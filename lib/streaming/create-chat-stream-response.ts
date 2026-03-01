@@ -150,18 +150,16 @@ export async function createChatStreamResponse(
           emptyMessages: 'remove'
         })
 
-        {
-          const originalCount = modelMessages.length
-          modelMessages = maybeTruncateMessages(modelMessages, model)
+        const preTruncationCount = modelMessages.length
+        modelMessages = maybeTruncateMessages(modelMessages, model)
 
-          if (
-            process.env.NODE_ENV === 'development' &&
-            modelMessages.length < originalCount
-          ) {
-            console.log(
-              `Context window limit reached. Truncating from ${originalCount} to ${modelMessages.length} messages`
-            )
-          }
+        if (
+          process.env.NODE_ENV === 'development' &&
+          modelMessages.length < preTruncationCount
+        ) {
+          console.log(
+            `Context window limit reached. Truncating from ${preTruncationCount} to ${modelMessages.length} messages`
+          )
         }
 
         // Start title generation in parallel if it's a new chat

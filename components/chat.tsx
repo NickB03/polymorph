@@ -242,39 +242,25 @@ export function Chat({
     const container = scrollContainerRef.current
     if (!container) return
 
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = container
-      const threshold = 50 // threshold in pixels
-      if (scrollHeight - scrollTop - clientHeight < threshold) {
-        setIsAtBottom(true)
-      } else {
-        setIsAtBottom(false)
-      }
-    }
-
-    container.addEventListener('scroll', handleScroll, { passive: true })
-    handleScroll() // Set initial state
-
-    return () => container.removeEventListener('scroll', handleScroll)
-  }, [messages.length])
-
-  // Re-check scroll position when content grows (e.g., during streaming)
-  useEffect(() => {
-    const container = scrollContainerRef.current
-    const content = container?.firstElementChild
-    if (!container || !content) return
-
-    const check = () => {
+    const checkIsAtBottom = () => {
       const { scrollTop, scrollHeight, clientHeight } = container
       const threshold = 50
       setIsAtBottom(scrollHeight - scrollTop - clientHeight < threshold)
     }
 
-    const observer = new ResizeObserver(check)
-    observer.observe(content)
+    container.addEventListener('scroll', checkIsAtBottom, { passive: true })
+    checkIsAtBottom() // Set initial state
 
-    return () => observer.disconnect()
-  }, [])
+    // Also re-check when content grows (e.g., during streaming)
+    const content = container.firstElementChild
+    const observer = content ? new ResizeObserver(checkIsAtBottom) : null
+    if (content) observer!.observe(content)
+
+    return () => {
+      container.removeEventListener('scroll', checkIsAtBottom)
+      observer?.disconnect()
+    }
+  }, [messages.length])
 
   // Scroll to the section when a new user message is sent
   useEffect(() => {

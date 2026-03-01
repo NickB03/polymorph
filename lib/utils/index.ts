@@ -1,7 +1,10 @@
+import type { ChatStatus } from 'ai'
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
 import { type Model } from '@/lib/types/models'
+
+export type { ChatStatus }
 
 // Function to generate a UUID
 export function generateUUID(): string {
@@ -29,8 +32,6 @@ export function sanitizeUrl(url: string): string {
 export function isCloudDeployment(): boolean {
   return process.env.VANA_CLOUD_DEPLOYMENT === 'true'
 }
-
-export type ChatStatus = 'submitted' | 'streaming' | 'ready' | 'error'
 
 export function isChatLoading(status: ChatStatus | undefined): boolean {
   return status === 'submitted' || status === 'streaming'

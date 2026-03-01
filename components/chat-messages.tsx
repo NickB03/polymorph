@@ -116,8 +116,6 @@ export function ChatMessages({
 
   if (!sections.length) return null
 
-  const showLoading = isLoading
-
   // Helper function to get tool count with caching
   const getToolCount = (message?: UIMessage): number => {
     if (!message || !message.id) return 0
@@ -258,7 +256,7 @@ export function ChatMessages({
               )
             })}
             {/* Show loading after assistant messages */}
-            {showLoading && sectionIndex === sections.length - 1 && (
+            {isLoading && sectionIndex === sections.length - 1 && (
               <div className="flex justify-start py-4">
                 <AnimatedLogo className="h-10 w-10" />
               </div>

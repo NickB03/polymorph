@@ -1,20 +1,22 @@
 /**
  * Safely extract hostname from a URL string.
- * Returns the full hostname (e.g., "www.google.com").
+ * Returns the full hostname (e.g., "www.google.com"), or null on failure.
  */
-export function getHostname(url: string): string {
+export function getHostname(url: string): string | null {
   try {
     return new URL(url).hostname
   } catch {
-    return 'unknown'
+    return null
   }
 }
 
 /**
  * Extract hostname without the www. prefix (e.g., "google.com").
+ * Returns null if the URL cannot be parsed.
  */
-export function getDomain(url: string): string {
-  return getHostname(url).replace(/^www\./, '')
+export function getDomain(url: string): string | null {
+  const hostname = getHostname(url)
+  return hostname?.replace(/^www\./, '') ?? null
 }
 
 /**
@@ -35,17 +37,14 @@ export function getFaviconUrl(domain: string, size = 16): string {
  * displayUrlName("https://en.wikipedia.org") // "wikipedia"
  */
 export const displayUrlName = (url: string): string => {
-  try {
-    const hostname = new URL(url).hostname
-    const parts = hostname.split('.')
+  const hostname = getHostname(url)
+  if (!hostname) return 'source'
 
-    // For hostnames like "www.google.com" or "docs.github.com"
-    // Extract the main domain name (second-to-last part)
-    // parts.length > 2: ["www", "google", "com"] -> "google"
-    // parts.length <= 2: ["localhost"] or ["example", "com"] -> "example"
-    return parts.length > 2 ? parts.slice(1, -1).join('.') : parts[0]
-  } catch {
-    // Fallback for invalid URLs
-    return 'source'
-  }
+  const parts = hostname.split('.')
+
+  // For hostnames like "www.google.com" or "docs.github.com"
+  // Extract the main domain name (second-to-last part)
+  // parts.length > 2: ["www", "google", "com"] -> "google"
+  // parts.length <= 2: ["localhost"] or ["example", "com"] -> "example"
+  return parts.length > 2 ? parts.slice(1, -1).join('.') : parts[0]
 }

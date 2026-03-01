@@ -5,7 +5,7 @@ import { Model } from '@/lib/types/models'
 
 import {
   getMaxAllowedTokens,
-  shouldTruncateMessages,
+  maybeTruncateMessages,
   truncateMessages
 } from '../context-window'
 
@@ -50,32 +50,33 @@ describe('context-window', () => {
     })
   })
 
-  describe('shouldTruncateMessages', () => {
-    test('returns false for empty messages', () => {
-      expect(shouldTruncateMessages([], mockModel)).toBe(false)
+  describe('maybeTruncateMessages', () => {
+    test('returns same array for empty messages', () => {
+      const empty: ModelMessage[] = []
+      expect(maybeTruncateMessages(empty, mockModel)).toBe(empty)
     })
 
-    test('returns false when under limit', () => {
+    test('returns same array when under limit', () => {
       const messages: ModelMessage[] = [
         createMessage('user', 'Hello'),
         createMessage('assistant', 'Hi there!')
       ]
-      expect(shouldTruncateMessages(messages, mockModel)).toBe(false)
+      expect(maybeTruncateMessages(messages, mockModel)).toBe(messages)
     })
 
-    test('returns true when over limit', () => {
-      // Create messages that exceed the token limit
+    test('truncates when over limit', () => {
       // mockModel (gpt-4o-mini) has 98816 max tokens
-      const longText = 'This is a test message. '.repeat(1000) // ~6000 tokens per message
+      const longText = 'This is a test message. '.repeat(1000)
       const messages: ModelMessage[] = Array(20)
         .fill(null)
-        .map(() => createMessage('user', longText)) // Total: ~120,000 tokens > 98,816 max tokens
-      expect(shouldTruncateMessages(messages, mockModel)).toBe(true)
+        .map(() => createMessage('user', longText))
+      const result = maybeTruncateMessages(messages, mockModel)
+      expect(result.length).toBeLessThan(messages.length)
     })
 
     test('handles null/undefined messages gracefully', () => {
-      expect(shouldTruncateMessages(null as any, mockModel)).toBe(false)
-      expect(shouldTruncateMessages(undefined as any, mockModel)).toBe(false)
+      expect(maybeTruncateMessages(null as any, mockModel)).toBeNull()
+      expect(maybeTruncateMessages(undefined as any, mockModel)).toBeUndefined()
     })
   })
 

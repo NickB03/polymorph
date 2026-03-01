@@ -34,40 +34,43 @@ export function SearchResults({
   if (displayMode === 'list') {
     return (
       <div className="flex flex-col gap-2">
-        {results.map((result, index) => (
-          <Link
-            href={result.url}
-            key={index}
-            passHref
-            target="_blank"
-            className="block"
-          >
-            <Card className="w-full hover:bg-muted/50 transition-colors">
-              <CardContent className="p-2 flex items-start space-x-2">
-                <Avatar className="h-4 w-4 mt-1 shrink-0">
-                  <AvatarImage
-                    src={getFaviconUrl(getHostname(result.url))}
-                    alt={getHostname(result.url)}
-                  />
-                  <AvatarFallback className="text-xs">
-                    {getHostname(result.url)[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="grow overflow-hidden space-y-0.5">
-                  <p className="text-sm font-medium line-clamp-1">
-                    {result.title || result.url}
-                  </p>
-                  <p className="text-xs text-muted-foreground line-clamp-2">
-                    {result.content}
-                  </p>
-                  <div className="text-xs text-muted-foreground/80 mt-1 truncate">
-                    <span className="underline">{getHostname(result.url)}</span>
+        {results.map((result, index) => {
+          const hostname = getHostname(result.url)
+          return (
+            <Link
+              href={result.url}
+              key={index}
+              passHref
+              target="_blank"
+              className="block"
+            >
+              <Card className="w-full hover:bg-muted/50 transition-colors">
+                <CardContent className="p-2 flex items-start space-x-2">
+                  <Avatar className="h-4 w-4 mt-1 shrink-0">
+                    <AvatarImage
+                      src={hostname ? getFaviconUrl(hostname) : undefined}
+                      alt={hostname ?? ''}
+                    />
+                    <AvatarFallback className="text-xs">
+                      {hostname?.[0] ?? '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grow overflow-hidden space-y-0.5">
+                    <p className="text-sm font-medium line-clamp-1">
+                      {result.title || result.url}
+                    </p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {result.content}
+                    </p>
+                    <div className="text-xs text-muted-foreground/80 mt-1 truncate">
+                      <span className="underline">{hostname ?? result.url}</span>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+                </CardContent>
+              </Card>
+            </Link>
+          )
+        })}
       </div>
     )
   }
@@ -75,33 +78,36 @@ export function SearchResults({
   // --- Grid Mode Rendering (Existing Logic) ---
   return (
     <div className="flex flex-wrap -m-1">
-      {displayedGridResults.map((result, index) => (
-        <div className="w-1/2 md:w-1/4 p-1 min-w-0" key={index}>
-          <Link href={result.url} passHref target="_blank">
-            <Card className="flex-1 h-full hover:bg-muted/50 transition-colors">
-              <CardContent className="p-2 flex flex-col justify-between h-full min-w-0">
-                <p className="text-xs line-clamp-2 min-h-8">
-                  {result.title || result.content}
-                </p>
-                <div className="mt-2 flex items-center space-x-1 min-w-0">
-                  <Avatar className="h-4 w-4 shrink-0">
-                    <AvatarImage
-                      src={getFaviconUrl(getHostname(result.url))}
-                      alt={getHostname(result.url)}
-                    />
-                    <AvatarFallback>
-                      {getHostname(result.url)[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="text-xs opacity-60 truncate min-w-0">
-                    {displayUrlName(result.url)}
+      {displayedGridResults.map((result, index) => {
+        const hostname = getHostname(result.url)
+        return (
+          <div className="w-1/2 md:w-1/4 p-1 min-w-0" key={index}>
+            <Link href={result.url} passHref target="_blank">
+              <Card className="flex-1 h-full hover:bg-muted/50 transition-colors">
+                <CardContent className="p-2 flex flex-col justify-between h-full min-w-0">
+                  <p className="text-xs line-clamp-2 min-h-8">
+                    {result.title || result.content}
+                  </p>
+                  <div className="mt-2 flex items-center space-x-1 min-w-0">
+                    <Avatar className="h-4 w-4 shrink-0">
+                      <AvatarImage
+                        src={hostname ? getFaviconUrl(hostname) : undefined}
+                        alt={hostname ?? ''}
+                      />
+                      <AvatarFallback>
+                        {hostname?.[0] ?? '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-xs opacity-60 truncate min-w-0">
+                      {displayUrlName(result.url)}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
-      ))}
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        )
+      })}
       {!showAllResults && additionalResultsCount > 0 && (
         <div className="w-1/2 md:w-1/4 p-1">
           <Card className="flex-1 flex h-full items-center justify-center">

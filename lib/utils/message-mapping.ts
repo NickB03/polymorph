@@ -70,6 +70,15 @@ type UIMessagePart =
   | ToolResultPart
   | DataPart
 
+/** Tool names that have dedicated DB columns (not routed through dynamic columns). */
+const KNOWN_TOOL_NAMES = [
+  'search',
+  'fetch',
+  'question',
+  'todoWrite',
+  'todoRead'
+] as const
+
 // Type guards
 function isToolCallPart(part: unknown): part is ToolCallPart {
   if (typeof part !== 'object' || part === null) return false
@@ -428,14 +437,7 @@ export function mapDBPartToUIMessagePart(
         }
 
         // Known tool parts with dedicated DB columns
-        const knownTools = [
-          'search',
-          'fetch',
-          'question',
-          'todoWrite',
-          'todoRead'
-        ]
-        if (knownTools.includes(toolName)) {
+        if ((KNOWN_TOOL_NAMES as readonly string[]).includes(toolName)) {
           if (!part.tool_state) {
             throw new Error(`tool_state is undefined for ${toolName}`)
           }

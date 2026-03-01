@@ -85,18 +85,25 @@ export const CitationLink = memo(function CitationLink({
             >
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-4 w-4 shrink-0">
-                    <AvatarImage
-                      src={getFaviconUrl(getHostname(citationData.url))}
-                      alt={getHostname(citationData.url)}
-                    />
-                    <AvatarFallback className="text-xs">
-                      {getHostname(citationData.url)[0]?.toUpperCase() || '?'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs text-muted-foreground truncate">
-                    {getHostname(citationData.url)}
-                  </span>
+                  {(() => {
+                    const hostname = getHostname(citationData.url)
+                    return (
+                      <>
+                        <Avatar className="h-4 w-4 shrink-0">
+                          <AvatarImage
+                            src={hostname ? getFaviconUrl(hostname) : undefined}
+                            alt={hostname ?? ''}
+                          />
+                          <AvatarFallback className="text-xs">
+                            {hostname?.[0]?.toUpperCase() || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-muted-foreground truncate">
+                          {hostname ?? citationData.url}
+                        </span>
+                      </>
+                    )
+                  })()}
                 </div>
                 <p className="text-sm font-medium line-clamp-1">
                   {citationData.title}

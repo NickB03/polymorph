@@ -33,6 +33,7 @@ export async function createEphemeralChatStreamResponse(
   config: EphemeralStreamConfig
 ): Promise<Response> {
   const { messages, model, abortSignal, searchMode, modelType, chatId } = config
+  const modelId = createModelId(model)
 
   if (!messages || messages.length === 0) {
     return new Response('messages are required', {
@@ -55,7 +56,7 @@ export async function createEphemeralChatStreamResponse(
       metadata: {
         chatId,
         userId: 'guest',
-        modelId: createModelId(model),
+        modelId,
         trigger: 'submit-message',
         modelType
       }
@@ -65,7 +66,7 @@ export async function createEphemeralChatStreamResponse(
   const stream = createUIMessageStream<UIMessage>({
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
       try {
-        const isOpenAI = createModelId(model).startsWith('openai:')
+        const isOpenAI = modelId.startsWith('openai:')
         const messagesToConvert = isOpenAI
           ? stripReasoningParts(messages)
           : messages
@@ -82,7 +83,7 @@ export async function createEphemeralChatStreamResponse(
         modelMessages = maybeTruncateMessages(modelMessages, model)
 
         const researchAgent = researcher({
-          model: createModelId(model),
+          model: modelId,
           modelConfig: model,
           writer,
           parentTraceId,
@@ -103,7 +104,7 @@ export async function createEphemeralChatStreamResponse(
                 return {
                   traceId: parentTraceId,
                   searchMode,
-                  modelId: createModelId(model)
+                  modelId
                 }
               }
             }

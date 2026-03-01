@@ -38,6 +38,8 @@ export function VideoResultGrid({
           displayMode === 'chat' && index === 3 && videos.length > 4
         const cardClasses = displayMode === 'chat' ? 'w-1/2 md:w-1/4 p-1' : ''
 
+        const hostname = getHostname(video.link)
+
         return (
           <VideoCarouselDialog
             key={video.link || index}
@@ -79,17 +81,15 @@ export function VideoResultGrid({
                     <div className="flex items-center space-x-2">
                       <Avatar className="h-4 w-4">
                         <AvatarImage
-                          src={getFaviconUrl(getHostname(video.link))}
+                          src={hostname ? getFaviconUrl(hostname) : undefined}
                           alt={video.channel || video.source}
                         />
                         <AvatarFallback>
-                          {getHostname(video.link)[0]}
+                          {hostname?.[0] ?? '?'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="text-xs text-muted-foreground opacity-60 truncate">
-                        {video.channel ||
-                          video.source ||
-                          getHostname(video.link)}
+                        {video.channel || video.source || hostname}
                       </div>
                     </div>
                   </div>

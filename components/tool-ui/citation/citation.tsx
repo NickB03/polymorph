@@ -36,8 +36,7 @@ const TYPE_ICONS: Record<CitationType, LucideIcon> = {
 }
 
 function extractDomain(url: string): string | undefined {
-  const domain = getDomain(url)
-  return domain === 'unknown' ? undefined : domain
+  return getDomain(url) ?? undefined
 }
 
 function formatDate(isoString: string, locale: string): string {

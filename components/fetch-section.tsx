@@ -70,7 +70,7 @@ export function FetchSection({
   const getPageTitle = () => {
     if (title) return title
     if (!url) return 'Unknown URL'
-    return getDomain(url)
+    return getDomain(url) ?? url
   }
 
   // Handle click to open URL
