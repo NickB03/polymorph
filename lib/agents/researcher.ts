@@ -9,6 +9,7 @@ import type { ResearcherTools } from '@/lib/types/agent'
 import { type ModelType } from '@/lib/types/model-type'
 import { type Model } from '@/lib/types/models'
 
+import { displayChartTool } from '../tools/display-chart'
 import { displayCitationsTool } from '../tools/display-citations'
 import { displayLinkPreviewTool } from '../tools/display-link-preview'
 import { displayOptionListTool } from '../tools/display-option-list'
@@ -112,6 +113,7 @@ export function createResearcher({
           'fetch',
           'displayPlan',
           'displayTable',
+          'displayChart',
           'displayCitations',
           'displayLinkPreview',
           'displayOptionList'
@@ -130,6 +132,7 @@ export function createResearcher({
           'search',
           'fetch',
           'displayTable',
+          'displayChart',
           'displayCitations',
           'displayLinkPreview',
           'displayOptionList'
@@ -153,6 +156,7 @@ export function createResearcher({
       askQuestion: askQuestionTool,
       displayPlan: displayPlanTool,
       displayTable: displayTableTool,
+      displayChart: displayChartTool,
       displayCitations: displayCitationsTool,
       displayLinkPreview: displayLinkPreviewTool,
       displayOptionList: displayOptionListTool,
