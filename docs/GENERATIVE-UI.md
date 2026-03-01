@@ -100,12 +100,12 @@ sequenceDiagram
 
 Each display tool part transitions through states as the AI SDK processes the tool call:
 
-| State              | UI                                    | Duration     |
-| ------------------ | ------------------------------------- | ------------ |
-| `input-streaming`  | Animated skeleton placeholder (pulse) | Brief        |
-| `input-available`  | Animated skeleton placeholder (pulse) | Brief        |
-| `output-available` | Full rendered component               | Permanent    |
-| `output-error`     | Error message (dashed border)         | Permanent    |
+| State              | UI                                    | Duration  |
+| ------------------ | ------------------------------------- | --------- |
+| `input-streaming`  | Animated skeleton placeholder (pulse) | Brief     |
+| `input-available`  | Animated skeleton placeholder (pulse) | Brief     |
+| `output-available` | Full rendered component               | Permanent |
+| `output-error`     | Error message (dashed border)         | Permanent |
 
 Display tools transition quickly through these states since their `execute` function simply returns the input unchanged.
 
@@ -121,13 +121,13 @@ Display tools do not perform any computation — they serve as a structured outp
 
 ### Tool definitions
 
-| Tool                 | File                              | Description                          | Has `execute`? |
-| -------------------- | --------------------------------- | ------------------------------------ | :------------: |
-| `displayPlan`        | `lib/tools/display-plan.ts`       | Step-by-step guides with status      |      Yes       |
-| `displayTable`       | `lib/tools/display-table.ts`      | Sortable data tables with formatting |      Yes       |
-| `displayCitations`   | `lib/tools/display-citations.ts`  | Rich source citation lists           |      Yes       |
-| `displayLinkPreview` | `lib/tools/display-link-preview.ts` | Link preview cards                 |      Yes       |
-| `displayOptionList`  | `lib/tools/display-option-list.ts`  | Interactive option lists           |      No        |
+| Tool                 | File                                | Description                          | Has `execute`? |
+| -------------------- | ----------------------------------- | ------------------------------------ | :------------: |
+| `displayPlan`        | `lib/tools/display-plan.ts`         | Step-by-step guides with status      |      Yes       |
+| `displayTable`       | `lib/tools/display-table.ts`        | Sortable data tables with formatting |      Yes       |
+| `displayCitations`   | `lib/tools/display-citations.ts`    | Rich source citation lists           |      Yes       |
+| `displayLinkPreview` | `lib/tools/display-link-preview.ts` | Link preview cards                   |      Yes       |
+| `displayOptionList`  | `lib/tools/display-option-list.ts`  | Interactive option lists             |       No       |
 
 All tools with `execute` use the same passthrough pattern:
 
@@ -234,14 +234,14 @@ graph TD
 
 ### Adapter contents by component
 
-| Component      | Adapter re-exports                                                          |
-| -------------- | --------------------------------------------------------------------------- |
-| `plan/`        | Accordion, Card (Header/Content/Title/Description), Collapsible, `cn`       |
-| `data-table/`  | Accordion, Badge, Button, Table (all parts), Tooltip (all parts), `cn`      |
-| `citation/`    | Popover (all parts), `cn`                                                   |
-| `link-preview/`| `cn`                                                                        |
-| `option-list/` | Button, Separator, `cn`                                                     |
-| `shared/`      | Button, `cn`                                                                |
+| Component       | Adapter re-exports                                                     |
+| --------------- | ---------------------------------------------------------------------- |
+| `plan/`         | Accordion, Card (Header/Content/Title/Description), Collapsible, `cn`  |
+| `data-table/`   | Accordion, Badge, Button, Table (all parts), Tooltip (all parts), `cn` |
+| `citation/`     | Popover (all parts), `cn`                                              |
+| `link-preview/` | `cn`                                                                   |
+| `option-list/`  | Button, Separator, `cn`                                                |
+| `shared/`       | Button, `cn`                                                           |
 
 ### Why adapters?
 
@@ -268,6 +268,7 @@ const contract = defineToolUiContract('Plan', SerializablePlanSchema)
 ```
 
 This creates a contract object with:
+
 - `schema` — the Zod schema itself
 - `parse(input)` — strict parse that throws on invalid input
 - `safeParse(input)` — returns `null` on invalid input (used in the registry)
@@ -285,12 +286,12 @@ For example, `OptionListProps` extends the serializable schema with `onChange`, 
 
 All tool UI schemas share common base fields from `components/tool-ui/shared/schema.ts`:
 
-| Schema              | Purpose                                              |
-| ------------------- | ---------------------------------------------------- |
-| `ToolUIIdSchema`    | Unique identifier (`z.string().min(1)`)              |
-| `ToolUIRoleSchema`  | Surface role (information, decision, control, etc.)   |
+| Schema                | Purpose                                             |
+| --------------------- | --------------------------------------------------- |
+| `ToolUIIdSchema`      | Unique identifier (`z.string().min(1)`)             |
+| `ToolUIRoleSchema`    | Surface role (information, decision, control, etc.) |
 | `ToolUIReceiptSchema` | Outcome metadata (success/partial/failed/cancelled) |
-| `ActionSchema`      | Button action definition with variant and shortcut    |
+| `ActionSchema`        | Button action definition with variant and shortcut  |
 
 **Source files:** [`components/tool-ui/shared/schema.ts`](../components/tool-ui/shared/schema.ts), [`components/tool-ui/shared/contract.ts`](../components/tool-ui/shared/contract.ts), `components/tool-ui/*/schema.ts`
 
@@ -394,6 +395,7 @@ A visual step-by-step guide with status indicators and progress tracking.
 **Status types:** `pending` | `in_progress` | `completed` | `cancelled`
 
 **Features:**
+
 - Progress bar with percentage calculation
 - Celebration animation when progress crosses thresholds
 - Staggered entrance animations for new items
@@ -410,6 +412,7 @@ A sortable data table with rich column formatting and responsive layout.
 **Format kinds:** `text`, `number`, `currency`, `percent`, `date`, `delta`, `boolean`, `link`, `badge`, `status`, `array`
 
 **Features:**
+
 - Three-state sort cycling (ascending -> descending -> unsorted)
 - Container query responsive layout (`auto` switches between table and cards at `@md`)
 - Mobile card view with accordion expand for secondary columns
@@ -427,11 +430,13 @@ A list of source citations with metadata and navigation.
 **Citation types:** `webpage`, `document`, `article`, `api`, `code`, `other`
 
 **Variants:**
+
 - `default` — full cards with metadata
 - `inline` — compact inline badges
 - `stacked` — overlapping favicon circles with popover
 
 **Features:**
+
 - Overflow indicator with popover for truncated lists
 - Hover popover with delay for browsing
 - Type-specific icons (Globe, FileText, Newspaper, etc.)
@@ -444,6 +449,7 @@ A rich link preview card with image, title, and description.
 **Props:** `id`, `href`, `title`, `description`, `image`, `domain`, `favicon`, `ratio`, `fit`
 
 **Features:**
+
 - Aspect ratio options (16:9, 4:3, 1:1, auto)
 - Image fit modes (cover, contain, fill)
 - Hover scale animation on image
@@ -457,6 +463,7 @@ An interactive option list that pauses the AI conversation for user input.
 **Props:** `id`, `options[]`, `selectionMode` (single/multi), `minSelections`, `maxSelections`, `actions[]`
 
 **Features:**
+
 - Single and multi-select modes with radio/checkbox indicators
 - Full keyboard navigation (Arrow keys, Home/End, Enter/Space, Escape)
 - ARIA listbox semantics
@@ -465,6 +472,7 @@ An interactive option list that pauses the AI conversation for user input.
 - Max selection enforcement (locks unselected options when limit reached)
 
 **Interactive flow:**
+
 1. AI calls `displayOptionList` (no `execute` function)
 2. Frontend renders interactive OptionList with `addToolResult` callback
 3. User selects option(s) and clicks Confirm
@@ -520,11 +528,11 @@ The `DynamicToolDisplay` component (`components/dynamic-tool-display.tsx`) handl
 
 ### Tool name conventions
 
-| Prefix      | Type           | Display name transformation    |
-| ----------- | -------------- | ------------------------------ |
-| `mcp__`     | MCP Tool       | Remove prefix, replace `__` with `.` |
-| `dynamic__` | Dynamic Tool   | Remove prefix                  |
-| (other)     | Custom Tool    | Use as-is                      |
+| Prefix      | Type         | Display name transformation          |
+| ----------- | ------------ | ------------------------------------ |
+| `mcp__`     | MCP Tool     | Remove prefix, replace `__` with `.` |
+| `dynamic__` | Dynamic Tool | Remove prefix                        |
+| (other)     | Custom Tool  | Use as-is                            |
 
 ### State indicators
 
@@ -586,13 +594,13 @@ graph TD
 
 `ArtifactContent` dispatches based on `part.type`:
 
-| Part type        | Component                  | Content shown                              |
-| ---------------- | -------------------------- | ------------------------------------------ |
-| `tool-search`    | `ToolInvocationContent` → `SearchArtifactContent` | Search results with source links and snippets |
-| `tool-fetch`     | `ToolInvocationContent`    | Generic tool display                       |
-| `tool-askQuestion` | `ToolInvocationContent`  | Generic tool display                       |
-| `tool-todoWrite` | `TodoInvocationContent`    | Todo list with progress                    |
-| `reasoning`      | `ReasoningContent`         | Full reasoning text as markdown            |
+| Part type          | Component                                         | Content shown                                 |
+| ------------------ | ------------------------------------------------- | --------------------------------------------- |
+| `tool-search`      | `ToolInvocationContent` → `SearchArtifactContent` | Search results with source links and snippets |
+| `tool-fetch`       | `ToolInvocationContent`                           | Generic tool display                          |
+| `tool-askQuestion` | `ToolInvocationContent`                           | Generic tool display                          |
+| `tool-todoWrite`   | `TodoInvocationContent`                           | Todo list with progress                       |
+| `reasoning`        | `ReasoningContent`                                | Full reasoning text as markdown               |
 
 **Source files:** [`components/artifact/artifact-root.tsx`](../components/artifact/artifact-root.tsx), [`components/artifact/artifact-context.tsx`](../components/artifact/artifact-context.tsx), [`components/artifact/artifact-content.tsx`](../components/artifact/artifact-content.tsx), [`components/artifact/chat-artifact-container.tsx`](../components/artifact/chat-artifact-container.tsx)
 
@@ -618,11 +626,11 @@ The `ResearchProcessSection` component (`components/research-process-section.tsx
 
 Each part is dispatched via `RenderPart`:
 
-| Part type    | Component          | Behavior                                    |
-| ------------ | ------------------ | ------------------------------------------- |
-| `reasoning`  | `ReasoningSection` | Collapsible with preview text, inspect link |
-| `tool-*`     | `ToolSection`      | Collapsible tool result                     |
-| `data-*`     | `DataSection`      | Data display (related questions, etc.)      |
+| Part type   | Component          | Behavior                                    |
+| ----------- | ------------------ | ------------------------------------------- |
+| `reasoning` | `ReasoningSection` | Collapsible with preview text, inspect link |
+| `tool-*`    | `ToolSection`      | Collapsible tool result                     |
+| `data-*`    | `DataSection`      | Data display (related questions, etc.)      |
 
 **Source file:** [`components/research-process-section.tsx`](../components/research-process-section.tsx)
 
@@ -644,14 +652,20 @@ const DisplayChartSchema = z.object({
   id: z.string().min(1).describe('Unique identifier for this chart'),
   title: z.string().describe('Chart title'),
   type: z.enum(['bar', 'line', 'pie']).describe('Chart type'),
-  data: z.array(z.object({
-    label: z.string(),
-    value: z.number()
-  })).min(1).describe('Chart data points')
+  data: z
+    .array(
+      z.object({
+        label: z.string(),
+        value: z.number()
+      })
+    )
+    .min(1)
+    .describe('Chart data points')
 })
 
 export const displayChartTool = tool({
-  description: 'Display a chart visualization. Use when presenting numerical data visually.',
+  description:
+    'Display a chart visualization. Use when presenting numerical data visually.',
   inputSchema: DisplayChartSchema,
   execute: async params => params
 })
@@ -696,15 +710,23 @@ export const safeParseSerializableChart = contract.safeParse
 import { Card, CardContent, CardHeader, CardTitle, cn } from './_adapter'
 import type { SerializableChart } from './schema'
 
-export function Chart({ id, title, type, data, className }: SerializableChart & { className?: string }) {
+export function Chart({
+  id,
+  title,
+  type,
+  data,
+  className
+}: SerializableChart & { className?: string }) {
   return (
-    <Card className={cn('w-full max-w-xl', className)} data-tool-ui-id={id} data-slot="chart">
+    <Card
+      className={cn('w-full max-w-xl', className)}
+      data-tool-ui-id={id}
+      data-slot="chart"
+    >
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        {/* Your chart rendering logic */}
-      </CardContent>
+      <CardContent>{/* Your chart rendering logic */}</CardContent>
     </Card>
   )
 }
@@ -756,61 +778,61 @@ activeTools: [...existingTools, 'displayChart']
 
 ### Display tools (server)
 
-| File                                   | Purpose                              |
-| -------------------------------------- | ------------------------------------ |
-| `lib/tools/display-plan.ts`           | Plan tool definition + schema        |
-| `lib/tools/display-table.ts`          | DataTable tool definition + schema   |
-| `lib/tools/display-citations.ts`      | Citations tool definition + schema   |
-| `lib/tools/display-link-preview.ts`   | LinkPreview tool definition + schema |
-| `lib/tools/display-option-list.ts`    | OptionList tool definition (no execute) |
+| File                                | Purpose                                 |
+| ----------------------------------- | --------------------------------------- |
+| `lib/tools/display-plan.ts`         | Plan tool definition + schema           |
+| `lib/tools/display-table.ts`        | DataTable tool definition + schema      |
+| `lib/tools/display-citations.ts`    | Citations tool definition + schema      |
+| `lib/tools/display-link-preview.ts` | LinkPreview tool definition + schema    |
+| `lib/tools/display-option-list.ts`  | OptionList tool definition (no execute) |
 
 ### Tool UI components (client)
 
-| File                                          | Purpose                              |
-| --------------------------------------------- | ------------------------------------ |
-| `components/tool-ui/registry.tsx`             | Central tool name -> component map   |
-| `components/tool-ui/plan/plan.tsx`            | Plan component with progress         |
-| `components/tool-ui/plan/schema.ts`           | Plan Zod schema + contract           |
-| `components/tool-ui/data-table/data-table.tsx`| DataTable with sort + responsive     |
-| `components/tool-ui/data-table/schema.ts`     | DataTable Zod schema + contract      |
-| `components/tool-ui/data-table/formatters.tsx`| Column value formatting              |
-| `components/tool-ui/citation/citation-list.tsx`| CitationList with variants          |
-| `components/tool-ui/citation/schema.ts`       | Citation Zod schema + contract       |
-| `components/tool-ui/link-preview/link-preview.tsx`| LinkPreview card               |
-| `components/tool-ui/link-preview/schema.ts`   | LinkPreview Zod schema + contract    |
-| `components/tool-ui/option-list/option-list.tsx`| Interactive OptionList             |
-| `components/tool-ui/option-list/schema.ts`    | OptionList Zod schema + contract     |
-| `components/tool-ui/shared/schema.ts`         | Shared base schemas (id, role, etc.) |
-| `components/tool-ui/shared/contract.ts`       | `defineToolUiContract` helper        |
-| `components/tool-ui/*/_adapter.tsx`            | Host dependency adapters             |
+| File                                               | Purpose                              |
+| -------------------------------------------------- | ------------------------------------ |
+| `components/tool-ui/registry.tsx`                  | Central tool name -> component map   |
+| `components/tool-ui/plan/plan.tsx`                 | Plan component with progress         |
+| `components/tool-ui/plan/schema.ts`                | Plan Zod schema + contract           |
+| `components/tool-ui/data-table/data-table.tsx`     | DataTable with sort + responsive     |
+| `components/tool-ui/data-table/schema.ts`          | DataTable Zod schema + contract      |
+| `components/tool-ui/data-table/formatters.tsx`     | Column value formatting              |
+| `components/tool-ui/citation/citation-list.tsx`    | CitationList with variants           |
+| `components/tool-ui/citation/schema.ts`            | Citation Zod schema + contract       |
+| `components/tool-ui/link-preview/link-preview.tsx` | LinkPreview card                     |
+| `components/tool-ui/link-preview/schema.ts`        | LinkPreview Zod schema + contract    |
+| `components/tool-ui/option-list/option-list.tsx`   | Interactive OptionList               |
+| `components/tool-ui/option-list/schema.ts`         | OptionList Zod schema + contract     |
+| `components/tool-ui/shared/schema.ts`              | Shared base schemas (id, role, etc.) |
+| `components/tool-ui/shared/contract.ts`            | `defineToolUiContract` helper        |
+| `components/tool-ui/*/_adapter.tsx`                | Host dependency adapters             |
 
 ### Rendering pipeline
 
-| File                                          | Purpose                              |
-| --------------------------------------------- | ------------------------------------ |
-| `components/render-message.tsx`               | Part-type dispatcher (buffer/flush)  |
-| `components/dynamic-tool-display.tsx`         | MCP/dynamic tool renderer            |
-| `components/answer-section.tsx`               | Answer text with markdown + actions  |
-| `components/message.tsx`                      | Streaming markdown via Streamdown    |
-| `components/research-process-section.tsx`     | Collapsible research steps           |
-| `components/reasoning-section.tsx`            | Reasoning display with preview       |
+| File                                      | Purpose                             |
+| ----------------------------------------- | ----------------------------------- |
+| `components/render-message.tsx`           | Part-type dispatcher (buffer/flush) |
+| `components/dynamic-tool-display.tsx`     | MCP/dynamic tool renderer           |
+| `components/answer-section.tsx`           | Answer text with markdown + actions |
+| `components/message.tsx`                  | Streaming markdown via Streamdown   |
+| `components/research-process-section.tsx` | Collapsible research steps          |
+| `components/reasoning-section.tsx`        | Reasoning display with preview      |
 
 ### Artifact / Inspector
 
-| File                                          | Purpose                              |
-| --------------------------------------------- | ------------------------------------ |
-| `components/artifact/artifact-root.tsx`       | Provider + container wrapper         |
-| `components/artifact/artifact-context.tsx`    | React context with open/close state  |
-| `components/artifact/artifact-content.tsx`    | Part type -> content dispatcher      |
-| `components/artifact/chat-artifact-container.tsx`| Resizable desktop + mobile drawer |
-| `components/artifact/tool-invocation-content.tsx`| Tool part dispatcher (search, fetch, question) |
-| `components/artifact/search-artifact-content.tsx`| Full search results view          |
-| `components/artifact/reasoning-content.tsx`   | Full reasoning markdown view         |
-| `components/artifact/todo-invocation-content.tsx`| Todo list detail view             |
-| `components/inspector/inspector-panel.tsx`    | Panel chrome with icon + close       |
+| File                                              | Purpose                                        |
+| ------------------------------------------------- | ---------------------------------------------- |
+| `components/artifact/artifact-root.tsx`           | Provider + container wrapper                   |
+| `components/artifact/artifact-context.tsx`        | React context with open/close state            |
+| `components/artifact/artifact-content.tsx`        | Part type -> content dispatcher                |
+| `components/artifact/chat-artifact-container.tsx` | Resizable desktop + mobile drawer              |
+| `components/artifact/tool-invocation-content.tsx` | Tool part dispatcher (search, fetch, question) |
+| `components/artifact/search-artifact-content.tsx` | Full search results view                       |
+| `components/artifact/reasoning-content.tsx`       | Full reasoning markdown view                   |
+| `components/artifact/todo-invocation-content.tsx` | Todo list detail view                          |
+| `components/inspector/inspector-panel.tsx`        | Panel chrome with icon + close                 |
 
 ### Types
 
-| File                                 | Purpose                              |
-| ------------------------------------ | ------------------------------------ |
-| `lib/types/dynamic-tools.ts`        | DynamicToolPart type definitions     |
+| File                         | Purpose                          |
+| ---------------------------- | -------------------------------- |
+| `lib/types/dynamic-tools.ts` | DynamicToolPart type definitions |
