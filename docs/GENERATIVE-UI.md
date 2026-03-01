@@ -171,7 +171,7 @@ The registry (`components/tool-ui/registry.tsx`) is the central mapping between 
 
 Primary lookup. First tries a direct name match, then falls back to schema probing.
 
-```
+```text
 1. Find entry where entry.name === toolName
 2. If found, call entry.tryRender(output)
 3. If that returns a component, return it
@@ -352,7 +352,7 @@ The dispatcher maintains a buffer of non-text parts (reasoning, tool results, da
 
 This produces an interleaved layout:
 
-```
+```text
 [Research Process: search → fetch → reasoning]  ← collapsed
 [Answer text with markdown and citations]
 [Research Process: more searches]                ← collapsed
@@ -588,7 +588,7 @@ graph TD
 
 | Part type        | Component                  | Content shown                              |
 | ---------------- | -------------------------- | ------------------------------------------ |
-| `tool-search`    | `ToolInvocationContent`    | Delegates to `SearchArtifactContent` internally |
+| `tool-search`    | `ToolInvocationContent` → `SearchArtifactContent` | Search results with source links and snippets |
 | `tool-fetch`     | `ToolInvocationContent`    | Generic tool display                       |
 | `tool-askQuestion` | `ToolInvocationContent`  | Generic tool display                       |
 | `tool-todoWrite` | `TodoInvocationContent`    | Todo list with progress                    |

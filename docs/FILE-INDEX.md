@@ -613,6 +613,8 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 |------|---------|
 | `docs/ARCHITECTURE.md` | System architecture with diagrams for agent pipeline, streaming, DB schema, and UI component tree |
 | `docs/API.md` | API endpoint reference for chat, chats, feedback, upload, and advanced-search routes |
+| `docs/GENERATIVE-UI.md` | Generative UI system architecture; display tools, Tool UI registry, adapter pattern, schema validation, and adding new tools |
+| `docs/RESEARCH-AGENT.md` | Research agent deep technical reference; ToolLoopAgent pattern, search modes, tool system, model selection, and context window management |
 | `docs/CONFIGURATION.md` | Configuration guide for models, search providers, and feature flags |
 | `docs/DEPLOYMENT.md` | Deployment guide for Vercel, Docker, and self-hosted setups |
 | `docs/DOCKER.md` | Docker-specific setup and configuration instructions |
