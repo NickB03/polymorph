@@ -103,31 +103,39 @@ export class BraveSearchProvider implements SearchProvider {
     return results
   }
 
+  private async fetchBraveApi(
+    endpoint: string,
+    query: string,
+    maxResults: number
+  ): Promise<any> {
+    const response = await fetch(
+      `https://api.search.brave.com/res/v1/${endpoint}/search?q=${encodeURIComponent(
+        query
+      )}&count=${maxResults}`,
+      {
+        headers: {
+          Accept: 'application/json',
+          'Accept-Encoding': 'gzip',
+          'X-Subscription-Token': this.apiKey!
+        }
+      }
+    )
+
+    if (!response.ok) {
+      console.error(`Brave ${endpoint} search failed: ${response.statusText}`)
+      throw new Error('Search failed')
+    }
+
+    return response.json()
+  }
+
   private async searchWeb(
     query: string,
     maxResults: number,
     results: SearchResults
   ): Promise<void> {
     try {
-      const response = await fetch(
-        `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(
-          query
-        )}&count=${maxResults}`,
-        {
-          headers: {
-            Accept: 'application/json',
-            'Accept-Encoding': 'gzip',
-            'X-Subscription-Token': this.apiKey!
-          }
-        }
-      )
-
-      if (!response.ok) {
-        console.error(`Brave web search failed: ${response.statusText}`)
-        throw new Error('Search failed')
-      }
-
-      const data = await response.json()
+      const data = await this.fetchBraveApi('web', query, maxResults)
       results.results = (data.web?.results || [])
         .slice(0, maxResults)
         .map((result: BraveWebResult) => ({
@@ -146,25 +154,7 @@ export class BraveSearchProvider implements SearchProvider {
     results: SearchResults
   ): Promise<void> {
     try {
-      const response = await fetch(
-        `https://api.search.brave.com/res/v1/videos/search?q=${encodeURIComponent(
-          query
-        )}&count=${maxResults}`,
-        {
-          headers: {
-            Accept: 'application/json',
-            'Accept-Encoding': 'gzip',
-            'X-Subscription-Token': this.apiKey!
-          }
-        }
-      )
-
-      if (!response.ok) {
-        console.error(`Brave video search failed: ${response.statusText}`)
-        throw new Error('Search failed')
-      }
-
-      const data = await response.json()
+      const data = await this.fetchBraveApi('videos', query, maxResults)
 
       // Convert to SerperSearchResultItem format for compatibility
       results.videos = (data.results || []).slice(0, maxResults).map(
@@ -193,25 +183,7 @@ export class BraveSearchProvider implements SearchProvider {
     results: SearchResults
   ): Promise<void> {
     try {
-      const response = await fetch(
-        `https://api.search.brave.com/res/v1/images/search?q=${encodeURIComponent(
-          query
-        )}&count=${maxResults}`,
-        {
-          headers: {
-            Accept: 'application/json',
-            'Accept-Encoding': 'gzip',
-            'X-Subscription-Token': this.apiKey!
-          }
-        }
-      )
-
-      if (!response.ok) {
-        console.error(`Brave image search failed: ${response.statusText}`)
-        throw new Error('Search failed')
-      }
-
-      const data = await response.json()
+      const data = await this.fetchBraveApi('images', query, maxResults)
       results.images = (data.results || []).slice(0, maxResults).map(
         (result: BraveImageResult) =>
           ({

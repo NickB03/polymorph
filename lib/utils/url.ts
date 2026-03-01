@@ -42,9 +42,7 @@ export async function getBaseUrl(): Promise<URL> {
 
   if (baseUrlEnv) {
     try {
-      const baseUrlObj = new URL(baseUrlEnv)
-      console.log('Using BASE_URL environment variable:', baseUrlEnv)
-      return baseUrlObj
+      return new URL(baseUrlEnv)
     } catch (error) {
       console.warn(
         'Invalid BASE_URL environment variable, falling back to headers'

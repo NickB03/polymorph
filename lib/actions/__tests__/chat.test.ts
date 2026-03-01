@@ -411,33 +411,14 @@ describe('Chat Actions', () => {
   describe('clearChats', () => {
     it('should clear all chats for authenticated user', async () => {
       const userId = 'user-123'
-      const mockChats: Chat[] = [
-        {
-          id: 'chat-1',
-          title: 'Chat 1',
-          userId,
-          visibility: 'private',
-          createdAt: new Date()
-        },
-        {
-          id: 'chat-2',
-          title: 'Chat 2',
-          userId,
-          visibility: 'private',
-          createdAt: new Date()
-        }
-      ]
 
       vi.mocked(getCurrentUserId).mockResolvedValue(userId)
-      vi.mocked(dbActions.getChats).mockResolvedValue(mockChats)
-      vi.mocked(dbActions.deleteChat).mockResolvedValue({ success: true })
+      vi.mocked(dbActions.clearAllChats).mockResolvedValue({ success: true })
 
       const result = await clearChats()
 
       expect(result).toEqual({ success: true })
-      expect(dbActions.deleteChat).toHaveBeenCalledTimes(2)
-      expect(dbActions.deleteChat).toHaveBeenCalledWith('chat-1', userId)
-      expect(dbActions.deleteChat).toHaveBeenCalledWith('chat-2', userId)
+      expect(dbActions.clearAllChats).toHaveBeenCalledWith(userId)
       expect(revalidateTag).toHaveBeenCalledWith('chat', 'max')
     })
   })

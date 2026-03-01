@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { PlusCircle } from 'lucide-react'
 
 import { SerperSearchResultItem } from '@/lib/types'
+import { getFaviconUrl, getHostname } from '@/lib/utils/domain'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
@@ -78,20 +79,17 @@ export function VideoResultGrid({
                     <div className="flex items-center space-x-2">
                       <Avatar className="h-4 w-4">
                         <AvatarImage
-                          src={`https://www.google.com/s2/favicons?domain=${
-                            new URL(video.link).hostname
-                          }`}
+                          src={getFaviconUrl(getHostname(video.link))}
                           alt={video.channel || video.source}
                         />
                         <AvatarFallback>
-                          {new URL(video.link).hostname[0]}
+                          {getHostname(video.link)[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div className="text-xs text-muted-foreground opacity-60 truncate">
-                        {/* Display channel or source if available */}
                         {video.channel ||
                           video.source ||
-                          new URL(video.link).hostname}
+                          getHostname(video.link)}
                       </div>
                     </div>
                   </div>

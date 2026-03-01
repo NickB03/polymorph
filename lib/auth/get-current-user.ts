@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { isCloudDeployment } from '@/lib/utils'
 import { perfLog } from '@/lib/utils/perf-logging'
 import { incrementAuthCallCount } from '@/lib/utils/perf-tracking'
 
@@ -18,12 +19,10 @@ export async function getCurrentUser() {
 export async function getCurrentUserId() {
   const count = incrementAuthCallCount()
   perfLog(`getCurrentUserId called - count: ${count}`)
-  const isCloudDeployment = process.env.VANA_CLOUD_DEPLOYMENT === 'true'
-
   // Skip authentication mode (for personal Docker deployments)
   if (process.env.ENABLE_AUTH === 'false') {
     // Guard: Prevent disabling auth in cloud deployments
-    if (isCloudDeployment) {
+    if (isCloudDeployment()) {
       throw new Error(
         'ENABLE_AUTH=false is not allowed in cloud deployment mode'
       )

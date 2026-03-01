@@ -12,15 +12,13 @@ import { randomUUID } from 'crypto'
 import { Langfuse } from 'langfuse'
 
 import { researcher } from '@/lib/agents/researcher'
+import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
+import { createModelId } from '@/lib/utils'
 import { isTracingEnabled } from '@/lib/utils/telemetry'
 
 import { loadChat } from '../actions/chat'
 import { generateChatTitle } from '../agents/title-generator'
-import {
-  getMaxAllowedTokens,
-  shouldTruncateMessages,
-  truncateMessages
-} from '../utils/context-window'
+import { maybeTruncateMessages } from '../utils/context-window'
 import { getTextFromParts } from '../utils/message-utils'
 import { perfLog, perfTime } from '../utils/perf-logging'
 
@@ -30,9 +28,6 @@ import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
 import type { StreamContext } from './helpers/types'
 import { BaseStreamConfig } from './types'
-
-// Constants
-const DEFAULT_CHAT_TITLE = 'Untitled'
 
 export async function createChatStreamResponse(
   config: BaseStreamConfig
@@ -92,7 +87,7 @@ export async function createChatStreamResponse(
       metadata: {
         chatId,
         userId,
-        modelId: `${model.providerId}:${model.id}`,
+        modelId: createModelId(model),
         trigger
       }
     })
@@ -102,7 +97,7 @@ export async function createChatStreamResponse(
   const context: StreamContext = {
     chatId,
     userId,
-    modelId: `${model.providerId}:${model.id}`,
+    modelId: createModelId(model),
     messageId,
     trigger,
     initialChat,
@@ -155,12 +150,14 @@ export async function createChatStreamResponse(
           emptyMessages: 'remove'
         })
 
-        if (shouldTruncateMessages(modelMessages, model)) {
-          const maxTokens = getMaxAllowedTokens(model)
+        {
           const originalCount = modelMessages.length
-          modelMessages = truncateMessages(modelMessages, maxTokens, model.id)
+          modelMessages = maybeTruncateMessages(modelMessages, model)
 
-          if (process.env.NODE_ENV === 'development') {
+          if (
+            process.env.NODE_ENV === 'development' &&
+            modelMessages.length < originalCount
+          ) {
             console.log(
               `Context window limit reached. Truncating from ${originalCount} to ${modelMessages.length} messages`
             )

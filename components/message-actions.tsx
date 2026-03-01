@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 
 import type { SearchResultItem } from '@/lib/types'
 import type { UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
-import { cn } from '@/lib/utils'
+import { cn, isChatLoading } from '@/lib/utils'
 import { processCitations } from '@/lib/utils/citation'
 
 import { Button } from './ui/button'
@@ -51,7 +51,7 @@ export function MessageActions({
   }, [message, citationMaps])
 
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false)
-  const isLoading = status === 'submitted' || status === 'streaming'
+  const isLoading = isChatLoading(status)
 
   // Keep the element mounted during loading to preserve layout; otherwise skip rendering.
   if (!visible && !isLoading) {

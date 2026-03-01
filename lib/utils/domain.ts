@@ -1,4 +1,30 @@
 /**
+ * Safely extract hostname from a URL string.
+ * Returns the full hostname (e.g., "www.google.com").
+ */
+export function getHostname(url: string): string {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return 'unknown'
+  }
+}
+
+/**
+ * Extract hostname without the www. prefix (e.g., "google.com").
+ */
+export function getDomain(url: string): string {
+  return getHostname(url).replace(/^www\./, '')
+}
+
+/**
+ * Build a Google favicon URL for a given domain.
+ */
+export function getFaviconUrl(domain: string, size = 16): string {
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`
+}
+
+/**
  * Extract display name from URL by removing TLD and www/subdomain
  * This is a pure client-safe utility function without Next.js dependencies
  * @param url - Full URL string

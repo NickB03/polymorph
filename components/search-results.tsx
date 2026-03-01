@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 
 import { SearchResultItem } from '@/lib/types'
-import { displayUrlName } from '@/lib/utils/domain'
+import { displayUrlName, getFaviconUrl, getHostname } from '@/lib/utils/domain'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -46,26 +46,22 @@ export function SearchResults({
               <CardContent className="p-2 flex items-start space-x-2">
                 <Avatar className="h-4 w-4 mt-1 shrink-0">
                   <AvatarImage
-                    src={`https://www.google.com/s2/favicons?domain=${
-                      new URL(result.url).hostname
-                    }`}
-                    alt={new URL(result.url).hostname}
+                    src={getFaviconUrl(getHostname(result.url))}
+                    alt={getHostname(result.url)}
                   />
                   <AvatarFallback className="text-xs">
-                    {new URL(result.url).hostname[0]}
+                    {getHostname(result.url)[0]}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grow overflow-hidden space-y-0.5">
                   <p className="text-sm font-medium line-clamp-1">
-                    {result.title || new URL(result.url).pathname}
+                    {result.title || result.url}
                   </p>
                   <p className="text-xs text-muted-foreground line-clamp-2">
                     {result.content}
                   </p>
                   <div className="text-xs text-muted-foreground/80 mt-1 truncate">
-                    <span className="underline">
-                      {new URL(result.url).hostname}
-                    </span>
+                    <span className="underline">{getHostname(result.url)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -90,13 +86,11 @@ export function SearchResults({
                 <div className="mt-2 flex items-center space-x-1 min-w-0">
                   <Avatar className="h-4 w-4 shrink-0">
                     <AvatarImage
-                      src={`https://www.google.com/s2/favicons?domain=${
-                        new URL(result.url).hostname
-                      }`}
-                      alt={new URL(result.url).hostname}
+                      src={getFaviconUrl(getHostname(result.url))}
+                      alt={getHostname(result.url)}
                     />
                     <AvatarFallback>
-                      {new URL(result.url).hostname[0]}
+                      {getHostname(result.url)[0]}
                     </AvatarFallback>
                   </Avatar>
                   <div className="text-xs opacity-60 truncate min-w-0">

@@ -26,6 +26,16 @@ export function sanitizeUrl(url: string): string {
   return url.replace(/\s+/g, '%20')
 }
 
+export function isCloudDeployment(): boolean {
+  return process.env.VANA_CLOUD_DEPLOYMENT === 'true'
+}
+
+export type ChatStatus = 'submitted' | 'streaming' | 'ready' | 'error'
+
+export function isChatLoading(status: ChatStatus | undefined): boolean {
+  return status === 'submitted' || status === 'streaming'
+}
+
 export function createModelId(model: Model): string {
   return `${model.providerId}:${model.id}`
 }

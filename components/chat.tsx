@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 
 import { generateId } from '@/lib/db/schema'
 import { UploadedFile } from '@/lib/types'
-import type { UIMessage } from '@/lib/types/ai'
+import type { ChatSection, UIMessage } from '@/lib/types/ai'
 import {
   isDynamicToolPart,
   isToolCallPart,
@@ -23,13 +23,6 @@ import { ChatMessages } from './chat-messages'
 import { ChatPanel } from './chat-panel'
 import { DragOverlay } from './drag-overlay'
 import { ErrorModal } from './error-modal'
-
-// Define section structure
-interface ChatSection {
-  id: string // User message ID
-  userMessage: UIMessage
-  assistantMessages: UIMessage[]
-}
 
 export function Chat({
   id: providedId,
@@ -264,20 +257,6 @@ export function Chat({
 
     return () => container.removeEventListener('scroll', handleScroll)
   }, [messages.length])
-
-  // Check scroll position when messages change (during generation)
-  useEffect(() => {
-    const container = scrollContainerRef.current
-    if (!container) return
-
-    const { scrollTop, scrollHeight, clientHeight } = container
-    const threshold = 50
-    if (scrollHeight - scrollTop - clientHeight < threshold) {
-      setIsAtBottom(true)
-    } else {
-      setIsAtBottom(false)
-    }
-  }, [messages])
 
   // Scroll to the section when a new user message is sent
   useEffect(() => {

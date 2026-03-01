@@ -9,6 +9,7 @@ import { checkAndEnforceGuestLimit } from '@/lib/rate-limit/guest-limit'
 import { createChatStreamResponse } from '@/lib/streaming/create-chat-stream-response'
 import { createEphemeralChatStreamResponse } from '@/lib/streaming/create-ephemeral-chat-stream-response'
 import { SearchMode } from '@/lib/types/search'
+import { isCloudDeployment } from '@/lib/utils'
 import { selectModel } from '@/lib/utils/model-selection'
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 import { resetAllCounters } from '@/lib/utils/perf-tracking'
@@ -93,8 +94,7 @@ export async function POST(req: Request) {
         ? (searchModeCookie as SearchMode)
         : 'quick'
 
-    const isCloudDeployment = process.env.VANA_CLOUD_DEPLOYMENT === 'true'
-    const forceSpeed = isGuest || isCloudDeployment
+    const forceSpeed = isGuest || isCloudDeployment()
     const modelCookieStore = forceSpeed
       ? ({
           get: (name: string) =>

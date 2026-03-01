@@ -1,8 +1,26 @@
 import { Redis } from '@upstash/redis'
 
+import { isCloudDeployment } from '@/lib/utils'
 import { perfLog } from '@/lib/utils/perf-logging'
 
 const DAILY_CHAT_LIMIT = 100
+
+let _redis: Redis | null = null
+function getRedis(): Redis | null {
+  if (
+    !process.env.UPSTASH_REDIS_REST_URL ||
+    !process.env.UPSTASH_REDIS_REST_TOKEN
+  ) {
+    return null
+  }
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN
+    })
+  }
+  return _redis
+}
 
 /**
  * Get seconds until next midnight UTC
@@ -29,27 +47,17 @@ async function checkOverallChatLimit(userId: string): Promise<{
   remaining: number
   resetAt: number
 }> {
-  const isCloudDeployment = process.env.VANA_CLOUD_DEPLOYMENT === 'true'
-
   // If not in cloud deployment mode, allow unlimited requests
-  if (!isCloudDeployment) {
+  if (!isCloudDeployment()) {
     return { allowed: true, remaining: Infinity, resetAt: 0 }
   }
 
-  // If Upstash is not configured, allow unlimited requests
-  if (
-    !process.env.UPSTASH_REDIS_REST_URL ||
-    !process.env.UPSTASH_REDIS_REST_TOKEN
-  ) {
+  const redis = getRedis()
+  if (!redis) {
     return { allowed: true, remaining: Infinity, resetAt: 0 }
   }
 
   try {
-    const redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN
-    })
-
     const dateKey = new Date().toISOString().split('T')[0] // YYYY-MM-DD
     const key = `rl:chat:${userId}:${dateKey}`
 

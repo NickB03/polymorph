@@ -25,6 +25,12 @@ export type UIMessage<
   TTools = UITools
 > = AIMessage
 
+export interface ChatSection {
+  id: string
+  userMessage: UIMessage
+  assistantMessages: UIMessage[]
+}
+
 export interface RelatedQuestionsData {
   status: 'loading' | 'streaming' | 'success' | 'error'
   questions?: Array<{ question: string }>

@@ -12,13 +12,10 @@ import { randomUUID } from 'crypto'
 import { Langfuse } from 'langfuse'
 
 import { researcher } from '@/lib/agents/researcher'
+import { createModelId } from '@/lib/utils'
 import { isTracingEnabled } from '@/lib/utils/telemetry'
 
-import {
-  getMaxAllowedTokens,
-  shouldTruncateMessages,
-  truncateMessages
-} from '../utils/context-window'
+import { maybeTruncateMessages } from '../utils/context-window'
 
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
@@ -58,7 +55,7 @@ export async function createEphemeralChatStreamResponse(
       metadata: {
         chatId,
         userId: 'guest',
-        modelId: `${model.providerId}:${model.id}`,
+        modelId: createModelId(model),
         trigger: 'submit-message',
         modelType
       }
@@ -68,7 +65,7 @@ export async function createEphemeralChatStreamResponse(
   const stream = createUIMessageStream<UIMessage>({
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
       try {
-        const isOpenAI = `${model.providerId}:${model.id}`.startsWith('openai:')
+        const isOpenAI = createModelId(model).startsWith('openai:')
         const messagesToConvert = isOpenAI
           ? stripReasoningParts(messages)
           : messages
@@ -82,13 +79,10 @@ export async function createEphemeralChatStreamResponse(
           emptyMessages: 'remove'
         })
 
-        if (shouldTruncateMessages(modelMessages, model)) {
-          const maxTokens = getMaxAllowedTokens(model)
-          modelMessages = truncateMessages(modelMessages, maxTokens, model.id)
-        }
+        modelMessages = maybeTruncateMessages(modelMessages, model)
 
         const researchAgent = researcher({
-          model: `${model.providerId}:${model.id}`,
+          model: createModelId(model),
           modelConfig: model,
           writer,
           parentTraceId,
@@ -109,7 +103,7 @@ export async function createEphemeralChatStreamResponse(
                 return {
                   traceId: parentTraceId,
                   searchMode,
-                  modelId: `${model.providerId}:${model.id}`
+                  modelId: createModelId(model)
                 }
               }
             }

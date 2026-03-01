@@ -4,6 +4,7 @@ import defaultConfig from '@/config/models/default.json'
 import { ModelType } from '@/lib/types/model-type'
 import { Model } from '@/lib/types/models'
 import { SearchMode } from '@/lib/types/search'
+import { isCloudDeployment } from '@/lib/utils'
 
 export interface ModelsConfig {
   version: number
@@ -60,8 +61,7 @@ function validateModelsConfigStructure(
 }
 
 export async function loadModelsConfig(): Promise<ModelsConfig> {
-  const isCloudDeployment = process.env.VANA_CLOUD_DEPLOYMENT === 'true'
-  const profile = isCloudDeployment ? 'cloud' : 'default'
+  const profile = isCloudDeployment() ? 'cloud' : 'default'
 
   if (cachedConfig && cachedProfile === profile) {
     return cachedConfig
@@ -77,8 +77,7 @@ export async function loadModelsConfig(): Promise<ModelsConfig> {
 
 // Synchronous load (for code paths that need sync access)
 export function loadModelsConfigSync(): ModelsConfig {
-  const isCloudDeployment = process.env.VANA_CLOUD_DEPLOYMENT === 'true'
-  const profile = isCloudDeployment ? 'cloud' : 'default'
+  const profile = isCloudDeployment() ? 'cloud' : 'default'
 
   if (cachedConfig && cachedProfile === profile) {
     return cachedConfig

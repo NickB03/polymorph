@@ -281,42 +281,19 @@ export function mapUIMessagePartsToDBParts(
               : undefined
         }
 
-      // Tool-specific parts that are not tool-call or tool-result
-      // The following cases are tool parts with state tracking
+      // Tool-specific parts with dedicated DB columns
       case 'tool-search':
-        if (!isExtendedToolPart(part)) {
-          console.error('Invalid extended tool part:', part)
-          return null
-        }
-        return createToolPartMapping(basePart, part, 'search')
-
       case 'tool-fetch':
-        if (!isExtendedToolPart(part)) {
-          console.error('Invalid extended tool part:', part)
-          return null
-        }
-        return createToolPartMapping(basePart, part, 'fetch')
-
       case 'tool-question':
-        if (!isExtendedToolPart(part)) {
-          console.error('Invalid extended tool part:', part)
-          return null
-        }
-        return createToolPartMapping(basePart, part, 'question')
-
       case 'tool-todoWrite':
+      case 'tool-todoRead': {
         if (!isExtendedToolPart(part)) {
           console.error('Invalid extended tool part:', part)
           return null
         }
-        return createToolPartMapping(basePart, part, 'todoWrite')
-
-      case 'tool-todoRead':
-        if (!isExtendedToolPart(part)) {
-          console.error('Invalid extended tool part:', part)
-          return null
-        }
-        return createToolPartMapping(basePart, part, 'todoRead')
+        const toolName = part.type.substring(5) // Remove 'tool-' prefix
+        return createToolPartMapping(basePart, part, toolName)
+      }
 
       // Display tool parts — route to dynamic columns for persistence
       case 'tool-displayPlan':
@@ -450,205 +427,52 @@ export function mapDBPartToUIMessagePart(
           }
         }
 
-        // Special handling for tool parts that maintain their type
-        if (toolName === 'search') {
+        // Known tool parts with dedicated DB columns
+        const knownTools = [
+          'search',
+          'fetch',
+          'question',
+          'todoWrite',
+          'todoRead'
+        ]
+        if (knownTools.includes(toolName)) {
           if (!part.tool_state) {
             throw new Error(`tool_state is undefined for ${toolName}`)
           }
+          const typeName = `tool-${toolName}` as any
+          const toolCallId = part.tool_toolCallId || ''
+          const input = part[inputColumn]!
+          const output = part[outputColumn]!
 
           switch (part.tool_state) {
             case 'input-streaming':
               return {
-                type: 'tool-search',
+                type: typeName,
                 state: 'input-streaming',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_search_input!
+                toolCallId,
+                input
               }
             case 'input-available':
               return {
-                type: 'tool-search',
+                type: typeName,
                 state: 'input-available',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_search_input!
+                toolCallId,
+                input
               }
             case 'output-available':
               return {
-                type: 'tool-search',
+                type: typeName,
                 state: 'output-available',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_search_input!,
-                output: part.tool_search_output!
+                toolCallId,
+                input,
+                output
               }
             case 'output-error':
               return {
-                type: 'tool-search',
+                type: typeName,
                 state: 'output-error',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_search_input!,
-                errorText: part.tool_errorText!
-              }
-            default:
-              throw new Error(`Unknown tool state: ${part.tool_state}`)
-          }
-        }
-
-        if (toolName === 'fetch') {
-          if (!part.tool_state) {
-            throw new Error(`tool_state is undefined for ${toolName}`)
-          }
-
-          switch (part.tool_state) {
-            case 'input-streaming':
-              return {
-                type: 'tool-fetch',
-                state: 'input-streaming',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_fetch_input!
-              }
-            case 'input-available':
-              return {
-                type: 'tool-fetch',
-                state: 'input-available',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_fetch_input!
-              }
-            case 'output-available':
-              return {
-                type: 'tool-fetch',
-                state: 'output-available',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_fetch_input!,
-                output: part.tool_fetch_output!
-              }
-            case 'output-error':
-              return {
-                type: 'tool-fetch',
-                state: 'output-error',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_fetch_input!,
-                errorText: part.tool_errorText!
-              }
-            default:
-              throw new Error(`Unknown tool state: ${part.tool_state}`)
-          }
-        }
-
-        if (toolName === 'question') {
-          if (!part.tool_state) {
-            throw new Error(`tool_state is undefined for ${toolName}`)
-          }
-
-          switch (part.tool_state) {
-            case 'input-streaming':
-              return {
-                type: 'tool-question',
-                state: 'input-streaming',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_question_input!
-              }
-            case 'input-available':
-              return {
-                type: 'tool-question',
-                state: 'input-available',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_question_input!
-              }
-            case 'output-available':
-              return {
-                type: 'tool-question',
-                state: 'output-available',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_question_input!,
-                output: part.tool_question_output!
-              }
-            case 'output-error':
-              return {
-                type: 'tool-question',
-                state: 'output-error',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_question_input!,
-                errorText: part.tool_errorText!
-              }
-            default:
-              throw new Error(`Unknown tool state: ${part.tool_state}`)
-          }
-        }
-
-        if (toolName === 'todoWrite') {
-          if (!part.tool_state) {
-            throw new Error(`tool_state is undefined for ${toolName}`)
-          }
-
-          switch (part.tool_state) {
-            case 'input-streaming':
-              return {
-                type: 'tool-todoWrite',
-                state: 'input-streaming',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_todoWrite_input!
-              }
-            case 'input-available':
-              return {
-                type: 'tool-todoWrite',
-                state: 'input-available',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_todoWrite_input!
-              }
-            case 'output-available':
-              return {
-                type: 'tool-todoWrite',
-                state: 'output-available',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_todoWrite_input!,
-                output: part.tool_todoWrite_output!
-              }
-            case 'output-error':
-              return {
-                type: 'tool-todoWrite',
-                state: 'output-error',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_todoWrite_input!,
-                errorText: part.tool_errorText!
-              }
-            default:
-              throw new Error(`Unknown tool state: ${part.tool_state}`)
-          }
-        }
-
-        if (toolName === 'todoRead') {
-          if (!part.tool_state) {
-            throw new Error(`tool_state is undefined for ${toolName}`)
-          }
-
-          switch (part.tool_state) {
-            case 'input-streaming':
-              return {
-                type: 'tool-todoRead',
-                state: 'input-streaming',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_todoRead_input!
-              }
-            case 'input-available':
-              return {
-                type: 'tool-todoRead',
-                state: 'input-available',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_todoRead_input!
-              }
-            case 'output-available':
-              return {
-                type: 'tool-todoRead',
-                state: 'output-available',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_todoRead_input!,
-                output: part.tool_todoRead_output!
-              }
-            case 'output-error':
-              return {
-                type: 'tool-todoRead',
-                state: 'output-error',
-                toolCallId: part.tool_toolCallId || '',
-                input: part.tool_todoRead_input!,
+                toolCallId,
+                input,
                 errorText: part.tool_errorText!
               }
             default:

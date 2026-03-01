@@ -1,12 +1,11 @@
 import { UIMessage } from 'ai'
 
 import { createChatWithFirstMessage, upsertMessage } from '@/lib/actions/chat'
+import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import { updateChatTitle } from '@/lib/db/actions'
 import { SearchMode } from '@/lib/types/search'
 import { perfTime } from '@/lib/utils/perf-logging'
 import { retryDatabaseOperation } from '@/lib/utils/retry'
-
-const DEFAULT_CHAT_TITLE = 'Untitled'
 
 export async function persistStreamResults(
   responseMessage: UIMessage,

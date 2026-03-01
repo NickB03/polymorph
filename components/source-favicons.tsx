@@ -2,6 +2,7 @@ import Image from 'next/image'
 
 import type { SearchResultItem } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { getFaviconUrl, getHostname } from '@/lib/utils/domain'
 
 interface SourceFaviconsProps {
   results: SearchResultItem[]
@@ -21,11 +22,8 @@ export function SourceFavicons({
   const uniqueDomains = Array.from(
     new Set(
       results.map(result => {
-        try {
-          return new URL(result.url).hostname
-        } catch {
-          return null
-        }
+        const hostname = getHostname(result.url)
+        return hostname === 'unknown' ? null : hostname
       })
     )
   )
@@ -48,7 +46,7 @@ export function SourceFavicons({
           }}
         >
           <Image
-            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
+            src={getFaviconUrl(domain)}
             alt={domain}
             width={16}
             height={16}

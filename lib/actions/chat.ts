@@ -4,14 +4,12 @@ import { revalidateTag, unstable_cache } from 'next/cache'
 
 import { generateChatTitle } from '@/lib/agents/title-generator'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
+import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import * as dbActions from '@/lib/db/actions'
 import type { Chat, Message } from '@/lib/db/schema'
 import { generateId } from '@/lib/db/schema'
 import type { UIMessage } from '@/lib/types/ai'
 import { getTextFromParts } from '@/lib/utils/message-utils'
-
-// Constants
-const DEFAULT_CHAT_TITLE = 'Untitled'
 
 // Create cached version of loadChatWithMessages with dynamic tags per chat
 const getCachedChatWithMessages = (
@@ -226,15 +224,11 @@ export async function clearChats() {
     return { success: false, error: 'User not authenticated' }
   }
 
-  const chats = await dbActions.getChats(userId)
-
-  for (const chat of chats) {
-    await dbActions.deleteChat(chat.id, userId)
+  const result = await dbActions.clearAllChats(userId)
+  if (result.success) {
+    revalidateTag('chat', 'max')
   }
-
-  // Clear all chat caches since we deleted all chats
-  revalidateTag('chat', 'max')
-  return { success: true }
+  return result
 }
 
 /**
