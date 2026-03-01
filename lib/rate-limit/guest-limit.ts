@@ -1,4 +1,6 @@
-import { Redis } from '@upstash/redis'
+import { isCloudDeployment } from '@/lib/utils'
+
+import { getRedis } from './redis'
 
 const DEFAULT_GUEST_DAILY_LIMIT = 10
 
@@ -31,25 +33,16 @@ async function checkGuestLimit(ip: string): Promise<{
   resetAt: number
   limit: number
 }> {
-  const isCloudDeployment = process.env.VANA_CLOUD_DEPLOYMENT === 'true'
-
-  if (!isCloudDeployment) {
+  if (!isCloudDeployment()) {
     return { allowed: true, remaining: Infinity, resetAt: 0, limit: 0 }
   }
 
-  if (
-    !process.env.UPSTASH_REDIS_REST_URL ||
-    !process.env.UPSTASH_REDIS_REST_TOKEN
-  ) {
+  const redis = getRedis()
+  if (!redis) {
     return { allowed: true, remaining: Infinity, resetAt: 0, limit: 0 }
   }
 
   try {
-    const redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN
-    })
-
     const dateKey = new Date().toISOString().split('T')[0]
     const key = `rl:guest:chat:${ip}:${dateKey}`
     const count = await Promise.race([

@@ -13,6 +13,8 @@ import {
   Newspaper
 } from 'lucide-react'
 
+import { getDomain } from '@/lib/utils/domain'
+
 import { openSafeNavigationHref, sanitizeHref } from '../shared/media'
 
 import { cn, Popover, PopoverContent, PopoverTrigger } from './_adapter'
@@ -34,12 +36,7 @@ const TYPE_ICONS: Record<CitationType, LucideIcon> = {
 }
 
 function extractDomain(url: string): string | undefined {
-  try {
-    const urlObj = new URL(url)
-    return urlObj.hostname.replace(/^www\./, '')
-  } catch {
-    return undefined
-  }
+  return getDomain(url) ?? undefined
 }
 
 function formatDate(isoString: string, locale: string): string {

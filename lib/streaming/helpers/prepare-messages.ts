@@ -7,12 +7,11 @@ import {
   loadChat,
   upsertMessage
 } from '@/lib/actions/chat'
+import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import { generateId } from '@/lib/db/schema'
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 
 import type { StreamContext } from './types'
-
-const DEFAULT_CHAT_TITLE = 'Untitled'
 
 export async function prepareMessages(
   context: StreamContext,

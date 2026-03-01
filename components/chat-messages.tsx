@@ -5,20 +5,18 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { UseChatHelpers } from '@ai-sdk/react'
 
 import { useMediaQuery } from '@/lib/hooks/use-media-query'
-import type { UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
-import { cn } from '@/lib/utils'
+import type {
+  ChatSection,
+  UIDataTypes,
+  UIMessage,
+  UITools
+} from '@/lib/types/ai'
+import { cn, isChatLoading } from '@/lib/utils'
 import { extractCitationMapsFromMessages } from '@/lib/utils/citation'
 
 import { AnimatedLogo } from './ui/animated-logo'
 import { ChatError } from './chat-error'
 import { RenderMessage } from './render-message'
-
-// Import section structure interface
-interface ChatSection {
-  id: string
-  userMessage: UIMessage
-  assistantMessages: UIMessage[]
-}
 
 interface ChatMessagesProps {
   sections: ChatSection[] // Changed from messages to sections
@@ -52,7 +50,20 @@ export function ChatMessages({
   >({})
   // Cache tool counts for performance optimization
   const toolCountCacheRef = useRef<Map<string, number>>(new Map())
-  const isLoading = status === 'submitted' || status === 'streaming'
+  // Cache citation maps per message to avoid recomputing from all messages during streaming
+  const citationCacheRef = useRef<
+    Record<
+      string,
+      Record<string, Record<number, import('@/lib/types').SearchResultItem>>
+    >
+  >({})
+  const prevChatIdRef = useRef(chatId)
+  if (prevChatIdRef.current !== chatId) {
+    prevChatIdRef.current = chatId
+    citationCacheRef.current = {}
+    toolCountCacheRef.current.clear()
+  }
+  const isLoading = isChatLoading(status)
   const isMobile = useMediaQuery('(max-width: 767px)')
 
   // Tool types definition - moved outside function for performance
@@ -79,18 +90,31 @@ export function ChatMessages({
 
   // Extract citation maps from all messages in all sections
   const allCitationMaps = useMemo(() => {
-    const allMessages: UIMessage[] = []
-    sections.forEach(section => {
-      allMessages.push(section.userMessage)
-      allMessages.push(...section.assistantMessages)
+    const result: Record<
+      string,
+      Record<number, import('@/lib/types').SearchResultItem>
+    > = {}
+    const cache = citationCacheRef.current
+    sections.forEach((section, sIdx) => {
+      const isLastSection = sIdx === sections.length - 1
+      for (const msg of [section.userMessage, ...section.assistantMessages]) {
+        // Only cache completed messages; recompute the latest section during streaming
+        const canCache = !(isLoading && isLastSection)
+        if (!canCache || !cache[msg.id]) {
+          const maps = extractCitationMapsFromMessages([msg])
+          if (canCache) {
+            cache[msg.id] = maps
+          }
+          Object.assign(result, maps)
+        } else {
+          Object.assign(result, cache[msg.id])
+        }
+      }
     })
-    return extractCitationMapsFromMessages(allMessages)
-  }, [sections])
+    return result
+  }, [sections, isLoading])
 
   if (!sections.length) return null
-
-  // Check if loading indicator should be shown
-  const showLoading = status === 'submitted' || status === 'streaming'
 
   // Helper function to get tool count with caching
   const getToolCount = (message?: UIMessage): number => {
@@ -232,7 +256,7 @@ export function ChatMessages({
               )
             })}
             {/* Show loading after assistant messages */}
-            {showLoading && sectionIndex === sections.length - 1 && (
+            {isLoading && sectionIndex === sections.length - 1 && (
               <div className="flex justify-start py-4">
                 <AnimatedLogo className="h-10 w-10" />
               </div>

@@ -348,6 +348,23 @@ export async function deleteChat(
 }
 
 /**
+ * Delete all chats for a user in a single transaction
+ */
+export async function clearAllChats(
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    return withRLS(userId, async tx => {
+      await tx.delete(chats).where(eq(chats.userId, userId))
+      return { success: true }
+    })
+  } catch (error) {
+    console.error('Error clearing chats:', error)
+    return { success: false, error: 'Failed to clear chats' }
+  }
+}
+
+/**
  * Update chat visibility
  */
 export async function updateChatVisibility(

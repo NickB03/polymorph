@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 
 import { UploadedFile } from '@/lib/types'
 import type { UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
-import { cn } from '@/lib/utils'
+import { cn, isChatLoading } from '@/lib/utils'
 
 import { useArtifact } from './artifact/artifact-context'
 import { Button } from './ui/button'
@@ -71,7 +71,7 @@ export function ChatPanel({
   const [enterDisabled, setEnterDisabled] = useState(false) // Disable Enter after composition ends
   const [isInputFocused, setIsInputFocused] = useState(false) // Track input focus
   const { close: closeArtifact } = useArtifact()
-  const isLoading = status === 'submitted' || status === 'streaming'
+  const isLoading = isChatLoading(status)
 
   const handleCompositionStart = () => setIsComposing(true)
 

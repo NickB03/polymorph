@@ -5,7 +5,10 @@ import { AlertCircle, Check, ExternalLink, Globe } from 'lucide-react'
 
 import { SearchResults as SearchResultsType } from '@/lib/types'
 import type { ToolPart, UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
-import { cn } from '@/lib/utils'
+import { cn, isChatLoading } from '@/lib/utils'
+import { getDomain } from '@/lib/utils/domain'
+
+import { openSafeNavigationHref } from '@/components/tool-ui/shared/media'
 
 import ProcessHeader from './process-header'
 
@@ -29,7 +32,7 @@ export function FetchSection({
   isLast = false
 }: FetchSectionProps) {
   const url = tool.input?.url
-  const isLoading = status === 'submitted' || status === 'streaming'
+  const isLoading = isChatLoading(status)
   const isToolLoading =
     tool.state === 'input-streaming' || tool.state === 'input-available'
 
@@ -67,18 +70,13 @@ export function FetchSection({
   const getPageTitle = () => {
     if (title) return title
     if (!url) return 'Unknown URL'
-    try {
-      const domain = new URL(url).hostname
-      return domain.replace('www.', '')
-    } catch {
-      return url
-    }
+    return getDomain(url) ?? url
   }
 
   // Handle click to open URL
   const handleClick = () => {
     if (url && displayStatus === 'success') {
-      window.open(url, '_blank', 'noopener,noreferrer')
+      openSafeNavigationHref(url)
     }
   }
 

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { PlusCircle } from 'lucide-react'
 
 import { SerperSearchResultItem } from '@/lib/types'
+import { getFaviconUrl, getHostname } from '@/lib/utils/domain'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
@@ -36,6 +37,8 @@ export function VideoResultGrid({
         const showOverlay =
           displayMode === 'chat' && index === 3 && videos.length > 4
         const cardClasses = displayMode === 'chat' ? 'w-1/2 md:w-1/4 p-1' : ''
+
+        const hostname = getHostname(video.link)
 
         return (
           <VideoCarouselDialog
@@ -78,20 +81,13 @@ export function VideoResultGrid({
                     <div className="flex items-center space-x-2">
                       <Avatar className="h-4 w-4">
                         <AvatarImage
-                          src={`https://www.google.com/s2/favicons?domain=${
-                            new URL(video.link).hostname
-                          }`}
+                          src={hostname ? getFaviconUrl(hostname) : undefined}
                           alt={video.channel || video.source}
                         />
-                        <AvatarFallback>
-                          {new URL(video.link).hostname[0]}
-                        </AvatarFallback>
+                        <AvatarFallback>{hostname?.[0] ?? '?'}</AvatarFallback>
                       </Avatar>
                       <div className="text-xs text-muted-foreground opacity-60 truncate">
-                        {/* Display channel or source if available */}
-                        {video.channel ||
-                          video.source ||
-                          new URL(video.link).hostname}
+                        {video.channel || video.source || hostname}
                       </div>
                     </div>
                   </div>

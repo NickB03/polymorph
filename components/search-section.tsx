@@ -5,7 +5,7 @@ import { Check, Search as SearchIcon } from 'lucide-react'
 
 import type { SearchResults as TypeSearchResults } from '@/lib/types'
 import type { ToolPart, UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
-import { cn } from '@/lib/utils'
+import { cn, isChatLoading } from '@/lib/utils'
 
 import { useArtifact } from '@/components/artifact/artifact-context'
 
@@ -41,7 +41,7 @@ export function SearchSection({
   isFirst = false,
   isLast = false
 }: SearchSectionProps) {
-  const isLoading = status === 'submitted' || status === 'streaming'
+  const isLoading = isChatLoading(status)
 
   const isToolLoading =
     tool.state === 'input-streaming' || tool.state === 'input-available'

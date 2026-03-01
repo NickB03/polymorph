@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 
 import { generateId } from '@/lib/db/schema'
 import { UploadedFile } from '@/lib/types'
-import type { UIMessage } from '@/lib/types/ai'
+import type { ChatSection, UIMessage } from '@/lib/types/ai'
 import {
   isDynamicToolPart,
   isToolCallPart,
@@ -23,13 +23,6 @@ import { ChatMessages } from './chat-messages'
 import { ChatPanel } from './chat-panel'
 import { DragOverlay } from './drag-overlay'
 import { ErrorModal } from './error-modal'
-
-// Define section structure
-interface ChatSection {
-  id: string // User message ID
-  userMessage: UIMessage
-  assistantMessages: UIMessage[]
-}
 
 export function Chat({
   id: providedId,
@@ -249,35 +242,25 @@ export function Chat({
     const container = scrollContainerRef.current
     if (!container) return
 
-    const handleScroll = () => {
+    const checkIsAtBottom = () => {
       const { scrollTop, scrollHeight, clientHeight } = container
-      const threshold = 50 // threshold in pixels
-      if (scrollHeight - scrollTop - clientHeight < threshold) {
-        setIsAtBottom(true)
-      } else {
-        setIsAtBottom(false)
-      }
+      const threshold = 50
+      setIsAtBottom(scrollHeight - scrollTop - clientHeight < threshold)
     }
 
-    container.addEventListener('scroll', handleScroll, { passive: true })
-    handleScroll() // Set initial state
+    container.addEventListener('scroll', checkIsAtBottom, { passive: true })
+    checkIsAtBottom() // Set initial state
 
-    return () => container.removeEventListener('scroll', handleScroll)
+    // Also re-check when content grows (e.g., during streaming)
+    const content = container.firstElementChild
+    const observer = content ? new ResizeObserver(checkIsAtBottom) : null
+    if (content) observer!.observe(content)
+
+    return () => {
+      container.removeEventListener('scroll', checkIsAtBottom)
+      observer?.disconnect()
+    }
   }, [messages.length])
-
-  // Check scroll position when messages change (during generation)
-  useEffect(() => {
-    const container = scrollContainerRef.current
-    if (!container) return
-
-    const { scrollTop, scrollHeight, clientHeight } = container
-    const threshold = 50
-    if (scrollHeight - scrollTop - clientHeight < threshold) {
-      setIsAtBottom(true)
-    } else {
-      setIsAtBottom(false)
-    }
-  }, [messages])
 
   // Scroll to the section when a new user message is sent
   useEffect(() => {

@@ -289,18 +289,21 @@ export function truncateMessages(
 }
 
 /**
- * Check if messages need truncation
+ * Check and truncate messages in a single call.
+ * Returns the original messages if no truncation is needed.
  */
-export function shouldTruncateMessages(
+export function maybeTruncateMessages(
   messages: ModelMessage[],
   model: Model
-): boolean {
-  if (!messages || messages.length === 0) return false
+): ModelMessage[] {
+  if (!messages || messages.length === 0) return messages
 
   const maxTokens = getMaxAllowedTokens(model)
   const totalTokens = messages.reduce(
     (sum, msg) => sum + estimateTokenCount(msg.content, model.id),
     0
   )
-  return totalTokens > maxTokens
+
+  if (totalTokens <= maxTokens) return messages
+  return truncateMessages(messages, maxTokens, model.id)
 }
