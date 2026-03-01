@@ -1,5 +1,13 @@
 // Components
 export type {
+  ChartClientProps,
+  ChartDataPoint,
+  ChartProps,
+  ChartSeries,
+  SerializableChart
+} from './chart'
+export { Chart } from './chart'
+export type {
   CitationListProps,
   CitationProps,
   CitationType,

@@ -2,6 +2,8 @@
 
 import type { ReactNode } from 'react'
 
+import { Chart } from './chart/chart'
+import { safeParseSerializableChart } from './chart/schema'
 import { CitationList } from './citation/citation-list'
 import { safeParseSerializableCitation } from './citation/schema'
 import { DataTable } from './data-table/data-table'
@@ -33,6 +35,14 @@ const entries: ToolUIEntry[] = [
       const parsed = safeParseSerializableDataTable(output)
       if (!parsed) return null
       return <DataTable {...parsed} />
+    }
+  },
+  {
+    name: 'displayChart',
+    tryRender: output => {
+      const parsed = safeParseSerializableChart(output)
+      if (!parsed) return null
+      return <Chart {...parsed} />
     }
   },
   {

@@ -6,6 +6,7 @@ import type {
   UIToolInvocation
 } from 'ai'
 
+import type { displayChartTool } from '../tools/display-chart'
 import type { displayCitationsTool } from '../tools/display-citations'
 import type { displayLinkPreviewTool } from '../tools/display-link-preview'
 import type { displayOptionListTool } from '../tools/display-option-list'
@@ -23,6 +24,7 @@ export type ResearcherTools = {
   askQuestion: ReturnType<typeof createQuestionTool>
   displayPlan: typeof displayPlanTool
   displayTable: typeof displayTableTool
+  displayChart: typeof displayChartTool
   displayCitations: typeof displayCitationsTool
   displayLinkPreview: typeof displayLinkPreviewTool
   displayOptionList: typeof displayOptionListTool
@@ -53,6 +55,9 @@ export type DisplayPlanToolInvocation = UIToolInvocation<
 export type DisplayTableToolInvocation = UIToolInvocation<
   ResearcherTools['displayTable']
 >
+export type DisplayChartToolInvocation = UIToolInvocation<
+  ResearcherTools['displayChart']
+>
 export type DisplayCitationsToolInvocation = UIToolInvocation<
   ResearcherTools['displayCitations']
 >
@@ -71,6 +76,7 @@ export type ResearcherToolInvocation =
   | TodoWriteToolInvocation
   | DisplayPlanToolInvocation
   | DisplayTableToolInvocation
+  | DisplayChartToolInvocation
   | DisplayCitationsToolInvocation
   | DisplayLinkPreviewToolInvocation
   | DisplayOptionListToolInvocation
