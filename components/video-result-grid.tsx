@@ -84,9 +84,7 @@ export function VideoResultGrid({
                           src={hostname ? getFaviconUrl(hostname) : undefined}
                           alt={video.channel || video.source}
                         />
-                        <AvatarFallback>
-                          {hostname?.[0] ?? '?'}
-                        </AvatarFallback>
+                        <AvatarFallback>{hostname?.[0] ?? '?'}</AvatarFallback>
                       </Avatar>
                       <div className="text-xs text-muted-foreground opacity-60 truncate">
                         {video.channel || video.source || hostname}

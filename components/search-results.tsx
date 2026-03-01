@@ -63,7 +63,9 @@ export function SearchResults({
                       {result.content}
                     </p>
                     <div className="text-xs text-muted-foreground/80 mt-1 truncate">
-                      <span className="underline">{hostname ?? result.url}</span>
+                      <span className="underline">
+                        {hostname ?? result.url}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
@@ -94,9 +96,7 @@ export function SearchResults({
                         src={hostname ? getFaviconUrl(hostname) : undefined}
                         alt={hostname ?? ''}
                       />
-                      <AvatarFallback>
-                        {hostname?.[0] ?? '?'}
-                      </AvatarFallback>
+                      <AvatarFallback>{hostname?.[0] ?? '?'}</AvatarFallback>
                     </Avatar>
                     <div className="text-xs opacity-60 truncate min-w-0">
                       {displayUrlName(result.url)}

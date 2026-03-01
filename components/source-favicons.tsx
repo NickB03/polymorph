@@ -20,9 +20,7 @@ export function SourceFavicons({
 }: SourceFaviconsProps) {
   // Extract unique domains from results
   const uniqueDomains = Array.from(
-    new Set(
-      results.map(result => getHostname(result.url))
-    )
+    new Set(results.map(result => getHostname(result.url)))
   )
     .filter((domain): domain is string => domain !== null)
     .slice(0, maxDisplay)
