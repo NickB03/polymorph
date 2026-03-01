@@ -258,6 +258,24 @@ export function Chat({
     return () => container.removeEventListener('scroll', handleScroll)
   }, [messages.length])
 
+  // Re-check scroll position when content grows (e.g., during streaming)
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    const content = container?.firstElementChild
+    if (!container || !content) return
+
+    const check = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      const threshold = 50
+      setIsAtBottom(scrollHeight - scrollTop - clientHeight < threshold)
+    }
+
+    const observer = new ResizeObserver(check)
+    observer.observe(content)
+
+    return () => observer.disconnect()
+  }, [])
+
   // Scroll to the section when a new user message is sent
   useEffect(() => {
     // Only scroll if this chat is currently visible in the URL

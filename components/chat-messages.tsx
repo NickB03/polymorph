@@ -57,6 +57,12 @@ export function ChatMessages({
       Record<string, Record<number, import('@/lib/types').SearchResultItem>>
     >
   >({})
+  const prevChatIdRef = useRef(chatId)
+  if (prevChatIdRef.current !== chatId) {
+    prevChatIdRef.current = chatId
+    citationCacheRef.current = {}
+    toolCountCacheRef.current.clear()
+  }
   const isLoading = isChatLoading(status)
   const isMobile = useMediaQuery('(max-width: 767px)')
 

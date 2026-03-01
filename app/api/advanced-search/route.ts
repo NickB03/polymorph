@@ -76,7 +76,7 @@ async function getCachedResults(
         : await client.get(cacheKey)
 
     if (cachedData) {
-      return JSON.parse(cachedData as string)
+      return JSON.parse(cachedData)
     }
     return null
   } catch (error) {

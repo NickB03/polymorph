@@ -1,25 +1,8 @@
-import { Redis } from '@upstash/redis'
-
 import { isCloudDeployment } from '@/lib/utils'
 
-const DEFAULT_GUEST_DAILY_LIMIT = 10
+import { getRedis } from './redis'
 
-let _redis: Redis | null = null
-function getRedis(): Redis | null {
-  if (
-    !process.env.UPSTASH_REDIS_REST_URL ||
-    !process.env.UPSTASH_REDIS_REST_TOKEN
-  ) {
-    return null
-  }
-  if (!_redis) {
-    _redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN
-    })
-  }
-  return _redis
-}
+const DEFAULT_GUEST_DAILY_LIMIT = 10
 
 function getGuestDailyLimit(): number {
   const raw = process.env.GUEST_CHAT_DAILY_LIMIT
