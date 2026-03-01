@@ -163,13 +163,13 @@ The `createResearcher` function in [`lib/agents/researcher.ts`](../lib/agents/re
 
 ```typescript
 const agent = new ToolLoopAgent({
-  model: getModel(model),            // Resolved LLM from provider registry
-  instructions: systemPrompt,         // Mode-specific prompt + current date
-  tools,                              // All available tools
-  activeTools: activeToolsList,        // Subset enabled for this mode
-  stopWhen: stepCountIs(maxSteps),     // 20 (quick) or 50 (adaptive)
-  providerOptions,                     // Model-specific options (if any)
-  experimental_telemetry               // Langfuse tracing config
+  model: getModel(model), // Resolved LLM from provider registry
+  instructions: systemPrompt, // Mode-specific prompt + current date
+  tools, // All available tools
+  activeTools: activeToolsList, // Subset enabled for this mode
+  stopWhen: stepCountIs(maxSteps), // 20 (quick) or 50 (adaptive)
+  providerOptions, // Model-specific options (if any)
+  experimental_telemetry // Langfuse tracing config
 })
 ```
 
@@ -209,17 +209,18 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 
 **Purpose:** Fast, focused answers. Optimized for simple questions that need 1-3 searches.
 
-| Property | Value |
-| --- | --- |
-| Max steps | 20 |
-| Search type | Forced `optimized` (via `wrapSearchToolForQuickMode`) |
-| Target tool calls | ~5 |
-| `todoWrite` | Not available |
-| `displayPlan` | Available |
+| Property          | Value                                                 |
+| ----------------- | ----------------------------------------------------- |
+| Max steps         | 20                                                    |
+| Search type       | Forced `optimized` (via `wrapSearchToolForQuickMode`) |
+| Target tool calls | ~5                                                    |
+| `todoWrite`       | Not available                                         |
+| `displayPlan`     | Available                                             |
 
 **How search wrapping works:** In quick mode, the search tool is wrapped by `wrapSearchToolForQuickMode()`, which intercepts every call and forces `type: 'optimized'` regardless of what the LLM requests. This ensures the agent always gets content snippets directly from the search provider (Tavily/Exa) rather than needing to fetch pages separately.
 
 **System prompt behavior:**
+
 - Instructs the agent to complete research within ~5 tool calls
 - Defines early stop criteria (sufficient info, converging results, diminishing returns)
 - Directs the agent to start with search immediately (no text preamble)
@@ -232,15 +233,16 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 
 **Purpose:** Thorough, multi-step research. For complex queries that need systematic investigation.
 
-| Property | Value |
-| --- | --- |
-| Max steps | 50 |
-| Search type | Full (general + optimized) |
-| Target tool calls | ~20 |
-| `todoWrite` | Available (when writer present) |
-| `displayPlan` | Not in `activeTools` |
+| Property          | Value                           |
+| ----------------- | ------------------------------- |
+| Max steps         | 50                              |
+| Search type       | Full (general + optimized)      |
+| Target tool calls | ~20                             |
+| `todoWrite`       | Available (when writer present) |
+| `displayPlan`     | Not in `activeTools`            |
 
 **System prompt behavior:**
+
 - Assesses query complexity first (simple, medium, complex)
 - For 5+ aspects, strongly recommends `todoWrite` for structured planning
 - Supports both `type: 'optimized'` (content snippets) and `type: 'general'` (for news, videos, images via Brave)
@@ -251,16 +253,16 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 
 ### Mode Comparison
 
-| Aspect | Quick | Adaptive |
-| --- | --- | --- |
-| Step limit | 20 | 50 |
-| Search types | `optimized` only (forced) | `optimized` + `general` |
-| Task planning | No (`todoWrite` unavailable) | Yes (`todoWrite` available) |
-| `displayPlan` | Available | Not in active tools |
-| Fetch from search results | Discouraged by prompt | Encouraged for top sources |
-| Target efficiency | ~5 tool calls | ~20 tool calls |
-| Prompt complexity assessment | No | Yes (simple/medium/complex) |
-| Early stop criteria | 4 criteria | 5 criteria (includes todo completion) |
+| Aspect                       | Quick                        | Adaptive                              |
+| ---------------------------- | ---------------------------- | ------------------------------------- |
+| Step limit                   | 20                           | 50                                    |
+| Search types                 | `optimized` only (forced)    | `optimized` + `general`               |
+| Task planning                | No (`todoWrite` unavailable) | Yes (`todoWrite` available)           |
+| `displayPlan`                | Available                    | Not in active tools                   |
+| Fetch from search results    | Discouraged by prompt        | Encouraged for top sources            |
+| Target efficiency            | ~5 tool calls                | ~20 tool calls                        |
+| Prompt complexity assessment | No                           | Yes (simple/medium/complex)           |
+| Early stop criteria          | 4 criteria                   | 5 criteria (includes todo completion) |
 
 ### `askQuestion` Tool
 
@@ -287,6 +289,7 @@ Uses the `async *execute` generator pattern to stream intermediate states to the
 5. Yields `{ state: 'complete', ...searchResults }` with results, images, and citation map
 
 **Parameters:**
+
 - `query` (required): Search query string
 - `type` (`'optimized'` | `'general'`): Provider routing (default: `'optimized'`)
 - `content_types` (`['web', 'video', 'image', 'news']`): Content filtering (Brave only)
@@ -300,12 +303,13 @@ Uses the `async *execute` generator pattern to stream intermediate states to the
 
 Also uses the streaming generator pattern. Has two fetch strategies:
 
-| Strategy | Type param | Use case | Details |
-| --- | --- | --- | --- |
-| Regular | `'regular'` (default) | Standard web pages | Direct HTTP fetch, HTML tag stripping, 50k char limit, 10s timeout |
-| API-based | `'api'` | PDFs, JS-rendered pages | Jina Reader (if `JINA_API_KEY`) or Tavily Extract (fallback) |
+| Strategy  | Type param            | Use case                | Details                                                            |
+| --------- | --------------------- | ----------------------- | ------------------------------------------------------------------ |
+| Regular   | `'regular'` (default) | Standard web pages      | Direct HTTP fetch, HTML tag stripping, 50k char limit, 10s timeout |
+| API-based | `'api'`               | PDFs, JS-rendered pages | Jina Reader (if `JINA_API_KEY`) or Tavily Extract (fallback)       |
 
 **Regular fetch processing:**
+
 1. Fetches URL with 10-second timeout
 2. Validates content type (text/html or text/plain)
 3. Strips `<script>` and `<style>` tags
@@ -326,12 +330,14 @@ Has **no server-side execute function**. When the agent calls this tool, the too
 Session-scoped task management. Each `createTodoTools()` call creates an isolated closure with its own todo state.
 
 **Key behaviors:**
+
 - First call initializes the task list
 - Subsequent calls merge by **content matching** (case-insensitive): sending a todo with the same content as an existing one updates its status rather than creating a duplicate
 - Returns `{ completedCount, totalCount, todos }` for progress tracking
 - New todos without explicit status default to `'pending'`
 
 **Workflow pattern in the agent:**
+
 1. CREATE: Call with all tasks as first action
 2. UPDATE: Send only changed tasks (unchanged ones are preserved)
 3. FINALIZE: Mark all tasks completed before writing final answer
@@ -340,13 +346,13 @@ Session-scoped task management. Each `createTodoTools()` call creates an isolate
 
 All display tools share a common pattern: they accept structured input, validate it with Zod schemas, and return the input as output (`execute: async params => params`). The actual rendering happens in the frontend via `components/tool-ui/registry.tsx`.
 
-| Tool | Purpose | Key input fields | Trigger examples |
-| --- | --- | --- | --- |
-| `displayPlan` | Step-by-step guides and how-to checklists | `id`, `title`, `todos[]` with `id`, `label`, `status` | "how to deploy to AWS", "steps to learn Python" |
-| `displayTable` | Sortable data tables with formatted columns | `columns[]` with `key`, `label`, `format`, `data[]` | "compare React vs Vue", "GPU benchmarks" |
-| `displayCitations` | Rich source citation cards | `citations[]` with `id`, `href`, `title`, `snippet` | "best resources for learning Rust" |
-| `displayLinkPreview` | Single featured link card | `id`, `href`, `title`, `description`, `image` | "where are the React docs" |
-| `displayOptionList` | Interactive option selector | `id`, `options[]` with `id`, `label`, `description` | "which database should I use" |
+| Tool                 | Purpose                                     | Key input fields                                      | Trigger examples                                |
+| -------------------- | ------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------- |
+| `displayPlan`        | Step-by-step guides and how-to checklists   | `id`, `title`, `todos[]` with `id`, `label`, `status` | "how to deploy to AWS", "steps to learn Python" |
+| `displayTable`       | Sortable data tables with formatted columns | `columns[]` with `key`, `label`, `format`, `data[]`   | "compare React vs Vue", "GPU benchmarks"        |
+| `displayCitations`   | Rich source citation cards                  | `citations[]` with `id`, `href`, `title`, `snippet`   | "best resources for learning Rust"              |
+| `displayLinkPreview` | Single featured link card                   | `id`, `href`, `title`, `description`, `image`         | "where are the React docs"                      |
+| `displayOptionList`  | Interactive option selector                 | `id`, `options[]` with `id`, `label`, `description`   | "which database should I use"                   |
 
 **`displayOptionList`** is unique: it has no `execute` function (like `askQuestion`), so the frontend resolves it via `addToolResult` when the user makes a selection.
 
@@ -512,25 +518,25 @@ flowchart TD
 
 From `config/models/default.json`:
 
-| Mode | Type | Model | Provider |
-| --- | --- | --- | --- |
-| Quick | Speed | `google/gemini-3-flash` | Gateway |
-| Quick | Quality | `xai/grok-4.1-fast-reasoning` | Gateway |
-| Adaptive | Speed | `google/gemini-3-flash` | Gateway |
-| Adaptive | Quality | `xai/grok-4.1-fast-reasoning` | Gateway |
+| Mode     | Type    | Model                         | Provider |
+| -------- | ------- | ----------------------------- | -------- |
+| Quick    | Speed   | `google/gemini-3-flash`       | Gateway  |
+| Quick    | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
+| Adaptive | Speed   | `google/gemini-3-flash`       | Gateway  |
+| Adaptive | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
 
 ### Provider Registry
 
 The provider registry ([`lib/utils/registry.ts`](../lib/utils/registry.ts)) wraps six AI providers via `createProviderRegistry`:
 
-| Provider ID | SDK | Env var required |
-| --- | --- | --- |
-| `gateway` | `@ai-sdk/gateway` | `AI_GATEWAY_API_KEY` |
-| `openai` | `@ai-sdk/openai` | `OPENAI_API_KEY` |
-| `anthropic` | `@ai-sdk/anthropic` | `ANTHROPIC_API_KEY` |
-| `google` | `@ai-sdk/google` | `GOOGLE_GENERATIVE_AI_API_KEY` |
+| Provider ID         | SDK                                | Env var required                                               |
+| ------------------- | ---------------------------------- | -------------------------------------------------------------- |
+| `gateway`           | `@ai-sdk/gateway`                  | `AI_GATEWAY_API_KEY`                                           |
+| `openai`            | `@ai-sdk/openai`                   | `OPENAI_API_KEY`                                               |
+| `anthropic`         | `@ai-sdk/anthropic`                | `ANTHROPIC_API_KEY`                                            |
+| `google`            | `@ai-sdk/google`                   | `GOOGLE_GENERATIVE_AI_API_KEY`                                 |
 | `openai-compatible` | `@ai-sdk/openai` (custom base URL) | `OPENAI_COMPATIBLE_API_KEY` + `OPENAI_COMPATIBLE_API_BASE_URL` |
-| `ollama` | `ollama-ai-provider-v2` | `OLLAMA_BASE_URL` |
+| `ollama`            | `ollama-ai-provider-v2`            | `OLLAMA_BASE_URL`                                              |
 
 The `getModel(modelString)` function takes a `providerId:modelId` string (e.g., `gateway:google/gemini-3-flash`) and returns a `LanguageModel` instance from the registry.
 
@@ -565,14 +571,14 @@ Token estimation uses `js-tiktoken` with the `cl100k_base` encoding (GPT-4 token
 
 ### Model Context Windows
 
-| Model Family | Context Window | Output Tokens |
-| --- | --- | --- |
-| GPT-4.1 / GPT-4o-mini | 128,000 | 16,384 |
-| Claude Opus 4 / Sonnet 4 | 680,000 | 8,192 |
-| Claude 3.7 Sonnet / 3.5 Haiku | 200,000 | 8,192 |
-| Gemini 3 Flash / 2.5 Flash / 2.5 Pro | 1,048,576 | 65,536 |
-| Grok 4.1 Fast Reasoning | 1,048,576 | 65,536 |
-| Grok 4 / Grok 3 / Grok 3 Mini | 131,072 - 256,000 | 8,192 |
+| Model Family                         | Context Window    | Output Tokens |
+| ------------------------------------ | ----------------- | ------------- |
+| GPT-4.1 / GPT-4o-mini                | 128,000           | 16,384        |
+| Claude Opus 4 / Sonnet 4             | 680,000           | 8,192         |
+| Claude 3.7 Sonnet / 3.5 Haiku        | 200,000           | 8,192         |
+| Gemini 3 Flash / 2.5 Flash / 2.5 Pro | 1,048,576         | 65,536        |
+| Grok 4.1 Fast Reasoning              | 1,048,576         | 65,536        |
+| Grok 4 / Grok 3 / Grok 3 Mini        | 131,072 - 256,000 | 8,192         |
 
 A 10% safety buffer is reserved for system prompts and formatting overhead. The formula is:
 
@@ -626,13 +632,13 @@ return createUIMessageStreamResponse({ stream })
 
 During the tool loop, every tool call and result is streamed in real time:
 
-| Event | When | Client rendering |
-| --- | --- | --- |
-| Tool call start | Agent decides to call a tool | Loading skeleton appears |
-| Tool input streaming | Input parameters arrive | Parameters shown (if applicable) |
-| Tool result | Tool execution completes | SearchSection, FetchSection, etc. |
-| Text delta | Agent writes answer text | Markdown text appears word-by-word |
-| Data part | Related questions arrive | Follow-up question chips appear |
+| Event                | When                         | Client rendering                   |
+| -------------------- | ---------------------------- | ---------------------------------- |
+| Tool call start      | Agent decides to call a tool | Loading skeleton appears           |
+| Tool input streaming | Input parameters arrive      | Parameters shown (if applicable)   |
+| Tool result          | Tool execution completes     | SearchSection, FetchSection, etc.  |
+| Text delta           | Agent writes answer text     | Markdown text appears word-by-word |
+| Data part            | Related questions arrive     | Follow-up question chips appear    |
 
 ### Message Metadata
 
@@ -761,6 +767,7 @@ export const displayMyComponentTool = tool({
 Edit [`lib/agents/prompts/search-mode-prompts.ts`](../lib/agents/prompts/search-mode-prompts.ts). The prompts are generated by functions (`getQuickModePrompt()` and `getAdaptiveModePrompt()`) that use environment-aware helpers to adjust guidance based on available providers.
 
 Key sections in each prompt:
+
 - **Efficiency guidelines**: Target tool call counts and early stop criteria
 - **Search requirement**: Mandatory search before answering informational questions
 - **Citation format**: `[number](#toolCallId)` inline citation rules
@@ -805,36 +812,36 @@ case 'my-provider':
 
 ## Key Files
 
-| File | Purpose |
-| --- | --- |
-| `lib/agents/researcher.ts` | `ToolLoopAgent` factory — configures tools, prompt, and step limit per mode |
-| `lib/agents/prompts/search-mode-prompts.ts` | System prompts for quick and adaptive modes (environment-aware) |
-| `lib/agents/generate-related-questions.ts` | Follow-up question generation with structured output |
-| `lib/agents/title-generator.ts` | Parallel chat title generation |
-| `lib/tools/search.ts` | Multi-provider search tool with streaming and citation mapping |
-| `lib/tools/fetch.ts` | Web content extraction (regular HTML + API-based for PDFs) |
-| `lib/tools/question.ts` | Clarifying question tool (frontend confirmation, no server execute) |
-| `lib/tools/todo.ts` | Session-scoped task tracking with content-based merge |
-| `lib/tools/dynamic.ts` | Dynamic/MCP tool factory |
-| `lib/tools/display-plan.ts` | Step-by-step guide display tool |
-| `lib/tools/display-table.ts` | Sortable data table display tool |
-| `lib/tools/display-citations.ts` | Rich citation card display tool |
-| `lib/tools/display-link-preview.ts` | Featured link preview display tool |
-| `lib/tools/display-option-list.ts` | Interactive option list display tool |
-| `lib/tools/search/providers/index.ts` | Search provider factory and type exports |
-| `lib/tools/search/providers/base.ts` | `SearchProvider` interface and `BaseSearchProvider` abstract class |
-| `lib/tools/search/providers/tavily.ts` | Tavily search provider (default) |
-| `lib/tools/search/providers/brave.ts` | Brave search provider (multimedia support) |
-| `lib/tools/search/providers/exa.ts` | Exa semantic search provider |
-| `lib/tools/search/providers/searxng.ts` | SearXNG meta-search provider (self-hosted) |
-| `lib/tools/search/providers/firecrawl.ts` | Firecrawl search provider |
-| `lib/streaming/create-chat-stream-response.ts` | Authenticated stream with persistence and title generation |
-| `lib/streaming/create-ephemeral-chat-stream-response.ts` | Guest/ephemeral stream (stateless) |
-| `lib/utils/model-selection.ts` | Model resolution with fallback chain |
-| `lib/utils/registry.ts` | AI provider registry (6 providers) |
-| `lib/utils/context-window.ts` | Token counting and context window truncation |
-| `lib/utils/search-config.ts` | Environment-aware search provider configuration |
-| `lib/types/agent.ts` | `ResearcherTools` type, `ResearcherAgent` type, tool invocation types |
-| `lib/types/ai.ts` | UI message types, tool part types, data part types |
-| `app/api/chat/route.ts` | API endpoint — auth, model selection, stream dispatch |
-| `config/models/default.json` | Default model assignments per mode and type |
+| File                                                     | Purpose                                                                     |
+| -------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `lib/agents/researcher.ts`                               | `ToolLoopAgent` factory — configures tools, prompt, and step limit per mode |
+| `lib/agents/prompts/search-mode-prompts.ts`              | System prompts for quick and adaptive modes (environment-aware)             |
+| `lib/agents/generate-related-questions.ts`               | Follow-up question generation with structured output                        |
+| `lib/agents/title-generator.ts`                          | Parallel chat title generation                                              |
+| `lib/tools/search.ts`                                    | Multi-provider search tool with streaming and citation mapping              |
+| `lib/tools/fetch.ts`                                     | Web content extraction (regular HTML + API-based for PDFs)                  |
+| `lib/tools/question.ts`                                  | Clarifying question tool (frontend confirmation, no server execute)         |
+| `lib/tools/todo.ts`                                      | Session-scoped task tracking with content-based merge                       |
+| `lib/tools/dynamic.ts`                                   | Dynamic/MCP tool factory                                                    |
+| `lib/tools/display-plan.ts`                              | Step-by-step guide display tool                                             |
+| `lib/tools/display-table.ts`                             | Sortable data table display tool                                            |
+| `lib/tools/display-citations.ts`                         | Rich citation card display tool                                             |
+| `lib/tools/display-link-preview.ts`                      | Featured link preview display tool                                          |
+| `lib/tools/display-option-list.ts`                       | Interactive option list display tool                                        |
+| `lib/tools/search/providers/index.ts`                    | Search provider factory and type exports                                    |
+| `lib/tools/search/providers/base.ts`                     | `SearchProvider` interface and `BaseSearchProvider` abstract class          |
+| `lib/tools/search/providers/tavily.ts`                   | Tavily search provider (default)                                            |
+| `lib/tools/search/providers/brave.ts`                    | Brave search provider (multimedia support)                                  |
+| `lib/tools/search/providers/exa.ts`                      | Exa semantic search provider                                                |
+| `lib/tools/search/providers/searxng.ts`                  | SearXNG meta-search provider (self-hosted)                                  |
+| `lib/tools/search/providers/firecrawl.ts`                | Firecrawl search provider                                                   |
+| `lib/streaming/create-chat-stream-response.ts`           | Authenticated stream with persistence and title generation                  |
+| `lib/streaming/create-ephemeral-chat-stream-response.ts` | Guest/ephemeral stream (stateless)                                          |
+| `lib/utils/model-selection.ts`                           | Model resolution with fallback chain                                        |
+| `lib/utils/registry.ts`                                  | AI provider registry (6 providers)                                          |
+| `lib/utils/context-window.ts`                            | Token counting and context window truncation                                |
+| `lib/utils/search-config.ts`                             | Environment-aware search provider configuration                             |
+| `lib/types/agent.ts`                                     | `ResearcherTools` type, `ResearcherAgent` type, tool invocation types       |
+| `lib/types/ai.ts`                                        | UI message types, tool part types, data part types                          |
+| `app/api/chat/route.ts`                                  | API endpoint — auth, model selection, stream dispatch                       |
+| `config/models/default.json`                             | Default model assignments per mode and type                                 |
