@@ -105,10 +105,13 @@ Open http://localhost:43100.
 ### Architecture
 
 - [System Architecture](docs/ARCHITECTURE.md)
+- [Research Agent](docs/RESEARCH-AGENT.md)
+- [Generative UI](docs/GENERATIVE-UI.md)
 - [API Reference](docs/API.md)
 - [Streaming](docs/STREAMING.md)
 - [Search Providers](docs/SEARCH-PROVIDERS.md)
 - [Model Configuration](docs/MODEL-CONFIGURATION.md)
+- [File Index](docs/FILE-INDEX.md)
 
 ### Operations
 
