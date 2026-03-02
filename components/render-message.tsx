@@ -208,6 +208,15 @@ export function RenderMessage({
             )}
           </div>
         )
+      } else if (toolPart.state === 'output-error') {
+        return (
+          <div
+            key={`${messageId}-display-tool-${partIndex}`}
+            className="my-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground"
+          >
+            {toolName} output could not be rendered
+          </div>
+        )
       } else if (
         toolPart.state === 'input-streaming' ||
         toolPart.state === 'input-available'
