@@ -56,7 +56,7 @@ Supabase Auth with three client patterns:
 - `lib/supabase/client.ts` — browser client
 - `lib/supabase/server.ts` — server-side client (cookies-based)
 - `lib/supabase/middleware.ts` — session refresh in middleware
-- Guest mode available via `ENABLE_GUEST_CHAT=true` with rate limiting (Upstash Redis)
+- **Guest mode** (default): `ENABLE_GUEST_CHAT=true` lets unauthenticated users search immediately. Guest chats are ephemeral (not persisted), use speed-mode models only, and are rate-limited per IP via Upstash Redis. A gentle inline nudge encourages sign-up after the 5th search.
 
 ### Generative UI
 

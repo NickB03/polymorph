@@ -53,7 +53,7 @@ export function ErrorModal({
   const getErrorTitle = () => {
     switch (error.type) {
       case 'rate-limit':
-        return 'Rate Limit Exceeded'
+        return 'Daily limit reached'
       case 'auth':
         return 'Continue with Vana'
       case 'forbidden':
@@ -71,7 +71,7 @@ export function ErrorModal({
           'You have made too many requests. Please wait a moment before trying again.'
         )
       case 'auth':
-        return 'To use Vana, sign in to your account or create a new one.'
+        return 'Create a free account to save your search history, upload files, and get unlimited searches.'
       case 'forbidden':
         return 'You do not have permission to access this resource.'
       default:
@@ -83,10 +83,12 @@ export function ErrorModal({
 
   const getErrorDetails = () => {
     if (error.type === 'rate-limit') {
-      return 'The limit will reset at midnight UTC. You can continue using speed mode without restrictions.'
+      return 'Your limit resets at midnight UTC. Sign up for a free account to get unlimited searches.'
     }
     return error.details
   }
+
+  const errorDetails = getErrorDetails()
 
   return (
     <Dialog
@@ -110,25 +112,35 @@ export function ErrorModal({
           <DialogDescription className="text-center text-muted-foreground">
             {getErrorDescription()}
           </DialogDescription>
-          {getErrorDetails() && (
+          {errorDetails && (
             <div className="mt-4 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-              {getErrorDetails()}
+              {errorDetails}
             </div>
           )}
         </DialogHeader>
         <DialogFooter className="flex-col gap-2">
-          {error.type === 'auth' ? (
+          {error.type === 'auth' || error.type === 'rate-limit' ? (
             <>
               <Button asChild className="w-full">
-                <Link href="/auth/sign-up">Sign Up</Link>
+                <Link href="/auth/sign-up">Create Free Account</Link>
               </Button>
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/auth/login">Sign In</Link>
-              </Button>
+              {error.type === 'auth' ? (
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/auth/login">I already have an account</Link>
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  className="w-full"
+                >
+                  Maybe later
+                </Button>
+              )}
             </>
           ) : (
             <>
-              {onRetry && error.type !== 'rate-limit' && (
+              {onRetry && (
                 <Button
                   onClick={() => {
                     onRetry()
@@ -141,13 +153,11 @@ export function ErrorModal({
                 </Button>
               )}
               <Button
-                variant={
-                  onRetry && error.type !== 'rate-limit' ? 'outline' : 'default'
-                }
+                variant={onRetry ? 'outline' : 'default'}
                 onClick={() => onOpenChange(false)}
                 className="w-full"
               >
-                {error.type === 'rate-limit' ? 'Understood' : 'Close'}
+                Close
               </Button>
             </>
           )}

@@ -16,6 +16,7 @@ import { extractCitationMapsFromMessages } from '@/lib/utils/citation'
 
 import { AnimatedLogo } from './ui/animated-logo'
 import { ChatError } from './chat-error'
+import { GuestSignupNudge } from './guest-signup-nudge'
 import { RenderMessage } from './render-message'
 
 interface ChatMessagesProps {
@@ -261,6 +262,10 @@ export function ChatMessages({
                 <AnimatedLogo className="h-10 w-10" />
               </div>
             )}
+            {isGuest &&
+              !isLoading &&
+              sectionIndex === sections.length - 1 &&
+              section.assistantMessages.length > 0 && <GuestSignupNudge />}
             {sectionIndex === sections.length - 1 && (
               <ChatError error={error} />
             )}

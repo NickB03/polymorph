@@ -54,7 +54,7 @@ Required when `ENABLE_AUTH=true`:
 
 ## Optional platform features
 
-- Guest mode: `ENABLE_GUEST_CHAT`, `GUEST_CHAT_DAILY_LIMIT`
+- Guest mode: `ENABLE_GUEST_CHAT` (recommended), `GUEST_CHAT_DAILY_LIMIT`
 - Tracing/observability: `ENABLE_LANGFUSE_TRACING`, `LANGFUSE_*`
 - Performance diagnostics: `ENABLE_PERF_LOGGING`
 
@@ -75,8 +75,12 @@ Required when `ENABLE_AUTH=true`:
 
 ### Guest Chat (`ENABLE_GUEST_CHAT`)
 
-- If `ENABLE_AUTH=true` and `ENABLE_GUEST_CHAT` is not `true`, the API will return `401 Unauthorized` for non-logged-in users.
-- Guest sessions are ephemeral and do not persist in the database.
+Guest mode is the recommended default experience. It lets unauthenticated users search immediately without signing in — reducing friction and letting users experience the product before creating an account.
+
+- Set `ENABLE_GUEST_CHAT=true` (recommended) to allow unauthenticated users to search.
+- Set `ENABLE_GUEST_CHAT=false` to require sign-in before any search.
+- Guest sessions are ephemeral: chats are not persisted, and guests are limited to speed-mode models.
+- `GUEST_CHAT_DAILY_LIMIT` (default: `10`) caps daily searches per IP. Requires Redis (`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`) when running in cloud mode. When the limit is reached, a friendly 429 response encourages account creation.
 
 ### Cloud Mode (`VANA_CLOUD_DEPLOYMENT`)
 

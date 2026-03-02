@@ -6,7 +6,8 @@ import {
   Link2,
   LogIn,
   Palette,
-  Settings2 // Or EllipsisVertical, etc.
+  Settings2, // Or EllipsisVertical, etc.
+  UserPlus
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -34,6 +35,12 @@ export default function GuestMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
+        <DropdownMenuItem asChild>
+          <Link href="/auth/sign-up">
+            <UserPlus className="mr-2 h-4 w-4" />
+            <span>Create Account</span>
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/auth/login">
             <LogIn className="mr-2 h-4 w-4" />
