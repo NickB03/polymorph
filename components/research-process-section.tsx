@@ -68,7 +68,6 @@ type Props = {
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   addToolResult?: (params: { toolCallId: string; result: any }) => void
   parts?: MessagePart[]
-  hasSubsequentText?: boolean
 }
 
 /**
@@ -290,6 +289,23 @@ function useHasSubsequentContent(
   )
 }
 
+/**
+ * Renders an interactive "research process" view for a message by splitting its parts into segments,
+ * grouping consecutive tool parts, and presenting reasoning, tool, and data parts in accordions.
+ *
+ * The component omits empty reasoning parts, supports an optional override list of parts, and
+ * collapses long segments behind a parent accordion when a segment contains five or more parts.
+ *
+ * @param message - The AI message object containing parts to render.
+ * @param messageId - Unique identifier for the message; used to build stable element keys.
+ * @param getIsOpen - Function to determine whether a specific section is open.
+ * @param onOpenChange - Callback invoked when a section's open state changes.
+ * @param onQuerySelect - Callback invoked when a data/query item is selected.
+ * @param status - Current status used to render tool sections (e.g., loading or idle).
+ * @param addToolResult - Optional handler to attach a tool result to a tool part.
+ * @param parts - Optional override array of message parts to render instead of message.parts.
+ * @returns The rendered research process UI or `null` when there is no renderable content.
+ */
 export function ResearchProcessSection({
   message,
   messageId,
@@ -298,8 +314,7 @@ export function ResearchProcessSection({
   onQuerySelect,
   status,
   addToolResult,
-  parts: partsOverride,
-  hasSubsequentText = false
+  parts: partsOverride
 }: Props) {
   const allParts = (partsOverride ?? (message.parts || [])) as MessagePart[]
 
@@ -319,7 +334,6 @@ export function ResearchProcessSection({
   )
 
   // State for parent collapsible (when segment has 5+ parts)
-  // Auto-collapse when text generation starts (hasSubsequentText is true)
   const [parentOpenStates, setParentOpenStates] = useState<
     Record<string, boolean>
   >({})
@@ -340,9 +354,7 @@ export function ResearchProcessSection({
 
         // Parent collapsible ID
         const parentId = `${messageId}-parent-${sidx}`
-        // If user has explicitly set state, use that; otherwise auto-collapse when text follows
-        const isParentOpen =
-          parentOpenStates[parentId] ?? (hasSubsequentText ? false : true)
+        const isParentOpen = parentOpenStates[parentId] ?? false
 
         const segmentContent = (
           <div className={containerClass}>

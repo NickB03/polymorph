@@ -7,7 +7,6 @@ import type { ToolPart, UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 import FetchSection from './fetch-section'
 import { QuestionConfirmation } from './question-confirmation'
 import { SearchSection } from './search-section'
-import { ToolTodoDisplay } from './tool-todo-display'
 
 interface ToolSectionProps {
   tool: ToolPart
@@ -21,6 +20,22 @@ interface ToolSectionProps {
   isLast?: boolean
 }
 
+/**
+ * Render the UI section appropriate for the provided tool invocation.
+ *
+ * Renders a specialized confirmation view for `tool-askQuestion` states that require user input or display results, otherwise dispatches to the corresponding section component for `tool-search` and `tool-fetch`.
+ *
+ * @param tool - The tool invocation and its current state used to determine which section to render
+ * @param isOpen - Whether the section panel is open
+ * @param onOpenChange - Callback invoked when the section open state changes
+ * @param status - Optional status passed to child sections
+ * @param addToolResult - Callback to persist a tool result when the user confirms or declines an ask-question prompt
+ * @param onQuerySelect - Callback invoked when a query is selected inside a child section
+ * @param borderless - Render the section without borders (default: false)
+ * @param isFirst - Marks the section as the first in a list (default: false)
+ * @param isLast - Marks the section as the last in a list (default: false)
+ * @returns The React element for the tool's UI section, or `null` if the tool type is unsupported
+ */
 export function ToolSection({
   tool,
   isOpen,
@@ -90,22 +105,6 @@ export function ToolSection({
           isOpen={isOpen}
           onOpenChange={onOpenChange}
           status={status}
-          borderless={borderless}
-          isFirst={isFirst}
-          isLast={isLast}
-        />
-      )
-    case 'tool-todoWrite':
-      return (
-        <ToolTodoDisplay
-          tool="todoWrite"
-          state={tool.state}
-          input={tool.input}
-          output={tool.output}
-          errorText={tool.errorText}
-          toolCallId={tool.toolCallId}
-          isOpen={isOpen}
-          onOpenChange={onOpenChange}
           borderless={borderless}
           isFirst={isFirst}
           isLast={isLast}
