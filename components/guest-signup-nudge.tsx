@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
 import { Bookmark, X } from 'lucide-react'
@@ -11,8 +11,12 @@ const NUDGE_THRESHOLD = 5
 
 export function GuestSignupNudge() {
   const [visible, setVisible] = useState(false)
+  const hasIncremented = useRef(false)
 
   useEffect(() => {
+    if (hasIncremented.current) return
+    hasIncremented.current = true
+
     if (localStorage.getItem(NUDGE_DISMISSED_KEY)) return
 
     const count = Number(localStorage.getItem(SEARCH_COUNT_KEY) || '0') + 1
