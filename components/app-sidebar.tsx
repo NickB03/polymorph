@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { Plus } from 'lucide-react'
@@ -68,11 +69,21 @@ export default function AppSidebar({ hasUser = false }: { hasUser?: boolean }) {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        {hasUser && (
+        {hasUser ? (
           <div className="flex-1 overflow-y-auto">
             <Suspense fallback={<ChatHistorySkeleton />}>
               <ChatHistoryClient />
             </Suspense>
+          </div>
+        ) : (
+          <div className="px-2 py-4 text-xs text-muted-foreground">
+            <p>Your searches are not saved.</p>
+            <Link
+              href="/auth/sign-up"
+              className="text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            >
+              Create an account to save history
+            </Link>
           </div>
         )}
       </SidebarContent>

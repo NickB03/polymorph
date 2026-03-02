@@ -27,15 +27,17 @@ describe('checkAndEnforceGuestLimit', () => {
     expect(response).toBeNull()
   })
 
-  it('returns 401 when over the default limit', async () => {
+  it('returns 429 when over the default limit', async () => {
     mockRedisIncr.mockResolvedValue(11)
     mockRedisExpire.mockResolvedValue(1)
 
     const response = await checkAndEnforceGuestLimit('1.2.3.4')
     expect(response).not.toBeNull()
-    expect(response?.status).toBe(401)
+    expect(response?.status).toBe(429)
     const body = await response!.json()
-    expect(body.error).toBe('Please sign in to continue.')
+    expect(body.error).toBe(
+      'You\u2019ve reached your daily search limit. Create a free account for unlimited access, or come back tomorrow.'
+    )
     expect(body.limit).toBe(10)
   })
 
@@ -46,7 +48,7 @@ describe('checkAndEnforceGuestLimit', () => {
 
     const response = await checkAndEnforceGuestLimit('5.6.7.8')
     expect(response).not.toBeNull()
-    expect(response?.status).toBe(401)
+    expect(response?.status).toBe(429)
     const body = await response!.json()
     expect(body.limit).toBe(5)
   })

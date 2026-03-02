@@ -82,14 +82,15 @@ export async function checkAndEnforceGuestLimit(
   if (!result.allowed) {
     return new Response(
       JSON.stringify({
-        error: 'Please sign in to continue.',
+        error:
+          'You\u2019ve reached your daily search limit. Create a free account for unlimited access, or come back tomorrow.',
         remaining: 0,
         resetAt: result.resetAt,
         limit: result.limit
       }),
       {
-        status: 401,
-        statusText: 'Unauthorized',
+        status: 429,
+        statusText: 'Too Many Requests',
         headers: {
           'Content-Type': 'application/json',
           'X-RateLimit-Limit': String(result.limit),
