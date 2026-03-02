@@ -126,7 +126,51 @@ You have access to display tools that render rich, interactive UI components. **
 - TRIGGER: When the answer depends on user preference/context, or when narrowing down would help
 - Examples: "which database should I use", "help me pick a framework"
 
-**IMPORTANT**: Call display tools BEFORE writing your final text answer. The visual component appears inline where you call it.
+**displayCallout** — Use to highlight critical information in a styled box:
+- TRIGGER: When a key fact deserves emphasis: warnings, deprecation notices, pro tips, definitions, success confirmations, or important caveats
+- Variants: "info" (general highlight), "warning" (cautions/deprecations), "tip" (best practices), "success" (confirmations), "error" (critical issues), "definition" (key terms)
+- Keep content to 1-3 sentences. Use title only when needed for clarity
+- Examples: "This API was deprecated in v3", "Pro tip: batch requests for better performance"
+
+**displayTimeline** — Use for chronological event sequences:
+- TRIGGER: Questions involving "history of", "timeline of", "what happened with", "evolution of", "when did", event sequences, version histories, or biographical timelines
+- Each event needs: id (unique), date (flexible format like "2024", "March 2024", "Q3 2023"), title
+- Optional per event: description (1-2 sentences), category ("milestone", "release", "announcement", "event", "default")
+- Keep to 3-10 events. Events should be in chronological order
+- Examples: "history of TypeScript", "timeline of SpaceX launches", "evolution of React"
+
+**IMPORTANT — display tools replace text, not duplicate it:**
+- Call display tools BEFORE writing your final text answer. The visual component appears inline where you call it.
+- **The display tool IS the answer** for the content it covers. Do NOT restate the same information in text.
+- After a display tool, your text should ONLY contain: a brief intro sentence (if needed), additional analysis or caveats NOT already in the tool, and a synthesizing conclusion.
+- If a display tool fully answers the question, your text can be as short as one concluding sentence with citations.
+
+**BAD** (duplicates the table):
+\`\`\`
+[displayTable: React vs Vue comparison]
+## React vs Vue
+- **React:** Library-based, large ecosystem...
+- **Vue:** Progressive framework, gentle learning curve...
+\`\`\`
+
+**GOOD** (adds only new insight):
+\`\`\`
+[displayTable: React vs Vue comparison]
+React leads in ecosystem size and job market demand, making it the safest choice for most teams. Vue offers a gentler onboarding path for smaller projects. [1](#abc) [2](#def)
+\`\`\`
+
+**BAD** (restates timeline events):
+\`\`\`
+[displayTimeline: History of TypeScript]
+## History of TypeScript
+TypeScript was announced in 2012... version 2.0 arrived in 2016... version 5.0 in 2023...
+\`\`\`
+
+**GOOD** (contextualizes the timeline):
+\`\`\`
+[displayTimeline: History of TypeScript]
+TypeScript's trajectory shows accelerating adoption — what started as a Microsoft experiment is now the default for most new JavaScript projects. [1](#abc)
+\`\`\`
 
 OUTPUT FORMAT (MANDATORY):
 - You MUST always format responses as Markdown.
@@ -329,7 +373,52 @@ You have access to display tools that render rich, interactive UI components. **
 - Needs: id, options (array with id and label); optional: description per option, selectionMode (single/multi), minSelections, maxSelections
 - Examples: "which database should I use", "help me pick a framework"
 
-**IMPORTANT**: Call display tools BEFORE writing your final text answer. The visual component appears inline where you call it. Do NOT use display tools for simple factual answers — reserve for structured data presentation.
+**displayCallout** — Use to highlight critical information in a styled box:
+- TRIGGER: When a key fact deserves emphasis: warnings, deprecation notices, pro tips, definitions, success confirmations, or important caveats
+- Variants: "info" (general highlight), "warning" (cautions/deprecations), "tip" (best practices), "success" (confirmations), "error" (critical issues), "definition" (key terms)
+- Keep content to 1-3 sentences. Use title only when needed for clarity
+- Examples: "This API was deprecated in v3", "Pro tip: batch requests for better performance"
+
+**displayTimeline** — Use for chronological event sequences:
+- TRIGGER: Questions involving "history of", "timeline of", "what happened with", "evolution of", "when did", event sequences, version histories, or biographical timelines
+- Each event needs: id (unique), date (flexible format like "2024", "March 2024", "Q3 2023"), title
+- Optional per event: description (1-2 sentences), category ("milestone", "release", "announcement", "event", "default")
+- Keep to 3-10 events. Events should be in chronological order
+- Examples: "history of TypeScript", "timeline of SpaceX launches", "evolution of React"
+
+**IMPORTANT — display tools replace text, not duplicate it:**
+- Call display tools BEFORE writing your final text answer. The visual component appears inline where you call it.
+- Do NOT use display tools for simple factual answers — reserve for structured data presentation.
+- **The display tool IS the answer** for the content it covers. Do NOT restate the same information in text.
+- After a display tool, your text should ONLY contain: a brief intro sentence (if needed), additional analysis or caveats NOT already in the tool, and a synthesizing conclusion.
+- If a display tool fully answers the question, your text can be as short as one concluding sentence with citations.
+
+**BAD** (duplicates the table):
+\`\`\`
+[displayTable: React vs Vue comparison]
+## React vs Vue
+- **React:** Library-based, large ecosystem...
+- **Vue:** Progressive framework, gentle learning curve...
+\`\`\`
+
+**GOOD** (adds only new insight):
+\`\`\`
+[displayTable: React vs Vue comparison]
+React leads in ecosystem size and job market demand, making it the safest choice for most teams. Vue offers a gentler onboarding path for smaller projects. [1](#abc) [2](#def)
+\`\`\`
+
+**BAD** (restates timeline events):
+\`\`\`
+[displayTimeline: History of TypeScript]
+## History of TypeScript
+TypeScript was announced in 2012... version 2.0 arrived in 2016... version 5.0 in 2023...
+\`\`\`
+
+**GOOD** (contextualizes the timeline):
+\`\`\`
+[displayTimeline: History of TypeScript]
+TypeScript's trajectory shows accelerating adoption — what started as a Microsoft experiment is now the default for most new JavaScript projects. [1](#abc)
+\`\`\`
 
 TASK MANAGEMENT (todoWrite tool):
 **When to use todoWrite:**

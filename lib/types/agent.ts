@@ -6,12 +6,14 @@ import type {
   UIToolInvocation
 } from 'ai'
 
+import type { displayCalloutTool } from '../tools/display-callout'
 import type { displayChartTool } from '../tools/display-chart'
 import type { displayCitationsTool } from '../tools/display-citations'
 import type { displayLinkPreviewTool } from '../tools/display-link-preview'
 import type { displayOptionListTool } from '../tools/display-option-list'
 import type { displayPlanTool } from '../tools/display-plan'
 import type { displayTableTool } from '../tools/display-table'
+import type { displayTimelineTool } from '../tools/display-timeline'
 import type { fetchTool } from '../tools/fetch'
 import type { createQuestionTool } from '../tools/question'
 import type { createSearchTool } from '../tools/search'
@@ -28,6 +30,8 @@ export type ResearcherTools = {
   displayCitations: typeof displayCitationsTool
   displayLinkPreview: typeof displayLinkPreviewTool
   displayOptionList: typeof displayOptionListTool
+  displayCallout: typeof displayCalloutTool
+  displayTimeline: typeof displayTimelineTool
 } & ReturnType<typeof createTodoTools>
 
 // Type alias for the researcher agent using ToolLoopAgent
@@ -67,6 +71,12 @@ export type DisplayLinkPreviewToolInvocation = UIToolInvocation<
 export type DisplayOptionListToolInvocation = UIToolInvocation<
   ResearcherTools['displayOptionList']
 >
+export type DisplayCalloutToolInvocation = UIToolInvocation<
+  ResearcherTools['displayCallout']
+>
+export type DisplayTimelineToolInvocation = UIToolInvocation<
+  ResearcherTools['displayTimeline']
+>
 
 // Union type for all tool invocations
 export type ResearcherToolInvocation =
@@ -80,6 +90,8 @@ export type ResearcherToolInvocation =
   | DisplayCitationsToolInvocation
   | DisplayLinkPreviewToolInvocation
   | DisplayOptionListToolInvocation
+  | DisplayCalloutToolInvocation
+  | DisplayTimelineToolInvocation
 
 // Helper type to extract tool names
 export type ResearcherToolName = keyof ResearcherTools

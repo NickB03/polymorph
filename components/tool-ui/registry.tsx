@@ -2,6 +2,8 @@
 
 import type { ReactNode } from 'react'
 
+import { Callout } from './callout/callout'
+import { safeParseSerializableCallout } from './callout/schema'
 import { Chart } from './chart/chart'
 import { safeParseSerializableChart } from './chart/schema'
 import { CitationList } from './citation/citation-list'
@@ -14,6 +16,8 @@ import { OptionList } from './option-list/option-list'
 import { safeParseSerializableOptionList } from './option-list/schema'
 import { Plan } from './plan/plan'
 import { safeParseSerializablePlan } from './plan/schema'
+import { safeParseSerializableTimeline } from './timeline/schema'
+import { Timeline } from './timeline/timeline'
 
 type ToolUIEntry = {
   name: string
@@ -84,6 +88,22 @@ const entries: ToolUIEntry[] = [
       const parsed = safeParseSerializableOptionList(output)
       if (!parsed) return null
       return <OptionList {...parsed} />
+    }
+  },
+  {
+    name: 'displayCallout',
+    tryRender: output => {
+      const parsed = safeParseSerializableCallout(output)
+      if (!parsed) return null
+      return <Callout {...parsed} />
+    }
+  },
+  {
+    name: 'displayTimeline',
+    tryRender: output => {
+      const parsed = safeParseSerializableTimeline(output)
+      if (!parsed) return null
+      return <Timeline {...parsed} />
     }
   }
 ]

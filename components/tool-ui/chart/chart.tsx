@@ -110,7 +110,7 @@ export const Chart = memo(function Chart({
         )}
 
         {type === 'bar' &&
-          series.map((s) => (
+          series.map(s => (
             <Bar
               key={s.key}
               dataKey={s.key}
@@ -124,7 +124,7 @@ export const Chart = memo(function Chart({
           ))}
 
         {type === 'line' &&
-          series.map((s) => (
+          series.map(s => (
             <Line
               key={s.key}
               dataKey={s.key}

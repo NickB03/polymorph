@@ -23,7 +23,7 @@ This document describes the generative UI system in Vana v2 — how AI tool invo
 
 ## Overview
 
-The generative UI system lets the AI agent produce structured data that renders as rich UI components (tables, charts, citations, plans, link previews, option lists) directly inside the chat conversation. The system is built around three core ideas:
+The generative UI system lets the AI agent produce structured data that renders as rich UI components (tables, charts, citations, plans, link previews, option lists, callouts, timelines) directly inside the chat conversation. The system is built around three core ideas:
 
 1. **Display tools** — server-side AI tool definitions that accept structured input and pass it through as output (`execute: async params => params`). They exist purely to give the AI a schema to emit structured data.
 
@@ -129,6 +129,8 @@ Display tools do not perform any computation — they serve as a structured outp
 | `displayCitations`   | `lib/tools/display-citations.ts`    | Rich source citation lists           |      Yes       |
 | `displayLinkPreview` | `lib/tools/display-link-preview.ts` | Link preview cards                   |      Yes       |
 | `displayOptionList`  | `lib/tools/display-option-list.ts`  | Interactive option lists             |       No       |
+| `displayCallout`     | `lib/tools/display-callout.ts`      | Styled callout boxes                 |      Yes       |
+| `displayTimeline`    | `lib/tools/display-timeline.ts`     | Chronological event timelines        |      Yes       |
 
 All tools with `execute` use the same passthrough pattern:
 
@@ -160,7 +162,7 @@ const FormatSchema = z.discriminatedUnion('kind', [
 
 This allows the AI to specify exactly how each column should be formatted — currencies, percentages, status badges, links — and the DataTable component renders them accordingly.
 
-**Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../lib/tools/display-chart.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts)
+**Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../lib/tools/display-chart.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts), [`lib/tools/display-callout.ts`](../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../lib/tools/display-timeline.ts)
 
 ---
 
@@ -201,7 +203,7 @@ const entries: ToolUIEntry[] = [
       return <Plan {...parsed} />
     }
   },
-  // ... displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList
+  // ... displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline
 ]
 ```
 
@@ -235,15 +237,17 @@ graph TD
 
 ### Adapter contents by component
 
-| Component       | Adapter re-exports                                                     |
-| --------------- | ---------------------------------------------------------------------- |
-| `plan/`         | Accordion, Card (Header/Content/Title/Description), Collapsible, `cn`                      |
-| `data-table/`   | Accordion, Badge, Button, Table (all parts), Tooltip (all parts), `cn`                     |
-| `chart/`        | Card (Header/Content/Title/Description), ChartContainer, ChartTooltip, ChartLegend, `cn`   |
-| `citation/`     | Popover (all parts), `cn`                                                                  |
-| `link-preview/` | `cn`                                                                   |
-| `option-list/`  | Button, Separator, `cn`                                                |
-| `shared/`       | Button, `cn`                                                           |
+| Component       | Adapter re-exports                                                                       |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| `plan/`         | Accordion, Card (Header/Content/Title/Description), Collapsible, `cn`                    |
+| `data-table/`   | Accordion, Badge, Button, Table (all parts), Tooltip (all parts), `cn`                   |
+| `chart/`        | Card (Header/Content/Title/Description), ChartContainer, ChartTooltip, ChartLegend, `cn` |
+| `citation/`     | Popover (all parts), `cn`                                                                |
+| `link-preview/` | `cn`                                                                                     |
+| `option-list/`  | Button, Separator, `cn`                                                                  |
+| `callout/`      | `cn`                                                                                     |
+| `timeline/`     | `cn`                                                                                     |
+| `shared/`       | Button, `cn`                                                                             |
 
 ### Why adapters?
 
@@ -373,6 +377,16 @@ When the dispatcher encounters a part with a `tool-display*` type prefix:
 3. For all other display tools: calls `tryRenderToolUIByName(toolName, output)` from the registry
 4. During `input-streaming` and `input-available` states: shows an animated skeleton placeholder
 
+### Display tool text suppression
+
+When a display tool renders rich UI (table, timeline, callout, etc.), the agent is instructed to not duplicate its content in surrounding text. Two layers enforce this:
+
+1. **Prompt instructions** — The system prompts tell the agent that the display tool IS the answer for the content it covers. Text after a display tool should only contain additional analysis, caveats, or a synthesizing conclusion — never a restatement of the tool's data.
+
+2. **Frontend guard** — `RenderMessage` suppresses near-empty text parts adjacent to display tools. A text part is "near-empty" if it contains only whitespace or a bare markdown heading (e.g., `## React vs Vue`). If the previous or next part is a `tool-display*` part, the near-empty text part is skipped.
+
+This guard is intentionally conservative: text parts with substantive content (full sentences, analysis, citations) always render regardless of adjacency to display tools. Old persisted messages are unaffected.
+
 ### AnswerSection
 
 `AnswerSection` wraps `MarkdownMessage` which uses the `Streamdown` library for streaming-aware markdown rendering. It supports:
@@ -474,6 +488,38 @@ A rich link preview card with image, title, and description.
 - Hover scale animation on image
 - Keyboard accessible (Enter/Space to navigate)
 - Href sanitization for security
+
+### Callout (`components/tool-ui/callout/`)
+
+A styled callout box for highlighting critical information with variant-specific iconography and color.
+
+**Props:** `id`, `variant`, `title` (optional), `content`
+
+**Variants:** `info` | `warning` | `tip` | `success` | `error` | `definition`
+
+**Features:**
+
+- Variant-specific Lucide icons (Info, AlertTriangle, Lightbulb, CheckCircle2, XCircle, BookOpen)
+- Color theming per variant with dark mode support
+- Accessible `<aside role="note">` semantic HTML
+- Concise — encourages 1-3 sentence content
+
+### Timeline (`components/tool-ui/timeline/`)
+
+A vertical chronological timeline of events with category-specific styling.
+
+**Props:** `id`, `title`, `description` (optional), `events[]` (each with `id`, `date`, `title`, optional `description`, optional `category`)
+
+**Event categories:** `milestone` | `event` | `release` | `announcement` | `default`
+
+**Features:**
+
+- Category-specific Lucide icons (Star, Calendar, Package, Megaphone, Flag)
+- Color theming per category with dark mode support
+- Connecting lines between events
+- Date badges with category-colored backgrounds
+- Accessible `<section>` + `<ol>` semantic HTML
+- Schema validation with `superRefine` (rejects duplicate event IDs)
 
 ### OptionList (`components/tool-ui/option-list/`)
 
@@ -811,6 +857,8 @@ activeTools: [...existingTools, 'displayTimeline']
 | `lib/tools/display-citations.ts`    | Citations tool definition + schema      |
 | `lib/tools/display-link-preview.ts` | LinkPreview tool definition + schema    |
 | `lib/tools/display-option-list.ts`  | OptionList tool definition (no execute) |
+| `lib/tools/display-callout.ts`      | Callout tool definition + schema        |
+| `lib/tools/display-timeline.ts`     | Timeline tool definition + schema       |
 
 ### Tool UI components (client)
 
@@ -830,6 +878,10 @@ activeTools: [...existingTools, 'displayTimeline']
 | `components/tool-ui/link-preview/schema.ts`        | LinkPreview Zod schema + contract    |
 | `components/tool-ui/option-list/option-list.tsx`   | Interactive OptionList               |
 | `components/tool-ui/option-list/schema.ts`         | OptionList Zod schema + contract     |
+| `components/tool-ui/callout/callout.tsx`           | Callout component with variants      |
+| `components/tool-ui/callout/schema.ts`             | Callout Zod schema + contract        |
+| `components/tool-ui/timeline/timeline.tsx`         | Timeline component with events       |
+| `components/tool-ui/timeline/schema.ts`            | Timeline Zod schema + contract       |
 | `components/tool-ui/shared/schema.ts`              | Shared base schemas (id, role, etc.) |
 | `components/tool-ui/shared/contract.ts`            | `defineToolUiContract` helper        |
 | `components/tool-ui/*/_adapter.tsx`                | Host dependency adapters             |
