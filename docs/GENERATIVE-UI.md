@@ -23,7 +23,7 @@ This document describes the generative UI system in Vana v2 — how AI tool invo
 
 ## Overview
 
-The generative UI system lets the AI agent produce structured data that renders as rich UI components (tables, citations, plans, link previews, option lists) directly inside the chat conversation. The system is built around three core ideas:
+The generative UI system lets the AI agent produce structured data that renders as rich UI components (tables, charts, citations, plans, link previews, option lists) directly inside the chat conversation. The system is built around three core ideas:
 
 1. **Display tools** — server-side AI tool definitions that accept structured input and pass it through as output (`execute: async params => params`). They exist purely to give the AI a schema to emit structured data.
 
@@ -125,6 +125,7 @@ Display tools do not perform any computation — they serve as a structured outp
 | -------------------- | ----------------------------------- | ------------------------------------ | :------------: |
 | `displayPlan`        | `lib/tools/display-plan.ts`         | Step-by-step guides with status      |      Yes       |
 | `displayTable`       | `lib/tools/display-table.ts`        | Sortable data tables with formatting |      Yes       |
+| `displayChart`       | `lib/tools/display-chart.ts`        | Bar and line chart visualizations    |      Yes       |
 | `displayCitations`   | `lib/tools/display-citations.ts`    | Rich source citation lists           |      Yes       |
 | `displayLinkPreview` | `lib/tools/display-link-preview.ts` | Link preview cards                   |      Yes       |
 | `displayOptionList`  | `lib/tools/display-option-list.ts`  | Interactive option lists             |       No       |
@@ -159,7 +160,7 @@ const FormatSchema = z.discriminatedUnion('kind', [
 
 This allows the AI to specify exactly how each column should be formatted — currencies, percentages, status badges, links — and the DataTable component renders them accordingly.
 
-**Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts)
+**Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../lib/tools/display-chart.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts)
 
 ---
 
@@ -200,7 +201,7 @@ const entries: ToolUIEntry[] = [
       return <Plan {...parsed} />
     }
   },
-  // ... displayTable, displayCitations, displayLinkPreview, displayOptionList
+  // ... displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList
 ]
 ```
 
@@ -236,9 +237,10 @@ graph TD
 
 | Component       | Adapter re-exports                                                     |
 | --------------- | ---------------------------------------------------------------------- |
-| `plan/`         | Accordion, Card (Header/Content/Title/Description), Collapsible, `cn`  |
-| `data-table/`   | Accordion, Badge, Button, Table (all parts), Tooltip (all parts), `cn` |
-| `citation/`     | Popover (all parts), `cn`                                              |
+| `plan/`         | Accordion, Card (Header/Content/Title/Description), Collapsible, `cn`                      |
+| `data-table/`   | Accordion, Badge, Button, Table (all parts), Tooltip (all parts), `cn`                     |
+| `chart/`        | Card (Header/Content/Title/Description), ChartContainer, ChartTooltip, ChartLegend, `cn`   |
+| `citation/`     | Popover (all parts), `cn`                                                                  |
 | `link-preview/` | `cn`                                                                   |
 | `option-list/`  | Button, Separator, `cn`                                                |
 | `shared/`       | Button, `cn`                                                           |
@@ -420,6 +422,23 @@ A sortable data table with rich column formatting and responsive layout.
 - Accessibility: sort announcements, ARIA roles, keyboard navigation
 
 **Compound components:** `DataTable`, `DataTable.Table` (forced table), `DataTable.Cards` (forced cards), `DataTable.Provider` (headless)
+
+### Chart (`components/tool-ui/chart/`)
+
+A data visualization component supporting bar and line charts via Recharts.
+
+**Props:** `id`, `type` (bar/line), `title`, `description`, `data[]`, `xKey`, `series[]` (key, label, color), `colors[]`, `showLegend`, `showGrid`
+
+**Features:**
+
+- Bar and line chart types with automatic axis configuration
+- Multiple data series with configurable color palette
+- Individual series color overrides via `series[].color`
+- Grid lines and legend support (configurable via `showGrid`, `showLegend`)
+- Interactive tooltips via `ChartTooltip`
+- Clickable data points with `onDataPointClick` callback (client-only prop)
+- Card wrapper with optional title and description
+- Schema validation with `superRefine` (rejects duplicate series keys, validates `xKey` and series keys exist in every data row, ensures Y-values are finite numbers or null)
 
 ### CitationList (`components/tool-ui/citation/`)
 
@@ -638,42 +657,42 @@ Each part is dispatched via `RenderPart`:
 
 ## How to Add a New Generative UI Tool
 
-Follow these steps to add a new display tool (e.g., `displayChart`):
+Follow these steps to add a new display tool (e.g., `displayTimeline`):
 
 ### Step 1: Define the server-side tool
 
-Create `lib/tools/display-chart.ts`:
+Create `lib/tools/display-timeline.ts`:
 
 ```ts
 import { tool } from 'ai'
 import { z } from 'zod'
 
-const DisplayChartSchema = z.object({
-  id: z.string().min(1).describe('Unique identifier for this chart'),
-  title: z.string().describe('Chart title'),
-  type: z.enum(['bar', 'line', 'pie']).describe('Chart type'),
-  data: z
+const DisplayTimelineSchema = z.object({
+  id: z.string().min(1).describe('Unique identifier for this timeline'),
+  title: z.string().describe('Timeline title'),
+  events: z
     .array(
       z.object({
-        label: z.string(),
-        value: z.number()
+        date: z.string().describe('Date or time label'),
+        title: z.string().describe('Event title'),
+        description: z.string().optional().describe('Event details')
       })
     )
     .min(1)
-    .describe('Chart data points')
+    .describe('Timeline events in chronological order')
 })
 
-export const displayChartTool = tool({
+export const displayTimelineTool = tool({
   description:
-    'Display a chart visualization. Use when presenting numerical data visually.',
-  inputSchema: DisplayChartSchema,
+    'Display a timeline of events. Use when presenting chronological sequences, project milestones, or historical events.',
+  inputSchema: DisplayTimelineSchema,
   execute: async params => params
 })
 ```
 
 ### Step 2: Create the component directory
 
-Create the following files under `components/tool-ui/chart/`:
+Create the following files under `components/tool-ui/timeline/`:
 
 **`_adapter.tsx`** — re-export host dependencies:
 
@@ -689,44 +708,50 @@ import { z } from 'zod'
 import { defineToolUiContract } from '../shared/contract'
 import { ToolUIIdSchema } from '../shared/schema'
 
-export const SerializableChartSchema = z.object({
+export const SerializableTimelineSchema = z.object({
   id: ToolUIIdSchema,
   title: z.string().min(1),
-  type: z.enum(['bar', 'line', 'pie']),
-  data: z.array(z.object({ label: z.string(), value: z.number() })).min(1)
+  events: z
+    .array(
+      z.object({
+        date: z.string(),
+        title: z.string(),
+        description: z.string().optional()
+      })
+    )
+    .min(1)
 })
 
-export type SerializableChart = z.infer<typeof SerializableChartSchema>
+export type SerializableTimeline = z.infer<typeof SerializableTimelineSchema>
 
-const contract = defineToolUiContract('Chart', SerializableChartSchema)
-export const parseSerializableChart = contract.parse
-export const safeParseSerializableChart = contract.safeParse
+const contract = defineToolUiContract('Timeline', SerializableTimelineSchema)
+export const parseSerializableTimeline = contract.parse
+export const safeParseSerializableTimeline = contract.safeParse
 ```
 
-**`chart.tsx`** — the React component:
+**`timeline.tsx`** — the React component:
 
 ```tsx
 'use client'
 import { Card, CardContent, CardHeader, CardTitle, cn } from './_adapter'
-import type { SerializableChart } from './schema'
+import type { SerializableTimeline } from './schema'
 
-export function Chart({
+export function Timeline({
   id,
   title,
-  type,
-  data,
+  events,
   className
-}: SerializableChart & { className?: string }) {
+}: SerializableTimeline & { className?: string }) {
   return (
     <Card
       className={cn('w-full max-w-xl', className)}
       data-tool-ui-id={id}
-      data-slot="chart"
+      data-slot="timeline"
     >
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent>{/* Your chart rendering logic */}</CardContent>
+      <CardContent>{/* Your timeline rendering logic */}</CardContent>
     </Card>
   )
 }
@@ -737,16 +762,16 @@ export function Chart({
 Add the entry to `components/tool-ui/registry.tsx`:
 
 ```tsx
-import { Chart } from './chart/chart'
-import { safeParseSerializableChart } from './chart/schema'
+import { Timeline } from './timeline/timeline'
+import { safeParseSerializableTimeline } from './timeline/schema'
 
 // Add to the entries array:
 {
-  name: 'displayChart',
+  name: 'displayTimeline',
   tryRender: output => {
-    const parsed = safeParseSerializableChart(output)
+    const parsed = safeParseSerializableTimeline(output)
     if (!parsed) return null
-    return <Chart {...parsed} />
+    return <Timeline {...parsed} />
   }
 }
 ```
@@ -756,19 +781,19 @@ import { safeParseSerializableChart } from './chart/schema'
 In `lib/agents/researcher.ts`, add the tool to the active tools for the desired mode(s):
 
 ```ts
-import { displayChartTool } from '@/lib/tools/display-chart'
+import { displayTimelineTool } from '@/lib/tools/display-timeline'
 
 // In the tools object:
-displayChart: displayChartTool
+displayTimeline: displayTimelineTool
 
 // In the activeTools array for quick/adaptive mode:
-activeTools: [...existingTools, 'displayChart']
+activeTools: [...existingTools, 'displayTimeline']
 ```
 
 ### Step 5: Verify
 
 1. Run `bun typecheck` to ensure type safety
-2. Run `bun dev` and test by prompting the AI to create a chart
+2. Run `bun dev` and test by prompting the AI to create a timeline
 3. Verify the component renders during streaming (skeleton) and after completion (full component)
 4. Verify the component handles invalid output gracefully (returns null, shows fallback)
 
@@ -782,6 +807,7 @@ activeTools: [...existingTools, 'displayChart']
 | ----------------------------------- | --------------------------------------- |
 | `lib/tools/display-plan.ts`         | Plan tool definition + schema           |
 | `lib/tools/display-table.ts`        | DataTable tool definition + schema      |
+| `lib/tools/display-chart.ts`        | Chart tool definition + schema          |
 | `lib/tools/display-citations.ts`    | Citations tool definition + schema      |
 | `lib/tools/display-link-preview.ts` | LinkPreview tool definition + schema    |
 | `lib/tools/display-option-list.ts`  | OptionList tool definition (no execute) |
@@ -796,6 +822,8 @@ activeTools: [...existingTools, 'displayChart']
 | `components/tool-ui/data-table/data-table.tsx`     | DataTable with sort + responsive     |
 | `components/tool-ui/data-table/schema.ts`          | DataTable Zod schema + contract      |
 | `components/tool-ui/data-table/formatters.tsx`     | Column value formatting              |
+| `components/tool-ui/chart/chart.tsx`               | Chart component (bar/line)           |
+| `components/tool-ui/chart/schema.ts`               | Chart Zod schema + contract          |
 | `components/tool-ui/citation/citation-list.tsx`    | CitationList with variants           |
 | `components/tool-ui/citation/schema.ts`            | Citation Zod schema + contract       |
 | `components/tool-ui/link-preview/link-preview.tsx` | LinkPreview card                     |
