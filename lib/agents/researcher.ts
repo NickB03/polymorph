@@ -16,6 +16,7 @@ import { displayLinkPreviewTool } from '../tools/display-link-preview'
 import { displayOptionListTool } from '../tools/display-option-list'
 import { displayPlanTool } from '../tools/display-plan'
 import { displayTableTool } from '../tools/display-table'
+import { displayTimelineTool } from '../tools/display-timeline'
 import { fetchTool } from '../tools/fetch'
 import { createQuestionTool } from '../tools/question'
 import { createSearchTool } from '../tools/search'
@@ -118,7 +119,8 @@ export function createResearcher({
           'displayCitations',
           'displayLinkPreview',
           'displayOptionList',
-          'displayCallout'
+          'displayCallout',
+          'displayTimeline'
         ]
         maxSteps = 20
         searchTool = wrapSearchToolForQuickMode(originalSearchTool)
@@ -138,7 +140,8 @@ export function createResearcher({
           'displayCitations',
           'displayLinkPreview',
           'displayOptionList',
-          'displayCallout'
+          'displayCallout',
+          'displayTimeline'
         ]
         // Enable todo tools when writer is available
         if (writer && 'todoWrite' in todoTools) {
@@ -164,6 +167,7 @@ export function createResearcher({
       displayLinkPreview: displayLinkPreviewTool,
       displayOptionList: displayOptionListTool,
       displayCallout: displayCalloutTool,
+      displayTimeline: displayTimelineTool,
       ...todoTools
     } as ResearcherTools
 

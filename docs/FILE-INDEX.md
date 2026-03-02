@@ -320,6 +320,15 @@ The `components/tool-ui/` directory contains generative UI components rendered b
 | `components/tool-ui/plan/progress.ts`  | Progress calculation utilities for plan steps                |
 | `components/tool-ui/plan/schema.ts`    | Zod schema and serialization types for plan data             |
 
+#### Timeline Tool
+
+| File                                       | Purpose                                                          |
+| ------------------------------------------ | ---------------------------------------------------------------- |
+| `components/tool-ui/timeline/index.ts`     | Barrel export for Timeline component                             |
+| `components/tool-ui/timeline/_adapter.tsx`  | Adapter re-exporting `cn` utility for Timeline                   |
+| `components/tool-ui/timeline/timeline.tsx`  | Vertical timeline with category-specific icons and color theming |
+| `components/tool-ui/timeline/schema.ts`    | Zod schema and serialization types for timeline data             |
+
 #### Shared Tool UI
 
 | File                                                  | Purpose                                                   |
@@ -401,6 +410,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/tools/display-table.ts`        | Display tool that renders a formatted data table with column types                               |
 | `lib/tools/display-option-list.ts`  | Display tool that renders an interactive option list for user selection                          |
 | `lib/tools/display-callout.ts`      | Display tool that renders a styled callout box with variant-specific icons and colors            |
+| `lib/tools/display-timeline.ts`    | Display tool that renders a chronological event timeline with category styling                   |
 | `lib/tools/dynamic.ts`              | Factory for creating runtime-defined tools (MCP tools, user-defined functions)                   |
 
 ### Search Providers

@@ -16,6 +16,8 @@ import { OptionList } from './option-list/option-list'
 import { safeParseSerializableOptionList } from './option-list/schema'
 import { Plan } from './plan/plan'
 import { safeParseSerializablePlan } from './plan/schema'
+import { safeParseSerializableTimeline } from './timeline/schema'
+import { Timeline } from './timeline/timeline'
 
 type ToolUIEntry = {
   name: string
@@ -94,6 +96,14 @@ const entries: ToolUIEntry[] = [
       const parsed = safeParseSerializableCallout(output)
       if (!parsed) return null
       return <Callout {...parsed} />
+    }
+  },
+  {
+    name: 'displayTimeline',
+    tryRender: output => {
+      const parsed = safeParseSerializableTimeline(output)
+      if (!parsed) return null
+      return <Timeline {...parsed} />
     }
   }
 ]

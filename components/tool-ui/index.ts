@@ -41,6 +41,8 @@ export type {
   SerializablePlan
 } from './plan'
 export { Plan, PlanCompact } from './plan'
+export type { SerializableTimeline, TimelineProps } from './timeline'
+export { Timeline } from './timeline'
 
 // Registry
 export { tryRenderToolUI, tryRenderToolUIByName } from './registry'

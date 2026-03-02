@@ -83,8 +83,8 @@ flowchart TD
     AuthStream["createChatStreamResponse()"]
     PrepareMsg["prepareMessages()<br/>(load/create chat,<br/>handle regeneration)"]
     CreateAgent["createResearcher()<br/>(configure tools + mode)"]
-    QuickMode["Quick Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayCitations,<br/>displayLinkPreview,<br/>displayOptionList, displayCallout"]
-    AdaptiveMode["Adaptive Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayChart,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList, displayCallout,<br/>todoWrite"]
+    QuickMode["Quick Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayCitations,<br/>displayLinkPreview,<br/>displayOptionList, displayCallout,<br/>displayTimeline"]
+    AdaptiveMode["Adaptive Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayChart,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList, displayCallout,<br/>displayTimeline, todoWrite"]
     AgentStream["agent.stream()<br/>+ smoothStream(word)"]
     Parallel["Parallel operations:<br/>title + related questions<br/>+ persistence"]
     SSE["SSE Response to Client"]
@@ -155,6 +155,7 @@ graph LR
         linkPreview["displayLinkPreview<br/>Link preview cards"]
         optionList["displayOptionList<br/>Interactive option lists"]
         callout["displayCallout<br/>Styled callout boxes"]
+        timeline["displayTimeline<br/>Chronological timelines"]
     end
 
     subgraph SearchProviders["Search Providers"]
@@ -189,6 +190,7 @@ graph LR
 | `displayLinkPreview` |               Yes                |               Yes                |
 | `displayOptionList`  |               Yes                |               Yes                |
 | `displayCallout`     |               Yes                |               Yes                |
+| `displayTimeline`    |               Yes                |               Yes                |
 | `todoWrite`          |                No                |   Yes (when writer available)    |
 
 **Tool implementation details:**
@@ -712,7 +714,7 @@ The `current_setting('app.current_user_id', true)` call uses `true` as the secon
 | `lib/tools/fetch.ts`                                     | Web content extraction (regular + API-based)                                      |
 | `lib/tools/question.ts`                                  | Clarifying question tool (frontend confirmation only)                             |
 | `lib/tools/todo.ts`                                      | Session-scoped task tracking with content-based merge                             |
-| `lib/tools/display-*.ts`                                 | Display tools (plan, table, chart, citations, link preview, option list, callout) |
+| `lib/tools/display-*.ts`                                 | Display tools (plan, table, chart, citations, link preview, option list, callout, timeline) |
 | `lib/tools/search/providers/`                            | Search provider implementations (tavily, brave, exa, searxng, firecrawl)          |
 | `lib/streaming/create-chat-stream-response.ts`           | Authenticated chat streaming with persistence                                     |
 | `lib/streaming/create-ephemeral-chat-stream-response.ts` | Guest/anonymous streaming (stateless)                                             |

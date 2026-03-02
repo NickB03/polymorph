@@ -23,7 +23,7 @@ This document describes the generative UI system in Vana v2 — how AI tool invo
 
 ## Overview
 
-The generative UI system lets the AI agent produce structured data that renders as rich UI components (tables, charts, citations, plans, link previews, option lists) directly inside the chat conversation. The system is built around three core ideas:
+The generative UI system lets the AI agent produce structured data that renders as rich UI components (tables, charts, citations, plans, link previews, option lists, callouts, timelines) directly inside the chat conversation. The system is built around three core ideas:
 
 1. **Display tools** — server-side AI tool definitions that accept structured input and pass it through as output (`execute: async params => params`). They exist purely to give the AI a schema to emit structured data.
 
@@ -130,6 +130,7 @@ Display tools do not perform any computation — they serve as a structured outp
 | `displayLinkPreview` | `lib/tools/display-link-preview.ts` | Link preview cards                   |      Yes       |
 | `displayOptionList`  | `lib/tools/display-option-list.ts`  | Interactive option lists             |       No       |
 | `displayCallout`     | `lib/tools/display-callout.ts`      | Styled callout boxes                 |      Yes       |
+| `displayTimeline`    | `lib/tools/display-timeline.ts`     | Chronological event timelines        |      Yes       |
 
 All tools with `execute` use the same passthrough pattern:
 
@@ -161,7 +162,7 @@ const FormatSchema = z.discriminatedUnion('kind', [
 
 This allows the AI to specify exactly how each column should be formatted — currencies, percentages, status badges, links — and the DataTable component renders them accordingly.
 
-**Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../lib/tools/display-chart.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts), [`lib/tools/display-callout.ts`](../lib/tools/display-callout.ts)
+**Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../lib/tools/display-chart.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts), [`lib/tools/display-callout.ts`](../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../lib/tools/display-timeline.ts)
 
 ---
 
@@ -202,7 +203,7 @@ const entries: ToolUIEntry[] = [
       return <Plan {...parsed} />
     }
   },
-  // ... displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList
+  // ... displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline
 ]
 ```
 
@@ -245,6 +246,7 @@ graph TD
 | `link-preview/` | `cn`                                                                                     |
 | `option-list/`  | Button, Separator, `cn`                                                                  |
 | `callout/`      | `cn`                                                                                     |
+| `timeline/`     | `cn`                                                                                     |
 | `shared/`       | Button, `cn`                                                                             |
 
 ### Why adapters?
@@ -491,6 +493,23 @@ A styled callout box for highlighting critical information with variant-specific
 - Color theming per variant with dark mode support
 - Accessible `<aside role="note">` semantic HTML
 - Concise — encourages 1-3 sentence content
+
+### Timeline (`components/tool-ui/timeline/`)
+
+A vertical chronological timeline of events with category-specific styling.
+
+**Props:** `id`, `title`, `description` (optional), `events[]` (each with `id`, `date`, `title`, optional `description`, optional `category`)
+
+**Event categories:** `milestone` | `event` | `release` | `announcement` | `default`
+
+**Features:**
+
+- Category-specific Lucide icons (Star, Calendar, Package, Megaphone, Flag)
+- Color theming per category with dark mode support
+- Connecting lines between events
+- Date badges with category-colored backgrounds
+- Accessible `<section>` + `<ol>` semantic HTML
+- Schema validation with `superRefine` (rejects duplicate event IDs)
 
 ### OptionList (`components/tool-ui/option-list/`)
 
@@ -829,6 +848,7 @@ activeTools: [...existingTools, 'displayTimeline']
 | `lib/tools/display-link-preview.ts` | LinkPreview tool definition + schema    |
 | `lib/tools/display-option-list.ts`  | OptionList tool definition (no execute) |
 | `lib/tools/display-callout.ts`      | Callout tool definition + schema        |
+| `lib/tools/display-timeline.ts`     | Timeline tool definition + schema       |
 
 ### Tool UI components (client)
 
@@ -850,6 +870,8 @@ activeTools: [...existingTools, 'displayTimeline']
 | `components/tool-ui/option-list/schema.ts`         | OptionList Zod schema + contract     |
 | `components/tool-ui/callout/callout.tsx`           | Callout component with variants      |
 | `components/tool-ui/callout/schema.ts`             | Callout Zod schema + contract        |
+| `components/tool-ui/timeline/timeline.tsx`         | Timeline component with events       |
+| `components/tool-ui/timeline/schema.ts`            | Timeline Zod schema + contract       |
 | `components/tool-ui/shared/schema.ts`              | Shared base schemas (id, role, etc.) |
 | `components/tool-ui/shared/contract.ts`            | `defineToolUiContract` helper        |
 | `components/tool-ui/*/_adapter.tsx`                | Host dependency adapters             |

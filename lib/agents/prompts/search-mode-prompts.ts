@@ -132,6 +132,13 @@ You have access to display tools that render rich, interactive UI components. **
 - Keep content to 1-3 sentences. Use title only when needed for clarity
 - Examples: "This API was deprecated in v3", "Pro tip: batch requests for better performance"
 
+**displayTimeline** — Use for chronological event sequences:
+- TRIGGER: Questions involving "history of", "timeline of", "what happened with", "evolution of", "when did", event sequences, version histories, or biographical timelines
+- Each event needs: id (unique), date (flexible format like "2024", "March 2024", "Q3 2023"), title
+- Optional per event: description (1-2 sentences), category ("milestone", "release", "announcement", "event", "default")
+- Keep to 3-10 events. Events should be in chronological order
+- Examples: "history of TypeScript", "timeline of SpaceX launches", "evolution of React"
+
 **IMPORTANT**: Call display tools BEFORE writing your final text answer. The visual component appears inline where you call it.
 
 OUTPUT FORMAT (MANDATORY):
@@ -340,6 +347,13 @@ You have access to display tools that render rich, interactive UI components. **
 - Variants: "info" (general highlight), "warning" (cautions/deprecations), "tip" (best practices), "success" (confirmations), "error" (critical issues), "definition" (key terms)
 - Keep content to 1-3 sentences. Use title only when needed for clarity
 - Examples: "This API was deprecated in v3", "Pro tip: batch requests for better performance"
+
+**displayTimeline** — Use for chronological event sequences:
+- TRIGGER: Questions involving "history of", "timeline of", "what happened with", "evolution of", "when did", event sequences, version histories, or biographical timelines
+- Each event needs: id (unique), date (flexible format like "2024", "March 2024", "Q3 2023"), title
+- Optional per event: description (1-2 sentences), category ("milestone", "release", "announcement", "event", "default")
+- Keep to 3-10 events. Events should be in chronological order
+- Examples: "history of TypeScript", "timeline of SpaceX launches", "evolution of React"
 
 **IMPORTANT**: Call display tools BEFORE writing your final text answer. The visual component appears inline where you call it. Do NOT use display tools for simple factual answers — reserve for structured data presentation.
 
