@@ -68,7 +68,6 @@ type Props = {
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   addToolResult?: (params: { toolCallId: string; result: any }) => void
   parts?: MessagePart[]
-  hasSubsequentText?: boolean
 }
 
 /**
@@ -298,8 +297,7 @@ export function ResearchProcessSection({
   onQuerySelect,
   status,
   addToolResult,
-  parts: partsOverride,
-  hasSubsequentText = false
+  parts: partsOverride
 }: Props) {
   const allParts = (partsOverride ?? (message.parts || [])) as MessagePart[]
 
@@ -319,7 +317,6 @@ export function ResearchProcessSection({
   )
 
   // State for parent collapsible (when segment has 5+ parts)
-  // Auto-collapse when text generation starts (hasSubsequentText is true)
   const [parentOpenStates, setParentOpenStates] = useState<
     Record<string, boolean>
   >({})
@@ -340,9 +337,7 @@ export function ResearchProcessSection({
 
         // Parent collapsible ID
         const parentId = `${messageId}-parent-${sidx}`
-        // If user has explicitly set state, use that; otherwise auto-collapse when text follows
-        const isParentOpen =
-          parentOpenStates[parentId] ?? (hasSubsequentText ? false : true)
+        const isParentOpen = parentOpenStates[parentId] ?? false
 
         const segmentContent = (
           <div className={containerClass}>
