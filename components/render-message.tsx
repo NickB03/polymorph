@@ -109,6 +109,21 @@ export function RenderMessage({
 
   message.parts?.forEach((part, index) => {
     if (part.type === 'text') {
+      // Suppress near-empty text parts adjacent to display tools.
+      // Catches trivial intros/outros (whitespace-only or bare headings)
+      // that the LLM sometimes emits around display tool calls.
+      const isNearEmpty =
+        !part.text.trim() ||
+        /^#{1,3}\s+.{0,80}$/.test(part.text.trim())
+      if (isNearEmpty) {
+        const prevPart = message.parts?.[index - 1]
+        const nextPart = message.parts?.[index + 1]
+        const adjacentToDisplayTool =
+          prevPart?.type?.startsWith?.('tool-display') ||
+          nextPart?.type?.startsWith?.('tool-display')
+        if (adjacentToDisplayTool) return
+      }
+
       // Check if there's buffered content before this text part
       const hasBufferedContent = buffer.length > 0
 

@@ -377,6 +377,16 @@ When the dispatcher encounters a part with a `tool-display*` type prefix:
 3. For all other display tools: calls `tryRenderToolUIByName(toolName, output)` from the registry
 4. During `input-streaming` and `input-available` states: shows an animated skeleton placeholder
 
+### Display tool text suppression
+
+When a display tool renders rich UI (table, timeline, callout, etc.), the agent is instructed to not duplicate its content in surrounding text. Two layers enforce this:
+
+1. **Prompt instructions** — The system prompts tell the agent that the display tool IS the answer for the content it covers. Text after a display tool should only contain additional analysis, caveats, or a synthesizing conclusion — never a restatement of the tool's data.
+
+2. **Frontend guard** — `RenderMessage` suppresses near-empty text parts adjacent to display tools. A text part is "near-empty" if it contains only whitespace or a bare markdown heading (e.g., `## React vs Vue`). If the previous or next part is a `tool-display*` part, the near-empty text part is skipped.
+
+This guard is intentionally conservative: text parts with substantive content (full sentences, analysis, citations) always render regardless of adjacency to display tools. Old persisted messages are unaffected.
+
 ### AnswerSection
 
 `AnswerSection` wraps `MarkdownMessage` which uses the `Streamdown` library for streaming-aware markdown rendering. It supports:
