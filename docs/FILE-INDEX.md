@@ -260,6 +260,15 @@ The `components/tool-ui/` directory contains generative UI components rendered b
 | `components/tool-ui/index.ts`     | Barrel export for all tool UI components and registry                         |
 | `components/tool-ui/registry.tsx` | Tool UI registry mapping tool names to render functions via schema validation |
 
+#### Callout Tool
+
+| File                                      | Purpose                                                          |
+| ----------------------------------------- | ---------------------------------------------------------------- |
+| `components/tool-ui/callout/index.ts`     | Barrel export for Callout component                              |
+| `components/tool-ui/callout/_adapter.tsx` | Adapter re-exporting `cn` utility for Callout                    |
+| `components/tool-ui/callout/callout.tsx`  | Styled callout box with variant-specific icons and color theming |
+| `components/tool-ui/callout/schema.ts`    | Zod schema and serialization types for callout data              |
+
 #### Citation Tool
 
 | File                                            | Purpose                                                            |
@@ -391,6 +400,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/tools/display-plan.ts`         | Display tool that renders a step-by-step research plan                                           |
 | `lib/tools/display-table.ts`        | Display tool that renders a formatted data table with column types                               |
 | `lib/tools/display-option-list.ts`  | Display tool that renders an interactive option list for user selection                          |
+| `lib/tools/display-callout.ts`      | Display tool that renders a styled callout box with variant-specific icons and colors            |
 | `lib/tools/dynamic.ts`              | Factory for creating runtime-defined tools (MCP tools, user-defined functions)                   |
 
 ### Search Providers

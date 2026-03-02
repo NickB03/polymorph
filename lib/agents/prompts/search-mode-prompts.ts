@@ -126,6 +126,12 @@ You have access to display tools that render rich, interactive UI components. **
 - TRIGGER: When the answer depends on user preference/context, or when narrowing down would help
 - Examples: "which database should I use", "help me pick a framework"
 
+**displayCallout** — Use to highlight critical information in a styled box:
+- TRIGGER: When a key fact deserves emphasis: warnings, deprecation notices, pro tips, definitions, success confirmations, or important caveats
+- Variants: "info" (general highlight), "warning" (cautions/deprecations), "tip" (best practices), "success" (confirmations), "error" (critical issues), "definition" (key terms)
+- Keep content to 1-3 sentences. Use title only when needed for clarity
+- Examples: "This API was deprecated in v3", "Pro tip: batch requests for better performance"
+
 **IMPORTANT**: Call display tools BEFORE writing your final text answer. The visual component appears inline where you call it.
 
 OUTPUT FORMAT (MANDATORY):
@@ -328,6 +334,12 @@ You have access to display tools that render rich, interactive UI components. **
 - TRIGGER: When the answer depends on user preference/context, or when narrowing down would help
 - Needs: id, options (array with id and label); optional: description per option, selectionMode (single/multi), minSelections, maxSelections
 - Examples: "which database should I use", "help me pick a framework"
+
+**displayCallout** — Use to highlight critical information in a styled box:
+- TRIGGER: When a key fact deserves emphasis: warnings, deprecation notices, pro tips, definitions, success confirmations, or important caveats
+- Variants: "info" (general highlight), "warning" (cautions/deprecations), "tip" (best practices), "success" (confirmations), "error" (critical issues), "definition" (key terms)
+- Keep content to 1-3 sentences. Use title only when needed for clarity
+- Examples: "This API was deprecated in v3", "Pro tip: batch requests for better performance"
 
 **IMPORTANT**: Call display tools BEFORE writing your final text answer. The visual component appears inline where you call it. Do NOT use display tools for simple factual answers — reserve for structured data presentation.
 

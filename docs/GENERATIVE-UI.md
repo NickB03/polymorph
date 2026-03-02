@@ -129,6 +129,7 @@ Display tools do not perform any computation — they serve as a structured outp
 | `displayCitations`   | `lib/tools/display-citations.ts`    | Rich source citation lists           |      Yes       |
 | `displayLinkPreview` | `lib/tools/display-link-preview.ts` | Link preview cards                   |      Yes       |
 | `displayOptionList`  | `lib/tools/display-option-list.ts`  | Interactive option lists             |       No       |
+| `displayCallout`     | `lib/tools/display-callout.ts`      | Styled callout boxes                 |      Yes       |
 
 All tools with `execute` use the same passthrough pattern:
 
@@ -160,7 +161,7 @@ const FormatSchema = z.discriminatedUnion('kind', [
 
 This allows the AI to specify exactly how each column should be formatted — currencies, percentages, status badges, links — and the DataTable component renders them accordingly.
 
-**Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../lib/tools/display-chart.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts)
+**Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../lib/tools/display-chart.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts), [`lib/tools/display-callout.ts`](../lib/tools/display-callout.ts)
 
 ---
 
@@ -235,15 +236,16 @@ graph TD
 
 ### Adapter contents by component
 
-| Component       | Adapter re-exports                                                     |
-| --------------- | ---------------------------------------------------------------------- |
-| `plan/`         | Accordion, Card (Header/Content/Title/Description), Collapsible, `cn`                      |
-| `data-table/`   | Accordion, Badge, Button, Table (all parts), Tooltip (all parts), `cn`                     |
-| `chart/`        | Card (Header/Content/Title/Description), ChartContainer, ChartTooltip, ChartLegend, `cn`   |
-| `citation/`     | Popover (all parts), `cn`                                                                  |
-| `link-preview/` | `cn`                                                                   |
-| `option-list/`  | Button, Separator, `cn`                                                |
-| `shared/`       | Button, `cn`                                                           |
+| Component       | Adapter re-exports                                                                       |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| `plan/`         | Accordion, Card (Header/Content/Title/Description), Collapsible, `cn`                    |
+| `data-table/`   | Accordion, Badge, Button, Table (all parts), Tooltip (all parts), `cn`                   |
+| `chart/`        | Card (Header/Content/Title/Description), ChartContainer, ChartTooltip, ChartLegend, `cn` |
+| `citation/`     | Popover (all parts), `cn`                                                                |
+| `link-preview/` | `cn`                                                                                     |
+| `option-list/`  | Button, Separator, `cn`                                                                  |
+| `callout/`      | `cn`                                                                                     |
+| `shared/`       | Button, `cn`                                                                             |
 
 ### Why adapters?
 
@@ -474,6 +476,21 @@ A rich link preview card with image, title, and description.
 - Hover scale animation on image
 - Keyboard accessible (Enter/Space to navigate)
 - Href sanitization for security
+
+### Callout (`components/tool-ui/callout/`)
+
+A styled callout box for highlighting critical information with variant-specific iconography and color.
+
+**Props:** `id`, `variant`, `title` (optional), `content`
+
+**Variants:** `info` | `warning` | `tip` | `success` | `error` | `definition`
+
+**Features:**
+
+- Variant-specific Lucide icons (Info, AlertTriangle, Lightbulb, CheckCircle2, XCircle, BookOpen)
+- Color theming per variant with dark mode support
+- Accessible `<aside role="note">` semantic HTML
+- Concise — encourages 1-3 sentence content
 
 ### OptionList (`components/tool-ui/option-list/`)
 
@@ -811,6 +828,7 @@ activeTools: [...existingTools, 'displayTimeline']
 | `lib/tools/display-citations.ts`    | Citations tool definition + schema      |
 | `lib/tools/display-link-preview.ts` | LinkPreview tool definition + schema    |
 | `lib/tools/display-option-list.ts`  | OptionList tool definition (no execute) |
+| `lib/tools/display-callout.ts`      | Callout tool definition + schema        |
 
 ### Tool UI components (client)
 
@@ -830,6 +848,8 @@ activeTools: [...existingTools, 'displayTimeline']
 | `components/tool-ui/link-preview/schema.ts`        | LinkPreview Zod schema + contract    |
 | `components/tool-ui/option-list/option-list.tsx`   | Interactive OptionList               |
 | `components/tool-ui/option-list/schema.ts`         | OptionList Zod schema + contract     |
+| `components/tool-ui/callout/callout.tsx`           | Callout component with variants      |
+| `components/tool-ui/callout/schema.ts`             | Callout Zod schema + contract        |
 | `components/tool-ui/shared/schema.ts`              | Shared base schemas (id, role, etc.) |
 | `components/tool-ui/shared/contract.ts`            | `defineToolUiContract` helper        |
 | `components/tool-ui/*/_adapter.tsx`                | Host dependency adapters             |

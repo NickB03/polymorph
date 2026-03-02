@@ -9,6 +9,7 @@ import type { ResearcherTools } from '@/lib/types/agent'
 import { type ModelType } from '@/lib/types/model-type'
 import { type Model } from '@/lib/types/models'
 
+import { displayCalloutTool } from '../tools/display-callout'
 import { displayChartTool } from '../tools/display-chart'
 import { displayCitationsTool } from '../tools/display-citations'
 import { displayLinkPreviewTool } from '../tools/display-link-preview'
@@ -116,7 +117,8 @@ export function createResearcher({
           'displayChart',
           'displayCitations',
           'displayLinkPreview',
-          'displayOptionList'
+          'displayOptionList',
+          'displayCallout'
         ]
         maxSteps = 20
         searchTool = wrapSearchToolForQuickMode(originalSearchTool)
@@ -135,7 +137,8 @@ export function createResearcher({
           'displayChart',
           'displayCitations',
           'displayLinkPreview',
-          'displayOptionList'
+          'displayOptionList',
+          'displayCallout'
         ]
         // Enable todo tools when writer is available
         if (writer && 'todoWrite' in todoTools) {
@@ -160,6 +163,7 @@ export function createResearcher({
       displayCitations: displayCitationsTool,
       displayLinkPreview: displayLinkPreviewTool,
       displayOptionList: displayOptionListTool,
+      displayCallout: displayCalloutTool,
       ...todoTools
     } as ResearcherTools
 

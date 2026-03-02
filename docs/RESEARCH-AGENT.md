@@ -228,7 +228,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 - Prohibits use of fetch on search results (only on user-provided URLs)
 - Requires all responses to use inline citations `[number](#toolCallId)`
 
-**Active tools:** `search`, `fetch`, `displayPlan`, `displayTable`, `displayChart`, `displayCitations`, `displayLinkPreview`, `displayOptionList`
+**Active tools:** `search`, `fetch`, `displayPlan`, `displayTable`, `displayChart`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayCallout`
 
 ### Adaptive Mode
 
@@ -251,7 +251,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 - Encourages multiple searches from different angles
 - Allows fetching top 2-3 sources for deeper content analysis
 
-**Active tools:** `search`, `fetch`, `displayTable`, `displayChart`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `todoWrite` (conditional)
+**Active tools:** `search`, `fetch`, `displayTable`, `displayChart`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayCallout`, `todoWrite` (conditional)
 
 ### Mode Comparison
 
@@ -348,14 +348,15 @@ Session-scoped task management. Each `createTodoTools()` call creates an isolate
 
 All display tools share a common pattern: they accept structured input, validate it with Zod schemas, and return the input as output (`execute: async params => params`). The actual rendering happens in the frontend via `components/tool-ui/registry.tsx`.
 
-| Tool                 | Purpose                                     | Key input fields                                      | Trigger examples                                |
-| -------------------- | ------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------- |
-| `displayPlan`        | Step-by-step guides and how-to checklists   | `id`, `title`, `todos[]` with `id`, `label`, `status`       | "how to deploy to AWS", "steps to learn Python"   |
-| `displayTable`       | Sortable data tables with formatted columns | `columns[]` with `key`, `label`, `format`, `data[]`         | "compare React vs Vue", "GPU benchmarks"          |
-| `displayChart`       | Bar and line chart data visualizations      | `id`, `type`, `data[]`, `xKey`, `series[]` (key, label)     | "show revenue trends", "compare sales by quarter" |
-| `displayCitations`   | Rich source citation cards                  | `citations[]` with `id`, `href`, `title`, `snippet`         | "best resources for learning Rust"                |
-| `displayLinkPreview` | Single featured link card                   | `id`, `href`, `title`, `description`, `image`         | "where are the React docs"                      |
-| `displayOptionList`  | Interactive option selector                 | `id`, `options[]` with `id`, `label`, `description`   | "which database should I use"                   |
+| Tool                 | Purpose                                     | Key input fields                                        | Trigger examples                                  |
+| -------------------- | ------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------- |
+| `displayPlan`        | Step-by-step guides and how-to checklists   | `id`, `title`, `todos[]` with `id`, `label`, `status`   | "how to deploy to AWS", "steps to learn Python"   |
+| `displayTable`       | Sortable data tables with formatted columns | `columns[]` with `key`, `label`, `format`, `data[]`     | "compare React vs Vue", "GPU benchmarks"          |
+| `displayChart`       | Bar and line chart data visualizations      | `id`, `type`, `data[]`, `xKey`, `series[]` (key, label) | "show revenue trends", "compare sales by quarter" |
+| `displayCitations`   | Rich source citation cards                  | `citations[]` with `id`, `href`, `title`, `snippet`     | "best resources for learning Rust"                |
+| `displayLinkPreview` | Single featured link card                   | `id`, `href`, `title`, `description`, `image`           | "where are the React docs"                        |
+| `displayOptionList`  | Interactive option selector                 | `id`, `options[]` with `id`, `label`, `description`     | "which database should I use"                     |
+| `displayCallout`     | Styled callout box for key information      | `id`, `variant`, `title` (optional), `content`          | "This API was deprecated in v3"                   |
 
 **`displayOptionList`** is unique: it has no `execute` function (like `askQuestion`), so the frontend resolves it via `addToolResult` when the user makes a selection.
 

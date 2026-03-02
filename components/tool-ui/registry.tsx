@@ -2,6 +2,8 @@
 
 import type { ReactNode } from 'react'
 
+import { Callout } from './callout/callout'
+import { safeParseSerializableCallout } from './callout/schema'
 import { Chart } from './chart/chart'
 import { safeParseSerializableChart } from './chart/schema'
 import { CitationList } from './citation/citation-list'
@@ -84,6 +86,14 @@ const entries: ToolUIEntry[] = [
       const parsed = safeParseSerializableOptionList(output)
       if (!parsed) return null
       return <OptionList {...parsed} />
+    }
+  },
+  {
+    name: 'displayCallout',
+    tryRender: output => {
+      const parsed = safeParseSerializableCallout(output)
+      if (!parsed) return null
+      return <Callout {...parsed} />
     }
   }
 ]

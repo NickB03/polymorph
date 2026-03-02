@@ -6,6 +6,7 @@ import type {
   UIToolInvocation
 } from 'ai'
 
+import type { displayCalloutTool } from '../tools/display-callout'
 import type { displayChartTool } from '../tools/display-chart'
 import type { displayCitationsTool } from '../tools/display-citations'
 import type { displayLinkPreviewTool } from '../tools/display-link-preview'
@@ -28,6 +29,7 @@ export type ResearcherTools = {
   displayCitations: typeof displayCitationsTool
   displayLinkPreview: typeof displayLinkPreviewTool
   displayOptionList: typeof displayOptionListTool
+  displayCallout: typeof displayCalloutTool
 } & ReturnType<typeof createTodoTools>
 
 // Type alias for the researcher agent using ToolLoopAgent
@@ -67,6 +69,9 @@ export type DisplayLinkPreviewToolInvocation = UIToolInvocation<
 export type DisplayOptionListToolInvocation = UIToolInvocation<
   ResearcherTools['displayOptionList']
 >
+export type DisplayCalloutToolInvocation = UIToolInvocation<
+  ResearcherTools['displayCallout']
+>
 
 // Union type for all tool invocations
 export type ResearcherToolInvocation =
@@ -80,6 +85,7 @@ export type ResearcherToolInvocation =
   | DisplayCitationsToolInvocation
   | DisplayLinkPreviewToolInvocation
   | DisplayOptionListToolInvocation
+  | DisplayCalloutToolInvocation
 
 // Helper type to extract tool names
 export type ResearcherToolName = keyof ResearcherTools

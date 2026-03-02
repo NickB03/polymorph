@@ -1,4 +1,6 @@
 // Components
+export type { CalloutProps, SerializableCallout } from './callout'
+export { Callout } from './callout'
 export type {
   ChartClientProps,
   ChartDataPoint,
