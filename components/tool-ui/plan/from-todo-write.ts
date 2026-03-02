@@ -9,14 +9,14 @@ export interface TodoWriteOutput {
   totalCount?: number
 }
 
-const STATUS_MAP: Record<string, PlanTodoStatus> = {
+const STATUS_MAP: Record<NonNullable<TodoItem['status']>, PlanTodoStatus> = {
   pending: 'pending',
   in_progress: 'in_progress',
   completed: 'completed'
 }
 
-function toStatus(status: string | undefined): PlanTodoStatus {
-  return STATUS_MAP[status ?? ''] ?? 'pending'
+function toStatus(status: TodoItem['status'] | undefined): PlanTodoStatus {
+  return STATUS_MAP[status ?? 'pending']
 }
 
 function toPlanTodo(item: TodoItem, index: number): PlanTodo {

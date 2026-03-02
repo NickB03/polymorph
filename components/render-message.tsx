@@ -13,6 +13,7 @@ import type { DynamicToolPart } from '@/lib/types/dynamic-tools'
 import { OptionList } from './tool-ui/option-list/option-list'
 import type { OptionListSelection } from './tool-ui/option-list/schema'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
+import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
 import { tryRenderToolUIByName } from './tool-ui/registry'
 import { AnswerSection } from './answer-section'
 import { DynamicToolDisplay } from './dynamic-tool-display'
@@ -20,6 +21,32 @@ import { ResearchPlan } from './research-plan'
 import ResearchProcessSection from './research-process-section'
 import { UserFileSection } from './user-file-section'
 import { UserTextSection } from './user-text-section'
+
+/** Single-pass scan of message parts for todoWrite state. */
+function scanTodoWriteParts(parts: UIMessage['parts']) {
+  let firstTodoWriteIndex: number | undefined
+  let latestOutput: TodoWriteOutput | undefined
+  let isStreaming = false
+  let hasError = false
+
+  for (let i = 0; i < (parts?.length ?? 0); i++) {
+    const part = parts![i]
+    if (part.type !== 'tool-todoWrite') continue
+
+    if (firstTodoWriteIndex === undefined) firstTodoWriteIndex = i
+
+    const state = (part as ToolPart<'todoWrite'>).state
+    if (state === 'output-available') {
+      latestOutput = (part as ToolPart<'todoWrite'>).output
+    } else if (state === 'input-streaming' || state === 'input-available') {
+      isStreaming = true
+    } else if (state === 'output-error') {
+      hasError = true
+    }
+  }
+
+  return { firstTodoWriteIndex, latestOutput, isStreaming, hasError }
+}
 
 interface RenderMessageProps {
   message: UIMessage
@@ -87,27 +114,9 @@ export function RenderMessage({
   }
 
   // Pre-scan: identify todoWrite parts for the Research Plan component.
-  // We render one Plan at the first todoWrite position using the latest output.
-  // Cast once after filtering — our local ToolPart type differs from the SDK's
-  // UIMessagePart union (extra fields like rawInput, callProviderMetadata), so a
-  // type predicate won't satisfy assignability. The runtime filter is the guard.
-  const todoWriteParts = (message.parts ?? [])
-    .map((part, index) => ({ part, index }))
-    .filter(({ part }) => part.type === 'tool-todoWrite') as {
-    part: ToolPart<'todoWrite'>
-    index: number
-  }[]
-  const firstTodoWriteIndex = todoWriteParts[0]?.index
-  const latestTodoOutput = todoWriteParts
-    .filter(({ part }) => part.state === 'output-available')
-    .at(-1)
-  const hasTodoStreaming = todoWriteParts.some(
-    ({ part }) =>
-      part.state === 'input-streaming' || part.state === 'input-available'
-  )
-  const hasTodoError = todoWriteParts.some(
-    ({ part }) => part.state === 'output-error'
-  )
+  // Single pass collects the first index, latest resolved output, and state flags.
+  const todoScan = scanTodoWriteParts(message.parts)
+  const { firstTodoWriteIndex } = todoScan
 
   // New rendering: interleave text parts with grouped non-text segments
   const elements: React.ReactNode[] = []
@@ -302,9 +311,9 @@ export function RenderMessage({
         elements.push(
           <ResearchPlan
             key={`${messageId}-research-plan`}
-            output={latestTodoOutput?.part.output}
-            isStreaming={!latestTodoOutput && hasTodoStreaming}
-            hasError={hasTodoError && !latestTodoOutput}
+            output={todoScan.latestOutput}
+            isStreaming={!todoScan.latestOutput && todoScan.isStreaming}
+            hasError={todoScan.hasError && !todoScan.latestOutput}
           />
         )
       }
