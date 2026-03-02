@@ -113,8 +113,7 @@ export function RenderMessage({
       // Catches trivial intros/outros (whitespace-only or bare headings)
       // that the LLM sometimes emits around display tool calls.
       const isNearEmpty =
-        !part.text.trim() ||
-        /^#{1,3}\s+.{0,80}$/.test(part.text.trim())
+        !part.text.trim() || /^#{1,3}\s+.{0,80}$/.test(part.text.trim())
       if (isNearEmpty) {
         const prevPart = message.parts?.[index - 1]
         const nextPart = message.parts?.[index + 1]
