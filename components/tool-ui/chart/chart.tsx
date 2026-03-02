@@ -52,15 +52,6 @@ export const Chart = memo(function Chart({
 }: ChartProps) {
   const palette = colors?.length ? colors : DEFAULT_COLORS
 
-  const seriesColors = useMemo(
-    () =>
-      series.map(
-        (seriesItem, index) =>
-          seriesItem.color ?? palette[index % palette.length]
-      ),
-    [series, palette]
-  )
-
   const chartConfig: ChartConfig = useMemo(
     () =>
       Object.fromEntries(
@@ -68,11 +59,11 @@ export const Chart = memo(function Chart({
           seriesItem.key,
           {
             label: seriesItem.label,
-            color: seriesColors[index]
+            color: seriesItem.color ?? palette[index % palette.length]
           }
         ])
       ),
-    [series, seriesColors]
+    [series, palette]
   )
 
   const handleDataPointClick = useCallback(
@@ -119,11 +110,11 @@ export const Chart = memo(function Chart({
         )}
 
         {type === 'bar' &&
-          series.map((s, i) => (
+          series.map((s) => (
             <Bar
               key={s.key}
               dataKey={s.key}
-              fill={seriesColors[i]}
+              fill={chartConfig[s.key].color}
               radius={4}
               onClick={(data: any) =>
                 handleDataPointClick(s.key, s.label, data.payload, data.index)
@@ -133,12 +124,12 @@ export const Chart = memo(function Chart({
           ))}
 
         {type === 'line' &&
-          series.map((s, i) => (
+          series.map((s) => (
             <Line
               key={s.key}
               dataKey={s.key}
               type="monotone"
-              stroke={seriesColors[i]}
+              stroke={chartConfig[s.key].color}
               strokeWidth={2}
               dot={{ r: 4, cursor: onDataPointClick ? 'pointer' : undefined }}
               activeDot={{

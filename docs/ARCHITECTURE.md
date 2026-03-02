@@ -83,8 +83,8 @@ flowchart TD
     AuthStream["createChatStreamResponse()"]
     PrepareMsg["prepareMessages()<br/>(load/create chat,<br/>handle regeneration)"]
     CreateAgent["createResearcher()<br/>(configure tools + mode)"]
-    QuickMode["Quick Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayCitations,<br/>displayLinkPreview,<br/>displayOptionList"]
-    AdaptiveMode["Adaptive Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayCitations,<br/>displayLinkPreview,<br/>displayOptionList, todoWrite"]
+    QuickMode["Quick Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayCitations,<br/>displayLinkPreview,<br/>displayOptionList"]
+    AdaptiveMode["Adaptive Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayChart,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList, todoWrite"]
     AgentStream["agent.stream()<br/>+ smoothStream(word)"]
     Parallel["Parallel operations:<br/>title + related questions<br/>+ persistence"]
     SSE["SSE Response to Client"]
@@ -150,6 +150,7 @@ graph LR
     subgraph Display["Display Tools"]
         plan["displayPlan<br/>Step-by-step guides"]
         table["displayTable<br/>Sortable data tables"]
+        chart["displayChart<br/>Data visualizations"]
         citations["displayCitations<br/>Rich source lists"]
         linkPreview["displayLinkPreview<br/>Link preview cards"]
         optionList["displayOptionList<br/>Interactive option lists"]
@@ -182,6 +183,7 @@ graph LR
 | `askQuestion`        | Defined but not in `activeTools` | Defined but not in `activeTools` |
 | `displayPlan`        |               Yes                |                No                |
 | `displayTable`       |               Yes                |               Yes                |
+| `displayChart`       |               Yes                |               Yes                |
 | `displayCitations`   |               Yes                |               Yes                |
 | `displayLinkPreview` |               Yes                |               Yes                |
 | `displayOptionList`  |               Yes                |               Yes                |
@@ -708,7 +710,7 @@ The `current_setting('app.current_user_id', true)` call uses `true` as the secon
 | `lib/tools/fetch.ts`                                     | Web content extraction (regular + API-based)                             |
 | `lib/tools/question.ts`                                  | Clarifying question tool (frontend confirmation only)                    |
 | `lib/tools/todo.ts`                                      | Session-scoped task tracking with content-based merge                    |
-| `lib/tools/display-*.ts`                                 | Display tools (plan, table, citations, link preview, option list)        |
+| `lib/tools/display-*.ts`                                 | Display tools (plan, table, chart, citations, link preview, option list) |
 | `lib/tools/search/providers/`                            | Search provider implementations (tavily, brave, exa, searxng, firecrawl) |
 | `lib/streaming/create-chat-stream-response.ts`           | Authenticated chat streaming with persistence                            |
 | `lib/streaming/create-ephemeral-chat-stream-response.ts` | Guest/anonymous streaming (stateless)                                    |
