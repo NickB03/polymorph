@@ -2,13 +2,7 @@
 
 import Link from 'next/link'
 
-import {
-  Link2,
-  LogIn,
-  Palette,
-  Settings2,
-  UserPlus
-} from 'lucide-react'
+import { Link2, LogIn, Palette, Settings2, UserPlus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
