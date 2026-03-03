@@ -12,10 +12,13 @@ export async function GET() {
     const redis = getRedis()
 
     // Try cache first
+    // Upstash automatically serializes (JSON.stringify) on set and
+    // deserializes (JSON.parse) on get, so we store/retrieve the
+    // object directly — no manual JSON.stringify/parse needed.
     if (redis) {
-      const cached = await redis.get<string>(CACHE_KEY)
+      const cached = await redis.get<Record<string, string[]>>(CACHE_KEY)
       if (cached) {
-        return NextResponse.json(JSON.parse(cached))
+        return NextResponse.json(cached)
       }
     }
 
@@ -24,7 +27,7 @@ export async function GET() {
 
     // Cache the result
     if (redis) {
-      await redis.set(CACHE_KEY, JSON.stringify(suggestions), {
+      await redis.set(CACHE_KEY, suggestions, {
         ex: CACHE_TTL
       })
     }
