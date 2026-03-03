@@ -6,7 +6,7 @@ import {
   Link2,
   LogIn,
   Palette,
-  Settings2, // Or EllipsisVertical, etc.
+  Settings2,
   UserPlus
 } from 'lucide-react'
 
@@ -30,7 +30,7 @@ export default function GuestMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="h-6 w-6">
-          <Settings2 className="h-4 w-4" /> {/* Choose an icon */}
+          <Settings2 className="h-4 w-4" />
           <span className="sr-only">Open menu</span>
         </Button>
       </DropdownMenuTrigger>
