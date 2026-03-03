@@ -57,7 +57,7 @@ interface ActionButtonsProps {
   onSelectPrompt: (prompt: string) => void
   onCategoryClick: (category: string) => void
   promptSamples: Record<SuggestionCategory, string[]>
-  inputRef?: React.RefObject<HTMLTextAreaElement>
+  inputRef?: React.RefObject<HTMLTextAreaElement | null>
   className?: string
 }
 
@@ -68,7 +68,8 @@ export function ActionButtons({
   inputRef,
   className
 }: ActionButtonsProps) {
-  const [activeCategory, setActiveCategory] = useState<SuggestionCategory | null>(null)
+  const [activeCategory, setActiveCategory] =
+    useState<SuggestionCategory | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const handleCategoryClick = (category: ActionCategory) => {

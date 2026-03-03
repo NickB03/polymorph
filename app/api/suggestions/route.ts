@@ -21,7 +21,8 @@ export async function GET() {
     // deserializes (JSON.parse) on get, so we store/retrieve the
     // object directly — no manual JSON.stringify/parse needed.
     if (redis) {
-      const cached = await redis.get<Record<SuggestionCategory, string[]>>(CACHE_KEY)
+      const cached =
+        await redis.get<Record<SuggestionCategory, string[]>>(CACHE_KEY)
       if (cached) {
         return NextResponse.json(cached)
       }
@@ -36,7 +37,8 @@ export async function GET() {
         // Another request is generating — wait for it to populate the cache
         for (let i = 0; i < LOCK_MAX_RETRIES; i++) {
           await new Promise(r => setTimeout(r, LOCK_RETRY_DELAY_MS))
-          const result = await redis.get<Record<SuggestionCategory, string[]>>(CACHE_KEY)
+          const result =
+            await redis.get<Record<SuggestionCategory, string[]>>(CACHE_KEY)
           if (result) return NextResponse.json(result)
         }
         // Lock holder may have failed — fall through to generate ourselves
