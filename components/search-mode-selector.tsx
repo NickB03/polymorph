@@ -63,10 +63,7 @@ export function SearchModeSelector() {
         >
           {SelectedIcon && (
             <SelectedIcon
-              className={cn(
-                'h-4 w-4 transition-colors',
-                selectedMode?.color
-              )}
+              className={cn('h-4 w-4 transition-colors', selectedMode?.color)}
             />
           )}
           <span className="text-xs font-medium">{selectedMode?.label}</span>

@@ -388,13 +388,13 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Agents
 
-| File                                             | Purpose                                                                                                              |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `lib/agents/researcher.ts`                       | Creates the ToolLoopAgent with search/fetch/display tools; configures Chat (20 steps) and Research (50 steps) modes  |
-| `lib/agents/title-generator.ts`                  | Generates concise 3-5 word chat titles using an LLM                                                                  |
-| `lib/agents/generate-related-questions.ts`       | Streams 3 follow-up question suggestions using structured output                                                     |
-| `lib/agents/prompts/search-mode-prompts.ts`      | System prompts for Chat mode and Research mode search behaviors                                                      |
-| `lib/agents/prompts/related-questions-prompt.ts` | System prompt for related question generation                                                                        |
+| File                                             | Purpose                                                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `lib/agents/researcher.ts`                       | Creates the ToolLoopAgent with search/fetch/display tools; configures Chat (20 steps) and Research (50 steps) modes |
+| `lib/agents/title-generator.ts`                  | Generates concise 3-5 word chat titles using an LLM                                                                 |
+| `lib/agents/generate-related-questions.ts`       | Streams 3 follow-up question suggestions using structured output                                                    |
+| `lib/agents/prompts/search-mode-prompts.ts`      | System prompts for Chat mode and Research mode search behaviors                                                     |
+| `lib/agents/prompts/related-questions-prompt.ts` | System prompt for related question generation                                                                       |
 
 ### Tools
 
@@ -481,12 +481,12 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Config
 
-| File                               | Purpose                                                                               |
-| ---------------------------------- | ------------------------------------------------------------------------------------- |
-| `lib/config/model-types.ts`        | Retrieves model assignments by search mode and model type from JSON config            |
-| `lib/config/load-models-config.ts` | Loads and validates model configuration from JSON files (default.json, cloud.json)    |
-| `lib/config/search-modes.ts`       | Search mode UI configuration (Chat and Research labels, descriptions, icons, colors)  |
-| `lib/config/ollama-validator.ts`   | Validates configured Ollama models are available and compatible on server startup     |
+| File                               | Purpose                                                                              |
+| ---------------------------------- | ------------------------------------------------------------------------------------ |
+| `lib/config/model-types.ts`        | Retrieves model assignments by search mode and model type from JSON config           |
+| `lib/config/load-models-config.ts` | Loads and validates model configuration from JSON files (default.json, cloud.json)   |
+| `lib/config/search-modes.ts`       | Search mode UI configuration (Chat and Research labels, descriptions, icons, colors) |
+| `lib/config/ollama-validator.ts`   | Validates configured Ollama models are available and compatible on server startup    |
 
 ### Auth
 

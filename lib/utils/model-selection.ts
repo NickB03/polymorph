@@ -66,9 +66,7 @@ export function selectModel({
     | undefined
 
   const requestedMode =
-    searchMode && MODE_FALLBACK_ORDER.includes(searchMode)
-      ? searchMode
-      : 'chat'
+    searchMode && MODE_FALLBACK_ORDER.includes(searchMode) ? searchMode : 'chat'
 
   const typePreferenceOrder: ModelType[] = []
   if (

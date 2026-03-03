@@ -128,10 +128,10 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
 
 ### Inputs
 
-| Input        | Source                | Description                                                      |
-| ------------ | --------------------- | ---------------------------------------------------------------- |
+| Input        | Source                | Description                                                    |
+| ------------ | --------------------- | -------------------------------------------------------------- |
 | `searchMode` | Cookie (`searchMode`) | `chat` or `research`. Defaults to `chat` if missing or invalid |
-| `modelType`  | Cookie (`modelType`)  | `speed` or `quality`. Determines preference order                |
+| `modelType`  | Cookie (`modelType`)  | `speed` or `quality`. Determines preference order              |
 
 ### Step-by-step process
 
