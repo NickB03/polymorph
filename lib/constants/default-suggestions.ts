@@ -19,10 +19,10 @@ export const DEFAULT_SUGGESTIONS: Record<SuggestionCategory, string[]> = {
     'Public vs private space exploration programs'
   ],
   latest: [
-    'Latest breakthroughs in AI research',
-    'What happened in space exploration this week?',
-    'Recent discoveries in marine biology',
-    'Latest findings in longevity research'
+    'OpenAI o3 benchmark results and capabilities',
+    'NASA Artemis III lunar landing timeline update',
+    'Global semiconductor chip shortage status in 2026',
+    'WHO response to latest avian flu outbreak'
   ],
   summarize: [
     'Summarize the key findings on neural scaling laws',

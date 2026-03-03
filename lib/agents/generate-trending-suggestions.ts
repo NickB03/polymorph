@@ -22,7 +22,7 @@ Create 4 prompt suggestions per category. Use the trending context for inspirati
 Categories and their style:
 - research: Academic deep-dive questions about medicine, psychology, economics, climate science, physics, or sociology. Start with "Why", "How", "What drives", "What are the implications of". Example: "Why is antibiotic resistance accelerating?", "How does sleep deprivation affect memory formation?"
 - compare: Head-to-head comparisons using "vs" or "Compare". Include at least 2 non-tech comparisons. Example: "Nuclear vs solar for baseload power", "Compare public vs private space programs"
-- latest: Current events and recent developments. This is the ONLY category for news headlines. Require domain mix — not all political. Example: "Latest breakthroughs in AI research", "What happened in space exploration this week?"
+- latest: Specific, topical news stories happening RIGHT NOW. Reference actual events, names, or developments from the trending context — never use vague phrases like "latest breakthroughs in X" or "what happened in X this week". Require domain mix — not all political. Example: "What caused the Ohio train chemical spill?", "Why did Silicon Valley Bank collapse?"
 - summarize: Summarization requests spanning business, science, culture. Example: "Summarize the state of global chip manufacturing", "Key takeaways from recent climate reports"
 - explain: Concept explainers — NOT news. Focus on science, economics, technology, and cultural phenomena. Example: "Explain how mRNA vaccines work", "What causes ocean acidification?", "How does the placebo effect work?"
 
@@ -32,7 +32,8 @@ Rules:
 - DOMAIN DIVERSITY is mandatory: across all 20 suggestions, cover 6+ distinct domains (science, tech, health, business, space, environment, psychology, sports, culture, economics, etc.)
 - POLITICAL CAP: at most 2 of the 20 suggestions may be political, and they must be in the "latest" category only
 - "research" and "explain" must NEVER contain political prompts
-- Prefer evergreen-feeling prompts inspired by trends over ephemeral headline references`
+- For research, compare, summarize, and explain: prefer evergreen-feeling prompts inspired by trends over ephemeral headline references
+- For latest: do the OPPOSITE — use specific, timely references to actual events from the trending context. Never be vague or generic in this category.`
 
 /**
  * Fetches trending topics via Tavily and uses Gemini Flash to generate
