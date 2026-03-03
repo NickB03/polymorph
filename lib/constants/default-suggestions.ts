@@ -1,9 +1,11 @@
+import type { SuggestionCategory } from '@/lib/types'
+
 /**
  * Default prompt suggestions shown in the ActionButtons component.
  * Used as instant initial state (no loading flash) and as a fallback
  * when the trending suggestions API is unavailable.
  */
-export const DEFAULT_SUGGESTIONS: Record<string, string[]> = {
+export const DEFAULT_SUGGESTIONS: Record<SuggestionCategory, string[]> = {
   research: [
     'Why is antibiotic resistance accelerating?',
     'How does sleep deprivation affect memory?',

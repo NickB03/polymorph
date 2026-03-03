@@ -10,6 +10,7 @@ export interface SearchProvider {
     options?: {
       type?: 'general' | 'optimized'
       content_types?: Array<'web' | 'video' | 'image' | 'news'>
+      includeImages?: boolean
     }
   ): Promise<SearchResults>
 }
@@ -24,6 +25,7 @@ export abstract class BaseSearchProvider implements SearchProvider {
     options?: {
       type?: 'general' | 'optimized'
       content_types?: Array<'web' | 'video' | 'image' | 'news'>
+      includeImages?: boolean
     }
   ): Promise<SearchResults>
 

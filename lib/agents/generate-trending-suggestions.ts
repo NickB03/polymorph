@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getRelatedQuestionsModel } from '@/lib/config/model-types'
 import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
 import { TavilySearchProvider } from '@/lib/tools/search/providers/tavily'
+import type { SuggestionCategory } from '@/lib/types'
 import { getModel } from '@/lib/utils/registry'
 
 const trendingSuggestionsSchema = z.object({
@@ -38,22 +39,32 @@ Rules:
  * categorized prompt suggestions. Falls back to static defaults on any error.
  */
 export async function generateTrendingSuggestions(): Promise<
-  Record<string, string[]>
+  Record<SuggestionCategory, string[]>
 > {
   try {
     const tavily = new TavilySearchProvider()
-    const queries = [
-      'trending science technology breakthroughs this week',
-      'trending business economy culture sports this week',
-      'trending health environment space discoveries this week'
+    const trendingTopics = [
+      'science technology breakthroughs',
+      'business economy culture sports',
+      'health environment space discoveries'
     ]
 
     const searchResults = await Promise.all(
-      queries.map(q => tavily.search(q, 5, 'basic'))
+      trendingTopics.map(topics =>
+        tavily.search(`trending ${topics} this week`, 5, 'basic', [], [], {
+          includeImages: false
+        })
+      )
     )
 
+    const seen = new Set<string>()
     const context = searchResults
       .flatMap(r => r.results)
+      .filter(r => {
+        if (seen.has(r.url)) return false
+        seen.add(r.url)
+        return true
+      })
       .map(r => `- ${r.title}: ${r.content}`)
       .join('\n')
 

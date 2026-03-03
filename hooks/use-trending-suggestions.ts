@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 
 import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
+import type { SuggestionCategory } from '@/lib/types'
 
 export function useTrendingSuggestions() {
   const [suggestions, setSuggestions] =
-    useState<Record<string, string[]>>(DEFAULT_SUGGESTIONS)
+    useState<Record<SuggestionCategory, string[]>>(DEFAULT_SUGGESTIONS)
 
   useEffect(() => {
     fetch('/api/suggestions')

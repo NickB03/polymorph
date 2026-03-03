@@ -11,6 +11,7 @@ import {
   Search
 } from 'lucide-react'
 
+import type { SuggestionCategory } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 import { Button } from './ui/button'
@@ -21,7 +22,7 @@ const FOCUS_OUT_DELAY_MS = 100 // Delay to ensure focus has actually moved
 interface ActionCategory {
   icon: LucideIcon
   label: string
-  key: string
+  key: SuggestionCategory
 }
 
 const actionCategories: ActionCategory[] = [
@@ -55,7 +56,7 @@ const actionCategories: ActionCategory[] = [
 interface ActionButtonsProps {
   onSelectPrompt: (prompt: string) => void
   onCategoryClick: (category: string) => void
-  promptSamples: Record<string, string[]>
+  promptSamples: Record<SuggestionCategory, string[]>
   inputRef?: React.RefObject<HTMLTextAreaElement>
   className?: string
 }
@@ -67,7 +68,7 @@ export function ActionButtons({
   inputRef,
   className
 }: ActionButtonsProps) {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [activeCategory, setActiveCategory] = useState<SuggestionCategory | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const handleCategoryClick = (category: ActionCategory) => {

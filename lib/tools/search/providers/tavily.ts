@@ -9,7 +9,12 @@ export class TavilySearchProvider extends BaseSearchProvider {
     maxResults: number = 10,
     searchDepth: 'basic' | 'advanced' = 'basic',
     includeDomains: string[] = [],
-    excludeDomains: string[] = []
+    excludeDomains: string[] = [],
+    options?: {
+      type?: 'general' | 'optimized'
+      content_types?: Array<'web' | 'video' | 'image' | 'news'>
+      includeImages?: boolean
+    }
   ): Promise<SearchResults> {
     const apiKey = process.env.TAVILY_API_KEY
     this.validateApiKey(apiKey, 'TAVILY')
@@ -18,7 +23,8 @@ export class TavilySearchProvider extends BaseSearchProvider {
     const filledQuery =
       query.length < 5 ? query + ' '.repeat(5 - query.length) : query
 
-    const includeImageDescriptions = true
+    const includeImages = options?.includeImages ?? true
+    const includeImageDescriptions = includeImages
     const response = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: {
@@ -29,7 +35,7 @@ export class TavilySearchProvider extends BaseSearchProvider {
         query: filledQuery,
         max_results: Math.max(maxResults, 5),
         search_depth: searchDepth,
-        include_images: true,
+        include_images: includeImages,
         include_image_descriptions: includeImageDescriptions,
         include_answers: true,
         include_domains: includeDomains,
