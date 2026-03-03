@@ -1,37 +1,39 @@
+import type { SuggestionCategory } from '@/lib/types'
+
 /**
  * Default prompt suggestions shown in the ActionButtons component.
  * Used as instant initial state (no loading flash) and as a fallback
  * when the trending suggestions API is unavailable.
  */
-export const DEFAULT_SUGGESTIONS: Record<string, string[]> = {
+export const DEFAULT_SUGGESTIONS: Record<SuggestionCategory, string[]> = {
   research: [
-    'Why is Nvidia growing so rapidly?',
-    'Research the latest AI developments',
-    'What are the key trends in robotics?',
-    'What are the latest breakthroughs in renewable energy?'
+    'Why is antibiotic resistance accelerating?',
+    'How does sleep deprivation affect memory?',
+    'What drives inflation in housing markets?',
+    'Why has nuclear fusion taken decades to commercialize?'
   ],
   compare: [
-    'Tesla vs BYD vs Toyota comparison',
-    'Compare Next.js, Remix, and Astro',
-    'AWS vs GCP vs Azure',
-    'iPhone vs Android ecosystem comparison'
+    'Nuclear vs solar for baseload power',
+    'Passive vs active investing strategies',
+    'Electric vs hydrogen fuel cell vehicles',
+    'Public vs private space exploration programs'
   ],
   latest: [
-    'Latest news today',
-    'What happened in tech this week?',
-    'Recent breakthroughs in medicine',
-    'Latest AI model releases'
+    'Latest breakthroughs in AI research',
+    'What happened in space exploration this week?',
+    'Recent discoveries in marine biology',
+    'Latest findings in longevity research'
   ],
   summarize: [
-    'Summarize: https://arxiv.org/pdf/2504.19678',
-    "Summarize this week's business news",
-    'Create an executive summary of AI trends',
-    'Summarize recent climate change research'
+    'Summarize the key findings on neural scaling laws',
+    'Key takeaways from recent climate reports',
+    'Summarize the state of global chip manufacturing',
+    'Create an executive summary of AI trends'
   ],
   explain: [
-    'Explain neural networks simply',
-    'How does blockchain work?',
-    'What is quantum entanglement?',
-    'Explain CRISPR gene editing'
+    'Explain how mRNA vaccines work',
+    'What causes ocean acidification?',
+    'How does the placebo effect work?',
+    'Explain how large language models are trained'
   ]
 }

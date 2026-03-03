@@ -1,6 +1,13 @@
 // Re-export SearchMode for convenience
 export type { SearchMode } from './search'
 
+export type SuggestionCategory =
+  | 'research'
+  | 'compare'
+  | 'latest'
+  | 'summarize'
+  | 'explain'
+
 export type SearchResults = {
   images: SearchResultImage[]
   results: SearchResultItem[]
