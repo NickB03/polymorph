@@ -308,6 +308,92 @@
   --enter-translate-x: 0.5rem;
 }
 
+/* Slide-out utilities (exit animations) */
+@utility slide-out-to-top {
+  --exit-translate-y: -100%;
+}
+
+@utility slide-out-to-bottom {
+  --exit-translate-y: 100%;
+}
+
+@utility slide-out-to-left {
+  --exit-translate-x: -100%;
+}
+
+@utility slide-out-to-right {
+  --exit-translate-x: 100%;
+}
+
+@utility slide-out-to-top-1 {
+  --exit-translate-y: -0.25rem;
+}
+
+@utility slide-out-to-left-1\/2 {
+  --exit-translate-x: -50%;
+}
+
+@utility slide-out-to-top-48 {
+  --exit-translate-y: -48%;
+}
+
+/* Slide-in utilities (enter animations) */
+@utility slide-in-from-top {
+  --enter-translate-y: -100%;
+}
+
+@utility slide-in-from-bottom {
+  --enter-translate-y: 100%;
+}
+
+@utility slide-in-from-left {
+  --enter-translate-x: -100%;
+}
+
+@utility slide-in-from-right {
+  --enter-translate-x: 100%;
+}
+
+@utility slide-in-from-top-1 {
+  --enter-translate-y: -0.25rem;
+}
+
+@utility slide-in-from-bottom-1 {
+  --enter-translate-y: 0.25rem;
+}
+
+@utility slide-in-from-left-1\/2 {
+  --enter-translate-x: -50%;
+}
+
+@utility slide-in-from-top-48 {
+  --enter-translate-y: -48%;
+}
+
+/* Fade utilities */
+@utility fade-in {
+  --enter-opacity: 0;
+}
+
+@utility fade-out {
+  --exit-opacity: 0;
+}
+
+/* Zoom utilities */
+@utility zoom-in-75 {
+  --enter-scale: 0.75;
+}
+
+/* Fill mode utility */
+@utility fill-mode-both {
+  animation-fill-mode: both;
+}
+
+/* Blur utility */
+@utility blur-in-sm {
+  --enter-blur: 4px;
+}
+
 @keyframes enter {
   from {
     opacity: var(--enter-opacity, 1);
@@ -316,10 +402,12 @@
         var(--enter-translate-y, 0)
       )
       scale(var(--enter-scale, 1));
+    filter: blur(var(--enter-blur, 0));
   }
   to {
     opacity: 1;
     transform: translate(0, 0) scale(1);
+    filter: blur(0);
   }
 }
 
