@@ -14,7 +14,7 @@ const DEFAULT_MODEL: Model = {
 }
 
 const VALID_MODEL_TYPES: ModelType[] = ['speed', 'quality']
-const MODE_FALLBACK_ORDER: SearchMode[] = ['quick', 'adaptive']
+const MODE_FALLBACK_ORDER: SearchMode[] = ['chat', 'research']
 
 interface ModelSelectionParams {
   cookieStore: ReadonlyRequestCookies
@@ -66,9 +66,7 @@ export function selectModel({
     | undefined
 
   const requestedMode =
-    searchMode && MODE_FALLBACK_ORDER.includes(searchMode)
-      ? searchMode
-      : 'quick'
+    searchMode && MODE_FALLBACK_ORDER.includes(searchMode) ? searchMode : 'chat'
 
   const typePreferenceOrder: ModelType[] = []
   if (

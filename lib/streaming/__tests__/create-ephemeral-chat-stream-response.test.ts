@@ -8,7 +8,7 @@ describe('createEphemeralChatStreamResponse', () => {
       messages: [],
       model: { providerId: 'openai', id: 'gpt-4o-mini' } as any,
       abortSignal: new AbortController().signal,
-      searchMode: 'quick',
+      searchMode: 'chat',
       modelType: 'speed'
     })
 

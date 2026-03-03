@@ -87,12 +87,18 @@ export async function POST(req: Request) {
 
     const cookieStore = await cookies()
 
-    // Get search mode from cookie
-    const searchModeCookie = cookieStore.get('searchMode')?.value
+    // Get search mode from cookie (with backward compat for old values)
+    const rawSearchMode = cookieStore.get('searchMode')?.value
+    const mappedSearchMode =
+      rawSearchMode === 'quick'
+        ? 'chat'
+        : rawSearchMode === 'adaptive'
+          ? 'research'
+          : rawSearchMode
     const searchMode: SearchMode =
-      searchModeCookie && ['quick', 'adaptive'].includes(searchModeCookie)
-        ? (searchModeCookie as SearchMode)
-        : 'quick'
+      mappedSearchMode && ['chat', 'research'].includes(mappedSearchMode)
+        ? (mappedSearchMode as SearchMode)
+        : 'chat'
 
     const forceSpeed = isGuest || isCloudDeployment()
     const modelCookieStore = forceSpeed

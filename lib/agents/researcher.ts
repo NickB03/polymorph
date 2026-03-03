@@ -26,12 +26,12 @@ import { getModel } from '../utils/registry'
 import { isTracingEnabled } from '../utils/telemetry'
 
 import {
-  ADAPTIVE_MODE_PROMPT,
-  QUICK_MODE_PROMPT
+  CHAT_MODE_PROMPT,
+  RESEARCH_MODE_PROMPT
 } from './prompts/search-mode-prompts'
 
 // Enhanced wrapper function with better type safety and streaming support
-function wrapSearchToolForQuickMode<
+function wrapSearchToolForChatMode<
   T extends ReturnType<typeof createSearchTool>
 >(originalTool: T): T {
   return tool({
@@ -43,7 +43,7 @@ function wrapSearchToolForQuickMode<
         throw new Error('Search tool execute function is not defined')
       }
 
-      // Force optimized type for quick mode
+      // Force optimized type for chat mode
       const modifiedParams = {
         ...params,
         type: 'optimized' as const
@@ -83,7 +83,7 @@ export function createResearcher({
   modelConfig,
   writer,
   parentTraceId,
-  searchMode = 'adaptive',
+  searchMode = 'research',
   modelType
 }: {
   model: string
@@ -108,8 +108,8 @@ export function createResearcher({
 
     // Configure based on search mode
     switch (searchMode) {
-      case 'quick':
-        systemPrompt = QUICK_MODE_PROMPT
+      case 'chat':
+        systemPrompt = CHAT_MODE_PROMPT
         activeToolsList = [
           'search',
           'fetch',
@@ -123,15 +123,15 @@ export function createResearcher({
           'displayTimeline'
         ]
         maxSteps = 20
-        searchTool = wrapSearchToolForQuickMode(originalSearchTool)
+        searchTool = wrapSearchToolForChatMode(originalSearchTool)
         console.log(
-          `[Researcher] Quick mode: maxSteps=${maxSteps}, tools=[${activeToolsList.join(', ')}]`
+          `[Researcher] Chat mode: maxSteps=${maxSteps}, tools=[${activeToolsList.join(', ')}]`
         )
         break
 
-      case 'adaptive':
+      case 'research':
       default:
-        systemPrompt = ADAPTIVE_MODE_PROMPT
+        systemPrompt = RESEARCH_MODE_PROMPT
         activeToolsList = [
           'search',
           'fetch',
@@ -148,7 +148,7 @@ export function createResearcher({
           activeToolsList.push('todoWrite')
         }
         console.log(
-          `[Researcher] Adaptive mode: maxSteps=50, modelType=${modelType}, tools=[${activeToolsList.join(', ')}]`
+          `[Researcher] Research mode: maxSteps=50, modelType=${modelType}, tools=[${activeToolsList.join(', ')}]`
         )
         maxSteps = 50
         searchTool = originalSearchTool

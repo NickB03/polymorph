@@ -138,9 +138,9 @@ If this is a new chat, `generateChatTitle()` fires immediately and runs concurre
 The `researcher()` factory (`lib/agents/researcher.ts`) creates a `ToolLoopAgent` configured with:
 
 - The selected model
-- A system prompt based on search mode (quick or adaptive)
+- A system prompt based on search mode (chat or research)
 - Active tools (search, fetch, display tools, and optionally todoWrite)
-- A step limit (20 for quick mode, 50 for adaptive mode)
+- A step limit (20 for chat mode, 50 for research mode)
 - Telemetry configuration for Langfuse
 
 The agent is invoked with:

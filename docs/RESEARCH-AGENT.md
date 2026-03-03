@@ -23,7 +23,7 @@ This document provides a deep technical reference for the research agent system 
 
 The research agent is the core intelligence of Vana v2. When a user submits a question, the agent autonomously plans a research strategy, executes web searches, fetches page content, tracks progress through tasks, and synthesizes findings into a cited answer with inline generative UI components (tables, charts, citations, plans, link previews, option lists, callouts, timelines).
 
-The agent is built on the Vercel AI SDK's `ToolLoopAgent` — a construct that runs an LLM in a loop, allowing it to call tools repeatedly until it decides to produce a final answer or hits a step limit. Two operating modes (quick and adaptive) control the agent's behavior, tool availability, and depth of research.
+The agent is built on the Vercel AI SDK's `ToolLoopAgent` — a construct that runs an LLM in a loop, allowing it to call tools repeatedly until it decides to produce a final answer or hits a step limit. Two operating modes (chat and research) control the agent's behavior, tool availability, and depth of research.
 
 ```mermaid
 graph TD
@@ -32,7 +32,7 @@ graph TD
     Select["selectModel()"]
     Stream["createUIMessageStream"]
     Agent["ToolLoopAgent<br/>(createResearcher)"]
-    Prompt["System Prompt<br/>(quick or adaptive)"]
+    Prompt["System Prompt<br/>(chat or research)"]
     Tools["Tools<br/>(search, fetch, display, todo)"]
     LLM["LLM Provider<br/>(Gemini, Grok, GPT, Claude)"]
     Answer["Cited Answer + Generative UI"]
@@ -120,7 +120,7 @@ flowchart TD
 
 2. **Authentication & Rate Limiting**: The API route authenticates the user via Supabase. Guest users are rate-limited by IP (Upstash Redis); authenticated users by overall chat limits. Guest users and cloud deployments are forced to `modelType=speed`.
 
-3. **Model Selection**: `selectModel()` reads cookie preferences for model type (`speed` or `quality`) and search mode (`quick` or `adaptive`), looks up the model in `config/models/*.json`, and verifies the provider is enabled (API key present). Falls back to Gemini 3 Flash via Gateway.
+3. **Model Selection**: `selectModel()` reads cookie preferences for model type (`speed` or `quality`) and search mode (`chat` or `research`), looks up the model in `config/models/*.json`, and verifies the provider is enabled (API key present). Falls back to Gemini 3 Flash via Gateway.
 
 4. **Stream Dispatch**: Authenticated users go through `createChatStreamResponse` (with DB persistence and title generation); guests go through `createEphemeralChatStreamResponse` (stateless).
 
@@ -167,7 +167,7 @@ const agent = new ToolLoopAgent({
   instructions: systemPrompt, // Mode-specific prompt + current date
   tools, // All available tools
   activeTools: activeToolsList, // Subset enabled for this mode
-  stopWhen: stepCountIs(maxSteps), // 20 (quick) or 50 (adaptive)
+  stopWhen: stepCountIs(maxSteps), // 20 (chat) or 50 (research)
   providerOptions, // Model-specific options (if any)
   experimental_telemetry // Langfuse tracing config
 })
@@ -205,20 +205,20 @@ writer.merge(result.toUIMessageStream({ messageMetadata }))
 
 The agent operates in one of two modes, selected by the user via a cookie preference. Each mode has a distinct system prompt, tool set, step limit, and behavioral philosophy.
 
-### Quick Mode
+### Chat Mode
 
 **Purpose:** Fast, focused answers. Optimized for simple questions that need 1-3 searches.
 
-| Property          | Value                                                 |
-| ----------------- | ----------------------------------------------------- |
-| Max steps         | 20                                                    |
-| Search type       | Forced `optimized` (via `wrapSearchToolForQuickMode`) |
-| Target tool calls | ~5                                                    |
-| `todoWrite`       | Not available                                         |
-| `displayPlan`     | Available                                             |
-| `displayChart`    | Available                                             |
+| Property          | Value                                                |
+| ----------------- | ---------------------------------------------------- |
+| Max steps         | 20                                                   |
+| Search type       | Forced `optimized` (via `wrapSearchToolForChatMode`) |
+| Target tool calls | ~5                                                   |
+| `todoWrite`       | Not available                                        |
+| `displayPlan`     | Available                                            |
+| `displayChart`    | Available                                            |
 
-**How search wrapping works:** In quick mode, the search tool is wrapped by `wrapSearchToolForQuickMode()`, which intercepts every call and forces `type: 'optimized'` regardless of what the LLM requests. This ensures the agent always gets content snippets directly from the search provider (Tavily/Exa) rather than needing to fetch pages separately.
+**How search wrapping works:** In chat mode, the search tool is wrapped by `wrapSearchToolForChatMode()`, which intercepts every call and forces `type: 'optimized'` regardless of what the LLM requests. This ensures the agent always gets content snippets directly from the search provider (Tavily/Exa) rather than needing to fetch pages separately.
 
 **System prompt behavior:**
 
@@ -230,7 +230,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 
 **Active tools:** `search`, `fetch`, `displayPlan`, `displayTable`, `displayChart`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayCallout`, `displayTimeline`
 
-### Adaptive Mode
+### Research Mode
 
 **Purpose:** Thorough, multi-step research. For complex queries that need systematic investigation.
 
@@ -255,7 +255,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 
 ### Mode Comparison
 
-| Aspect                       | Quick                        | Adaptive                              |
+| Aspect                       | Chat                         | Research                              |
 | ---------------------------- | ---------------------------- | ------------------------------------- |
 | Step limit                   | 20                           | 50                                    |
 | Search types                 | `optimized` only (forced)    | `optimized` + `general`               |
@@ -499,7 +499,7 @@ The model selection system resolves which LLM to use for each request based on t
 flowchart TD
     Start["selectModel({cookieStore, searchMode})"]
     ReadType["Read modelType cookie<br/>(speed | quality)"]
-    ReadMode["Determine search mode<br/>(quick | adaptive)"]
+    ReadMode["Determine search mode<br/>(chat | research)"]
     BuildOrder["Build preference order:<br/>1. Cookie type first<br/>2. Then remaining types<br/>For each: requested mode first,<br/>then remaining modes"]
 
     Loop["Try each (mode, type) pair"]
@@ -525,10 +525,10 @@ From `config/models/default.json`:
 
 | Mode     | Type    | Model                         | Provider |
 | -------- | ------- | ----------------------------- | -------- |
-| Quick    | Speed   | `google/gemini-3-flash`       | Gateway  |
-| Quick    | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
-| Adaptive | Speed   | `google/gemini-3-flash`       | Gateway  |
-| Adaptive | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
+| Chat     | Speed   | `google/gemini-3-flash`       | Gateway  |
+| Chat     | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
+| Research | Speed   | `google/gemini-3-flash`       | Gateway  |
+| Research | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
 
 ### Provider Registry
 
@@ -737,7 +737,7 @@ const tools: ResearcherTools = {
 }
 
 // Add to activeToolsList for desired modes:
-case 'adaptive':
+case 'research':
   activeToolsList = [/* ..., */ 'myTool']
 ```
 
@@ -769,7 +769,7 @@ export const displayMyComponentTool = tool({
 
 ### Modifying System Prompts
 
-Edit [`lib/agents/prompts/search-mode-prompts.ts`](../lib/agents/prompts/search-mode-prompts.ts). The prompts are generated by functions (`getQuickModePrompt()` and `getAdaptiveModePrompt()`) that use environment-aware helpers to adjust guidance based on available providers.
+Edit [`lib/agents/prompts/search-mode-prompts.ts`](../lib/agents/prompts/search-mode-prompts.ts). The prompts are generated by functions (`getChatModePrompt()` and `getResearchModePrompt()`) that use environment-aware helpers to adjust guidance based on available providers.
 
 Key sections in each prompt:
 
@@ -820,7 +820,7 @@ case 'my-provider':
 | File                                                     | Purpose                                                                     |
 | -------------------------------------------------------- | --------------------------------------------------------------------------- |
 | `lib/agents/researcher.ts`                               | `ToolLoopAgent` factory — configures tools, prompt, and step limit per mode |
-| `lib/agents/prompts/search-mode-prompts.ts`              | System prompts for quick and adaptive modes (environment-aware)             |
+| `lib/agents/prompts/search-mode-prompts.ts`              | System prompts for chat and research modes (environment-aware)              |
 | `lib/agents/generate-related-questions.ts`               | Follow-up question generation with structured output                        |
 | `lib/agents/title-generator.ts`                          | Parallel chat title generation                                              |
 | `lib/tools/search.ts`                                    | Multi-provider search tool with streaming and citation mapping              |

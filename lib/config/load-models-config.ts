@@ -18,7 +18,7 @@ let cachedConfig: ModelsConfig | null = null
 let cachedProfile: string | null = null
 
 const VALID_MODEL_TYPES: ModelType[] = ['speed', 'quality']
-const VALID_SEARCH_MODES: SearchMode[] = ['quick', 'adaptive']
+const VALID_SEARCH_MODES: SearchMode[] = ['chat', 'research']
 
 function validateModelsConfigStructure(
   json: unknown

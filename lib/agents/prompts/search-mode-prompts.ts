@@ -5,7 +5,7 @@ import {
 
 // Search mode system prompts
 
-export function getQuickModePrompt(): string {
+export function getChatModePrompt(): string {
   const hasGeneralProvider = isGeneralSearchProviderAvailable()
 
   return `
@@ -217,7 +217,7 @@ End with a synthesizing conclusion that ties the main points together into a cle
 `
 }
 
-export function getAdaptiveModePrompt(): string {
+export function getResearchModePrompt(): string {
   return `
 Instructions:
 
@@ -504,5 +504,5 @@ Conclude with a brief synthesis that ties together the main insights into a clea
 }
 
 // Export static prompts for backward compatibility
-export const QUICK_MODE_PROMPT = getQuickModePrompt()
-export const ADAPTIVE_MODE_PROMPT = getAdaptiveModePrompt()
+export const CHAT_MODE_PROMPT = getChatModePrompt()
+export const RESEARCH_MODE_PROMPT = getResearchModePrompt()
