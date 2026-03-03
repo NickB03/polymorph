@@ -72,7 +72,7 @@ The primary chat endpoint. Accepts a user message and returns a Server-Sent Even
 
 | Cookie       | Values                  | Default   | Description                                                                            |
 | ------------ | ----------------------- | --------- | -------------------------------------------------------------------------------------- |
-| `searchMode` | `"quick"`, `"adaptive"` | `"quick"` | Controls the research agent mode. Quick uses max 20 steps; adaptive uses max 50 steps. |
+| `searchMode` | `"chat"`, `"research"` | `"chat"` | Controls the research agent mode. Chat uses max 20 steps; research uses max 50 steps. |
 | `modelType`  | `"speed"`, `"quality"`  | `"speed"` | Model selection preference. Guests and cloud deployments are forced to `"speed"`.      |
 
 #### Response

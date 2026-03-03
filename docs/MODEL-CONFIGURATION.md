@@ -19,7 +19,7 @@ This document explains how Vana v2 selects AI models for the researcher agent pi
 
 Model selection sits between the chat API route (`app/api/chat/route.ts`) and the researcher agent (`lib/agents/researcher.ts`). When a user sends a message, the system determines which language model to use based on two dimensions:
 
-- **Search mode** (`quick` or `adaptive`) — controls the agent's tool budget and research depth
+- **Search mode** (`chat` or `research`) — controls the agent's tool budget and research depth
 - **Model type** (`speed` or `quality`) — controls the cost/capability trade-off
 
 The resolved model is passed to the researcher agent, which uses it for all LLM calls during the tool loop. The selection logic lives in `lib/utils/model-selection.ts` and reads configuration from JSON files in `config/models/`.
@@ -51,7 +51,7 @@ Model configurations live in `config/models/` as JSON files. Each file follows t
   "version": 1,
   "models": {
     "byMode": {
-      "quick": {
+      "chat": {
         "speed": {
           /* Model */
         },
@@ -59,7 +59,7 @@ Model configurations live in `config/models/` as JSON files. Each file follows t
           /* Model */
         }
       },
-      "adaptive": {
+      "research": {
         "speed": {
           /* Model */
         },
@@ -91,7 +91,7 @@ Each model entry has the following fields:
 
 The config maps two dimensions to a model:
 
-- **Search Mode** (`quick` | `adaptive`): Controls the agent's research strategy
+- **Search Mode** (`chat` | `research`): Controls the agent's research strategy
 - **Model Type** (`speed` | `quality`): Controls the model's capability tier
 
 This creates a 2x2 matrix of possible model assignments. A separate `relatedQuestions` model handles post-response question generation.
@@ -130,7 +130,7 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
 
 | Input        | Source                | Description                                                      |
 | ------------ | --------------------- | ---------------------------------------------------------------- |
-| `searchMode` | Cookie (`searchMode`) | `quick` or `adaptive`. Defaults to `quick` if missing or invalid |
+| `searchMode` | Cookie (`searchMode`) | `chat` or `research`. Defaults to `chat` if missing or invalid |
 | `modelType`  | Cookie (`modelType`)  | `speed` or `quality`. Determines preference order                |
 
 ### Step-by-step process
@@ -145,7 +145,7 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
 
 3. **Build type preference order** — Starting with the user's preferred type, then appending the remaining valid type. For example, if the cookie says `quality`, the order is `[quality, speed]`. If no valid cookie, the order is `[speed, quality]`.
 
-4. **Build mode preference order** — Starting with the requested search mode, then appending remaining modes. For example, if the requested mode is `adaptive`, the order is `[adaptive, quick]`.
+4. **Build mode preference order** — Starting with the requested search mode, then appending remaining modes. For example, if the requested mode is `research`, the order is `[research, chat]`.
 
 5. **Nested candidate loop** — For each candidate mode, for each candidate type:
    - Look up the model from the config via `getModelForModeAndType(mode, type)`
@@ -156,19 +156,19 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
 
 ### Full resolution order
 
-For a request with `searchMode=quick` and `modelType=quality`, the candidates are tried in this order:
+For a request with `searchMode=chat` and `modelType=quality`, the candidates are tried in this order:
 
-1. `quick` + `quality` (requested combination)
-2. `quick` + `speed` (fallback type)
-3. `adaptive` + `quality` (fallback mode)
-4. `adaptive` + `speed` (fallback mode + type)
+1. `chat` + `quality` (requested combination)
+2. `chat` + `speed` (fallback type)
+3. `research` + `quality` (fallback mode)
+4. `research` + `speed` (fallback mode + type)
 5. `DEFAULT_MODEL` (hardcoded Gemini 3 Flash)
 
 ### Example scenarios
 
-**Default local development** — User has `modelType=speed`, `searchMode=quick`. Lookup finds `quick/speed` -> `google/gemini-3-flash` via `gateway`. `AI_GATEWAY_API_KEY` is set, so the provider is enabled. Result: Gemini 3 Flash.
+**Default local development** — User has `modelType=speed`, `searchMode=chat`. Lookup finds `chat/speed` -> `google/gemini-3-flash` via `gateway`. `AI_GATEWAY_API_KEY` is set, so the provider is enabled. Result: Gemini 3 Flash.
 
-**Quality preference** — User has `modelType=quality`, `searchMode=quick`. Lookup finds `quick/quality` -> `xai/grok-4.1-fast-reasoning` via `gateway`. Provider is enabled. Result: Grok 4.1 Fast Reasoning.
+**Quality preference** — User has `modelType=quality`, `searchMode=chat`. Lookup finds `chat/quality` -> `xai/grok-4.1-fast-reasoning` via `gateway`. Provider is enabled. Result: Grok 4.1 Fast Reasoning.
 
 **Provider unavailable** — User has `modelType=quality` but no API keys are set. All four config candidates fail `isProviderEnabled()`. The hardcoded `DEFAULT_MODEL` is returned as a last resort (even though its provider may also be unavailable).
 
@@ -197,10 +197,10 @@ The current default configuration (`config/models/default.json`):
 
 | Mode              | Type    | Model                   | Provider |
 | ----------------- | ------- | ----------------------- | -------- |
-| Quick             | Speed   | Gemini 3 Flash          | Gateway  |
-| Quick             | Quality | Grok 4.1 Fast Reasoning | Gateway  |
-| Adaptive          | Speed   | Gemini 3 Flash          | Gateway  |
-| Adaptive          | Quality | Grok 4.1 Fast Reasoning | Gateway  |
+| Chat              | Speed   | Gemini 3 Flash          | Gateway  |
+| Chat              | Quality | Grok 4.1 Fast Reasoning | Gateway  |
+| Research          | Speed   | Gemini 3 Flash          | Gateway  |
+| Research          | Quality | Grok 4.1 Fast Reasoning | Gateway  |
 | Related Questions | -       | Gemini 3 Flash          | Gateway  |
 
 The hardcoded `DEFAULT_MODEL` fallback (used when all config models fail):
@@ -251,8 +251,8 @@ Make sure the corresponding API key is set in your environment. See [docs/ENVIRO
 After changing a model, verify it works in both search modes:
 
 1. Set the `modelType` cookie to match your config entry (`speed` or `quality`)
-2. Set the `searchMode` cookie to `quick`, send a message, and check the server logs for the expected model ID
-3. Repeat with `searchMode=adaptive`
+2. Set the `searchMode` cookie to `chat`, send a message, and check the server logs for the expected model ID
+3. Repeat with `searchMode=research`
 4. If targeting `cloud.json`, test with `VANA_CLOUD_DEPLOYMENT=true`
 
 ### Adding Provider Options
@@ -333,6 +333,6 @@ Add the new API key variable to [docs/ENVIRONMENT.md](./ENVIRONMENT.md) under th
 1. Set the API key in `.env.local`
 2. Verify `isProviderEnabled('your-provider')` returns `true` (check server logs for warnings)
 3. Update a config entry to use the new provider
-4. Send a chat message and confirm the correct model is used in both `quick` and `adaptive` search modes
+4. Send a chat message and confirm the correct model is used in both `chat` and `research` search modes
 
 The model selection algorithm will automatically include models from the new provider as long as `isProviderEnabled()` returns `true`.

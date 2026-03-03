@@ -832,7 +832,7 @@ import { displayTimelineTool } from '@/lib/tools/display-timeline'
 // In the tools object:
 displayTimeline: displayTimelineTool
 
-// In the activeTools array for quick/adaptive mode:
+// In the activeTools array for chat/research mode:
 activeTools: [...existingTools, 'displayTimeline']
 ```
 

@@ -12,7 +12,7 @@ Vana uses a factory pattern to support multiple search backends. Providers are i
   - [Exa](#exa)
   - [SearXNG](#searxng) (includes [Advanced Search Mode](#searxng-advanced-search-mode))
   - [Firecrawl](#firecrawl)
-- [Search in Quick vs Adaptive Modes](#search-in-quick-vs-adaptive-modes)
+- [Search in Chat vs Research Modes](#search-in-chat-vs-research-modes)
 - [Search Tool Schema](#search-tool-schema)
 - [Search Types: Optimized vs General](#search-types-optimized-vs-general)
 - [Adding a New Provider](#adding-a-new-provider)
@@ -84,7 +84,7 @@ flowchart TD
     Factory -->|"firecrawl"| FirecrawlImpl
 ```
 
-In Quick Mode, the search type is always forced to `optimized` regardless of what the model requests. In Adaptive Mode, the model can freely choose between `optimized` and `general`.
+In Chat Mode, the search type is always forced to `optimized` regardless of what the model requests. In Research Mode, the model can freely choose between `optimized` and `general`.
 
 ---
 
@@ -251,11 +251,11 @@ SEARCH_API=firecrawl
 
 ---
 
-## Search in Quick vs Adaptive Modes
+## Search in Chat vs Research Modes
 
 The researcher agent operates in two modes that affect how search works:
 
-| Aspect          | Quick Mode                       | Adaptive Mode                                   |
+| Aspect          | Chat Mode                        | Research Mode                                   |
 | --------------- | -------------------------------- | ----------------------------------------------- |
 | Max agent steps | 20                               | 50                                              |
 | Search type     | Forced `optimized` (wrapped)     | Agent chooses `general` or `optimized`          |
@@ -264,9 +264,9 @@ The researcher agent operates in two modes that affect how search works:
 
 \* `todoWrite` is available when a stream writer is present (i.e., during streaming responses).
 
-In **Quick Mode**, the search tool is wrapped by `wrapSearchToolForQuickMode` (in `lib/agents/researcher.ts`) to force `type: "optimized"` on every call, ensuring fast content-rich results regardless of what the agent requests.
+In **Chat Mode**, the search tool is wrapped by `wrapSearchToolForChatMode` (in `lib/agents/researcher.ts`) to force `type: "optimized"` on every call, ensuring fast content-rich results regardless of what the agent requests.
 
-In **Adaptive Mode**, the agent freely chooses between `type: "general"` and `type: "optimized"`, enabling multimedia search through Brave when configured.
+In **Research Mode**, the agent freely chooses between `type: "general"` and `type: "optimized"`, enabling multimedia search through Brave when configured.
 
 ---
 
@@ -296,7 +296,7 @@ The search tool supports two types that map to different provider behaviors:
 
 Used by the configured `SEARCH_API` provider (Tavily by default). Returns rich content snippets alongside results, reducing the need for follow-up fetch calls.
 
-- Forced in Quick Mode (overridden by `wrapSearchToolForQuickMode`)
+- Forced in Chat Mode (overridden by `wrapSearchToolForChatMode`)
 - Best for research queries where content extraction matters
 - Providers: Tavily, Exa, SearXNG, Firecrawl
 
@@ -304,7 +304,7 @@ Used by the configured `SEARCH_API` provider (Tavily by default). Returns rich c
 
 Intended for time-sensitive queries and multimedia content. Routes to Brave when available, otherwise falls back to the optimized provider.
 
-- Available in Adaptive Mode only (Quick Mode forces optimized)
+- Available in Research Mode only (Chat Mode forces optimized)
 - Supports `content_types` parameter for video/image filtering (Brave only)
 - Results typically need a follow-up `fetch` call for detailed content
 - Provider: Brave (when `BRAVE_SEARCH_API_KEY` is set)

@@ -18,30 +18,30 @@ const mockIsProviderEnabled = vi.mocked(isProviderEnabled)
 
 type Matrix = Record<SearchMode, Partial<Record<ModelType, Model>>>
 
-const quickSpeedModel: Model = {
-  id: 'quick-speed',
-  name: 'Quick Speed',
+const chatSpeedModel: Model = {
+  id: 'chat-speed',
+  name: 'Chat Speed',
   provider: 'Provider A',
   providerId: 'provider-a'
 }
 
-const quickQualityModel: Model = {
-  id: 'quick-quality',
-  name: 'Quick Quality',
+const chatQualityModel: Model = {
+  id: 'chat-quality',
+  name: 'Chat Quality',
   provider: 'Provider B',
   providerId: 'provider-b'
 }
 
-const adaptiveQualityModel: Model = {
-  id: 'adaptive-quality',
-  name: 'Adaptive Quality',
+const researchQualityModel: Model = {
+  id: 'research-quality',
+  name: 'Research Quality',
   provider: 'Provider C',
   providerId: 'provider-c'
 }
 
-const adaptiveSpeedModel: Model = {
-  id: 'adaptive-speed',
-  name: 'Adaptive Speed',
+const researchSpeedModel: Model = {
+  id: 'research-speed',
+  name: 'Research Speed',
   provider: 'Provider D',
   providerId: 'provider-d'
 }
@@ -69,13 +69,13 @@ describe('selectModel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     matrix = {
-      quick: {
-        speed: quickSpeedModel,
-        quality: quickQualityModel
+      chat: {
+        speed: chatSpeedModel,
+        quality: chatQualityModel
       },
-      adaptive: {
-        speed: adaptiveSpeedModel,
-        quality: adaptiveQualityModel
+      research: {
+        speed: researchSpeedModel,
+        quality: researchQualityModel
       }
     }
     setMatrixImplementation()
@@ -85,19 +85,19 @@ describe('selectModel', () => {
   it('returns the cookie-preferred type for the active mode when available', () => {
     const result = selectModel({
       cookieStore: createCookieStore('quality'),
-      searchMode: 'quick'
+      searchMode: 'chat'
     })
 
-    expect(result).toEqual(quickQualityModel)
+    expect(result).toEqual(chatQualityModel)
   })
 
   it('falls back to speed model for the mode when cookie is absent', () => {
     const result = selectModel({
       cookieStore: createCookieStore(),
-      searchMode: 'adaptive'
+      searchMode: 'research'
     })
 
-    expect(result).toEqual(adaptiveSpeedModel)
+    expect(result).toEqual(researchSpeedModel)
   })
 
   it('falls back to the other type within the same mode when preferred provider is disabled', () => {
@@ -107,10 +107,10 @@ describe('selectModel', () => {
 
     const result = selectModel({
       cookieStore: createCookieStore('speed'),
-      searchMode: 'quick'
+      searchMode: 'chat'
     })
 
-    expect(result).toEqual(quickQualityModel)
+    expect(result).toEqual(chatQualityModel)
   })
 
   it('falls back to the next mode in priority order when active mode has no enabled models', () => {
@@ -120,10 +120,10 @@ describe('selectModel', () => {
 
     const result = selectModel({
       cookieStore: createCookieStore('quality'),
-      searchMode: 'quick'
+      searchMode: 'chat'
     })
 
-    expect(result).toEqual(adaptiveQualityModel)
+    expect(result).toEqual(researchQualityModel)
   })
 
   it('returns DEFAULT_MODEL when no configured providers are enabled', () => {
@@ -131,7 +131,7 @@ describe('selectModel', () => {
 
     const result = selectModel({
       cookieStore: createCookieStore(),
-      searchMode: 'quick'
+      searchMode: 'chat'
     })
 
     expect(result).toEqual(DEFAULT_MODEL)

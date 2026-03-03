@@ -83,8 +83,8 @@ flowchart TD
     AuthStream["createChatStreamResponse()"]
     PrepareMsg["prepareMessages()<br/>(load/create chat,<br/>handle regeneration)"]
     CreateAgent["createResearcher()<br/>(configure tools + mode)"]
-    QuickMode["Quick Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayCitations,<br/>displayLinkPreview,<br/>displayOptionList, displayCallout,<br/>displayTimeline"]
-    AdaptiveMode["Adaptive Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayChart,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList, displayCallout,<br/>displayTimeline, todoWrite"]
+    ChatMode["Chat Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayCitations,<br/>displayLinkPreview,<br/>displayOptionList, displayCallout,<br/>displayTimeline"]
+    ResearchMode["Research Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayChart,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList, displayCallout,<br/>displayTimeline, todoWrite"]
     AgentStream["agent.stream()<br/>+ smoothStream(word)"]
     Parallel["Parallel operations:<br/>title + related questions<br/>+ persistence"]
     SSE["SSE Response to Client"]
@@ -112,14 +112,14 @@ flowchart TD
     AuthStream --> PrepareMsg
     EphemeralStream --> CreateAgent
     PrepareMsg --> CreateAgent
-    CreateAgent -->|searchMode=quick| QuickMode
-    CreateAgent -->|searchMode=adaptive| AdaptiveMode
-    QuickMode --> AgentStream
-    AdaptiveMode --> AgentStream
+    CreateAgent -->|searchMode=chat| ChatMode
+    CreateAgent -->|searchMode=research| ResearchMode
+    ChatMode --> AgentStream
+    ResearchMode --> AgentStream
     AgentStream --> Parallel --> SSE
 ```
 
-The `createResearcher` function in [`lib/agents/researcher.ts`](../lib/agents/researcher.ts) wraps the Vercel AI SDK's `ToolLoopAgent`. In quick mode, the search tool is wrapped via `wrapSearchToolForQuickMode` to force `type: 'optimized'` on every call, and the step limit is 20. In adaptive mode, the agent has access to the `todoWrite` tool (when a stream writer is available) and can run up to 50 steps with full search type support (general + optimized).
+The `createResearcher` function in [`lib/agents/researcher.ts`](../lib/agents/researcher.ts) wraps the Vercel AI SDK's `ToolLoopAgent`. In chat mode, the search tool is wrapped via `wrapSearchToolForChatMode` to force `type: 'optimized'` on every call, and the step limit is 20. In research mode, the agent has access to the `todoWrite` tool (when a stream writer is available) and can run up to 50 steps with full search type support (general + optimized).
 
 **Request body fields:**
 
@@ -178,7 +178,7 @@ graph LR
 
 ### Tool Availability by Mode
 
-| Tool                 |            Quick Mode            |          Adaptive Mode           |
+| Tool                 |            Chat Mode             |          Research Mode           |
 | -------------------- | :------------------------------: | :------------------------------: |
 | `search`             |  Yes (forced `type: optimized`)  | Yes (full: general + optimized)  |
 | `fetch`              |               Yes                |               Yes                |
@@ -538,7 +538,7 @@ Models are resolved through a layered preference system that considers the user'
 ```mermaid
 flowchart TD
     Start["selectModel({cookieStore, searchMode})"]
-    ReadCookies["Read cookies:<br/>modelType (speed | quality)<br/>searchMode (quick | adaptive)"]
+    ReadCookies["Read cookies:<br/>modelType (speed | quality)<br/>searchMode (chat | research)"]
     BuildTypeOrder["Build type preference order<br/>1. Cookie value (if valid)<br/>2. Remaining types"]
     BuildModeOrder["Build mode preference order<br/>1. Requested mode<br/>2. Remaining modes"]
 
@@ -586,10 +586,10 @@ From [`config/models/default.json`](../config/models/default.json):
 
 | Mode              | Type    | Model                         | Provider |
 | ----------------- | ------- | ----------------------------- | -------- |
-| Quick             | Speed   | `google/gemini-3-flash`       | Gateway  |
-| Quick             | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
-| Adaptive          | Speed   | `google/gemini-3-flash`       | Gateway  |
-| Adaptive          | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
+| Chat              | Speed   | `google/gemini-3-flash`       | Gateway  |
+| Chat              | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
+| Research          | Speed   | `google/gemini-3-flash`       | Gateway  |
+| Research          | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
 | Related Questions | --      | `google/gemini-3-flash`       | Gateway  |
 
 **Force-speed behavior:** Guest users and cloud deployments (`VANA_CLOUD_DEPLOYMENT=true`) are forced to `modelType=speed` regardless of cookie preference. This is implemented by replacing the cookie store with a mock that always returns `{ value: 'speed' }` for the `modelType` cookie.
@@ -709,7 +709,7 @@ The `current_setting('app.current_user_id', true)` call uses `true` as the secon
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `app/api/chat/route.ts`                                  | Main chat API endpoint (300s timeout, `force-dynamic`)                                      |
 | `lib/agents/researcher.ts`                               | `ToolLoopAgent` orchestration with mode-specific configuration                              |
-| `lib/agents/prompts/search-mode-prompts.ts`              | System prompts for quick/adaptive modes                                                     |
+| `lib/agents/prompts/search-mode-prompts.ts`              | System prompts for chat/research modes                                                      |
 | `lib/tools/search.ts`                                    | Multi-provider search tool with streaming generator                                         |
 | `lib/tools/fetch.ts`                                     | Web content extraction (regular + API-based)                                                |
 | `lib/tools/question.ts`                                  | Clarifying question tool (frontend confirmation only)                                       |

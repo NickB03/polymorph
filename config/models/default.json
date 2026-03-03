@@ -2,7 +2,7 @@
   "version": 1,
   "models": {
     "byMode": {
-      "quick": {
+      "chat": {
         "speed": {
           "id": "google/gemini-3-flash",
           "name": "Gemini 3 Flash",
@@ -16,7 +16,7 @@
           "providerId": "gateway"
         }
       },
-      "adaptive": {
+      "research": {
         "speed": {
           "id": "google/gemini-3-flash",
           "name": "Gemini 3 Flash",

@@ -19,7 +19,7 @@ import type { ChatEventData } from './types'
  * @example
  * ```typescript
  * await trackChatEvent({
- *   searchMode: 'quick',
+ *   searchMode: 'chat',
  *   modelType: 'quality',
  *   conversationTurn: 1,
  *   isNewChat: true,

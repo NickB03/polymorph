@@ -1,4 +1,4 @@
-import { Search } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
 
 import { SearchMode } from '@/lib/types/search'
 
@@ -15,16 +15,16 @@ export interface SearchModeConfig {
 // Centralized search mode configuration
 export const SEARCH_MODE_CONFIGS: SearchModeConfig[] = [
   {
-    value: 'quick',
-    label: 'Quick',
-    description: 'Streamlined search for fast, concise responses',
-    icon: Search,
+    value: 'chat',
+    label: 'Chat',
+    description: 'Fast, concise responses with web search',
+    icon: MessageSquare,
     color: 'text-amber-500'
   },
   {
-    value: 'adaptive',
-    label: 'Adaptive',
-    description: 'Adaptive agentic search with intelligent query understanding',
+    value: 'research',
+    label: 'Research Agent',
+    description: 'Deep research with intelligent query understanding',
     icon: IconLogoOutline,
     color: 'text-violet-500'
   }
