@@ -12,6 +12,8 @@ import { UploadedFile } from '@/lib/types'
 import type { UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 import { cn, isChatLoading } from '@/lib/utils'
 
+import { useTrendingSuggestions } from '@/hooks/use-trending-suggestions'
+
 import { useArtifact } from './artifact/artifact-context'
 import { Button } from './ui/button'
 import { ActionButtons } from './action-buttons'
@@ -71,6 +73,7 @@ export function ChatPanel({
   const [enterDisabled, setEnterDisabled] = useState(false) // Disable Enter after composition ends
   const [isInputFocused, setIsInputFocused] = useState(false) // Track input focus
   const { close: closeArtifact } = useArtifact()
+  const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
 
   const handleCompositionStart = () => setIsComposing(true)
@@ -296,7 +299,7 @@ export function ChatPanel({
                 </Button>
               )}
               {process.env.NEXT_PUBLIC_VANA_CLOUD_DEPLOYMENT !== 'true' && (
-                <ModelTypeSelector disabled={isGuest} />
+                <ModelTypeSelector disabled={false} />
               )}
               <Button
                 type={isLoading ? 'button' : 'submit'}
@@ -315,6 +318,7 @@ export function ChatPanel({
         {/* Action buttons for prompt suggestions */}
         {messages.length === 0 && (
           <ActionButtons
+            promptSamples={suggestions}
             onSelectPrompt={message => {
               // Set the input value and submit
               handleInputChange({
