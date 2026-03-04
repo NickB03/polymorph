@@ -45,11 +45,18 @@ export default function AppSidebar({ hasUser = false }: { hasUser?: boolean }) {
           className="flex items-center px-2 py-3"
         >
           <Image
-            src="/images/vana-wordmark.png"
-            alt="Vana"
-            width={72}
-            height={22}
-            className="h-5 w-auto brightness-150"
+            src="/images/polymorph-sidebar-logo-darkm.png"
+            alt="Polymorph"
+            width={261}
+            height={160}
+            className="h-6 w-auto block dark:hidden"
+          />
+          <Image
+            src="/images/polymorph-sidebar-logo.png"
+            alt="Polymorph"
+            width={261}
+            height={160}
+            className="h-6 w-auto hidden dark:block"
           />
         </a>
         <SidebarTrigger />
