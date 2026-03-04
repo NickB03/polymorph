@@ -43,6 +43,18 @@ export function SearchModeSelector() {
     }
   }, [])
 
+  // Sync local state when cookie is changed programmatically (e.g. research suggestion)
+  useEffect(() => {
+    const handleChange = () => {
+      const mode = getCookie('searchMode')
+      if (mode && ['chat', 'research'].includes(mode)) {
+        setValue(mode as SearchMode)
+      }
+    }
+    window.addEventListener('searchModeChanged', handleChange)
+    return () => window.removeEventListener('searchModeChanged', handleChange)
+  }, [])
+
   const handleModeSelect = (mode: SearchMode) => {
     setValue(mode)
     setCookie('searchMode', mode)

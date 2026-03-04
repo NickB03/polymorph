@@ -40,6 +40,18 @@ export function ModelTypeSelector({
     }
   }, [disabled])
 
+  // Sync local state when cookie is changed programmatically (e.g. research suggestion)
+  useEffect(() => {
+    const handleChange = () => {
+      const type = getCookie('modelType')
+      if (type && ['speed', 'quality'].includes(type)) {
+        setValue(type as ModelType)
+      }
+    }
+    window.addEventListener('modelTypeChanged', handleChange)
+    return () => window.removeEventListener('modelTypeChanged', handleChange)
+  }, [])
+
   const handleTypeSelect = (type: ModelType) => {
     if (disabled) return
     setValue(type)
