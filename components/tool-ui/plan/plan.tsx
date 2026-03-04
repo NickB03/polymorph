@@ -354,8 +354,8 @@ function PlanRoot({
       {hiddenTodos.length > 0 && (
         <li className="mt-1">
           <Accordion type="single" collapsible>
-            <AccordionItem value="more" className="border-0">
-              <AccordionTrigger className="text-muted-foreground hover:text-primary flex cursor-default items-start justify-start gap-2 py-1 text-sm font-normal [&>svg:last-child]:hidden">
+            <AccordionItem value="more" className="group border-0">
+              <AccordionTrigger className="text-muted-foreground hover:text-primary flex cursor-default items-start justify-start gap-2 py-1 text-sm font-normal [&>svg:last-child]:hidden group-data-[state=open]:hidden">
                 <MoreHorizontal className="text-muted-foreground/70 mt-0.5 size-4 shrink-0" />
                 <span>{hiddenTodos.length} more</span>
               </AccordionTrigger>
