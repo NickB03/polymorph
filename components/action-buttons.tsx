@@ -54,7 +54,7 @@ const actionCategories: ActionCategory[] = [
 ]
 
 interface ActionButtonsProps {
-  onSelectPrompt: (prompt: string) => void
+  onSelectPrompt: (prompt: string, category: SuggestionCategory) => void
   onCategoryClick: (category: string) => void
   promptSamples: Record<SuggestionCategory, string[]>
   inputRef?: React.RefObject<HTMLTextAreaElement | null>
@@ -78,8 +78,9 @@ export function ActionButtons({
   }
 
   const handlePromptClick = (prompt: string) => {
+    const category = activeCategory!
     setActiveCategory(null)
-    onSelectPrompt(prompt)
+    onSelectPrompt(prompt, category)
   }
 
   const resetToButtons = () => {

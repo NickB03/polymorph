@@ -9,9 +9,10 @@ import { UseChatHelpers } from '@ai-sdk/react'
 import { ArrowUp, ChevronDown, MessageCirclePlus, Square } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { UploadedFile } from '@/lib/types'
+import { SuggestionCategory, UploadedFile } from '@/lib/types'
 import type { UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 import { cn, isChatLoading } from '@/lib/utils'
+import { setCookie } from '@/lib/utils/cookies'
 
 import { useTrendingSuggestions } from '@/hooks/use-trending-suggestions'
 
@@ -331,7 +332,14 @@ export function ChatPanel({
         {messages.length === 0 && (
           <ActionButtons
             promptSamples={suggestions}
-            onSelectPrompt={message => {
+            onSelectPrompt={(message, category) => {
+              // Auto-switch to Research + Quality for research suggestions
+              if (category === 'research') {
+                setCookie('searchMode', 'research')
+                setCookie('modelType', 'quality')
+                window.dispatchEvent(new CustomEvent('searchModeChanged'))
+                window.dispatchEvent(new CustomEvent('modelTypeChanged'))
+              }
               // Set the input value and submit
               handleInputChange({
                 target: { value: message }
