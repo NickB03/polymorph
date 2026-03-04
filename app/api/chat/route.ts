@@ -9,7 +9,7 @@ import { checkAndEnforceGuestLimit } from '@/lib/rate-limit/guest-limit'
 import { createChatStreamResponse } from '@/lib/streaming/create-chat-stream-response'
 import { createEphemeralChatStreamResponse } from '@/lib/streaming/create-ephemeral-chat-stream-response'
 import { SearchMode } from '@/lib/types/search'
-import { isCloudDeployment } from '@/lib/utils'
+
 import { selectModel } from '@/lib/utils/model-selection'
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 import { resetAllCounters } from '@/lib/utils/perf-tracking'
@@ -100,19 +100,9 @@ export async function POST(req: Request) {
         ? (mappedSearchMode as SearchMode)
         : 'chat'
 
-    const forceSpeed = isGuest || isCloudDeployment()
-    const modelCookieStore = forceSpeed
-      ? ({
-          get: (name: string) =>
-            name === 'modelType'
-              ? ({ value: 'speed' } as const)
-              : cookieStore.get(name)
-        } as typeof cookieStore)
-      : cookieStore
-
     // Select the appropriate model based on model type preference and search mode
     const selectedModel = selectModel({
-      cookieStore: modelCookieStore,
+      cookieStore,
       searchMode
     })
 
@@ -126,13 +116,12 @@ export async function POST(req: Request) {
       )
     }
 
-    // Resolve model type from cookie (forced to speed for guests and cloud)
+    // Resolve model type from cookie
     const modelTypeCookie = cookieStore.get('modelType')?.value
-    const resolvedModelType =
+    const modelType =
       modelTypeCookie === 'quality' || modelTypeCookie === 'speed'
         ? modelTypeCookie
         : undefined
-    const modelType = forceSpeed ? 'speed' : resolvedModelType
     if (!isGuest) {
       const overallLimitResponse = await checkAndEnforceOverallChatLimit(userId)
       if (overallLimitResponse) return overallLimitResponse
