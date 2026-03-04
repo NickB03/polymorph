@@ -313,7 +313,7 @@ export function ChatPanel({
                 </Button>
               )}
               {process.env.NEXT_PUBLIC_VANA_CLOUD_DEPLOYMENT !== 'true' && (
-                <ModelTypeSelector disabled={false} />
+                <ModelTypeSelector disabled={isGuest} />
               )}
               <Button
                 type={isLoading ? 'button' : 'submit'}

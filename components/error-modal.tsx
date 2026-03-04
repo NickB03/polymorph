@@ -55,7 +55,7 @@ export function ErrorModal({
       case 'rate-limit':
         return 'Daily limit reached'
       case 'auth':
-        return 'Continue with Vana'
+        return 'Continue with Polymorph'
       case 'forbidden':
         return 'Access Denied'
       default:

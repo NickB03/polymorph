@@ -26,10 +26,10 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
             <IconLogo className="size-14" />
           </div>
           <DialogTitle className="text-xl font-semibold">
-            Continue with Vana
+            Continue with Polymorph
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            To use Vana, sign in to your account or create a new one.
+            To use Polymorph, sign in to your account or create a new one.
           </DialogDescription>
         </DialogHeader>
         <div className="mt-6 space-y-3">

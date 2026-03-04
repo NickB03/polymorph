@@ -100,7 +100,7 @@ export async function POST(req: Request) {
         ? (mappedSearchMode as SearchMode)
         : 'chat'
 
-    const forceSpeed = isCloudDeployment()
+    const forceSpeed = isGuest || isCloudDeployment()
     const modelCookieStore = forceSpeed
       ? ({
           get: (name: string) =>
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
       )
     }
 
-    // Resolve model type from cookie (forced to speed for cloud deployments)
+    // Resolve model type from cookie (forced to speed for guests and cloud)
     const modelTypeCookie = cookieStore.get('modelType')?.value
     const resolvedModelType =
       modelTypeCookie === 'quality' || modelTypeCookie === 'speed'
