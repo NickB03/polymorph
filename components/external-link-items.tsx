@@ -1,20 +1,17 @@
 'use client'
 
-import { SiDiscord, SiGithub, SiX } from 'react-icons/si'
+import { SiGithub } from 'react-icons/si'
 import Link from 'next/link'
+
+import { Globe } from 'lucide-react'
 
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 
 const externalLinks = [
   {
-    name: 'X',
-    href: 'https://x.com/vana_ai',
-    icon: <SiX className="mr-2 h-4 w-4" />
-  },
-  {
-    name: 'Discord',
-    href: 'https://discord.gg/zRxaseCuGq',
-    icon: <SiDiscord className="mr-2 h-4 w-4" />
+    name: 'nickb.net',
+    href: 'https://nickb.net',
+    icon: <Globe className="mr-2 h-4 w-4" />
   },
   {
     name: 'GitHub',

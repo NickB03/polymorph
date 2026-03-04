@@ -21,7 +21,7 @@ const fontSans = FontSans({
   variable: '--font-sans'
 })
 
-const title = 'Vana'
+const title = 'polymorph'
 const description =
   'An AI-powered answer engine with a generative UI for research and exploration.'
 const metadataBase = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:43100'
@@ -37,8 +37,7 @@ export const metadata: Metadata = {
   twitter: {
     title,
     description,
-    card: 'summary_large_image',
-    creator: '@vana'
+    card: 'summary_large_image'
   }
 }
 
