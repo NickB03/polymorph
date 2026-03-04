@@ -19,7 +19,7 @@ export const SEARCH_MODE_CONFIGS: SearchModeConfig[] = [
     label: 'Chat',
     description: 'Fast, concise responses with web search',
     icon: MessageSquare,
-    color: 'text-amber-500'
+    color: 'text-[#0184FC]'
   },
   {
     value: 'research',

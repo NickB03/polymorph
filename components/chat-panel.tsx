@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Textarea from 'react-textarea-autosize'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 
 import { UseChatHelpers } from '@ai-sdk/react'
@@ -152,10 +153,23 @@ export function ChatPanel({
       )}
     >
       {messages.length === 0 && (
-        <div className="mb-10 flex flex-col items-center gap-4">
-          <h1 className="text-2xl font-medium text-foreground">
-            What would you like to know?
-          </h1>
+        <div className="mb-6 flex flex-col items-center gap-4">
+          <Image
+            src="/images/polymorph_wordmark_lightmode_black.png"
+            alt="Polymorph"
+            width={2156}
+            height={396}
+            className="h-8 md:h-10 w-auto opacity-90 block dark:hidden"
+            priority
+          />
+          <Image
+            src="/images/polymorph-wordmark.png"
+            alt="Polymorph"
+            width={2156}
+            height={396}
+            className="h-8 md:h-10 w-auto opacity-90 hidden dark:block"
+            priority
+          />
         </div>
       )}
       {uploadedFiles.length > 0 && (
@@ -206,7 +220,7 @@ export function ChatPanel({
             spellCheck={false}
             value={input}
             disabled={isLoading || isToolInvocationInProgress()}
-            className="resize-none w-full min-h-12 bg-transparent border-0 p-4 text-sm placeholder:text-muted-foreground focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+            className="resize-none w-full min-h-14 bg-transparent border-0 p-4 text-base placeholder:text-muted-foreground focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
             onChange={handleInputChange}
             onKeyDown={e => {
               if (

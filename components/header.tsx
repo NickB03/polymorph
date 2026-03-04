@@ -39,18 +39,20 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
         <div></div>
 
         <div className="flex items-center gap-2">
-          {isRootPage && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setFeedbackOpen(true)}
-            >
-              Feedback
-            </Button>
-          )}
           {user ? <UserMenu user={user} /> : <GuestMenu />}
         </div>
       </header>
+
+      {isRootPage && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="fixed bottom-4 right-4 z-10"
+          onClick={() => setFeedbackOpen(true)}
+        >
+          Feedback
+        </Button>
+      )}
 
       {isRootPage && (
         <FeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />
