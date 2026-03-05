@@ -3,7 +3,7 @@
 name: polymorph-stack
 services:
   polymorph:
-    image: ghcr.io/${GITHUB_REPOSITORY:-your-username/vana-v2}:latest
+    image: ghcr.io/${GITHUB_REPOSITORY:-NickB03/polymorph}:latest
     command: bun start -H 0.0.0.0
     build:
       context: .
