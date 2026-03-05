@@ -19,7 +19,7 @@ export interface ChatEventData {
   /** Whether this is a new chat session */
   isNewChat: boolean
   /** Type of trigger that initiated the chat */
-  trigger: 'submit-message' | 'regenerate-message'
+  trigger: 'submit-message' | 'regenerate-message' | 'tool-result'
   /** Chat session ID (CUID2 - safe for tracking) */
   chatId: string
   /** User ID (Supabase UUID - pseudonymized identifier) */

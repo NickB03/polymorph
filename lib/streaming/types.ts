@@ -9,10 +9,11 @@ export interface BaseStreamConfig {
   model: Model
   chatId: string
   userId: string
-  trigger?: 'submit-user-message' | 'regenerate-assistant-message'
+  trigger?: 'submit-message' | 'regenerate-message' | 'tool-result'
   messageId?: string
   abortSignal?: AbortSignal
   isNewChat?: boolean
   searchMode?: SearchMode
   modelType?: ModelType
+  messages?: UIMessage[] // For tool-result continuations (bypass prepareMessages)
 }

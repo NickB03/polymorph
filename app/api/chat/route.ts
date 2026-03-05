@@ -42,6 +42,13 @@ export async function POST(req: Request) {
           statusText: 'Bad Request'
         })
       }
+    } else if (trigger === 'tool-result') {
+      if (!messages || !Array.isArray(messages) || messages.length === 0) {
+        return new Response('messages are required for tool-result continuation', {
+          status: 400,
+          statusText: 'Bad Request'
+        })
+      }
     } else if (trigger === 'submit-message') {
       if (!message) {
         return new Response('message is required for submission', {
@@ -141,7 +148,7 @@ export async function POST(req: Request) {
           chatId
         })
       : await createChatStreamResponse({
-          message,
+          message: trigger === 'tool-result' ? null : message,
           model: selectedModel,
           chatId,
           userId: userId, // userId is guaranteed to be non-null after authentication check above
@@ -150,7 +157,9 @@ export async function POST(req: Request) {
           abortSignal,
           isNewChat,
           searchMode,
-          modelType
+          modelType,
+          // Pass full messages for tool-result continuations
+          ...(trigger === 'tool-result' ? { messages } : {})
         })
 
     perfTime('createChatStreamResponse resolved', streamStart)
@@ -177,8 +186,10 @@ export async function POST(req: Request) {
             conversationTurn,
             isNewChat: isNewChat ?? false,
             trigger:
-              (trigger as 'submit-message' | 'regenerate-message') ??
-              'submit-message',
+              (trigger as
+                | 'submit-message'
+                | 'regenerate-message'
+                | 'tool-result') ?? 'submit-message',
             chatId,
             userId,
             modelId: selectedModel.id

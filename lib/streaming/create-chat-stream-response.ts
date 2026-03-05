@@ -34,6 +34,7 @@ export async function createChatStreamResponse(
 ): Promise<Response> {
   const {
     message,
+    messages: providedMessages,
     model,
     chatId,
     userId,
@@ -115,10 +116,17 @@ export async function createChatStreamResponse(
       try {
         // Prepare messages for the model
         const prepareStart = performance.now()
-        perfLog(
-          `prepareMessages - Invoked: trigger=${trigger}, isNewChat=${isNewChat}`
-        )
-        const messagesToModel = await prepareMessages(context, message)
+        let messagesToModel: UIMessage[]
+        if (providedMessages && providedMessages.length > 0) {
+          // Tool-result continuation: use provided messages directly
+          perfLog('prepareMessages - Skipped (using provided messages for tool-result)')
+          messagesToModel = providedMessages
+        } else {
+          perfLog(
+            `prepareMessages - Invoked: trigger=${trigger}, isNewChat=${isNewChat}`
+          )
+          messagesToModel = await prepareMessages(context, message)
+        }
         perfTime('prepareMessages completed (stream)', prepareStart)
 
         // Get the researcher agent with parent trace ID, search mode, and model type

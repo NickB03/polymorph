@@ -56,6 +56,7 @@ export function Chat({
     })
   }
 
+  const autoSendReadyAtRef = useRef<number | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
@@ -92,20 +93,28 @@ export function Chat({
             ? messages.find(m => m.id === messageId)
             : undefined
 
+        // Detect tool-result continuation: sendAutomaticallyWhen fires with
+        // trigger="submit-message" but last message is assistant (not user)
+        const isToolResultContinuation =
+          trigger === 'submit-message' && lastMessage?.role === 'assistant'
+
         return {
           body: {
-            trigger, // Use AI SDK's default trigger value directly
+            trigger: isToolResultContinuation ? 'tool-result' : trigger,
             chatId: chatId,
             messageId,
-            ...(isGuest ? { messages } : {}),
-            message:
-              trigger === 'regenerate-message' &&
-              messageToRegenerate?.role === 'user'
+            // Include full messages for guests AND tool-result continuations
+            ...(isGuest || isToolResultContinuation ? { messages } : {}),
+            message: isToolResultContinuation
+              ? undefined
+              : trigger === 'regenerate-message' &&
+                  messageToRegenerate?.role === 'user'
                 ? messageToRegenerate
                 : trigger === 'submit-message'
                   ? lastMessage
                   : undefined,
             isNewChat:
+              !isToolResultContinuation &&
               trigger === 'submit-message' &&
               messages.length === 1 &&
               savedMessages.length === 0
@@ -180,6 +189,41 @@ export function Chat({
         // For general errors, still use toast for less intrusive notification
         toast.error(`Error in chat: ${error.message}`)
       }
+    },
+    sendAutomaticallyWhen: ({ messages: msgs }) => {
+      const lastMsg = msgs[msgs.length - 1]
+      if (!lastMsg || lastMsg.role !== 'assistant') return false
+      const parts = lastMsg.parts
+      if (!parts) return false
+      // Check if any interactive tool parts are still pending (waiting for user input)
+      const hasPendingTools = parts.some(
+        p =>
+          isToolTypePart(p) &&
+          'state' in p &&
+          p.state === 'input-available' &&
+          !('output' in p)
+      )
+      if (hasPendingTools) return false
+      // Only auto-continue for displayOptionList selections (the only interactive tool currently)
+      const hasResolvedOptionList = parts.some(
+        p =>
+          isToolTypePart(p) &&
+          p.type === 'tool-displayOptionList' &&
+          'state' in p &&
+          p.state === 'output-available'
+      )
+      if (!hasResolvedOptionList) {
+        autoSendReadyAtRef.current = null
+        return false
+      }
+      // Brief delay so the user sees the confirmation receipt before streaming resumes
+      if (!autoSendReadyAtRef.current) {
+        autoSendReadyAtRef.current = Date.now()
+        return false
+      }
+      if (Date.now() - autoSendReadyAtRef.current < 400) return false
+      autoSendReadyAtRef.current = null
+      return true
     },
     experimental_throttle: 100,
     generateId
