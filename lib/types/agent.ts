@@ -15,7 +15,6 @@ import type { displayPlanTool } from '../tools/display-plan'
 import type { displayTableTool } from '../tools/display-table'
 import type { displayTimelineTool } from '../tools/display-timeline'
 import type { fetchTool } from '../tools/fetch'
-import type { createQuestionTool } from '../tools/question'
 import type { createSearchTool } from '../tools/search'
 import type { createTodoTools } from '../tools/todo'
 
@@ -23,7 +22,6 @@ import type { createTodoTools } from '../tools/todo'
 export type ResearcherTools = {
   search: ReturnType<typeof createSearchTool>
   fetch: typeof fetchTool
-  askQuestion: ReturnType<typeof createQuestionTool>
   displayPlan: typeof displayPlanTool
   displayTable: typeof displayTableTool
   displayChart: typeof displayChartTool
@@ -47,9 +45,6 @@ export type ResearcherUITools = InferUITools<ResearcherTools>
 // Tool invocation types for each tool
 export type SearchToolInvocation = UIToolInvocation<ResearcherTools['search']>
 export type FetchToolInvocation = UIToolInvocation<ResearcherTools['fetch']>
-export type QuestionToolInvocation = UIToolInvocation<
-  ResearcherTools['askQuestion']
->
 export type TodoWriteToolInvocation = UIToolInvocation<
   ResearcherTools['todoWrite']
 >
@@ -82,7 +77,6 @@ export type DisplayTimelineToolInvocation = UIToolInvocation<
 export type ResearcherToolInvocation =
   | SearchToolInvocation
   | FetchToolInvocation
-  | QuestionToolInvocation
   | TodoWriteToolInvocation
   | DisplayPlanToolInvocation
   | DisplayTableToolInvocation

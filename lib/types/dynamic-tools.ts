@@ -74,6 +74,18 @@ export function isToolCallPart(
   )
 }
 
+// Tool types that require user interaction (client-side confirmation)
+const INTERACTIVE_TOOL_TYPES = new Set(['tool-displayOptionList'])
+
+export function isInteractiveToolPart(
+  part: unknown
+): part is { type: string; toolCallId: string } {
+  return (
+    isToolTypePart(part) &&
+    INTERACTIVE_TOOL_TYPES.has((part as { type: string }).type)
+  )
+}
+
 export function isToolTypePart(
   part: unknown
 ): part is { type: string; toolCallId: string } {

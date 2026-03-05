@@ -12,6 +12,7 @@ import { UploadedFile } from '@/lib/types'
 import type { ChatSection, UIMessage } from '@/lib/types/ai'
 import {
   isDynamicToolPart,
+  isInteractiveToolPart,
   isToolCallPart,
   isToolTypePart
 } from '@/lib/types/dynamic-tools'
@@ -56,7 +57,7 @@ export function Chat({
     })
   }
 
-  const autoSendReadyAtRef = useRef<number | null>(null)
+  const autoSendFiredRef = useRef<Set<string>>(new Set())
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
@@ -98,23 +99,44 @@ export function Chat({
         const isToolResultContinuation =
           trigger === 'submit-message' && lastMessage?.role === 'assistant'
 
+        // For tool-result continuation, extract the minimal delta
+        if (isToolResultContinuation) {
+          // Find the resolved displayOptionList part in the last assistant message
+          const resolvedPart = lastMessage?.parts?.find(
+            (p: any) =>
+              p.type === 'tool-displayOptionList' &&
+              p.state === 'output-available' &&
+              p.toolCallId
+          ) as { toolCallId: string; output: unknown } | undefined
+
+          return {
+            body: {
+              trigger: 'tool-result',
+              chatId,
+              toolResult: resolvedPart
+                ? {
+                    toolCallId: resolvedPart.toolCallId,
+                    output: resolvedPart.output
+                  }
+                : undefined
+            }
+          }
+        }
+
         return {
           body: {
-            trigger: isToolResultContinuation ? 'tool-result' : trigger,
-            chatId: chatId,
+            trigger,
+            chatId,
             messageId,
-            // Include full messages for guests AND tool-result continuations
-            ...(isGuest || isToolResultContinuation ? { messages } : {}),
-            message: isToolResultContinuation
-              ? undefined
-              : trigger === 'regenerate-message' &&
-                  messageToRegenerate?.role === 'user'
+            ...(isGuest ? { messages } : {}),
+            message:
+              trigger === 'regenerate-message' &&
+              messageToRegenerate?.role === 'user'
                 ? messageToRegenerate
                 : trigger === 'submit-message'
                   ? lastMessage
                   : undefined,
             isNewChat:
-              !isToolResultContinuation &&
               trigger === 'submit-message' &&
               messages.length === 1 &&
               savedMessages.length === 0
@@ -198,31 +220,27 @@ export function Chat({
       // Check if any interactive tool parts are still pending (waiting for user input)
       const hasPendingTools = parts.some(
         p =>
-          isToolTypePart(p) &&
+          isInteractiveToolPart(p) &&
           'state' in p &&
           p.state === 'input-available' &&
           !('output' in p)
       )
       if (hasPendingTools) return false
-      // Only auto-continue for displayOptionList selections (the only interactive tool currently)
-      const hasResolvedOptionList = parts.some(
-        p =>
+      // Auto-continue when a displayOptionList has been resolved with a selection.
+      // Use a ref to track which toolCallIds have already triggered auto-send
+      // to prevent re-triggering on subsequent evaluations.
+      const resolvedOptionPart = parts.find(
+        (p: any) =>
           isToolTypePart(p) &&
           p.type === 'tool-displayOptionList' &&
           'state' in p &&
-          p.state === 'output-available'
-      )
-      if (!hasResolvedOptionList) {
-        autoSendReadyAtRef.current = null
+          p.state === 'output-available' &&
+          p.toolCallId
+      ) as { toolCallId: string } | undefined
+      if (!resolvedOptionPart) return false
+      if (autoSendFiredRef.current.has(resolvedOptionPart.toolCallId))
         return false
-      }
-      // Brief delay so the user sees the confirmation receipt before streaming resumes
-      if (!autoSendReadyAtRef.current) {
-        autoSendReadyAtRef.current = Date.now()
-        return false
-      }
-      if (Date.now() - autoSendReadyAtRef.current < 400) return false
-      autoSendReadyAtRef.current = null
+      autoSendFiredRef.current.add(resolvedOptionPart.toolCallId)
       return true
     },
     experimental_throttle: 100,

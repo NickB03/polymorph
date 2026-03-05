@@ -28,28 +28,50 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { message, messages, chatId, trigger, messageId, isNewChat } = body
+    const { message, messages, chatId, trigger, messageId, isNewChat, toolResult } =
+      body
 
     perfLog(
       `API Route - Start: chatId=${chatId}, trigger=${trigger}, isNewChat=${isNewChat}`
     )
 
+    // Validate trigger value
+    const VALID_TRIGGERS = [
+      'submit-message',
+      'regenerate-message',
+      'tool-result'
+    ] as const
+    type Trigger = (typeof VALID_TRIGGERS)[number]
+
+    if (trigger && !VALID_TRIGGERS.includes(trigger)) {
+      return new Response(`Unknown trigger: ${trigger}`, {
+        status: 400,
+        statusText: 'Bad Request'
+      })
+    }
+    const validatedTrigger: Trigger | undefined = trigger
+
     // Handle different triggers using AI SDK standard values
-    if (trigger === 'regenerate-message') {
+    if (validatedTrigger === 'regenerate-message') {
       if (!messageId) {
         return new Response('messageId is required for regeneration', {
           status: 400,
           statusText: 'Bad Request'
         })
       }
-    } else if (trigger === 'tool-result') {
-      if (!messages || !Array.isArray(messages) || messages.length === 0) {
-        return new Response('messages are required for tool-result continuation', {
-          status: 400,
-          statusText: 'Bad Request'
-        })
+    } else if (validatedTrigger === 'tool-result') {
+      const { toolResult } = body
+      if (
+        !toolResult ||
+        typeof toolResult.toolCallId !== 'string' ||
+        !('output' in toolResult)
+      ) {
+        return new Response(
+          'toolResult with toolCallId and output is required for tool-result continuation',
+          { status: 400, statusText: 'Bad Request' }
+        )
       }
-    } else if (trigger === 'submit-message') {
+    } else if (validatedTrigger === 'submit-message') {
       if (!message) {
         return new Response('message is required for submission', {
           status: 400,
@@ -148,18 +170,17 @@ export async function POST(req: Request) {
           chatId
         })
       : await createChatStreamResponse({
-          message: trigger === 'tool-result' ? null : message,
+          message: validatedTrigger === 'tool-result' ? null : message,
           model: selectedModel,
           chatId,
           userId: userId, // userId is guaranteed to be non-null after authentication check above
-          trigger,
+          trigger: validatedTrigger,
           messageId,
           abortSignal,
           isNewChat,
           searchMode,
           modelType,
-          // Pass full messages for tool-result continuations
-          ...(trigger === 'tool-result' ? { messages } : {})
+          ...(validatedTrigger === 'tool-result' ? { toolResult } : {})
         })
 
     perfTime('createChatStreamResponse resolved', streamStart)
@@ -185,11 +206,7 @@ export async function POST(req: Request) {
             modelType: modelTypeCookie === 'quality' ? 'quality' : 'speed',
             conversationTurn,
             isNewChat: isNewChat ?? false,
-            trigger:
-              (trigger as
-                | 'submit-message'
-                | 'regenerate-message'
-                | 'tool-result') ?? 'submit-message',
+            trigger: validatedTrigger ?? 'submit-message',
             chatId,
             userId,
             modelId: selectedModel.id

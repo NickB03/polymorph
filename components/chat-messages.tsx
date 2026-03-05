@@ -71,7 +71,6 @@ export function ChatMessages({
   const toolTypes = [
     'tool-search',
     'tool-fetch',
-    'tool-askQuestion',
     'tool-relatedQuestions'
   ]
 

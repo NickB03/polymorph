@@ -4,6 +4,8 @@ import { ModelType } from '../types/model-type'
 import { Model } from '../types/models'
 import { SearchMode } from '../types/search'
 
+import type { ToolResultDelta } from './helpers/prepare-tool-result-messages'
+
 export interface BaseStreamConfig {
   message: UIMessage | null
   model: Model
@@ -15,5 +17,5 @@ export interface BaseStreamConfig {
   isNewChat?: boolean
   searchMode?: SearchMode
   modelType?: ModelType
-  messages?: UIMessage[] // For tool-result continuations (bypass prepareMessages)
+  toolResult?: ToolResultDelta
 }

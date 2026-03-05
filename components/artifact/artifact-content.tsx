@@ -17,7 +17,6 @@ export function ArtifactContent({ part }: { part: Part | null }) {
   switch (part.type) {
     case 'tool-search':
     case 'tool-fetch':
-    case 'tool-askQuestion':
       return <ToolInvocationContent part={part} />
     case 'tool-todoWrite':
       if (isTodoToolPart(part)) {
