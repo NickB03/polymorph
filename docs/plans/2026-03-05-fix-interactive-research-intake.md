@@ -12,11 +12,11 @@
 
 ## Bug Summary (from audit)
 
-| Bug | Symptom | Root Cause |
-|-----|---------|-----------|
-| Duplicate option card | After user selects an option, the confirmed card appears twice | Server sends new messageId in stream → SDK pushes new message instead of replacing existing one |
-| "Related" on option cards | Each duplicate card has a "Related" questions section | `streamRelatedQuestions` runs unconditionally, including on tool-result continuations |
-| Plan stops at 4/7 | Research plan never completes remaining steps | Duplicate message corrupts continuation state; agent sees fragmented history |
+| Bug                       | Symptom                                                        | Root Cause                                                                                      |
+| ------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Duplicate option card     | After user selects an option, the confirmed card appears twice | Server sends new messageId in stream → SDK pushes new message instead of replacing existing one |
+| "Related" on option cards | Each duplicate card has a "Related" questions section          | `streamRelatedQuestions` runs unconditionally, including on tool-result continuations           |
+| Plan stops at 4/7         | Research plan never completes remaining steps                  | Duplicate message corrupts continuation state; agent sees fragmented history                    |
 
 ## Key Files Reference
 
@@ -36,6 +36,7 @@
 This is the simplest fix and is independent of the others.
 
 **Files:**
+
 - Modify: `lib/streaming/create-chat-stream-response.ts:216-231`
 
 **Step 1: Add guard around streamRelatedQuestions**
@@ -44,42 +45,46 @@ In `lib/streaming/create-chat-stream-response.ts`, the `streamRelatedQuestions` 
 
 ```typescript
 // BEFORE (lines 216-231):
-        // Generate related questions
-        if (responseMessages && responseMessages.length > 0) {
-          // Find the last user message
-          const lastUserMessage = [...modelMessages]
-            .reverse()
-            .find(msg => msg.role === 'user')
-          const messagesForQuestions = lastUserMessage
-            ? [lastUserMessage, ...responseMessages]
-            : responseMessages
+// Generate related questions
+if (responseMessages && responseMessages.length > 0) {
+  // Find the last user message
+  const lastUserMessage = [...modelMessages]
+    .reverse()
+    .find(msg => msg.role === 'user')
+  const messagesForQuestions = lastUserMessage
+    ? [lastUserMessage, ...responseMessages]
+    : responseMessages
 
-          await streamRelatedQuestions(
-            writer,
-            messagesForQuestions,
-            abortSignal,
-            parentTraceId
-          )
-        }
+  await streamRelatedQuestions(
+    writer,
+    messagesForQuestions,
+    abortSignal,
+    parentTraceId
+  )
+}
 
 // AFTER:
-        // Generate related questions (skip for tool-result continuations — mid-research, not final answer)
-        if (trigger !== 'tool-result' && responseMessages && responseMessages.length > 0) {
-          // Find the last user message
-          const lastUserMessage = [...modelMessages]
-            .reverse()
-            .find(msg => msg.role === 'user')
-          const messagesForQuestions = lastUserMessage
-            ? [lastUserMessage, ...responseMessages]
-            : responseMessages
+// Generate related questions (skip for tool-result continuations — mid-research, not final answer)
+if (
+  trigger !== 'tool-result' &&
+  responseMessages &&
+  responseMessages.length > 0
+) {
+  // Find the last user message
+  const lastUserMessage = [...modelMessages]
+    .reverse()
+    .find(msg => msg.role === 'user')
+  const messagesForQuestions = lastUserMessage
+    ? [lastUserMessage, ...responseMessages]
+    : responseMessages
 
-          await streamRelatedQuestions(
-            writer,
-            messagesForQuestions,
-            abortSignal,
-            parentTraceId
-          )
-        }
+  await streamRelatedQuestions(
+    writer,
+    messagesForQuestions,
+    abortSignal,
+    parentTraceId
+  )
+}
 ```
 
 **Step 2: Verify the build compiles**
@@ -101,11 +106,13 @@ git commit -m "fix: skip related questions on tool-result continuations"
 This is the core fix that resolves the duplicate message issue and the plan stopping.
 
 **Files:**
+
 - Modify: `lib/streaming/create-chat-stream-response.ts:115-263`
 
 **Context — why this works:**
 
 The AI SDK's `createUIMessageStream` accepts an optional `originalMessages` parameter. When provided:
+
 1. `handleUIMessageStreamFinish` (SDK internal) checks if the last original message is `role: 'assistant'`
 2. If so, it reuses that message's ID for the `start` chunk instead of generating a new one
 3. The client receives the same ID it already has → `replaceMessage` fires instead of `pushMessage`
@@ -245,6 +252,7 @@ If any issues are found during testing, fix them and commit.
 The git status shows uncommitted changes to several files that may contain leftover code from earlier approaches. Review and clean up.
 
 **Files to check:**
+
 - `components/chat.tsx` — verify `autoSendFiredRef` approach is clean (no leftover `autoSendReadyAtRef` from earlier delay-based approach)
 - `lib/streaming/types.ts` — verify no leftover `messages?: UIMessage[]` field (from the earlier approach that sent full messages from client)
 - `app/api/chat/route.ts` — verify no leftover `messages` extraction from body (from earlier approach)
@@ -252,6 +260,7 @@ The git status shows uncommitted changes to several files that may contain lefto
 **Step 1: Check for leftover client-side messages passing**
 
 The earlier committed approach sent full `messages` from the client for tool-result continuations. The current approach uses `toolResult` (minimal delta) instead. Verify:
+
 - `BaseStreamConfig` in `lib/streaming/types.ts` should NOT have a `messages` field — it should only have `toolResult`
 - `app/api/chat/route.ts` should NOT extract or pass `messages` for tool-result
 - `components/chat.tsx` `prepareSendMessagesRequest` for tool-result should only send `toolResult`, not `messages`

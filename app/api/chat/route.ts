@@ -28,8 +28,15 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { message, messages, chatId, trigger, messageId, isNewChat, toolResult } =
-      body
+    const {
+      message,
+      messages,
+      chatId,
+      trigger,
+      messageId,
+      isNewChat,
+      toolResult
+    } = body
 
     perfLog(
       `API Route - Start: chatId=${chatId}, trigger=${trigger}, isNewChat=${isNewChat}`
