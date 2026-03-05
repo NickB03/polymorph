@@ -50,6 +50,7 @@ export function Chat({
     // Clear other chat-related state that persists due to Next.js 16 component caching
     setInput('')
     setUploadedFiles([])
+    autoSendFiredRef.current.clear()
     setErrorModal({
       open: false,
       type: 'general',
@@ -487,28 +488,20 @@ export function Chat({
         }) => {
           // Find the tool name from the message parts
           let toolName = 'unknown'
-
-          // Optimize by breaking early once found
-          outerLoop: for (const message of messages) {
-            if (!message.parts) continue
-
-            for (const part of message.parts) {
-              if (isToolCallPart(part) && part.toolCallId === toolCallId) {
-                toolName = part.toolName
-                break outerLoop
-              } else if (
-                isToolTypePart(part) &&
-                part.toolCallId === toolCallId
-              ) {
-                toolName = part.type.substring(5) // Remove 'tool-' prefix
-                break outerLoop
-              } else if (
-                isDynamicToolPart(part) &&
-                part.toolCallId === toolCallId
-              ) {
-                toolName = part.toolName
-                break outerLoop
-              }
+          const matchedPart = messages
+            .flatMap(m => m.parts ?? [])
+            .find(
+              p =>
+                (isToolCallPart(p) ||
+                  isToolTypePart(p) ||
+                  isDynamicToolPart(p)) &&
+                p.toolCallId === toolCallId
+            )
+          if (matchedPart) {
+            if (isToolCallPart(matchedPart) || isDynamicToolPart(matchedPart)) {
+              toolName = matchedPart.toolName
+            } else if (isToolTypePart(matchedPart)) {
+              toolName = matchedPart.type.substring(5) // Remove 'tool-' prefix
             }
           }
 

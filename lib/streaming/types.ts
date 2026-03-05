@@ -1,4 +1,4 @@
-import { UIMessage } from '@ai-sdk/react'
+import type { UIMessage } from '@/lib/types/ai'
 
 import { ModelType } from '../types/model-type'
 import { Model } from '../types/models'
