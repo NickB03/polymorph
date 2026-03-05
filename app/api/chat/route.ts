@@ -110,6 +110,14 @@ export async function POST(req: Request) {
       })
     }
 
+    // Guest mode does not support tool-result continuations (no DB persistence)
+    if (isGuest && validatedTrigger === 'tool-result') {
+      return new Response(
+        'Tool-result continuations are not supported for guest users',
+        { status: 400, statusText: 'Bad Request' }
+      )
+    }
+
     if (isGuest) {
       const forwardedFor = req.headers.get('x-forwarded-for') || ''
       const ip =
@@ -166,14 +174,6 @@ export async function POST(req: Request) {
     perfLog(
       `createChatStreamResponse - Start: model=${selectedModel.providerId}:${selectedModel.id}, searchMode=${searchMode}, modelType=${modelType}`
     )
-
-    // Guest mode does not support tool-result continuations
-    if (isGuest && validatedTrigger === 'tool-result') {
-      return new Response(
-        'Tool-result continuations are not supported for guest users',
-        { status: 400, statusText: 'Bad Request' }
-      )
-    }
 
     const response = isGuest
       ? await createEphemeralChatStreamResponse({

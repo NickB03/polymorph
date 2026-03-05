@@ -76,7 +76,9 @@ export async function prepareToolResultMessages(
     )
   }
 
-  // Clone the assistant message and apply the tool result
+  // Clone the assistant message and apply the tool result.
+  // Type assertion is safe: we only modify the validated interactive tool part
+  // at matchingPartIndex, but TS can't narrow through .map() over a union.
   const updatedParts = lastMessage.parts.map((p, i) => {
     if (i === matchingPartIndex) {
       return {
@@ -86,7 +88,7 @@ export async function prepareToolResultMessages(
       }
     }
     return p
-  })
+  }) as typeof lastMessage.parts
 
   const updatedAssistantMessage: UIMessage = {
     ...lastMessage,
