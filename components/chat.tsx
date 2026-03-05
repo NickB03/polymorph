@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 
 import { generateId } from '@/lib/db/schema'
 import { UploadedFile } from '@/lib/types'
-import type { ChatSection, UIMessage } from '@/lib/types/ai'
+import type { ChatSection, UIMessage, UIMessageMetadata } from '@/lib/types/ai'
 import {
   isDynamicToolPart,
   isInteractiveToolPart,
@@ -17,6 +17,7 @@ import {
   isToolTypePart
 } from '@/lib/types/dynamic-tools'
 import { cn } from '@/lib/utils'
+import { getCookie, setCookie } from '@/lib/utils/cookies'
 
 import { useFileDropzone } from '@/hooks/use-file-dropzone'
 
@@ -55,7 +56,36 @@ export function Chat({
       type: 'general',
       message: ''
     })
+    // Reset search mode to default 'chat' for new conversations
+    setCookie('searchMode', 'chat')
+    window.dispatchEvent(new CustomEvent('searchModeChanged'))
   }
+
+  // Restore search mode from saved chat or reset to 'chat' for new conversations
+  useEffect(() => {
+    if (savedMessages.length > 0) {
+      // Existing chat: restore the search mode from the last assistant message metadata
+      const lastAssistantMessage = [...savedMessages]
+        .reverse()
+        .find(m => m.role === 'assistant')
+      const metadata = lastAssistantMessage?.metadata as
+        | UIMessageMetadata
+        | undefined
+      const savedSearchMode = metadata?.searchMode
+      if (savedSearchMode && ['chat', 'research'].includes(savedSearchMode)) {
+        if (getCookie('searchMode') !== savedSearchMode) {
+          setCookie('searchMode', savedSearchMode)
+          window.dispatchEvent(new CustomEvent('searchModeChanged'))
+        }
+      }
+    } else {
+      // New chat: reset to default 'chat' mode
+      if (getCookie('searchMode') !== 'chat') {
+        setCookie('searchMode', 'chat')
+        window.dispatchEvent(new CustomEvent('searchModeChanged'))
+      }
+    }
+  }, [providedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const autoSendFiredRef = useRef<Set<string>>(new Set())
   const scrollContainerRef = useRef<HTMLDivElement>(null)
