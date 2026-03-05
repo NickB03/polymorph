@@ -1,16 +1,16 @@
-# Docker Compose configuration for the vana-stack development environment
+# Docker Compose configuration for the polymorph-stack development environment
 
-name: vana-stack
+name: polymorph-stack
 services:
-  vana:
-    image: ghcr.io/${GITHUB_REPOSITORY:-your-username/vana-v2}:latest
+  polymorph:
+    image: ghcr.io/${GITHUB_REPOSITORY:-NickB03/polymorph}:latest
     command: bun start -H 0.0.0.0
     build:
       context: .
       dockerfile: Dockerfile
       cache_from:
-        - vana:builder
-        - vana:latest
+        - polymorph:builder
+        - polymorph:latest
     env_file: .env.local # Load environment variables
     environment:
       # Database connection (managed by Supabase CLI or Cloud)
@@ -20,7 +20,7 @@ services:
       ENABLE_AUTH: ${ENABLE_AUTH:-true}
       PORT: 43100
     ports:
-      - '${VANA_PORT:-43100}:43100' # Maps host port (default 43100) to app port 43100 in the container.
+      - '${POLYMORPH_PORT:-43100}:43100' # Maps host port (default 43100) to app port 43100 in the container.
     depends_on:
       redis:
         condition: service_started

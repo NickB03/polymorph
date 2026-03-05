@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- AI-powered answer engine with generative UI
+- AI platform with generative UI
 - Researcher agent with quick mode (20 steps) and adaptive mode (50 steps)
 - Multi-provider search via Tavily (primary) and Brave (multimedia)
 - Web content extraction with fetch tool
@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Vercel + Supabase deployment configuration with Docker build workflows
 - CI pipeline with GitHub Actions for linting, type checking, and builds
 - Local development environment setup with Supabase CLI
-- Vana branding and UI customization
+- Polymorph branding and UI customization
 
 ### Fixed
 
@@ -39,6 +39,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Custom branding and UI configuration for Vana
+- Custom branding and UI configuration for Polymorph
 - Standardized model configuration on AI Gateway providers
 - Updated shadcn/ui components and dependencies

@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Common issues and solutions for Vana v2 development and deployment.
+Common issues and solutions for Polymorph development and deployment.
 
 ## Setup Issues
 
@@ -129,7 +129,7 @@ curl http://127.0.0.1:44321/rest/v1/ -H "apikey: <your-anon-key>"
 
 **Symptoms:** Guest users see `Please sign in to continue.` (401). Authenticated users see `Daily chat limit reached. Please try again tomorrow.` (429).
 
-**Guest limits:** Default is 10 chats per day per IP. Configurable via `GUEST_CHAT_DAILY_LIMIT`. Only enforced in cloud deployments (`VANA_CLOUD_DEPLOYMENT=true`) with Upstash Redis configured.
+**Guest limits:** Default is 10 chats per day per IP. Configurable via `GUEST_CHAT_DAILY_LIMIT`. Only enforced in cloud deployments (`POLYMORPH_CLOUD_DEPLOYMENT=true`) with Upstash Redis configured.
 
 **Authenticated user limits:** Default is 100 chats per day. Only enforced in cloud deployments.
 
@@ -140,7 +140,7 @@ Rate limit data is stored in Upstash Redis with keys:
 
 Limits reset at midnight UTC.
 
-**Fix for local dev:** Rate limits are not enforced unless `VANA_CLOUD_DEPLOYMENT=true`. If testing rate limits locally, ensure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set.
+**Fix for local dev:** Rate limits are not enforced unless `POLYMORPH_CLOUD_DEPLOYMENT=true`. If testing rate limits locally, ensure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set.
 
 ## Build Issues
 

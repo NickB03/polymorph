@@ -5,8 +5,8 @@ import Link from 'next/link'
 
 import { Bookmark, X } from 'lucide-react'
 
-const SEARCH_COUNT_KEY = 'vana-guest-search-count'
-const NUDGE_DISMISSED_KEY = 'vana-guest-nudge-dismissed'
+const SEARCH_COUNT_KEY = 'polymorph-guest-search-count'
+const NUDGE_DISMISSED_KEY = 'polymorph-guest-nudge-dismissed'
 const NUDGE_THRESHOLD = 5
 
 export function GuestSignupNudge() {

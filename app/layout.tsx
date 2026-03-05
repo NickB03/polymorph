@@ -23,7 +23,7 @@ const fontSans = FontSans({
 
 const title = 'polymorph'
 const description =
-  'An AI-powered answer engine with a generative UI for research and exploration.'
+  'An AI platform with a generative UI for research, creation, and exploration.'
 const metadataBase = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:43100'
 
 export const metadata: Metadata = {

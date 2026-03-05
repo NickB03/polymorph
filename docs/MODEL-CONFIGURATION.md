@@ -1,6 +1,6 @@
 # Model Configuration
 
-This document explains how Vana v2 selects AI models for the researcher agent pipeline. It covers the configuration file format, the selection algorithm, provider registry, and how to add new models or providers.
+This document explains how Polymorph selects AI models for the researcher agent pipeline. It covers the configuration file format, the selection algorithm, provider registry, and how to add new models or providers.
 
 ## Table of Contents
 
@@ -102,12 +102,12 @@ This creates a 2x2 matrix of possible model assignments. A separate `relatedQues
 
 ## Configuration Profiles
 
-Two profiles exist, selected by the `VANA_CLOUD_DEPLOYMENT` environment variable:
+Two profiles exist, selected by the `POLYMORPH_CLOUD_DEPLOYMENT` environment variable:
 
-| Profile   | File                         | Selected When                |
-| --------- | ---------------------------- | ---------------------------- |
-| `default` | `config/models/default.json` | Default (self-hosted)        |
-| `cloud`   | `config/models/cloud.json`   | `VANA_CLOUD_DEPLOYMENT=true` |
+| Profile   | File                         | Selected When                     |
+| --------- | ---------------------------- | --------------------------------- |
+| `default` | `config/models/default.json` | Default (self-hosted)             |
+| `cloud`   | `config/models/cloud.json`   | `POLYMORPH_CLOUD_DEPLOYMENT=true` |
 
 The config loader at `lib/config/load-models-config.ts`:
 
@@ -253,7 +253,7 @@ After changing a model, verify it works in both search modes:
 1. Set the `modelType` cookie to match your config entry (`speed` or `quality`)
 2. Set the `searchMode` cookie to `chat`, send a message, and check the server logs for the expected model ID
 3. Repeat with `searchMode=research`
-4. If targeting `cloud.json`, test with `VANA_CLOUD_DEPLOYMENT=true`
+4. If targeting `cloud.json`, test with `POLYMORPH_CLOUD_DEPLOYMENT=true`
 
 ### Adding Provider Options
 

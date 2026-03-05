@@ -15,7 +15,7 @@ const externalLinks = [
   },
   {
     name: 'GitHub',
-    href: 'https://github.com/nick/vana-v2',
+    href: 'https://github.com/NickB03/vana-v2',
     icon: <SiGithub className="mr-2 h-4 w-4" />
   }
 ]

@@ -1,6 +1,6 @@
 # Search Providers
 
-Vana uses a factory pattern to support multiple search backends. Providers are interchangeable and selected via the `SEARCH_API` environment variable, with Tavily as the default.
+Polymorph uses a factory pattern to support multiple search backends. Providers are interchangeable and selected via the `SEARCH_API` environment variable, with Tavily as the default.
 
 ## Table of Contents
 

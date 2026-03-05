@@ -1,6 +1,6 @@
 # Generative UI
 
-This document describes the generative UI system in Vana v2 — how AI tool invocations are transformed into rich, interactive React components rendered inline in the chat.
+This document describes the generative UI system in Polymorph — how AI tool invocations are transformed into rich, interactive React components rendered inline in the chat.
 
 ## Table of Contents
 
@@ -18,6 +18,7 @@ This document describes the generative UI system in Vana v2 — how AI tool invo
 - [Research Process Section](#research-process-section)
 - [How to Add a New Generative UI Tool](#how-to-add-a-new-generative-ui-tool)
 - [Key File Reference](#key-file-reference)
+- [Future Capabilities](#future-capabilities)
 
 ---
 
@@ -163,6 +164,55 @@ const FormatSchema = z.discriminatedUnion('kind', [
 This allows the AI to specify exactly how each column should be formatted — currencies, percentages, status badges, links — and the DataTable component renders them accordingly.
 
 **Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../lib/tools/display-chart.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts), [`lib/tools/display-callout.ts`](../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../lib/tools/display-timeline.ts)
+
+### Mode-specific tool availability
+
+The researcher agent (`lib/agents/researcher.ts`) exposes different tools depending on the search mode:
+
+| Tool                 | Chat Mode |        Research Mode        |
+| -------------------- | :-------: | :-------------------------: |
+| `search`             |    Yes    |             Yes             |
+| `fetch`              |    Yes    |             Yes             |
+| `displayPlan`        |    Yes    |             No              |
+| `displayTable`       |    Yes    |             Yes             |
+| `displayChart`       |    Yes    |             Yes             |
+| `displayCitations`   |    Yes    |             Yes             |
+| `displayLinkPreview` |    Yes    |             Yes             |
+| `displayOptionList`  |    Yes    |             Yes             |
+| `displayCallout`     |    Yes    |             Yes             |
+| `displayTimeline`    |    Yes    |             Yes             |
+| `todoWrite`          |    No     | Yes (when writer available) |
+
+**Chat mode** (max 20 steps) uses forced optimized search and includes `displayPlan` for step-by-step guides. **Research mode** (max 50 steps) uses full search and enables `todoWrite` for task management when a writer is available.
+
+### Shared base fields
+
+All display tool schemas support optional base fields defined in `components/tool-ui/shared/schema.ts`:
+
+| Field     | Type     | Description                                                                                                                         |
+| --------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `id`      | `string` | Unique identifier for the component instance (`ToolUIIdSchema`)                                                                     |
+| `role`    | `enum`   | Semantic role: `information`, `decision`, `control`, `state`, `composite` (`ToolUIRoleSchema`)                                      |
+| `receipt` | `object` | Outcome tracking with `outcome` (success/partial/failed/cancelled), `summary`, `identifiers[]`, `timestamp` (`ToolUIReceiptSchema`) |
+
+These base fields enable consistent identification, semantic classification, and outcome tracking across all generative UI components.
+
+### Action system
+
+Some display tools support an optional `actions[]` field for interactive buttons:
+
+| Property       | Type      | Description                                                       |
+| -------------- | --------- | ----------------------------------------------------------------- |
+| `id`           | `string`  | Unique action identifier                                          |
+| `label`        | `string`  | Button display text                                               |
+| `variant`      | `enum`    | `default`, `destructive`, `outline`, `secondary`, `ghost`, `link` |
+| `icon`         | `string`  | Optional Lucide icon name                                         |
+| `disabled`     | `boolean` | Whether the action is disabled                                    |
+| `shortcut`     | `string`  | Keyboard shortcut hint                                            |
+| `confirmLabel` | `string`  | Confirmation text before executing                                |
+| `sentence`     | `string`  | Natural language description sent back to the AI                  |
+
+Currently supported on `OptionList` and extensible to other components via the shared `ActionSchema`.
 
 ---
 
@@ -406,7 +456,7 @@ This guard is intentionally conservative: text parts with substantive content (f
 
 A visual step-by-step guide with status indicators and progress tracking.
 
-**Props:** `id`, `title`, `description`, `todos[]` (each with `id`, `label`, `status`, optional `description`)
+**Props:** `id`, `title`, `description`, `todos[]` (each with `id`, `label`, `status`, optional `description`), `maxVisibleTodos`
 
 **Status types:** `pending` | `in_progress` | `completed` | `cancelled`
 
@@ -423,7 +473,7 @@ A visual step-by-step guide with status indicators and progress tracking.
 
 A sortable data table with rich column formatting and responsive layout.
 
-**Props:** `id`, `columns[]` (key, label, format, sortable, align), `data[]`, `rowIdKey`, `defaultSort`
+**Props:** `id`, `columns[]` (key, label, format, sortable, align, `abbr`, `width`, `truncate`, `hideOnMobile`, `priority`), `data[]`, `rowIdKey`, `defaultSort`
 
 **Format kinds:** `text`, `number`, `currency`, `percent`, `date`, `delta`, `boolean`, `link`, `badge`, `status`, `array`
 
@@ -458,15 +508,15 @@ A data visualization component supporting bar and line charts via Recharts.
 
 A list of source citations with metadata and navigation.
 
-**Props:** `id`, `citations[]` (each with `id`, `href`, `title`, `snippet`, `domain`, `favicon`, `type`)
+**Props:** `id`, `citations[]` (each with `id`, `href`, `title`, `snippet`, `domain`, `favicon`, `type`, `author`, `publishedAt`, `locale`)
 
 **Citation types:** `webpage`, `document`, `article`, `api`, `code`, `other`
 
 **Variants:**
 
-- `default` — full cards with metadata
-- `inline` — compact inline badges
-- `stacked` — overlapping favicon circles with popover
+- `default` — full cards with metadata, best for 3-6 sources where each needs visibility
+- `inline` — compact badges that wrap in text flow, best for many inline references
+- `stacked` — overlapping favicon circles with popover, best for compact source attribution
 
 **Features:**
 
@@ -479,7 +529,7 @@ A list of source citations with metadata and navigation.
 
 A rich link preview card with image, title, and description.
 
-**Props:** `id`, `href`, `title`, `description`, `image`, `domain`, `favicon`, `ratio`, `fit`
+**Props:** `id`, `href`, `title`, `description`, `image`, `domain`, `favicon`, `createdAt`, `locale`, `ratio`, `fit`
 
 **Features:**
 
@@ -916,3 +966,14 @@ activeTools: [...existingTools, 'displayTimeline']
 | File                         | Purpose                          |
 | ---------------------------- | -------------------------------- |
 | `lib/types/dynamic-tools.ts` | DynamicToolPart type definitions |
+
+---
+
+## Future Capabilities
+
+Polymorph's generative UI system is designed to expand beyond research. Planned display components include:
+
+- **Code Artifacts** — Live code rendering with syntax highlighting and execution previews
+- **Image Generation** — Display components for AI-generated images with variant selection
+- **Multimodal Input/Output** — Components for handling mixed media (text, images, audio, video)
+- **Website Previews** — Interactive iframe-based previews for generated web content
