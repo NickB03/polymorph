@@ -30,7 +30,10 @@ export function sanitizeUrl(url: string): string {
 }
 
 export function isCloudDeployment(): boolean {
-  return process.env.VANA_CLOUD_DEPLOYMENT === 'true'
+  return (
+    process.env.POLYMORPH_CLOUD_DEPLOYMENT === 'true' ||
+    process.env.VANA_CLOUD_DEPLOYMENT === 'true'
+  )
 }
 
 export function isChatLoading(status: ChatStatus | undefined): boolean {

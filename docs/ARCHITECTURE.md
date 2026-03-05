@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the internal architecture of Vana v2 — an AI-powered answer engine with generative UI. It covers the agent pipeline, tool system, streaming infrastructure, database schema, authentication, UI rendering, and model selection.
+This document describes the internal architecture of Polymorph — an AI platform with generative UI. It covers the agent pipeline, tool system, streaming infrastructure, database schema, authentication, UI rendering, and model selection.
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@ This document describes the internal architecture of Vana v2 — an AI-powered a
 
 ## System Overview
 
-Vana v2 is built on Next.js 16 (App Router) with React 19. A single chat API endpoint orchestrates an AI agent that performs multi-step research using tools (search, fetch, question, todo) and streams structured responses back to the browser as Server-Sent Events (SSE). The generative UI layer renders each message part — text, reasoning, tool results, data attachments — using dedicated React components.
+Polymorph is built on Next.js 16 (App Router) with React 19. A single chat API endpoint orchestrates an AI agent that performs multi-step research using tools (search, fetch, question, todo) and streams structured responses back to the browser as Server-Sent Events (SSE). The generative UI layer renders each message part — text, reasoning, tool results, data attachments — using dedicated React components.
 
 ```mermaid
 graph TD
@@ -553,7 +553,7 @@ flowchart TD
 
     subgraph ConfigFiles["Configuration Files"]
         DefaultJSON["default.json<br/>(standard deployment)"]
-        CloudJSON["cloud.json<br/>(VANA_CLOUD_DEPLOYMENT)"]
+        CloudJSON["cloud.json<br/>(POLYMORPH_CLOUD_DEPLOYMENT)"]
     end
 
     subgraph Providers["Provider Registry (lib/utils/registry.ts)"]
@@ -592,7 +592,7 @@ From [`config/models/default.json`](../config/models/default.json):
 | Research          | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
 | Related Questions | --      | `google/gemini-3-flash`       | Gateway  |
 
-**Force-speed behavior:** Guest users and cloud deployments (`VANA_CLOUD_DEPLOYMENT=true`) are forced to `modelType=speed` regardless of cookie preference. This is implemented by replacing the cookie store with a mock that always returns `{ value: 'speed' }` for the `modelType` cookie.
+**Force-speed behavior:** Guest users and cloud deployments (`POLYMORPH_CLOUD_DEPLOYMENT=true`) are forced to `modelType=speed` regardless of cookie preference. This is implemented by replacing the cookie store with a mock that always returns `{ value: 'speed' }` for the `modelType` cookie.
 
 **Source files:** [`lib/utils/model-selection.ts`](../lib/utils/model-selection.ts), [`lib/utils/registry.ts`](../lib/utils/registry.ts), [`lib/config/model-types.ts`](../lib/config/model-types.ts), [`config/models/default.json`](../config/models/default.json)
 

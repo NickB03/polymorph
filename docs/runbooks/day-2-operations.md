@@ -1,6 +1,6 @@
 # Day-2 Operations Runbook
 
-This runbook is for operators maintaining Vana v2 after initial deployment.
+This runbook is for operators maintaining Polymorph after initial deployment.
 
 ## 1) Incident triage flow
 

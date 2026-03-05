@@ -23,7 +23,7 @@ If you discover a security vulnerability, please report it responsibly.
 
 ### Authentication
 
-Vana v2 uses [Supabase Auth](https://supabase.com/docs/guides/auth) for user authentication.
+Polymorph uses [Supabase Auth](https://supabase.com/docs/guides/auth) for user authentication.
 
 - Session tokens are refreshed automatically via Next.js middleware (`lib/supabase/middleware.ts`).
 - Unauthenticated requests to protected routes are redirected to `/auth/login`.

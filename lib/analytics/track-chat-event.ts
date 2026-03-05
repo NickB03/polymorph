@@ -7,7 +7,7 @@ import type { ChatEventData } from './types'
 /**
  * Track a chat event to analytics provider
  *
- * Currently uses Vercel Analytics. Only sends events when VANA_CLOUD_DEPLOYMENT=true.
+ * Currently uses Vercel Analytics. Only sends events when POLYMORPH_CLOUD_DEPLOYMENT=true.
  * Errors are logged but do not interrupt the application flow.
  *
  * Future extensibility: This function can be modified to support multiple providers

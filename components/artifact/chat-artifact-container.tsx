@@ -136,7 +136,7 @@ export function ChatArtifactContainer({
         )}
       </div>
 
-      {/* Desktop: Independent panels like Vana Studio */}
+      {/* Desktop: Independent resizable panels */}
       <div
         ref={containerRef}
         className="hidden md:flex flex-1 min-w-0 overflow-hidden"

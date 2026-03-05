@@ -1,6 +1,6 @@
 # Streaming Architecture
 
-This document provides a detailed technical reference for the streaming infrastructure in Vana v2. It covers how Server-Sent Events (SSE) deliver real-time AI responses to the client, the two stream paths (authenticated and ephemeral), message preparation, smooth streaming, parallel operations, error handling, and the SSE protocol.
+This document provides a detailed technical reference for the streaming infrastructure in Polymorph. It covers how Server-Sent Events (SSE) deliver real-time AI responses to the client, the two stream paths (authenticated and ephemeral), message preparation, smooth streaming, parallel operations, error handling, and the SSE protocol.
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ This document provides a detailed technical reference for the streaming infrastr
 
 ## Overview
 
-Vana v2 uses **Server-Sent Events (SSE)** to stream AI responses from the server to the client in real time. Rather than waiting for the entire research agent to finish before returning a response, the system streams partial results incrementally: tool calls appear as they execute, text tokens arrive word-by-word, and related questions stream in after the main answer completes.
+Polymorph uses **Server-Sent Events (SSE)** to stream AI responses from the server to the client in real time. Rather than waiting for the entire research agent to finish before returning a response, the system streams partial results incrementally: tool calls appear as they execute, text tokens arrive word-by-word, and related questions stream in after the main answer completes.
 
 This architecture enables:
 

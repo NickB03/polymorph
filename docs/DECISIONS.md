@@ -1,8 +1,8 @@
-# Vana v2 Launch Decisions
+# Polymorph Launch Decisions
 
 Date: 2026-02-23
 
-This document captures the Phase 0 onboarding decisions for Vana v2.
+This document captures the Phase 0 onboarding decisions for Polymorph.
 
 ## 1) Authentication and Backend
 

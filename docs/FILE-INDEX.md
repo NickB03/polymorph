@@ -1,6 +1,6 @@
 # File Index
 
-Comprehensive index of every file in the Vana v2 repository, organized by directory. Each entry includes the file path and a one-line description.
+Comprehensive index of every file in the Polymorph repository, organized by directory. Each entry includes the file path and a one-line description.
 
 ## Table of Contents
 
@@ -62,7 +62,7 @@ Comprehensive index of every file in the Vana v2 repository, organized by direct
 | `prettier.config.js`  | Prettier configuration (no semicolons, single quotes, no trailing commas)                               |
 | `.eslintrc.json`      | ESLint configuration with import sorting rules                                                          |
 | `components.json`     | shadcn/ui configuration for component generation                                                        |
-| `docker-compose.yaml` | Docker Compose stack defining Vana app and Redis services                                               |
+| `docker-compose.yaml` | Docker Compose stack defining Polymorph app and Redis services                                               |
 | `Dockerfile`          | Multi-stage Docker build for production deployment                                                      |
 | `.gitignore`          | Git ignore rules for node_modules, .next, env files, etc.                                               |
 | `.mcp.json`           | MCP (Model Context Protocol) configuration                                                              |
@@ -379,8 +379,8 @@ shadcn/ui-based primitives and custom UI components.
 | `components/ui/status-indicator.tsx` | Animated status dot indicator                          |
 | `components/ui/switch.tsx`           | Toggle switch component                                |
 | `components/ui/toggle.tsx`           | Toggle button component                                |
-| `components/ui/animated-logo.tsx`    | Animated Vana logo displayed during loading states     |
-| `components/ui/icons.tsx`            | Custom SVG icon components (Vana logo, provider logos) |
+| `components/ui/animated-logo.tsx`    | Animated Polymorph logo displayed during loading states     |
+| `components/ui/icons.tsx`            | Custom SVG icon components (Polymorph logo, provider logos) |
 
 ---
 
@@ -665,10 +665,10 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 
 | File                                  | Purpose                                              |
 | ------------------------------------- | ---------------------------------------------------- |
-| `public/images/vana-v-mark.png`       | Vana "V" mark logo                                   |
-| `public/images/vana-wordmark.png`     | Vana full wordmark logo                              |
-| `public/images/vana-v-48.png`         | 48px Vana icon for sidebar collapsed state           |
-| `public/images/vana-icon-512.png`     | 512px Vana icon for PWA                              |
+| `public/images/vana-v-mark.png`       | Polymorph "V" mark logo                              |
+| `public/images/vana-wordmark.png`     | Polymorph full wordmark logo                         |
+| `public/images/vana-v-48.png`         | 48px Polymorph icon for sidebar collapsed state      |
+| `public/images/vana-icon-512.png`     | 512px Polymorph icon for PWA                         |
 | `public/images/placeholder-image.png` | Placeholder image for missing thumbnails             |
 | `public/screenshot-2026-02-07.png`    | Application screenshot for README and social sharing |
 

@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide describes the Vana v2 production deployment baseline.
+This guide describes the Polymorph production deployment baseline.
 
 ## Recommended targets
 
@@ -25,8 +25,8 @@ NEXT_PUBLIC_APP_URL=[YOUR_PUBLIC_APP_URL]
 If cloud controls are enabled:
 
 ```bash
-VANA_CLOUD_DEPLOYMENT=true
-NEXT_PUBLIC_VANA_CLOUD_DEPLOYMENT=true
+POLYMORPH_CLOUD_DEPLOYMENT=true
+NEXT_PUBLIC_POLYMORPH_CLOUD_DEPLOYMENT=true
 UPSTASH_REDIS_REST_URL=[YOUR_UPSTASH_URL]
 UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 ```

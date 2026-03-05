@@ -1,6 +1,6 @@
-# Vana v2 Environment Reference
+# Polymorph Environment Reference
 
-This document defines the environment-variable matrix for Vana v2.
+This document defines the environment-variable matrix for Polymorph.
 
 ## Required (Day-1 bootstrap)
 
@@ -22,8 +22,8 @@ This document defines the environment-variable matrix for Vana v2.
 
 | Variable                            | Required in cloud       | Purpose                                    |
 | ----------------------------------- | ----------------------- | ------------------------------------------ |
-| `VANA_CLOUD_DEPLOYMENT`             | Yes                     | Enables cloud-mode guardrails and behavior |
-| `NEXT_PUBLIC_VANA_CLOUD_DEPLOYMENT` | Recommended             | Hides client-only controls in cloud mode   |
+| `POLYMORPH_CLOUD_DEPLOYMENT`             | Yes                     | Enables cloud-mode guardrails and behavior |
+| `NEXT_PUBLIC_POLYMORPH_CLOUD_DEPLOYMENT` | Recommended             | Hides client-only controls in cloud mode   |
 | `UPSTASH_REDIS_REST_URL`            | Yes (if limits enabled) | Redis endpoint for limits                  |
 | `UPSTASH_REDIS_REST_TOKEN`          | Yes (if limits enabled) | Redis credential                           |
 
@@ -82,6 +82,6 @@ Guest mode is the recommended default experience. It lets unauthenticated users 
 - Guest sessions are ephemeral: chats are not persisted, and guests are limited to speed-mode models.
 - `GUEST_CHAT_DAILY_LIMIT` (default: `10`) caps daily searches per IP. Requires Redis (`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`) when running in cloud mode. When the limit is reached, a friendly 429 response encourages account creation.
 
-### Cloud Mode (`VANA_CLOUD_DEPLOYMENT`)
+### Cloud Mode (`POLYMORPH_CLOUD_DEPLOYMENT`)
 
 - Enabling this mode locally requires `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to be configured, or the app will fail to initialize rate limiting and search caching.

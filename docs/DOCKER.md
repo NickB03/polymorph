@@ -1,6 +1,6 @@
 # Docker Guide
 
-This guide covers running Vana v2 with Docker for local development and self-hosted deployments.
+This guide covers running Polymorph with Docker for local development and self-hosted deployments.
 
 ## Quick Start (Docker Compose)
 
@@ -34,7 +34,7 @@ docker compose up -d
 
 ### What starts in Docker Compose
 
-- `vana` app container
+- `polymorph` app container
 - Redis (used for caching and rate limiting)
 
 **Note:** PostgreSQL, Authentication, and Storage are managed by the Supabase CLI (or Supabase Cloud in production).
@@ -62,8 +62,8 @@ docker compose down
 docker compose down -v
 
 # Follow app logs
-docker compose logs -f vana
+docker compose logs -f polymorph
 
 # Rebuild app image
-docker compose build vana
+docker compose build polymorph
 ```

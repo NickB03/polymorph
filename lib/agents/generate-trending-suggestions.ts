@@ -15,7 +15,7 @@ const trendingSuggestionsSchema = z.object({
   explain: z.array(z.string()).length(4)
 })
 
-const SYSTEM_PROMPT = `You generate trending search prompt suggestions for an AI answer engine.
+const SYSTEM_PROMPT = `You generate trending search prompt suggestions for an AI search platform.
 You will be given trending topics across science, technology, business, health, culture, and more.
 Create 4 prompt suggestions per category. Use the trending context for inspiration but prioritize DOMAIN DIVERSITY over news recency.
 

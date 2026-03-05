@@ -1,6 +1,6 @@
 # Research Agent
 
-This document provides a deep technical reference for the research agent system in Vana v2 — the agentic pipeline that transforms a user's question into a multi-source, cited answer with rich generative UI. It covers the ToolLoopAgent pattern, search modes, the tool system, search providers, model selection, context window management, streaming integration, and how to extend the agent.
+This document provides a deep technical reference for the research agent system in Polymorph — the agentic pipeline that transforms a user's question into a multi-source, cited answer with rich generative UI. It covers the ToolLoopAgent pattern, search modes, the tool system, search providers, model selection, context window management, streaming integration, and how to extend the agent.
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@ This document provides a deep technical reference for the research agent system 
 
 ## Overview
 
-The research agent is the core intelligence of Vana v2. When a user submits a question, the agent autonomously plans a research strategy, executes web searches, fetches page content, tracks progress through tasks, and synthesizes findings into a cited answer with inline generative UI components (tables, charts, citations, plans, link previews, option lists, callouts, timelines).
+The research agent is the research subsystem of Polymorph. When a user submits a question, the agent autonomously plans a research strategy, executes web searches, fetches page content, tracks progress through tasks, and synthesizes findings into a cited answer with inline generative UI components (tables, charts, citations, plans, link previews, option lists, callouts, timelines).
 
 The agent is built on the Vercel AI SDK's `ToolLoopAgent` — a construct that runs an LLM in a loop, allowing it to call tools repeatedly until it decides to produce a final answer or hits a step limit. Two operating modes (chat and research) control the agent's behavior, tool availability, and depth of research.
 
@@ -547,7 +547,7 @@ The `getModel(modelString)` function takes a `providerId:modelId` string (e.g., 
 
 ### Force-Speed Behavior
 
-Guest users and cloud deployments (`VANA_CLOUD_DEPLOYMENT=true`) are forced to `modelType=speed` regardless of cookie preference. This is implemented by replacing the cookie store with a mock that always returns `{ value: 'speed' }` for the `modelType` cookie.
+Guest users and cloud deployments (`POLYMORPH_CLOUD_DEPLOYMENT=true`) are forced to `modelType=speed` regardless of cookie preference. This is implemented by replacing the cookie store with a mock that always returns `{ value: 'speed' }` for the `modelType` cookie.
 
 ---
 

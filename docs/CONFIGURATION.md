@@ -1,10 +1,10 @@
 # Configuration Guide
 
-This guide covers application configuration for Vana v2, including required startup variables and optional capabilities.
+This guide covers application configuration for Polymorph, including required startup variables and optional capabilities.
 
 ## Required Day-1 Configuration
 
-Vana v2 requires the following environment variables to run:
+Polymorph requires the following environment variables to run:
 
 ```bash
 DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres
@@ -63,7 +63,7 @@ If you change providers, ensure model IDs in `config/models/*.json` are compatib
 For managed cloud mode, enable:
 
 ```bash
-VANA_CLOUD_DEPLOYMENT=true
+POLYMORPH_CLOUD_DEPLOYMENT=true
 UPSTASH_REDIS_REST_URL=[YOUR_UPSTASH_URL]
 UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 ```

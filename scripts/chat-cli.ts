@@ -118,9 +118,9 @@ class ChatApiTester {
   }
 
   private loadCookiesFromEnv(): string | undefined {
-    if (process.env.VANA_COOKIES) {
-      console.log('🍪 Using cookies from VANA_COOKIES environment variable')
-      return process.env.VANA_COOKIES
+    if (process.env.POLYMORPH_COOKIES || process.env.VANA_COOKIES) {
+      console.log('🍪 Using cookies from POLYMORPH_COOKIES environment variable')
+      return process.env.POLYMORPH_COOKIES || process.env.VANA_COOKIES
     }
 
     return undefined
@@ -407,15 +407,15 @@ Note: Without authentication, you may get "User not authenticated" errors.
 
 Authentication:
 
-1. Add to .env.local: VANA_COOKIES="your-cookie-string"
+1. Add to .env.local: POLYMORPH_COOKIES="your-cookie-string"
 2. The script will automatically load cookies when it runs
 
 To get cookies:
 1. Open DevTools > Network tab
-2. Make any request in Vana
+2. Make any request in Polymorph
 3. Click on the request > Headers > Request Headers > Cookie
 4. Copy the entire Cookie value
-5. Add to .env.local as VANA_COOKIES="copied-value"
+5. Add to .env.local as POLYMORPH_COOKIES="copied-value"
 `)
         process.exit(0)
     }

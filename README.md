@@ -1,4 +1,4 @@
-# Vana v2
+# Polymorph
 
 ![CI](https://github.com/NickB03/vana-v2/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
@@ -6,13 +6,14 @@
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![Bun](https://img.shields.io/badge/Bun-runtime-f9f1e1)
 
-Vana v2 is an AI-powered answer engine with a generative UI, built for Vana deployment and operations.
+Polymorph is an AI platform with a generative UI. It combines multi-step research, rich interactive components, and an expanding set of creative capabilities — including code generation, image creation, and multimodal interaction.
 
 ## Overview
 
 - Next.js 16 + React 19 + TypeScript
 - Vercel AI SDK-powered chat + tool workflows
 - Search provider support (Tavily, Brave)
+- 8 generative UI display tools for rich interactive responses
 - PostgreSQL + Drizzle for persisted chat history (via Supabase)
 - Supabase Auth, Supabase Storage, and Redis-backed limits
 
@@ -29,6 +30,7 @@ Vana v2 is an AI-powered answer engine with a generative UI, built for Vana depl
 | Search    | Tavily (primary), Brave (multimedia)  |
 | Styling   | Tailwind CSS v4 + shadcn/ui           |
 | Testing   | Vitest                                |
+| Gen UI    | 8 display tools (tables, charts, timelines, citations, callouts, plans, link previews, option lists) |
 
 ## Architecture
 
@@ -139,4 +141,4 @@ The repository includes GitHub Actions workflows for:
 
 ## Attribution
 
-Vana v2 is derived from [miurla/morphic](https://github.com/miurla/morphic) under the Apache-2.0 license. See [LICENSE](LICENSE) for details.
+Polymorph is derived from [miurla/morphic](https://github.com/miurla/morphic) under the Apache-2.0 license. See [LICENSE](LICENSE) for details.

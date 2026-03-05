@@ -3,7 +3,7 @@ import { LangfuseExporter } from 'langfuse-vercel'
 
 export async function register() {
   registerOTel({
-    serviceName: 'vana-ai-search',
+    serviceName: 'polymorph',
     traceExporter: new LangfuseExporter()
   })
 

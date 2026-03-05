@@ -1,6 +1,6 @@
-# Contributing to Vana v2
+# Contributing to Polymorph
 
-Thank you for your interest in contributing to Vana v2! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to Polymorph! This document provides guidelines and instructions for contributing.
 
 ## Code of Conduct
 

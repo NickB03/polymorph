@@ -1,6 +1,6 @@
 # API Reference
 
-Complete REST API reference for Vana v2. All endpoints are served from the Next.js application under the `/api` path prefix.
+Complete REST API reference for Polymorph. All endpoints are served from the Next.js application under the `/api` path prefix.
 
 **Base URL:** `http://localhost:43100` (development) or your deployed domain.
 
@@ -24,7 +24,7 @@ graph LR
 
 ## Authentication
 
-Vana v2 uses **Supabase Auth** with cookie-based sessions. The middleware (`lib/supabase/middleware.ts`) refreshes the session on every request using `@supabase/ssr`.
+Polymorph uses **Supabase Auth** with cookie-based sessions. The middleware (`lib/supabase/middleware.ts`) refreshes the session on every request using `@supabase/ssr`.
 
 | Mode              | Behavior                                                                                                                      |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -356,7 +356,7 @@ Performs a SearXNG-powered web search with optional deep crawling and relevance 
 
 ## Rate Limiting
 
-Rate limits are enforced only in **cloud deployments** (`VANA_CLOUD_DEPLOYMENT=true`) using Upstash Redis.
+Rate limits are enforced only in **cloud deployments** (`POLYMORPH_CLOUD_DEPLOYMENT=true`) using Upstash Redis.
 
 ### Guest Rate Limits
 
