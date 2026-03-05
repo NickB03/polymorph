@@ -62,7 +62,7 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | `prettier.config.js`  | Prettier configuration (no semicolons, single quotes, no trailing commas)                               |
 | `.eslintrc.json`      | ESLint configuration with import sorting rules                                                          |
 | `components.json`     | shadcn/ui configuration for component generation                                                        |
-| `docker-compose.yaml` | Docker Compose stack defining Polymorph app and Redis services                                               |
+| `docker-compose.yaml` | Docker Compose stack defining Polymorph app and Redis services                                          |
 | `Dockerfile`          | Multi-stage Docker build for production deployment                                                      |
 | `.gitignore`          | Git ignore rules for node_modules, .next, env files, etc.                                               |
 | `.mcp.json`           | MCP (Model Context Protocol) configuration                                                              |
@@ -353,32 +353,32 @@ The `components/tool-ui/` directory contains generative UI components rendered b
 
 shadcn/ui-based primitives and custom UI components.
 
-| File                                 | Purpose                                                |
-| ------------------------------------ | ------------------------------------------------------ |
-| `components/ui/index.ts`             | Barrel export for button, tooltip, and tooltip-button  |
-| `components/ui/button.tsx`           | Button component with size and variant props           |
-| `components/ui/tooltip.tsx`          | Tooltip component wrapping Radix UI Tooltip            |
-| `components/ui/tooltip-button.tsx`   | Button with integrated tooltip                         |
-| `components/ui/alert-dialog.tsx`     | Confirmation dialog for destructive actions            |
-| `components/ui/avatar.tsx`           | User avatar with image and fallback                    |
-| `components/ui/carousel.tsx`         | Embla-based carousel/slider component                  |
-| `components/ui/checkbox.tsx`         | Checkbox input component                               |
-| `components/ui/collapsible.tsx`      | Radix UI Collapsible component                         |
-| `components/ui/command.tsx`          | Command palette / combobox component                   |
-| `components/ui/dialog.tsx`           | Modal dialog component                                 |
-| `components/ui/drawer.tsx`           | Bottom sheet drawer component (Vaul)                   |
-| `components/ui/hover-card.tsx`       | Hover-triggered card component                         |
-| `components/ui/label.tsx`            | Form label component                                   |
-| `components/ui/password-input.tsx`   | Password input with show/hide toggle                   |
-| `components/ui/select.tsx`           | Dropdown select component                              |
-| `components/ui/sidebar.tsx`          | Sidebar layout component with collapse/expand support  |
-| `components/ui/skeleton.tsx`         | Loading skeleton placeholder                           |
-| `components/ui/slider.tsx`           | Range slider input component                           |
-| `components/ui/sonner.tsx`           | Toast notification component (Sonner)                  |
-| `components/ui/spinner.tsx`          | Loading spinner animation                              |
-| `components/ui/status-indicator.tsx` | Animated status dot indicator                          |
-| `components/ui/switch.tsx`           | Toggle switch component                                |
-| `components/ui/toggle.tsx`           | Toggle button component                                |
+| File                                 | Purpose                                                     |
+| ------------------------------------ | ----------------------------------------------------------- |
+| `components/ui/index.ts`             | Barrel export for button, tooltip, and tooltip-button       |
+| `components/ui/button.tsx`           | Button component with size and variant props                |
+| `components/ui/tooltip.tsx`          | Tooltip component wrapping Radix UI Tooltip                 |
+| `components/ui/tooltip-button.tsx`   | Button with integrated tooltip                              |
+| `components/ui/alert-dialog.tsx`     | Confirmation dialog for destructive actions                 |
+| `components/ui/avatar.tsx`           | User avatar with image and fallback                         |
+| `components/ui/carousel.tsx`         | Embla-based carousel/slider component                       |
+| `components/ui/checkbox.tsx`         | Checkbox input component                                    |
+| `components/ui/collapsible.tsx`      | Radix UI Collapsible component                              |
+| `components/ui/command.tsx`          | Command palette / combobox component                        |
+| `components/ui/dialog.tsx`           | Modal dialog component                                      |
+| `components/ui/drawer.tsx`           | Bottom sheet drawer component (Vaul)                        |
+| `components/ui/hover-card.tsx`       | Hover-triggered card component                              |
+| `components/ui/label.tsx`            | Form label component                                        |
+| `components/ui/password-input.tsx`   | Password input with show/hide toggle                        |
+| `components/ui/select.tsx`           | Dropdown select component                                   |
+| `components/ui/sidebar.tsx`          | Sidebar layout component with collapse/expand support       |
+| `components/ui/skeleton.tsx`         | Loading skeleton placeholder                                |
+| `components/ui/slider.tsx`           | Range slider input component                                |
+| `components/ui/sonner.tsx`           | Toast notification component (Sonner)                       |
+| `components/ui/spinner.tsx`          | Loading spinner animation                                   |
+| `components/ui/status-indicator.tsx` | Animated status dot indicator                               |
+| `components/ui/switch.tsx`           | Toggle switch component                                     |
+| `components/ui/toggle.tsx`           | Toggle button component                                     |
 | `components/ui/animated-logo.tsx`    | Animated Polymorph logo displayed during loading states     |
 | `components/ui/icons.tsx`            | Custom SVG icon components (Polymorph logo, provider logos) |
 

@@ -169,19 +169,19 @@ This allows the AI to specify exactly how each column should be formatted — cu
 
 The researcher agent (`lib/agents/researcher.ts`) exposes different tools depending on the search mode:
 
-| Tool               | Chat Mode | Research Mode |
-| ------------------ | :-------: | :-----------: |
-| `search`           |    Yes    |      Yes      |
-| `fetch`            |    Yes    |      Yes      |
-| `displayPlan`      |    Yes    |      No       |
-| `displayTable`     |    Yes    |      Yes      |
-| `displayChart`     |    Yes    |      Yes      |
-| `displayCitations` |    Yes    |      Yes      |
-| `displayLinkPreview` |  Yes    |      Yes      |
-| `displayOptionList` |  Yes    |      Yes      |
-| `displayCallout`   |    Yes    |      Yes      |
-| `displayTimeline`  |    Yes    |      Yes      |
-| `todoWrite`        |    No     | Yes (when writer available) |
+| Tool                 | Chat Mode |        Research Mode        |
+| -------------------- | :-------: | :-------------------------: |
+| `search`             |    Yes    |             Yes             |
+| `fetch`              |    Yes    |             Yes             |
+| `displayPlan`        |    Yes    |             No              |
+| `displayTable`       |    Yes    |             Yes             |
+| `displayChart`       |    Yes    |             Yes             |
+| `displayCitations`   |    Yes    |             Yes             |
+| `displayLinkPreview` |    Yes    |             Yes             |
+| `displayOptionList`  |    Yes    |             Yes             |
+| `displayCallout`     |    Yes    |             Yes             |
+| `displayTimeline`    |    Yes    |             Yes             |
+| `todoWrite`          |    No     | Yes (when writer available) |
 
 **Chat mode** (max 20 steps) uses forced optimized search and includes `displayPlan` for step-by-step guides. **Research mode** (max 50 steps) uses full search and enables `todoWrite` for task management when a writer is available.
 
@@ -189,10 +189,10 @@ The researcher agent (`lib/agents/researcher.ts`) exposes different tools depend
 
 All display tool schemas support optional base fields defined in `components/tool-ui/shared/schema.ts`:
 
-| Field     | Type   | Description |
-| --------- | ------ | ----------- |
-| `id`      | `string` | Unique identifier for the component instance (`ToolUIIdSchema`) |
-| `role`    | `enum`   | Semantic role: `information`, `decision`, `control`, `state`, `composite` (`ToolUIRoleSchema`) |
+| Field     | Type     | Description                                                                                                                         |
+| --------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `id`      | `string` | Unique identifier for the component instance (`ToolUIIdSchema`)                                                                     |
+| `role`    | `enum`   | Semantic role: `information`, `decision`, `control`, `state`, `composite` (`ToolUIRoleSchema`)                                      |
 | `receipt` | `object` | Outcome tracking with `outcome` (success/partial/failed/cancelled), `summary`, `identifiers[]`, `timestamp` (`ToolUIReceiptSchema`) |
 
 These base fields enable consistent identification, semantic classification, and outcome tracking across all generative UI components.
@@ -201,16 +201,16 @@ These base fields enable consistent identification, semantic classification, and
 
 Some display tools support an optional `actions[]` field for interactive buttons:
 
-| Property       | Type     | Description |
-| -------------- | -------- | ----------- |
-| `id`           | `string` | Unique action identifier |
-| `label`        | `string` | Button display text |
-| `variant`      | `enum`   | `default`, `destructive`, `outline`, `secondary`, `ghost`, `link` |
-| `icon`         | `string` | Optional Lucide icon name |
-| `disabled`     | `boolean` | Whether the action is disabled |
-| `shortcut`     | `string` | Keyboard shortcut hint |
-| `confirmLabel` | `string` | Confirmation text before executing |
-| `sentence`     | `string` | Natural language description sent back to the AI |
+| Property       | Type      | Description                                                       |
+| -------------- | --------- | ----------------------------------------------------------------- |
+| `id`           | `string`  | Unique action identifier                                          |
+| `label`        | `string`  | Button display text                                               |
+| `variant`      | `enum`    | `default`, `destructive`, `outline`, `secondary`, `ghost`, `link` |
+| `icon`         | `string`  | Optional Lucide icon name                                         |
+| `disabled`     | `boolean` | Whether the action is disabled                                    |
+| `shortcut`     | `string`  | Keyboard shortcut hint                                            |
+| `confirmLabel` | `string`  | Confirmation text before executing                                |
+| `sentence`     | `string`  | Natural language description sent back to the AI                  |
 
 Currently supported on `OptionList` and extensible to other components via the shared `ActionSchema`.
 

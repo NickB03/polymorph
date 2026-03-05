@@ -19,17 +19,17 @@ Polymorph is an AI platform with a generative UI. It combines multi-step researc
 
 ## Tech Stack
 
-| Category  | Technology                            |
-| --------- | ------------------------------------- |
-| Framework | Next.js 16 (App Router)               |
-| Runtime   | Bun                                   |
-| Language  | TypeScript (strict mode)              |
-| Database  | PostgreSQL via Supabase + Drizzle ORM |
-| Auth      | Supabase Auth                         |
-| AI        | Vercel AI SDK + AI Gateway            |
-| Search    | Tavily (primary), Brave (multimedia)  |
-| Styling   | Tailwind CSS v4 + shadcn/ui           |
-| Testing   | Vitest                                |
+| Category  | Technology                                                                                           |
+| --------- | ---------------------------------------------------------------------------------------------------- |
+| Framework | Next.js 16 (App Router)                                                                              |
+| Runtime   | Bun                                                                                                  |
+| Language  | TypeScript (strict mode)                                                                             |
+| Database  | PostgreSQL via Supabase + Drizzle ORM                                                                |
+| Auth      | Supabase Auth                                                                                        |
+| AI        | Vercel AI SDK + AI Gateway                                                                           |
+| Search    | Tavily (primary), Brave (multimedia)                                                                 |
+| Styling   | Tailwind CSS v4 + shadcn/ui                                                                          |
+| Testing   | Vitest                                                                                               |
 | Gen UI    | 8 display tools (tables, charts, timelines, citations, callouts, plans, link previews, option lists) |
 
 ## Architecture

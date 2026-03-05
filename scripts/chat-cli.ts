@@ -119,7 +119,9 @@ class ChatApiTester {
 
   private loadCookiesFromEnv(): string | undefined {
     if (process.env.POLYMORPH_COOKIES || process.env.VANA_COOKIES) {
-      console.log('🍪 Using cookies from POLYMORPH_COOKIES environment variable')
+      console.log(
+        '🍪 Using cookies from POLYMORPH_COOKIES environment variable'
+      )
       return process.env.POLYMORPH_COOKIES || process.env.VANA_COOKIES
     }
 

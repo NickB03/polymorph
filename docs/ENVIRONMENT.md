@@ -20,12 +20,12 @@ This document defines the environment-variable matrix for Polymorph.
 
 ## Cloud deployment controls
 
-| Variable                            | Required in cloud       | Purpose                                    |
-| ----------------------------------- | ----------------------- | ------------------------------------------ |
+| Variable                                 | Required in cloud       | Purpose                                    |
+| ---------------------------------------- | ----------------------- | ------------------------------------------ |
 | `POLYMORPH_CLOUD_DEPLOYMENT`             | Yes                     | Enables cloud-mode guardrails and behavior |
 | `NEXT_PUBLIC_POLYMORPH_CLOUD_DEPLOYMENT` | Recommended             | Hides client-only controls in cloud mode   |
-| `UPSTASH_REDIS_REST_URL`            | Yes (if limits enabled) | Redis endpoint for limits                  |
-| `UPSTASH_REDIS_REST_TOKEN`          | Yes (if limits enabled) | Redis credential                           |
+| `UPSTASH_REDIS_REST_URL`                 | Yes (if limits enabled) | Redis endpoint for limits                  |
+| `UPSTASH_REDIS_REST_TOKEN`               | Yes (if limits enabled) | Redis credential                           |
 
 ## Authentication (Supabase)
 
