@@ -67,10 +67,10 @@ export async function POST(req: Request) {
         })
       }
     } else if (validatedTrigger === 'tool-result') {
-      const { toolResult } = body
       if (
         !toolResult ||
         typeof toolResult.toolCallId !== 'string' ||
+        !toolResult.toolCallId ||
         !('output' in toolResult)
       ) {
         return new Response(
@@ -166,6 +166,14 @@ export async function POST(req: Request) {
     perfLog(
       `createChatStreamResponse - Start: model=${selectedModel.providerId}:${selectedModel.id}, searchMode=${searchMode}, modelType=${modelType}`
     )
+
+    // Guest mode does not support tool-result continuations
+    if (isGuest && validatedTrigger === 'tool-result') {
+      return new Response(
+        'Tool-result continuations are not supported for guest users',
+        { status: 400, statusText: 'Bad Request' }
+      )
+    }
 
     const response = isGuest
       ? await createEphemeralChatStreamResponse({

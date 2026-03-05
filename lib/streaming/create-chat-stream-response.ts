@@ -24,7 +24,10 @@ import { perfLog, perfTime } from '../utils/perf-logging'
 
 import { persistStreamResults } from './helpers/persist-stream-results'
 import { prepareMessages } from './helpers/prepare-messages'
-import { prepareToolResultMessages } from './helpers/prepare-tool-result-messages'
+import {
+  prepareToolResultMessages,
+  ToolResultValidationError
+} from './helpers/prepare-tool-result-messages'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
 import type { StreamContext } from './helpers/types'
@@ -117,10 +120,20 @@ export async function createChatStreamResponse(
   // preventing the client SDK from pushing a duplicate message.
   let prefetchedMessages: UIMessage[] | undefined
   if (toolResult) {
-    const prepareStart = performance.now()
-    perfLog('prepareToolResultMessages - Invoked')
-    prefetchedMessages = await prepareToolResultMessages(context, toolResult)
-    perfTime('prepareToolResultMessages completed (pre-stream)', prepareStart)
+    try {
+      const prepareStart = performance.now()
+      perfLog('prepareToolResultMessages - Invoked')
+      prefetchedMessages = await prepareToolResultMessages(context, toolResult)
+      perfTime('prepareToolResultMessages completed (pre-stream)', prepareStart)
+    } catch (error) {
+      if (error instanceof ToolResultValidationError) {
+        return new Response(error.message, {
+          status: 400,
+          statusText: 'Bad Request'
+        })
+      }
+      throw error
+    }
   }
 
   // Create the stream

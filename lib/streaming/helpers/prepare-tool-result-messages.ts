@@ -1,6 +1,6 @@
-import { UIMessage } from 'ai'
-
 import { upsertMessage } from '@/lib/actions/chat'
+import type { UIMessage } from '@/lib/types/ai'
+import { isInteractiveToolPart } from '@/lib/types/dynamic-tools'
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 
 import type { StreamContext } from './types'
@@ -8,6 +8,13 @@ import type { StreamContext } from './types'
 export interface ToolResultDelta {
   toolCallId: string
   output: unknown
+}
+
+export class ToolResultValidationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ToolResultValidationError'
+  }
 }
 
 /**
@@ -27,37 +34,54 @@ export async function prepareToolResultMessages(
   const { chatId, userId, initialChat } = context
 
   if (!initialChat || !initialChat.messages.length) {
-    throw new Error('Chat not found or has no messages')
+    throw new ToolResultValidationError('Chat not found or has no messages')
   }
 
   const messages = initialChat.messages
   const lastMessage = messages[messages.length - 1]
 
   if (lastMessage.role !== 'assistant') {
-    throw new Error('Last message is not an assistant message')
+    throw new ToolResultValidationError(
+      'Last message is not an assistant message'
+    )
   }
 
   if (!lastMessage.parts) {
-    throw new Error('Assistant message has no parts')
+    throw new ToolResultValidationError('Assistant message has no parts')
   }
 
-  // Find the matching tool part by toolCallId
+  // Find the matching interactive tool part by toolCallId
   const matchingPartIndex = lastMessage.parts.findIndex(
-    (p: any) => p.toolCallId === toolResult.toolCallId
+    p =>
+      'toolCallId' in p &&
+      (p as { toolCallId: string }).toolCallId === toolResult.toolCallId
   )
 
   if (matchingPartIndex === -1) {
-    throw new Error(
+    throw new ToolResultValidationError(
       `No tool part found with toolCallId: ${toolResult.toolCallId}`
     )
   }
 
+  const matchedPart = lastMessage.parts[matchingPartIndex]
+  if (!isInteractiveToolPart(matchedPart)) {
+    throw new ToolResultValidationError(
+      `Tool part with toolCallId ${toolResult.toolCallId} is not an interactive tool`
+    )
+  }
+
+  if ('state' in matchedPart && matchedPart.state !== 'input-available') {
+    throw new ToolResultValidationError(
+      `Tool part with toolCallId ${toolResult.toolCallId} is not awaiting input (state: ${(matchedPart as { state: string }).state})`
+    )
+  }
+
   // Clone the assistant message and apply the tool result
-  const updatedParts = lastMessage.parts.map((p: any, i: number) => {
+  const updatedParts = lastMessage.parts.map((p, i) => {
     if (i === matchingPartIndex) {
       return {
         ...p,
-        state: 'output-available',
+        state: 'output-available' as const,
         output: toolResult.output
       }
     }
