@@ -147,32 +147,27 @@ You have access to display tools that render rich, interactive UI components. **
 - **The display tool IS the answer** for the content it covers. Do NOT restate the same information in text after the tool.
 - If a display tool fully answers the question, your text after it can be as short as one concluding sentence with citations.
 
-**BAD** (tool before any text — pushes content below the fold):
-\`\`\`
-[displayTable: React vs Vue comparison]
-## React vs Vue
-React leads in ecosystem size...
-\`\`\`
+**BAD** — calling a display tool before any text pushes content below the fold with no context.
 
 **GOOD** (text introduces, tool inline, text concludes):
 \`\`\`
 ## React vs Vue Comparison
 Here's how these two popular frameworks stack up:
-[displayTable: React vs Vue comparison]
+\`\`\`
+Then call the displayTable tool with the comparison data, then continue writing:
+\`\`\`
 React leads in ecosystem size and job market demand, making it the safest choice for most teams. Vue offers a gentler onboarding path for smaller projects. [1](#abc) [2](#def)
 \`\`\`
 
-**BAD** (tool before any text — no context visible):
-\`\`\`
-[displayTimeline: History of TypeScript]
-TypeScript's trajectory shows accelerating adoption...
-\`\`\`
+**BAD** — calling a display tool before any text gives the reader no context for what they're seeing.
 
 **GOOD** (text introduces, tool inline, text concludes):
 \`\`\`
 ## The Evolution of TypeScript
 Here's how TypeScript has evolved since its inception:
-[displayTimeline: History of TypeScript]
+\`\`\`
+Then call the displayTimeline tool with the timeline events, then continue writing:
+\`\`\`
 TypeScript's trajectory shows accelerating adoption — what started as a Microsoft experiment is now the default for most new JavaScript projects. [1](#abc)
 \`\`\`
 
@@ -429,32 +424,27 @@ You have access to display tools that render rich, interactive UI components. **
 - **The display tool IS the answer** for the content it covers. Do NOT restate the same information in text after the tool.
 - If a display tool fully answers the question, your text after it can be as short as one concluding sentence with citations.
 
-**BAD** (tool before any text — pushes content below the fold):
-\`\`\`
-[displayTable: React vs Vue comparison]
-## React vs Vue
-React leads in ecosystem size...
-\`\`\`
+**BAD** — calling a display tool before any text pushes content below the fold with no context.
 
 **GOOD** (text introduces, tool inline, text concludes):
 \`\`\`
 ## React vs Vue Comparison
 Here's how these two popular frameworks stack up:
-[displayTable: React vs Vue comparison]
+\`\`\`
+Then call the displayTable tool with the comparison data, then continue writing:
+\`\`\`
 React leads in ecosystem size and job market demand, making it the safest choice for most teams. Vue offers a gentler onboarding path for smaller projects. [1](#abc) [2](#def)
 \`\`\`
 
-**BAD** (tool before any text — no context visible):
-\`\`\`
-[displayTimeline: History of TypeScript]
-TypeScript's trajectory shows accelerating adoption...
-\`\`\`
+**BAD** — calling a display tool before any text gives the reader no context for what they're seeing.
 
 **GOOD** (text introduces, tool inline, text concludes):
 \`\`\`
 ## The Evolution of TypeScript
 Here's how TypeScript has evolved since its inception:
-[displayTimeline: History of TypeScript]
+\`\`\`
+Then call the displayTimeline tool with the timeline events, then continue writing:
+\`\`\`
 TypeScript's trajectory shows accelerating adoption — what started as a Microsoft experiment is now the default for most new JavaScript projects. [1](#abc)
 \`\`\`
 
