@@ -24,6 +24,7 @@ import { perfLog, perfTime } from '../utils/perf-logging'
 
 import { persistStreamResults } from './helpers/persist-stream-results'
 import { prepareMessages } from './helpers/prepare-messages'
+import { prepareToolResultMessages } from './helpers/prepare-tool-result-messages'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
 import type { StreamContext } from './helpers/types'
@@ -34,7 +35,7 @@ export async function createChatStreamResponse(
 ): Promise<Response> {
   const {
     message,
-    messages: providedMessages,
+    toolResult,
     model,
     chatId,
     userId,
@@ -110,17 +111,29 @@ export async function createChatStreamResponse(
   // Declare titlePromise in outer scope for onFinish access
   let titlePromise: Promise<string> | undefined
 
+  // For tool-result continuations, prepare messages before creating the stream
+  // so we can pass originalMessages to createUIMessageStream. This ensures the
+  // server reuses the existing assistant message ID in the stream's start chunk,
+  // preventing the client SDK from pushing a duplicate message.
+  let prefetchedMessages: UIMessage[] | undefined
+  if (toolResult) {
+    const prepareStart = performance.now()
+    perfLog('prepareToolResultMessages - Invoked')
+    prefetchedMessages = await prepareToolResultMessages(context, toolResult)
+    perfTime('prepareToolResultMessages completed (pre-stream)', prepareStart)
+  }
+
   // Create the stream
   const stream = createUIMessageStream<UIMessage>({
+    ...(prefetchedMessages ? { originalMessages: prefetchedMessages } : {}),
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
       try {
         // Prepare messages for the model
         const prepareStart = performance.now()
         let messagesToModel: UIMessage[]
-        if (providedMessages && providedMessages.length > 0) {
-          // Tool-result continuation: use provided messages directly
-          perfLog('prepareMessages - Skipped (using provided messages for tool-result)')
-          messagesToModel = providedMessages
+        if (prefetchedMessages) {
+          messagesToModel = prefetchedMessages
+          perfLog('prepareMessages - Using prefetched messages for tool-result')
         } else {
           perfLog(
             `prepareMessages - Invoked: trigger=${trigger}, isNewChat=${isNewChat}`
@@ -212,8 +225,8 @@ export async function createChatStreamResponse(
 
         const responseMessages = (await result.response).messages
         perfTime('researchAgent.stream completed', llmStart)
-        // Generate related questions
-        if (responseMessages && responseMessages.length > 0) {
+        // Generate related questions (skip for tool-result continuations — mid-research, not final answer)
+        if (trigger !== 'tool-result' && responseMessages && responseMessages.length > 0) {
           // Find the last user message
           const lastUserMessage = [...modelMessages]
             .reverse()
