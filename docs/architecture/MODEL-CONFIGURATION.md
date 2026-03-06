@@ -1,5 +1,8 @@
 # Model Configuration
 
+> **Audience:** Contributor | Operator
+> **Prerequisites:** [Architecture Overview](OVERVIEW.md)
+
 This document explains how Polymorph selects AI models for the researcher agent pipeline. It covers the configuration file format, the selection algorithm, provider registry, and how to add new models or providers.
 
 ## Table of Contents
@@ -124,7 +127,7 @@ The loader provides both async (`loadModelsConfig`) and sync (`getModelsConfig`)
 
 Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. The algorithm reads user preferences from cookies and resolves a model through a priority cascade with fallbacks.
 
-> For a visual flowchart, see the [Model Selection Flow diagram in ARCHITECTURE.md](./ARCHITECTURE.md#model-selection-flow).
+> For a visual flowchart, see the [Model Selection Flow diagram in ARCHITECTURE.md](./OVERVIEW.md#model-selection-flow).
 
 ### Inputs
 
@@ -244,7 +247,7 @@ To use a provider directly (bypassing the Gateway), set the `providerId` to the 
 }
 ```
 
-Make sure the corresponding API key is set in your environment. See [docs/ENVIRONMENT.md](./ENVIRONMENT.md) for the full list of provider variables.
+Make sure the corresponding API key is set in your environment. See [docs/ENVIRONMENT.md](../getting-started/ENVIRONMENT.md) for the full list of provider variables.
 
 ### Testing
 
@@ -326,7 +329,7 @@ YOUR_PROVIDER_API_KEY=...
 
 ### 6. Update Environment Documentation
 
-Add the new API key variable to [docs/ENVIRONMENT.md](./ENVIRONMENT.md) under the **AI provider options** section.
+Add the new API key variable to [docs/ENVIRONMENT.md](../getting-started/ENVIRONMENT.md) under the **AI provider options** section.
 
 ### 7. Test
 

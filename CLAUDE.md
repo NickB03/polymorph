@@ -88,7 +88,7 @@ Strict import sorting via `simple-import-sort`:
 
 ## Environment
 
-See `docs/ENVIRONMENT.md` for full reference. Key variables:
+See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 
 - `DATABASE_URL` — PostgreSQL connection
 - `AI_GATEWAY_API_KEY` — Vercel AI Gateway (primary model provider)

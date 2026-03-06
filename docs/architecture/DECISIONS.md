@@ -1,5 +1,7 @@
 # Polymorph Launch Decisions
 
+> **Audience:** Architect | Contributor
+
 Date: 2026-02-23
 
 This document captures the Phase 0 onboarding decisions for Polymorph.
@@ -57,3 +59,28 @@ Rationale:
 
 - Vercel is the optimal path for Next.js 16 and App Router performance
 - Docker ensures portability for self-hosting scenarios
+
+---
+
+## ADR Template
+
+Use this template when recording future architecture decisions:
+
+```markdown
+## N) Decision Title
+
+Date: YYYY-MM-DD
+Status: Proposed | Accepted | Deprecated | Superseded by [N]
+
+### Context
+
+What is the issue that we're seeing that motivates this decision?
+
+### Decision
+
+What is the change that we're proposing and/or doing?
+
+### Consequences
+
+What becomes easier or harder as a result of this change?
+```

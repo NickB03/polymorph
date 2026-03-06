@@ -1,5 +1,8 @@
 # Polymorph Environment Reference
 
+> **Audience:** New Developer | Contributor
+> **Prerequisites:** [Quickstart Guide](QUICKSTART.md)
+
 This document defines the environment-variable matrix for Polymorph.
 
 ## Required (Day-1 bootstrap)

@@ -1,5 +1,8 @@
 # Architecture
 
+> **Audience:** Architect | Contributor
+> **Prerequisites:** [Quickstart Guide](../getting-started/QUICKSTART.md)
+
 This document describes the internal architecture of Polymorph — an AI platform with generative UI. It covers the agent pipeline, tool system, streaming infrastructure, database schema, authentication, UI rendering, and model selection.
 
 ## Table of Contents

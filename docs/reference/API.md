@@ -1,5 +1,8 @@
 # API Reference
 
+> **Audience:** Contributor | Operator
+> **Prerequisites:** [Quickstart Guide](../getting-started/QUICKSTART.md)
+
 Complete REST API reference for Polymorph. All endpoints are served from the Next.js application under the `/api` path prefix.
 
 **Base URL:** `http://localhost:43100` (development) or your deployed domain.

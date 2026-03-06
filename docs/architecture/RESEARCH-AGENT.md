@@ -1,5 +1,8 @@
 # Research Agent
 
+> **Audience:** Architect | Contributor
+> **Prerequisites:** [Architecture Overview](OVERVIEW.md)
+
 This document provides a deep technical reference for the research agent system in Polymorph — the agentic pipeline that transforms a user's question into a multi-source, cited answer with rich generative UI. It covers the ToolLoopAgent pattern, search modes, the tool system, search providers, model selection, context window management, streaming integration, and how to extend the agent.
 
 ## Table of Contents

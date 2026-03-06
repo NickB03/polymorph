@@ -1,5 +1,8 @@
 # Docker Guide
 
+> **Audience:** Operator
+> **Prerequisites:** [Quickstart Guide](../getting-started/QUICKSTART.md)
+
 This guide covers running Polymorph with Docker for local development and self-hosted deployments.
 
 ## Quick Start (Docker Compose)

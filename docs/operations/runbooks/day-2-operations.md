@@ -1,5 +1,8 @@
 # Day-2 Operations Runbook
 
+> **Audience:** Operator
+> **Prerequisites:** [Deployment Guide](../DEPLOYMENT.md)
+
 This runbook is for operators maintaining Polymorph after initial deployment.
 
 ## 1) Incident triage flow

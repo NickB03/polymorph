@@ -1,5 +1,8 @@
 # Configuration Guide
 
+> **Audience:** New Developer | Contributor
+> **Prerequisites:** [Quickstart Guide](QUICKSTART.md)
+
 This guide covers application configuration for Polymorph, including required startup variables and optional capabilities.
 
 ## Required Day-1 Configuration

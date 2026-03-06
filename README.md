@@ -1,6 +1,6 @@
 # Polymorph
 
-![CI](https://github.com/NickB03/vana-v2/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/NickB03/polymorph/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
@@ -59,74 +59,55 @@ graph TD
     Auth -->|"Session Cookies"| Browser
 ```
 
-See [Architecture Documentation](docs/ARCHITECTURE.md) for detailed diagrams.
+See [Architecture Documentation](docs/architecture/OVERVIEW.md) for detailed diagrams.
 
 ## Quickstart
 
-1. Install dependencies:
-
 ```bash
 bun install
-```
-
-2. Configure environment variables:
-
-```bash
-cp .env.local.example .env.local
-```
-
-3. Set minimum required variables in `.env.local`:
-
-```bash
-DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres
-AI_GATEWAY_API_KEY=your_vercel_gateway_key
-TAVILY_API_KEY=your_tavily_key
-```
-
-4. Run database migrations:
-
-```bash
+cp .env.local.example .env.local   # then set DATABASE_URL, AI_GATEWAY_API_KEY, TAVILY_API_KEY
 bun run migrate
+bun dev                             # http://localhost:43100
 ```
 
-5. Start the app:
-
-```bash
-bun dev
-```
-
-Open http://localhost:43100.
+See the [full Quickstart Guide](docs/getting-started/QUICKSTART.md) for detailed setup including local Supabase, auth configuration, and a guided first search.
 
 ## Documentation
 
+[Browse all documentation ->](docs/README.md)
+
 ### Getting Started
 
-- [Environment Setup](docs/ENVIRONMENT.md)
-- [Configuration Guide](docs/CONFIGURATION.md)
+- [Quickstart Guide](docs/getting-started/QUICKSTART.md) -- End-to-end setup from clone to first search
+- [Environment Reference](docs/getting-started/ENVIRONMENT.md) -- All environment variables explained
+- [Configuration Guide](docs/getting-started/CONFIGURATION.md) -- Auth modes, search providers, AI providers
 
 ### Architecture
 
-- [System Architecture](docs/ARCHITECTURE.md)
-- [Research Agent](docs/RESEARCH-AGENT.md)
-- [Generative UI](docs/GENERATIVE-UI.md)
-- [API Reference](docs/API.md)
-- [Streaming](docs/STREAMING.md)
-- [Search Providers](docs/SEARCH-PROVIDERS.md)
-- [Model Configuration](docs/MODEL-CONFIGURATION.md)
-- [File Index](docs/FILE-INDEX.md)
+- [Architecture Overview](docs/architecture/OVERVIEW.md) -- System design, data flow, and component relationships
+- [Research Agent](docs/architecture/RESEARCH-AGENT.md) -- ToolLoopAgent orchestration and tool pipeline
+- [Generative UI](docs/architecture/GENERATIVE-UI.md) -- Display tools and rich interactive components
+- [Streaming](docs/architecture/STREAMING.md) -- SSE response creation and message part streaming
+- [Model Configuration](docs/architecture/MODEL-CONFIGURATION.md) -- Model selection logic and provider registry
+- [Search Providers](docs/architecture/SEARCH-PROVIDERS.md) -- Tavily, Brave, Exa, SearXNG, and Firecrawl
+
+### Reference
+
+- [API Reference](docs/reference/API.md) -- Chat API endpoint, request/response schemas, error codes
+- [File Index](docs/reference/FILE-INDEX.md) -- Every file in the repository with a one-line description
 
 ### Operations
 
-- [Deployment Guide](docs/DEPLOYMENT.md)
-- [Docker Guide](docs/DOCKER.md)
-- [Runbooks](docs/runbooks/day-2-operations.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Deployment Guide](docs/operations/DEPLOYMENT.md) -- Vercel deployment and production configuration
+- [Docker Guide](docs/operations/DOCKER.md) -- Containerized setup with Docker Compose
+- [Troubleshooting](docs/operations/TROUBLESHOOTING.md) -- Common issues, error messages, and fixes
+- [Day-2 Operations](docs/operations/runbooks/day-2-operations.md) -- Monitoring, maintenance, and incident response
 
 ### Contributing
 
 - [Contributing Guide](CONTRIBUTING.md)
 - [Changelog](CHANGELOG.md)
-- [Launch Decisions](docs/DECISIONS.md)
+- [Launch Decisions](docs/architecture/DECISIONS.md)
 - [Security Policy](SECURITY.md)
 
 ## CI/CD Quality Gates

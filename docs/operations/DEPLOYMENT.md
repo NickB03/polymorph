@@ -1,5 +1,8 @@
 # Deployment Guide
 
+> **Audience:** Operator
+> **Prerequisites:** [Quickstart Guide](../getting-started/QUICKSTART.md)
+
 This guide describes the Polymorph production deployment baseline.
 
 ## Recommended targets

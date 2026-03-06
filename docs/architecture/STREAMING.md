@@ -1,5 +1,8 @@
 # Streaming Architecture
 
+> **Audience:** Architect | Contributor
+> **Prerequisites:** [Architecture Overview](OVERVIEW.md)
+
 This document provides a detailed technical reference for the streaming infrastructure in Polymorph. It covers how Server-Sent Events (SSE) deliver real-time AI responses to the client, the two stream paths (authenticated and ephemeral), message preparation, smooth streaming, parallel operations, error handling, and the SSE protocol.
 
 ## Table of Contents
