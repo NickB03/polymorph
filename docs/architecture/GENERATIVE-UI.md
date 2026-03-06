@@ -1,5 +1,8 @@
 # Generative UI
 
+> **Audience:** Architect | Contributor
+> **Prerequisites:** [Architecture Overview](OVERVIEW.md)
+
 This document describes the generative UI system in Polymorph — how AI tool invocations are transformed into rich, interactive React components rendered inline in the chat.
 
 ## Table of Contents

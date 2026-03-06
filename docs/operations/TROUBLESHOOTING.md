@@ -1,5 +1,7 @@
 # Troubleshooting
 
+> **Audience:** New Developer | Operator
+
 Common issues and solutions for Polymorph development and deployment.
 
 ## Setup Issues
@@ -14,7 +16,7 @@ Common issues and solutions for Polymorph development and deployment.
 cp .env.local.example .env.local
 ```
 
-Then fill in the required values. See [docs/ENVIRONMENT.md](./ENVIRONMENT.md) for the full variable reference. At minimum you need:
+Then fill in the required values. See [docs/ENVIRONMENT.md](../getting-started/ENVIRONMENT.md) for the full variable reference. At minimum you need:
 
 - `DATABASE_URL`
 - `AI_GATEWAY_API_KEY`
@@ -232,7 +234,7 @@ SEARCH_API=searxng
 2. **Wrong `SEARCH_API` value.** If set to a provider that is not configured, searches will fail. Valid values: `tavily` (default), `exa`, `firecrawl`, `searxng`, `brave`.
 3. **Provider fallback.** If the primary provider fails, there is no automatic fallback. The error is thrown to the AI agent, which may retry or report the failure.
 
-**Fix:** Check that `TAVILY_API_KEY` is set. If using an alternative provider, ensure the corresponding API key and `SEARCH_API` variable are correctly configured. See [docs/SEARCH-PROVIDERS.md](./SEARCH-PROVIDERS.md) for provider setup details.
+**Fix:** Check that `TAVILY_API_KEY` is set. If using an alternative provider, ensure the corresponding API key and `SEARCH_API` variable are correctly configured. See [docs/SEARCH-PROVIDERS.md](../architecture/SEARCH-PROVIDERS.md) for provider setup details.
 
 ## Database Issues
 
@@ -281,6 +283,6 @@ The database uses Row-Level Security (RLS) with `current_setting('app.current_us
 
 ## Getting More Help
 
-- Check the [Environment Reference](./ENVIRONMENT.md) for all configuration options
-- Review the [Architecture Guide](./ARCHITECTURE.md) for system understanding
+- Check the [Environment Reference](../getting-started/ENVIRONMENT.md) for all configuration options
+- Review the [Architecture Guide](../architecture/OVERVIEW.md) for system understanding
 - Open an issue on GitHub with reproduction steps

@@ -1,5 +1,8 @@
 # File Index
 
+> **Audience:** Contributor
+> **See also:** [Architecture Overview](../architecture/OVERVIEW.md) for high-level context
+
 Comprehensive index of every file in the Polymorph repository, organized by directory. Each entry includes the file path and a one-line description.
 
 ## Table of Contents

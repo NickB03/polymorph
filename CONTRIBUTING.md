@@ -51,8 +51,8 @@ We use conventional commits. Examples:
 1. Clone the repository and install dependencies:
 
    ```bash
-   git clone https://github.com/NickB03/vana-v2.git
-   cd vana-v2
+   git clone https://github.com/NickB03/polymorph.git
+   cd polymorph
    bun install
    ```
 
@@ -62,7 +62,7 @@ We use conventional commits. Examples:
    cp .env.local.example .env.local
    ```
 
-   See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for the full variable reference.
+   See [docs/ENVIRONMENT.md](docs/getting-started/ENVIRONMENT.md) for the full variable reference.
 
 3. Start local Supabase (requires Docker):
 
@@ -86,7 +86,7 @@ We use conventional commits. Examples:
 
    The app runs on [http://localhost:43100](http://localhost:43100).
 
-For troubleshooting setup issues, see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
+For troubleshooting setup issues, see [docs/TROUBLESHOOTING.md](docs/operations/TROUBLESHOOTING.md).
 
 ## Quality Gate
 
@@ -189,7 +189,7 @@ The researcher agent uses tools to perform actions like searching and fetching. 
 
 ## Architecture Reference
 
-For a detailed understanding of the system architecture, data flow, and component relationships, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+For a detailed understanding of the system architecture, data flow, and component relationships, see [docs/ARCHITECTURE.md](docs/architecture/OVERVIEW.md).
 
 ## License
 
