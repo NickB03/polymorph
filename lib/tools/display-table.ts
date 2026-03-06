@@ -1,74 +1,27 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 
-const FormatSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('text') }),
-  z.object({
-    kind: z.literal('number'),
-    decimals: z.number().optional(),
-    unit: z.string().optional(),
-    compact: z.boolean().optional(),
-    showSign: z.boolean().optional()
-  }),
-  z.object({
-    kind: z.literal('currency'),
-    currency: z.string(),
-    decimals: z.number().optional()
-  }),
-  z.object({
-    kind: z.literal('percent'),
-    decimals: z.number().optional(),
-    basis: z.enum(['fraction', 'unit']).optional(),
-    showSign: z.boolean().optional()
-  }),
-  z.object({
-    kind: z.literal('date'),
-    dateFormat: z.enum(['short', 'long', 'relative']).optional()
-  }),
-  z.object({
-    kind: z.literal('delta'),
-    decimals: z.number().optional(),
-    upIsPositive: z.boolean().optional(),
-    showSign: z.boolean().optional()
-  }),
-  z.object({
-    kind: z.literal('boolean'),
-    labels: z.object({ true: z.string(), false: z.string() }).optional()
-  }),
-  z.object({
-    kind: z.literal('link'),
-    hrefKey: z.string().optional(),
-    external: z.boolean().optional()
-  }),
-  z.object({
-    kind: z.literal('badge'),
-    colorMap: z
-      .record(
-        z.string(),
-        z.enum(['success', 'warning', 'danger', 'info', 'neutral'])
+/**
+ * Permissive format schema for tool input validation.
+ *
+ * The AI often produces format configs that are structurally reasonable but
+ * don't exactly match strict schemas (e.g., statusMap with string values
+ * instead of { tone, label } objects, or colorMap with hex colors instead
+ * of enum names). We accept any object with a `kind` string here and let
+ * the UI layer handle graceful degradation for unrecognized formats.
+ *
+ * Supported kinds: text, number, currency, percent, date, delta, boolean,
+ * link, badge, status, array
+ */
+const FormatSchema = z
+  .object({
+    kind: z
+      .string()
+      .describe(
+        'Format type: text | number | currency | percent | date | delta | boolean | link | badge | status | array'
       )
-      .optional()
-  }),
-  z.object({
-    kind: z.literal('status'),
-    statusMap: z
-      .record(
-        z.string(),
-        z.object({
-          tone: z.enum(['success', 'warning', 'danger', 'info', 'neutral']),
-          label: z.string().optional()
-        })
-      )
-      .describe('Map values to status tones and optional labels')
-  }),
-  z.object({
-    kind: z.literal('array'),
-    maxVisible: z
-      .number()
-      .optional()
-      .describe('Max items to show before truncating')
   })
-])
+  .passthrough()
 
 const ColumnSchema = z.object({
   key: z.string().describe('Key in row data to display'),
