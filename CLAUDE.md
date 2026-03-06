@@ -64,6 +64,11 @@ Components render different message part types: `answer-section.tsx`, `search-se
 
 ## Code Conventions
 
+### Quality Standards
+
+- **Fix every warning and error you encounter.** Never dismiss issues as "pre-existing," "unrelated to our changes," or "from a previous session." If you see it, you own it. Either fix it immediately or explicitly flag it to the user as something that needs attention — do not silently pass over it.
+- Before claiming any task is complete, run `bun lint` and `bun typecheck`. If either produces warnings or errors, fix them — all of them, not just the ones your changes introduced.
+
 ### Formatting (Prettier)
 
 No semicolons, single quotes, no trailing commas, 2-space indent, avoid arrow parens, LF line endings.

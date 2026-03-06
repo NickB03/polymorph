@@ -126,6 +126,7 @@ export function Citation(props: CitationProps) {
   }
 
   const iconElement = favicon ? (
+    // eslint-disable-next-line @next/next/no-img-element -- external favicon from arbitrary domains
     <img
       src={favicon}
       alt=""

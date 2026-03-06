@@ -3,7 +3,7 @@ import defaultConfig from '@/config/models/default.json'
 
 import { ModelType } from '@/lib/types/model-type'
 import { Model } from '@/lib/types/models'
-import { SearchMode } from '@/lib/types/search'
+import { SearchMode, VALID_SEARCH_MODES } from '@/lib/types/search'
 import { isCloudDeployment } from '@/lib/utils'
 
 export interface ModelsConfig {
@@ -18,7 +18,6 @@ let cachedConfig: ModelsConfig | null = null
 let cachedProfile: string | null = null
 
 const VALID_MODEL_TYPES: ModelType[] = ['speed', 'quality']
-const VALID_SEARCH_MODES: SearchMode[] = ['chat', 'research']
 
 function validateModelsConfigStructure(
   json: unknown

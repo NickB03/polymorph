@@ -9,14 +9,16 @@ import { toast } from 'sonner'
 
 import { generateId } from '@/lib/db/schema'
 import { UploadedFile } from '@/lib/types'
-import type { ChatSection, UIMessage } from '@/lib/types/ai'
+import type { ChatSection, UIMessage, UIMessageMetadata } from '@/lib/types/ai'
 import {
   isDynamicToolPart,
   isInteractiveToolPart,
   isToolCallPart,
   isToolTypePart
 } from '@/lib/types/dynamic-tools'
+import { isValidSearchMode } from '@/lib/types/search'
 import { cn } from '@/lib/utils'
+import { syncSearchMode } from '@/lib/utils/search-mode'
 
 import { useFileDropzone } from '@/hooks/use-file-dropzone'
 
@@ -56,7 +58,25 @@ export function Chat({
       type: 'general',
       message: ''
     })
+    syncSearchMode('chat')
   }
+
+  // Restore search mode from saved chat metadata, or reset for new conversations
+  useEffect(() => {
+    if (savedMessages.length > 0) {
+      const lastAssistantMessage = savedMessages.findLast(
+        m => m.role === 'assistant'
+      )
+      const metadata = lastAssistantMessage?.metadata as
+        | UIMessageMetadata
+        | undefined
+      if (isValidSearchMode(metadata?.searchMode)) {
+        syncSearchMode(metadata.searchMode)
+      }
+    } else {
+      syncSearchMode('chat')
+    }
+  }, [providedId, savedMessages])
 
   const autoSendFiredRef = useRef<Set<string>>(new Set())
   const scrollContainerRef = useRef<HTMLDivElement>(null)

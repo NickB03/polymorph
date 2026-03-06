@@ -5,9 +5,10 @@ import { useEffect, useState } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 
 import { SEARCH_MODE_CONFIGS } from '@/lib/config/search-modes'
-import { SearchMode } from '@/lib/types/search'
+import { isValidSearchMode, SearchMode } from '@/lib/types/search'
 import { cn } from '@/lib/utils'
-import { getCookie, setCookie } from '@/lib/utils/cookies'
+import { getCookie } from '@/lib/utils/cookies'
+import { syncSearchMode } from '@/lib/utils/search-mode'
 
 import { Button } from './ui/button'
 import {
@@ -30,15 +31,15 @@ export function SearchModeSelector() {
         : savedMode === 'adaptive'
           ? 'research'
           : savedMode
-    if (mapped && ['chat', 'research'].includes(mapped)) {
-      setValue(mapped as SearchMode)
+    if (isValidSearchMode(mapped)) {
+      setValue(mapped)
       // Overwrite cookie if it had an old value
       if (mapped !== savedMode) {
-        setCookie('searchMode', mapped)
+        syncSearchMode(mapped)
       }
     } else if (savedMode) {
       // Clean up invalid cookie value
-      setCookie('searchMode', 'chat')
+      syncSearchMode('chat')
       setValue('chat')
     }
   }, [])
@@ -47,8 +48,8 @@ export function SearchModeSelector() {
   useEffect(() => {
     const handleChange = () => {
       const mode = getCookie('searchMode')
-      if (mode && ['chat', 'research'].includes(mode)) {
-        setValue(mode as SearchMode)
+      if (isValidSearchMode(mode)) {
+        setValue(mode)
       }
     }
     window.addEventListener('searchModeChanged', handleChange)
@@ -57,7 +58,7 @@ export function SearchModeSelector() {
 
   const handleModeSelect = (mode: SearchMode) => {
     setValue(mode)
-    setCookie('searchMode', mode)
+    syncSearchMode(mode)
     setDropdownOpen(false)
   }
 

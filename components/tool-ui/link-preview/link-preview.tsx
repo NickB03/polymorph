@@ -89,6 +89,7 @@ export function LinkPreview(props: LinkPreviewProps) {
                 ratio !== 'auto' ? RATIO_CLASS_MAP[ratio] : 'aspect-[5/3]'
               )}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element -- external preview image from arbitrary domains */}
               <img
                 src={image}
                 alt=""
@@ -106,6 +107,7 @@ export function LinkPreview(props: LinkPreviewProps) {
             {domain && (
               <div className="text-muted-foreground flex items-center gap-2 text-xs">
                 {favicon ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- external favicon from arbitrary domains
                   <img
                     src={favicon}
                     alt=""
