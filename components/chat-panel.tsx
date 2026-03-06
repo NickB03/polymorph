@@ -109,9 +109,7 @@ export function ChatPanel({
     const lastPart = parts[parts.length - 1]
 
     return (
-      (lastPart?.type === 'tool-search' ||
-        lastPart?.type === 'tool-fetch' ||
-        lastPart?.type === 'tool-askQuestion') &&
+      (lastPart?.type === 'tool-search' || lastPart?.type === 'tool-fetch') &&
       ((lastPart as any)?.state === 'input-streaming' ||
         (lastPart as any)?.state === 'input-available')
     )

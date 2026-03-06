@@ -23,8 +23,6 @@ export function InspectorDrawer() {
         return 'search'
       case 'tool-fetch':
         return 'fetch'
-      case 'tool-askQuestion':
-        return 'askQuestion'
       case 'reasoning':
         return 'Thoughts'
       case 'text':

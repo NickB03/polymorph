@@ -68,12 +68,7 @@ export function ChatMessages({
   const isMobile = useMediaQuery('(max-width: 767px)')
 
   // Tool types definition - moved outside function for performance
-  const toolTypes = [
-    'tool-search',
-    'tool-fetch',
-    'tool-askQuestion',
-    'tool-relatedQuestions'
-  ]
+  const toolTypes = ['tool-search', 'tool-fetch', 'tool-relatedQuestions']
 
   // Clear cache during streaming to ensure accurate tool counts
   useEffect(() => {

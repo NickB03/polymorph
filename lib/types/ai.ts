@@ -2,7 +2,6 @@ import type { ReasoningPart, TextPart } from '@ai-sdk/provider-utils'
 import type { InferUITool, UIMessage as AIMessage } from 'ai'
 
 import { fetchTool } from '@/lib/tools/fetch'
-import { askQuestionTool } from '@/lib/tools/question'
 import { searchTool } from '@/lib/tools/search'
 import { createTodoTools, type TodoItem } from '@/lib/tools/todo'
 import type { SearchMode } from '@/lib/types/search'
@@ -56,7 +55,6 @@ const todoTools = createTodoTools()
 export type UITools = {
   search: InferUITool<typeof searchTool>
   fetch: InferUITool<typeof fetchTool>
-  askQuestion: InferUITool<typeof askQuestionTool>
   todoWrite: InferUITool<typeof todoTools.todoWrite>
   // Dynamic tools will be added at runtime
   [key: string]: any

@@ -33,11 +33,11 @@ export type FormatConfig =
     }
   | {
       kind: 'status'
-      statusMap: Record<string, { tone: Tone; label?: string }>
+      statusMap?: Record<string, { tone: Tone; label?: string } | string>
     }
   | { kind: 'boolean'; labels?: { true: string; false: string } }
   | { kind: 'link'; hrefKey?: string; external?: boolean }
-  | { kind: 'badge'; colorMap?: Record<string, Tone> }
+  | { kind: 'badge'; colorMap?: Record<string, string> }
   | { kind: 'array'; maxVisible?: number }
 
 interface DeltaValueProps {
@@ -93,10 +93,11 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ value, options }: StatusBadgeProps) {
-  const config = options?.statusMap?.[value] ?? {
-    tone: 'neutral' as Tone,
-    label: value
-  }
+  const raw = options?.statusMap?.[value]
+  const config =
+    typeof raw === 'string'
+      ? { tone: 'neutral' as Tone, label: raw }
+      : (raw ?? { tone: 'neutral' as Tone, label: value })
   const label = config.label ?? value
 
   const variant =

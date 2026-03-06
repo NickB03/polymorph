@@ -24,7 +24,6 @@ export function InspectorPanel() {
   const getIconAndTitle = () => {
     switch (part.type) {
       case 'tool-search':
-      case 'tool-askQuestion':
         const toolName = part.type.replace('tool-', '')
         return {
           icon: <Search size={18} />,

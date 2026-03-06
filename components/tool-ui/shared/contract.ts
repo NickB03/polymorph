@@ -15,6 +15,7 @@ export function defineToolUiContract<T>(
   return {
     schema,
     parse: (input: unknown) => parseWithSchema(schema, input, componentName),
-    safeParse: (input: unknown) => safeParseWithSchema(schema, input)
+    safeParse: (input: unknown) =>
+      safeParseWithSchema(schema, input, componentName)
   }
 }

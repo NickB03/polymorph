@@ -18,7 +18,6 @@ import { displayPlanTool } from '../tools/display-plan'
 import { displayTableTool } from '../tools/display-table'
 import { displayTimelineTool } from '../tools/display-timeline'
 import { fetchTool } from '../tools/fetch'
-import { createQuestionTool } from '../tools/question'
 import { createSearchTool } from '../tools/search'
 import { createTodoTools } from '../tools/todo'
 import { SearchMode } from '../types/search'
@@ -98,7 +97,6 @@ export function createResearcher({
 
     // Create model-specific tools with proper typing
     const originalSearchTool = createSearchTool(model)
-    const askQuestionTool = createQuestionTool(model)
     const todoTools = writer ? createTodoTools() : {}
 
     let systemPrompt: string
@@ -159,7 +157,6 @@ export function createResearcher({
     const tools: ResearcherTools = {
       search: searchTool,
       fetch: fetchTool,
-      askQuestion: askQuestionTool,
       displayPlan: displayPlanTool,
       displayTable: displayTableTool,
       displayChart: displayChartTool,

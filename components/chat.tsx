@@ -12,6 +12,7 @@ import { UploadedFile } from '@/lib/types'
 import type { ChatSection, UIMessage } from '@/lib/types/ai'
 import {
   isDynamicToolPart,
+  isInteractiveToolPart,
   isToolCallPart,
   isToolTypePart
 } from '@/lib/types/dynamic-tools'
@@ -49,6 +50,7 @@ export function Chat({
     // Clear other chat-related state that persists due to Next.js 16 component caching
     setInput('')
     setUploadedFiles([])
+    autoSendFiredRef.current.clear()
     setErrorModal({
       open: false,
       type: 'general',
@@ -56,6 +58,7 @@ export function Chat({
     })
   }
 
+  const autoSendFiredRef = useRef<Set<string>>(new Set())
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
@@ -92,10 +95,39 @@ export function Chat({
             ? messages.find(m => m.id === messageId)
             : undefined
 
+        // Detect tool-result continuation: sendAutomaticallyWhen fires with
+        // trigger="submit-message" but last message is assistant (not user)
+        const isToolResultContinuation =
+          trigger === 'submit-message' && lastMessage?.role === 'assistant'
+
+        // For tool-result continuation, extract the minimal delta
+        if (isToolResultContinuation) {
+          // Find the resolved displayOptionList part in the last assistant message
+          const resolvedPart = lastMessage?.parts?.find(
+            (p: any) =>
+              p.type === 'tool-displayOptionList' &&
+              p.state === 'output-available' &&
+              p.toolCallId
+          ) as { toolCallId: string; output: unknown } | undefined
+
+          return {
+            body: {
+              trigger: 'tool-result',
+              chatId,
+              toolResult: resolvedPart
+                ? {
+                    toolCallId: resolvedPart.toolCallId,
+                    output: resolvedPart.output
+                  }
+                : undefined
+            }
+          }
+        }
+
         return {
           body: {
-            trigger, // Use AI SDK's default trigger value directly
-            chatId: chatId,
+            trigger,
+            chatId,
             messageId,
             ...(isGuest ? { messages } : {}),
             message:
@@ -180,6 +212,37 @@ export function Chat({
         // For general errors, still use toast for less intrusive notification
         toast.error(`Error in chat: ${error.message}`)
       }
+    },
+    sendAutomaticallyWhen: ({ messages: msgs }) => {
+      const lastMsg = msgs[msgs.length - 1]
+      if (!lastMsg || lastMsg.role !== 'assistant') return false
+      const parts = lastMsg.parts
+      if (!parts) return false
+      // Check if any interactive tool parts are still pending (waiting for user input)
+      const hasPendingTools = parts.some(
+        p =>
+          isInteractiveToolPart(p) &&
+          'state' in p &&
+          p.state === 'input-available' &&
+          !('output' in p)
+      )
+      if (hasPendingTools) return false
+      // Auto-continue when a displayOptionList has been resolved with a selection.
+      // Use a ref to track which toolCallIds have already triggered auto-send
+      // to prevent re-triggering on subsequent evaluations.
+      const resolvedOptionPart = parts.find(
+        (p: any) =>
+          isToolTypePart(p) &&
+          p.type === 'tool-displayOptionList' &&
+          'state' in p &&
+          p.state === 'output-available' &&
+          p.toolCallId
+      ) as { toolCallId: string } | undefined
+      if (!resolvedOptionPart) return false
+      if (autoSendFiredRef.current.has(resolvedOptionPart.toolCallId))
+        return false
+      autoSendFiredRef.current.add(resolvedOptionPart.toolCallId)
+      return true
     },
     experimental_throttle: 100,
     generateId
@@ -425,28 +488,20 @@ export function Chat({
         }) => {
           // Find the tool name from the message parts
           let toolName = 'unknown'
-
-          // Optimize by breaking early once found
-          outerLoop: for (const message of messages) {
-            if (!message.parts) continue
-
-            for (const part of message.parts) {
-              if (isToolCallPart(part) && part.toolCallId === toolCallId) {
-                toolName = part.toolName
-                break outerLoop
-              } else if (
-                isToolTypePart(part) &&
-                part.toolCallId === toolCallId
-              ) {
-                toolName = part.type.substring(5) // Remove 'tool-' prefix
-                break outerLoop
-              } else if (
-                isDynamicToolPart(part) &&
-                part.toolCallId === toolCallId
-              ) {
-                toolName = part.toolName
-                break outerLoop
-              }
+          const matchedPart = messages
+            .flatMap(m => m.parts ?? [])
+            .find(
+              p =>
+                (isToolCallPart(p) ||
+                  isToolTypePart(p) ||
+                  isDynamicToolPart(p)) &&
+                p.toolCallId === toolCallId
+            )
+          if (matchedPart) {
+            if (isToolCallPart(matchedPart) || isDynamicToolPart(matchedPart)) {
+              toolName = matchedPart.toolName
+            } else if (isToolTypePart(matchedPart)) {
+              toolName = matchedPart.type.substring(5) // Remove 'tool-' prefix
             }
           }
 

@@ -24,6 +24,10 @@ import { perfLog, perfTime } from '../utils/perf-logging'
 
 import { persistStreamResults } from './helpers/persist-stream-results'
 import { prepareMessages } from './helpers/prepare-messages'
+import {
+  prepareToolResultMessages,
+  ToolResultValidationError
+} from './helpers/prepare-tool-result-messages'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
 import type { StreamContext } from './helpers/types'
@@ -34,6 +38,7 @@ export async function createChatStreamResponse(
 ): Promise<Response> {
   const {
     message,
+    toolResult,
     model,
     chatId,
     userId,
@@ -109,16 +114,45 @@ export async function createChatStreamResponse(
   // Declare titlePromise in outer scope for onFinish access
   let titlePromise: Promise<string> | undefined
 
+  // For tool-result continuations, prepare messages before creating the stream
+  // so we can pass originalMessages to createUIMessageStream. This ensures the
+  // server reuses the existing assistant message ID in the stream's start chunk,
+  // preventing the client SDK from pushing a duplicate message.
+  let prefetchedMessages: UIMessage[] | undefined
+  if (toolResult) {
+    try {
+      const prepareStart = performance.now()
+      perfLog('prepareToolResultMessages - Invoked')
+      prefetchedMessages = await prepareToolResultMessages(context, toolResult)
+      perfTime('prepareToolResultMessages completed (pre-stream)', prepareStart)
+    } catch (error) {
+      if (error instanceof ToolResultValidationError) {
+        return new Response(error.message, {
+          status: 400,
+          statusText: 'Bad Request'
+        })
+      }
+      throw error
+    }
+  }
+
   // Create the stream
   const stream = createUIMessageStream<UIMessage>({
+    ...(prefetchedMessages ? { originalMessages: prefetchedMessages } : {}),
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
       try {
         // Prepare messages for the model
         const prepareStart = performance.now()
-        perfLog(
-          `prepareMessages - Invoked: trigger=${trigger}, isNewChat=${isNewChat}`
-        )
-        const messagesToModel = await prepareMessages(context, message)
+        let messagesToModel: UIMessage[]
+        if (prefetchedMessages) {
+          messagesToModel = prefetchedMessages
+          perfLog('prepareMessages - Using prefetched messages for tool-result')
+        } else {
+          perfLog(
+            `prepareMessages - Invoked: trigger=${trigger}, isNewChat=${isNewChat}`
+          )
+          messagesToModel = await prepareMessages(context, message)
+        }
         perfTime('prepareMessages completed (stream)', prepareStart)
 
         // Get the researcher agent with parent trace ID, search mode, and model type
@@ -204,8 +238,40 @@ export async function createChatStreamResponse(
 
         const responseMessages = (await result.response).messages
         perfTime('researchAgent.stream completed', llmStart)
-        // Generate related questions
-        if (responseMessages && responseMessages.length > 0) {
+
+        // Check if response ends with a pending interactive tool (e.g. displayOptionList)
+        // that is waiting for user input — skip related questions in that case
+        const hasPendingInteractiveTool = (() => {
+          if (!responseMessages || responseMessages.length === 0) return false
+          const lastMsg = responseMessages[responseMessages.length - 1]
+          if (
+            lastMsg.role !== 'assistant' ||
+            typeof lastMsg.content === 'string'
+          )
+            return false
+          const toolCalls = lastMsg.content.filter(p => p.type === 'tool-call')
+          if (toolCalls.length === 0) return false
+          // Collect all tool-result IDs from subsequent tool messages
+          const resolvedIds = new Set(
+            responseMessages
+              .filter(m => m.role === 'tool')
+              .flatMap(m =>
+                m.content
+                  .filter(p => p.type === 'tool-result')
+                  .map(p => p.toolCallId)
+              )
+          )
+          // If any tool call has no result, the agent stopped for user input
+          return toolCalls.some(tc => !resolvedIds.has(tc.toolCallId))
+        })()
+
+        // Generate related questions (skip for tool-result continuations and pending interactive tools)
+        if (
+          trigger !== 'tool-result' &&
+          !hasPendingInteractiveTool &&
+          responseMessages &&
+          responseMessages.length > 0
+        ) {
           // Find the last user message
           const lastUserMessage = [...modelMessages]
             .reverse()
