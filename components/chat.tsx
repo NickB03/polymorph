@@ -16,8 +16,9 @@ import {
   isToolCallPart,
   isToolTypePart
 } from '@/lib/types/dynamic-tools'
+import { isValidSearchMode } from '@/lib/types/search'
 import { cn } from '@/lib/utils'
-import { getCookie, setCookie } from '@/lib/utils/cookies'
+import { syncSearchMode } from '@/lib/utils/search-mode'
 
 import { useFileDropzone } from '@/hooks/use-file-dropzone'
 
@@ -57,31 +58,23 @@ export function Chat({
       type: 'general',
       message: ''
     })
-    setCookie('searchMode', 'chat')
-    window.dispatchEvent(new CustomEvent('searchModeChanged'))
+    syncSearchMode('chat')
   }
 
   // Restore search mode from saved chat metadata, or reset for new conversations
   useEffect(() => {
     if (savedMessages.length > 0) {
-      const lastAssistantMessage = [...savedMessages]
-        .reverse()
-        .find(m => m.role === 'assistant')
+      const lastAssistantMessage = savedMessages.findLast(
+        m => m.role === 'assistant'
+      )
       const metadata = lastAssistantMessage?.metadata as
         | UIMessageMetadata
         | undefined
-      const savedSearchMode = metadata?.searchMode
-      if (savedSearchMode && ['chat', 'research'].includes(savedSearchMode)) {
-        if (getCookie('searchMode') !== savedSearchMode) {
-          setCookie('searchMode', savedSearchMode)
-          window.dispatchEvent(new CustomEvent('searchModeChanged'))
-        }
+      if (isValidSearchMode(metadata?.searchMode)) {
+        syncSearchMode(metadata.searchMode)
       }
     } else {
-      if (getCookie('searchMode') !== 'chat') {
-        setCookie('searchMode', 'chat')
-        window.dispatchEvent(new CustomEvent('searchModeChanged'))
-      }
+      syncSearchMode('chat')
     }
   }, [providedId, savedMessages])
 
