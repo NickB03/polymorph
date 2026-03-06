@@ -304,6 +304,7 @@ function OverflowItem({ citation, onClick }: OverflowItemProps) {
       className="group hover:bg-muted focus-visible:bg-muted flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors focus-visible:outline-none"
     >
       {citation.favicon ? (
+        // eslint-disable-next-line @next/next/no-img-element -- external favicon from arbitrary domains
         <img
           src={citation.favicon}
           alt=""
@@ -404,6 +405,7 @@ function StackedCitations({
                     style={{ zIndex: maxIcons - index }}
                   >
                     {citation.favicon ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- external favicon from arbitrary domains
                       <img
                         src={citation.favicon}
                         alt=""
