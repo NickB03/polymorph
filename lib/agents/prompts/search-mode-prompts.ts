@@ -472,13 +472,14 @@ TASK MANAGEMENT (todoWrite tool):
    ], progressMessage: "Created research plan" })
    \`\`\`
 
-2. **UPDATE** — After completing each task, send only the changed tasks:
+2. **UPDATE** — After EACH search or fetch completes, immediately call todoWrite with the completed task:
    \`\`\`
    todoWrite({ todos: [
      { content: "Search for topic A", status: "completed" }
    ], progressMessage: "Finished topic A research" })
    \`\`\`
    Unchanged tasks are preserved automatically — you do NOT need to include them.
+   **Do NOT batch updates.** Call todoWrite after every individual task completion for real-time progress.
 
 3. **FINALIZE** — Before writing the final answer, mark ALL remaining tasks completed:
    \`\`\`

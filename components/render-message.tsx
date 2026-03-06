@@ -22,15 +22,30 @@ import ResearchProcessSection from './research-process-section'
 import { UserFileSection } from './user-file-section'
 import { UserTextSection } from './user-text-section'
 
-/** Single-pass scan of message parts for todoWrite state. */
+/** Single-pass scan of message parts for todoWrite state and research tool activity. */
 function scanTodoWriteParts(parts: UIMessage['parts']) {
   let firstTodoWriteIndex: number | undefined
   let latestOutput: TodoWriteOutput | undefined
   let isStreaming = false
   let hasError = false
+  let completedToolCalls = 0
+  let hasActiveToolCall = false
 
   for (let i = 0; i < (parts?.length ?? 0); i++) {
     const part = parts![i]
+
+    // Count non-todoWrite research tool activity after plan creation
+    if (firstTodoWriteIndex !== undefined && part.type !== 'tool-todoWrite') {
+      const type = part.type
+      if (type?.startsWith?.('tool-') && !type.startsWith('tool-display')) {
+        const state = (part as { state?: string }).state
+        if (state === 'output-available') completedToolCalls++
+        else if (state === 'input-streaming' || state === 'input-available')
+          hasActiveToolCall = true
+      }
+      continue
+    }
+
     if (part.type !== 'tool-todoWrite') continue
 
     if (firstTodoWriteIndex === undefined) firstTodoWriteIndex = i
@@ -45,7 +60,14 @@ function scanTodoWriteParts(parts: UIMessage['parts']) {
     }
   }
 
-  return { firstTodoWriteIndex, latestOutput, isStreaming, hasError }
+  return {
+    firstTodoWriteIndex,
+    latestOutput,
+    isStreaming,
+    hasError,
+    completedToolCalls,
+    hasActiveToolCall
+  }
 }
 
 interface RenderMessageProps {
@@ -314,6 +336,8 @@ export function RenderMessage({
             output={todoScan.latestOutput}
             isStreaming={!todoScan.latestOutput && todoScan.isStreaming}
             hasError={todoScan.hasError && !todoScan.latestOutput}
+            completedToolCalls={todoScan.completedToolCalls}
+            hasActiveToolCall={todoScan.hasActiveToolCall}
           />
         )
       }
