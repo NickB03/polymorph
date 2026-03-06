@@ -17,13 +17,14 @@ import { isTracingEnabled } from '@/lib/utils/telemetry'
 
 import { maybeTruncateMessages } from '../utils/context-window'
 
+import { hasPendingInteractiveTool } from './helpers/has-pending-interactive-tool'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
 import { BaseStreamConfig } from './types'
 
 type EphemeralStreamConfig = Pick<
   BaseStreamConfig,
-  'model' | 'abortSignal' | 'searchMode' | 'modelType'
+  'model' | 'abortSignal' | 'searchMode' | 'modelType' | 'trigger'
 > & {
   messages: UIMessage[]
   chatId?: string
@@ -32,7 +33,15 @@ type EphemeralStreamConfig = Pick<
 export async function createEphemeralChatStreamResponse(
   config: EphemeralStreamConfig
 ): Promise<Response> {
-  const { messages, model, abortSignal, searchMode, modelType, chatId } = config
+  const {
+    messages,
+    model,
+    abortSignal,
+    searchMode,
+    modelType,
+    chatId,
+    trigger
+  } = config
   const modelId = createModelId(model)
 
   if (!messages || messages.length === 0) {
@@ -117,7 +126,12 @@ export async function createEphemeralChatStreamResponse(
         )
 
         const responseMessages = (await result.response).messages
-        if (responseMessages && responseMessages.length > 0) {
+        if (
+          trigger !== 'tool-result' &&
+          responseMessages &&
+          responseMessages.length > 0 &&
+          !hasPendingInteractiveTool(responseMessages)
+        ) {
           const lastUserMessage = [...modelMessages]
             .reverse()
             .find(msg => msg.role === 'user')

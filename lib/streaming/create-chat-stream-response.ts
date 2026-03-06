@@ -22,6 +22,7 @@ import { maybeTruncateMessages } from '../utils/context-window'
 import { getTextFromParts } from '../utils/message-utils'
 import { perfLog, perfTime } from '../utils/perf-logging'
 
+import { hasPendingInteractiveTool } from './helpers/has-pending-interactive-tool'
 import { persistStreamResults } from './helpers/persist-stream-results'
 import { prepareMessages } from './helpers/prepare-messages'
 import {
@@ -240,36 +241,10 @@ export async function createChatStreamResponse(
         const responseMessages = (await result.response).messages
         perfTime('researchAgent.stream completed', llmStart)
 
-        // Check if response ends with a pending interactive tool (e.g. displayOptionList)
-        // that is waiting for user input — skip related questions in that case
-        const hasPendingInteractiveTool = (() => {
-          if (!responseMessages || responseMessages.length === 0) return false
-          const lastMsg = responseMessages[responseMessages.length - 1]
-          if (
-            lastMsg.role !== 'assistant' ||
-            typeof lastMsg.content === 'string'
-          )
-            return false
-          const toolCalls = lastMsg.content.filter(p => p.type === 'tool-call')
-          if (toolCalls.length === 0) return false
-          // Collect all tool-result IDs from subsequent tool messages
-          const resolvedIds = new Set(
-            responseMessages
-              .filter(m => m.role === 'tool')
-              .flatMap(m =>
-                m.content
-                  .filter(p => p.type === 'tool-result')
-                  .map(p => p.toolCallId)
-              )
-          )
-          // If any tool call has no result, the agent stopped for user input
-          return toolCalls.some(tc => !resolvedIds.has(tc.toolCallId))
-        })()
-
         // Generate related questions (skip for tool-result continuations and pending interactive tools)
         if (
           trigger !== 'tool-result' &&
-          !hasPendingInteractiveTool &&
+          !hasPendingInteractiveTool(responseMessages) &&
           responseMessages &&
           responseMessages.length > 0
         ) {

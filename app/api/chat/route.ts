@@ -193,7 +193,8 @@ export async function POST(req: Request) {
           abortSignal,
           searchMode,
           modelType,
-          chatId
+          chatId,
+          trigger: validatedTrigger
         })
       : await createChatStreamResponse({
           message: validatedTrigger === 'tool-result' ? null : message,
