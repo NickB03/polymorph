@@ -4,6 +4,7 @@ import type { InferUITool, UIMessage as AIMessage } from 'ai'
 import { fetchTool } from '@/lib/tools/fetch'
 import { searchTool } from '@/lib/tools/search'
 import { createTodoTools, type TodoItem } from '@/lib/tools/todo'
+import type { ModelType } from '@/lib/types/model-type'
 import type { SearchMode } from '@/lib/types/search'
 
 // Re-export TodoItem for external use
@@ -14,6 +15,7 @@ export interface UIMessageMetadata {
   traceId?: string
   feedbackScore?: number | null
   searchMode?: SearchMode
+  modelType?: ModelType
   modelId?: string
   [key: string]: any
 }

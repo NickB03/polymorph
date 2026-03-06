@@ -16,8 +16,10 @@ import {
   isToolCallPart,
   isToolTypePart
 } from '@/lib/types/dynamic-tools'
+import { isValidModelType } from '@/lib/types/model-type'
 import { isValidSearchMode } from '@/lib/types/search'
 import { cn } from '@/lib/utils'
+import { syncModelType } from '@/lib/utils/model-type'
 import { syncSearchMode } from '@/lib/utils/search-mode'
 
 import { useFileDropzone } from '@/hooks/use-file-dropzone'
@@ -27,9 +29,11 @@ import { ChatPanel } from './chat-panel'
 import { DragOverlay } from './drag-overlay'
 import { ErrorModal } from './error-modal'
 
+const EMPTY_MESSAGES: UIMessage[] = []
+
 export function Chat({
   id: providedId,
-  savedMessages = [],
+  savedMessages = EMPTY_MESSAGES,
   query,
   isGuest = false
 }: {
@@ -59,9 +63,10 @@ export function Chat({
       message: ''
     })
     syncSearchMode('chat')
+    syncModelType('speed')
   }
 
-  // Restore search mode from saved chat metadata, or reset for new conversations
+  // Restore search mode and model type from saved chat metadata, or reset for new conversations
   useEffect(() => {
     if (savedMessages.length > 0) {
       const lastAssistantMessage = savedMessages.findLast(
@@ -73,8 +78,12 @@ export function Chat({
       if (isValidSearchMode(metadata?.searchMode)) {
         syncSearchMode(metadata.searchMode)
       }
+      if (isValidModelType(metadata?.modelType)) {
+        syncModelType(metadata.modelType)
+      }
     } else {
       syncSearchMode('chat')
+      syncModelType('speed')
     }
   }, [providedId, savedMessages])
 
@@ -122,7 +131,6 @@ export function Chat({
 
         // For tool-result continuation, extract the minimal delta
         if (isToolResultContinuation) {
-          // Find the resolved displayOptionList part in the last assistant message
           const resolvedPart = lastMessage?.parts?.find(
             (p: any) =>
               p.type === 'tool-displayOptionList' &&
@@ -130,16 +138,21 @@ export function Chat({
               p.toolCallId
           ) as { toolCallId: string; output: unknown } | undefined
 
+          const toolResult = resolvedPart
+            ? {
+                toolCallId: resolvedPart.toolCallId,
+                output: resolvedPart.output
+              }
+            : undefined
+
           return {
             body: {
               trigger: 'tool-result',
               chatId,
-              toolResult: resolvedPart
-                ? {
-                    toolCallId: resolvedPart.toolCallId,
-                    output: resolvedPart.output
-                  }
-                : undefined
+              toolResult,
+              // Guest: include full messages (already resolved by addToolResult)
+              // so the ephemeral stream can continue without DB access
+              ...(isGuest ? { messages } : {})
             }
           }
         }

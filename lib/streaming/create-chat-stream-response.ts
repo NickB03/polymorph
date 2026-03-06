@@ -229,6 +229,7 @@ export async function createChatStreamResponse(
                 return {
                   traceId: parentTraceId,
                   searchMode,
+                  modelType,
                   modelId: context.modelId
                 }
               }

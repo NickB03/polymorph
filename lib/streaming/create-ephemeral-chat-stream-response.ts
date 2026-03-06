@@ -64,6 +64,10 @@ export async function createEphemeralChatStreamResponse(
   }
 
   const stream = createUIMessageStream<UIMessage>({
+    // Pass originalMessages so handleUIMessageStreamFinish reuses the
+    // assistant message ID on tool-result continuations (prevents duplicate
+    // messages on the client when the last message is already assistant).
+    originalMessages: messages,
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
       try {
         const isOpenAI = modelId.startsWith('openai:')
@@ -104,6 +108,7 @@ export async function createEphemeralChatStreamResponse(
                 return {
                   traceId: parentTraceId,
                   searchMode,
+                  modelType,
                   modelId
                 }
               }

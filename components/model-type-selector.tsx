@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 
 import { ModelType } from '@/lib/types/model-type'
-import { getCookie, setCookie } from '@/lib/utils/cookies'
+import { getCookie } from '@/lib/utils/cookies'
+import { syncModelType } from '@/lib/utils/model-type'
 
 import { Button } from './ui/button'
 import {
@@ -31,7 +32,7 @@ export function ModelTypeSelector({
   useEffect(() => {
     if (disabled) {
       setValue('speed')
-      setCookie('modelType', 'speed')
+      syncModelType('speed')
       return
     }
     const savedType = getCookie('modelType')
@@ -55,7 +56,7 @@ export function ModelTypeSelector({
   const handleTypeSelect = (type: ModelType) => {
     if (disabled) return
     setValue(type)
-    setCookie('modelType', type)
+    syncModelType(type)
     setDropdownOpen(false)
   }
 
