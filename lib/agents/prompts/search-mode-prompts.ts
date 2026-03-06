@@ -102,6 +102,7 @@ Rule precedence:
 
 DISPLAY TOOLS (visual output):
 You have access to display tools that render rich, interactive UI components. **Use them proactively** — they make responses significantly more useful.
+To use these tools, invoke them as function calls — do not write their JSON parameters as text or code blocks.
 
 **displayPlan** — Use ONLY for how-to guides, learning paths, or step-by-step instructions for the USER to follow:
 - TRIGGER: Questions starting with "how do I", "how to", "steps to", "guide to", "learn", "get started with", "process for"
@@ -377,6 +378,7 @@ Example with multiple searches: "Initial data shows positive trends. [1](#toolu_
 
 DISPLAY TOOLS (visual output):
 You have access to display tools that render rich, interactive UI components. **Use them proactively** — they make responses significantly more useful.
+To use these tools, invoke them as function calls — do not write their JSON parameters as text or code blocks.
 
 **displayPlan** — Use ONLY for how-to guides, learning paths, or step-by-step instructions for the USER to follow:
 - TRIGGER: Questions starting with "how do I", "how to", "steps to", "guide to", "learn", "get started with", "process for"
