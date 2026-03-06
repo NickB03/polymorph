@@ -12,7 +12,7 @@ import { toast } from 'sonner'
 import { SuggestionCategory, UploadedFile } from '@/lib/types'
 import type { UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 import { cn, isChatLoading } from '@/lib/utils'
-import { setCookie } from '@/lib/utils/cookies'
+import { syncModelType } from '@/lib/utils/model-type'
 import { syncSearchMode } from '@/lib/utils/search-mode'
 
 import { useTrendingSuggestions } from '@/hooks/use-trending-suggestions'
@@ -335,8 +335,7 @@ export function ChatPanel({
               // Auto-switch to Research + Quality for research suggestions
               if (category === 'research') {
                 syncSearchMode('research')
-                setCookie('modelType', 'quality')
-                window.dispatchEvent(new CustomEvent('modelTypeChanged'))
+                syncModelType('quality')
               }
               // Set the input value and submit
               handleInputChange({
