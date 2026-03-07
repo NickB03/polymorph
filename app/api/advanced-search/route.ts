@@ -591,7 +591,7 @@ async function fetchHtmlWithTimeout(
   }
 }
 
-function fetchHtml(url: string): Promise<string> {
+function fetchHtml(url: string, remainingRedirects = 5): Promise<string> {
   return new Promise((resolve, reject) => {
     const protocol = url.startsWith('https:') ? https : http
     const agent = url.startsWith('https:') ? httpsAgent : httpAgent
@@ -602,8 +602,15 @@ function fetchHtml(url: string): Promise<string> {
         res.statusCode < 400 &&
         res.headers.location
       ) {
+        if (remainingRedirects <= 0) {
+          reject(new Error('Too many redirects'))
+          return
+        }
         // Handle redirects
-        fetchHtml(new URL(res.headers.location, url).toString())
+        fetchHtml(
+          new URL(res.headers.location, url).toString(),
+          remainingRedirects - 1
+        )
           .then(resolve)
           .catch(reject)
         return
