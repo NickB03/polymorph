@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import { UseChatHelpers } from '@ai-sdk/react'
 
 import type { SearchResultItem } from '@/lib/types'
@@ -14,7 +16,7 @@ import { OptionList } from './tool-ui/option-list/option-list'
 import type { OptionListSelection } from './tool-ui/option-list/schema'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
 import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
-import { tryRenderToolUIByName } from './tool-ui/registry'
+import { tryRenderToolUI, tryRenderToolUIByName } from './tool-ui/registry'
 import { AnswerSection } from './answer-section'
 import { DynamicToolDisplay } from './dynamic-tool-display'
 import { ResearchPlan } from './research-plan'
@@ -22,15 +24,30 @@ import ResearchProcessSection from './research-process-section'
 import { UserFileSection } from './user-file-section'
 import { UserTextSection } from './user-text-section'
 
-/** Single-pass scan of message parts for todoWrite state. */
+/** Single-pass scan of message parts for todoWrite state and research tool activity. */
 function scanTodoWriteParts(parts: UIMessage['parts']) {
   let firstTodoWriteIndex: number | undefined
   let latestOutput: TodoWriteOutput | undefined
   let isStreaming = false
   let hasError = false
+  let completedToolCalls = 0
+  let hasActiveToolCall = false
 
   for (let i = 0; i < (parts?.length ?? 0); i++) {
     const part = parts![i]
+
+    // Count research tool activity after plan creation
+    if (firstTodoWriteIndex !== undefined && part.type !== 'tool-todoWrite') {
+      const type = part.type
+      if (type === 'tool-search' || type === 'tool-fetch') {
+        const state = (part as { state?: string }).state
+        if (state === 'output-available') completedToolCalls++
+        else if (state === 'input-streaming' || state === 'input-available')
+          hasActiveToolCall = true
+      }
+      continue
+    }
+
     if (part.type !== 'tool-todoWrite') continue
 
     if (firstTodoWriteIndex === undefined) firstTodoWriteIndex = i
@@ -45,7 +62,62 @@ function scanTodoWriteParts(parts: UIMessage['parts']) {
     }
   }
 
-  return { firstTodoWriteIndex, latestOutput, isStreaming, hasError }
+  return {
+    firstTodoWriteIndex,
+    latestOutput,
+    isStreaming,
+    hasError,
+    completedToolCalls,
+    hasActiveToolCall
+  }
+}
+
+/** Segments produced by extractToolUIFromText */
+type TextSegment = { type: 'text'; content: string }
+type ToolUISegment = { type: 'tool-ui'; component: ReactNode; key: string }
+type Segment = TextSegment | ToolUISegment
+
+/**
+ * Scan text for ```json fenced code blocks that match a registered tool UI schema.
+ * Returns the original text unchanged if no matches are found.
+ */
+function extractToolUIFromText(text: string): Segment[] {
+  const jsonBlockRegex = /```json\s*\n([\s\S]*?)\n\s*```/g
+  const segments: Segment[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+  let toolUIFound = false
+
+  while ((match = jsonBlockRegex.exec(text)) !== null) {
+    try {
+      const parsed = JSON.parse(match[1])
+      const rendered = tryRenderToolUI(parsed)
+      if (rendered) {
+        toolUIFound = true
+        if (match.index > lastIndex) {
+          segments.push({
+            type: 'text',
+            content: text.slice(lastIndex, match.index)
+          })
+        }
+        segments.push({
+          type: 'tool-ui',
+          component: rendered,
+          key: `extracted-${match.index}`
+        })
+        lastIndex = match.index + match[0].length
+      }
+    } catch {
+      // Not valid JSON or no schema match — leave as-is
+    }
+  }
+
+  if (!toolUIFound) return [{ type: 'text', content: text }]
+
+  if (lastIndex < text.length) {
+    segments.push({ type: 'text', content: text.slice(lastIndex) })
+  }
+  return segments
 }
 
 interface RenderMessageProps {
@@ -265,26 +337,43 @@ export function RenderMessage({
       const shouldShowActions =
         isLastTextPart && (isLatestMessage ? isStreamingComplete : true)
 
-      elements.push(
-        <AnswerSection
-          key={`${messageId}-text-${index}`}
-          content={part.text}
-          isOpen={getIsOpen(
-            messageId,
-            part.type,
-            index < (message.parts?.length ?? 0) - 1
-          )}
-          onOpenChange={open => onOpenChange(messageId, open)}
-          chatId={chatId}
-          isGuest={isGuest}
-          showActions={shouldShowActions}
-          messageId={messageId}
-          metadata={message.metadata as UIMessageMetadata | undefined}
-          reload={reload}
-          status={status}
-          citationMaps={citationMaps}
-        />
-      )
+      const segments = extractToolUIFromText(part.text)
+      for (let si = 0; si < segments.length; si++) {
+        const segment = segments[si]
+        if (segment.type === 'tool-ui') {
+          elements.push(
+            <div
+              key={`${messageId}-extracted-tool-${index}-${segment.key}`}
+              className="my-2"
+            >
+              {segment.component}
+            </div>
+          )
+        } else if (segment.content.trim()) {
+          // Only show actions on the very last text segment of the last text part
+          const isLastSegment = si === segments.length - 1
+          elements.push(
+            <AnswerSection
+              key={`${messageId}-text-${index}-${si}`}
+              content={segment.content}
+              isOpen={getIsOpen(
+                messageId,
+                part.type,
+                index < (message.parts?.length ?? 0) - 1
+              )}
+              onOpenChange={open => onOpenChange(messageId, open)}
+              chatId={chatId}
+              isGuest={isGuest}
+              showActions={shouldShowActions && isLastSegment}
+              messageId={messageId}
+              metadata={message.metadata as UIMessageMetadata | undefined}
+              reload={reload}
+              status={status}
+              citationMaps={citationMaps}
+            />
+          )
+        }
+      }
 
       // Mark that we've seen text content
       hasSeenText = true
@@ -314,6 +403,8 @@ export function RenderMessage({
             output={todoScan.latestOutput}
             isStreaming={!todoScan.latestOutput && todoScan.isStreaming}
             hasError={todoScan.hasError && !todoScan.latestOutput}
+            completedToolCalls={todoScan.completedToolCalls}
+            hasActiveToolCall={todoScan.hasActiveToolCall}
           />
         )
       }

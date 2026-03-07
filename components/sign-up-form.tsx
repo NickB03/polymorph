@@ -53,6 +53,7 @@ export function SignUpForm({
       // Otherwise, email confirmation is required
       if (data.session) {
         router.push('/')
+        router.refresh()
       } else {
         router.push('/auth/sign-up-success')
       }

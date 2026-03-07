@@ -26,6 +26,7 @@ export function ChatHistoryClient() {
   const [nextOffset, setNextOffset] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  const historyTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const [isPending, startTransition] = useTransition()
 
   const fetchInitialChats = useCallback(async () => {
@@ -55,13 +56,30 @@ export function ChatHistoryClient() {
 
   useEffect(() => {
     const handleHistoryUpdate = () => {
-      startTransition(() => {
-        fetchInitialChats()
-      })
+      // Clear pending retries from previous events
+      historyTimeoutsRef.current.forEach(clearTimeout)
+      historyTimeoutsRef.current = []
+
+      // Brief delay to let server persistence complete
+      const t1 = setTimeout(() => {
+        startTransition(() => {
+          fetchInitialChats()
+        })
+      }, 800)
+
+      // Safety-net retry for slow DB writes
+      const t2 = setTimeout(() => {
+        startTransition(() => {
+          fetchInitialChats()
+        })
+      }, 3000)
+
+      historyTimeoutsRef.current = [t1, t2]
     }
     window.addEventListener('chat-history-updated', handleHistoryUpdate)
     return () => {
       window.removeEventListener('chat-history-updated', handleHistoryUpdate)
+      historyTimeoutsRef.current.forEach(clearTimeout)
     }
   }, [fetchInitialChats])
 
