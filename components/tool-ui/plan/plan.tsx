@@ -122,7 +122,7 @@ const PlanTodoItem = memo(function PlanTodoItem({
         'text-sm leading-6 font-medium break-words',
         todo.status === 'pending' && 'text-muted-foreground',
         todo.status === 'in_progress' &&
-          'motion-safe:shimmer shimmer-invert text-foreground',
+          'motion-safe:shimmer motion-safe:shimmer-invert text-foreground',
         (todo.status === 'completed' || todo.status === 'cancelled') &&
           'text-muted-foreground'
       )}
@@ -136,6 +136,7 @@ const PlanTodoItem = memo(function PlanTodoItem({
       <li
         className={cn(
           'relative -mx-2 flex cursor-default items-start gap-3 rounded-md px-2 py-1.5',
+          todo.status === 'in_progress' && 'bg-primary/5',
           className
         )}
         style={style}
@@ -176,7 +177,10 @@ const PlanTodoItem = memo(function PlanTodoItem({
       )}
       <Collapsible asChild open={isOpen} onOpenChange={setIsOpen}>
         <div
-          className="data-[state=open]:bg-primary/5 min-w-0 rounded-md motion-safe:transition-all motion-safe:duration-200"
+          className={cn(
+            'min-w-0 rounded-md motion-safe:transition-all motion-safe:duration-200',
+            (isOpen || todo.status === 'in_progress') && 'bg-primary/5'
+          )}
           style={{
             backdropFilter: isOpen ? 'blur(2px)' : undefined
           }}

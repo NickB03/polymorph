@@ -15,6 +15,7 @@ import { cn, isChatLoading } from '@/lib/utils'
 import { extractCitationMapsFromMessages } from '@/lib/utils/citation'
 
 import { AnimatedLogo } from './ui/animated-logo'
+import { Skeleton } from './ui/skeleton'
 import { ChatError } from './chat-error'
 import { GuestSignupNudge } from './guest-signup-nudge'
 import { RenderMessage } from './render-message'
@@ -260,11 +261,26 @@ export function ChatMessages({
               )
             })}
             {/* Show loading after assistant messages */}
-            {isLoading && sectionIndex === sections.length - 1 && (
-              <div className="flex justify-start py-4">
-                <AnimatedLogo className="h-10 w-10" />
-              </div>
-            )}
+            {isLoading &&
+              sectionIndex === sections.length - 1 &&
+              (section.assistantMessages.length === 0 ||
+              !section.assistantMessages.some(m => m.parts?.length) ? (
+                <div className="flex flex-col gap-3 py-4">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton
+                    className="h-5 w-full"
+                    style={{ animationDelay: '75ms' }}
+                  />
+                  <Skeleton
+                    className="h-5 w-5/6"
+                    style={{ animationDelay: '150ms' }}
+                  />
+                </div>
+              ) : (
+                <div className="flex justify-start py-4">
+                  <AnimatedLogo className="h-10 w-10" />
+                </div>
+              ))}
             {isGuest &&
               !isLoading &&
               sectionIndex === sections.length - 1 &&

@@ -568,7 +568,6 @@ export function Chat({
         handleSubmit={onSubmit}
         status={status}
         messages={messages}
-        setMessages={setMessages}
         stop={stop}
         query={query}
         append={(message: any) => {
@@ -578,7 +577,6 @@ export function Chat({
         uploadedFiles={uploadedFiles}
         setUploadedFiles={setUploadedFiles}
         scrollContainerRef={scrollContainerRef}
-        onNewChat={handleNewChat}
         isGuest={isGuest}
       />
       <DragOverlay visible={dragHandlers.isDragging} />

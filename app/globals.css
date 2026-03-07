@@ -242,25 +242,34 @@
       ry: 0;
     }
   }
-  @keyframes lookAround {
+  @keyframes dot-wave {
     0%,
+    60%,
     100% {
-      transform: translateX(0);
+      transform: translateY(0);
+      opacity: 0.4;
     }
-    25% {
-      transform: translateX(10px);
-    }
-    50% {
-      transform: translateX(0);
-    }
-    75% {
-      transform: translateX(-10px);
+    30% {
+      transform: translateY(-40%);
+      opacity: 1;
     }
   }
 }
 
 @utility animate-blink {
   animation: blink 0.2s ease-in-out;
+}
+
+@utility dot-wave {
+  animation: dot-wave 1.4s ease-in-out infinite;
+}
+
+@utility shimmer {
+  animation: shimmer-text 1.2s ease-in-out infinite;
+}
+
+@utility shimmer-invert {
+  animation: shimmer-text 1.2s ease-in-out infinite reverse;
 }
 
 /* Animation utilities for dropdown menu */
@@ -420,6 +429,16 @@
     opacity: var(--exit-opacity, 1);
     transform: translate(var(--exit-translate-x, 0), var(--exit-translate-y, 0))
       scale(var(--exit-scale, 1));
+  }
+}
+
+@keyframes shimmer-text {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
   }
 }
 
