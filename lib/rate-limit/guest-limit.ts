@@ -82,6 +82,7 @@ export async function checkAndEnforceGuestLimit(
   if (!result.allowed) {
     return new Response(
       JSON.stringify({
+        code: 'GUEST_LIMIT',
         error:
           'You\u2019ve reached your daily search limit. Create a free account for unlimited access, or come back tomorrow.',
         remaining: 0,

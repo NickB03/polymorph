@@ -122,8 +122,14 @@ export class BraveSearchProvider implements SearchProvider {
     )
 
     if (!response.ok) {
-      console.error(`Brave ${endpoint} search failed: ${response.statusText}`)
-      throw new Error('Search failed')
+      const body = await response.text().catch(() => '')
+      console.error(
+        `Brave ${endpoint} search failed: ${response.status} ${response.statusText}`,
+        body
+      )
+      throw new Error(
+        `Brave ${endpoint} API error ${response.status}: ${response.statusText}`
+      )
     }
 
     return response.json()

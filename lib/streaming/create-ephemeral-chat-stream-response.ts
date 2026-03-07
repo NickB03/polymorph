@@ -13,6 +13,7 @@ import { Langfuse } from 'langfuse'
 
 import { researcher } from '@/lib/agents/researcher'
 import { createModelId } from '@/lib/utils'
+import { jsonError } from '@/lib/utils/json-error'
 import { isTracingEnabled } from '@/lib/utils/telemetry'
 
 import { maybeTruncateMessages } from '../utils/context-window'
@@ -45,10 +46,7 @@ export async function createEphemeralChatStreamResponse(
   const modelId = createModelId(model)
 
   if (!messages || messages.length === 0) {
-    return new Response('messages are required', {
-      status: 400,
-      statusText: 'Bad Request'
-    })
+    return jsonError('BAD_REQUEST', 'messages are required', 400)
   }
 
   // Create parent trace ID for grouping all operations

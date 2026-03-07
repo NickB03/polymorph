@@ -13,7 +13,10 @@ describe('createEphemeralChatStreamResponse', () => {
     })
 
     expect(response.status).toBe(400)
-    const text = await response.text()
-    expect(text).toBe('messages are required')
+    const json = await response.json()
+    expect(json).toEqual({
+      code: 'BAD_REQUEST',
+      error: 'messages are required'
+    })
   })
 })

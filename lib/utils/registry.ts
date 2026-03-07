@@ -10,12 +10,18 @@ const providers: Record<string, any> = {
   openai,
   anthropic,
   google,
-  'openai-compatible': createOpenAI({
-    apiKey: process.env.OPENAI_COMPATIBLE_API_KEY,
-    baseURL: process.env.OPENAI_COMPATIBLE_API_BASE_URL
-  }),
   gateway: createGateway({
     apiKey: process.env.AI_GATEWAY_API_KEY
+  })
+}
+
+if (
+  process.env.OPENAI_COMPATIBLE_API_KEY &&
+  process.env.OPENAI_COMPATIBLE_API_BASE_URL
+) {
+  providers['openai-compatible'] = createOpenAI({
+    apiKey: process.env.OPENAI_COMPATIBLE_API_KEY,
+    baseURL: process.env.OPENAI_COMPATIBLE_API_BASE_URL
   })
 }
 
@@ -29,6 +35,11 @@ if (process.env.OLLAMA_BASE_URL) {
 export const registry = createProviderRegistry(providers)
 
 export function getModel(model: string): LanguageModel {
+  if (!model.includes(':')) {
+    throw new Error(
+      `Invalid model format "${model}": expected "provider:model-id" (e.g. "gateway:google/gemini-3-flash")`
+    )
+  }
   return registry.languageModel(
     model as Parameters<typeof registry.languageModel>[0]
   )

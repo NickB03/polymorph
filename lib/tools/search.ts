@@ -38,6 +38,9 @@ export function createSearchTool(fullModel: string) {
         state: 'searching' as const,
         query
       }
+
+      if (context?.abortSignal?.aborted) return
+
       // Ensure max_results is at least 10
       const minResults = 10
       const effectiveMaxResults = Math.max(
@@ -81,14 +84,16 @@ export function createSearchTool(fullModel: string) {
         `Using search API: ${searchAPI}, Type: ${type}, Search Depth: ${effectiveSearchDepthForAPI}`
       )
 
-      try {
+      if (context?.abortSignal?.aborted) return
+
+      const executeSearch = async (
+        provider: SearchProviderType
+      ): Promise<SearchResults> => {
         if (
-          searchAPI === 'searxng' &&
+          provider === 'searxng' &&
           effectiveSearchDepthForAPI === 'advanced'
         ) {
-          // Get the base URL using the centralized utility function
           const baseUrl = await getBaseUrlString()
-
           const response = await fetch(`${baseUrl}/api/advanced-search`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -98,51 +103,81 @@ export function createSearchTool(fullModel: string) {
               searchDepth: effectiveSearchDepthForAPI,
               includeDomains: include_domains,
               excludeDomains: exclude_domains
-            })
+            }),
+            signal: context?.abortSignal
           })
           if (!response.ok) {
             throw new Error(
-              `Advanced search API error: ${response.status} ${response.statusText}`
+              `Advanced search API error ${response.status}: ${response.statusText}`
             )
           }
-          searchResult = await response.json()
-        } else {
-          // Use the provider factory to get the appropriate search provider
-          const searchProvider = createSearchProvider(searchAPI)
-
-          // Pass content_types only for Brave provider
-          if (searchAPI === 'brave') {
-            searchResult = await searchProvider.search(
-              filledQuery,
-              effectiveMaxResults,
-              effectiveSearchDepthForAPI,
-              include_domains,
-              exclude_domains,
-              {
-                type: type as 'general' | 'optimized',
-                content_types: content_types as Array<
-                  'web' | 'video' | 'image' | 'news'
-                >
-              }
-            )
-          } else {
-            searchResult = await searchProvider.search(
-              filledQuery,
-              effectiveMaxResults,
-              effectiveSearchDepthForAPI,
-              include_domains,
-              exclude_domains
-            )
-          }
+          return (await response.json()) as SearchResults
         }
-      } catch (error) {
-        console.error('Search API error:', error)
-        const message =
-          error instanceof Error ? error.message : 'Unknown search error'
-        // Include guidance so the model does not fabricate citations
-        throw new Error(
-          `Search failed: ${message}. IMPORTANT: Do NOT use [number](#toolCallId) citations for this failed search — no results are available to cite.`
+
+        const searchProvider = createSearchProvider(provider)
+        if (provider === 'brave') {
+          return await searchProvider.search(
+            filledQuery,
+            effectiveMaxResults,
+            effectiveSearchDepthForAPI,
+            include_domains,
+            exclude_domains,
+            {
+              type: type as 'general' | 'optimized',
+              content_types: content_types as Array<
+                'web' | 'video' | 'image' | 'news'
+              >
+            }
+          )
+        }
+        return await searchProvider.search(
+          filledQuery,
+          effectiveMaxResults,
+          effectiveSearchDepthForAPI,
+          include_domains,
+          exclude_domains
         )
+      }
+
+      // Determine fallback provider (Brave if available and not already primary)
+      const fallbackAPI: SearchProviderType | null =
+        searchAPI !== 'brave' && process.env.BRAVE_SEARCH_API_KEY
+          ? 'brave'
+          : searchAPI !== 'tavily' && process.env.TAVILY_API_KEY
+            ? 'tavily'
+            : null
+
+      try {
+        searchResult = await executeSearch(searchAPI)
+      } catch (primaryError) {
+        if (context?.abortSignal?.aborted) return
+
+        const primaryMessage =
+          primaryError instanceof Error
+            ? primaryError.message
+            : 'Unknown search error'
+
+        if (fallbackAPI) {
+          console.warn(
+            `[Search] Primary provider ${searchAPI} failed: ${primaryMessage}. Falling back to ${fallbackAPI}.`
+          )
+          try {
+            searchResult = await executeSearch(fallbackAPI)
+          } catch (fallbackError) {
+            console.error(
+              `[Search] Fallback provider ${fallbackAPI} also failed:`,
+              fallbackError
+            )
+            throw new Error(
+              `${primaryMessage}. IMPORTANT: Do NOT use [number](#toolCallId) citations for this failed search — no results are available to cite.`
+            )
+          }
+        } else {
+          console.error('Search API error:', primaryError)
+          throw new Error(
+            `${primaryMessage}. IMPORTANT: Do NOT use [number](#toolCallId) citations for this failed search — no results are available to cite.`
+          )
+        }
       }
 
       // Add citation mapping and toolCallId to search results
