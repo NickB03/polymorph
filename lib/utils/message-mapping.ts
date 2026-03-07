@@ -119,6 +119,16 @@ function isExtendedToolPart(part: unknown): part is ExtendedToolPart {
   return typeof p.type === 'string' && p.type.startsWith('tool-')
 }
 
+/** Serialize callProviderMetadata (e.g., Gemini thoughtSignature) for DB storage */
+function serializeProviderMeta(meta?: Record<string, unknown>) {
+  return meta ? { providerMetadata: meta } : {}
+}
+
+/** Deserialize providerMetadata from DB back to callProviderMetadata for AI SDK */
+function deserializeProviderMeta(meta?: Record<string, unknown> | null) {
+  return meta ? { callProviderMetadata: meta } : {}
+}
+
 // Helper function to create tool part mapping
 function createToolPartMapping(
   basePart: Omit<DBMessagePart, 'type'>,
@@ -136,10 +146,7 @@ function createToolPartMapping(
     tool_errorText: part.errorText,
     [inputColumn]: part.input,
     [outputColumn]: part.output,
-    // Preserve callProviderMetadata (e.g., Gemini thoughtSignature)
-    ...(part.callProviderMetadata
-      ? { providerMetadata: part.callProviderMetadata }
-      : {})
+    ...serializeProviderMeta(part.callProviderMetadata)
   } as DBMessagePart
 }
 
@@ -214,10 +221,7 @@ export function mapUIMessagePartsToDBParts(
           tool_toolCallId: part.toolCallId,
           tool_state: 'input-available' as ToolState,
           [toolInputColumn]: part.args,
-          // Preserve callProviderMetadata (e.g., Gemini thoughtSignature)
-          ...(part.callProviderMetadata
-            ? { providerMetadata: part.callProviderMetadata }
-            : {})
+          ...serializeProviderMeta(part.callProviderMetadata)
         } as DBMessagePart
 
         // Store additional metadata for dynamic tools
@@ -336,10 +340,7 @@ export function mapUIMessagePartsToDBParts(
             part.state === 'output-available' ? part.output : undefined,
           tool_errorText:
             part.state === 'output-error' ? part.errorText : undefined,
-          // Preserve callProviderMetadata (e.g., Gemini thoughtSignature)
-          ...(part.callProviderMetadata
-            ? { providerMetadata: part.callProviderMetadata }
-            : {})
+          ...serializeProviderMeta(part.callProviderMetadata)
         }
 
       // Data parts
@@ -436,10 +437,7 @@ export function mapDBPartToUIMessagePart(
               input: part.tool_dynamic_input,
               output: part.tool_dynamic_output,
               errorText: part.tool_errorText,
-              // Restore callProviderMetadata (e.g., Gemini thoughtSignature)
-              ...(part.providerMetadata
-                ? { callProviderMetadata: part.providerMetadata }
-                : {})
+              ...deserializeProviderMeta(part.providerMetadata)
             }
           }
           // Regular dynamic tools (MCP, etc.)
@@ -451,10 +449,7 @@ export function mapDBPartToUIMessagePart(
             input: part.tool_dynamic_input,
             output: part.tool_dynamic_output,
             errorText: part.tool_errorText,
-            // Restore callProviderMetadata (e.g., Gemini thoughtSignature)
-            ...(part.providerMetadata
-              ? { callProviderMetadata: part.providerMetadata }
-              : {})
+            ...deserializeProviderMeta(part.providerMetadata)
           }
         }
 
@@ -467,10 +462,7 @@ export function mapDBPartToUIMessagePart(
           const toolCallId = part.tool_toolCallId || ''
           const input = part[inputColumn]!
           const output = part[outputColumn]!
-          // Restore callProviderMetadata (e.g., Gemini thoughtSignature)
-          const callMeta = part.providerMetadata
-            ? { callProviderMetadata: part.providerMetadata }
-            : {}
+          const callMeta = deserializeProviderMeta(part.providerMetadata)
 
           switch (part.tool_state) {
             case 'input-streaming':
@@ -528,10 +520,7 @@ export function mapDBPartToUIMessagePart(
             toolCallId: part.tool_toolCallId || '',
             toolName: originalToolName,
             args: part[inputColumn] as any,
-            // Restore callProviderMetadata (e.g., Gemini thoughtSignature)
-            ...(part.providerMetadata
-              ? { callProviderMetadata: part.providerMetadata }
-              : {})
+            ...deserializeProviderMeta(part.providerMetadata)
           }
         } else {
           // output-available or output-error
