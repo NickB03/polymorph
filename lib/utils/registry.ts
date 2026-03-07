@@ -35,6 +35,11 @@ if (process.env.OLLAMA_BASE_URL) {
 export const registry = createProviderRegistry(providers)
 
 export function getModel(model: string): LanguageModel {
+  if (!model.includes(':')) {
+    throw new Error(
+      `Invalid model format "${model}": expected "provider:model-id" (e.g. "gateway:google/gemini-3-flash")`
+    )
+  }
   return registry.languageModel(
     model as Parameters<typeof registry.languageModel>[0]
   )
