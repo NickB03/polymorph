@@ -133,9 +133,9 @@ export function Chat({
         if (isToolResultContinuation) {
           const resolvedPart = lastMessage?.parts?.find(
             (p: any) =>
-              p.type === 'tool-displayOptionList' &&
-              p.state === 'output-available' &&
-              p.toolCallId
+              isInteractiveToolPart(p) &&
+              'state' in p &&
+              p.state === 'output-available'
           ) as { toolCallId: string; output: unknown } | undefined
 
           const toolResult = resolvedPart
@@ -279,11 +279,9 @@ export function Chat({
       // to prevent re-triggering on subsequent evaluations.
       const resolvedOptionPart = parts.find(
         (p: any) =>
-          isToolTypePart(p) &&
-          p.type === 'tool-displayOptionList' &&
+          isInteractiveToolPart(p) &&
           'state' in p &&
-          p.state === 'output-available' &&
-          p.toolCallId
+          p.state === 'output-available'
       ) as { toolCallId: string } | undefined
       if (!resolvedOptionPart) return false
       if (autoSendFiredRef.current.has(resolvedOptionPart.toolCallId))
