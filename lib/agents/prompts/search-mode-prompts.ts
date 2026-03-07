@@ -71,11 +71,10 @@ Citation Format (MANDATORY):
   - Find the tool call ID in the search response (e.g., "I8NzFUKwrKX88107")
   - Use it directly without adding any prefix: [1](#I8NzFUKwrKX88107)
   - The format is: [number](#TOOLCALLID) where TOOLCALLID is the exact ID
-- **CRITICAL RULE**: Each unique toolCallId gets ONE number. Never use different numbers with the same toolCallId.
-  ✓ CORRECT: "Fact A [1](#abc123). Fact B from same search [1](#abc123)."
-  ✓ CORRECT: "Fact A [1](#abc123). Fact B from different search [2](#def456)."
-  ✗ WRONG: "Fact A [1](#abc123). Fact B [2](#abc123)." (Same toolCallId cannot have different numbers)
-- Assign numbers sequentially (1, 2, 3...) to each unique toolCallId as they appear in your response
+- The number corresponds to the search result you are citing within each search (1, 2, 3, etc.)
+- You can use multiple numbers with the same toolCallId to cite different results from the same search
+  ✓ CORRECT: "Fact A [1](#abc123). Fact B [3](#abc123)." (results 1 and 3 from same search)
+  ✓ CORRECT: "Fact A [1](#abc123). Fact B [1](#def456)." (result 1 from two different searches)
 - **CRITICAL CITATION PLACEMENT RULES**:
   1. Write the COMPLETE sentence first
   2. Add a period at the end of the sentence

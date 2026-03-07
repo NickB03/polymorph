@@ -137,8 +137,12 @@ export function createSearchTool(fullModel: string) {
         }
       } catch (error) {
         console.error('Search API error:', error)
-        // Re-throw the error to let AI SDK handle it properly
-        throw error instanceof Error ? error : new Error('Unknown search error')
+        const message =
+          error instanceof Error ? error.message : 'Unknown search error'
+        // Include guidance so the model does not fabricate citations
+        throw new Error(
+          `Search failed: ${message}. IMPORTANT: Do NOT use [number](#toolCallId) citations for this failed search — no results are available to cite.`
+        )
       }
 
       // Add citation mapping and toolCallId to search results
