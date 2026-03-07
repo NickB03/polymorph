@@ -38,6 +38,9 @@ export function createSearchTool(fullModel: string) {
         state: 'searching' as const,
         query
       }
+
+      if (context?.abortSignal?.aborted) return
+
       // Ensure max_results is at least 10
       const minResults = 10
       const effectiveMaxResults = Math.max(
@@ -81,6 +84,8 @@ export function createSearchTool(fullModel: string) {
         `Using search API: ${searchAPI}, Type: ${type}, Search Depth: ${effectiveSearchDepthForAPI}`
       )
 
+      if (context?.abortSignal?.aborted) return
+
       try {
         if (
           searchAPI === 'searxng' &&
@@ -98,7 +103,8 @@ export function createSearchTool(fullModel: string) {
               searchDepth: effectiveSearchDepthForAPI,
               includeDomains: include_domains,
               excludeDomains: exclude_domains
-            })
+            }),
+            signal: context?.abortSignal
           })
           if (!response.ok) {
             throw new Error(
