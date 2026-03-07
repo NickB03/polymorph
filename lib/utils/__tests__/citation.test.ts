@@ -108,12 +108,21 @@ describe('processCitations', () => {
     expect(processCitations(null as any, mockCitationMaps)).toBe('')
   })
 
-  it('handles empty citation maps', () => {
+  it('handles empty citation maps by stripping unresolvable citations', () => {
     const content = 'Text with [1](#toolCall1) citation'
     const result = processCitations(content, {})
 
-    // When citation maps are empty, content is returned unchanged
-    expect(result).toBe('Text with [1](#toolCall1) citation')
+    expect(result).toBe('Text with  citation')
+  })
+
+  it('strips citations with invented IDs when no search results exist', () => {
+    const content =
+      'The Stone Age began around 2.5 million years ago. [1](#u1) It ended around 3300 BCE. [4](#call_66672710)'
+    const result = processCitations(content, {})
+
+    expect(result).toBe(
+      'The Stone Age began around 2.5 million years ago.  It ended around 3300 BCE. '
+    )
   })
 
   it('encodes URLs to prevent injection', () => {

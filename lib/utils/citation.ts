@@ -73,9 +73,8 @@ export function processCitations(
   content: string,
   citationMaps: Record<string, Record<number, SearchResultItem>>
 ): string {
-  if (!citationMaps || !content || Object.keys(citationMaps).length === 0) {
-    return content || ''
-  }
+  if (!content) return ''
+  if (!citationMaps) citationMaps = {}
 
   // Replace [number](#toolCallId) with [domain](actual-url)
   // Also handle cases with spaces: [ number ]

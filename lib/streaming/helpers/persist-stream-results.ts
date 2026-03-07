@@ -28,9 +28,6 @@ export async function persistStreamResults(
     ...(modelId && { modelId })
   }
 
-  // Wait for title generation if it was started
-  const chatTitle = titlePromise ? await titlePromise : undefined
-
   // Ensure the initial chat/message persistence finished before saving the response
   if (initialSavePromise) {
     const initialSaveStart = performance.now()
@@ -91,10 +88,19 @@ export async function persistStreamResults(
       )
       perfTime('upsertMessage (AI response) completed after retry', saveStart)
     } catch (retryError) {
-      console.error('Failed to save after retries:', retryError)
+      console.error(
+        `Failed to save message after retries: chatId=${chatId}`,
+        retryError
+      )
       // Don't throw here to avoid breaking the stream
     }
   }
+
+  // Wait for title generation AFTER message is saved — title generation is a
+  // model API call that can take seconds and must never block message persistence,
+  // otherwise tool-result continuations fail because the assistant message isn't
+  // in the DB yet when prepareToolResultMessages loads the chat.
+  const chatTitle = titlePromise ? await titlePromise : undefined
 
   // Update title after message is saved
   if (chatTitle && chatTitle !== DEFAULT_CHAT_TITLE) {

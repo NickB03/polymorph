@@ -41,6 +41,8 @@ export const CitationLink = memo(function CitationLink({
 
   // If no citation data, render as simple link
   if (!citationData) {
+    // Hide unresolved citations (href starts with #)
+    if (isCitation && href.startsWith('#')) return null
     return (
       <a
         href={href}
