@@ -40,16 +40,12 @@ describe('POST /api/advanced-search validation', () => {
   })
 
   it('rejects negative maxResults', async () => {
-    const res = await POST(
-      makeRequest({ query: 'test', maxResults: -5 })
-    )
+    const res = await POST(makeRequest({ query: 'test', maxResults: -5 }))
     expect(res.status).toBe(400)
   })
 
   it('rejects maxResults over 100', async () => {
-    const res = await POST(
-      makeRequest({ query: 'test', maxResults: 999 })
-    )
+    const res = await POST(makeRequest({ query: 'test', maxResults: 999 }))
     expect(res.status).toBe(400)
   })
 

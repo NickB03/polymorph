@@ -120,7 +120,9 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: parseResult.error.issues
-          .map(i => (i.path.length ? `${i.path.join('.')}: ${i.message}` : i.message))
+          .map(i =>
+            i.path.length ? `${i.path.join('.')}: ${i.message}` : i.message
+          )
           .join(', '),
         results: [],
         images: [],
