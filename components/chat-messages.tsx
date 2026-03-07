@@ -14,6 +14,8 @@ import type {
 import { cn, isChatLoading } from '@/lib/utils'
 import { extractCitationMapsFromMessages } from '@/lib/utils/citation'
 
+import { useActivityFeed } from '@/hooks/use-activity-feed'
+
 import { AnimatedLogo } from './ui/animated-logo'
 import { Skeleton } from './ui/skeleton'
 import { ChatError } from './chat-error'
@@ -67,6 +69,13 @@ export function ChatMessages({
   }
   const isLoading = isChatLoading(status)
   const isMobile = useMediaQuery('(max-width: 767px)')
+
+  // Flatten sections into messages for the activity feed hook
+  const allMessages = useMemo(
+    () => sections.flatMap(s => [s.userMessage, ...s.assistantMessages]),
+    [sections]
+  )
+  const { isResearchMode } = useActivityFeed(allMessages, status, chatId)
 
   // Tool types definition - moved outside function for performance
   const toolTypes = ['tool-search', 'tool-fetch', 'tool-relatedQuestions']
@@ -228,6 +237,7 @@ export function ChatMessages({
                 onUpdateMessage={onUpdateMessage}
                 reload={reload}
                 citationMaps={allCitationMaps}
+                isResearchMode={isResearchMode}
               />
             </div>
 
@@ -256,6 +266,7 @@ export function ChatMessages({
                     reload={reload}
                     isLatestMessage={isLatestMessage}
                     citationMaps={allCitationMaps}
+                    isResearchMode={isResearchMode}
                   />
                 </div>
               )

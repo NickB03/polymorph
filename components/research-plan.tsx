@@ -1,10 +1,16 @@
 'use client'
 
+import { useState } from 'react'
+
+import { Check } from 'lucide-react'
+
 import { Plan } from './tool-ui/plan'
 import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
 import { mapTodoWriteToPlan } from './tool-ui/plan/from-todo-write'
 import type { PlanTodo } from './tool-ui/plan/schema'
 import { safeParseSerializablePlan } from './tool-ui/plan/schema'
+import { CollapsibleMessage } from './collapsible-message'
+import { ProcessHeader } from './process-header'
 
 interface ResearchPlanProps {
   output: TodoWriteOutput | undefined
@@ -12,6 +18,7 @@ interface ResearchPlanProps {
   hasError?: boolean
   completedToolCalls?: number
   hasActiveToolCall?: boolean
+  isComplete?: boolean
 }
 
 /**
@@ -44,8 +51,11 @@ export function ResearchPlan({
   isStreaming,
   hasError,
   completedToolCalls,
-  hasActiveToolCall
+  hasActiveToolCall,
+  isComplete
 }: ResearchPlanProps) {
+  const [userExpanded, setUserExpanded] = useState<boolean | null>(null)
+
   if (!output && isStreaming) {
     return (
       <div
@@ -82,6 +92,45 @@ export function ResearchPlan({
   // Validate through schema for runtime safety (e.g. duplicate ID check)
   const validated = safeParseSerializablePlan(planProps)
   if (!validated) return null
+
+  const isAllComplete = validated.todos.every(t => t.status === 'completed')
+  const autoCollapsed = isAllComplete && (isComplete ?? false)
+  const isOpen = userExpanded ?? !autoCollapsed
+
+  if (isAllComplete) {
+    const completedCount = validated.todos.length
+    const header = (
+      <ProcessHeader
+        label={
+          <span className="flex items-center gap-2">
+            <Check className="size-3.5 shrink-0 text-emerald-500" />
+            <span className="truncate">
+              {validated.title} &mdash; {completedCount}/
+              {validated.todos.length} complete
+            </span>
+          </span>
+        }
+      />
+    )
+
+    return (
+      <div className="my-2">
+        <CollapsibleMessage
+          role="assistant"
+          isCollapsible
+          header={header}
+          isOpen={isOpen}
+          onOpenChange={open => setUserExpanded(open)}
+          showIcon={false}
+          showBorder
+          variant="default"
+          showSeparator={false}
+        >
+          <Plan {...validated} />
+        </CollapsibleMessage>
+      </div>
+    )
+  }
 
   return (
     <div className="my-2">
