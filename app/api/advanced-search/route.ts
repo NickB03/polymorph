@@ -115,7 +115,21 @@ const advancedSearchSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const parseResult = advancedSearchSchema.safeParse(await request.json())
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json(
+      {
+        error: 'Invalid JSON body',
+        results: [],
+        images: [],
+        number_of_results: 0
+      },
+      { status: 400 }
+    )
+  }
+  const parseResult = advancedSearchSchema.safeParse(body)
   if (!parseResult.success) {
     return NextResponse.json(
       {
