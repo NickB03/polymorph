@@ -6,6 +6,7 @@ import { Agent } from 'http'
 import https from 'https'
 import { JSDOM, VirtualConsole } from 'jsdom'
 import { createClient } from 'redis'
+import { z } from 'zod'
 
 import {
   SearchResultItem,
@@ -105,16 +106,36 @@ async function setCachedResults(
   }
 }
 
+const advancedSearchSchema = z.object({
+  query: z.string().min(1, 'query is required').max(1000),
+  maxResults: z.coerce.number().int().min(1).max(100).default(10),
+  searchDepth: z.enum(['basic', 'advanced']).default('basic'),
+  includeDomains: z.array(z.string()).default([]),
+  excludeDomains: z.array(z.string()).default([])
+})
+
 export async function POST(request: Request) {
+  const parseResult = advancedSearchSchema.safeParse(await request.json())
+  if (!parseResult.success) {
+    return NextResponse.json(
+      {
+        error: parseResult.error.issues
+          .map(i => (i.path.length ? `${i.path.join('.')}: ${i.message}` : i.message))
+          .join(', '),
+        results: [],
+        images: [],
+        number_of_results: 0
+      },
+      { status: 400 }
+    )
+  }
   const { query, maxResults, searchDepth, includeDomains, excludeDomains } =
-    await request.json()
+    parseResult.data
 
   const SEARXNG_DEFAULT_DEPTH = process.env.SEARXNG_DEFAULT_DEPTH || 'basic'
 
   try {
-    const cacheKey = `search:${query}:${maxResults}:${searchDepth}:${
-      Array.isArray(includeDomains) ? includeDomains.join(',') : ''
-    }:${Array.isArray(excludeDomains) ? excludeDomains.join(',') : ''}`
+    const cacheKey = `search:${query}:${maxResults}:${searchDepth}:${includeDomains.join(',')}:${excludeDomains.join(',')}`
 
     // Try to get cached results
     const cachedResults = await getCachedResults(cacheKey)
@@ -127,8 +148,8 @@ export async function POST(request: Request) {
       query,
       Math.min(maxResults, SEARXNG_MAX_RESULTS),
       searchDepth || SEARXNG_DEFAULT_DEPTH,
-      Array.isArray(includeDomains) ? includeDomains : [],
-      Array.isArray(excludeDomains) ? excludeDomains : []
+      includeDomains,
+      excludeDomains
     )
 
     // Cache the results
