@@ -207,7 +207,7 @@ export function Chat({
         } = {}
         try {
           // Extract JSON from error message if it exists
-          const jsonMatch = error.message?.match(/\{.*\}/)
+          const jsonMatch = error.message?.match(/\{[^{}]*\}/)
           if (jsonMatch) {
             parsedError = JSON.parse(jsonMatch[0])
           }
