@@ -187,7 +187,7 @@ export function Chat({
       let errorCode = ''
       let errorMessage = error.message || 'An error occurred'
       try {
-        const jsonMatch = error.message?.match(/\{.*?\}/)
+        const jsonMatch = error.message?.match(/\{[^{}]*\}/)
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0])
           errorCode = parsed.code || ''
