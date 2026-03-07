@@ -114,6 +114,9 @@ export async function POST(req: Request) {
     }
 
     if (isGuest) {
+      // NOTE: X-Forwarded-For is trusted because this runs behind Vercel's
+      // edge network, which overwrites the header. If deploying elsewhere,
+      // validate the proxy chain or use a platform-specific header.
       const forwardedFor = req.headers.get('x-forwarded-for') || ''
       const ip =
         forwardedFor.split(',')[0]?.trim() ||
