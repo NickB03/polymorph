@@ -51,6 +51,7 @@ export function Chat({
 
   // Callback to reset chat state when user clicks "New" button
   const handleNewChat = () => {
+    stop() // Cancel any in-flight stream before switching chat
     const newId = generateId()
     setChatId(newId)
     // Clear other chat-related state that persists due to Next.js 16 component caching
@@ -138,23 +139,27 @@ export function Chat({
               p.state === 'output-available'
           ) as { toolCallId: string; output: unknown } | undefined
 
-          const toolResult = resolvedPart
-            ? {
-                toolCallId: resolvedPart.toolCallId,
-                output: resolvedPart.output
+          if (resolvedPart && resolvedPart.output !== undefined) {
+            return {
+              body: {
+                trigger: 'tool-result',
+                chatId,
+                toolResult: {
+                  toolCallId: resolvedPart.toolCallId,
+                  output: resolvedPart.output
+                },
+                // Guest: include full messages (already resolved by addToolResult)
+                // so the ephemeral stream can continue without DB access
+                ...(isGuest ? { messages } : {})
               }
-            : undefined
-
-          return {
-            body: {
-              trigger: 'tool-result',
-              chatId,
-              toolResult,
-              // Guest: include full messages (already resolved by addToolResult)
-              // so the ephemeral stream can continue without DB access
-              ...(isGuest ? { messages } : {})
             }
           }
+
+          // No valid resolved part found — fall through to the normal request
+          // path rather than sending an invalid tool-result continuation
+          console.warn(
+            '[chat] tool-result continuation: no resolved part found, falling back to normal request'
+          )
         }
 
         return {

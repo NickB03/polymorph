@@ -93,14 +93,18 @@ async function fetchRegularData(
   }
 }
 
-async function fetchJinaReaderData(url: string): Promise<SearchResultsType> {
+async function fetchJinaReaderData(
+  url: string,
+  abortSignal?: AbortSignal
+): Promise<SearchResultsType> {
   try {
     const response = await fetch(`https://r.jina.ai/${url}`, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
         'X-With-Generated-Alt': 'true'
-      }
+      },
+      signal: abortSignal
     })
     const json = await response.json()
     if (!json.data || !json.data.content) {
@@ -126,7 +130,10 @@ async function fetchJinaReaderData(url: string): Promise<SearchResultsType> {
   }
 }
 
-async function fetchTavilyExtractData(url: string): Promise<SearchResultsType> {
+async function fetchTavilyExtractData(
+  url: string,
+  abortSignal?: AbortSignal
+): Promise<SearchResultsType> {
   try {
     const apiKey = process.env.TAVILY_API_KEY
     const response = await fetch('https://api.tavily.com/extract', {
@@ -134,7 +141,8 @@ async function fetchTavilyExtractData(url: string): Promise<SearchResultsType> {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ api_key: apiKey, urls: [url] })
+      body: JSON.stringify({ api_key: apiKey, urls: [url] }),
+      signal: abortSignal
     })
     const json = await response.json()
     if (!json.results || json.results.length === 0) {
@@ -185,9 +193,9 @@ export const fetchTool = tool({
       // Use API-based extraction (Jina or Tavily)
       const useJina = process.env.JINA_API_KEY
       if (useJina) {
-        results = await fetchJinaReaderData(url)
+        results = await fetchJinaReaderData(url, context?.abortSignal)
       } else {
-        results = await fetchTavilyExtractData(url)
+        results = await fetchTavilyExtractData(url, context?.abortSignal)
       }
     }
 

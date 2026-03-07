@@ -150,6 +150,8 @@ export function createSearchTool(fullModel: string) {
       try {
         searchResult = await executeSearch(searchAPI)
       } catch (primaryError) {
+        if (context?.abortSignal?.aborted) return
+
         const primaryMessage =
           primaryError instanceof Error
             ? primaryError.message

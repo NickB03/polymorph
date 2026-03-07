@@ -179,7 +179,16 @@ export async function POST(req: Request) {
           (m: any) =>
             (m.role === 'user' || m.role === 'assistant') &&
             Array.isArray(m.parts) &&
-            m.parts.length > 0
+            m.parts.length > 0 &&
+            m.parts.every((p: any) => {
+              if (typeof p.type !== 'string') return false
+              if (p.type === 'text') return typeof p.text === 'string'
+              if (p.type === 'file')
+                return (
+                  typeof p.url === 'string' && typeof p.mediaType === 'string'
+                )
+              return ['reasoning', 'tool-call', 'tool-result'].includes(p.type)
+            })
         )
       ) {
         return jsonError(
