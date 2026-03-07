@@ -14,7 +14,10 @@ import type {
 import { cn, isChatLoading } from '@/lib/utils'
 import { extractCitationMapsFromMessages } from '@/lib/utils/citation'
 
+import { useActivityFeed } from '@/hooks/use-activity-feed'
+
 import { AnimatedLogo } from './ui/animated-logo'
+import { Skeleton } from './ui/skeleton'
 import { ChatError } from './chat-error'
 import { GuestSignupNudge } from './guest-signup-nudge'
 import { RenderMessage } from './render-message'
@@ -66,6 +69,13 @@ export function ChatMessages({
   }
   const isLoading = isChatLoading(status)
   const isMobile = useMediaQuery('(max-width: 767px)')
+
+  // Flatten sections into messages for the activity feed hook
+  const allMessages = useMemo(
+    () => sections.flatMap(s => [s.userMessage, ...s.assistantMessages]),
+    [sections]
+  )
+  const { isResearchMode } = useActivityFeed(allMessages, status, chatId)
 
   // Tool types definition - moved outside function for performance
   const toolTypes = ['tool-search', 'tool-fetch', 'tool-relatedQuestions']
@@ -227,6 +237,7 @@ export function ChatMessages({
                 onUpdateMessage={onUpdateMessage}
                 reload={reload}
                 citationMaps={allCitationMaps}
+                isResearchMode={false}
               />
             </div>
 
@@ -255,16 +266,32 @@ export function ChatMessages({
                     reload={reload}
                     isLatestMessage={isLatestMessage}
                     citationMaps={allCitationMaps}
+                    isResearchMode={isLatestMessage && isResearchMode}
                   />
                 </div>
               )
             })}
             {/* Show loading after assistant messages */}
-            {isLoading && sectionIndex === sections.length - 1 && (
-              <div className="flex justify-start py-4">
-                <AnimatedLogo className="h-10 w-10" />
-              </div>
-            )}
+            {isLoading &&
+              sectionIndex === sections.length - 1 &&
+              (section.assistantMessages.length === 0 ||
+              !section.assistantMessages.some(m => m.parts?.length) ? (
+                <div className="flex flex-col gap-3 py-4">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton
+                    className="h-5 w-full"
+                    style={{ animationDelay: '75ms' }}
+                  />
+                  <Skeleton
+                    className="h-5 w-5/6"
+                    style={{ animationDelay: '150ms' }}
+                  />
+                </div>
+              ) : (
+                <div className="flex justify-start py-4">
+                  <AnimatedLogo className="h-10 w-10" />
+                </div>
+              ))}
             {isGuest &&
               !isLoading &&
               sectionIndex === sections.length - 1 &&

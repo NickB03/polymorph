@@ -11,6 +11,7 @@ import type {
   UITools
 } from '@/lib/types/ai'
 import type { DynamicToolPart } from '@/lib/types/dynamic-tools'
+import { isChatLoading } from '@/lib/utils'
 
 import { OptionList } from './tool-ui/option-list/option-list'
 import type { OptionListSelection } from './tool-ui/option-list/schema'
@@ -21,6 +22,7 @@ import { AnswerSection } from './answer-section'
 import { DynamicToolDisplay } from './dynamic-tool-display'
 import { ResearchPlan } from './research-plan'
 import ResearchProcessSection from './research-process-section'
+import { ResearchStatusLine } from './research-status-line'
 import { UserFileSection } from './user-file-section'
 import { UserTextSection } from './user-text-section'
 
@@ -134,6 +136,7 @@ interface RenderMessageProps {
   reload?: (messageId: string) => Promise<void | string | null | undefined>
   isLatestMessage?: boolean
   citationMaps?: Record<string, Record<number, SearchResultItem>>
+  isResearchMode?: boolean
 }
 
 export function RenderMessage({
@@ -149,7 +152,8 @@ export function RenderMessage({
   onUpdateMessage,
   reload,
   isLatestMessage = false,
-  citationMaps = {}
+  citationMaps = {},
+  isResearchMode = false
 }: RenderMessageProps) {
   // Use provided citation maps (from all messages)
   if (message.role === 'user') {
@@ -230,10 +234,32 @@ export function RenderMessage({
       toolCallId?: string
     }
 
+    // In research mode, suppress citations and link previews (rendered in activity sidebar)
+    if (
+      isResearchMode &&
+      (toolName === 'displayCitations' || toolName === 'displayLinkPreview')
+    ) {
+      return null
+    }
+
     if (toolName === 'displayOptionList') {
       if (toolPart.state === 'output-available') {
         const parsed = safeParseSerializableOptionList(toolPart.input)
         if (parsed) {
+          // Research depth → compact status line instead of receipt card
+          if (parsed.id === 'research-depth') {
+            const selectedOption = parsed.options.find(
+              opt => opt.id === toolPart.output
+            )
+            return (
+              <ResearchStatusLine
+                key={`${messageId}-display-tool-${partIndex}`}
+                selectedLabel={selectedOption?.label ?? 'Research'}
+                isStreaming={isLatestMessage && isChatLoading(status)}
+              />
+            )
+          }
+          // Non-depth option lists keep their receipt card
           return (
             <div
               key={`${messageId}-display-tool-${partIndex}`}
@@ -314,15 +340,17 @@ export function RenderMessage({
 
   message.parts?.forEach((part, index) => {
     if (part.type === 'text') {
-      // Suppress near-empty text parts adjacent to display tools.
-      // Catches trivial intros/outros (whitespace-only or bare headings)
-      // that the LLM sometimes emits around display tool calls.
-      const isNearEmpty =
-        !part.text.trim() || /^#{1,3}\s+.{0,80}$/.test(part.text.trim())
-      if (isNearEmpty) {
-        const prevPart = message.parts?.[index - 1]
-        const followsDisplayTool = prevPart?.type?.startsWith?.('tool-display')
-        if (followsDisplayTool) return
+      // Suppress intro text preceding a completed research-depth option list.
+      // The status line replaces both the question text and the receipt card.
+      const nextPart = message.parts?.[index + 1]
+      if (nextPart?.type === 'tool-displayOptionList') {
+        const nextToolPart = nextPart as { state?: string; input?: unknown }
+        if (nextToolPart.state === 'output-available') {
+          const nextParsed = safeParseSerializableOptionList(nextToolPart.input)
+          if (nextParsed?.id === 'research-depth') {
+            return
+          }
+        }
       }
 
       // Flush accumulated non-text parts before rendering text
@@ -404,6 +432,7 @@ export function RenderMessage({
             hasError={todoScan.hasError && !todoScan.latestOutput}
             completedToolCalls={todoScan.completedToolCalls}
             hasActiveToolCall={todoScan.hasActiveToolCall}
+            isComplete={isLatestMessage ? !isChatLoading(status) : true}
           />
         )
       }

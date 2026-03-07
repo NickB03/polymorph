@@ -3,10 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Textarea from 'react-textarea-autosize'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 
 import { UseChatHelpers } from '@ai-sdk/react'
-import { ArrowUp, ChevronDown, MessageCirclePlus, Square } from 'lucide-react'
+import { ArrowUp, ChevronDown, Square } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { SuggestionCategory, UploadedFile } from '@/lib/types'
@@ -17,7 +16,6 @@ import { syncSearchMode } from '@/lib/utils/search-mode'
 
 import { useTrendingSuggestions } from '@/hooks/use-trending-suggestions'
 
-import { useArtifact } from './artifact/artifact-context'
 import { Button } from './ui/button'
 import { ActionButtons } from './action-buttons'
 import { FileUploadButton } from './file-upload-button'
@@ -35,7 +33,6 @@ interface ChatPanelProps {
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
   status: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   messages: UIMessage[]
-  setMessages: (messages: UIMessage[]) => void
   query?: string
   stop: () => void
   append: (message: any) => void
@@ -45,8 +42,6 @@ interface ChatPanelProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   uploadedFiles: UploadedFile[]
   setUploadedFiles: React.Dispatch<React.SetStateAction<UploadedFile[]>>
-  /** Callback to reset chatId when starting a new chat */
-  onNewChat?: () => void
   /** Whether the current session is guest */
   isGuest?: boolean
 }
@@ -58,7 +53,6 @@ export function ChatPanel({
   handleSubmit,
   status,
   messages,
-  setMessages,
   query,
   stop,
   append,
@@ -66,16 +60,13 @@ export function ChatPanel({
   uploadedFiles,
   setUploadedFiles,
   scrollContainerRef,
-  onNewChat,
   isGuest = false
 }: ChatPanelProps) {
-  const router = useRouter()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const isFirstRender = useRef(true)
   const [isComposing, setIsComposing] = useState(false) // Composition state
   const [enterDisabled, setEnterDisabled] = useState(false) // Disable Enter after composition ends
   const [isInputFocused, setIsInputFocused] = useState(false) // Track input focus
-  const { close: closeArtifact } = useArtifact()
   const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
 
@@ -87,17 +78,6 @@ export function ChatPanel({
     setTimeout(() => {
       setEnterDisabled(false)
     }, 300)
-  }
-
-  const handleNewChat = () => {
-    setMessages([])
-    closeArtifact()
-    // Reset focus state when clearing chat
-    setIsInputFocused(false)
-    inputRef.current?.blur()
-    // Reset chatId in parent component
-    onNewChat?.()
-    router.push('/')
   }
 
   const isToolInvocationInProgress = () => {
@@ -299,19 +279,6 @@ export function ChatPanel({
               <SearchModeSelector />
             </div>
             <div className="flex items-center gap-2">
-              {messages.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleNewChat}
-                  className="shrink-0 rounded-full group"
-                  type="button"
-                  disabled={isLoading}
-                  aria-label="New chat"
-                >
-                  <MessageCirclePlus className="size-4 group-hover:rotate-12 transition-all" />
-                </Button>
-              )}
               <ModelTypeSelector disabled={false} />
               <Button
                 type={isLoading ? 'button' : 'submit'}

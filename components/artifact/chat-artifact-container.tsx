@@ -6,6 +6,9 @@ import { cn } from '@/lib/utils'
 
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
 
+import { useActivity } from '@/components/activity/activity-context'
+import { ActivityDrawer } from '@/components/activity/activity-drawer'
+import { ActivityPanel } from '@/components/activity/activity-panel'
 import { InspectorDrawer } from '@/components/inspector/inspector-drawer'
 import { InspectorPanel } from '@/components/inspector/inspector-panel'
 
@@ -41,6 +44,15 @@ export function ChatArtifactContainer({
   children: React.ReactNode
 }) {
   const { state } = useArtifact()
+  const activity = useActivity()
+
+  const activePanel: 'inspector' | 'activity' | null =
+    state.isOpen && state.part
+      ? 'inspector'
+      : activity.state.isOpen
+        ? 'activity'
+        : null
+
   const containerRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(DEFAULT_WIDTH)
   const [isResizing, setIsResizing] = useState(false)
@@ -145,7 +157,7 @@ export function ChatArtifactContainer({
         <div className="flex-1 min-w-0 flex flex-col">{children}</div>
 
         {/* Resize Handle */}
-        {state.isOpen && state.part && (
+        {activePanel && (
           <div
             className={cn(
               'w-1 mx-0.5 my-6 hover:bg-border transition-colors duration-200 cursor-col-resize select-none relative',
@@ -161,15 +173,16 @@ export function ChatArtifactContainer({
         <div
           className={cn(
             'bg-background overflow-hidden',
-            state.isOpen && state.part ? 'opacity-100' : 'w-0 opacity-0',
+            activePanel ? 'opacity-100' : 'w-0 opacity-0',
             !isResizing && 'transition-all duration-300 ease-out'
           )}
           style={{
-            width: state.isOpen && state.part ? `${width}px` : '0px'
+            width: activePanel ? `${width}px` : '0px'
           }}
         >
           <div className="h-full" style={{ width: `${width}px` }}>
-            {state.isOpen && state.part && <InspectorPanel />}
+            {activePanel === 'inspector' && <InspectorPanel />}
+            {activePanel === 'activity' && <ActivityPanel />}
           </div>
         </div>
       </div>
@@ -186,6 +199,7 @@ export function ChatArtifactContainer({
       <div className="md:hidden flex-1 h-full min-w-0">
         {children}
         <InspectorDrawer />
+        <ActivityDrawer />
       </div>
     </div>
   )
