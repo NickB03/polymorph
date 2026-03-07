@@ -72,11 +72,19 @@ export function ChatMessages({
 
   // Clear cache during streaming to ensure accurate tool counts
   useEffect(() => {
-    if (isLoading) {
-      // Clear cache for all messages during streaming
-      toolCountCacheRef.current.clear()
+    if (!isLoading) return
+    // Only clear cache for the last section's messages (currently streaming)
+    const lastSection = sections[sections.length - 1]
+    if (!lastSection) return
+    const streamingIds = new Set(
+      [lastSection.userMessage, ...lastSection.assistantMessages].map(m => m.id)
+    )
+    for (const key of toolCountCacheRef.current.keys()) {
+      if (streamingIds.has(key)) {
+        toolCountCacheRef.current.delete(key)
+      }
     }
-  }, [isLoading])
+  }, [isLoading, sections])
 
   // Calculate the offset height based on device type
   // Note: pt-14 (56px) on scroll-container must be included in desktop offset
