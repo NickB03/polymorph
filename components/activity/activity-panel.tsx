@@ -72,13 +72,21 @@ export function ActivityPanel() {
 function ActivityItemRenderer({ item }: { item: ActivityItem }) {
   switch (item.type) {
     case 'search':
-      return <ActivitySearchItem tool={item.data} />
+      return (
+        <ActivitySearchItem
+          tool={item.data as import('@/lib/types/ai').ToolPart<'search'>}
+        />
+      )
     case 'fetch':
-      return <ActivityFetchItem tool={item.data} />
+      return (
+        <ActivityFetchItem
+          tool={item.data as import('@/lib/types/ai').ToolPart<'fetch'>}
+        />
+      )
     case 'mode-indicator':
       return (
         <div className="py-1 px-2 text-[10px] text-muted-foreground/70 uppercase tracking-wider font-medium">
-          {item.data?.label || 'Research'}
+          {(item.data as { label?: string })?.label || 'Research'}
         </div>
       )
     case 'link-preview': {

@@ -8,11 +8,27 @@ import {
   useReducer
 } from 'react'
 
+import type { ToolPart } from '@/lib/types/ai'
+
+import type { SerializableCitation } from '@/components/tool-ui/citation/schema'
+import type { SerializableLinkPreview } from '@/components/tool-ui/link-preview/schema'
+
+type ModeIndicatorData = {
+  label?: string
+}
+
+type ActivityItemData =
+  | ToolPart<'search'>
+  | ToolPart<'fetch'>
+  | SerializableLinkPreview
+  | SerializableCitation
+  | ModeIndicatorData
+
 export interface ActivityItem {
   id: string
   timestamp: number
   type: 'search' | 'fetch' | 'link-preview' | 'citation' | 'mode-indicator'
-  data: any
+  data: ActivityItemData
   state: 'active' | 'complete' | 'error'
 }
 

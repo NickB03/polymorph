@@ -237,7 +237,7 @@ export function ChatMessages({
                 onUpdateMessage={onUpdateMessage}
                 reload={reload}
                 citationMaps={allCitationMaps}
-                isResearchMode={isResearchMode}
+                isResearchMode={false}
               />
             </div>
 
@@ -266,7 +266,7 @@ export function ChatMessages({
                     reload={reload}
                     isLatestMessage={isLatestMessage}
                     citationMaps={allCitationMaps}
-                    isResearchMode={isResearchMode}
+                    isResearchMode={isLatestMessage && isResearchMode}
                   />
                 </div>
               )
