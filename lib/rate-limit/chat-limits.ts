@@ -82,6 +82,7 @@ export async function checkAndEnforceOverallChatLimit(
   if (!result.allowed) {
     return new Response(
       JSON.stringify({
+        code: 'RATE_LIMIT',
         error: 'Daily chat limit reached. Please try again tomorrow.',
         remaining: 0,
         resetAt: result.resetAt,

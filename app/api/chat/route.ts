@@ -9,6 +9,7 @@ import { checkAndEnforceGuestLimit } from '@/lib/rate-limit/guest-limit'
 import { createChatStreamResponse } from '@/lib/streaming/create-chat-stream-response'
 import { createEphemeralChatStreamResponse } from '@/lib/streaming/create-ephemeral-chat-stream-response'
 import { SearchMode } from '@/lib/types/search'
+import { jsonError } from '@/lib/utils/json-error'
 import { selectModel } from '@/lib/utils/model-selection'
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 import { resetAllCounters } from '@/lib/utils/perf-tracking'
@@ -51,20 +52,18 @@ export async function POST(req: Request) {
     type Trigger = (typeof VALID_TRIGGERS)[number]
 
     if (trigger && !VALID_TRIGGERS.includes(trigger)) {
-      return new Response(`Unknown trigger: ${trigger}`, {
-        status: 400,
-        statusText: 'Bad Request'
-      })
+      return jsonError('BAD_REQUEST', `Unknown trigger: ${trigger}`, 400)
     }
     const validatedTrigger: Trigger | undefined = trigger
 
     // Handle different triggers using AI SDK standard values
     if (validatedTrigger === 'regenerate-message') {
       if (!messageId) {
-        return new Response('messageId is required for regeneration', {
-          status: 400,
-          statusText: 'Bad Request'
-        })
+        return jsonError(
+          'BAD_REQUEST',
+          'messageId is required for regeneration',
+          400
+        )
       }
     } else if (validatedTrigger === 'tool-result') {
       if (
@@ -73,9 +72,10 @@ export async function POST(req: Request) {
         !toolResult.toolCallId ||
         !('output' in toolResult)
       ) {
-        return new Response(
-          'toolResult with toolCallId and output is required for tool-result continuation',
-          { status: 400, statusText: 'Bad Request' }
+        return jsonError(
+          'BAD_REQUEST',
+          'toolResult with toolCallId and output is required',
+          400
         )
       }
       console.log(
@@ -83,10 +83,11 @@ export async function POST(req: Request) {
       )
     } else if (validatedTrigger === 'submit-message') {
       if (!message) {
-        return new Response('message is required for submission', {
-          status: 400,
-          statusText: 'Bad Request'
-        })
+        return jsonError(
+          'BAD_REQUEST',
+          'message is required for submission',
+          400
+        )
       }
     }
 
@@ -98,22 +99,23 @@ export async function POST(req: Request) {
     perfTime('Auth completed', authStart)
 
     if (isSharePage) {
-      return new Response('Chat API is not available on share pages', {
-        status: 403,
-        statusText: 'Forbidden'
-      })
+      return jsonError(
+        'FORBIDDEN',
+        'Chat API is not available on share pages',
+        403
+      )
     }
 
     const guestChatEnabled = process.env.ENABLE_GUEST_CHAT === 'true'
     const isGuest = !userId
     if (isGuest && !guestChatEnabled) {
-      return new Response('Authentication required', {
-        status: 401,
-        statusText: 'Unauthorized'
-      })
+      return jsonError('AUTH_REQUIRED', 'Authentication required', 401)
     }
 
     if (isGuest) {
+      // NOTE: X-Forwarded-For is trusted because this runs behind Vercel's
+      // edge network, which overwrites the header. If deploying elsewhere,
+      // validate the proxy chain or use a platform-specific header.
       const forwardedFor = req.headers.get('x-forwarded-for') || ''
       const ip =
         forwardedFor.split(',')[0]?.trim() ||
@@ -145,12 +147,10 @@ export async function POST(req: Request) {
     })
 
     if (!isProviderEnabled(selectedModel.providerId)) {
-      return new Response(
-        `Selected provider is not enabled ${selectedModel.providerId}`,
-        {
-          status: 404,
-          statusText: 'Not Found'
-        }
+      return jsonError(
+        'PROVIDER_UNAVAILABLE',
+        `Provider not enabled: ${selectedModel.providerId}`,
+        404
       )
     }
 
@@ -182,9 +182,10 @@ export async function POST(req: Request) {
             m.parts.length > 0
         )
       ) {
-        return new Response(
+        return jsonError(
+          'BAD_REQUEST',
           'Invalid messages: expected non-empty array with valid role and parts',
-          { status: 400, statusText: 'Bad Request' }
+          400
         )
       }
     }
@@ -264,9 +265,6 @@ export async function POST(req: Request) {
     return response
   } catch (error) {
     console.error('API route error:', error)
-    return new Response('Error processing your request', {
-      status: 500,
-      statusText: 'Internal Server Error'
-    })
+    return jsonError('INTERNAL_ERROR', 'Error processing your request', 500)
   }
 }

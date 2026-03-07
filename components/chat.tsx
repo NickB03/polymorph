@@ -133,9 +133,9 @@ export function Chat({
         if (isToolResultContinuation) {
           const resolvedPart = lastMessage?.parts?.find(
             (p: any) =>
-              p.type === 'tool-displayOptionList' &&
-              p.state === 'output-available' &&
-              p.toolCallId
+              isInteractiveToolPart(p) &&
+              'state' in p &&
+              p.state === 'output-available'
           ) as { toolCallId: string; output: unknown } | undefined
 
           const toolResult = resolvedPart
@@ -183,81 +183,80 @@ export function Chat({
       window.dispatchEvent(new CustomEvent('chat-history-updated'))
     },
     onError: error => {
-      // Handle rate limiting errors from Vercel WAF
-      // Check for status codes in error message or specific rate limit indicators
-      const errorMessage = error.message?.toLowerCase() || ''
-      const isRateLimit =
-        error.message?.includes('429') ||
-        errorMessage.includes('rate limit') ||
-        errorMessage.includes('too many requests') ||
-        errorMessage.includes('daily limit')
+      // Parse structured error code from JSON response
+      let errorCode = ''
+      let errorMessage = error.message || 'An error occurred'
+      try {
+        const jsonMatch = error.message?.match(/\{.*\}/)
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0])
+          errorCode = parsed.code || ''
+          errorMessage = parsed.error || errorMessage
+        }
+      } catch {
+        // Fall through to legacy detection
+      }
 
-      // Check for authentication errors
+      const lowerMessage = errorMessage.toLowerCase()
+
+      // Structured code matching (preferred), with legacy string fallback
+      const isRateLimit =
+        errorCode === 'RATE_LIMIT' ||
+        errorCode === 'GUEST_LIMIT' ||
+        error.message?.includes('429') ||
+        lowerMessage.includes('rate limit') ||
+        lowerMessage.includes('too many requests') ||
+        lowerMessage.includes('daily limit')
+
       const isAuthError =
+        errorCode === 'AUTH_REQUIRED' ||
         error.message?.includes('401') ||
-        errorMessage.includes('unauthorized') ||
-        errorMessage.includes('authentication required')
+        lowerMessage.includes('unauthorized') ||
+        lowerMessage.includes('authentication required')
+
+      const isForbidden =
+        errorCode === 'FORBIDDEN' ||
+        error.message?.includes('403') ||
+        lowerMessage.includes('forbidden')
+
+      const isToolError =
+        errorCode === 'TOOL_ERROR' ||
+        lowerMessage.includes('tool part') ||
+        lowerMessage.includes('assistant message') ||
+        lowerMessage.includes('toolcallid') ||
+        lowerMessage.includes('tool-result') ||
+        lowerMessage.includes('has no messages')
 
       if (isRateLimit) {
-        // Try to parse JSON error response for quality mode rate limit
-        let parsedError: {
-          error?: string
-          resetAt?: number
-          remaining?: number
-        } = {}
-        try {
-          // Extract JSON from error message if it exists
-          const jsonMatch = error.message?.match(/\{.*\}/)
-          if (jsonMatch) {
-            parsedError = JSON.parse(jsonMatch[0])
-          }
-        } catch {
-          // Ignore parse errors
-        }
-
-        // Use parsed error message or fallback
-        const userMessage =
-          parsedError.error ||
-          'You have reached your daily limit for quality mode chat requests.'
-
         setErrorModal({
           open: true,
           type: 'rate-limit',
-          message: userMessage,
+          message: errorMessage,
           details: undefined
         })
       } else if (isAuthError) {
         setErrorModal({
           open: true,
           type: 'auth',
-          message: error.message
+          message: errorMessage
         })
-      } else if (
-        error.message?.includes('403') ||
-        errorMessage.includes('forbidden')
-      ) {
+      } else if (isForbidden) {
         setErrorModal({
           open: true,
           type: 'forbidden',
-          message: error.message
+          message: errorMessage
         })
-      } else if (
-        errorMessage.includes('tool part') ||
-        errorMessage.includes('assistant message') ||
-        errorMessage.includes('toolcallid') ||
-        errorMessage.includes('tool-result') ||
-        errorMessage.includes('has no messages')
-      ) {
+      } else if (isToolError) {
         // Tool-result continuation errors need persistent visibility — a toast
         // auto-dismisses in ~4s and users miss it, leaving them with no feedback
         setErrorModal({
           open: true,
           type: 'general',
-          message: `Tool continuation failed: ${error.message}`
+          message: `Tool continuation failed: ${errorMessage}`
         })
       } else {
         // For general errors, still use toast for less intrusive notification
-        toast.error(`Error in chat: ${error.message}`)
+        toast.error(`Error in chat: ${errorMessage}`)
       }
     },
     sendAutomaticallyWhen: ({ messages: msgs }) => {
@@ -279,11 +278,9 @@ export function Chat({
       // to prevent re-triggering on subsequent evaluations.
       const resolvedOptionPart = parts.find(
         (p: any) =>
-          isToolTypePart(p) &&
-          p.type === 'tool-displayOptionList' &&
+          isInteractiveToolPart(p) &&
           'state' in p &&
-          p.state === 'output-available' &&
-          p.toolCallId
+          p.state === 'output-available'
       ) as { toolCallId: string } | undefined
       if (!resolvedOptionPart) return false
       if (autoSendFiredRef.current.has(resolvedOptionPart.toolCallId))
