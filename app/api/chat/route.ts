@@ -78,6 +78,9 @@ export async function POST(req: Request) {
           { status: 400, statusText: 'Bad Request' }
         )
       }
+      console.log(
+        `[tool-result] Received continuation: chatId=${chatId}, toolCallId=${toolResult.toolCallId}`
+      )
     } else if (validatedTrigger === 'submit-message') {
       if (!message) {
         return new Response('message is required for submission', {

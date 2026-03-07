@@ -241,6 +241,20 @@ export function Chat({
           type: 'forbidden',
           message: error.message
         })
+      } else if (
+        errorMessage.includes('tool part') ||
+        errorMessage.includes('assistant message') ||
+        errorMessage.includes('toolcallid') ||
+        errorMessage.includes('tool-result') ||
+        errorMessage.includes('has no messages')
+      ) {
+        // Tool-result continuation errors need persistent visibility — a toast
+        // auto-dismisses in ~4s and users miss it, leaving them with no feedback
+        setErrorModal({
+          open: true,
+          type: 'general',
+          message: `Tool continuation failed: ${error.message}`
+        })
       } else {
         // For general errors, still use toast for less intrusive notification
         toast.error(`Error in chat: ${error.message}`)

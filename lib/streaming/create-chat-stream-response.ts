@@ -123,11 +123,19 @@ export async function createChatStreamResponse(
   if (toolResult) {
     try {
       const prepareStart = performance.now()
-      perfLog('prepareToolResultMessages - Invoked')
+      console.log(
+        `[tool-result] prepareToolResultMessages: chatId=${chatId}, toolCallId=${toolResult.toolCallId}`
+      )
       prefetchedMessages = await prepareToolResultMessages(context, toolResult)
+      console.log(
+        `[tool-result] prepareToolResultMessages OK: ${prefetchedMessages.length} messages`
+      )
       perfTime('prepareToolResultMessages completed (pre-stream)', prepareStart)
     } catch (error) {
       if (error instanceof ToolResultValidationError) {
+        console.error(
+          `[tool-result] Validation error: chatId=${chatId}, ${error.message}`
+        )
         return new Response(error.message, {
           status: 400,
           statusText: 'Bad Request'
@@ -212,6 +220,11 @@ export async function createChatStreamResponse(
         }
 
         const llmStart = performance.now()
+        if (toolResult) {
+          console.log(
+            `[tool-result] researchAgent.stream: chatId=${chatId}, model=${context.modelId}, ${modelMessages.length} model messages`
+          )
+        }
         perfLog(
           `researchAgent.stream - Start: model=${context.modelId}, searchMode=${searchMode}`
         )

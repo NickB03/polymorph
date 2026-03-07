@@ -49,6 +49,7 @@ type ToolCallPart = {
   toolCallId: string
   toolName: string
   args: Record<string, unknown>
+  callProviderMetadata?: Record<string, unknown>
 }
 type ToolResultPart = {
   type: 'tool-result'
@@ -109,6 +110,7 @@ type ExtendedToolPart = {
   errorText?: string
   input?: unknown
   output?: unknown
+  callProviderMetadata?: Record<string, unknown>
 }
 
 function isExtendedToolPart(part: unknown): part is ExtendedToolPart {
@@ -133,7 +135,11 @@ function createToolPartMapping(
     tool_state: part.state || ('input-available' as ToolState),
     tool_errorText: part.errorText,
     [inputColumn]: part.input,
-    [outputColumn]: part.output
+    [outputColumn]: part.output,
+    // Preserve callProviderMetadata (e.g., Gemini thoughtSignature)
+    ...(part.callProviderMetadata
+      ? { providerMetadata: part.callProviderMetadata }
+      : {})
   } as DBMessagePart
 }
 
@@ -207,7 +213,11 @@ export function mapUIMessagePartsToDBParts(
           type: `tool-${toolName}`,
           tool_toolCallId: part.toolCallId,
           tool_state: 'input-available' as ToolState,
-          [toolInputColumn]: part.args
+          [toolInputColumn]: part.args,
+          // Preserve callProviderMetadata (e.g., Gemini thoughtSignature)
+          ...(part.callProviderMetadata
+            ? { providerMetadata: part.callProviderMetadata }
+            : {})
         } as DBMessagePart
 
         // Store additional metadata for dynamic tools
@@ -325,7 +335,11 @@ export function mapUIMessagePartsToDBParts(
           tool_dynamic_output:
             part.state === 'output-available' ? part.output : undefined,
           tool_errorText:
-            part.state === 'output-error' ? part.errorText : undefined
+            part.state === 'output-error' ? part.errorText : undefined,
+          // Preserve callProviderMetadata (e.g., Gemini thoughtSignature)
+          ...(part.callProviderMetadata
+            ? { providerMetadata: part.callProviderMetadata }
+            : {})
         }
 
       // Data parts
@@ -421,7 +435,11 @@ export function mapDBPartToUIMessagePart(
               state: part.tool_state as any,
               input: part.tool_dynamic_input,
               output: part.tool_dynamic_output,
-              errorText: part.tool_errorText
+              errorText: part.tool_errorText,
+              // Restore callProviderMetadata (e.g., Gemini thoughtSignature)
+              ...(part.providerMetadata
+                ? { callProviderMetadata: part.providerMetadata }
+                : {})
             }
           }
           // Regular dynamic tools (MCP, etc.)
@@ -432,7 +450,11 @@ export function mapDBPartToUIMessagePart(
             state: part.tool_state as any,
             input: part.tool_dynamic_input,
             output: part.tool_dynamic_output,
-            errorText: part.tool_errorText
+            errorText: part.tool_errorText,
+            // Restore callProviderMetadata (e.g., Gemini thoughtSignature)
+            ...(part.providerMetadata
+              ? { callProviderMetadata: part.providerMetadata }
+              : {})
           }
         }
 
@@ -445,6 +467,10 @@ export function mapDBPartToUIMessagePart(
           const toolCallId = part.tool_toolCallId || ''
           const input = part[inputColumn]!
           const output = part[outputColumn]!
+          // Restore callProviderMetadata (e.g., Gemini thoughtSignature)
+          const callMeta = part.providerMetadata
+            ? { callProviderMetadata: part.providerMetadata }
+            : {}
 
           switch (part.tool_state) {
             case 'input-streaming':
@@ -452,14 +478,16 @@ export function mapDBPartToUIMessagePart(
                 type: typeName,
                 state: 'input-streaming',
                 toolCallId,
-                input
+                input,
+                ...callMeta
               }
             case 'input-available':
               return {
                 type: typeName,
                 state: 'input-available',
                 toolCallId,
-                input
+                input,
+                ...callMeta
               }
             case 'output-available':
               return {
@@ -467,7 +495,8 @@ export function mapDBPartToUIMessagePart(
                 state: 'output-available',
                 toolCallId,
                 input,
-                output
+                output,
+                ...callMeta
               }
             case 'output-error':
               return {
@@ -475,7 +504,8 @@ export function mapDBPartToUIMessagePart(
                 state: 'output-error',
                 toolCallId,
                 input,
-                errorText: part.tool_errorText!
+                errorText: part.tool_errorText!,
+                ...callMeta
               }
             default:
               throw new Error(`Unknown tool state: ${part.tool_state}`)
@@ -497,7 +527,11 @@ export function mapDBPartToUIMessagePart(
             type: 'tool-call',
             toolCallId: part.tool_toolCallId || '',
             toolName: originalToolName,
-            args: part[inputColumn] as any
+            args: part[inputColumn] as any,
+            // Restore callProviderMetadata (e.g., Gemini thoughtSignature)
+            ...(part.providerMetadata
+              ? { callProviderMetadata: part.providerMetadata }
+              : {})
           }
         } else {
           // output-available or output-error
