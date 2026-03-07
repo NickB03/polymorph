@@ -321,33 +321,39 @@ export function mapUIMessagePartsToDBParts(
         return createToolPartMapping(basePart, part, toolName)
       }
 
-      // Display tool parts — route to dynamic columns for persistence
-      case 'tool-displayPlan':
-      case 'tool-displayTable':
-      case 'tool-displayCitations':
-      case 'tool-displayLinkPreview':
-      case 'tool-displayOptionList':
-        if (!isExtendedToolPart(part)) {
-          console.error('Invalid extended tool part:', part)
-          return null
-        }
-        return {
-          ...basePart,
-          type: 'tool-dynamic',
-          tool_toolCallId: part.toolCallId || generateId(),
-          tool_state: part.state || ('input-available' as ToolState),
-          tool_dynamic_name: part.type.substring(5), // e.g., 'displayPlan'
-          tool_dynamic_type: 'display',
-          tool_dynamic_input: part.input,
-          tool_dynamic_output:
-            part.state === 'output-available' ? part.output : undefined,
-          tool_errorText:
-            part.state === 'output-error' ? part.errorText : undefined,
-          ...serializeProviderMeta(part.callProviderMetadata)
+      default:
+        // Display tool parts — route to dynamic columns for persistence.
+        // Uses startsWith to automatically cover all current and future
+        // display tools (e.g., displayCallout, displayChart, displayTimeline).
+        if (part.type.startsWith('tool-display')) {
+          if (!isExtendedToolPart(part)) {
+            console.error('Invalid extended tool part:', part)
+            return null
+          }
+          return {
+            ...basePart,
+            type: 'tool-dynamic',
+            tool_toolCallId: part.toolCallId || generateId(),
+            tool_state: part.state || ('input-available' as ToolState),
+            tool_dynamic_name: part.type.substring(5), // e.g., 'displayPlan'
+            tool_dynamic_type: 'display',
+            tool_dynamic_input: part.input,
+            tool_dynamic_output:
+              part.state === 'output-available' ? part.output : undefined,
+            tool_errorText:
+              part.state === 'output-error' ? part.errorText : undefined,
+            ...serializeProviderMeta(part.callProviderMetadata)
+          }
         }
 
-      // Data parts
-      default:
+        // Warn about unrecognized tool-* parts that fell through
+        if (part.type.startsWith('tool-')) {
+          console.warn(
+            `Unrecognized tool part type "${part.type}" — tool metadata (state, toolCallId, input/output) will be lost`
+          )
+        }
+
+        // Data parts
         if (part.type.startsWith('data-')) {
           const dataType = part.type.substring(5) // Remove 'data-' prefix
           return {
