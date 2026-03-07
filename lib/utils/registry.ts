@@ -10,12 +10,18 @@ const providers: Record<string, any> = {
   openai,
   anthropic,
   google,
-  'openai-compatible': createOpenAI({
-    apiKey: process.env.OPENAI_COMPATIBLE_API_KEY,
-    baseURL: process.env.OPENAI_COMPATIBLE_API_BASE_URL
-  }),
   gateway: createGateway({
     apiKey: process.env.AI_GATEWAY_API_KEY
+  })
+}
+
+if (
+  process.env.OPENAI_COMPATIBLE_API_KEY &&
+  process.env.OPENAI_COMPATIBLE_API_BASE_URL
+) {
+  providers['openai-compatible'] = createOpenAI({
+    apiKey: process.env.OPENAI_COMPATIBLE_API_KEY,
+    baseURL: process.env.OPENAI_COMPATIBLE_API_BASE_URL
   })
 }
 
