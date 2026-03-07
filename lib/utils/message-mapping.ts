@@ -301,7 +301,10 @@ export function mapUIMessagePartsToDBParts(
           tool_errorText:
             dynamicPart.state === 'output-error'
               ? dynamicPart.errorText
-              : undefined
+              : undefined,
+          ...serializeProviderMeta(
+            (dynamicPart as ExtendedToolPart).callProviderMetadata
+          )
         }
 
       // Tool-specific parts with dedicated DB columns
