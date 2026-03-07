@@ -193,8 +193,7 @@ export function RenderMessage({
   // New rendering: interleave text parts with grouped non-text segments
   const elements: React.ReactNode[] = []
   // Buffer collects non-text parts for ResearchProcessSection.
-  // Uses any[] because UIMessage['parts'] is wider than ResearchProcessSection's MessagePart union.
-  let buffer: any[] = []
+  let buffer: NonNullable<UIMessage['parts']>[number][] = []
   const flushBuffer = (keySuffix: string) => {
     if (buffer.length === 0) return
     elements.push(
@@ -202,7 +201,7 @@ export function RenderMessage({
         key={`${messageId}-proc-${keySuffix}`}
         message={message}
         messageId={messageId}
-        parts={buffer}
+        parts={buffer as Parameters<typeof ResearchProcessSection>[0]['parts']}
         getIsOpen={getIsOpen}
         onOpenChange={onOpenChange}
         onQuerySelect={onQuerySelect}
