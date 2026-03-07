@@ -36,10 +36,10 @@ function scanTodoWriteParts(parts: UIMessage['parts']) {
   for (let i = 0; i < (parts?.length ?? 0); i++) {
     const part = parts![i]
 
-    // Count non-todoWrite research tool activity after plan creation
+    // Count research tool activity after plan creation
     if (firstTodoWriteIndex !== undefined && part.type !== 'tool-todoWrite') {
       const type = part.type
-      if (type?.startsWith?.('tool-') && !type.startsWith('tool-display')) {
+      if (type === 'tool-search' || type === 'tool-fetch') {
         const state = (part as { state?: string }).state
         if (state === 'output-available') completedToolCalls++
         else if (state === 'input-streaming' || state === 'input-available')

@@ -66,7 +66,7 @@ export async function createEphemeralChatStreamResponse(
         chatId,
         userId: 'guest',
         modelId,
-        trigger: 'submit-message',
+        trigger: trigger ?? 'submit-message',
         modelType
       }
     })
