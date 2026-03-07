@@ -6,13 +6,19 @@ import { SearchResults as SearchResultsType } from '@/lib/types'
 const CONTENT_CHARACTER_LIMIT = 50000
 const TITLE_CHARACTER_LIMIT = 100
 
-async function fetchRegularData(url: string): Promise<SearchResultsType> {
+async function fetchRegularData(
+  url: string,
+  abortSignal?: AbortSignal
+): Promise<SearchResultsType> {
   try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+    const timeoutController = new AbortController()
+    const timeoutId = setTimeout(() => timeoutController.abort(), 10000) // 10 second timeout
+    const signal = abortSignal
+      ? AbortSignal.any([timeoutController.signal, abortSignal])
+      : timeoutController.signal
 
     const response = await fetch(url, {
-      signal: controller.signal,
+      signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; Polymorph/1.0)',
         Accept:
@@ -161,18 +167,20 @@ export const fetchTool = tool({
   description:
     'Fetch content from any URL. By default uses "regular" type which performs fast, direct HTML fetching without external APIs - ideal for most websites. IMPORTANT: "regular" type does NOT support PDFs and will fail on PDF URLs. Use "api" type when you need: 1) PDF content extraction (required for .pdf URLs), 2) Complex JavaScript-rendered pages, 3) Better markdown formatting, 4) Table extraction. The "api" type requires Jina or Tavily API keys and uses Jina Reader if available, otherwise falls back to Tavily Extract.',
   inputSchema: fetchSchema,
-  async *execute({ url, type = 'regular' }) {
+  async *execute({ url, type = 'regular' }, context) {
     // Yield initial fetching state
     yield {
       state: 'fetching' as const,
       url
     }
 
+    if (context?.abortSignal?.aborted) return
+
     let results: SearchResultsType
 
     if (type === 'regular') {
       // Use regular fetch for direct HTML retrieval
-      results = await fetchRegularData(url)
+      results = await fetchRegularData(url, context?.abortSignal)
     } else {
       // Use API-based extraction (Jina or Tavily)
       const useJina = process.env.JINA_API_KEY
