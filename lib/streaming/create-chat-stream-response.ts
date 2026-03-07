@@ -14,6 +14,7 @@ import { Langfuse } from 'langfuse'
 import { researcher } from '@/lib/agents/researcher'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import { createModelId } from '@/lib/utils'
+import { jsonError } from '@/lib/utils/json-error'
 import { isTracingEnabled } from '@/lib/utils/telemetry'
 
 import { loadChat } from '../actions/chat'
@@ -53,10 +54,7 @@ export async function createChatStreamResponse(
 
   // Verify that chatId is provided
   if (!chatId) {
-    return new Response('Chat ID is required', {
-      status: 400,
-      statusText: 'Bad Request'
-    })
+    return jsonError('BAD_REQUEST', 'Chat ID is required', 400)
   }
 
   // Skip loading chat for new chats optimization
@@ -69,10 +67,11 @@ export async function createChatStreamResponse(
 
     // Authorization check: if chat exists, it must belong to the user
     if (initialChat && initialChat.userId !== userId) {
-      return new Response('You are not allowed to access this chat', {
-        status: 403,
-        statusText: 'Forbidden'
-      })
+      return jsonError(
+        'FORBIDDEN',
+        'You are not allowed to access this chat',
+        403
+      )
     }
   } else {
     perfLog('loadChat skipped for new chat')
@@ -136,10 +135,7 @@ export async function createChatStreamResponse(
         console.error(
           `[tool-result] Validation error: chatId=${chatId}, ${error.message}`
         )
-        return new Response(error.message, {
-          status: 400,
-          statusText: 'Bad Request'
-        })
+        return jsonError('TOOL_ERROR', error.message, 400)
       }
       throw error
     }
