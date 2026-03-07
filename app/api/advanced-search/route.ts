@@ -106,8 +106,23 @@ async function setCachedResults(
 }
 
 export async function POST(request: Request) {
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json(
+      {
+        error: 'Invalid JSON body',
+        results: [],
+        images: [],
+        number_of_results: 0
+      },
+      { status: 400 }
+    )
+  }
+
   const { query, maxResults, searchDepth, includeDomains, excludeDomains } =
-    await request.json()
+    body as any
 
   const SEARXNG_DEFAULT_DEPTH = process.env.SEARXNG_DEFAULT_DEPTH || 'basic'
 
