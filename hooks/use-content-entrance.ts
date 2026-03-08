@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 /**
  * Hook that tracks whether a content block has entered the DOM for the first time.
@@ -11,7 +11,6 @@ import { useEffect, useRef, useState } from 'react'
  */
 export function useContentEntrance(delayMs = 0) {
   const [hasEntered, setHasEntered] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     // Mark as entered on first mount — the animation plays once via CSS
@@ -19,7 +18,6 @@ export function useContentEntrance(delayMs = 0) {
   }, [])
 
   return {
-    ref,
     entranceProps: {
       className: hasEntered ? 'animate-content-enter' : 'opacity-0',
       style: { '--enter-delay': `${delayMs}ms` } as React.CSSProperties
