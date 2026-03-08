@@ -1231,11 +1231,8 @@ function WordmarkHover() {
 // ─────────────────────────────────────────────
 
 const SUFFIX_WORDS = [
-  'build',
+  'learn',
   'create',
-  'design',
-  'explore',
-  'imagine',
   'discover',
   'research',
   'morph'
@@ -1251,8 +1248,8 @@ function getSuffixHoldDelay(index: number, total: number): number {
   // 0 at edges → 1 at center
   const center = (total - 1) / 2
   const distFromCenter = Math.abs(index - center) / center // 1 at edges, 0 at center
-  // Slow (1200ms) at edges, fast (200ms) at center — matches 5d pacing
-  return 200 + distFromCenter * distFromCenter * 1000
+  // Slow (1100ms) at edges, comfortable (600ms) at center
+  return 600 + distFromCenter * distFromCenter * 500
 }
 
 function PolySuffix() {
@@ -1356,12 +1353,263 @@ function PolySuffixLooped() {
 }
 
 // ─────────────────────────────────────────────
+// #9 options — comparing morph transition styles
+// ─────────────────────────────────────────────
+
+const MORPH_KEYFRAMES = `
+@keyframes morphFluidEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(20%) scaleY(0.9);
+    filter: blur(1.5px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  75% {
+    transform: translateY(-2%) scaleY(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    filter: blur(0);
+  }
+}
+@keyframes morphFluidExit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-15%) scaleY(0.95);
+    filter: blur(1.5px);
+  }
+}
+@keyframes morphCollapseOut {
+  0% {
+    opacity: 1;
+    transform: scaleX(1) scaleY(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(0) scaleY(0.85);
+    filter: blur(6px);
+  }
+}
+@keyframes morphExpandIn {
+  0% {
+    opacity: 0;
+    transform: scaleX(0) scaleY(0.85);
+    filter: blur(6px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  75% {
+    transform: scaleX(1.04) scaleY(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleX(1) scaleY(1);
+    filter: blur(0);
+  }
+}
+`
+
+/**
+ * Fluid per-character morph with optional stagger.
+ * staggerMs=0 → cross-dissolve (all at once)
+ * staggerMs=45 → cascading ripple left-to-right
+ */
+function PolySuffixFluid({ staggerMs = 0 }: { staggerMs?: number }) {
+  const [word, setWord] = useState('')
+  const [wordKey, setWordKey] = useState(0)
+  const [isExiting, setIsExiting] = useState(false)
+  const [wordIndex, setWordIndex] = useState(-1)
+  const [settled, setSettled] = useState(false)
+
+  const enterDuration = 280
+  const exitDuration = 150
+
+  useEffect(() => {
+    if (settled) return
+    const nextIdx = wordIndex + 1
+    if (nextIdx >= SUFFIX_WORDS.length) {
+      setSettled(true)
+      return
+    }
+
+    // Ensure hold is long enough for enter + stagger to finish
+    const holdDelay =
+      wordIndex === -1
+        ? 800
+        : Math.max(
+            enterDuration + staggerMs * SUFFIX_MAX_LEN + 100,
+            getSuffixHoldDelay(wordIndex, SUFFIX_WORDS.length)
+          )
+
+    const timeout = setTimeout(() => {
+      const target = SUFFIX_WORDS[nextIdx] as string
+
+      if (wordIndex >= 0) {
+        // Phase 1: exit current chars
+        setIsExiting(true)
+        const totalExit = exitDuration + staggerMs * SUFFIX_MAX_LEN
+        setTimeout(() => {
+          // Phase 2: swap content + remount with enter animation
+          setIsExiting(false)
+          setWord(target)
+          setWordKey(k => k + 1)
+          setWordIndex(nextIdx)
+        }, totalExit)
+      } else {
+        // First word — just enter
+        setWord(target)
+        setWordKey(k => k + 1)
+        setWordIndex(nextIdx)
+      }
+    }, holdDelay)
+
+    return () => clearTimeout(timeout)
+  }, [wordIndex, settled, staggerMs])
+
+  return (
+    <span className="inline-flex select-none text-[2.5rem] leading-none font-medium">
+      <span className="shrink-0 text-neutral-900 dark:text-neutral-100">
+        poly
+      </span>
+      <span style={{ minWidth: `${SUFFIX_MAX_LEN}ch` }}>
+        {word.split('').map((char, i) => {
+          const isFinal = word === SUFFIX_WORDS[SUFFIX_WORDS.length - 1]
+          const enter = isFinal ? 650 : enterDuration
+          const stagger = isFinal ? staggerMs * 2.5 : staggerMs
+          return (
+            <span
+              key={`${wordKey}-${i}`}
+              className="inline-block text-blue-600 dark:text-blue-400"
+              style={{
+                animation: isExiting
+                  ? `morphFluidExit ${exitDuration}ms ease-in ${staggerMs * i}ms forwards`
+                  : word
+                    ? `morphFluidEnter ${enter}ms ease-out ${stagger * i}ms both`
+                    : undefined
+              }}
+            >
+              {char}
+            </span>
+          )
+        })}
+      </span>
+    </span>
+  )
+}
+
+/**
+ * Whole-word collapse/expand morph.
+ * The entire suffix squishes horizontally, then the new word expands from left.
+ */
+function PolySuffixCollapse() {
+  const [word, setWord] = useState('')
+  const [wordKey, setWordKey] = useState(0)
+  const [isExiting, setIsExiting] = useState(false)
+  const [wordIndex, setWordIndex] = useState(-1)
+  const [settled, setSettled] = useState(false)
+
+  useEffect(() => {
+    if (settled) return
+    const nextIdx = wordIndex + 1
+    if (nextIdx >= SUFFIX_WORDS.length) {
+      setSettled(true)
+      return
+    }
+
+    const holdDelay =
+      wordIndex === -1
+        ? 800
+        : Math.max(500, getSuffixHoldDelay(wordIndex, SUFFIX_WORDS.length))
+
+    const timeout = setTimeout(() => {
+      const target = SUFFIX_WORDS[nextIdx] as string
+
+      if (wordIndex >= 0) {
+        setIsExiting(true)
+        setTimeout(() => {
+          setIsExiting(false)
+          setWord(target)
+          setWordKey(k => k + 1)
+          setWordIndex(nextIdx)
+        }, 280)
+      } else {
+        setWord(target)
+        setWordKey(k => k + 1)
+        setWordIndex(nextIdx)
+      }
+    }, holdDelay)
+
+    return () => clearTimeout(timeout)
+  }, [wordIndex, settled])
+
+  return (
+    <span className="inline-flex select-none text-[2.5rem] leading-none font-medium tracking-[0.08em]">
+      <span className="shrink-0 text-neutral-900 dark:text-neutral-100">
+        poly
+      </span>
+      <span
+        className="relative overflow-hidden font-mono"
+        style={{ width: `${SUFFIX_MAX_LEN}ch` }}
+      >
+        <span
+          key={wordKey}
+          className={cn(
+            'inline-block',
+            settled
+              ? 'text-blue-500 dark:text-blue-400'
+              : 'text-neutral-900 dark:text-neutral-100'
+          )}
+          style={{
+            transformOrigin: 'left center',
+            animation: isExiting
+              ? 'morphCollapseOut 280ms ease-in forwards'
+              : word
+                ? 'morphExpandIn 400ms ease-out both'
+                : undefined
+          }}
+        >
+          {word || '\u00A0'}
+        </span>
+      </span>
+    </span>
+  )
+}
+
+function PolySuffixDissolveLooped() {
+  const key = useLoop(15000)
+  return <PolySuffixFluid key={key} staggerMs={0} />
+}
+
+function PolySuffixStaggeredLooped() {
+  const key = useLoop(15000)
+  return <PolySuffixFluid key={key} staggerMs={30} />
+}
+
+function PolySuffixCollapseLooped() {
+  const key = useLoop(15000)
+  return <PolySuffixCollapse key={key} />
+}
+
+// ─────────────────────────────────────────────
 // Page
 // ─────────────────────────────────────────────
 
 export default function MorphDemoPage() {
   return (
     <div className="h-full overflow-y-auto bg-neutral-50 px-4 py-12 dark:bg-neutral-900 sm:px-8">
+      <style>{MORPH_KEYFRAMES}</style>
       <div className="mx-auto max-w-3xl">
         <div className="mb-12">
           <h1 className="mb-2 text-2xl font-bold text-neutral-900 dark:text-neutral-100">
@@ -1486,6 +1734,30 @@ export default function MorphDemoPage() {
             description="&ldquo;poly&rdquo; stays static. The suffix morphs through capabilities in blue, settling on &ldquo;morph&rdquo; to complete the brand."
           >
             <PolySuffixLooped />
+          </DemoCard>
+
+          <DemoCard
+            number={9}
+            title="9 · Option A: Cross-Dissolve"
+            description="All characters morph simultaneously — old slides up, new rises from below with a blue flash. Feels like a liquid transform."
+          >
+            <PolySuffixDissolveLooped />
+          </DemoCard>
+
+          <DemoCard
+            number={9}
+            title="9 · Option B: Staggered Ripple"
+            description="Same fluid morph but cascaded left-to-right with 45ms per-character delay. Creates a wave of change across the word."
+          >
+            <PolySuffixStaggeredLooped />
+          </DemoCard>
+
+          <DemoCard
+            number={9}
+            title="9 · Option C: Collapse &amp; Expand"
+            description="The whole word squishes horizontally, then the new word expands from the left. Macro-level motion instead of per-character."
+          >
+            <PolySuffixCollapseLooped />
           </DemoCard>
         </div>
       </div>
