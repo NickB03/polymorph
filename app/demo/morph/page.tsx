@@ -980,19 +980,24 @@ function UserReactive() {
   const [letters, setLetters] = useState(WORD.split(''))
   const [isHovering, setIsHovering] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const touchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const startMorphing = () => {
+  const startMorphing = useCallback(() => {
     setIsHovering(true)
+    if (intervalRef.current) clearInterval(intervalRef.current)
     intervalRef.current = setInterval(() => {
       setLetters(
         WORD.split('').map(char => (Math.random() > 0.5 ? randomChar() : char))
       )
     }, 80)
-  }
+  }, [])
 
-  const stopMorphing = () => {
+  const stopMorphing = useCallback(() => {
     setIsHovering(false)
     if (intervalRef.current) clearInterval(intervalRef.current)
+    intervalRef.current = null
+    if (touchTimeoutRef.current) clearTimeout(touchTimeoutRef.current)
+    touchTimeoutRef.current = null
 
     WORD.split('').forEach((char, i) => {
       setTimeout(() => {
@@ -1003,13 +1008,26 @@ function UserReactive() {
         })
       }, i * 60)
     })
-  }
+  }, [])
+
+  const handleTouch = useCallback(() => {
+    startMorphing()
+    touchTimeoutRef.current = setTimeout(stopMorphing, 3000)
+  }, [startMorphing, stopMorphing])
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      if (touchTimeoutRef.current) clearTimeout(touchTimeoutRef.current)
+    }
+  }, [])
 
   return (
     <span
       className="cursor-pointer select-none font-mono text-4xl font-light tracking-wider text-neutral-900 dark:text-neutral-100"
       onMouseEnter={startMorphing}
       onMouseLeave={stopMorphing}
+      onTouchStart={handleTouch}
     >
       {letters.map((char, i) => (
         <span
@@ -1025,7 +1043,7 @@ function UserReactive() {
         </span>
       ))}
       <span className="ml-4 text-sm text-neutral-400">
-        {isHovering ? '(hover)' : '\u2190 hover me'}
+        {isHovering ? '(active)' : 'hover or tap'}
       </span>
     </span>
   )
@@ -1102,12 +1120,7 @@ function WordmarkHover() {
     cycle()
   }, [waveTo])
 
-  const handleEnter = useCallback(() => {
-    setIsHovering(true)
-    startCycling()
-  }, [startCycling])
-
-  const handleLeave = useCallback(() => {
+  const stopCycling = useCallback(() => {
     setIsHovering(false)
 
     if (cycleRef.current) clearTimeout(cycleRef.current)
@@ -1119,10 +1132,29 @@ function WordmarkHover() {
     waveTo(WORD)
   }, [waveTo])
 
+  const handleEnter = useCallback(() => {
+    setIsHovering(true)
+    startCycling()
+  }, [startCycling])
+
+  const handleLeave = useCallback(() => {
+    stopCycling()
+  }, [stopCycling])
+
+  const touchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleTouch = useCallback(() => {
+    if (touchTimeoutRef.current) clearTimeout(touchTimeoutRef.current)
+    setIsHovering(true)
+    startCycling()
+    touchTimeoutRef.current = setTimeout(stopCycling, 4000)
+  }, [startCycling, stopCycling])
+
   useEffect(() => {
     return () => {
       if (cycleRef.current) clearTimeout(cycleRef.current)
       if (waveRef.current) clearInterval(waveRef.current)
+      if (touchTimeoutRef.current) clearTimeout(touchTimeoutRef.current)
     }
   }, [])
 
@@ -1132,6 +1164,7 @@ function WordmarkHover() {
         className="cursor-pointer select-none text-[2.5rem] leading-none font-medium tracking-[0.08em]"
         onMouseEnter={handleEnter}
         onMouseLeave={handleLeave}
+        onTouchStart={handleTouch}
       >
         {Array.from({ length: maxLen }, (_, i) => {
           const isPast = isWaving && i < wavePos
@@ -1155,7 +1188,7 @@ function WordmarkHover() {
         })}
       </span>
       <span className="text-xs tracking-widest text-neutral-400">
-        {isHovering ? '\u00A0' : 'hover to explore'}
+        {isHovering ? '\u00A0' : 'hover or tap to explore'}
       </span>
     </div>
   )
