@@ -1231,14 +1231,13 @@ function WordmarkHover() {
 // ─────────────────────────────────────────────
 
 const SUFFIX_WORDS = [
-  'research',
-  'create',
-  'explore',
-  'discover',
-  'analyze',
-  'imagine',
-  'design',
   'build',
+  'create',
+  'design',
+  'explore',
+  'imagine',
+  'discover',
+  'research',
   'morph'
 ] as const
 
@@ -1257,11 +1256,13 @@ function getSuffixHoldDelay(index: number, total: number): number {
 }
 
 function PolySuffix() {
-  const [currentSuffix, setCurrentSuffix] = useState(SUFFIX_WORDS[0] as string)
-  const [nextSuffix, setNextSuffix] = useState(SUFFIX_WORDS[0] as string)
+  // Start with empty suffix — just "poly" visible
+  const [currentSuffix, setCurrentSuffix] = useState('')
+  const [nextSuffix, setNextSuffix] = useState('')
   const [wavePos, setWavePos] = useState(-1)
   const [isWaving, setIsWaving] = useState(false)
-  const [wordIndex, setWordIndex] = useState(0)
+  // -1 = initial "poly only" state, 0+ = word index
+  const [wordIndex, setWordIndex] = useState(-1)
   const [settled, setSettled] = useState(false)
 
   useEffect(() => {
@@ -1273,7 +1274,11 @@ function PolySuffix() {
       return
     }
 
-    const holdDelay = getSuffixHoldDelay(wordIndex, SUFFIX_WORDS.length)
+    // Brief pause on "poly" before first word, then bell curve
+    const holdDelay =
+      wordIndex === -1
+        ? 800
+        : getSuffixHoldDelay(wordIndex, SUFFIX_WORDS.length)
 
     const timeout = setTimeout(() => {
       const target = SUFFIX_WORDS[nextIndex] as string
