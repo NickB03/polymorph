@@ -1235,10 +1235,8 @@ const SUFFIX_WORDS = [
   'create',
   'explore',
   'discover',
-  'generate',
   'analyze',
   'imagine',
-  'transform',
   'design',
   'build',
   'morph'
@@ -1307,7 +1305,12 @@ function PolySuffix() {
       <span className="shrink-0 text-neutral-900 dark:text-neutral-100">
         poly
       </span>
-      <span style={{ width: `${SUFFIX_MAX_LEN * 0.65}em` }}>
+      <span
+        className="inline-grid font-mono"
+        style={{
+          gridTemplateColumns: `repeat(${SUFFIX_MAX_LEN}, 1ch)`
+        }}
+      >
         {Array.from({ length: SUFFIX_MAX_LEN }, (_, i) => {
           const isPast = isWaving && i < wavePos
           const isAtWave = isWaving && (i === wavePos || i === wavePos - 1)
@@ -1320,7 +1323,7 @@ function PolySuffix() {
             <span
               key={i}
               className={cn(
-                'inline-block w-[0.65em] text-center transition-all duration-100',
+                'text-center transition-all duration-100',
                 settled
                   ? 'text-blue-500 dark:text-blue-400'
                   : isAtWave
@@ -1343,7 +1346,7 @@ function PolySuffix() {
 }
 
 function PolySuffixLooped() {
-  const key = useLoop(18000)
+  const key = useLoop(15000)
   return <PolySuffix key={key} />
 }
 
