@@ -980,6 +980,7 @@ function UserReactive() {
   const [letters, setLetters] = useState(WORD.split(''))
   const [isHovering, setIsHovering] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const touchActiveRef = useRef(false)
   const touchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const startMorphing = useCallback(() => {
@@ -994,6 +995,7 @@ function UserReactive() {
 
   const stopMorphing = useCallback(() => {
     setIsHovering(false)
+    touchActiveRef.current = false
     if (intervalRef.current) clearInterval(intervalRef.current)
     intervalRef.current = null
     if (touchTimeoutRef.current) clearTimeout(touchTimeoutRef.current)
@@ -1010,10 +1012,26 @@ function UserReactive() {
     })
   }, [])
 
-  const handleTouch = useCallback(() => {
+  const handleTouch = useCallback(
+    (e: React.TouchEvent) => {
+      e.preventDefault()
+      touchActiveRef.current = true
+      startMorphing()
+      touchTimeoutRef.current = setTimeout(stopMorphing, 3000)
+    },
+    [startMorphing, stopMorphing]
+  )
+
+  // Block synthetic mouse events during touch
+  const handleMouseEnter = useCallback(() => {
+    if (touchActiveRef.current) return
     startMorphing()
-    touchTimeoutRef.current = setTimeout(stopMorphing, 3000)
-  }, [startMorphing, stopMorphing])
+  }, [startMorphing])
+
+  const handleMouseLeave = useCallback(() => {
+    if (touchActiveRef.current) return
+    stopMorphing()
+  }, [stopMorphing])
 
   useEffect(() => {
     return () => {
@@ -1025,8 +1043,8 @@ function UserReactive() {
   return (
     <span
       className="cursor-pointer select-none font-mono text-4xl font-light tracking-wider text-neutral-900 dark:text-neutral-100"
-      onMouseEnter={startMorphing}
-      onMouseLeave={stopMorphing}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onTouchStart={handleTouch}
     >
       {letters.map((char, i) => (
@@ -1120,35 +1138,47 @@ function WordmarkHover() {
     cycle()
   }, [waveTo])
 
+  const touchActiveRef = useRef(false)
+  const touchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const stopCycling = useCallback(() => {
     setIsHovering(false)
+    touchActiveRef.current = false
 
     if (cycleRef.current) clearTimeout(cycleRef.current)
     cycleRef.current = null
     if (waveRef.current) clearInterval(waveRef.current)
     waveRef.current = null
+    if (touchTimeoutRef.current) clearTimeout(touchTimeoutRef.current)
+    touchTimeoutRef.current = null
 
     // Wave back to polymorph
     waveTo(WORD)
   }, [waveTo])
 
+  // Block synthetic mouse events during touch
   const handleEnter = useCallback(() => {
+    if (touchActiveRef.current) return
     setIsHovering(true)
     startCycling()
   }, [startCycling])
 
   const handleLeave = useCallback(() => {
+    if (touchActiveRef.current) return
     stopCycling()
   }, [stopCycling])
 
-  const touchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const handleTouch = useCallback(() => {
-    if (touchTimeoutRef.current) clearTimeout(touchTimeoutRef.current)
-    setIsHovering(true)
-    startCycling()
-    touchTimeoutRef.current = setTimeout(stopCycling, 4000)
-  }, [startCycling, stopCycling])
+  const handleTouch = useCallback(
+    (e: React.TouchEvent) => {
+      e.preventDefault()
+      if (touchTimeoutRef.current) clearTimeout(touchTimeoutRef.current)
+      touchActiveRef.current = true
+      setIsHovering(true)
+      startCycling()
+      touchTimeoutRef.current = setTimeout(stopCycling, 4000)
+    },
+    [startCycling, stopCycling]
+  )
 
   useEffect(() => {
     return () => {
