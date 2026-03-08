@@ -17,6 +17,7 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 - `bun format` — Prettier format
 - `bun format:check` — Prettier check
 - `bun run test` — Vitest (single run)
+- `bun run test -- path/to/file.test.ts` — run a single test file
 - `bun run test:watch` — Vitest watch mode
 - `bun run migrate` — run Drizzle migrations
 - `npx supabase start` — local Supabase (DB:44322, API:44321, Studio:44323)
@@ -30,7 +31,7 @@ The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → too
 - **Researcher agent** (`lib/agents/researcher.ts`): Uses Vercel AI SDK's `ToolLoopAgent` with two modes:
   - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline]`
   - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline, todoWrite]` (todoWrite when writer available)
-- **Tools** (`lib/tools/`): `search` (Tavily primary, Brave for multimedia), `fetch` (web content extraction), `question` (interactive), `todo` (task management)
+- **Tools** (`lib/tools/`): `search` (Tavily primary, Brave for multimedia), `fetch` (web content extraction), `todo` (task management), `dynamic` (MCP/runtime-defined tools)
 - **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Gemini 3 Flash (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway
 - **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
 
@@ -61,6 +62,10 @@ Supabase Auth with three client patterns:
 ### Generative UI
 
 Components render different message part types: `answer-section.tsx`, `search-section.tsx`, `reasoning-section.tsx`, `artifact/` directory for rich artifacts. These map to part types from the `parts` database table.
+
+### Hooks
+
+Custom React hooks in `hooks/`: `use-activity-feed`, `use-auth-check`, `use-current-user`, `use-file-dropzone`, `use-mobile`, `use-trending-suggestions`.
 
 ## Code Conventions
 

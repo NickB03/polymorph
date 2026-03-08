@@ -478,6 +478,17 @@
   & h6 {
     @apply text-sm font-medium mt-4 mb-2;
   }
+
+  /* List spacing/indent so wrapped lines align with list text */
+  & ul,
+  & ol {
+    @apply pl-6 my-4;
+    list-style-position: outside;
+  }
+
+  & li {
+    @apply my-1;
+  }
 }
 
 @utility prose-sm {
@@ -503,6 +514,17 @@
 
   & h6 {
     @apply text-xs font-medium mt-3 mb-1;
+  }
+
+  /* List spacing/indent so wrapped lines align with list text */
+  & ul,
+  & ol {
+    @apply pl-6 my-3;
+    list-style-position: outside;
+  }
+
+  & li {
+    @apply my-1;
   }
 }
 

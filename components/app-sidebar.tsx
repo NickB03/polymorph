@@ -76,23 +76,26 @@ export default function AppSidebar({ hasUser = false }: { hasUser?: boolean }) {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+
         {hasUser ? (
           <div className="flex-1 overflow-y-auto">
             <Suspense fallback={<ChatHistorySkeleton />}>
               <ChatHistoryClient />
             </Suspense>
           </div>
-        ) : (
-          <div className="px-2 py-4 text-xs text-muted-foreground">
-            <p>Your searches are not saved.</p>
+        ) : null}
+
+        {!hasUser ? (
+          <div className="mt-auto px-2 py-4 text-xs text-muted-foreground">
+            <p>Enjoying the chat?</p>
             <Link
-              href="/auth/sign-up"
+              href="/auth/login"
               className="text-muted-foreground underline underline-offset-2 hover:text-foreground"
             >
-              Create an account to save history
+              Sign in to save your chat history
             </Link>
           </div>
-        )}
+        ) : null}
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
