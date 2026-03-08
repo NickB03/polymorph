@@ -20,40 +20,6 @@ function getSuffixHoldDelay(index: number, total: number): number {
   return 600 + distFromCenter * distFromCenter * 500
 }
 
-const KEYFRAMES = `
-@keyframes morphFluidEnter {
-  0% {
-    opacity: 0;
-    transform: translateY(20%) scaleY(0.9);
-    filter: blur(1.5px);
-  }
-  50% {
-    opacity: 1;
-    filter: blur(0);
-  }
-  75% {
-    transform: translateY(-2%) scaleY(1.01);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scaleY(1);
-    filter: blur(0);
-  }
-}
-@keyframes morphFluidExit {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scaleY(1);
-    filter: blur(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-15%) scaleY(0.95);
-    filter: blur(1.5px);
-  }
-}
-`
-
 function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
   const [word, setWord] = useState('')
   const [wordKey, setWordKey] = useState(0)
@@ -104,7 +70,6 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
 
   return (
     <>
-      <style>{KEYFRAMES}</style>
       <span className="inline-flex select-none leading-none font-medium">
         <span className="shrink-0 text-neutral-900 dark:text-neutral-100">
           poly
