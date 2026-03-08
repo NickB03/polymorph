@@ -1225,6 +1225,106 @@ function WordmarkHover() {
 }
 
 // ─────────────────────────────────────────────
+// #9 — Poly + Suffix
+// "poly" static, suffix morphs through words in blue,
+// settles on "morph" (blue) to complete "polymorph"
+// ─────────────────────────────────────────────
+
+const SUFFIX_WORDS = [
+  'research',
+  'create',
+  'explore',
+  'discover',
+  'generate',
+  'analyze',
+  'imagine',
+  'transform',
+  'design',
+  'build',
+  'morph'
+] as const
+
+const SUFFIX_MAX_LEN = Math.max(...SUFFIX_WORDS.map(w => w.length))
+
+function PolySuffix() {
+  const [currentSuffix, setCurrentSuffix] = useState(SUFFIX_WORDS[0] as string)
+  const [nextSuffix, setNextSuffix] = useState(SUFFIX_WORDS[0] as string)
+  const [wavePos, setWavePos] = useState(-1)
+  const [isWaving, setIsWaving] = useState(false)
+  const [wordIndex, setWordIndex] = useState(0)
+  const [settled, setSettled] = useState(false)
+
+  useEffect(() => {
+    if (settled) return
+
+    const nextIndex = wordIndex + 1
+    if (nextIndex >= SUFFIX_WORDS.length) {
+      setSettled(true)
+      return
+    }
+
+    // Hold current word, then wave to next
+    const holdDelay =
+      wordIndex === 0 ? 600 : 150 + (wordIndex / SUFFIX_WORDS.length) * 400
+
+    const timeout = setTimeout(() => {
+      const target = SUFFIX_WORDS[nextIndex] as string
+      setNextSuffix(target)
+      setIsWaving(true)
+
+      let pos = -1
+      const interval = setInterval(() => {
+        pos++
+        setWavePos(pos)
+        if (pos > SUFFIX_MAX_LEN + 1) {
+          clearInterval(interval)
+          setIsWaving(false)
+          setWavePos(-1)
+          setCurrentSuffix(target)
+          setNextSuffix(target)
+          setWordIndex(nextIndex)
+        }
+      }, 30)
+
+      return () => clearInterval(interval)
+    }, holdDelay)
+
+    return () => clearTimeout(timeout)
+  }, [wordIndex, settled])
+
+  return (
+    <span className="select-none text-[2.5rem] leading-none font-medium tracking-[0.08em]">
+      <span className="text-neutral-900 dark:text-neutral-100">poly</span>
+      {Array.from({ length: SUFFIX_MAX_LEN }, (_, i) => {
+        const isPast = isWaving && i < wavePos
+        const isAtWave = isWaving && (i === wavePos || i === wavePos - 1)
+        const char =
+          isPast || (isWaving && i <= wavePos)
+            ? nextSuffix[i] || ''
+            : currentSuffix[i] || ''
+
+        return (
+          <span
+            key={i}
+            className={cn(
+              'inline-block transition-all duration-75 text-blue-500 dark:text-blue-400',
+              isAtWave && 'scale-105 opacity-40'
+            )}
+          >
+            {char || '\u00A0'}
+          </span>
+        )
+      })}
+    </span>
+  )
+}
+
+function PolySuffixLooped() {
+  const key = useLoop(10000)
+  return <PolySuffix key={key} />
+}
+
+// ─────────────────────────────────────────────
 // Page
 // ─────────────────────────────────────────────
 
@@ -1347,6 +1447,14 @@ export default function MorphDemoPage() {
             description="Matches the real wordmark style. Static &ldquo;polymorph&rdquo; — hover to cycle through action words, leave to settle back."
           >
             <WordmarkHover />
+          </DemoCard>
+
+          <DemoCard
+            number={9}
+            title="Poly + Suffix"
+            description="&ldquo;poly&rdquo; stays static. The suffix morphs through capabilities in blue, settling on &ldquo;morph&rdquo; to complete the brand."
+          >
+            <PolySuffixLooped />
           </DemoCard>
         </div>
       </div>
