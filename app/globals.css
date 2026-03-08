@@ -233,6 +233,24 @@
       opacity: 1;
     }
   }
+  @keyframes content-enter {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes shimmer-gradient {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
   @keyframes blink {
     0%,
     100% {
@@ -270,6 +288,33 @@
 
 @utility shimmer-invert {
   animation: shimmer-text 1.2s ease-in-out infinite reverse;
+}
+
+@utility animate-content-enter {
+  animation: content-enter 0.4s ease-out both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+
+@utility skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    color-mix(in oklch, var(--muted), var(--foreground) 5%) 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-gradient 1.8s ease-in-out infinite;
+}
+
+/* Respect user's motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Animation utilities for dropdown menu */

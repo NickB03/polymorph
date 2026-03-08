@@ -8,7 +8,7 @@ import { UseChatHelpers } from '@ai-sdk/react'
 import { ArrowUp, ChevronDown, Square } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { SuggestionCategory, UploadedFile } from '@/lib/types'
+import { UploadedFile } from '@/lib/types'
 import type { UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 import { cn, isChatLoading } from '@/lib/utils'
 import { syncModelType } from '@/lib/utils/model-type'
@@ -132,26 +132,32 @@ export function ChatPanel({
         messages.length > 0 ? 'sticky bottom-0 px-2 pb-4' : 'px-6'
       )}
     >
-      {messages.length === 0 && (
-        <div className="mb-6 flex flex-col items-center gap-4">
-          <Image
-            src="/images/polymorph_wordmark_lightmode_black.png"
-            alt="Polymorph"
-            width={2156}
-            height={396}
-            className="h-8 md:h-10 w-auto opacity-90 block dark:hidden"
-            priority
-          />
-          <Image
-            src="/images/polymorph-wordmark.png"
-            alt="Polymorph"
-            width={2156}
-            height={396}
-            className="h-8 md:h-10 w-auto opacity-90 hidden dark:block"
-            priority
-          />
-        </div>
-      )}
+      {/* Wordmark - always rendered, fades out when messages appear */}
+      <div
+        className={cn(
+          'transition-all duration-500 ease-out overflow-hidden',
+          messages.length === 0
+            ? 'mb-6 flex flex-col items-center gap-4 opacity-100 max-h-20 scale-100'
+            : 'mb-0 flex flex-col items-center gap-4 opacity-0 max-h-0 scale-95 pointer-events-none'
+        )}
+      >
+        <Image
+          src="/images/polymorph_wordmark_lightmode_black.png"
+          alt="Polymorph"
+          width={2156}
+          height={396}
+          className="h-8 md:h-10 w-auto opacity-90 block dark:hidden"
+          priority
+        />
+        <Image
+          src="/images/polymorph-wordmark.png"
+          alt="Polymorph"
+          width={2156}
+          height={396}
+          className="h-8 md:h-10 w-auto opacity-90 hidden dark:block"
+          priority
+        />
+      </div>
       {uploadedFiles.length > 0 && (
         <UploadedFileList files={uploadedFiles} onRemove={handleFileRemove} />
       )}
@@ -162,7 +168,9 @@ export function ChatPanel({
           setIsInputFocused(false)
           inputRef.current?.blur()
         }}
-        className={cn('max-w-full md:max-w-3xl w-full mx-auto relative')}
+        className={cn(
+          'max-w-full md:max-w-3xl w-full mx-auto relative transition-all duration-500 ease-out'
+        )}
       >
         {/* Scroll to bottom button - only shown when showScrollToBottomButton is true */}
         {showScrollToBottomButton && messages.length > 0 && (

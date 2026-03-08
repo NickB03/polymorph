@@ -514,7 +514,7 @@ export function Chat({
   return (
     <div
       className={cn(
-        'relative flex h-full min-w-0 flex-1 flex-col',
+        'relative flex h-full min-w-0 flex-1 flex-col transition-all duration-500 ease-out',
         messages.length === 0 ? 'items-center justify-center pb-[5vh]' : ''
       )}
       data-testid="full-chat"

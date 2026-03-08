@@ -340,7 +340,10 @@ export function ResearchProcessSection({
         const isParentOpen = parentOpenStates[parentId] ?? false
 
         const segmentContent = (
-          <div className={containerClass}>
+          <div
+            className={cn(containerClass, 'animate-content-enter')}
+            style={{ '--enter-delay': `${sidx * 75}ms` } as React.CSSProperties}
+          >
             {groups.map((grp, gidx) => (
               <div key={`${messageId}-grp-${sidx}-${gidx}`}>
                 {grp.map((part, pidx) => {
