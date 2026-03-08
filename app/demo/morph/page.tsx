@@ -1320,9 +1320,18 @@ function PolySuffix() {
             <span
               key={i}
               className={cn(
-                'inline-block w-[0.65em] text-center transition-all duration-75 text-blue-500 dark:text-blue-400',
-                isAtWave && 'scale-105 opacity-40'
+                'inline-block w-[0.65em] text-center transition-all duration-100',
+                settled
+                  ? 'text-blue-500 dark:text-blue-400'
+                  : isAtWave
+                    ? 'scale-110 text-blue-500 dark:text-blue-400'
+                    : isPast
+                      ? 'text-neutral-900 dark:text-neutral-100'
+                      : 'text-neutral-500 dark:text-neutral-400'
               )}
+              style={{
+                filter: isAtWave ? 'blur(0.5px)' : 'none'
+              }}
             >
               {char || '\u00A0'}
             </span>
