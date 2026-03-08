@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils'
 
 import { useSidebar } from '@/components/ui/sidebar'
 
-import { Button } from './ui/button'
 import { FeedbackModal } from './feedback-modal'
 // import { Button } from './ui/button' // No longer needed directly here for Sign In button
 import GuestMenu from './guest-menu' // Import the new GuestMenu component
@@ -39,20 +38,22 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
         <div></div>
 
         <div className="flex items-center gap-2">
-          {user ? <UserMenu user={user} /> : <GuestMenu />}
+          {user ? (
+            <UserMenu
+              user={user}
+              onFeedbackClick={
+                isRootPage ? () => setFeedbackOpen(true) : undefined
+              }
+            />
+          ) : (
+            <GuestMenu
+              onFeedbackClick={
+                isRootPage ? () => setFeedbackOpen(true) : undefined
+              }
+            />
+          )}
         </div>
       </header>
-
-      {isRootPage && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="fixed bottom-4 right-4 z-10"
-          onClick={() => setFeedbackOpen(true)}
-        >
-          Feedback
-        </Button>
-      )}
 
       {isRootPage && (
         <FeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />

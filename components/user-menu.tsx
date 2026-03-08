@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 
 import { User } from '@supabase/supabase-js'
-import { Link2, LogOut, Palette } from 'lucide-react'
+import { Link2, LogOut, MessageSquare, Palette } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/client'
 
@@ -26,9 +26,10 @@ import { ThemeMenuItems } from './theme-menu-items'
 
 interface UserMenuProps {
   user: User
+  onFeedbackClick?: () => void
 }
 
-export default function UserMenu({ user }: UserMenuProps) {
+export default function UserMenu({ user, onFeedbackClick }: UserMenuProps) {
   const router = useRouter()
   const userName =
     user.user_metadata?.full_name || user.user_metadata?.name || 'User'
@@ -102,6 +103,12 @@ export default function UserMenu({ user }: UserMenuProps) {
             <ExternalLinkItems />
           </DropdownMenuSubContent>
         </DropdownMenuSub>
+        {onFeedbackClick ? (
+          <DropdownMenuItem onClick={onFeedbackClick}>
+            <MessageSquare className="mr-2 h-4 w-4" />
+            <span>Feedback</span>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />

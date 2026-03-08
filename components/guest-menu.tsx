@@ -2,7 +2,14 @@
 
 import Link from 'next/link'
 
-import { Link2, LogIn, Palette, Settings2, UserPlus } from 'lucide-react'
+import {
+  Link2,
+  LogIn,
+  MessageSquare,
+  Palette,
+  Settings2,
+  UserPlus
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -19,7 +26,11 @@ import {
 import { ExternalLinkItems } from './external-link-items'
 import { ThemeMenuItems } from './theme-menu-items'
 
-export default function GuestMenu() {
+interface GuestMenuProps {
+  onFeedbackClick?: () => void
+}
+
+export default function GuestMenu({ onFeedbackClick }: GuestMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -60,6 +71,12 @@ export default function GuestMenu() {
             <ExternalLinkItems />
           </DropdownMenuSubContent>
         </DropdownMenuSub>
+        {onFeedbackClick ? (
+          <DropdownMenuItem onClick={onFeedbackClick}>
+            <MessageSquare className="mr-2 h-4 w-4" />
+            <span>Feedback</span>
+          </DropdownMenuItem>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )
