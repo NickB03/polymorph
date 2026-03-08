@@ -1246,6 +1246,18 @@ const SUFFIX_WORDS = [
 
 const SUFFIX_MAX_LEN = Math.max(...SUFFIX_WORDS.map(w => w.length))
 
+/**
+ * Speed curve: fast at edges, fastest at middle, slow at start/end
+ * Creates a bell-curve feel — ramps up then ramps down
+ */
+function getSuffixHoldDelay(index: number, total: number): number {
+  // 0 at edges → 1 at center
+  const center = (total - 1) / 2
+  const distFromCenter = Math.abs(index - center) / center // 1 at edges, 0 at center
+  // Slow (300ms) at edges, fast (60ms) at center
+  return 60 + distFromCenter * distFromCenter * 280
+}
+
 function PolySuffix() {
   const [currentSuffix, setCurrentSuffix] = useState(SUFFIX_WORDS[0] as string)
   const [nextSuffix, setNextSuffix] = useState(SUFFIX_WORDS[0] as string)
@@ -1263,9 +1275,7 @@ function PolySuffix() {
       return
     }
 
-    // Hold current word, then wave to next
-    const holdDelay =
-      wordIndex === 0 ? 600 : 150 + (wordIndex / SUFFIX_WORDS.length) * 400
+    const holdDelay = getSuffixHoldDelay(wordIndex, SUFFIX_WORDS.length)
 
     const timeout = setTimeout(() => {
       const target = SUFFIX_WORDS[nextIndex] as string
@@ -1284,7 +1294,7 @@ function PolySuffix() {
           setNextSuffix(target)
           setWordIndex(nextIndex)
         }
-      }, 30)
+      }, 25)
 
       return () => clearInterval(interval)
     }, holdDelay)
@@ -1293,34 +1303,38 @@ function PolySuffix() {
   }, [wordIndex, settled])
 
   return (
-    <span className="select-none text-[2.5rem] leading-none font-medium tracking-[0.08em]">
-      <span className="text-neutral-900 dark:text-neutral-100">poly</span>
-      {Array.from({ length: SUFFIX_MAX_LEN }, (_, i) => {
-        const isPast = isWaving && i < wavePos
-        const isAtWave = isWaving && (i === wavePos || i === wavePos - 1)
-        const char =
-          isPast || (isWaving && i <= wavePos)
-            ? nextSuffix[i] || ''
-            : currentSuffix[i] || ''
+    <span className="inline-flex select-none text-[2.5rem] leading-none font-medium tracking-[0.08em]">
+      <span className="shrink-0 text-neutral-900 dark:text-neutral-100">
+        poly
+      </span>
+      <span style={{ width: `${SUFFIX_MAX_LEN * 0.65}em` }}>
+        {Array.from({ length: SUFFIX_MAX_LEN }, (_, i) => {
+          const isPast = isWaving && i < wavePos
+          const isAtWave = isWaving && (i === wavePos || i === wavePos - 1)
+          const char =
+            isPast || (isWaving && i <= wavePos)
+              ? nextSuffix[i] || ''
+              : currentSuffix[i] || ''
 
-        return (
-          <span
-            key={i}
-            className={cn(
-              'inline-block transition-all duration-75 text-blue-500 dark:text-blue-400',
-              isAtWave && 'scale-105 opacity-40'
-            )}
-          >
-            {char || '\u00A0'}
-          </span>
-        )
-      })}
+          return (
+            <span
+              key={i}
+              className={cn(
+                'inline-block w-[0.65em] text-center transition-all duration-75 text-blue-500 dark:text-blue-400',
+                isAtWave && 'scale-105 opacity-40'
+              )}
+            >
+              {char || '\u00A0'}
+            </span>
+          )
+        })}
+      </span>
     </span>
   )
 }
 
 function PolySuffixLooped() {
-  const key = useLoop(10000)
+  const key = useLoop(8000)
   return <PolySuffix key={key} />
 }
 
