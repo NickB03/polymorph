@@ -1254,8 +1254,8 @@ function getSuffixHoldDelay(index: number, total: number): number {
   // 0 at edges → 1 at center
   const center = (total - 1) / 2
   const distFromCenter = Math.abs(index - center) / center // 1 at edges, 0 at center
-  // Slow (300ms) at edges, fast (60ms) at center
-  return 60 + distFromCenter * distFromCenter * 280
+  // Slow (1200ms) at edges, fast (200ms) at center — matches 5d pacing
+  return 200 + distFromCenter * distFromCenter * 1000
 }
 
 function PolySuffix() {
@@ -1286,7 +1286,7 @@ function PolySuffix() {
       const interval = setInterval(() => {
         pos++
         setWavePos(pos)
-        if (pos > SUFFIX_MAX_LEN + 1) {
+        if (pos > SUFFIX_MAX_LEN + 2) {
           clearInterval(interval)
           setIsWaving(false)
           setWavePos(-1)
@@ -1294,7 +1294,7 @@ function PolySuffix() {
           setNextSuffix(target)
           setWordIndex(nextIndex)
         }
-      }, 25)
+      }, 80)
 
       return () => clearInterval(interval)
     }, holdDelay)
@@ -1343,7 +1343,7 @@ function PolySuffix() {
 }
 
 function PolySuffixLooped() {
-  const key = useLoop(8000)
+  const key = useLoop(18000)
   return <PolySuffix key={key} />
 }
 
