@@ -20,7 +20,10 @@ export function SearchSkeleton() {
           key={index}
           className="w-[calc(50%-0.5rem)] md:w-[calc(25%-0.5rem)]"
         >
-          <Skeleton className="h-20 w-full" />
+          <Skeleton
+            className="h-20 w-full"
+            style={{ animationDelay: `${index * 100}ms` }}
+          />
         </div>
       ))}
     </div>

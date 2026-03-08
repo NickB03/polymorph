@@ -151,7 +151,7 @@ export function ActionButtons({
           )}
         >
           <div className="flex flex-wrap justify-center gap-2 px-2">
-            {actionCategories.map(category => {
+            {actionCategories.map((category, index) => {
               const Icon = category.icon
               return (
                 <Button
@@ -160,9 +160,14 @@ export function ActionButtons({
                   variant="outline"
                   size="sm"
                   className={cn(
-                    'flex items-center gap-2 whitespace-nowrap rounded-full',
+                    'flex items-center gap-2 whitespace-nowrap rounded-full animate-content-enter',
                     'text-xs sm:text-sm px-3 sm:px-4'
                   )}
+                  style={
+                    {
+                      '--enter-delay': `${index * 60}ms`
+                    } as React.CSSProperties
+                  }
                   onClick={() => handleCategoryClick(category)}
                 >
                   <Icon className="h-3 w-3 sm:h-4 sm:w-4" />

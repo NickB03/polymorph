@@ -221,7 +221,7 @@ export function ChatMessages({
             }
           >
             {/* User message */}
-            <div className="flex flex-col gap-4 mb-4">
+            <div className="flex flex-col gap-4 mb-4 animate-content-enter">
               <RenderMessage
                 message={section.userMessage}
                 messageId={section.userMessage.id}
@@ -249,7 +249,15 @@ export function ChatMessages({
                 messageIndex === section.assistantMessages.length - 1
 
               return (
-                <div key={assistantMessage.id} className="flex flex-col gap-4">
+                <div
+                  key={assistantMessage.id}
+                  className="flex flex-col gap-4 animate-content-enter"
+                  style={
+                    {
+                      '--enter-delay': `${100 + messageIndex * 75}ms`
+                    } as React.CSSProperties
+                  }
+                >
                   <RenderMessage
                     message={assistantMessage}
                     messageId={assistantMessage.id}

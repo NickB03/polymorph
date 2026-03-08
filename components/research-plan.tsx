@@ -59,7 +59,7 @@ export function ResearchPlan({
   if (!output && isStreaming) {
     return (
       <div
-        className="my-2 h-24 animate-pulse rounded-lg bg-muted"
+        className="my-2 h-24 skeleton-shimmer rounded-lg"
         role="status"
         aria-label="Loading research plan"
       />
@@ -114,7 +114,7 @@ export function ResearchPlan({
     )
 
     return (
-      <div className="my-2">
+      <div className="my-2 animate-content-enter">
         <CollapsibleMessage
           role="assistant"
           isCollapsible
@@ -133,7 +133,7 @@ export function ResearchPlan({
   }
 
   return (
-    <div className="my-2">
+    <div className="my-2 animate-content-enter">
       <Plan {...validated} />
     </div>
   )
