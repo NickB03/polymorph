@@ -46,11 +46,13 @@ if (isDevelopment) {
 
 // SSL configuration: Use environment variable to control SSL
 // DATABASE_SSL_DISABLED=true disables SSL completely (for local/Docker PostgreSQL)
-// Default is to enable SSL with certificate verification (for cloud databases like Neon, Supabase)
+// Default is to enable SSL without strict CA verification (standard for managed
+// Postgres providers like Supabase and Neon whose CAs may not be in the Node.js
+// trust store). TLS encryption is still active — only CA chain verification is skipped.
 const sslConfig =
   process.env.DATABASE_SSL_DISABLED === 'true'
     ? false // Disable SSL entirely for local PostgreSQL
-    : { rejectUnauthorized: true } // Enable SSL with verification for cloud DBs
+    : { rejectUnauthorized: false }
 
 const client = postgres(connectionString, {
   ssl: sslConfig,
