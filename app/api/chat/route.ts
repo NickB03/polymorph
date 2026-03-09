@@ -187,7 +187,7 @@ export async function POST(req: Request) {
                 return (
                   typeof p.url === 'string' && typeof p.mediaType === 'string'
                 )
-              return ['reasoning', 'tool-call', 'tool-result'].includes(p.type)
+              return p.type.length > 0
             })
         )
       ) {

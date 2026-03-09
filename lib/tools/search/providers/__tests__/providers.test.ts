@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  BraveSearchProvider,
   createSearchProvider,
   DEFAULT_PROVIDER,
   TavilySearchProvider
@@ -11,13 +12,13 @@ const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
 
 describe('createSearchProvider', () => {
-  it('defaults to tavily', () => {
+  it('defaults to brave', () => {
     const provider = createSearchProvider()
-    expect(provider).toBeInstanceOf(TavilySearchProvider)
+    expect(provider).toBeInstanceOf(BraveSearchProvider)
   })
 
   it('returns the correct DEFAULT_PROVIDER', () => {
-    expect(DEFAULT_PROVIDER).toBe('tavily')
+    expect(DEFAULT_PROVIDER).toBe('brave')
   })
 
   it('creates tavily provider', () => {

@@ -11,7 +11,7 @@ export type SearchProviderType =
   | 'searxng'
   | 'firecrawl'
   | 'brave'
-export const DEFAULT_PROVIDER: SearchProviderType = 'tavily'
+export const DEFAULT_PROVIDER: SearchProviderType = 'brave'
 
 export function createSearchProvider(
   type?: SearchProviderType

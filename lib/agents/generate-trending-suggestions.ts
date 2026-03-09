@@ -112,16 +112,16 @@ export async function generateTrendingSuggestions(): Promise<TrendingSuggestions
     let source: TrendingSuggestionsSource = 'default'
 
     try {
-      context = await getTrendingContextFromTavily()
-      source = 'tavily'
-    } catch (tavilyError) {
-      console.warn(
-        '[Suggestions] Tavily trending fetch failed, falling back to Brave.',
-        tavilyError
-      )
-
       context = await getTrendingContextFromBrave()
       source = 'brave'
+    } catch (braveError) {
+      console.warn(
+        '[Suggestions] Brave trending fetch failed, falling back to Tavily.',
+        braveError
+      )
+
+      context = await getTrendingContextFromTavily()
+      source = 'tavily'
     }
 
     if (!context.trim()) {
