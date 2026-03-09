@@ -13,6 +13,19 @@ const SUFFIX_WORDS = [
 ] as const
 
 const SUFFIX_MAX_LEN = Math.max(...SUFFIX_WORDS.map(w => w.length))
+const FINAL_WORD = SUFFIX_WORDS[SUFFIX_WORDS.length - 1]
+
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(false)
+  useEffect(() => {
+    const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setReduced(mql.matches)
+    const handler = (e: MediaQueryListEvent) => setReduced(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
+  return reduced
+}
 
 function getSuffixHoldDelay(index: number, total: number): number {
   const center = (total - 1) / 2
@@ -21,6 +34,7 @@ function getSuffixHoldDelay(index: number, total: number): number {
 }
 
 function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
+  const reducedMotion = useReducedMotion()
   const [word, setWord] = useState('')
   const [wordKey, setWordKey] = useState(0)
   const [isExiting, setIsExiting] = useState(false)
@@ -30,8 +44,18 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
   const enterDuration = 280
   const exitDuration = 150
 
+  // In reduced-motion mode, skip animation and show final word immediately
   useEffect(() => {
-    if (settled) return
+    if (reducedMotion && !settled) {
+      setWord(FINAL_WORD)
+      setWordKey(1)
+      setWordIndex(SUFFIX_WORDS.length - 1)
+      setSettled(true)
+    }
+  }, [reducedMotion, settled])
+
+  useEffect(() => {
+    if (settled || reducedMotion) return
     const nextIdx = wordIndex + 1
     if (nextIdx >= SUFFIX_WORDS.length) {
       setSettled(true)
@@ -66,7 +90,9 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
     }, holdDelay)
 
     return () => clearTimeout(timeout)
-  }, [wordIndex, settled, staggerMs])
+  }, [wordIndex, settled, staggerMs, reducedMotion])
+
+  const suffixWidth = settled ? `${FINAL_WORD.length}ch` : `${SUFFIX_MAX_LEN}ch`
 
   return (
     <>
@@ -74,9 +100,14 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
         <span className="shrink-0 text-neutral-900 dark:text-neutral-100">
           poly
         </span>
-        <span style={{ minWidth: `${SUFFIX_MAX_LEN}ch` }}>
+        <span
+          style={{
+            minWidth: suffixWidth,
+            transition: settled ? 'min-width 400ms ease-out' : undefined
+          }}
+        >
           {word.split('').map((char, i) => {
-            const isFinal = word === SUFFIX_WORDS[SUFFIX_WORDS.length - 1]
+            const isFinal = word === FINAL_WORD
             const enter = isFinal ? 650 : enterDuration
             const stagger = isFinal ? staggerMs * 2.5 : staggerMs
             return (
@@ -84,11 +115,13 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
                 key={`${wordKey}-${i}`}
                 className="inline-block text-blue-600 dark:text-blue-400"
                 style={{
-                  animation: isExiting
-                    ? `morphFluidExit ${exitDuration}ms ease-in ${staggerMs * i}ms forwards`
-                    : word
-                      ? `morphFluidEnter ${enter}ms ease-out ${stagger * i}ms both`
-                      : undefined
+                  animation: reducedMotion
+                    ? undefined
+                    : isExiting
+                      ? `morphFluidExit ${exitDuration}ms ease-in ${staggerMs * i}ms forwards`
+                      : word
+                        ? `morphFluidEnter ${enter}ms ease-out ${stagger * i}ms both`
+                        : undefined
                 }}
               >
                 {char}
