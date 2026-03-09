@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Textarea from 'react-textarea-autosize'
-import Image from 'next/image'
 
 import { UseChatHelpers } from '@ai-sdk/react'
 import { ArrowUp, ChevronDown, Square } from 'lucide-react'
@@ -20,6 +19,7 @@ import { Button } from './ui/button'
 import { ActionButtons } from './action-buttons'
 import { FileUploadButton } from './file-upload-button'
 import { ModelTypeSelector } from './model-type-selector'
+import { PolymorphWordmark } from './polymorph-wordmark'
 import { SearchModeSelector } from './search-mode-selector'
 import { UploadedFileList } from './uploaded-file-list'
 
@@ -141,22 +141,7 @@ export function ChatPanel({
             : 'mb-0 flex flex-col items-center gap-4 opacity-0 max-h-0 scale-95 pointer-events-none'
         )}
       >
-        <Image
-          src="/images/polymorph_wordmark_lightmode_black.png"
-          alt="Polymorph"
-          width={2156}
-          height={396}
-          className="h-8 md:h-10 w-auto opacity-90 block dark:hidden"
-          priority
-        />
-        <Image
-          src="/images/polymorph-wordmark.png"
-          alt="Polymorph"
-          width={2156}
-          height={396}
-          className="h-8 md:h-10 w-auto opacity-90 hidden dark:block"
-          priority
-        />
+        <PolymorphWordmark className="text-[2rem] md:text-[2.5rem]" />
       </div>
       {uploadedFiles.length > 0 && (
         <UploadedFileList files={uploadedFiles} onRemove={handleFileRemove} />
