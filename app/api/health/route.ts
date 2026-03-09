@@ -11,28 +11,27 @@ export async function GET() {
 
   try {
     // 5-second timeout for DB check
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 5000)
-
-    try {
-      await Promise.race([
-        db.execute(sql`SELECT 1`),
-        new Promise((_, reject) => {
-          controller.signal.addEventListener('abort', () =>
-            reject(new Error('Database health check timed out after 5s'))
-          )
-        })
-      ])
-    } finally {
-      clearTimeout(timeout)
-    }
+    await Promise.race([
+      db.execute(sql`SELECT 1`),
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Database health check timed out after 5s')),
+          5000
+        )
+      )
+    ])
 
     return NextResponse.json(
       { status: 'ok', timestamp, db: 'connected' },
       { status: 200 }
     )
   } catch (error) {
-    const dbError = error instanceof Error ? error.message : 'Unknown error'
+    const dbError =
+      process.env.NODE_ENV === 'development'
+        ? error instanceof Error
+          ? error.message
+          : 'Unknown error'
+        : 'unreachable'
 
     return NextResponse.json(
       { status: 'error', timestamp, db: 'error', dbError },
