@@ -92,25 +92,19 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
     return () => clearTimeout(timeout)
   }, [wordIndex, settled, staggerMs, reducedMotion])
 
-  // Offset the entire wordmark so the *visible* text is centered,
-  // not the box (which reserves space for the longest word).
-  const wordLen = word.length || SUFFIX_MAX_LEN
-  const centerOffset = (SUFFIX_MAX_LEN - wordLen) / 2
-
   return (
     <>
-      <span
-        className="inline-flex select-none leading-none font-medium"
-        style={{
-          transform:
-            centerOffset > 0 ? `translateX(${centerOffset}ch)` : undefined,
-          transition: 'transform 300ms ease-out'
-        }}
-      >
+      <span className="inline-flex select-none leading-none font-medium">
         <span className="shrink-0 text-neutral-900 dark:text-neutral-100">
           poly
         </span>
-        <span style={{ minWidth: `${SUFFIX_MAX_LEN}ch` }}>
+        <span
+          style={{
+            minWidth: `${SUFFIX_MAX_LEN}ch`,
+            display: 'inline-flex',
+            justifyContent: 'center'
+          }}
+        >
           {word.split('').map((char, i) => {
             const isFinal = word === FINAL_WORD
             const enter = isFinal ? 650 : enterDuration
@@ -118,7 +112,7 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
             return (
               <span
                 key={`${wordKey}-${i}`}
-                className="inline-block text-blue-600 dark:text-blue-400"
+                className="text-blue-600 dark:text-blue-400"
                 style={{
                   animation: reducedMotion
                     ? undefined
