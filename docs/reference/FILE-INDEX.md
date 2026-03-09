@@ -197,18 +197,17 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 
 ### Process & Research Components
 
-| File                                      | Purpose                                                                        |
-| ----------------------------------------- | ------------------------------------------------------------------------------ |
-| `components/research-process-section.tsx` | Renders the multi-step research process (plan, search, fetch steps)            |
-| `components/process-header.tsx`           | Header for research process sections with step count                           |
-| `components/process-rail.tsx`             | Vertical rail UI showing research step progression                             |
-| `components/reasoning-section.tsx`        | Renders model reasoning/thinking output                                        |
-| `components/tool-badge.tsx`               | Small badge showing tool name during invocation                                |
-| `components/tool-section.tsx`             | Routes tool invocations to search, fetch, question, or todo section components |
-| `components/tool-todo-display.tsx`        | Renders todo/task list tool output                                             |
-| `components/todo-list-content.tsx`        | Renders todo list items with status indicators                                 |
-| `components/dynamic-tool-display.tsx`     | Renders dynamic/MCP tool invocations via the tool UI registry                  |
-| `components/question-confirmation.tsx`    | Renders the interactive question tool with selectable options                  |
+| File                                      | Purpose                                                             |
+| ----------------------------------------- | ------------------------------------------------------------------- |
+| `components/research-process-section.tsx` | Renders the multi-step research process (plan, search, fetch steps) |
+| `components/process-header.tsx`           | Header for research process sections with step count                |
+| `components/process-rail.tsx`             | Vertical rail UI showing research step progression                  |
+| `components/reasoning-section.tsx`        | Renders model reasoning/thinking output                             |
+| `components/tool-badge.tsx`               | Small badge showing tool name during invocation                     |
+| `components/tool-section.tsx`             | Routes tool invocations to search or fetch section components       |
+| `components/tool-todo-display.tsx`        | Renders todo/task list tool output                                  |
+| `components/todo-list-content.tsx`        | Renders todo list items with status indicators                      |
+| `components/dynamic-tool-display.tsx`     | Renders dynamic/MCP tool invocations via the tool UI registry       |
 
 ### File & Upload Components
 
@@ -471,7 +470,6 @@ shadcn/ui-based primitives and custom UI components.
 | ------------------------ | -------------------------------------------------------------------------- |
 | `lib/schema/search.tsx`  | Zod schema for search tool input (query, type, content_types, max_results) |
 | `lib/schema/fetch.tsx`   | Zod schema for fetch tool input (url, type)                                |
-| `lib/schema/question.ts` | Zod schema for question tool input (question, options, allowInput)         |
 | `lib/schema/related.tsx` | Zod schema for related questions output (array of 3 questions)             |
 
 ### Types

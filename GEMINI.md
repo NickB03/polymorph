@@ -13,7 +13,7 @@ Polymorph is an AI platform with a generative UI. It provides a sophisticated ch
 - **Auth:** Supabase Auth
 - **Storage:** Supabase Storage
 - **Caching/Rate Limiting:** Upstash Redis
-- **Search:** Tavily (Primary), Brave (Multimedia)
+- **Search:** Tavily (primary), Brave (multimedia), Exa, SearXNG, Firecrawl
 - **AI Providers:** Google (Gemini 3 Flash), xAI (Grok 4.1 Fast Reasoning) via Vercel AI Gateway
 
 ## Architectural Patterns
@@ -48,7 +48,7 @@ Polymorph is an AI platform with a generative UI. It provides a sophisticated ch
 
 - `app/api/chat/route.ts`: Main entry point for AI chat interactions.
 - `lib/agents/researcher.ts`: Core research logic using `ToolLoopAgent`.
-- `lib/tools/search.ts`: Integration with Tavily and Brave.
+- `lib/tools/search.ts`: Integration with Tavily, Brave, Exa, SearXNG, and Firecrawl.
 - `lib/db/schema.ts`: Database schema definition.
 - `next.config.mjs`: Next.js configuration (image remote patterns).
 - `docs/architecture/DECISIONS.md`: Records architectural decisions for Phase 0.
