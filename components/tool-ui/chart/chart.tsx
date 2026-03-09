@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useMemo } from 'react'
 
+import type { ActiveDotProps } from 'recharts'
 import {
   Bar,
   BarChart,
@@ -116,8 +117,13 @@ export const Chart = memo(function Chart({
               dataKey={s.key}
               fill={chartConfig[s.key].color}
               radius={4}
-              onClick={(data: any) =>
-                handleDataPointClick(s.key, s.label, data.payload, data.index)
+              onClick={(data, index) =>
+                handleDataPointClick(
+                  s.key,
+                  s.label,
+                  data.payload as Record<string, unknown>,
+                  index
+                )
               }
               cursor={onDataPointClick ? 'pointer' : undefined}
             />
@@ -135,16 +141,20 @@ export const Chart = memo(function Chart({
               activeDot={{
                 r: 6,
                 cursor: onDataPointClick ? 'pointer' : undefined,
-                // Recharts types are incorrect - onClick receives (event, dotData) at runtime
-
-                onClick: ((_: unknown, dotData: any) => {
+                onClick: ((
+                  _event: unknown,
+                  dotData: {
+                    payload: Record<string, unknown>
+                    index: number
+                  }
+                ) => {
                   handleDataPointClick(
                     s.key,
                     s.label,
                     dotData.payload,
                     dotData.index
                   )
-                }) as any
+                }) as unknown as ActiveDotProps['onClick']
               }}
             />
           ))}

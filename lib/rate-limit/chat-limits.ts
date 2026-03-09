@@ -1,9 +1,19 @@
 import { isCloudDeployment } from '@/lib/utils'
 import { perfLog } from '@/lib/utils/perf-logging'
 
+import { checkMemoryLimit } from './memory-limiter'
 import { getRedis } from './redis'
 
-const DAILY_CHAT_LIMIT = 100
+const DEFAULT_DAILY_CHAT_LIMIT = 100
+
+function getDailyChatLimit(): number {
+  const raw = process.env.DAILY_CHAT_LIMIT
+  const parsed = raw ? Number(raw) : DEFAULT_DAILY_CHAT_LIMIT
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_DAILY_CHAT_LIMIT
+  }
+  return Math.floor(parsed)
+}
 
 /**
  * Get seconds until next midnight UTC
@@ -36,9 +46,13 @@ async function checkOverallChatLimit(userId: string): Promise<{
   }
 
   const redis = getRedis()
+
+  // Redis not configured (e.g. local dev without Upstash) — allow all
   if (!redis) {
     return { allowed: true, remaining: Infinity, resetAt: 0 }
   }
+
+  const limit = getDailyChatLimit()
 
   try {
     const dateKey = new Date().toISOString().split('T')[0] // YYYY-MM-DD
@@ -56,17 +70,23 @@ async function checkOverallChatLimit(userId: string): Promise<{
       await redis.expire(key, secondsUntilMidnight)
     }
 
-    const remaining = Math.max(0, DAILY_CHAT_LIMIT - count)
+    const remaining = Math.max(0, limit - count)
     const resetAt = getNextMidnightTimestamp()
 
     return {
-      allowed: count <= DAILY_CHAT_LIMIT,
+      allowed: count <= limit,
       remaining,
       resetAt
     }
   } catch (error) {
-    console.error('Rate limit check failed:', error)
-    return { allowed: true, remaining: Infinity, resetAt: 0 }
+    // Redis configured but unreachable — fail closed with in-memory fallback
+    console.warn('Redis unreachable, using in-memory rate limiter:', error)
+    const fallback = checkMemoryLimit(`chat:${userId}`)
+    return {
+      allowed: fallback.allowed,
+      remaining: fallback.remaining,
+      resetAt: fallback.resetAt
+    }
   }
 }
 
@@ -79,6 +99,8 @@ export async function checkAndEnforceOverallChatLimit(
 ): Promise<Response | null> {
   const result = await checkOverallChatLimit(userId)
 
+  const limit = getDailyChatLimit()
+
   if (!result.allowed) {
     return new Response(
       JSON.stringify({
@@ -86,13 +108,13 @@ export async function checkAndEnforceOverallChatLimit(
         error: 'Daily chat limit reached. Please try again tomorrow.',
         remaining: 0,
         resetAt: result.resetAt,
-        limit: DAILY_CHAT_LIMIT
+        limit
       }),
       {
         status: 429,
         headers: {
           'Content-Type': 'application/json',
-          'X-RateLimit-Limit': String(DAILY_CHAT_LIMIT),
+          'X-RateLimit-Limit': String(limit),
           'X-RateLimit-Remaining': '0',
           'X-RateLimit-Reset': String(result.resetAt)
         }
@@ -100,9 +122,7 @@ export async function checkAndEnforceOverallChatLimit(
     )
   }
 
-  perfLog(
-    `Chat usage: ${DAILY_CHAT_LIMIT - result.remaining}/${DAILY_CHAT_LIMIT}`
-  )
+  perfLog(`Chat usage: ${limit - result.remaining}/${limit}`)
 
   return null
 }

@@ -30,6 +30,10 @@ export async function proxy(request: NextRequest) {
     })
   }
 
+  // Add request correlation ID
+  const requestId = crypto.randomUUID()
+  response.headers.set('x-request-id', requestId)
+
   // Add request information to response headers
   response.headers.set('x-url', request.url)
   response.headers.set('x-host', host)

@@ -1,7 +1,11 @@
 import { registerOTel } from '@vercel/otel'
 import { LangfuseExporter } from 'langfuse-vercel'
 
+import { validateEnv } from '@/lib/config/env'
+
 export async function register() {
+  validateEnv()
+
   registerOTel({
     serviceName: 'polymorph',
     traceExporter: new LangfuseExporter()
