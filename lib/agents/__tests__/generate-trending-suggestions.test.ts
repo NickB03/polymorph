@@ -45,31 +45,13 @@ describe('generateTrendingSuggestions', () => {
     mockGetModel.mockReturnValue('mock-model')
   })
 
-  it('uses Tavily successfully when available', async () => {
-    mockTavilySearch.mockResolvedValue({
-      results: [{ title: 'Title', content: 'Context', url: 'https://a.com' }],
-      query: 'q',
-      images: []
-    })
-    mockGenerateObject.mockResolvedValue({
-      object: DEFAULT_SUGGESTIONS
-    })
-
-    const result = await generateTrendingSuggestions()
-
-    expect(result.source).toBe('tavily')
-    expect(mockTavilySearch).toHaveBeenCalled()
-    expect(mockBraveSearch).not.toHaveBeenCalled()
-  })
-
-  it('falls back to Brave when Tavily fails', async () => {
-    mockTavilySearch.mockRejectedValue(new Error('Tavily API error 432: limit'))
+  it('uses Brave successfully when available', async () => {
     mockBraveSearch.mockResolvedValue({
       results: [
         {
-          title: 'Fallback title',
-          description: 'Fallback description',
-          url: 'https://b.com'
+          title: 'Title',
+          description: 'Context',
+          url: 'https://a.com'
         }
       ],
       query: 'q',
@@ -83,6 +65,30 @@ describe('generateTrendingSuggestions', () => {
 
     expect(result.source).toBe('brave')
     expect(mockBraveSearch).toHaveBeenCalled()
+    expect(mockTavilySearch).not.toHaveBeenCalled()
+  })
+
+  it('falls back to Tavily when Brave fails', async () => {
+    mockBraveSearch.mockRejectedValue(new Error('Brave API error'))
+    mockTavilySearch.mockResolvedValue({
+      results: [
+        {
+          title: 'Fallback title',
+          content: 'Fallback context',
+          url: 'https://b.com'
+        }
+      ],
+      query: 'q',
+      images: []
+    })
+    mockGenerateObject.mockResolvedValue({
+      object: DEFAULT_SUGGESTIONS
+    })
+
+    const result = await generateTrendingSuggestions()
+
+    expect(result.source).toBe('tavily')
+    expect(mockTavilySearch).toHaveBeenCalled()
   })
 
   it('returns static defaults when all providers fail', async () => {
