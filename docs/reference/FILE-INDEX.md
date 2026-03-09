@@ -228,16 +228,16 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 
 ### Artifact Components
 
-| File                                              | Purpose                                                                     |
-| ------------------------------------------------- | --------------------------------------------------------------------------- |
-| `components/artifact/artifact-root.tsx`           | Root wrapper providing ArtifactProvider and container                       |
-| `components/artifact/artifact-context.tsx`        | React context for artifact panel state (open/close, active part)            |
-| `components/artifact/artifact-content.tsx`        | Part type dispatcher routing to search, reasoning, todo, or generic content |
-| `components/artifact/chat-artifact-container.tsx` | Resizable split layout between chat and artifact/inspector panel            |
-| `components/artifact/tool-invocation-content.tsx` | Tool part dispatcher for search, fetch, and question tool artifacts         |
-| `components/artifact/search-artifact-content.tsx` | Renders search results, images, and videos in the artifact panel            |
-| `components/artifact/reasoning-content.tsx`       | Renders model reasoning text in the artifact panel                          |
-| `components/artifact/todo-invocation-content.tsx` | Renders todo list output in the artifact panel                              |
+| File                                              | Purpose                                                                          |
+| ------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `components/artifact/artifact-root.tsx`           | Root wrapper providing ArtifactProvider and container                            |
+| `components/artifact/artifact-context.tsx`        | React context for artifact panel state (open/close, active part)                 |
+| `components/artifact/artifact-content.tsx`        | Part type dispatcher routing to search, reasoning, todo, or generic content      |
+| `components/artifact/chat-artifact-container.tsx` | Resizable split layout between chat and artifact/inspector panel                 |
+| `components/artifact/tool-invocation-content.tsx` | Tool part dispatcher routing search tool artifacts (default fallback for others) |
+| `components/artifact/search-artifact-content.tsx` | Renders search results, images, and videos in the artifact panel                 |
+| `components/artifact/reasoning-content.tsx`       | Renders model reasoning text in the artifact panel                               |
+| `components/artifact/todo-invocation-content.tsx` | Renders todo list output in the artifact panel                                   |
 
 ### Inspector Components
 
