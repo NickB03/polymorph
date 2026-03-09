@@ -18,8 +18,8 @@ Polymorph is an AI platform with a generative UI. It provides a sophisticated ch
 
 ## Architectural Patterns
 
-- **Agents:** Located in `lib/agents/`. The `researcher.ts` uses `ToolLoopAgent` to orchestrate multi-step tool calls. It supports "Quick" and "Adaptive" modes.
-- **Tools:** Located in `lib/tools/`. Core tools include `search`, `fetch`, `askQuestion`, and `todoWrite`.
+- **Agents:** Located in `lib/agents/`. The `researcher.ts` uses `ToolLoopAgent` to orchestrate multi-step tool calls. It supports "Chat" (20 steps) and "Research" (50 steps) modes.
+- **Tools:** Located in `lib/tools/`. Core tools include `search`, `fetch`, and `todoWrite`. Display tools include `displayPlan`, `displayTable`, `displayChart`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayCallout`, and `displayTimeline`.
 - **Database Schema:** Defined in `lib/db/schema.ts`.
   - `chats`: Stores chat metadata.
   - `messages`: Stores individual messages in a chat.
@@ -51,4 +51,4 @@ Polymorph is an AI platform with a generative UI. It provides a sophisticated ch
 - `lib/tools/search.ts`: Integration with Tavily and Brave.
 - `lib/db/schema.ts`: Database schema definition.
 - `next.config.mjs`: Next.js configuration (image remote patterns).
-- `docs/DECISIONS.md`: Records architectural decisions for Phase 0.
+- `docs/architecture/DECISIONS.md`: Records architectural decisions for Phase 0.

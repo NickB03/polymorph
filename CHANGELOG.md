@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - AI platform with generative UI
-- Researcher agent with quick mode (20 steps) and adaptive mode (50 steps)
+- Researcher agent with chat mode (20 steps) and research mode (50 steps)
 - Multi-provider search via Tavily (primary) and Brave (multimedia)
 - Web content extraction with fetch tool
 - Interactive question and todo/planning tools

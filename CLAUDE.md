@@ -65,7 +65,7 @@ Components render different message part types: `answer-section.tsx`, `search-se
 
 ### Hooks
 
-Custom React hooks in `hooks/`: `use-activity-feed`, `use-auth-check`, `use-current-user`, `use-file-dropzone`, `use-mobile`, `use-trending-suggestions`.
+Custom React hooks in `hooks/`: `use-activity-feed`, `use-auth-check`, `use-content-entrance`, `use-current-user`, `use-file-dropzone`, `use-mobile`, `use-trending-suggestions`. Additional hooks in `lib/hooks/`: `use-copy-to-clipboard`, `use-media-query`.
 
 ## Code Conventions
 

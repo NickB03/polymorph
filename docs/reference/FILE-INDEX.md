@@ -125,6 +125,8 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | `app/api/feedback/route.ts`        | Feedback endpoint (POST); records thumbs up/down scores to Langfuse and updates message metadata                                                    |
 | `app/api/upload/route.ts`          | File upload endpoint (POST); validates file type/size and uploads to Supabase Storage                                                               |
 | `app/api/advanced-search/route.ts` | SearXNG advanced search endpoint (POST); performs cached deep-crawl searches with relevance scoring                                                 |
+| `app/api/suggestions/route.ts`     | Trending suggestions endpoint; returns generated topic suggestions for the homepage                                                                 |
+| `app/api/health/route.ts`          | Health check endpoint; returns server status for monitoring and load balancers                                                                      |
 
 ---
 
@@ -396,6 +398,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/agents/researcher.ts`                       | Creates the ToolLoopAgent with search/fetch/display tools; configures Chat (20 steps) and Research (50 steps) modes |
 | `lib/agents/title-generator.ts`                  | Generates concise 3-5 word chat titles using an LLM                                                                 |
 | `lib/agents/generate-related-questions.ts`       | Streams 3 follow-up question suggestions using structured output                                                    |
+| `lib/agents/generate-trending-suggestions.ts`    | Generates trending topic suggestions for the homepage                                                               |
 | `lib/agents/prompts/search-mode-prompts.ts`      | System prompts for Chat mode and Research mode search behaviors                                                     |
 | `lib/agents/prompts/related-questions-prompt.ts` | System prompt for related question generation                                                                       |
 
@@ -405,14 +408,14 @@ shadcn/ui-based primitives and custom UI components.
 | ----------------------------------- | ------------------------------------------------------------------------------------------------ |
 | `lib/tools/search.ts`               | Multi-provider search tool with streaming progress; supports general and optimized search types  |
 | `lib/tools/fetch.ts`                | Web content extraction tool; supports regular HTML fetch and API-based extraction (Jina, Tavily) |
-| `lib/tools/question.ts`             | Clarifying question tool; presents options to the user for frontend confirmation                 |
 | `lib/tools/todo.ts`                 | Task list management tool; creates and updates structured todo items                             |
+| `lib/tools/display-callout.ts`      | Display tool that renders a styled callout box with variant-specific icons and colors            |
+| `lib/tools/display-chart.ts`        | Display tool that renders bar and line charts                                                    |
 | `lib/tools/display-citations.ts`    | Display tool that renders a formatted citation list                                              |
 | `lib/tools/display-link-preview.ts` | Display tool that renders a rich link preview card                                               |
 | `lib/tools/display-plan.ts`         | Display tool that renders a step-by-step research plan                                           |
 | `lib/tools/display-table.ts`        | Display tool that renders a formatted data table with column types                               |
 | `lib/tools/display-option-list.ts`  | Display tool that renders an interactive option list for user selection                          |
-| `lib/tools/display-callout.ts`      | Display tool that renders a styled callout box with variant-specific icons and colors            |
 | `lib/tools/display-timeline.ts`     | Display tool that renders a chronological event timeline with category styling                   |
 | `lib/tools/dynamic.ts`              | Factory for creating runtime-defined tools (MCP tools, user-defined functions)                   |
 
@@ -437,6 +440,8 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/streaming/types.ts`                                 | TypeScript interfaces for stream configuration (BaseStreamConfig)                                                   |
 | `lib/streaming/helpers/prepare-messages.ts`              | Prepares messages for streaming by loading chat history and handling new/existing chats                             |
 | `lib/streaming/helpers/persist-stream-results.ts`        | Persists streamed response messages and chat title to the database                                                  |
+| `lib/streaming/helpers/prepare-tool-result-messages.ts`  | Handles tool result continuation messages; rebuilds state from DB to prevent prompt injection                       |
+| `lib/streaming/helpers/has-pending-interactive-tool.ts`  | Checks if the response has pending interactive tools awaiting user input                                            |
 | `lib/streaming/helpers/stream-related-questions.ts`      | Generates and streams related follow-up questions alongside the main response                                       |
 | `lib/streaming/helpers/strip-reasoning-parts.ts`         | Strips reasoning parts from messages to avoid OpenAI API compatibility issues                                       |
 | `lib/streaming/helpers/types.ts`                         | TypeScript interfaces for streaming context (StreamContext)                                                         |
@@ -489,6 +494,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/config/model-types.ts`        | Retrieves model assignments by search mode and model type from JSON config           |
 | `lib/config/load-models-config.ts` | Loads and validates model configuration from JSON files (default.json, cloud.json)   |
 | `lib/config/search-modes.ts`       | Search mode UI configuration (Chat and Research labels, descriptions, icons, colors) |
+| `lib/config/env.ts`                | Environment variable utilities and type-safe access                                  |
 | `lib/config/ollama-validator.ts`   | Validates configured Ollama models are available and compatible on server startup    |
 
 ### Auth
@@ -569,13 +575,15 @@ shadcn/ui-based primitives and custom UI components.
 
 ## Top-Level Hooks
 
-| File                              | Purpose                                                                   |
-| --------------------------------- | ------------------------------------------------------------------------- |
-| `hooks/use-mobile.tsx`            | Hook detecting mobile viewport (< 768px breakpoint)                       |
-| `hooks/use-auth-check.tsx`        | Hook checking Supabase auth state and subscribing to auth changes         |
-| `hooks/use-current-user-name.ts`  | Hook fetching the current user's display name from Supabase session       |
-| `hooks/use-current-user-image.ts` | Hook fetching the current user's avatar URL from Supabase session         |
-| `hooks/use-file-dropzone.ts`      | Hook managing file drag-and-drop, validation, and upload to `/api/upload` |
+| File                                | Purpose                                                                   |
+| ----------------------------------- | ------------------------------------------------------------------------- |
+| `hooks/use-activity-feed.ts`        | Hook for activity stream display                                          |
+| `hooks/use-auth-check.tsx`          | Hook checking Supabase auth state and subscribing to auth changes         |
+| `hooks/use-content-entrance.ts`     | Hook for content display entrance logic                                   |
+| `hooks/use-current-user.ts`         | Hook fetching the current user's session data from Supabase               |
+| `hooks/use-file-dropzone.ts`        | Hook managing file drag-and-drop, validation, and upload to `/api/upload` |
+| `hooks/use-mobile.tsx`              | Hook detecting mobile viewport (< 768px breakpoint)                       |
+| `hooks/use-trending-suggestions.ts` | Hook for fetching and displaying trending topic suggestions               |
 
 ---
 
@@ -632,22 +640,25 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 
 ## Documentation
 
-| File                                | Purpose                                                                                                                                   |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/ARCHITECTURE.md`              | System architecture with diagrams for agent pipeline, streaming, DB schema, and UI component tree                                         |
-| `docs/API.md`                       | API endpoint reference for chat, chats, feedback, upload, and advanced-search routes                                                      |
-| `docs/GENERATIVE-UI.md`             | Generative UI system architecture; display tools, Tool UI registry, adapter pattern, schema validation, and adding new tools              |
-| `docs/RESEARCH-AGENT.md`            | Research agent deep technical reference; ToolLoopAgent pattern, search modes, tool system, model selection, and context window management |
-| `docs/CONFIGURATION.md`             | Configuration guide for models, search providers, and feature flags                                                                       |
-| `docs/DEPLOYMENT.md`                | Deployment guide for Vercel, Docker, and self-hosted setups                                                                               |
-| `docs/DOCKER.md`                    | Docker-specific setup and configuration instructions                                                                                      |
-| `docs/ENVIRONMENT.md`               | Complete environment variable reference                                                                                                   |
-| `docs/MODEL-CONFIGURATION.md`       | Guide for configuring AI model profiles (default, cloud, Ollama)                                                                          |
-| `docs/SEARCH-PROVIDERS.md`          | Search provider setup guide (Tavily, Brave, Exa, Firecrawl, SearXNG)                                                                      |
-| `docs/STREAMING.md`                 | Streaming architecture and SSE protocol documentation                                                                                     |
-| `docs/TROUBLESHOOTING.md`           | Common issues and debugging guide                                                                                                         |
-| `docs/DECISIONS.md`                 | Architectural decision records (ADRs)                                                                                                     |
-| `docs/runbooks/day-2-operations.md` | Operational runbook for monitoring, maintenance, and incident response                                                                    |
+| File                                           | Purpose                                                                                                                                   |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/README.md`                               | Documentation index and navigation table                                                                                                  |
+| `docs/getting-started/QUICKSTART.md`           | End-to-end setup guide from clone to first search                                                                                         |
+| `docs/getting-started/ENVIRONMENT.md`          | Complete environment variable reference                                                                                                   |
+| `docs/getting-started/CONFIGURATION.md`        | Configuration guide for models, search providers, and feature flags                                                                       |
+| `docs/architecture/OVERVIEW.md`                | System architecture with diagrams for agent pipeline, streaming, DB schema, and UI component tree                                         |
+| `docs/architecture/RESEARCH-AGENT.md`          | Research agent deep technical reference; ToolLoopAgent pattern, search modes, tool system, model selection, and context window management |
+| `docs/architecture/GENERATIVE-UI.md`           | Generative UI system architecture; display tools, Tool UI registry, adapter pattern, schema validation, and adding new tools              |
+| `docs/architecture/STREAMING.md`               | Streaming architecture and SSE protocol documentation                                                                                     |
+| `docs/architecture/MODEL-CONFIGURATION.md`     | Guide for configuring AI model profiles (default, cloud, Ollama)                                                                          |
+| `docs/architecture/SEARCH-PROVIDERS.md`        | Search provider setup guide (Tavily, Brave, Exa, Firecrawl, SearXNG)                                                                      |
+| `docs/architecture/DECISIONS.md`               | Architectural decision records (ADRs)                                                                                                     |
+| `docs/reference/API.md`                        | API endpoint reference for chat, chats, feedback, upload, and advanced-search routes                                                      |
+| `docs/reference/FILE-INDEX.md`                 | This file; every file in the repository with a one-line description                                                                       |
+| `docs/operations/DEPLOYMENT.md`                | Deployment guide for Vercel, Docker, and self-hosted setups                                                                               |
+| `docs/operations/DOCKER.md`                    | Docker-specific setup and configuration instructions                                                                                      |
+| `docs/operations/TROUBLESHOOTING.md`           | Common issues and debugging guide                                                                                                         |
+| `docs/operations/runbooks/day-2-operations.md` | Operational runbook for monitoring, maintenance, and incident response                                                                    |
 
 ---
 
