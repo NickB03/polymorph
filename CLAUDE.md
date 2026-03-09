@@ -31,7 +31,7 @@ The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → too
 - **Researcher agent** (`lib/agents/researcher.ts`): Uses Vercel AI SDK's `ToolLoopAgent` with two modes:
   - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline]`
   - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline, todoWrite]` (todoWrite when writer available)
-- **Tools** (`lib/tools/`): `search` (Tavily primary, Brave for multimedia), `fetch` (web content extraction), `todo` (task management), `dynamic` (MCP/runtime-defined tools)
+- **Tools** (`lib/tools/`): `search` (Tavily primary, Brave multimedia, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todo` (task management), `dynamic` (MCP/runtime-defined tools)
 - **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Gemini 3 Flash (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway
 - **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
 
@@ -65,7 +65,7 @@ Components render different message part types: `answer-section.tsx`, `search-se
 
 ### Hooks
 
-Custom React hooks in `hooks/`: `use-activity-feed`, `use-auth-check`, `use-current-user`, `use-file-dropzone`, `use-mobile`, `use-trending-suggestions`.
+Custom React hooks in `hooks/`: `use-activity-feed`, `use-auth-check`, `use-content-entrance`, `use-current-user`, `use-file-dropzone`, `use-mobile`, `use-trending-suggestions`. Additional hooks in `lib/hooks/`: `use-copy-to-clipboard`, `use-media-query`.
 
 ## Code Conventions
 

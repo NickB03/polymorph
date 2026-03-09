@@ -8,11 +8,26 @@
 
 Polymorph is an AI platform with a generative UI. It combines multi-step research, rich interactive components, and an expanding set of creative capabilities — including code generation, image creation, and multimodal interaction.
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Quickstart](#quickstart)
+- [Documentation](#documentation)
+  - [Getting Started](#getting-started)
+  - [Architecture Docs](#architecture-1)
+  - [Reference](#reference)
+  - [Operations](#operations)
+  - [Contributing](#contributing)
+- [CI/CD Quality Gates](#cicd-quality-gates)
+- [Attribution](#attribution)
+
 ## Overview
 
 - Next.js 16 + React 19 + TypeScript
 - Vercel AI SDK-powered chat + tool workflows
-- Search provider support (Tavily, Brave)
+- Search provider support (Tavily, Brave, Exa, SearXNG, Firecrawl)
 - 8 generative UI display tools for rich interactive responses
 - PostgreSQL + Drizzle for persisted chat history (via Supabase)
 - Supabase Auth, Supabase Storage, and Redis-backed limits
@@ -27,7 +42,7 @@ Polymorph is an AI platform with a generative UI. It combines multi-step researc
 | Database  | PostgreSQL via Supabase + Drizzle ORM                                                                |
 | Auth      | Supabase Auth                                                                                        |
 | AI        | Vercel AI SDK + AI Gateway                                                                           |
-| Search    | Tavily (primary), Brave (multimedia)                                                                 |
+| Search    | Tavily (primary), Brave (multimedia), Exa, SearXNG, Firecrawl                                        |
 | Styling   | Tailwind CSS v4 + shadcn/ui                                                                          |
 | Testing   | Vitest                                                                                               |
 | Gen UI    | 8 display tools (tables, charts, timelines, citations, callouts, plans, link previews, option lists) |

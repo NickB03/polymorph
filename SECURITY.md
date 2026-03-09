@@ -14,7 +14,7 @@ If you discover a security vulnerability, please report it responsibly.
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-1. Email **security@example.com** with a description of the vulnerability, steps to reproduce, and any relevant logs or screenshots.
+1. Use [GitHub's private vulnerability reporting](https://github.com/NickB03/polymorph/security/advisories/new) to submit a description of the vulnerability, steps to reproduce, and any relevant logs or screenshots.
 2. You will receive an acknowledgment within **48 hours**.
 3. We will investigate and provide a fix or mitigation plan within **90 days** of the initial report.
 4. Once a fix is released, we will publicly disclose the vulnerability with credit to the reporter (unless anonymity is requested).
