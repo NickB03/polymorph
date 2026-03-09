@@ -205,6 +205,7 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | `components/reasoning-section.tsx`        | Renders model reasoning/thinking output                             |
 | `components/tool-badge.tsx`               | Small badge showing tool name during invocation                     |
 | `components/tool-section.tsx`             | Routes tool invocations to search or fetch section components       |
+| `components/tool-todo-display.tsx`        | Renders todo/task list tool output                                  |
 | `components/todo-list-content.tsx`        | Renders todo list items with status indicators                      |
 | `components/dynamic-tool-display.tsx`     | Renders dynamic/MCP tool invocations via the tool UI registry       |
 
