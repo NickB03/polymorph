@@ -94,17 +94,16 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
 
   return (
     <>
-      <span className="inline-flex select-none leading-none font-medium">
+      <span
+        className="inline-flex select-none leading-none font-medium"
+        style={{
+          marginRight: `-${SUFFIX_MAX_LEN - FINAL_WORD.length}ch`
+        }}
+      >
         <span className="shrink-0 text-neutral-900 dark:text-neutral-100">
           poly
         </span>
-        <span
-          style={{
-            minWidth: `${SUFFIX_MAX_LEN}ch`,
-            display: 'inline-flex',
-            justifyContent: 'center'
-          }}
-        >
+        <span style={{ minWidth: `${SUFFIX_MAX_LEN}ch` }}>
           {word.split('').map((char, i) => {
             const isFinal = word === FINAL_WORD
             const enter = isFinal ? 650 : enterDuration
@@ -112,7 +111,7 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
             return (
               <span
                 key={`${wordKey}-${i}`}
-                className="text-blue-600 dark:text-blue-400"
+                className="inline-block text-blue-600 dark:text-blue-400"
                 style={{
                   animation: reducedMotion
                     ? undefined
