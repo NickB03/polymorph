@@ -94,8 +94,21 @@ export function SearchSection({
     />
   )
 
+  const statusText = isError
+    ? 'Search failed'
+    : (isLoading && isToolLoading) || isSearching
+      ? `Searching for ${query}`
+      : searchResults && totalResults > 0
+        ? `${totalResults} results found`
+        : undefined
+
   return (
     <div className="relative">
+      {statusText && (
+        <div role="status" aria-live="polite" className="sr-only">
+          {statusText}
+        </div>
+      )}
       {/* Rails for header - show based on position */}
       {borderless && (
         <>

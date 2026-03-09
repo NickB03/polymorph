@@ -239,7 +239,11 @@ export function RenderMessage({
       isResearchMode &&
       (toolName === 'displayCitations' || toolName === 'displayLinkPreview')
     ) {
-      return null
+      return (
+        <span className="sr-only">
+          Citations available in research activity panel
+        </span>
+      )
     }
 
     if (toolName === 'displayOptionList') {

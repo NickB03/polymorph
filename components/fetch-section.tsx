@@ -117,8 +117,18 @@ export function FetchSection({
     />
   )
 
+  const statusText =
+    displayStatus === 'error'
+      ? error || 'Failed to retrieve content'
+      : displayStatus === 'fetching'
+        ? `Retrieving ${url || 'content'}`
+        : `Retrieved ${title || url || 'content'}`
+
   return (
     <div className="relative">
+      <div role="status" aria-live="polite" className="sr-only">
+        {statusText}
+      </div>
       {/* Rails for header - show based on position */}
       {borderless && (
         <>

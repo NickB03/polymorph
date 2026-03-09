@@ -1,5 +1,6 @@
 import { isCloudDeployment } from '@/lib/utils'
 
+import { checkMemoryLimit } from './memory-limiter'
 import { getRedis } from './redis'
 
 const DEFAULT_GUEST_DAILY_LIMIT = 10
@@ -68,8 +69,15 @@ async function checkGuestLimit(ip: string): Promise<{
       limit
     }
   } catch (error) {
-    console.error('Guest rate limit check failed:', error)
-    return { allowed: true, remaining: Infinity, resetAt: 0, limit: 0 }
+    // Redis configured but unreachable — fail closed with in-memory fallback
+    console.warn('Redis unreachable, using in-memory rate limiter:', error)
+    const fallback = checkMemoryLimit(`guest:${ip}`)
+    return {
+      allowed: fallback.allowed,
+      remaining: fallback.remaining,
+      resetAt: fallback.resetAt,
+      limit: getGuestDailyLimit()
+    }
   }
 }
 

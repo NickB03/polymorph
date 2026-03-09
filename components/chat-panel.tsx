@@ -8,7 +8,7 @@ import { ArrowUp, ChevronDown, Square } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { UploadedFile } from '@/lib/types'
-import type { UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
+import type { ToolPart, UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 import { cn, isChatLoading } from '@/lib/utils'
 import { syncModelType } from '@/lib/utils/model-type'
 import { syncSearchMode } from '@/lib/utils/search-mode'
@@ -89,11 +89,11 @@ export function ChatPanel({
     const parts = lastMessage.parts
     const lastPart = parts[parts.length - 1]
 
-    return (
-      (lastPart?.type === 'tool-search' || lastPart?.type === 'tool-fetch') &&
-      ((lastPart as any)?.state === 'input-streaming' ||
-        (lastPart as any)?.state === 'input-available')
-    )
+    if (lastPart?.type === 'tool-search' || lastPart?.type === 'tool-fetch') {
+      const state = (lastPart as ToolPart).state
+      return state === 'input-streaming' || state === 'input-available'
+    }
+    return false
   }
 
   // if query is not empty, submit the query

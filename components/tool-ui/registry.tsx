@@ -18,6 +18,7 @@ import { Plan } from './plan/plan'
 import { safeParseSerializablePlan } from './plan/schema'
 import { safeParseSerializableTimeline } from './timeline/schema'
 import { Timeline } from './timeline/timeline'
+import { ToolErrorBoundary } from './tool-error-boundary'
 
 type ToolUIEntry = {
   name: string
@@ -30,7 +31,11 @@ const entries: ToolUIEntry[] = [
     tryRender: output => {
       const parsed = safeParseSerializablePlan(output)
       if (!parsed) return null
-      return <Plan {...parsed} />
+      return (
+        <ToolErrorBoundary toolName="Plan">
+          <Plan {...parsed} />
+        </ToolErrorBoundary>
+      )
     }
   },
   {
@@ -38,7 +43,11 @@ const entries: ToolUIEntry[] = [
     tryRender: output => {
       const parsed = safeParseSerializableDataTable(output)
       if (!parsed) return null
-      return <DataTable {...parsed} />
+      return (
+        <ToolErrorBoundary toolName="DataTable">
+          <DataTable {...parsed} />
+        </ToolErrorBoundary>
+      )
     }
   },
   {
@@ -46,7 +55,11 @@ const entries: ToolUIEntry[] = [
     tryRender: output => {
       const parsed = safeParseSerializableChart(output)
       if (!parsed) return null
-      return <Chart {...parsed} />
+      return (
+        <ToolErrorBoundary toolName="Chart">
+          <Chart {...parsed} />
+        </ToolErrorBoundary>
+      )
     }
   },
   {
@@ -66,11 +79,13 @@ const entries: ToolUIEntry[] = [
       if (parsed.length === 0) return null
 
       return (
-        <CitationList
-          id={`citations-${parsed[0]!.id}`}
-          citations={parsed as NonNullable<(typeof parsed)[number]>[]}
-          variant="default"
-        />
+        <ToolErrorBoundary toolName="CitationList">
+          <CitationList
+            id={`citations-${parsed[0]!.id}`}
+            citations={parsed as NonNullable<(typeof parsed)[number]>[]}
+            variant="default"
+          />
+        </ToolErrorBoundary>
       )
     }
   },
@@ -79,7 +94,11 @@ const entries: ToolUIEntry[] = [
     tryRender: output => {
       const parsed = safeParseSerializableLinkPreview(output)
       if (!parsed) return null
-      return <LinkPreview {...parsed} />
+      return (
+        <ToolErrorBoundary toolName="LinkPreview">
+          <LinkPreview {...parsed} />
+        </ToolErrorBoundary>
+      )
     }
   },
   {
@@ -87,7 +106,11 @@ const entries: ToolUIEntry[] = [
     tryRender: output => {
       const parsed = safeParseSerializableOptionList(output)
       if (!parsed) return null
-      return <OptionList {...parsed} />
+      return (
+        <ToolErrorBoundary toolName="OptionList">
+          <OptionList {...parsed} />
+        </ToolErrorBoundary>
+      )
     }
   },
   {
@@ -95,7 +118,11 @@ const entries: ToolUIEntry[] = [
     tryRender: output => {
       const parsed = safeParseSerializableCallout(output)
       if (!parsed) return null
-      return <Callout {...parsed} />
+      return (
+        <ToolErrorBoundary toolName="Callout">
+          <Callout {...parsed} />
+        </ToolErrorBoundary>
+      )
     }
   },
   {
@@ -103,7 +130,11 @@ const entries: ToolUIEntry[] = [
     tryRender: output => {
       const parsed = safeParseSerializableTimeline(output)
       if (!parsed) return null
-      return <Timeline {...parsed} />
+      return (
+        <ToolErrorBoundary toolName="Timeline">
+          <Timeline {...parsed} />
+        </ToolErrorBoundary>
+      )
     }
   }
 ]
