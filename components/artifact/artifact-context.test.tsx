@@ -19,10 +19,10 @@ function wrapper({ children }: { children: ReactNode }) {
 
 describe('ArtifactContext', () => {
   describe('initial state', () => {
-    it('starts with no part and closed', () => {
+    it('starts with no inspected part and workspace closed', () => {
       const { result } = renderHook(() => useArtifact(), { wrapper })
-      expect(result.current.state.part).toBeNull()
-      expect(result.current.state.isOpen).toBe(false)
+      expect(result.current.state.inspectedPart).toBeNull()
+      expect(result.current.state.workspace.isOpen).toBe(false)
     })
   })
 
@@ -42,9 +42,8 @@ describe('ArtifactContext', () => {
         result.current.open(searchPart)
       })
 
-      expect(result.current.state.isOpen).toBe(true)
-      expect(result.current.state.part).toEqual(searchPart)
-      expect(result.current.state.part?.type).toBe('tool-search')
+      expect(result.current.state.inspectedPart).toEqual(searchPart)
+      expect(result.current.state.inspectedPart?.type).toBe('tool-search')
     })
 
     it('opens with a reasoning part (backward compat)', () => {
@@ -59,12 +58,11 @@ describe('ArtifactContext', () => {
         result.current.open(reasoningPart)
       })
 
-      expect(result.current.state.isOpen).toBe(true)
-      expect(result.current.state.part).toEqual(reasoningPart)
-      expect(result.current.state.part?.type).toBe('reasoning')
+      expect(result.current.state.inspectedPart).toEqual(reasoningPart)
+      expect(result.current.state.inspectedPart?.type).toBe('reasoning')
     })
 
-    it('opens with a data-artifact part (workspace auto-open)', () => {
+    it('opens with a data-artifact part', () => {
       const { result } = renderHook(() => useArtifact(), { wrapper })
 
       const artifactDataPart = {
@@ -82,8 +80,7 @@ describe('ArtifactContext', () => {
         result.current.open(artifactDataPart)
       })
 
-      expect(result.current.state.isOpen).toBe(true)
-      expect(result.current.state.part).toEqual(artifactDataPart)
+      expect(result.current.state.inspectedPart).toEqual(artifactDataPart)
     })
 
     it('replaces current part when opening a new one', () => {
@@ -105,35 +102,17 @@ describe('ArtifactContext', () => {
       act(() => {
         result.current.open(firstPart)
       })
-      expect(result.current.state.part?.type).toBe('tool-search')
+      expect(result.current.state.inspectedPart?.type).toBe('tool-search')
 
       act(() => {
         result.current.open(secondPart)
       })
-      expect(result.current.state.part?.type).toBe('reasoning')
-      expect(result.current.state.isOpen).toBe(true)
+      expect(result.current.state.inspectedPart?.type).toBe('reasoning')
     })
   })
 
   describe('close()', () => {
-    it('sets isOpen to false immediately', () => {
-      const { result } = renderHook(() => useArtifact(), { wrapper })
-
-      act(() => {
-        result.current.open({
-          type: 'reasoning' as const,
-          text: 'some reasoning'
-        })
-      })
-      expect(result.current.state.isOpen).toBe(true)
-
-      act(() => {
-        result.current.close()
-      })
-      expect(result.current.state.isOpen).toBe(false)
-    })
-
-    it('keeps part content briefly for animation, then clears', () => {
+    it('clears inspected part after animation', () => {
       vi.useFakeTimers()
       const { result } = renderHook(() => useArtifact(), { wrapper })
 
@@ -143,26 +122,85 @@ describe('ArtifactContext', () => {
           text: 'some reasoning'
         })
       })
+      expect(result.current.state.inspectedPart).not.toBeNull()
 
       act(() => {
         result.current.close()
       })
 
-      // Part is still present right after close for animation
-      expect(result.current.state.isOpen).toBe(false)
-      expect(result.current.state.part).not.toBeNull()
-
       // After animation duration, content is cleared
       act(() => {
         vi.advanceTimersByTime(300)
       })
-      expect(result.current.state.part).toBeNull()
+      expect(result.current.state.inspectedPart).toBeNull()
 
       vi.useRealTimers()
     })
   })
 
-  describe('coexistence: inspector open does not interfere with workspace', () => {
+  describe('workspace actions', () => {
+    it('openWorkspace sets workspace.isOpen to true', () => {
+      const { result } = renderHook(() => useArtifact(), { wrapper })
+
+      act(() => {
+        result.current.openWorkspace({
+          artifactId: 'a-1',
+          title: 'My App',
+          status: 'ready'
+        })
+      })
+
+      expect(result.current.state.workspace.isOpen).toBe(true)
+      expect(result.current.state.workspace.artifactId).toBe('a-1')
+      expect(result.current.state.workspace.title).toBe('My App')
+    })
+
+    it('updateWorkspace merges partial state', () => {
+      const { result } = renderHook(() => useArtifact(), { wrapper })
+
+      act(() => {
+        result.current.openWorkspace({
+          artifactId: 'a-1',
+          title: 'My App',
+          status: 'building'
+        })
+      })
+
+      act(() => {
+        result.current.updateWorkspace({
+          status: 'ready',
+          previewUrl: 'https://preview.test'
+        })
+      })
+
+      expect(result.current.state.workspace.status).toBe('ready')
+      expect(result.current.state.workspace.previewUrl).toBe(
+        'https://preview.test'
+      )
+      expect(result.current.state.workspace.artifactId).toBe('a-1')
+    })
+
+    it('closeWorkspace resets workspace state', () => {
+      const { result } = renderHook(() => useArtifact(), { wrapper })
+
+      act(() => {
+        result.current.openWorkspace({
+          artifactId: 'a-1',
+          title: 'My App',
+          status: 'ready'
+        })
+      })
+      expect(result.current.state.workspace.isOpen).toBe(true)
+
+      act(() => {
+        result.current.closeWorkspace()
+      })
+      expect(result.current.state.workspace.isOpen).toBe(false)
+      expect(result.current.state.workspace.artifactId).toBeNull()
+    })
+  })
+
+  describe('coexistence: inspector and workspace are independent', () => {
     it('can open different part types sequentially without state corruption', () => {
       const { result } = renderHook(() => useArtifact(), { wrapper })
 
@@ -176,33 +214,30 @@ describe('ArtifactContext', () => {
           output: { results: [] }
         })
       })
-      expect(result.current.state.isOpen).toBe(true)
-      expect(result.current.state.part?.type).toBe('tool-search')
+      expect(result.current.state.inspectedPart?.type).toBe('tool-search')
 
-      // Switch to artifact data (workspace)
+      // Open workspace (independent of inspector)
       act(() => {
-        result.current.open({
-          type: 'data-artifact' as const,
-          id: 'p-1',
-          data: {
-            id: 'a-1',
-            title: 'App',
-            status: 'ready' as const
-          }
+        result.current.openWorkspace({
+          artifactId: 'a-1',
+          title: 'App',
+          status: 'ready'
         })
       })
-      expect(result.current.state.isOpen).toBe(true)
-      expect(result.current.state.part?.type).toBe('data-artifact')
+      expect(result.current.state.workspace.isOpen).toBe(true)
+      // Inspector part is still set
+      expect(result.current.state.inspectedPart?.type).toBe('tool-search')
 
-      // Switch back to reasoning (inspector)
+      // Switch inspector to reasoning
       act(() => {
         result.current.open({
           type: 'reasoning' as const,
           text: 'thinking...'
         })
       })
-      expect(result.current.state.isOpen).toBe(true)
-      expect(result.current.state.part?.type).toBe('reasoning')
+      expect(result.current.state.inspectedPart?.type).toBe('reasoning')
+      // Workspace still open
+      expect(result.current.state.workspace.isOpen).toBe(true)
     })
   })
 

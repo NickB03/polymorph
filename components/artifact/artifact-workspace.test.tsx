@@ -67,14 +67,21 @@ vi.mock('@/components/artifact/artifact-content', () => ({
 
 // Dynamic mock for the artifact context
 const mockClose = vi.fn()
-let mockState: { part: Part | null; isOpen: boolean } = {
-  part: null,
-  isOpen: false
-}
+let mockInspectedPart: Part | null = null
 
 vi.mock('@/components/artifact/artifact-context', () => ({
   useArtifact: () => ({
-    state: mockState,
+    state: {
+      inspectedPart: mockInspectedPart,
+      workspace: {
+        isOpen: false,
+        artifactId: null,
+        revisionId: null,
+        title: null,
+        status: null,
+        previewUrl: null
+      }
+    },
     close: mockClose
   })
 }))
@@ -84,23 +91,20 @@ import { InspectorPanel } from '@/components/inspector/inspector-panel'
 
 describe('InspectorPanel (workspace behavior)', () => {
   it('renders nothing when no part is set', () => {
-    mockState = { part: null, isOpen: false }
+    mockInspectedPart = null
     const { container } = render(<InspectorPanel />)
     expect(container.innerHTML).toBe('')
   })
 
   describe('search part (legacy backward compat)', () => {
     it('renders with search icon and title', () => {
-      mockState = {
-        part: {
-          type: 'tool-search',
-          toolCallId: 'tc-1',
-          state: 'output-available',
-          input: { query: 'test' },
-          output: { results: [] }
-        } as any,
-        isOpen: true
-      }
+      mockInspectedPart = {
+        type: 'tool-search',
+        toolCallId: 'tc-1',
+        state: 'output-available',
+        input: { query: 'test' },
+        output: { results: [] }
+      } as any
 
       render(<InspectorPanel />)
 
@@ -112,13 +116,10 @@ describe('InspectorPanel (workspace behavior)', () => {
 
   describe('reasoning part (legacy backward compat)', () => {
     it('renders with lightbulb icon and Thoughts title', () => {
-      mockState = {
-        part: {
-          type: 'reasoning',
-          text: 'deep thinking...'
-        } as any,
-        isOpen: true
-      }
+      mockInspectedPart = {
+        type: 'reasoning',
+        text: 'deep thinking...'
+      } as any
 
       render(<InspectorPanel />)
 
@@ -129,13 +130,10 @@ describe('InspectorPanel (workspace behavior)', () => {
 
   describe('text part', () => {
     it('renders with message icon and Text title', () => {
-      mockState = {
-        part: {
-          type: 'text',
-          text: 'some text'
-        } as any,
-        isOpen: true
-      }
+      mockInspectedPart = {
+        type: 'text',
+        text: 'some text'
+      } as any
 
       render(<InspectorPanel />)
 
@@ -146,18 +144,15 @@ describe('InspectorPanel (workspace behavior)', () => {
 
   describe('unknown part type', () => {
     it('falls back to Content title with message icon', () => {
-      mockState = {
-        part: {
-          type: 'data-artifact',
-          id: 'p-1',
-          data: {
-            id: 'artifact-1',
-            title: 'App',
-            status: 'ready'
-          }
-        } as any,
-        isOpen: true
-      }
+      mockInspectedPart = {
+        type: 'data-artifact',
+        id: 'p-1',
+        data: {
+          id: 'artifact-1',
+          title: 'App',
+          status: 'ready'
+        }
+      } as any
 
       render(<InspectorPanel />)
 
@@ -168,13 +163,10 @@ describe('InspectorPanel (workspace behavior)', () => {
   describe('close action', () => {
     it('calls close when minimize button is clicked', () => {
       mockClose.mockClear()
-      mockState = {
-        part: {
-          type: 'reasoning',
-          text: 'thinking'
-        } as any,
-        isOpen: true
-      }
+      mockInspectedPart = {
+        type: 'reasoning',
+        text: 'thinking'
+      } as any
 
       render(<InspectorPanel />)
 
@@ -187,16 +179,13 @@ describe('InspectorPanel (workspace behavior)', () => {
 
   describe('artifact content delegation', () => {
     it('passes the part to ArtifactContent', () => {
-      mockState = {
-        part: {
-          type: 'tool-search',
-          toolCallId: 'tc-1',
-          state: 'output-available',
-          input: { query: 'test' },
-          output: { results: [] }
-        } as any,
-        isOpen: true
-      }
+      mockInspectedPart = {
+        type: 'tool-search',
+        toolCallId: 'tc-1',
+        state: 'output-available',
+        input: { query: 'test' },
+        output: { results: [] }
+      } as any
 
       render(<InspectorPanel />)
 
