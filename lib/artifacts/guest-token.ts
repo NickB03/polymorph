@@ -22,23 +22,11 @@ interface GuestArtifactTokenPayload {
 // ---------------------------------------------------------------------------
 
 function base64urlEncode(data: Uint8Array): string {
-  let binary = ''
-  for (const byte of data) {
-    binary += String.fromCharCode(byte)
-  }
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  return Buffer.from(data).toString('base64url')
 }
 
 function base64urlDecode(str: string): Uint8Array {
-  const padded =
-    str.replace(/-/g, '+').replace(/_/g, '/') +
-    '=='.slice(0, (4 - (str.length % 4)) % 4)
-  const binary = atob(padded)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  return bytes
+  return new Uint8Array(Buffer.from(str, 'base64url'))
 }
 
 function getSecret(): string {
@@ -136,7 +124,7 @@ export async function verifyGuestArtifactToken(
     const valid = await crypto.subtle.verify(
       'HMAC',
       key,
-      signatureBytes.buffer as ArrayBuffer,
+      signatureBytes,
       encoder.encode(payloadB64)
     )
     if (!valid) return null
