@@ -129,10 +129,15 @@ export function ArtifactWorkspaceHeader({
 
   const handleShare = useCallback(() => {
     if (!workspace.previewUrl || copied) return
-    navigator.clipboard.writeText(workspace.previewUrl).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+    navigator.clipboard.writeText(workspace.previewUrl).then(
+      () => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      },
+      err => {
+        console.error('Failed to copy preview URL to clipboard:', err)
+      }
+    )
   }, [workspace.previewUrl, copied])
 
   const isFailed = workspace.status === 'failed'

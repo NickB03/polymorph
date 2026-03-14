@@ -280,7 +280,7 @@ describe('E2B Runtime Adapter', () => {
     })
 
     it('throws ArtifactRuntimeConfigError when E2B_API_KEY is undefined', () => {
-      delete process.env.E2B_API_KEY
+      vi.stubEnv('E2B_API_KEY', undefined)
 
       expect(() => createE2BRuntime()).toThrow(ArtifactRuntimeConfigError)
     })

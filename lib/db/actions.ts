@@ -185,7 +185,12 @@ export async function loadArtifactByChatId(
 }
 
 /**
- * Load an artifact by its ID
+ * Load an artifact by its ID.
+ *
+ * **Security:** When `userId` is `null`, RLS is bypassed and the query runs
+ * without row-level permission checks. Callers MUST authenticate through an
+ * alternative mechanism (e.g. a signed guest artifact token) before passing
+ * `null`. Prefer passing a real `userId` whenever one is available.
  */
 export async function loadArtifactById(
   artifactId: string,
@@ -203,7 +208,12 @@ export async function loadArtifactById(
 }
 
 /**
- * Load the current runtime session for an artifact
+ * Load the current runtime session for an artifact.
+ *
+ * **Security:** When `userId` is `null`, RLS is bypassed and the query runs
+ * without row-level permission checks. Callers MUST authenticate through an
+ * alternative mechanism (e.g. a signed guest artifact token) before passing
+ * `null`. Prefer passing a real `userId` whenever one is available.
  */
 export async function loadArtifactRuntimeSession(
   artifactId: string,

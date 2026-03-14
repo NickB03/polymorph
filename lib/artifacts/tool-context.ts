@@ -8,10 +8,15 @@ import type {
 
 /**
  * Validated guest artifact handle extracted from a signed token.
+ *
+ * Carries both `runtimeSessionId` (our internal session record ID) and
+ * `sandboxId` (the E2B-assigned sandbox identifier). These are distinct:
+ * runtime operations (restart, destroy) require the provider's `sandboxId`.
  */
 export interface ValidatedGuestArtifactHandle {
   artifactId: string
   runtimeSessionId: string
+  sandboxId: string
   chatId: string
   expiresAt: Date
 }

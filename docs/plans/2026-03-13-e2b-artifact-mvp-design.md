@@ -270,10 +270,10 @@ adding an E2B SDK dependency in this phase.
 Suggested interface:
 
 - `createSession`
-- `reuseSession`
-- `writeTemplateFiles`
+- `writeFiles`
 - `applySourceUpdate`
-- `runValidation`
+- `installDependencies`
+- `runCommand`
 - `startPreview`
 - `restartPreview`
 - `getLogs`
@@ -450,8 +450,11 @@ The current artifact context only tracks an open `Part`. That is too narrow for 
 - workspace title
 - preview url
 - status
-- logs availability
 - is open
+
+Logs are tracked separately as a mutable array (`workspaceLogs`) with an
+`appendWorkspaceLog` callback, rather than a boolean availability flag in the
+workspace state.
 
 Do not remove the current generic inspector behavior. The right-side shell needs
 to support both:

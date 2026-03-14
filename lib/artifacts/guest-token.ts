@@ -151,6 +151,7 @@ export async function verifyGuestArtifactToken(
     return {
       artifactId: payload.artifactId,
       runtimeSessionId: payload.runtimeSessionId,
+      sandboxId: payload.sandboxId,
       chatId: payload.artifactId, // guest artifacts use artifactId as chatId context
       expiresAt: new Date(payload.expiresAt)
     }
@@ -176,7 +177,7 @@ export async function refreshGuestArtifactToken(
   return signGuestArtifactToken({
     artifactId: handle.artifactId,
     runtimeSessionId: handle.runtimeSessionId,
-    sandboxId: handle.runtimeSessionId, // sandboxId stored in runtimeSessionId context
+    sandboxId: handle.sandboxId,
     expiresAt: Date.now() + getTtlMs()
   })
 }

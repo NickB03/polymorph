@@ -99,6 +99,7 @@ describe('guest artifact token security', () => {
       expect(handle).not.toBeNull()
       expect(handle?.artifactId).toBe('art-1')
       expect(handle?.runtimeSessionId).toBe('sess-1')
+      expect(handle?.sandboxId).toBe('sbx-1')
     })
 
     it('rejects forged tokens (bad signature)', async () => {
@@ -181,6 +182,7 @@ describe('guest artifact token security', () => {
       const handle = {
         artifactId: 'art-1',
         runtimeSessionId: 'sess-1',
+        sandboxId: 'sandbox-1',
         chatId: 'art-1',
         expiresAt: new Date(Date.now() + 5_000) // about to expire
       }
@@ -190,10 +192,33 @@ describe('guest artifact token security', () => {
 
       expect(verified).not.toBeNull()
       expect(verified?.artifactId).toBe('art-1')
+      expect(verified?.runtimeSessionId).toBe('sess-1')
+      expect(verified?.sandboxId).toBe('sandbox-1')
       // Refreshed expiry should be further in the future than the original
       expect(verified!.expiresAt.getTime()).toBeGreaterThan(
         handle.expiresAt.getTime()
       )
+    })
+
+    it('preserves sandboxId distinct from runtimeSessionId through refresh', async () => {
+      const token = await signGuestArtifactToken({
+        artifactId: 'art-2',
+        runtimeSessionId: 'sess-2',
+        sandboxId: 'sbx-e2b-abc123',
+        expiresAt: Date.now() + 60_000
+      })
+
+      const handle = await verifyGuestArtifactToken(token)
+      expect(handle).not.toBeNull()
+      expect(handle!.runtimeSessionId).toBe('sess-2')
+      expect(handle!.sandboxId).toBe('sbx-e2b-abc123')
+
+      // Refresh and re-verify: sandboxId must survive the cycle
+      const refreshed = await refreshGuestArtifactToken(handle!)
+      const refreshedHandle = await verifyGuestArtifactToken(refreshed)
+      expect(refreshedHandle).not.toBeNull()
+      expect(refreshedHandle!.runtimeSessionId).toBe('sess-2')
+      expect(refreshedHandle!.sandboxId).toBe('sbx-e2b-abc123')
     })
   })
 })
