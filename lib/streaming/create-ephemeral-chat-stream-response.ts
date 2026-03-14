@@ -11,7 +11,12 @@ import { randomUUID } from 'crypto'
 import { Langfuse } from 'langfuse'
 
 import { researcher } from '@/lib/agents/researcher'
+import {
+  refreshGuestArtifactToken,
+  verifyGuestArtifactToken
+} from '@/lib/artifacts/guest-token'
 import type { ArtifactToolContext } from '@/lib/artifacts/tool-context'
+import type { ValidatedGuestArtifactHandle } from '@/lib/artifacts/tool-context'
 import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
 import { jsonError } from '@/lib/utils/json-error'
@@ -31,6 +36,8 @@ type EphemeralStreamConfig = Pick<
 > & {
   messages: UIMessage[]
   chatId?: string
+  /** Signed guest artifact token from a previous artifact operation. */
+  guestArtifactToken?: string
 }
 
 export async function createEphemeralChatStreamResponse(
@@ -43,7 +50,8 @@ export async function createEphemeralChatStreamResponse(
     searchMode,
     modelType,
     chatId,
-    trigger
+    trigger,
+    guestArtifactToken
   } = config
   const modelId = createModelId(model)
 
@@ -97,13 +105,51 @@ export async function createEphemeralChatStreamResponse(
 
         // Build request-scoped artifact tool context for guest flow
         // with writer-backed emitters for stream parity.
+        //
+        // Guest token resolution: verify the HMAC-signed token, fail closed
+        // on forged/expired tokens (returns null — no raw ID fallback).
+        // On successful verification, rotate the token and emit a refreshed
+        // version via the artifact event stream.
         const artifactEmitter = createArtifactEmitter(writer)
+
+        /**
+         * Resolve and rotate a guest artifact token.
+         *
+         * Security invariants:
+         * - Forged tokens (bad HMAC) return null.
+         * - Expired tokens return null.
+         * - No raw ID fallback on failure (fail closed).
+         * - On success, a rotated token is emitted as a transient event
+         *   so the client can use it in subsequent requests.
+         */
+        const resolveGuestArtifactToken =
+          async (): Promise<ValidatedGuestArtifactHandle | null> => {
+            if (!guestArtifactToken) return null
+
+            const handle = await verifyGuestArtifactToken(guestArtifactToken)
+            if (!handle) return null
+
+            // Rotate: issue a refreshed token and emit it to the client
+            try {
+              const refreshedToken = await refreshGuestArtifactToken(handle)
+              artifactEmitter.emitArtifactEvent({
+                artifactId: handle.artifactId,
+                event: 'guest-token-refreshed',
+                payload: { token: refreshedToken }
+              })
+            } catch {
+              // Token refresh is best-effort; the current handle is still valid
+            }
+
+            return handle
+          }
+
         const artifactToolContext: ArtifactToolContext = {
           chatId: chatId || 'ephemeral',
           userId: null,
           isGuest: true,
           messages,
-          resolveGuestArtifactToken: async () => null,
+          resolveGuestArtifactToken,
           ...artifactEmitter
         }
 

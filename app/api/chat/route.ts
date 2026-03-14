@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 
 import { loadChat } from '@/lib/actions/chat'
 import { calculateConversationTurn, trackChatEvent } from '@/lib/analytics'
+import { ArtifactError, isArtifactError } from '@/lib/artifacts/errors'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import { checkAndEnforceOverallChatLimit } from '@/lib/rate-limit/chat-limits'
 import { checkAndEnforceGuestLimit } from '@/lib/rate-limit/guest-limit'
@@ -273,6 +274,20 @@ export async function POST(req: Request) {
 
     return response
   } catch (error) {
+    // Handle artifact-specific errors with structured codes
+    if (isArtifactError(error)) {
+      const artifactError = error as ArtifactError
+      console.error(
+        `Artifact error [${artifactError.artifactErrorCode}]:`,
+        artifactError.message
+      )
+      return jsonError(
+        artifactError.artifactErrorCode,
+        artifactError.message,
+        artifactError.httpStatus
+      )
+    }
+
     console.error('API route error:', error)
     return jsonError('INTERNAL_ERROR', 'Error processing your request', 500)
   }

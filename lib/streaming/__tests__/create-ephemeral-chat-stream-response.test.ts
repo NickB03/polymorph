@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
+import {
+  refreshGuestArtifactToken,
+  signGuestArtifactToken,
+  verifyGuestArtifactToken
+} from '@/lib/artifacts/guest-token'
 import { createEphemeralChatStreamResponse } from '@/lib/streaming/create-ephemeral-chat-stream-response'
 
 describe('createEphemeralChatStreamResponse', () => {
@@ -17,6 +22,126 @@ describe('createEphemeralChatStreamResponse', () => {
     expect(json).toEqual({
       code: 'BAD_REQUEST',
       error: 'messages are required'
+    })
+  })
+})
+
+describe('guest artifact token security', () => {
+  const TEST_SECRET = 'test-secret-for-hmac-signing-32chars!'
+
+  beforeEach(() => {
+    process.env.GUEST_ARTIFACT_SECRET = TEST_SECRET
+    delete process.env.GUEST_ARTIFACT_TOKEN_TTL_MS
+  })
+
+  describe('signGuestArtifactToken + verifyGuestArtifactToken', () => {
+    it('round-trips a valid token', async () => {
+      const token = await signGuestArtifactToken({
+        artifactId: 'art-1',
+        runtimeSessionId: 'sess-1',
+        sandboxId: 'sbx-1',
+        expiresAt: Date.now() + 60_000
+      })
+
+      const handle = await verifyGuestArtifactToken(token)
+      expect(handle).not.toBeNull()
+      expect(handle?.artifactId).toBe('art-1')
+      expect(handle?.runtimeSessionId).toBe('sess-1')
+    })
+
+    it('rejects forged tokens (bad signature)', async () => {
+      const token = await signGuestArtifactToken({
+        artifactId: 'art-1',
+        runtimeSessionId: 'sess-1',
+        sandboxId: 'sbx-1',
+        expiresAt: Date.now() + 60_000
+      })
+
+      // Tamper with the signature segment
+      const parts = token.split('.')
+      const tamperedToken = `${parts[0]}.AAAA${parts[1].slice(4)}`
+
+      const handle = await verifyGuestArtifactToken(tamperedToken)
+      expect(handle).toBeNull()
+    })
+
+    it('rejects expired tokens', async () => {
+      const token = await signGuestArtifactToken({
+        artifactId: 'art-1',
+        runtimeSessionId: 'sess-1',
+        sandboxId: 'sbx-1',
+        expiresAt: Date.now() - 1000 // already expired
+      })
+
+      const handle = await verifyGuestArtifactToken(token)
+      expect(handle).toBeNull()
+    })
+
+    it('rejects tokens when secret is missing at verify time', async () => {
+      const token = await signGuestArtifactToken({
+        artifactId: 'art-1',
+        runtimeSessionId: 'sess-1',
+        sandboxId: 'sbx-1',
+        expiresAt: Date.now() + 60_000
+      })
+
+      delete process.env.GUEST_ARTIFACT_SECRET
+      const handle = await verifyGuestArtifactToken(token)
+      expect(handle).toBeNull()
+    })
+
+    it('throws when secret is missing at sign time', async () => {
+      delete process.env.GUEST_ARTIFACT_SECRET
+      await expect(
+        signGuestArtifactToken({
+          artifactId: 'art-1',
+          runtimeSessionId: 'sess-1',
+          sandboxId: 'sbx-1',
+          expiresAt: Date.now() + 60_000
+        })
+      ).rejects.toThrow('GUEST_ARTIFACT_SECRET')
+    })
+
+    it('rejects completely malformed tokens', async () => {
+      expect(await verifyGuestArtifactToken('')).toBeNull()
+      expect(await verifyGuestArtifactToken('not-a-token')).toBeNull()
+      expect(await verifyGuestArtifactToken('a.b.c')).toBeNull()
+      expect(await verifyGuestArtifactToken('.')).toBeNull()
+    })
+
+    it('rejects tokens signed with a different secret', async () => {
+      const token = await signGuestArtifactToken({
+        artifactId: 'art-1',
+        runtimeSessionId: 'sess-1',
+        sandboxId: 'sbx-1',
+        expiresAt: Date.now() + 60_000
+      })
+
+      // Change the secret
+      process.env.GUEST_ARTIFACT_SECRET = 'different-secret-key-entirely!'
+      const handle = await verifyGuestArtifactToken(token)
+      expect(handle).toBeNull()
+    })
+  })
+
+  describe('refreshGuestArtifactToken', () => {
+    it('produces a valid token with refreshed expiry', async () => {
+      const handle = {
+        artifactId: 'art-1',
+        runtimeSessionId: 'sess-1',
+        chatId: 'art-1',
+        expiresAt: new Date(Date.now() + 5_000) // about to expire
+      }
+
+      const refreshed = await refreshGuestArtifactToken(handle)
+      const verified = await verifyGuestArtifactToken(refreshed)
+
+      expect(verified).not.toBeNull()
+      expect(verified?.artifactId).toBe('art-1')
+      // Refreshed expiry should be further in the future than the original
+      expect(verified!.expiresAt.getTime()).toBeGreaterThan(
+        handle.expiresAt.getTime()
+      )
     })
   })
 })
