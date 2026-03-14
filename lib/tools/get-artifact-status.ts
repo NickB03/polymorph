@@ -1,6 +1,7 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 
+import { logArtifactEvent } from '@/lib/artifacts/observability'
 import { getArtifactContext } from '@/lib/artifacts/tool-context'
 
 const GetArtifactStatusSchema = z.object({
@@ -15,11 +16,20 @@ export const getArtifactStatusTool = tool({
     const artifactCtx = getArtifactContext(context)
 
     if (!artifactCtx) {
+      logArtifactEvent('artifact.status.query', {
+        error: 'Artifact context not available'
+      })
       return {
         success: false,
         error: 'Artifact context not available'
       }
     }
+
+    logArtifactEvent('artifact.status.query', {
+      chatId: artifactCtx.chatId,
+      isGuest: artifactCtx.isGuest,
+      reason: params.reason
+    })
 
     return {
       success: true,

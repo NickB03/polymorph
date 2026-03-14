@@ -100,10 +100,21 @@ export function createResearcher({
 }) {
   try {
     const currentDate = new Date().toLocaleString()
+    const artifactsEnabled = process.env.ENABLE_ARTIFACTS === 'true'
 
     // Create model-specific tools with proper typing
     const originalSearchTool = createSearchTool(model)
     const todoTools = writer ? createTodoTools() : {}
+
+    // Artifact tool names, conditionally included when enabled
+    const artifactToolNames: (keyof ResearcherTools)[] = artifactsEnabled
+      ? [
+          'createWebappArtifact',
+          'updateWebappArtifact',
+          'getArtifactStatus',
+          'restartArtifactPreview'
+        ]
+      : []
 
     let systemPrompt: string
     let activeToolsList: (keyof ResearcherTools)[] = []
@@ -125,10 +136,7 @@ export function createResearcher({
           'displayOptionList',
           'displayCallout',
           'displayTimeline',
-          'createWebappArtifact',
-          'updateWebappArtifact',
-          'getArtifactStatus',
-          'restartArtifactPreview'
+          ...artifactToolNames
         ]
         maxSteps = 20
         searchTool = wrapSearchToolForChatMode(originalSearchTool)
@@ -150,10 +158,7 @@ export function createResearcher({
           'displayOptionList',
           'displayCallout',
           'displayTimeline',
-          'createWebappArtifact',
-          'updateWebappArtifact',
-          'getArtifactStatus',
-          'restartArtifactPreview'
+          ...artifactToolNames
         ]
         // Enable todo tools when writer is available
         if (writer && 'todoWrite' in todoTools) {
@@ -179,10 +184,12 @@ export function createResearcher({
       displayOptionList: displayOptionListTool,
       displayCallout: displayCalloutTool,
       displayTimeline: displayTimelineTool,
-      createWebappArtifact: createWebappArtifactTool,
-      updateWebappArtifact: updateWebappArtifactTool,
-      getArtifactStatus: getArtifactStatusTool,
-      restartArtifactPreview: restartArtifactPreviewTool,
+      ...(artifactsEnabled && {
+        createWebappArtifact: createWebappArtifactTool,
+        updateWebappArtifact: updateWebappArtifactTool,
+        getArtifactStatus: getArtifactStatusTool,
+        restartArtifactPreview: restartArtifactPreviewTool
+      }),
       ...todoTools
     } as ResearcherTools
 

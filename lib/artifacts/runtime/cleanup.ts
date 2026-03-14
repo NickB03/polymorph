@@ -1,5 +1,6 @@
 import { and, eq, lt, or } from 'drizzle-orm'
 
+import { logArtifactEvent } from '@/lib/artifacts/observability'
 import type { ArtifactRuntime } from '@/lib/artifacts/runtime/types'
 import { db } from '@/lib/db'
 import { artifactRuntimeSessions, artifacts } from '@/lib/db/schema'
@@ -78,6 +79,7 @@ export async function cleanupExpiredArtifactSessions(
       )
     )
 
+  const startTime = Date.now()
   const result: CleanupResult = {
     destroyed: 0,
     failed: 0,
@@ -115,6 +117,14 @@ export async function cleanupExpiredArtifactSessions(
       result.failed++
     }
   }
+
+  logArtifactEvent('artifact.cleanup.run', {
+    destroyed: result.destroyed,
+    failed: result.failed,
+    skipped: result.found - result.destroyed - result.failed,
+    found: result.found,
+    durationMs: Date.now() - startTime
+  })
 
   return result
 }

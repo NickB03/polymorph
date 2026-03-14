@@ -1,6 +1,7 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 
+import { logArtifactEvent } from '@/lib/artifacts/observability'
 import { getArtifactContext } from '@/lib/artifacts/tool-context'
 
 const UpdateWebappArtifactSchema = z.object({
@@ -26,14 +27,25 @@ export const updateWebappArtifactTool = tool({
     'Update the existing webapp artifact with new or modified source files. Use this when the user asks to change, edit, update, or improve the current artifact. Only include files that need to change.',
   inputSchema: UpdateWebappArtifactSchema,
   execute: async (params, context) => {
+    const startTime = Date.now()
     const artifactCtx = getArtifactContext(context)
 
     if (!artifactCtx) {
+      logArtifactEvent('artifact.update.error', {
+        error: 'Artifact context not available',
+        durationMs: Date.now() - startTime
+      })
       return {
         success: false,
         error: 'Artifact context not available'
       }
     }
+
+    logArtifactEvent('artifact.update.start', {
+      chatId: artifactCtx.chatId,
+      isGuest: artifactCtx.isGuest,
+      fileCount: Object.keys(params.files).length
+    })
 
     artifactCtx.emitArtifactEvent({
       artifactId: 'current',
@@ -41,12 +53,21 @@ export const updateWebappArtifactTool = tool({
       payload: { description: params.description }
     })
 
-    return {
+    const result = {
       success: true,
       title: params.title,
       description: params.description,
       files: params.files,
       action: 'update' as const
     }
+
+    logArtifactEvent('artifact.update.complete', {
+      chatId: artifactCtx.chatId,
+      isGuest: artifactCtx.isGuest,
+      fileCount: Object.keys(params.files).length,
+      durationMs: Date.now() - startTime
+    })
+
+    return result
   }
 })

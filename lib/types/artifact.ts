@@ -23,6 +23,12 @@ export type ArtifactStatusData = {
   revisionId?: string
 }
 
+export interface ArtifactSourceFile {
+  path: string
+  content: string
+  language: string
+}
+
 export type ArtifactLogData = {
   artifactId: string
   message: string

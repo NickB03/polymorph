@@ -43,7 +43,16 @@ export const PREINSTALLED_PACKAGES = new Set([
   'react-hook-form',
   'zod',
   'recharts',
-  'date-fns'
+  'date-fns',
+  '@radix-ui/react-avatar',
+  '@radix-ui/react-dialog',
+  '@radix-ui/react-dropdown-menu',
+  '@radix-ui/react-label',
+  '@radix-ui/react-select',
+  '@radix-ui/react-separator',
+  '@radix-ui/react-switch',
+  '@radix-ui/react-tabs',
+  '@radix-ui/react-tooltip'
 ])
 
 /** Import patterns that are always banned (Next.js-specific) */

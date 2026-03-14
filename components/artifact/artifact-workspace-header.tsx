@@ -7,10 +7,12 @@ import {
   Code2,
   Copy,
   Eye,
+  FileCode,
   Minimize2,
   RefreshCw,
   RotateCcw,
-  ScrollText
+  ScrollText,
+  Sparkles
 } from 'lucide-react'
 
 import type { ArtifactStatus } from '@/lib/types/artifact'
@@ -21,7 +23,7 @@ import { TooltipButton } from '@/components/ui/tooltip-button'
 
 import { useArtifact } from './artifact-context'
 
-type WorkspaceTab = 'preview' | 'logs'
+type WorkspaceTab = 'preview' | 'code' | 'logs'
 
 interface ArtifactWorkspaceHeaderProps {
   activeTab: WorkspaceTab
@@ -69,7 +71,13 @@ export function ArtifactWorkspaceHeader({
   activeTab,
   onTabChange
 }: ArtifactWorkspaceHeaderProps) {
-  const { state, updateWorkspace, closeWorkspace } = useArtifact()
+  const {
+    state,
+    updateWorkspace,
+    closeWorkspace,
+    requestAiFix,
+    workspaceLogs
+  } = useArtifact()
   const { workspace } = state
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
@@ -127,6 +135,17 @@ export function ArtifactWorkspaceHeader({
     }
   }, [workspace, isRetrying, updateWorkspace])
 
+  const handleAskAiFix = useCallback(() => {
+    if (!requestAiFix) return
+    const context = workspaceLogs
+      .slice(-20)
+      .map(l => l.message)
+      .join('\n')
+    requestAiFix(
+      `The artifact build failed with the following error. Please diagnose and fix the source code:\n\n\`\`\`\n${context}\n\`\`\``
+    )
+  }, [requestAiFix, workspaceLogs])
+
   const handleShare = useCallback(() => {
     if (!workspace.previewUrl || copied) return
     navigator.clipboard.writeText(workspace.previewUrl).then(
@@ -172,6 +191,19 @@ export function ArtifactWorkspaceHeader({
             variant="ghost"
             size="icon"
             className="h-7 w-7"
+            onClick={() => onTabChange('code')}
+            aria-label="Code"
+            aria-pressed={activeTab === 'code'}
+            tooltipContent="Code"
+          >
+            <FileCode
+              className={`h-3.5 w-3.5 ${activeTab === 'code' ? 'text-foreground' : 'text-muted-foreground'}`}
+            />
+          </TooltipButton>
+          <TooltipButton
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
             onClick={() => onTabChange('logs')}
             aria-label="Logs"
             aria-pressed={activeTab === 'logs'}
@@ -200,19 +232,33 @@ export function ArtifactWorkspaceHeader({
           </TooltipButton>
 
           {isFailed && (
-            <TooltipButton
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleRetry}
-              disabled={isRetrying}
-              aria-label="Retry"
-              tooltipContent="Retry"
-            >
-              <RotateCcw
-                className={`h-3.5 w-3.5 ${isRetrying ? 'animate-spin' : ''}`}
-              />
-            </TooltipButton>
+            <>
+              <TooltipButton
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleRetry}
+                disabled={isRetrying}
+                aria-label="Retry"
+                tooltipContent="Retry"
+              >
+                <RotateCcw
+                  className={`h-3.5 w-3.5 ${isRetrying ? 'animate-spin' : ''}`}
+                />
+              </TooltipButton>
+              {requestAiFix && (
+                <TooltipButton
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={handleAskAiFix}
+                  aria-label="Ask AI to fix"
+                  tooltipContent="Ask AI to fix"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                </TooltipButton>
+              )}
+            </>
           )}
 
           {workspace.previewUrl && (

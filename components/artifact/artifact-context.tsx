@@ -11,7 +11,11 @@ import {
 } from 'react'
 
 import type { Part } from '@/lib/types/ai'
-import type { ArtifactLogData, ArtifactStatus } from '@/lib/types/artifact'
+import type {
+  ArtifactLogData,
+  ArtifactSourceFile,
+  ArtifactStatus
+} from '@/lib/types/artifact'
 
 import { useSidebar } from '../ui/sidebar'
 
@@ -24,6 +28,7 @@ export interface ArtifactWorkspaceState {
   title: string | null
   status: ArtifactStatus | null
   previewUrl: string | null
+  sourceFiles: ArtifactSourceFile[]
   isOpen: boolean
 }
 
@@ -38,6 +43,7 @@ const initialWorkspace: ArtifactWorkspaceState = {
   title: null,
   status: null,
   previewUrl: null,
+  sourceFiles: [],
   isOpen: false
 }
 
@@ -52,6 +58,7 @@ type ArtifactAction =
   | { type: 'CLEAR_INSPECTOR' }
   | { type: 'OPEN_WORKSPACE'; payload: Partial<ArtifactWorkspaceState> }
   | { type: 'UPDATE_WORKSPACE'; payload: Partial<ArtifactWorkspaceState> }
+  | { type: 'UPDATE_SOURCE_FILES'; payload: ArtifactSourceFile[] }
   | { type: 'CLOSE_WORKSPACE' }
 
 function artifactReducer(
@@ -82,6 +89,14 @@ function artifactReducer(
           ...action.payload
         }
       }
+    case 'UPDATE_SOURCE_FILES':
+      return {
+        ...state,
+        workspace: {
+          ...state.workspace,
+          sourceFiles: action.payload
+        }
+      }
     case 'CLOSE_WORKSPACE':
       return {
         ...state,
@@ -98,9 +113,12 @@ interface ArtifactContextValue {
   close: () => void
   openWorkspace: (ws: Partial<ArtifactWorkspaceState>) => void
   updateWorkspace: (ws: Partial<ArtifactWorkspaceState>) => void
+  updateSourceFiles: (files: ArtifactSourceFile[]) => void
   closeWorkspace: () => void
   appendWorkspaceLog: (log: ArtifactLogData) => void
   workspaceLogs: ArtifactLogData[]
+  requestAiFix: ((errorContext: string) => void) | null
+  setRequestAiFix: (cb: ((errorContext: string) => void) | null) => void
 }
 
 const ArtifactContext = createContext<ArtifactContextValue | undefined>(
@@ -111,6 +129,9 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(artifactReducer, initialState)
   const { setOpen, open: sidebarOpen } = useSidebar()
   const [workspaceLogs, setWorkspaceLogs] = useState<ArtifactLogData[]>([])
+  const [requestAiFix, setRequestAiFix] = useState<
+    ((errorContext: string) => void) | null
+  >(null)
   const isInspectorOpen =
     state.inspectedPart !== null && !state.workspace.isOpen
 
@@ -150,6 +171,10 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'UPDATE_WORKSPACE', payload: ws })
   }, [])
 
+  const updateSourceFiles = useCallback((files: ArtifactSourceFile[]) => {
+    dispatch({ type: 'UPDATE_SOURCE_FILES', payload: files })
+  }, [])
+
   const closeWorkspace = useCallback(() => {
     dispatch({ type: 'CLOSE_WORKSPACE' })
     setWorkspaceLogs([])
@@ -167,9 +192,12 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
         close,
         openWorkspace,
         updateWorkspace,
+        updateSourceFiles,
         closeWorkspace,
         appendWorkspaceLog,
-        workspaceLogs
+        workspaceLogs,
+        requestAiFix,
+        setRequestAiFix
       }}
     >
       {children}

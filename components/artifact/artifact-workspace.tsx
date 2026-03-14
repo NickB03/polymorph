@@ -4,16 +4,21 @@ import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
+import { ArtifactCodeViewer } from './artifact-code-viewer'
 import { useArtifact } from './artifact-context'
+import { ArtifactErrorPanel } from './artifact-error-panel'
 import { ArtifactLogsPanel } from './artifact-logs-panel'
 import { ArtifactPreviewFrame } from './artifact-preview-frame'
 import { ArtifactWorkspaceHeader } from './artifact-workspace-header'
 
-type WorkspaceTab = 'preview' | 'logs'
+type WorkspaceTab = 'preview' | 'code' | 'logs'
 
 export function ArtifactWorkspace() {
   const { state } = useArtifact()
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('preview')
+
+  const isFailed = state.workspace.status === 'failed'
+  const showErrorPanel = isFailed && activeTab === 'preview'
 
   if (!state.workspace.isOpen) return null
 
@@ -26,7 +31,10 @@ export function ArtifactWorkspace() {
         />
         <div className="flex-1 min-h-0 overflow-hidden">
           <div className={cn(activeTab !== 'preview' && 'hidden', 'h-full')}>
-            <ArtifactPreviewFrame />
+            {showErrorPanel ? <ArtifactErrorPanel /> : <ArtifactPreviewFrame />}
+          </div>
+          <div className={cn(activeTab !== 'code' && 'hidden', 'h-full')}>
+            <ArtifactCodeViewer />
           </div>
           <div className={cn(activeTab !== 'logs' && 'hidden', 'h-full')}>
             <ArtifactLogsPanel />
