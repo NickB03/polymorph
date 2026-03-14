@@ -1,4 +1,4 @@
-import { UIMessage } from 'ai'
+import type { UIMessage } from '@/lib/types/ai'
 
 /**
  * Strips reasoning parts from UIMessages for OpenAI models.

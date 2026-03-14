@@ -1,9 +1,8 @@
 import { notFound, redirect } from 'next/navigation'
 
-import { UIMessage } from 'ai'
-
 import { loadChat } from '@/lib/actions/chat'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
+import type { UIMessage } from '@/lib/types/ai'
 
 import { Chat } from '@/components/chat'
 

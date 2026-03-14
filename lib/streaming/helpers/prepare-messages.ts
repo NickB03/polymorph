@@ -1,5 +1,3 @@
-import { UIMessage } from 'ai'
-
 import {
   createChat,
   createChatWithFirstMessage,
@@ -9,6 +7,7 @@ import {
 } from '@/lib/actions/chat'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import { generateId } from '@/lib/db/schema'
+import type { UIMessage } from '@/lib/types/ai'
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 
 import type { StreamContext } from './types'

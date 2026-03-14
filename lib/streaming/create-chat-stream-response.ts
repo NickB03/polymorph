@@ -5,7 +5,6 @@ import {
   createUIMessageStreamResponse,
   pruneMessages,
   smoothStream,
-  UIMessage,
   UIMessageStreamWriter
 } from 'ai'
 import { randomUUID } from 'crypto'
@@ -13,6 +12,7 @@ import { Langfuse } from 'langfuse'
 
 import { researcher } from '@/lib/agents/researcher'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
+import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
 import { jsonError } from '@/lib/utils/json-error'
 import { isTracingEnabled } from '@/lib/utils/telemetry'

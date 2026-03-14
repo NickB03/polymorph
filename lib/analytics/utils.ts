@@ -1,4 +1,4 @@
-import type { UIMessage } from 'ai'
+import type { UIMessage } from '@/lib/types/ai'
 
 /**
  * Calculate the conversation turn number from message history

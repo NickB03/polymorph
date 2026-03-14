@@ -258,6 +258,149 @@ export const parts = pgTable(
 export type Part = InferSelectModel<typeof parts>
 export type NewPart = typeof parts.$inferInsert
 
+// Artifacts table
+export const artifacts = pgTable(
+  'artifacts',
+  {
+    id: varchar('id', { length: ID_LENGTH })
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    chatId: varchar('chat_id', { length: ID_LENGTH })
+      .notNull()
+      .references(() => chats.id, { onDelete: 'cascade' }),
+    userId: varchar('user_id', { length: USER_ID_LENGTH }),
+    currentRevisionId: varchar('current_revision_id', { length: ID_LENGTH }),
+    currentRuntimeSessionId: varchar('current_runtime_session_id', {
+      length: ID_LENGTH
+    }),
+    title: text('title').notNull(),
+    framework: varchar('framework', {
+      length: VARCHAR_LENGTH,
+      enum: ['react-spa']
+    })
+      .notNull()
+      .default('react-spa'),
+    status: varchar('status', {
+      length: VARCHAR_LENGTH,
+      enum: ['building', 'ready', 'failed', 'restarting', 'expired']
+    })
+      .notNull()
+      .default('building'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow()
+  },
+  table => [
+    index('artifacts_chat_id_idx').on(table.chatId),
+    pgPolicy('users_manage_own_artifacts', {
+      as: 'permissive',
+      for: 'all',
+      to: 'public',
+      using: sql`user_id = current_setting('app.current_user_id', true)`,
+      withCheck: sql`user_id = current_setting('app.current_user_id', true)`
+    })
+  ]
+).enableRLS()
+
+export type Artifact = InferSelectModel<typeof artifacts>
+
+// Artifact revisions table
+export const artifactRevisions = pgTable(
+  'artifact_revisions',
+  {
+    id: varchar('id', { length: ID_LENGTH })
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    artifactId: varchar('artifact_id', { length: ID_LENGTH })
+      .notNull()
+      .references(() => artifacts.id, { onDelete: 'cascade' }),
+    triggeringMessageId: varchar('triggering_message_id', { length: ID_LENGTH })
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    promptSummary: text('prompt_summary').notNull(),
+    title: text('title').notNull(),
+    sandboxSnapshotRef: text('sandbox_snapshot_ref'),
+    createdAt: timestamp('created_at').notNull().defaultNow()
+  },
+  table => [
+    index('artifact_revisions_artifact_id_created_at_idx').on(
+      table.artifactId,
+      table.createdAt.desc()
+    ),
+    pgPolicy('users_manage_own_artifact_revisions', {
+      as: 'permissive',
+      for: 'all',
+      to: 'public',
+      using: sql`EXISTS (
+        SELECT 1 FROM ${artifacts}
+        WHERE ${artifacts}.id = artifact_id
+        AND ${artifacts}.user_id = current_setting('app.current_user_id', true)
+      )`,
+      withCheck: sql`EXISTS (
+        SELECT 1 FROM ${artifacts}
+        WHERE ${artifacts}.id = artifact_id
+        AND ${artifacts}.user_id = current_setting('app.current_user_id', true)
+      )`
+    })
+  ]
+).enableRLS()
+
+export type ArtifactRevision = InferSelectModel<typeof artifactRevisions>
+
+// Artifact runtime sessions table
+export const artifactRuntimeSessions = pgTable(
+  'artifact_runtime_sessions',
+  {
+    id: varchar('id', { length: ID_LENGTH })
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    artifactId: varchar('artifact_id', { length: ID_LENGTH })
+      .notNull()
+      .references(() => artifacts.id, { onDelete: 'cascade' }),
+    provider: varchar('provider', {
+      length: VARCHAR_LENGTH,
+      enum: ['e2b']
+    })
+      .notNull()
+      .default('e2b'),
+    sandboxId: text('sandbox_id').notNull(),
+    previewUrl: text('preview_url'),
+    status: varchar('status', {
+      length: VARCHAR_LENGTH,
+      enum: ['building', 'ready', 'failed', 'restarting', 'expired']
+    })
+      .notNull()
+      .default('building'),
+    startedAt: timestamp('started_at').notNull().defaultNow(),
+    expiresAt: timestamp('expires_at'),
+    lastHeartbeatAt: timestamp('last_heartbeat_at')
+  },
+  table => [
+    index('artifact_runtime_sessions_artifact_id_started_at_idx').on(
+      table.artifactId,
+      table.startedAt.desc()
+    ),
+    pgPolicy('users_manage_own_artifact_runtime_sessions', {
+      as: 'permissive',
+      for: 'all',
+      to: 'public',
+      using: sql`EXISTS (
+        SELECT 1 FROM ${artifacts}
+        WHERE ${artifacts}.id = artifact_id
+        AND ${artifacts}.user_id = current_setting('app.current_user_id', true)
+      )`,
+      withCheck: sql`EXISTS (
+        SELECT 1 FROM ${artifacts}
+        WHERE ${artifacts}.id = artifact_id
+        AND ${artifacts}.user_id = current_setting('app.current_user_id', true)
+      )`
+    })
+  ]
+).enableRLS()
+
+export type ArtifactRuntimeSession = InferSelectModel<
+  typeof artifactRuntimeSessions
+>
+
 // Feedback table
 export const feedback = pgTable(
   'feedback',

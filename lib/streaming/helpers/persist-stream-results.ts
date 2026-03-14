@@ -1,8 +1,7 @@
-import { UIMessage } from 'ai'
-
 import { createChatWithFirstMessage, upsertMessage } from '@/lib/actions/chat'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import { updateChatTitle } from '@/lib/db/actions'
+import type { UIMessage } from '@/lib/types/ai'
 import { SearchMode } from '@/lib/types/search'
 import { perfTime } from '@/lib/utils/perf-logging'
 import { retryDatabaseOperation } from '@/lib/utils/retry'
