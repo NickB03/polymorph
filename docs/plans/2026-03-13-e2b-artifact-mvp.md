@@ -83,7 +83,7 @@ git commit -m "feat: add artifact persistence schema"
 
 - Modify: `lib/actions/chat.ts`
 - Create: `lib/actions/artifact.ts`
-- Create: `lib/db/actions/artifact.ts`
+- Modify: `lib/db/actions.ts`
 - Test: `lib/actions/artifact.ts`
 
 **Step 1: Write the failing action signatures**
@@ -103,10 +103,9 @@ export async function upsertArtifactRuntimeSession(
 
 **Step 2: Implement DB actions**
 
-Mirror the existing chat action split:
-
-- `lib/actions/*` for server actions/caching
-- `lib/db/actions/*` for raw persistence operations
+Add raw persistence operations to the existing `lib/db/actions.ts` file, which
+already hosts chat persistence. Use `lib/actions/artifact.ts` for server
+actions with caching and auth.
 
 **Step 3: Add cache invalidation**
 
@@ -124,7 +123,7 @@ Expected: no missing imports or action type errors.
 **Step 5: Commit**
 
 ```bash
-git add lib/actions/artifact.ts lib/db/actions/artifact.ts lib/actions/chat.ts
+git add lib/actions/artifact.ts lib/db/actions.ts lib/actions/chat.ts
 git commit -m "feat: add artifact persistence actions"
 ```
 
@@ -607,6 +606,7 @@ git commit -m "feat: render artifact cards and open workspace"
 - Modify: `app/api/chat/route.ts`
 - Modify: `components/chat.tsx`
 - Modify: `lib/streaming/create-ephemeral-chat-stream-response.ts`
+- Create: `lib/artifacts/errors.ts`
 - Create: `lib/artifacts/guest-token.ts`
 - Create: `lib/rate-limit/artifact-limits.ts`
 - Create: `lib/artifacts/runtime/cleanup.ts`
@@ -665,7 +665,7 @@ and the ephemeral stream path.
 **Step 6: Commit**
 
 ```bash
-git add app/api/chat/route.ts app/api/chat/__tests__/route.test.ts components/chat.tsx lib/streaming/create-ephemeral-chat-stream-response.ts lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts lib/artifacts/guest-token.ts lib/rate-limit/artifact-limits.ts lib/artifacts/runtime/cleanup.ts
+git add app/api/chat/route.ts app/api/chat/__tests__/route.test.ts components/chat.tsx lib/streaming/create-ephemeral-chat-stream-response.ts lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts lib/artifacts/errors.ts lib/artifacts/guest-token.ts lib/rate-limit/artifact-limits.ts lib/artifacts/runtime/cleanup.ts
 git commit -m "feat: add artifact runtime error handling"
 ```
 
@@ -679,9 +679,9 @@ git commit -m "feat: add artifact runtime error handling"
 - Create: `components/artifact/artifact-context.test.tsx`
 - Create: `lib/artifacts/validation/validate-artifact-source.test.ts`
 - Create: `lib/artifacts/runtime/e2b-runtime.test.ts`
-- Create: `lib/tools/create-webapp-artifact.test.ts`
-- Create: `lib/tools/update-webapp-artifact.test.ts`
+- Create: `lib/tools/__tests__/artifact-tools.test.ts`
 - Create: `lib/streaming/helpers/write-artifact-data.test.ts`
+- Create: `lib/actions/__tests__/artifact.test.ts`
 - Modify: `app/api/chat/__tests__/route.test.ts`
 - Modify: `lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts`
 
@@ -713,12 +713,12 @@ Run:
 bun run test -- lib/utils/__tests__/message-mapping-display-tools.test.ts
 bun run test -- lib/artifacts/validation/validate-artifact-source.test.ts
 bun run test -- lib/artifacts/runtime/e2b-runtime.test.ts
-bun run test -- lib/tools/create-webapp-artifact.test.ts
-bun run test -- lib/tools/update-webapp-artifact.test.ts
+bun run test -- lib/tools/__tests__/artifact-tools.test.ts
 bun run test -- lib/streaming/helpers/write-artifact-data.test.ts
 bun run test -- components/chat.test.tsx
 bun run test -- components/artifact/artifact-context.test.tsx
 bun run test -- components/artifact/artifact-workspace.test.tsx
+bun run test -- lib/actions/__tests__/artifact.test.ts
 bun run test -- app/api/chat/__tests__/route.test.ts
 bun run test -- lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts
 ```
@@ -728,7 +728,7 @@ Expected: all new artifact lifecycle tests pass.
 **Step 3: Commit**
 
 ```bash
-git add components/chat.test.tsx components/artifact/*.test.tsx lib/utils/__tests__/message-mapping-display-tools.test.ts lib/artifacts/runtime/*.test.ts lib/artifacts/validation/*.test.ts lib/tools/*.test.ts lib/streaming/helpers/*.test.ts app/api/chat/__tests__/route.test.ts lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts
+git add components/chat.test.tsx components/artifact/*.test.tsx lib/utils/__tests__/message-mapping-display-tools.test.ts lib/artifacts/runtime/*.test.ts lib/artifacts/validation/*.test.ts lib/tools/__tests__/artifact-tools.test.ts lib/streaming/helpers/*.test.ts lib/actions/__tests__/artifact.test.ts app/api/chat/__tests__/route.test.ts lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts
 git commit -m "test: cover artifact lifecycle flows"
 ```
 
@@ -762,12 +762,12 @@ Run:
 ```bash
 bun run test -- lib/utils/__tests__/message-mapping-display-tools.test.ts
 bun run test -- lib/artifacts/runtime/e2b-runtime.test.ts
-bun run test -- lib/tools/create-webapp-artifact.test.ts
-bun run test -- lib/tools/update-webapp-artifact.test.ts
+bun run test -- lib/tools/__tests__/artifact-tools.test.ts
 bun run test -- lib/streaming/helpers/write-artifact-data.test.ts
 bun run test -- components/chat.test.tsx
 bun run test -- components/artifact/artifact-context.test.tsx
 bun run test -- components/artifact/artifact-workspace.test.tsx
+bun run test -- lib/actions/__tests__/artifact.test.ts
 bun run test -- app/api/chat/__tests__/route.test.ts
 bun run test -- lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts
 ```
