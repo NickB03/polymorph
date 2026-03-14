@@ -87,12 +87,19 @@ The current codebase already provides the main extension points:
 - [app/api/chat/route.ts](/Users/nick/Projects/vana-v2/app/api/chat/route.ts): request validation, guest/auth split, model selection
 - [lib/streaming/create-chat-stream-response.ts](/Users/nick/Projects/vana-v2/lib/streaming/create-chat-stream-response.ts): streamed tool/data response construction
 - [lib/agents/researcher.ts](/Users/nick/Projects/vana-v2/lib/agents/researcher.ts): active tool list and instructions
-- [components/chat.tsx](/Users/nick/Projects/vana-v2/components/chat.tsx): client transport, tool-result continuations, error handling
+- [components/chat.tsx](/Users/nick/Projects/vana-v2/components/chat.tsx): client transport, tool-result continuations, error handling, and the client entry point for transient `onData` handling
 - [components/render-message.tsx](/Users/nick/Projects/vana-v2/components/render-message.tsx): rendering tool outputs inline
 - [components/artifact/artifact-context.tsx](/Users/nick/Projects/vana-v2/components/artifact/artifact-context.tsx): artifact open/close state
 - [components/artifact/chat-artifact-container.tsx](/Users/nick/Projects/vana-v2/components/artifact/chat-artifact-container.tsx): current right-side artifact/activity shell
 - [components/inspector/inspector-panel.tsx](/Users/nick/Projects/vana-v2/components/inspector/inspector-panel.tsx): current artifact panel presentation
 - [lib/db/schema.ts](/Users/nick/Projects/vana-v2/lib/db/schema.ts): persisted chat/message/part schema
+
+Artifact tools should be enabled in both existing search modes rather than
+behind a new mode flag:
+
+- `chat`: append artifact tools to the current 20-step tool list
+- `research`: append the same artifact tools while preserving `todoWrite` when
+  a writer is available
 
 ## Product Design
 
@@ -117,6 +124,21 @@ The workspace header should include:
 - close
 
 The header should feel lightweight and product-oriented, not IDE-oriented.
+
+### Header Actions
+
+Workspace header actions should use one concrete MVP contract:
+
+- `refresh`: call `POST /api/artifacts/[artifactId]/actions` with
+  `{ action: 'refresh' }`; the route should reuse the same server artifact
+  service used by `getArtifactStatus`
+- `retry`: call the same route with `{ action: 'retry' }`; the route should
+  reuse the same server artifact service used by `restartArtifactPreview`
+- `share`: copy the current `previewUrl` to the clipboard on the client; do not
+  add a second share-mutation route or DB record in MVP
+
+If `previewUrl` is unavailable, hide or disable `share` rather than rendering
+an inert control.
 
 ### Workspace Body
 
@@ -196,6 +218,16 @@ Suggested fields:
 
 This separation keeps artifact identity, revision history, and sandbox lifecycle from collapsing into one mutable record.
 
+### Migration Workflow
+
+Schema changes should continue to use the repo's existing Drizzle layout:
+
+- SQL migrations in `drizzle/`
+- snapshots and journal updates in `drizzle/meta/*`
+
+`bun run migrate` reads from `drizzle/`, so the MVP should not introduce a
+parallel `lib/db/migrations` folder.
+
 ### Guest Handling
 
 The contract should be the same for guests and signed-in users, but durability can differ:
@@ -203,11 +235,37 @@ The contract should be the same for guests and signed-in users, but durability c
 - authenticated users: persist artifact, revision, and runtime session records in Postgres
 - guests: allow artifact creation and updates with the same UI/agent contract, but tolerate shorter-lived persistence and more aggressive cleanup
 
+Guest continuity must not trust raw `artifactId` or `runtimeSessionId` values
+copied out of prior `data-artifact` parts. Use a server-verifiable
+`guestArtifactToken` instead:
+
+- issue a fresh opaque signed token on every successful guest
+  `createWebappArtifact`, `updateWebappArtifact`, `getArtifactStatus`, and
+  `restartArtifactPreview` result
+- encode the server-trusted guest handle in that token, including at minimum
+  `artifactId`, `runtimeSessionId`, `chatId`, and `expiresAt`
+- carry the token in guest `data-artifact` and `data-artifactStatus` payloads;
+  treat raw IDs in those parts as display metadata only
+- on the next guest turn, extract the latest token from incoming message
+  history, validate its signature, chat binding, and expiry, then look up the
+  backing artifact/runtime from server state
+- if the token is missing, forged, or expired, do not reuse the prior guest
+  runtime; `create`/`update` may start a fresh artifact, while `status`/`retry`
+  should return a structured preview-expired error
+
+Cleanup should destroy expired guest runtimes and prune guest-backed artifact
+records on the same or a shorter timeline than token expiry so stale tokens
+cannot resurrect deleted sessions.
+
 The user experience should remain generous and mostly frictionless.
 
 ## Runtime Design
 
 Create an internal runtime adapter with an E2B implementation.
+
+The MVP runtime adapter should be raw HTTP-backed. Use authenticated server-side
+`fetch` calls to E2B from `lib/artifacts/runtime/e2b-runtime.ts` rather than
+adding an E2B SDK dependency in this phase.
 
 Suggested interface:
 
@@ -280,6 +338,13 @@ Optional internal helper tools later:
 - `getArtifactLogs`
 - `snapshotArtifact`
 
+### Tool Registration Scope
+
+Register all four artifact tools in both existing researcher modes. Do not make
+artifact generation chat-only. `research` mode should keep its current
+additional capabilities, including `todoWrite`, while gaining the same artifact
+tool access as `chat`.
+
 ### Tool Semantics
 
 Each tool should return structured machine-readable output containing:
@@ -291,6 +356,41 @@ Each tool should return structured machine-readable output containing:
 - preview url when available
 - short title
 - repairable error information when relevant
+- refreshed guest token when `isGuest` is true
+
+Artifact tools should execute with request-scoped context supplied by the stream
+layer, including:
+
+- `chatId`
+- `userId | null`
+- `isGuest`
+- incoming message history
+- guest artifact token resolver
+- stream emitter callbacks for artifact data and transient events
+
+Pass this through the agent via `experimental_context` rather than relying on
+module globals or implicit singleton state.
+
+### Tool Persistence Contract
+
+Persist artifact tool invocations through the existing generic dynamic-tool
+shape already supported by the `parts` table:
+
+- `createWebappArtifact`
+- `updateWebappArtifact`
+- `getArtifactStatus`
+- `restartArtifactPreview`
+
+For persisted chats, `message-mapping.ts` should normalize those tool parts to:
+
+- `type = 'tool-dynamic'`
+- `tool_dynamic_type = 'artifact'`
+- `tool_dynamic_name = <tool name>`
+- `tool_dynamic_input` / `tool_dynamic_output` populated from the tool payload
+
+Do not add artifact-specific tool columns to `parts`. Persisted artifact state
+still travels separately through `data-artifact` and `data-artifactStatus`.
+`data-artifactLog` and `data-artifactEvent` remain transient stream-only events.
 
 The agent should be instructed to:
 
@@ -309,7 +409,7 @@ Extend the existing streamed message model with persistent artifact data parts a
 Add data part types for:
 
 - `data-artifact`
-- `data-artifact-status`
+- `data-artifactStatus`
 
 These should support reconciliation by stable `id` so the same artifact card/workspace can update over time.
 
@@ -317,11 +417,26 @@ These should support reconciliation by stable `id` so the same artifact card/wor
 
 Use transient parts for:
 
-- build progress
-- retry notifications
-- restart notifications
+- `data-artifactLog` for live sandbox/build logs
+- `data-artifactEvent` for progress, retry, and restart notifications
 
-This aligns with AI SDK streaming guidance for collaborative artifacts and status updates.
+These transient events should be consumed in `useChat({ onData })`. They should
+not be expected in `message.parts`.
+
+### Stream Emitter Contract
+
+Do not let artifact tools write ad hoc stream payloads. The request-scoped
+artifact context should expose explicit writer-backed callbacks:
+
+- `emitArtifact(data)` for persistent `data-artifact`
+- `emitArtifactStatus(data)` for persistent `data-artifactStatus`
+- `emitArtifactLog(data)` for transient `data-artifactLog`
+- `emitArtifactEvent(data)` for transient `data-artifactEvent`
+
+`createWebappArtifact` and `updateWebappArtifact` should emit start/progress
+events, zero or more log chunks, then the final persistent artifact/status
+payloads. `getArtifactStatus` and `restartArtifactPreview` should use the same
+contract so the client only has one transient event path.
 
 ## UI Design
 
@@ -329,6 +444,7 @@ This aligns with AI SDK streaming guidance for collaborative artifacts and statu
 
 The current artifact context only tracks an open `Part`. That is too narrow for a persistent workspace. Replace or extend it to track:
 
+- inspected part for the existing search/reasoning inspector
 - active artifact id
 - active revision id
 - workspace title
@@ -336,6 +452,12 @@ The current artifact context only tracks an open `Part`. That is too narrow for 
 - status
 - logs availability
 - is open
+
+Do not remove the current generic inspector behavior. The right-side shell needs
+to support both:
+
+- generic inspected parts such as search and reasoning
+- the dedicated artifact workspace
 
 ### Rendering
 
@@ -378,10 +500,15 @@ Critical coverage:
 
 - create artifact from chat
 - update existing artifact across turns
+- persist artifact tool calls as `tool-dynamic` rows for authenticated chats
 - render workspace automatically
 - stream preview state and logs into the UI
+- handle `useChat({ onData })` transient log/event updates
 - handle sandbox restart and failure states
-- verify guest flow works without auth
+- verify guest token issuance, validation, expiry, and cleanup behavior
+- reject forged or expired guest tokens in route and ephemeral-stream tests
+- execute at least one workspace header action path through
+  `POST /api/artifacts/[artifactId]/actions`
 - verify idle cleanup does not break artifact identity
 
 ## Rollout
