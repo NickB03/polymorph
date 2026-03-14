@@ -6,51 +6,102 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useReducer
+  useReducer,
+  useRef,
+  useState
 } from 'react'
 
 import type { Part } from '@/lib/types/ai'
+import type { ArtifactLogData, ArtifactStatus } from '@/lib/types/artifact'
 
 import { useSidebar } from '../ui/sidebar'
 
 // Animation duration should match CSS transition duration
 const ANIMATION_DURATION = 300
 
-interface ArtifactState {
-  part: Part | null
+export interface ArtifactWorkspaceState {
+  artifactId: string | null
+  revisionId: string | null
+  title: string | null
+  status: ArtifactStatus | null
+  previewUrl: string | null
   isOpen: boolean
 }
 
-type ArtifactAction =
-  | { type: 'OPEN'; payload: Part }
-  | { type: 'CLOSE' }
-  | { type: 'CLEAR_CONTENT' }
+export interface ArtifactUiState {
+  inspectedPart: Part | null
+  workspace: ArtifactWorkspaceState
+}
 
-const initialState: ArtifactState = {
-  part: null,
+const initialWorkspace: ArtifactWorkspaceState = {
+  artifactId: null,
+  revisionId: null,
+  title: null,
+  status: null,
+  previewUrl: null,
   isOpen: false
 }
 
+const initialState: ArtifactUiState = {
+  inspectedPart: null,
+  workspace: initialWorkspace
+}
+
+type ArtifactAction =
+  | { type: 'OPEN_INSPECTOR'; payload: Part }
+  | { type: 'CLOSE_INSPECTOR' }
+  | { type: 'CLEAR_INSPECTOR' }
+  | { type: 'OPEN_WORKSPACE'; payload: Partial<ArtifactWorkspaceState> }
+  | { type: 'UPDATE_WORKSPACE'; payload: Partial<ArtifactWorkspaceState> }
+  | { type: 'CLOSE_WORKSPACE' }
+
 function artifactReducer(
-  state: ArtifactState,
+  state: ArtifactUiState,
   action: ArtifactAction
-): ArtifactState {
+): ArtifactUiState {
   switch (action.type) {
-    case 'OPEN':
-      return { part: action.payload, isOpen: true }
-    case 'CLOSE':
-      return { ...state, isOpen: false }
-    case 'CLEAR_CONTENT':
-      return { part: null, isOpen: false }
+    case 'OPEN_INSPECTOR':
+      return { ...state, inspectedPart: action.payload }
+    case 'CLOSE_INSPECTOR':
+      return { ...state, inspectedPart: null }
+    case 'CLEAR_INSPECTOR':
+      return { ...state, inspectedPart: null }
+    case 'OPEN_WORKSPACE':
+      return {
+        ...state,
+        workspace: {
+          ...state.workspace,
+          ...action.payload,
+          isOpen: true
+        }
+      }
+    case 'UPDATE_WORKSPACE':
+      return {
+        ...state,
+        workspace: {
+          ...state.workspace,
+          ...action.payload
+        }
+      }
+    case 'CLOSE_WORKSPACE':
+      return {
+        ...state,
+        workspace: initialWorkspace
+      }
     default:
       return state
   }
 }
 
 interface ArtifactContextValue {
-  state: ArtifactState
+  state: ArtifactUiState
   open: (part: Part) => void
   close: () => void
+  openWorkspace: (ws: Partial<ArtifactWorkspaceState>) => void
+  updateWorkspace: (ws: Partial<ArtifactWorkspaceState>) => void
+  closeWorkspace: () => void
+  appendWorkspaceLog: (log: ArtifactLogData) => void
+  workspaceLogs: ArtifactLogData[]
 }
 
 const ArtifactContext = createContext<ArtifactContextValue | undefined>(
@@ -60,29 +111,72 @@ const ArtifactContext = createContext<ArtifactContextValue | undefined>(
 export function ArtifactProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(artifactReducer, initialState)
   const { setOpen, open: sidebarOpen } = useSidebar()
+  const [workspaceLogs, setWorkspaceLogs] = useState<ArtifactLogData[]>([])
+  const isInspectorOpen =
+    state.inspectedPart !== null && !state.workspace.isOpen
 
   const close = useCallback(() => {
-    dispatch({ type: 'CLOSE' })
+    dispatch({ type: 'CLOSE_INSPECTOR' })
     // Keep content for animation purposes, clear after transition
     setTimeout(() => {
-      dispatch({ type: 'CLEAR_CONTENT' })
+      dispatch({ type: 'CLEAR_INSPECTOR' })
     }, ANIMATION_DURATION)
   }, [])
 
-  // Close artifact when sidebar opens
+  // Close inspector when sidebar opens
   useEffect(() => {
-    if (sidebarOpen && state.isOpen) {
+    if (sidebarOpen && isInspectorOpen) {
       close()
     }
-  }, [sidebarOpen, state.isOpen, close])
+  }, [sidebarOpen, isInspectorOpen, close])
 
-  const open = (part: Part) => {
-    dispatch({ type: 'OPEN', payload: part })
-    setOpen(false)
-  }
+  const open = useCallback(
+    (part: Part) => {
+      dispatch({ type: 'OPEN_INSPECTOR', payload: part })
+      setOpen(false)
+    },
+    [setOpen]
+  )
+
+  const openWorkspace = useCallback(
+    (ws: Partial<ArtifactWorkspaceState>) => {
+      setWorkspaceLogs([])
+      dispatch({ type: 'OPEN_WORKSPACE', payload: ws })
+      setOpen(false)
+    },
+    [setOpen]
+  )
+
+  const updateWorkspace = useCallback((ws: Partial<ArtifactWorkspaceState>) => {
+    dispatch({ type: 'UPDATE_WORKSPACE', payload: ws })
+  }, [])
+
+  const closeWorkspace = useCallback(() => {
+    dispatch({ type: 'CLOSE_WORKSPACE' })
+    setWorkspaceLogs([])
+  }, [])
+
+  const appendWorkspaceLog = useCallback((log: ArtifactLogData) => {
+    setWorkspaceLogs(prev => [...prev, log])
+  }, [])
+
+  // Stable reference to avoid re-renders from logs array identity
+  const logsRef = useRef(workspaceLogs)
+  logsRef.current = workspaceLogs
 
   return (
-    <ArtifactContext.Provider value={{ state, open, close }}>
+    <ArtifactContext.Provider
+      value={{
+        state,
+        open,
+        close,
+        openWorkspace,
+        updateWorkspace,
+        closeWorkspace,
+        appendWorkspaceLog,
+        workspaceLogs
+      }}
+    >
       {children}
     </ArtifactContext.Provider>
   )

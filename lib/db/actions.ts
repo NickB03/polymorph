@@ -185,6 +185,43 @@ export async function loadArtifactByChatId(
 }
 
 /**
+ * Load an artifact by its ID
+ */
+export async function loadArtifactById(
+  artifactId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [artifact] = await tx
+      .select()
+      .from(artifacts)
+      .where(eq(artifacts.id, artifactId))
+      .limit(1)
+
+    return artifact ?? null
+  })
+}
+
+/**
+ * Load the current runtime session for an artifact
+ */
+export async function loadArtifactRuntimeSession(
+  artifactId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [session] = await tx
+      .select()
+      .from(artifactRuntimeSessions)
+      .where(eq(artifactRuntimeSessions.artifactId, artifactId))
+      .orderBy(desc(artifactRuntimeSessions.startedAt))
+      .limit(1)
+
+    return session ?? null
+  })
+}
+
+/**
  * Create a persisted artifact record
  */
 export async function createArtifactRecord(input: CreateArtifactInput) {

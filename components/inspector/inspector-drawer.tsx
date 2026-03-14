@@ -12,7 +12,7 @@ import { InspectorPanel } from './inspector-panel'
 
 export function InspectorDrawer() {
   const { state, close } = useArtifact()
-  const part = state.part
+  const part = state.inspectedPart
   const isMobile = useMediaQuery('(max-width: 767px)')
 
   // Function to get the title based on part type (mirrors ArtifactPanel logic)
@@ -32,11 +32,14 @@ export function InspectorDrawer() {
     }
   }
 
-  if (!isMobile) return null
+  // Don't show inspector drawer when workspace is open or not on mobile
+  if (!isMobile || state.workspace.isOpen) return null
+
+  const isOpen = part !== null
 
   return (
     <Drawer
-      open={state.isOpen}
+      open={isOpen}
       onOpenChange={open => {
         if (!open) close()
       }}
