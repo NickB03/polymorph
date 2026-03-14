@@ -26,7 +26,9 @@ function base64urlEncode(data: Uint8Array): string {
 }
 
 function base64urlDecode(str: string): Uint8Array {
-  return new Uint8Array(Buffer.from(str, 'base64url'))
+  // `Buffer.from(...)` is typed as Uint8Array<ArrayBufferLike>, but Web Crypto
+  // in TS expects BufferSource backed by ArrayBuffer.
+  return Uint8Array.from(Buffer.from(str, 'base64url'))
 }
 
 function getSecret(): string {
@@ -120,11 +122,13 @@ export async function verifyGuestArtifactToken(
     const key = await importKey(secret)
     const encoder = new TextEncoder()
     const signatureBytes = base64urlDecode(signatureB64)
+    const signatureBytesForCrypto = new Uint8Array(signatureBytes.length)
+    signatureBytesForCrypto.set(signatureBytes)
 
     const valid = await crypto.subtle.verify(
       'HMAC',
       key,
-      signatureBytes,
+      signatureBytesForCrypto,
       encoder.encode(payloadB64)
     )
     if (!valid) return null
