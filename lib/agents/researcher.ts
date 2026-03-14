@@ -9,6 +9,7 @@ import type { ResearcherTools } from '@/lib/types/agent'
 import { type ModelType } from '@/lib/types/model-type'
 import { type Model } from '@/lib/types/models'
 
+import { createWebappArtifactTool } from '../tools/create-webapp-artifact'
 import { displayCalloutTool } from '../tools/display-callout'
 import { displayChartTool } from '../tools/display-chart'
 import { displayCitationsTool } from '../tools/display-citations'
@@ -18,8 +19,11 @@ import { displayPlanTool } from '../tools/display-plan'
 import { displayTableTool } from '../tools/display-table'
 import { displayTimelineTool } from '../tools/display-timeline'
 import { fetchTool } from '../tools/fetch'
+import { getArtifactStatusTool } from '../tools/get-artifact-status'
+import { restartArtifactPreviewTool } from '../tools/restart-artifact-preview'
 import { createSearchTool } from '../tools/search'
 import { createTodoTools } from '../tools/todo'
+import { updateWebappArtifactTool } from '../tools/update-webapp-artifact'
 import { SearchMode } from '../types/search'
 import { getModel } from '../utils/registry'
 import { isTracingEnabled } from '../utils/telemetry'
@@ -83,7 +87,8 @@ export function createResearcher({
   writer,
   parentTraceId,
   searchMode = 'research',
-  modelType
+  modelType,
+  experimentalContext
 }: {
   model: string
   modelConfig?: Model
@@ -91,6 +96,7 @@ export function createResearcher({
   parentTraceId?: string
   searchMode?: SearchMode
   modelType?: ModelType
+  experimentalContext?: unknown
 }) {
   try {
     const currentDate = new Date().toLocaleString()
@@ -118,7 +124,11 @@ export function createResearcher({
           'displayLinkPreview',
           'displayOptionList',
           'displayCallout',
-          'displayTimeline'
+          'displayTimeline',
+          'createWebappArtifact',
+          'updateWebappArtifact',
+          'getArtifactStatus',
+          'restartArtifactPreview'
         ]
         maxSteps = 20
         searchTool = wrapSearchToolForChatMode(originalSearchTool)
@@ -139,7 +149,11 @@ export function createResearcher({
           'displayLinkPreview',
           'displayOptionList',
           'displayCallout',
-          'displayTimeline'
+          'displayTimeline',
+          'createWebappArtifact',
+          'updateWebappArtifact',
+          'getArtifactStatus',
+          'restartArtifactPreview'
         ]
         // Enable todo tools when writer is available
         if (writer && 'todoWrite' in todoTools) {
@@ -165,6 +179,10 @@ export function createResearcher({
       displayOptionList: displayOptionListTool,
       displayCallout: displayCalloutTool,
       displayTimeline: displayTimelineTool,
+      createWebappArtifact: createWebappArtifactTool,
+      updateWebappArtifact: updateWebappArtifactTool,
+      getArtifactStatus: getArtifactStatusTool,
+      restartArtifactPreview: restartArtifactPreviewTool,
       ...todoTools
     } as ResearcherTools
 
@@ -177,6 +195,9 @@ export function createResearcher({
       stopWhen: stepCountIs(maxSteps),
       ...(modelConfig?.providerOptions && {
         providerOptions: modelConfig.providerOptions
+      }),
+      ...(experimentalContext !== undefined && {
+        experimental_context: experimentalContext
       }),
       experimental_telemetry: {
         isEnabled: isTracingEnabled(),

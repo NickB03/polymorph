@@ -184,6 +184,22 @@ export function Chat({
       }
     }),
     messages: savedMessages,
+    onData: dataPart => {
+      // Handle transient artifact data parts (not persisted in message.parts).
+      // Dispatched as custom DOM events so the artifact workspace can react
+      // without polling. Transient parts arrive via the stream but are
+      // excluded from message.parts by the SDK.
+      if (dataPart && typeof dataPart === 'object' && 'type' in dataPart) {
+        const { type } = dataPart as { type: string }
+        if (type === 'data-artifactLog' || type === 'data-artifactEvent') {
+          window.dispatchEvent(
+            new CustomEvent(type, {
+              detail: (dataPart as { data: unknown }).data
+            })
+          )
+        }
+      }
+    },
     onFinish: () => {
       window.dispatchEvent(new CustomEvent('chat-history-updated'))
     },

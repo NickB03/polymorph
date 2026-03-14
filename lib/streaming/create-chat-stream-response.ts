@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto'
 import { Langfuse } from 'langfuse'
 
 import { researcher } from '@/lib/agents/researcher'
+import type { ArtifactToolContext } from '@/lib/artifacts/tool-context'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
@@ -33,6 +34,7 @@ import {
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
 import type { StreamContext } from './helpers/types'
+import { createArtifactEmitter } from './helpers/write-artifact-data'
 import { BaseStreamConfig } from './types'
 
 export async function createChatStreamResponse(
@@ -160,6 +162,17 @@ export async function createChatStreamResponse(
         }
         perfTime('prepareMessages completed (stream)', prepareStart)
 
+        // Build request-scoped artifact tool context with writer-backed emitters.
+        const artifactEmitter = createArtifactEmitter(writer)
+        const artifactToolContext: ArtifactToolContext = {
+          chatId,
+          userId,
+          isGuest: false,
+          messages: messagesToModel,
+          resolveGuestArtifactToken: async () => null,
+          ...artifactEmitter
+        }
+
         // Get the researcher agent with parent trace ID, search mode, and model type
         const researchAgent = researcher({
           model: context.modelId,
@@ -167,7 +180,8 @@ export async function createChatStreamResponse(
           writer,
           parentTraceId,
           searchMode,
-          modelType
+          modelType,
+          experimentalContext: { artifactToolContext }
         })
 
         // For OpenAI models, strip reasoning parts from UIMessages before conversion
