@@ -5,13 +5,14 @@ import {
   createUIMessageStreamResponse,
   pruneMessages,
   smoothStream,
-  UIMessage,
   UIMessageStreamWriter
 } from 'ai'
 import { randomUUID } from 'crypto'
 import { Langfuse } from 'langfuse'
 
 import { researcher } from '@/lib/agents/researcher'
+import type { ArtifactToolContext } from '@/lib/artifacts/tool-context'
+import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
 import { jsonError } from '@/lib/utils/json-error'
 import { isTracingEnabled } from '@/lib/utils/telemetry'
@@ -21,6 +22,7 @@ import { maybeTruncateMessages } from '../utils/context-window'
 import { hasPendingInteractiveTool } from './helpers/has-pending-interactive-tool'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
+import { createArtifactEmitter } from './helpers/write-artifact-data'
 import { BaseStreamConfig } from './types'
 
 type EphemeralStreamConfig = Pick<
@@ -93,13 +95,26 @@ export async function createEphemeralChatStreamResponse(
 
         modelMessages = maybeTruncateMessages(modelMessages, model)
 
+        // Build request-scoped artifact tool context for guest flow
+        // with writer-backed emitters for stream parity.
+        const artifactEmitter = createArtifactEmitter(writer)
+        const artifactToolContext: ArtifactToolContext = {
+          chatId: chatId || 'ephemeral',
+          userId: null,
+          isGuest: true,
+          messages,
+          resolveGuestArtifactToken: async () => null,
+          ...artifactEmitter
+        }
+
         const researchAgent = researcher({
           model: modelId,
           modelConfig: model,
           writer,
           parentTraceId,
           searchMode,
-          modelType
+          modelType,
+          experimentalContext: { artifactToolContext }
         })
 
         const result = await researchAgent.stream({

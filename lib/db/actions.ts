@@ -3,6 +3,11 @@
 import { and, asc, desc, eq, gt, inArray } from 'drizzle-orm'
 
 import type { UIMessage } from '@/lib/types/ai'
+import type {
+  AppendArtifactRevisionInput,
+  CreateArtifactInput,
+  UpsertArtifactRuntimeSessionInput
+} from '@/lib/types/artifact'
 import type { PersistableUIMessage } from '@/lib/types/message-persistence'
 import {
   buildUIMessageFromDB,
@@ -13,7 +18,15 @@ import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 import { incrementDbOperationCount } from '@/lib/utils/perf-tracking'
 
 import type { Chat, Message } from './schema'
-import { chats, generateId, messages, parts } from './schema'
+import {
+  artifactRevisions,
+  artifactRuntimeSessions,
+  artifacts,
+  chats,
+  generateId,
+  messages,
+  parts
+} from './schema'
 import type { TxInstance } from './with-rls'
 import { withOptionalRLS, withRLS } from './with-rls'
 import { db } from '.'
@@ -149,6 +162,133 @@ export async function loadChat(
 
     // Convert to UI format
     return result.map(msg => buildUIMessageFromDB(msg, msg.parts))
+  })
+}
+
+/**
+ * Load the most recent artifact for a chat
+ */
+export async function loadArtifactByChatId(
+  chatId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [artifact] = await tx
+      .select()
+      .from(artifacts)
+      .where(eq(artifacts.chatId, chatId))
+      .orderBy(desc(artifacts.updatedAt))
+      .limit(1)
+
+    return artifact ?? null
+  })
+}
+
+/**
+ * Create a persisted artifact record
+ */
+export async function createArtifactRecord(input: CreateArtifactInput) {
+  return withOptionalRLS(input.userId, async tx => {
+    const [artifact] = await tx
+      .insert(artifacts)
+      .values({
+        id: input.id ?? generateId(),
+        chatId: input.chatId,
+        userId: input.userId,
+        currentRevisionId: input.currentRevisionId ?? null,
+        currentRuntimeSessionId: input.currentRuntimeSessionId ?? null,
+        title: input.title,
+        framework: input.framework,
+        status: input.status,
+        updatedAt: new Date()
+      })
+      .returning()
+
+    return artifact
+  })
+}
+
+/**
+ * Append a revision and promote it to the current artifact revision
+ */
+export async function appendArtifactRevision(
+  input: AppendArtifactRevisionInput,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    return tx.transaction(async nestedTx => {
+      const [revision] = await nestedTx
+        .insert(artifactRevisions)
+        .values({
+          id: input.id ?? generateId(),
+          artifactId: input.artifactId,
+          triggeringMessageId: input.triggeringMessageId,
+          promptSummary: input.promptSummary,
+          title: input.title,
+          sandboxSnapshotRef: input.sandboxSnapshotRef ?? null
+        })
+        .returning()
+
+      await nestedTx
+        .update(artifacts)
+        .set({
+          currentRevisionId: revision.id,
+          title: input.title,
+          updatedAt: new Date()
+        })
+        .where(eq(artifacts.id, input.artifactId))
+
+      return revision
+    })
+  })
+}
+
+/**
+ * Upsert a runtime session and promote it to the current runtime session
+ */
+export async function upsertArtifactRuntimeSession(
+  input: UpsertArtifactRuntimeSessionInput,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    return tx.transaction(async nestedTx => {
+      const [session] = await nestedTx
+        .insert(artifactRuntimeSessions)
+        .values({
+          id: input.id ?? generateId(),
+          artifactId: input.artifactId,
+          provider: input.provider,
+          sandboxId: input.sandboxId,
+          previewUrl: input.previewUrl ?? null,
+          status: input.status,
+          startedAt: input.startedAt,
+          expiresAt: input.expiresAt ?? null,
+          lastHeartbeatAt: input.lastHeartbeatAt ?? null
+        })
+        .onConflictDoUpdate({
+          target: artifactRuntimeSessions.id,
+          set: {
+            sandboxId: input.sandboxId,
+            previewUrl: input.previewUrl ?? null,
+            status: input.status,
+            startedAt: input.startedAt,
+            expiresAt: input.expiresAt ?? null,
+            lastHeartbeatAt: input.lastHeartbeatAt ?? null
+          }
+        })
+        .returning()
+
+      await nestedTx
+        .update(artifacts)
+        .set({
+          currentRuntimeSessionId: session.id,
+          status: input.status,
+          updatedAt: new Date()
+        })
+        .where(eq(artifacts.id, input.artifactId))
+
+      return session
+    })
   })
 }
 

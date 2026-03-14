@@ -80,6 +80,15 @@ const KNOWN_TOOL_NAMES = [
   'todoRead'
 ] as const
 
+const ARTIFACT_TOOL_NAMES = [
+  'createWebappArtifact',
+  'updateWebappArtifact',
+  'getArtifactStatus',
+  'restartArtifactPreview'
+] as const
+
+const TRANSIENT_DATA_PART_TYPES = new Set(['artifactEvent', 'artifactLog'])
+
 // Type guards
 function isToolCallPart(part: unknown): part is ToolCallPart {
   if (typeof part !== 'object' || part === null) return false
@@ -127,6 +136,22 @@ function serializeProviderMeta(meta?: Record<string, unknown>) {
 /** Deserialize providerMetadata from DB back to callProviderMetadata for AI SDK */
 function deserializeProviderMeta(meta?: Record<string, unknown> | null) {
   return meta ? { callProviderMetadata: meta } : {}
+}
+
+function getDynamicToolType(toolName: string) {
+  if (toolName.startsWith('mcp__')) {
+    return 'mcp'
+  }
+
+  if (toolName.startsWith('display')) {
+    return 'display'
+  }
+
+  if ((ARTIFACT_TOOL_NAMES as readonly string[]).includes(toolName)) {
+    return 'artifact'
+  }
+
+  return 'dynamic'
 }
 
 // Helper function to create tool part mapping
@@ -227,9 +252,7 @@ export function mapUIMessagePartsToDBParts(
         // Store additional metadata for dynamic tools
         if (toolName === 'dynamic') {
           result.tool_dynamic_name = part.toolName
-          result.tool_dynamic_type = part.toolName.startsWith('mcp__')
-            ? 'mcp'
-            : 'dynamic'
+          result.tool_dynamic_type = getDynamicToolType(part.toolName)
         }
 
         return result
@@ -261,11 +284,9 @@ export function mapUIMessagePartsToDBParts(
 
           if (toolCallPart) {
             toolResult.tool_dynamic_name = toolCallPart.toolName
-            toolResult.tool_dynamic_type = toolCallPart.toolName.startsWith(
-              'mcp__'
+            toolResult.tool_dynamic_type = getDynamicToolType(
+              toolCallPart.toolName
             )
-              ? 'mcp'
-              : 'dynamic'
           }
         }
 
@@ -290,9 +311,7 @@ export function mapUIMessagePartsToDBParts(
           tool_toolCallId: dynamicPart.toolCallId || generateId(),
           tool_state: dynamicPart.state as ToolState,
           tool_dynamic_name: dynamicPart.toolName,
-          tool_dynamic_type: dynamicPart.toolName.startsWith('mcp__')
-            ? 'mcp'
-            : 'dynamic',
+          tool_dynamic_type: getDynamicToolType(dynamicPart.toolName),
           tool_dynamic_input: dynamicPart.input,
           tool_dynamic_output:
             dynamicPart.state === 'output-available'
@@ -325,7 +344,12 @@ export function mapUIMessagePartsToDBParts(
         // Display tool parts — route to dynamic columns for persistence.
         // Uses startsWith to automatically cover all current and future
         // display tools (e.g., displayCallout, displayChart, displayTimeline).
-        if (part.type.startsWith('tool-display')) {
+        const dynamicToolName = part.type.substring(5)
+
+        if (
+          part.type.startsWith('tool-display') ||
+          (ARTIFACT_TOOL_NAMES as readonly string[]).includes(dynamicToolName)
+        ) {
           if (!isExtendedToolPart(part)) {
             console.error('Invalid extended tool part:', part)
             return null
@@ -335,8 +359,8 @@ export function mapUIMessagePartsToDBParts(
             type: 'tool-dynamic',
             tool_toolCallId: part.toolCallId || generateId(),
             tool_state: part.state || ('input-available' as ToolState),
-            tool_dynamic_name: part.type.substring(5), // e.g., 'displayPlan'
-            tool_dynamic_type: 'display',
+            tool_dynamic_name: dynamicToolName,
+            tool_dynamic_type: getDynamicToolType(dynamicToolName),
             tool_dynamic_input: part.input,
             tool_dynamic_output:
               part.state === 'output-available' ? part.output : undefined,
@@ -356,6 +380,11 @@ export function mapUIMessagePartsToDBParts(
         // Data parts
         if (part.type.startsWith('data-')) {
           const dataType = part.type.substring(5) // Remove 'data-' prefix
+
+          if (TRANSIENT_DATA_PART_TYPES.has(dataType)) {
+            return null
+          }
+
           return {
             ...basePart,
             data_prefix: dataType,
@@ -438,7 +467,11 @@ export function mapDBPartToUIMessagePart(
         // Special handling for dynamic tools
         if (toolName === 'dynamic') {
           // Reconstruct display tools to their original type for rich rendering
-          if (part.tool_dynamic_type === 'display' && part.tool_dynamic_name) {
+          if (
+            (part.tool_dynamic_type === 'display' ||
+              part.tool_dynamic_type === 'artifact') &&
+            part.tool_dynamic_name
+          ) {
             return {
               type: `tool-${part.tool_dynamic_name}` as any,
               toolCallId: part.tool_toolCallId || '',
@@ -587,6 +620,10 @@ function getToolNameFromType(toolName: string): string {
 
   // Display tools route to dynamic columns
   if (toolName.startsWith('display')) {
+    return 'dynamic'
+  }
+
+  if ((ARTIFACT_TOOL_NAMES as readonly string[]).includes(toolName)) {
     return 'dynamic'
   }
 

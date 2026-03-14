@@ -41,3 +41,6 @@ next-env.d.ts
 
 # archived files
 .archive/
+
+# AI tool instruction files (non-Claude)
+AGENTS.md

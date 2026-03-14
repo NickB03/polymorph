@@ -1,9 +1,20 @@
 import type { ReasoningPart, TextPart } from '@ai-sdk/provider-utils'
-import type { InferUITool, UIMessage as AIMessage } from 'ai'
+import type {
+  InferUITool,
+  UIDataTypes as AIUIDataTypes,
+  UIMessage as AIMessage,
+  UITools as AIUITools
+} from 'ai'
 
 import { fetchTool } from '@/lib/tools/fetch'
 import { searchTool } from '@/lib/tools/search'
 import { createTodoTools, type TodoItem } from '@/lib/tools/todo'
+import type {
+  ArtifactData,
+  ArtifactEventData,
+  ArtifactLogData,
+  ArtifactStatusData
+} from '@/lib/types/artifact'
 import type { ModelType } from '@/lib/types/model-type'
 import type { SearchMode } from '@/lib/types/search'
 
@@ -22,9 +33,9 @@ export interface UIMessageMetadata {
 
 export type UIMessage<
   TMetadata = UIMessageMetadata,
-  TDataTypes = UIDataTypes,
-  TTools = UITools
-> = AIMessage
+  TDataTypes extends AIUIDataTypes = UIDataTypes,
+  TTools extends AIUITools = UITools
+> = AIMessage<TMetadata, TDataTypes, TTools>
 
 export interface ChatSection {
   id: string
@@ -38,18 +49,51 @@ export interface RelatedQuestionsData {
 }
 
 export type UIDataTypes = {
+  artifact?: ArtifactData
+  artifactEvent?: ArtifactEventData
+  artifactLog?: ArtifactLogData
+  artifactStatus?: ArtifactStatusData
   sources?: any[]
   relatedQuestions?: RelatedQuestionsData
 }
 
 // Data part types for DataSection
+export type DataArtifactPart = {
+  type: 'data-artifact'
+  id?: string
+  data: ArtifactData
+}
+
+export type DataArtifactStatusPart = {
+  type: 'data-artifactStatus'
+  id?: string
+  data: ArtifactStatusData
+}
+
+export type DataArtifactLogPart = {
+  type: 'data-artifactLog'
+  id?: string
+  data: ArtifactLogData
+}
+
+export type DataArtifactEventPart = {
+  type: 'data-artifactEvent'
+  id?: string
+  data: ArtifactEventData
+}
+
 export type DataRelatedQuestionsPart = {
   type: 'data-relatedQuestions'
   id?: string
   data: RelatedQuestionsData
 }
 
-export type DataPart = DataRelatedQuestionsPart
+export type DataPart =
+  | DataArtifactPart
+  | DataArtifactStatusPart
+  | DataArtifactLogPart
+  | DataArtifactEventPart
+  | DataRelatedQuestionsPart
 
 // Create todo tools instance for type inference
 const todoTools = createTodoTools()
@@ -75,4 +119,4 @@ export type ToolPart<T extends keyof UITools = keyof UITools> = {
   errorText?: string
 }
 
-export type Part = TextPart | ReasoningPart | ToolPart
+export type Part = DataPart | TextPart | ReasoningPart | ToolPart

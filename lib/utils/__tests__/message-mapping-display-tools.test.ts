@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { ArtifactData, ArtifactStatusData } from '@/lib/types/artifact'
 import type { DBMessagePartSelect } from '@/lib/types/message-persistence'
 
 import {
@@ -48,6 +49,125 @@ function makeDBDisplayPart(
     tool_dynamic_type: 'display',
     tool_dynamic_input: { query: 'test' },
     tool_dynamic_output: { result: name },
+    tool_errorText: null,
+    providerMetadata: null,
+    text_text: null,
+    reasoning_text: null,
+    file_mediaType: null,
+    file_filename: null,
+    file_url: null,
+    source_url_sourceId: null,
+    source_url_url: null,
+    source_url_title: null,
+    source_document_sourceId: null,
+    source_document_mediaType: null,
+    source_document_title: null,
+    source_document_filename: null,
+    source_document_url: null,
+    source_document_snippet: null,
+    tool_search_input: null,
+    tool_search_output: null,
+    tool_fetch_input: null,
+    tool_fetch_output: null,
+    tool_question_input: null,
+    tool_question_output: null,
+    tool_todoWrite_input: null,
+    tool_todoWrite_output: null,
+    tool_todoRead_input: null,
+    tool_todoRead_output: null,
+    data_prefix: null,
+    data_content: null,
+    data_id: null,
+    ...overrides
+  } as DBMessagePartSelect
+}
+
+function makeDBArtifactPart(
+  dataPrefix: 'artifact' | 'artifactStatus',
+  data: ArtifactData | ArtifactStatusData,
+  overrides?: Partial<DBMessagePartSelect>
+): DBMessagePartSelect {
+  return {
+    id: `id-${dataPrefix}`,
+    messageId: 'msg-1',
+    order: 0,
+    type: `data-${dataPrefix}`,
+    tool_toolCallId: null,
+    tool_state: null,
+    tool_dynamic_name: null,
+    tool_dynamic_type: null,
+    tool_dynamic_input: null,
+    tool_dynamic_output: null,
+    tool_errorText: null,
+    providerMetadata: null,
+    text_text: null,
+    reasoning_text: null,
+    file_mediaType: null,
+    file_filename: null,
+    file_url: null,
+    source_url_sourceId: null,
+    source_url_url: null,
+    source_url_title: null,
+    source_document_sourceId: null,
+    source_document_mediaType: null,
+    source_document_title: null,
+    source_document_filename: null,
+    source_document_url: null,
+    source_document_snippet: null,
+    tool_search_input: null,
+    tool_search_output: null,
+    tool_fetch_input: null,
+    tool_fetch_output: null,
+    tool_question_input: null,
+    tool_question_output: null,
+    tool_todoWrite_input: null,
+    tool_todoWrite_output: null,
+    tool_todoRead_input: null,
+    tool_todoRead_output: null,
+    data_prefix: dataPrefix,
+    data_content: data,
+    data_id: `${dataPrefix}-part-1`,
+    ...overrides
+  } as DBMessagePartSelect
+}
+
+function makeArtifactToolPart(
+  name:
+    | 'createWebappArtifact'
+    | 'updateWebappArtifact'
+    | 'getArtifactStatus'
+    | 'restartArtifactPreview',
+  overrides?: Record<string, unknown>
+) {
+  return {
+    type: `tool-${name}`,
+    toolCallId: `call-${name}`,
+    state: 'output-available',
+    input: { artifactId: 'artifact-1' },
+    output: { id: 'artifact-1', status: 'ready' },
+    ...overrides
+  }
+}
+
+function makeDBArtifactToolPart(
+  name:
+    | 'createWebappArtifact'
+    | 'updateWebappArtifact'
+    | 'getArtifactStatus'
+    | 'restartArtifactPreview',
+  overrides?: Partial<DBMessagePartSelect>
+): DBMessagePartSelect {
+  return {
+    id: `id-${name}`,
+    messageId: 'msg-1',
+    order: 0,
+    type: 'tool-dynamic',
+    tool_toolCallId: `call-${name}`,
+    tool_state: 'output-available',
+    tool_dynamic_name: name,
+    tool_dynamic_type: 'artifact',
+    tool_dynamic_input: { artifactId: 'artifact-1' },
+    tool_dynamic_output: { id: 'artifact-1', status: 'ready' },
     tool_errorText: null,
     providerMetadata: null,
     text_text: null,
@@ -151,6 +271,146 @@ describe('display tool persistence', () => {
       expect(dbError.tool_errorText).toBe('render failed')
       expect(dbOk.tool_errorText).toBeUndefined()
     })
+  })
+
+  describe('artifact data persistence', () => {
+    const artifactData: ArtifactData = {
+      id: 'artifact-1',
+      title: 'Landing page',
+      status: 'ready',
+      previewUrl: 'https://preview.example.com',
+      revisionId: 'revision-1'
+    }
+
+    const artifactStatus: ArtifactStatusData = {
+      id: 'artifact-1',
+      status: 'building',
+      previewUrl: 'https://preview.example.com'
+    }
+
+    it('persists data-artifact and data-artifactStatus parts', () => {
+      const parts = mapUIMessagePartsToDBParts(
+        [
+          {
+            type: 'data-artifact',
+            id: 'artifact-part-1',
+            data: artifactData
+          },
+          {
+            type: 'data-artifactStatus',
+            id: 'artifact-status-part-1',
+            data: artifactStatus
+          }
+        ],
+        'msg-1'
+      )
+
+      expect(parts).toEqual([
+        expect.objectContaining({
+          data_prefix: 'artifact',
+          data_content: artifactData,
+          data_id: 'artifact-part-1'
+        }),
+        expect.objectContaining({
+          data_prefix: 'artifactStatus',
+          data_content: artifactStatus,
+          data_id: 'artifact-status-part-1'
+        })
+      ])
+    })
+
+    it('does not persist transient artifact log and event parts', () => {
+      const parts = mapUIMessagePartsToDBParts(
+        [
+          {
+            type: 'data-artifactLog',
+            id: 'artifact-log-1',
+            data: {
+              artifactId: 'artifact-1',
+              message: 'npm run dev started'
+            }
+          },
+          {
+            type: 'data-artifactEvent',
+            id: 'artifact-event-1',
+            data: {
+              artifactId: 'artifact-1',
+              event: 'preview-ready'
+            }
+          }
+        ],
+        'msg-1'
+      )
+
+      expect(parts).toHaveLength(0)
+    })
+
+    it('round-trips persisted artifact data parts with reconciliation ids', () => {
+      expect(
+        mapDBPartToUIMessagePart(makeDBArtifactPart('artifact', artifactData))
+      ).toEqual({
+        type: 'data-artifact',
+        id: 'artifact-part-1',
+        data: artifactData
+      })
+
+      expect(
+        mapDBPartToUIMessagePart(
+          makeDBArtifactPart('artifactStatus', artifactStatus)
+        )
+      ).toEqual({
+        type: 'data-artifactStatus',
+        id: 'artifactStatus-part-1',
+        data: artifactStatus
+      })
+    })
+  })
+
+  describe('artifact tool persistence', () => {
+    it.each([
+      'createWebappArtifact',
+      'updateWebappArtifact',
+      'getArtifactStatus',
+      'restartArtifactPreview'
+    ] as const)('maps %s to tool-dynamic with artifact type', toolName => {
+      const parts = mapUIMessagePartsToDBParts(
+        [makeArtifactToolPart(toolName)],
+        'msg-1'
+      )
+
+      expect(parts).toHaveLength(1)
+      expect(parts[0]).toMatchObject({
+        type: 'tool-dynamic',
+        tool_toolCallId: `call-${toolName}`,
+        tool_state: 'output-available',
+        tool_dynamic_name: toolName,
+        tool_dynamic_type: 'artifact',
+        tool_dynamic_input: { artifactId: 'artifact-1' },
+        tool_dynamic_output: { id: 'artifact-1', status: 'ready' }
+      })
+    })
+
+    it.each([
+      'createWebappArtifact',
+      'updateWebappArtifact',
+      'getArtifactStatus',
+      'restartArtifactPreview'
+    ] as const)(
+      'reconstructs tool-%s from tool-dynamic artifact rows',
+      toolName => {
+        const uiPart = mapDBPartToUIMessagePart(
+          makeDBArtifactToolPart(toolName)
+        )
+
+        expect(uiPart).toMatchObject({
+          type: `tool-${toolName}`,
+          toolCallId: `call-${toolName}`,
+          state: 'output-available',
+          input: { artifactId: 'artifact-1' },
+          output: { id: 'artifact-1', status: 'ready' }
+        })
+      }
+    )
   })
 
   describe('mapDBPartToUIMessagePart', () => {
