@@ -214,9 +214,10 @@ Define a provider-neutral interface:
 ```ts
 export interface ArtifactRuntime {
   createSession(input: CreateSessionInput): Promise<CreateSessionResult>
-  writeTemplateFiles(input: WriteTemplateFilesInput): Promise<void>
+  writeFiles(input: WriteFilesInput): Promise<void>
   applySourceUpdate(input: ApplySourceUpdateInput): Promise<void>
-  runValidation(input: RunValidationInput): Promise<ValidationResult>
+  installDependencies(input: InstallDependenciesInput): Promise<void>
+  runCommand(input: RunCommandInput): Promise<RunCommandResult>
   startPreview(input: StartPreviewInput): Promise<StartPreviewResult>
   restartPreview(input: RestartPreviewInput): Promise<StartPreviewResult>
   getLogs(input: GetLogsInput): Promise<RuntimeLog[]>

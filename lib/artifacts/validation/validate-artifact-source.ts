@@ -8,11 +8,7 @@ import {
 import { normalizeImports } from './normalize-imports'
 
 export interface ValidationError {
-  code:
-    | 'TEMPLATE_OWNED_FILE'
-    | 'BANNED_IMPORT'
-    | 'UNSUPPORTED_PACKAGE'
-    | 'INVALID_PATH'
+  code: 'TEMPLATE_OWNED_FILE' | 'BANNED_IMPORT' | 'UNSUPPORTED_PACKAGE'
   message: string
   line?: number
   importPath?: string
