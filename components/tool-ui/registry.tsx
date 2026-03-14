@@ -18,6 +18,7 @@ import { Plan } from './plan/plan'
 import { safeParseSerializablePlan } from './plan/schema'
 import { safeParseSerializableTimeline } from './timeline/schema'
 import { Timeline } from './timeline/timeline'
+import { tryRenderArtifactCard } from './artifact-card'
 import { ToolErrorBoundary } from './tool-error-boundary'
 
 type ToolUIEntry = {
@@ -136,6 +137,10 @@ const entries: ToolUIEntry[] = [
         </ToolErrorBoundary>
       )
     }
+  },
+  {
+    name: 'artifactCard',
+    tryRender: output => tryRenderArtifactCard(output)
   }
 ]
 

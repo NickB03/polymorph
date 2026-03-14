@@ -9,7 +9,14 @@ import { toast } from 'sonner'
 
 import { generateId } from '@/lib/db/schema'
 import { UploadedFile } from '@/lib/types'
-import type { ChatSection, UIMessage, UIMessageMetadata } from '@/lib/types/ai'
+import type {
+  ChatSection,
+  DataArtifactPart,
+  DataArtifactStatusPart,
+  UIMessage,
+  UIMessageMetadata
+} from '@/lib/types/ai'
+import type { ArtifactLogData } from '@/lib/types/artifact'
 import {
   isDynamicToolPart,
   isInteractiveToolPart,
@@ -24,10 +31,18 @@ import { syncSearchMode } from '@/lib/utils/search-mode'
 
 import { useFileDropzone } from '@/hooks/use-file-dropzone'
 
+import { useArtifact } from './artifact/artifact-context'
 import { ChatMessages } from './chat-messages'
 import { ChatPanel } from './chat-panel'
 import { DragOverlay } from './drag-overlay'
 import { ErrorModal } from './error-modal'
+
+/** Artifact-specific error codes displayed inline rather than in a modal */
+const ARTIFACT_ERROR_CODES = new Set([
+  'BUILD_FAILED',
+  'RUNTIME_UNAVAILABLE',
+  'PREVIEW_EXPIRED'
+])
 
 const EMPTY_MESSAGES: UIMessage[] = []
 
@@ -43,6 +58,12 @@ export function Chat({
   isGuest?: boolean
 }) {
   const router = useRouter()
+  const {
+    openWorkspace,
+    updateWorkspace,
+    appendWorkspaceLog,
+    state: artifactState
+  } = useArtifact()
 
   // Generate a stable chatId on the client side
   // - If providedId exists (e.g., /search/[id]), use it for existing chats
@@ -89,6 +110,8 @@ export function Chat({
   }, [providedId, savedMessages])
 
   const autoSendFiredRef = useRef<Set<string>>(new Set())
+  // Track the last artifact id we auto-opened to avoid re-opening on every render
+  const lastOpenedArtifactIdRef = useRef<string | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
@@ -191,7 +214,11 @@ export function Chat({
       // excluded from message.parts by the SDK.
       if (dataPart && typeof dataPart === 'object' && 'type' in dataPart) {
         const { type } = dataPart as { type: string }
-        if (type === 'data-artifactLog' || type === 'data-artifactEvent') {
+        if (type === 'data-artifactLog') {
+          const logData = (dataPart as { data: ArtifactLogData }).data
+          appendWorkspaceLog(logData)
+          window.dispatchEvent(new CustomEvent(type, { detail: logData }))
+        } else if (type === 'data-artifactEvent') {
           window.dispatchEvent(
             new CustomEvent(type, {
               detail: (dataPart as { data: unknown }).data
@@ -216,6 +243,25 @@ export function Chat({
         }
       } catch {
         // Fall through to legacy detection
+      }
+
+      // Artifact-specific errors: show inline toast instead of modal
+      if (ARTIFACT_ERROR_CODES.has(errorCode)) {
+        const friendlyMessages: Record<string, string> = {
+          BUILD_FAILED: 'Artifact build failed — check logs for details',
+          RUNTIME_UNAVAILABLE:
+            'Artifact runtime is unavailable — try again shortly',
+          PREVIEW_EXPIRED:
+            'Artifact preview has expired — start a new conversation to rebuild'
+        }
+        toast.error(friendlyMessages[errorCode] ?? errorMessage)
+        // Update workspace status to reflect the error
+        if (errorCode === 'BUILD_FAILED') {
+          updateWorkspace({ status: 'failed' })
+        } else if (errorCode === 'PREVIEW_EXPIRED') {
+          updateWorkspace({ status: 'expired' })
+        }
+        return
       }
 
       const lowerMessage = errorMessage.toLowerCase()
@@ -312,6 +358,71 @@ export function Chat({
     experimental_throttle: 100,
     generateId
   })
+
+  // Auto-open workspace when artifact data parts arrive in messages.
+  // Reconcile by stable artifact id to avoid re-opening the same artifact.
+  useEffect(() => {
+    // Scan all messages for the latest artifact data part
+    let latestArtifact: DataArtifactPart | null = null
+    let latestStatus: DataArtifactStatusPart | null = null
+
+    for (const msg of messages) {
+      if (msg.role !== 'assistant') continue
+      for (const part of msg.parts ?? []) {
+        if (part.type === 'data-artifact') {
+          latestArtifact = part as DataArtifactPart
+        } else if (part.type === 'data-artifactStatus') {
+          latestStatus = part as DataArtifactStatusPart
+        }
+      }
+    }
+
+    if (!latestArtifact) return
+
+    const artifactId = latestArtifact.data.id
+
+    // If workspace is already showing this artifact, just apply status updates
+    if (artifactState.workspace.artifactId === artifactId) {
+      const statusData = latestStatus?.data
+      if (statusData && statusData.id === artifactId) {
+        updateWorkspace({
+          status: statusData.status,
+          previewUrl: statusData.previewUrl ?? undefined,
+          revisionId: statusData.revisionId ?? undefined
+        })
+      } else if (
+        latestArtifact.data.status !== artifactState.workspace.status
+      ) {
+        // Artifact part itself has updated status
+        updateWorkspace({
+          status: latestArtifact.data.status,
+          previewUrl: latestArtifact.data.previewUrl ?? undefined,
+          revisionId: latestArtifact.data.revisionId ?? undefined
+        })
+      }
+      lastOpenedArtifactIdRef.current = artifactId
+      return
+    }
+
+    // Don't re-open if we already opened this artifact (user may have closed it)
+    if (lastOpenedArtifactIdRef.current === artifactId) return
+
+    // Open workspace for a new artifact
+    openWorkspace({
+      artifactId,
+      title: latestArtifact.data.title,
+      status: latestArtifact.data.status,
+      previewUrl: latestArtifact.data.previewUrl,
+      revisionId: latestArtifact.data.revisionId
+    })
+    lastOpenedArtifactIdRef.current = artifactId
+  }, [
+    messages,
+    artifactState.workspace.artifactId,
+    artifactState.workspace.status,
+    openWorkspace,
+    updateWorkspace
+  ])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)
