@@ -118,6 +118,39 @@ describe('validateArtifactSource', () => {
       )
     })
 
+    it('rejects writes to index.html', () => {
+      const result = validateArtifactSource({
+        filePath: 'index.html',
+        content: '<!DOCTYPE html><html></html>'
+      })
+      expect(result.valid).toBe(false)
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({ code: 'TEMPLATE_OWNED_FILE' })
+      )
+    })
+
+    it('rejects writes to postcss.config.js', () => {
+      const result = validateArtifactSource({
+        filePath: 'postcss.config.js',
+        content: 'module.exports = {}'
+      })
+      expect(result.valid).toBe(false)
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({ code: 'TEMPLATE_OWNED_FILE' })
+      )
+    })
+
+    it('returns early on template-owned file without checking imports', () => {
+      // If the file is template-owned, validation should stop before import checks
+      const result = validateArtifactSource({
+        filePath: 'package.json',
+        content: '{ "dependencies": { "axios": "1.0.0" } }'
+      })
+      // Should have exactly one error (TEMPLATE_OWNED_FILE), not UNSUPPORTED_PACKAGE
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors[0].code).toBe('TEMPLATE_OWNED_FILE')
+    })
+
     it('allows writes to src/App.tsx', () => {
       const result = validateArtifactSource({
         filePath: 'src/App.tsx',

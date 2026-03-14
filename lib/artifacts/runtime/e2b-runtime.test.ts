@@ -261,6 +261,44 @@ describe('E2B Runtime Adapter', () => {
     })
   })
 
+  describe('runtime bootstrap validation', () => {
+    it('throws ArtifactRuntimeConfigError (not generic Error) when E2B_API_KEY is unset', () => {
+      vi.stubEnv('E2B_API_KEY', '')
+
+      try {
+        createE2BRuntime()
+        expect.fail('Should have thrown')
+      } catch (err) {
+        expect(err).toBeInstanceOf(ArtifactRuntimeConfigError)
+        expect((err as ArtifactRuntimeConfigError).name).toBe(
+          'ArtifactRuntimeConfigError'
+        )
+        expect((err as ArtifactRuntimeConfigError).message).toContain(
+          'E2B_API_KEY'
+        )
+      }
+    })
+
+    it('throws ArtifactRuntimeConfigError when E2B_API_KEY is undefined', () => {
+      delete process.env.E2B_API_KEY
+
+      expect(() => createE2BRuntime()).toThrow(ArtifactRuntimeConfigError)
+    })
+
+    it('does not throw when E2B_API_KEY has a non-empty value', () => {
+      vi.stubEnv('E2B_API_KEY', 'sk-valid-key')
+
+      expect(() => createE2BRuntime()).not.toThrow()
+    })
+
+    it('validates config eagerly at construction time, not lazily at first call', () => {
+      vi.stubEnv('E2B_API_KEY', '')
+
+      // The error happens at createE2BRuntime(), not at runtime.createSession()
+      expect(() => createE2BRuntime()).toThrow(ArtifactRuntimeConfigError)
+    })
+  })
+
   describe('module boundary', () => {
     it('does not export E2B-specific types from the public API', async () => {
       const indexModule = await import('./index')

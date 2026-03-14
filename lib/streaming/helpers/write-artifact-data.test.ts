@@ -146,6 +146,85 @@ describe('createArtifactEmitter', () => {
     })
   })
 
+  describe('stable id reconciliation', () => {
+    it('emits the same artifact id across status and data parts', () => {
+      const writer = createMockWriter()
+      const emitter = createArtifactEmitter(writer as any)
+
+      const artifactId = 'artifact-42'
+
+      emitter.emitArtifact({
+        id: artifactId,
+        title: 'My App',
+        status: 'building'
+      })
+      emitter.emitArtifactStatus({
+        id: artifactId,
+        status: 'ready',
+        previewUrl: 'https://preview.example.com'
+      })
+
+      // Both emissions carry the same id for client-side reconciliation
+      const artifactCall = writer.write.mock.calls[0][0]
+      const statusCall = writer.write.mock.calls[1][0]
+
+      expect(artifactCall.data.id).toBe(artifactId)
+      expect(statusCall.data.id).toBe(artifactId)
+    })
+
+    it('allows multiple status updates with same id for dedup', () => {
+      const writer = createMockWriter()
+      const emitter = createArtifactEmitter(writer as any)
+
+      const artifactId = 'artifact-99'
+
+      // Simulate lifecycle: building -> ready -> restarting -> ready
+      emitter.emitArtifactStatus({ id: artifactId, status: 'building' })
+      emitter.emitArtifactStatus({
+        id: artifactId,
+        status: 'ready',
+        previewUrl: 'https://preview.example.com'
+      })
+      emitter.emitArtifactStatus({ id: artifactId, status: 'restarting' })
+      emitter.emitArtifactStatus({
+        id: artifactId,
+        status: 'ready',
+        previewUrl: 'https://preview.example.com'
+      })
+
+      expect(writer.write).toHaveBeenCalledTimes(4)
+
+      // All share the same artifact id
+      for (const call of writer.write.mock.calls) {
+        expect(call[0].data.id).toBe(artifactId)
+        expect(call[0].type).toBe('data-artifactStatus')
+      }
+    })
+
+    it('transient log/event parts reference artifact by artifactId field', () => {
+      const writer = createMockWriter()
+      const emitter = createArtifactEmitter(writer as any)
+
+      const artifactId = 'artifact-7'
+
+      emitter.emitArtifactLog({
+        artifactId,
+        message: 'step 1'
+      })
+      emitter.emitArtifactEvent({
+        artifactId,
+        event: 'build-started'
+      })
+
+      const logCall = writer.write.mock.calls[0][0]
+      const eventCall = writer.write.mock.calls[1][0]
+
+      // Transient parts use artifactId (not id) to reference the artifact
+      expect(logCall.data.artifactId).toBe(artifactId)
+      expect(eventCall.data.artifactId).toBe(artifactId)
+    })
+  })
+
   describe('multiple emissions', () => {
     it('handles sequential emissions', () => {
       const writer = createMockWriter()

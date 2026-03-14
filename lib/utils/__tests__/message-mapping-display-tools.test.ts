@@ -475,6 +475,100 @@ describe('display tool persistence', () => {
     })
   })
 
+  describe('authenticated persistence stores artifact tool calls through tool-dynamic', () => {
+    it('createWebappArtifact round-trips with full input/output payload', () => {
+      const createInput = {
+        title: 'Landing Page',
+        description: 'A responsive landing page',
+        files: {
+          'src/App.tsx':
+            'export default function App() { return <div>Hello</div> }',
+          'src/styles.css': 'body { margin: 0 }'
+        }
+      }
+      const createOutput = {
+        success: true,
+        action: 'create',
+        title: 'Landing Page',
+        description: 'A responsive landing page',
+        files: createInput.files
+      }
+
+      const uiPart = {
+        type: 'tool-createWebappArtifact',
+        toolCallId: 'call-create-1',
+        state: 'output-available',
+        input: createInput,
+        output: createOutput
+      }
+
+      const [dbPart] = mapUIMessagePartsToDBParts([uiPart], 'msg-1')
+
+      expect(dbPart).toMatchObject({
+        type: 'tool-dynamic',
+        tool_dynamic_name: 'createWebappArtifact',
+        tool_dynamic_type: 'artifact',
+        tool_dynamic_input: createInput,
+        tool_dynamic_output: createOutput
+      })
+
+      // Round-trip back
+      const dbSelect = makeDBArtifactToolPart('createWebappArtifact', {
+        tool_toolCallId: 'call-create-1',
+        tool_dynamic_input: createInput,
+        tool_dynamic_output: createOutput
+      })
+
+      const restored = mapDBPartToUIMessagePart(dbSelect)
+
+      expect(restored).toMatchObject({
+        type: 'tool-createWebappArtifact',
+        toolCallId: 'call-create-1',
+        input: createInput,
+        output: createOutput
+      })
+    })
+
+    it('updateWebappArtifact round-trips preserving file diffs', () => {
+      const updateInput = {
+        description: 'Fix header colors',
+        files: { 'src/Header.tsx': 'updated header content' }
+      }
+      const updateOutput = {
+        success: true,
+        action: 'update',
+        description: 'Fix header colors',
+        files: updateInput.files
+      }
+
+      const uiPart = {
+        type: 'tool-updateWebappArtifact',
+        toolCallId: 'call-update-1',
+        state: 'output-available',
+        input: updateInput,
+        output: updateOutput
+      }
+
+      const [dbPart] = mapUIMessagePartsToDBParts([uiPart], 'msg-1')
+
+      expect(dbPart.tool_dynamic_type).toBe('artifact')
+      expect(dbPart.tool_dynamic_name).toBe('updateWebappArtifact')
+
+      const dbSelect = makeDBArtifactToolPart('updateWebappArtifact', {
+        tool_toolCallId: 'call-update-1',
+        tool_dynamic_input: updateInput,
+        tool_dynamic_output: updateOutput
+      })
+
+      const restored = mapDBPartToUIMessagePart(dbSelect)
+      expect(restored).toMatchObject({
+        type: 'tool-updateWebappArtifact',
+        input: updateInput,
+        output: updateOutput
+      })
+    })
+  })
+
   describe('round-trip', () => {
     it.each(DISPLAY_TOOLS)('%s survives UI → DB → UI round-trip', toolName => {
       const originalPart = makeDisplayToolPart(toolName)

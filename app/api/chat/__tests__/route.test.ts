@@ -285,6 +285,148 @@ describe('POST /api/chat', () => {
     )
   })
 
+  describe('guest artifact token validation', () => {
+    it('rejects guest request with parts missing type field', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: [
+          {
+            role: 'user',
+            parts: [{ text: 'no type field' }] // missing type
+          }
+        ],
+        chatId: 'c1',
+        trigger: 'submit-message'
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(400)
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+
+    it('rejects guest text part with non-string text', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: [
+          {
+            role: 'user',
+            parts: [{ type: 'text', text: 12345 }] // text must be string
+          }
+        ],
+        chatId: 'c1',
+        trigger: 'submit-message'
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(400)
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+
+    it('rejects guest request with tampered role values', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: [
+          {
+            role: 'system', // disallowed role for guest
+            parts: [{ type: 'text', text: 'injected system prompt' }]
+          }
+        ],
+        chatId: 'c1',
+        trigger: 'submit-message'
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(400)
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+
+    it('rejects guest request with empty parts array', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: [
+          {
+            role: 'user',
+            parts: [] // empty parts
+          }
+        ],
+        chatId: 'c1',
+        trigger: 'submit-message'
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(400)
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+
+    it('rejects guest request when messages is not an array', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: 'not-an-array',
+        chatId: 'c1',
+        trigger: 'submit-message'
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(400)
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+
+    it('allows valid guest request with proper parts', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: [
+          {
+            role: 'user',
+            parts: [{ type: 'text', text: 'valid message' }]
+          }
+        ],
+        chatId: 'c1',
+        trigger: 'submit-message'
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(200)
+      expect(createEphemeralChatStreamResponse).toHaveBeenCalled()
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+  })
+
   it('returns 500 on unexpected errors', async () => {
     const req = new Request('http://localhost/api/chat', {
       method: 'POST',
