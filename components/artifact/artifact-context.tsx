@@ -7,7 +7,6 @@ import {
   useContext,
   useEffect,
   useReducer,
-  useRef,
   useState
 } from 'react'
 
@@ -159,10 +158,6 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
   const appendWorkspaceLog = useCallback((log: ArtifactLogData) => {
     setWorkspaceLogs(prev => [...prev, log])
   }, [])
-
-  // Stable reference to avoid re-renders from logs array identity
-  const logsRef = useRef(workspaceLogs)
-  logsRef.current = workspaceLogs
 
   return (
     <ArtifactContext.Provider

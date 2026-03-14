@@ -107,7 +107,11 @@ export async function cleanupExpiredArtifactSessions(
         )
 
       result.destroyed++
-    } catch {
+    } catch (error) {
+      console.error(
+        `Failed to cleanup session ${session.id} (sandbox: ${session.sandboxId}):`,
+        error
+      )
       result.failed++
     }
   }
