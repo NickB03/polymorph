@@ -13,6 +13,7 @@ import { InspectorDrawer } from '@/components/inspector/inspector-drawer'
 import { InspectorPanel } from '@/components/inspector/inspector-panel'
 
 import { useArtifact } from './artifact-context'
+import { ArtifactWorkspace } from './artifact-workspace'
 
 const DEFAULT_WIDTH = 500
 const MIN_WIDTH = 320
@@ -46,12 +47,17 @@ export function ChatArtifactContainer({
   const { state } = useArtifact()
   const activity = useActivity()
 
-  const activePanel: 'inspector' | 'activity' | null =
-    state.isOpen && state.part
-      ? 'inspector'
-      : activity.state.isOpen
-        ? 'activity'
-        : null
+  const isWorkspaceOpen = state.workspace.isOpen
+  const isInspectorOpen = state.inspectedPart !== null && !isWorkspaceOpen
+
+  const activePanel: 'workspace' | 'inspector' | 'activity' | null =
+    isWorkspaceOpen
+      ? 'workspace'
+      : isInspectorOpen
+        ? 'inspector'
+        : activity.state.isOpen
+          ? 'activity'
+          : null
 
   const containerRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(DEFAULT_WIDTH)
@@ -181,6 +187,7 @@ export function ChatArtifactContainer({
           }}
         >
           <div className="h-full" style={{ width: `${width}px` }}>
+            {activePanel === 'workspace' && <ArtifactWorkspace />}
             {activePanel === 'inspector' && <InspectorPanel />}
             {activePanel === 'activity' && <ActivityPanel />}
           </div>
@@ -198,8 +205,14 @@ export function ChatArtifactContainer({
       {/* Mobile: full-width chat + drawer */}
       <div className="md:hidden flex-1 h-full min-w-0">
         {children}
-        <InspectorDrawer />
-        <ActivityDrawer />
+        {isWorkspaceOpen ? (
+          <ArtifactWorkspace />
+        ) : (
+          <>
+            <InspectorDrawer />
+            <ActivityDrawer />
+          </>
+        )}
       </div>
     </div>
   )

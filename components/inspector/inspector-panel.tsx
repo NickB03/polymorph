@@ -17,7 +17,7 @@ import { useArtifact } from '@/components/artifact/artifact-context'
 
 export function InspectorPanel() {
   const { state, close } = useArtifact()
-  const part = state.part
+  const part = state.inspectedPart
   if (!part) return null
 
   // Get the icon and title based on part type

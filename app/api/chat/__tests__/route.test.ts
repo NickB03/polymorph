@@ -71,6 +71,35 @@ vi.mock('@/lib/utils/json-error', () => ({
   )
 }))
 
+vi.mock('@/lib/artifacts/errors', () => {
+  class ArtifactError extends Error {
+    artifactErrorCode: string
+    httpStatus: number
+    constructor(code: string, message: string) {
+      super(message)
+      this.name = 'ArtifactError'
+      this.artifactErrorCode = code
+      this.httpStatus =
+        code === 'build-failed'
+          ? 502
+          : code === 'runtime-unavailable'
+            ? 503
+            : code === 'preview-expired'
+              ? 410
+              : 500
+    }
+  }
+  return {
+    ArtifactError,
+    isArtifactError: (error: unknown) =>
+      error instanceof ArtifactError ||
+      (error instanceof Error &&
+        'artifactErrorCode' in error &&
+        typeof (error as any).artifactErrorCode === 'string')
+  }
+})
+
+import { ArtifactError } from '@/lib/artifacts/errors'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import { createChatStreamResponse } from '@/lib/streaming/create-chat-stream-response'
 import { createEphemeralChatStreamResponse } from '@/lib/streaming/create-ephemeral-chat-stream-response'
@@ -256,6 +285,148 @@ describe('POST /api/chat', () => {
     )
   })
 
+  describe('guest artifact token validation', () => {
+    it('rejects guest request with parts missing type field', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: [
+          {
+            role: 'user',
+            parts: [{ text: 'no type field' }] // missing type
+          }
+        ],
+        chatId: 'c1',
+        trigger: 'submit-message'
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(400)
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+
+    it('rejects guest text part with non-string text', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: [
+          {
+            role: 'user',
+            parts: [{ type: 'text', text: 12345 }] // text must be string
+          }
+        ],
+        chatId: 'c1',
+        trigger: 'submit-message'
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(400)
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+
+    it('rejects guest request with tampered role values', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: [
+          {
+            role: 'system', // disallowed role for guest
+            parts: [{ type: 'text', text: 'injected system prompt' }]
+          }
+        ],
+        chatId: 'c1',
+        trigger: 'submit-message'
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(400)
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+
+    it('rejects guest request with empty parts array', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: [
+          {
+            role: 'user',
+            parts: [] // empty parts
+          }
+        ],
+        chatId: 'c1',
+        trigger: 'submit-message'
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(400)
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+
+    it('rejects guest request when messages is not an array', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: 'not-an-array',
+        chatId: 'c1',
+        trigger: 'submit-message'
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(400)
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+
+    it('allows valid guest request with proper parts', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: [
+          {
+            role: 'user',
+            parts: [{ type: 'text', text: 'valid message' }]
+          }
+        ],
+        chatId: 'c1',
+        trigger: 'submit-message'
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(200)
+      expect(createEphemeralChatStreamResponse).toHaveBeenCalled()
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+  })
+
   it('returns 500 on unexpected errors', async () => {
     const req = new Request('http://localhost/api/chat', {
       method: 'POST',
@@ -264,5 +435,79 @@ describe('POST /api/chat', () => {
 
     const res = await POST(req)
     expect(res.status).toBe(500)
+  })
+
+  describe('artifact error handling', () => {
+    it('returns 502 for build-failed artifact errors', async () => {
+      vi.mocked(createChatStreamResponse).mockRejectedValueOnce(
+        new ArtifactError('build-failed', 'Artifact build step failed')
+      )
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        chatId: 'c1',
+        trigger: 'submit-message',
+        isNewChat: true
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(502)
+      const json = await res.json()
+      expect(json.error).toBe('build-failed')
+    })
+
+    it('returns 503 for runtime-unavailable artifact errors', async () => {
+      vi.mocked(createChatStreamResponse).mockRejectedValueOnce(
+        new ArtifactError('runtime-unavailable', 'E2B runtime not reachable')
+      )
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        chatId: 'c1',
+        trigger: 'submit-message',
+        isNewChat: true
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(503)
+      const json = await res.json()
+      expect(json.error).toBe('runtime-unavailable')
+    })
+
+    it('returns 410 for preview-expired artifact errors', async () => {
+      vi.mocked(createChatStreamResponse).mockRejectedValueOnce(
+        new ArtifactError('preview-expired', 'Preview URL is no longer valid')
+      )
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        chatId: 'c1',
+        trigger: 'submit-message',
+        isNewChat: true
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(410)
+      const json = await res.json()
+      expect(json.error).toBe('preview-expired')
+    })
+
+    it('does not crash on non-artifact errors thrown from streaming', async () => {
+      vi.mocked(createChatStreamResponse).mockRejectedValueOnce(
+        new Error('Some unexpected streaming error')
+      )
+
+      const req = createRequest({
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        chatId: 'c1',
+        trigger: 'submit-message',
+        isNewChat: true
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(500)
+      const json = await res.json()
+      expect(json.error).toBe('INTERNAL_ERROR')
+    })
   })
 })

@@ -4,6 +4,7 @@ import { UseChatHelpers } from '@ai-sdk/react'
 
 import type { SearchResultItem } from '@/lib/types'
 import type {
+  DataArtifactPart,
   ToolPart,
   UIDataTypes,
   UIMessage,
@@ -13,6 +14,7 @@ import type {
 import type { DynamicToolPart } from '@/lib/types/dynamic-tools'
 import { isChatLoading } from '@/lib/utils'
 
+import { tryRenderArtifactCard } from './tool-ui/artifact-card'
 import { OptionList } from './tool-ui/option-list/option-list'
 import type { OptionListSelection } from './tool-ui/option-list/schema'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
@@ -440,6 +442,25 @@ export function RenderMessage({
           />
         )
       }
+    } else if (part.type === 'data-artifact') {
+      // Render artifact card inline — not buffered into ResearchProcessSection
+      flushBuffer(`seg-${index}`)
+      const artifactPart = part as DataArtifactPart
+      const rendered = tryRenderArtifactCard(artifactPart.data)
+      if (rendered) {
+        elements.push(
+          <div key={`${messageId}-artifact-${index}`} className="my-2">
+            {rendered}
+          </div>
+        )
+      }
+    } else if (
+      part.type === 'data-artifactStatus' ||
+      part.type === 'data-artifactLog' ||
+      part.type === 'data-artifactEvent'
+    ) {
+      // Artifact status/log/event parts are handled by chat.tsx (workspace context),
+      // not rendered as visible chat content
     } else if (
       part.type === 'reasoning' ||
       part.type?.startsWith?.('tool-') ||

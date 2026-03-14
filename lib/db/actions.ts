@@ -185,6 +185,53 @@ export async function loadArtifactByChatId(
 }
 
 /**
+ * Load an artifact by its ID.
+ *
+ * **Security:** When `userId` is `null`, RLS is bypassed and the query runs
+ * without row-level permission checks. Callers MUST authenticate through an
+ * alternative mechanism (e.g. a signed guest artifact token) before passing
+ * `null`. Prefer passing a real `userId` whenever one is available.
+ */
+export async function loadArtifactById(
+  artifactId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [artifact] = await tx
+      .select()
+      .from(artifacts)
+      .where(eq(artifacts.id, artifactId))
+      .limit(1)
+
+    return artifact ?? null
+  })
+}
+
+/**
+ * Load the current runtime session for an artifact.
+ *
+ * **Security:** When `userId` is `null`, RLS is bypassed and the query runs
+ * without row-level permission checks. Callers MUST authenticate through an
+ * alternative mechanism (e.g. a signed guest artifact token) before passing
+ * `null`. Prefer passing a real `userId` whenever one is available.
+ */
+export async function loadArtifactRuntimeSession(
+  artifactId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [session] = await tx
+      .select()
+      .from(artifactRuntimeSessions)
+      .where(eq(artifactRuntimeSessions.artifactId, artifactId))
+      .orderBy(desc(artifactRuntimeSessions.startedAt))
+      .limit(1)
+
+    return session ?? null
+  })
+}
+
+/**
  * Create a persisted artifact record
  */
 export async function createArtifactRecord(input: CreateArtifactInput) {
