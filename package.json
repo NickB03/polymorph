@@ -15,6 +15,7 @@
     "test": "NODE_ENV=test vitest run",
     "test:watch": "vitest --watch",
     "chat": "bun run scripts/chat-cli.ts",
+    "build:template": "tsx lib/artifacts/templates/react-spa/build-template.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -58,6 +59,7 @@
     "dotenv": "^17.2.1",
     "drizzle-kit": "^0.31.4",
     "drizzle-orm": "^0.44.3",
+    "e2b": "^2.14.1",
     "embla-carousel-react": "^8.0.0",
     "exa-js": "^1.0.12",
     "js-tiktoken": "^1.0.20",

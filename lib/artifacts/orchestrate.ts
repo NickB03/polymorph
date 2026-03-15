@@ -13,6 +13,13 @@ import type {
 } from '@/lib/types/artifact'
 import { getTextFromParts } from '@/lib/utils/message-utils'
 
+/**
+ * Sentinel user ID for guest artifact operations.
+ * Must match the value used in dbActions.ensureChatRecord for
+ * the guest chat row it creates.
+ */
+const GUEST_USER_ID = 'guest'
+
 const DEFAULT_GUEST_TOKEN_TTL_MS = 30 * 60 * 1000
 
 type CreateParams = {
@@ -113,6 +120,60 @@ function buildArtifactPayload(input: {
   }
 }
 
+/**
+ * Normalize a file path key from model output.
+ *
+ * Some models (notably Gemini) wrap z.record() keys in literal double-quote
+ * characters — e.g. `"src/App.tsx"` instead of `src/App.tsx`. Strip those so
+ * validation can match the `src/` prefix.
+ */
+function normalizeFilePath(filePath: string): string {
+  let normalized = filePath.trim()
+
+  // Strip JSON array wrapper (literal `["src/App.tsx"]` → `"src/App.tsx"`)
+  if (normalized.startsWith('[') && normalized.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(normalized)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        normalized = String(parsed[0]).trim()
+      }
+    } catch {
+      // Not valid JSON, strip brackets manually
+      normalized = normalized.slice(1, -1).trim()
+    }
+  }
+
+  // Strip surrounding double quotes (literal `"src/App.tsx"` → `src/App.tsx`)
+  if (
+    normalized.length >= 2 &&
+    normalized.startsWith('"') &&
+    normalized.endsWith('"')
+  ) {
+    normalized = normalized.slice(1, -1)
+  }
+
+  // Strip surrounding single quotes (just in case)
+  if (
+    normalized.length >= 2 &&
+    normalized.startsWith("'") &&
+    normalized.endsWith("'")
+  ) {
+    normalized = normalized.slice(1, -1)
+  }
+
+  // Ensure files without src/ prefix get it added (common model mistake)
+  if (
+    !normalized.startsWith('src/') &&
+    (normalized.endsWith('.tsx') ||
+      normalized.endsWith('.ts') ||
+      normalized.endsWith('.css'))
+  ) {
+    normalized = `src/${normalized}`
+  }
+
+  return normalized
+}
+
 function validateSourceFiles(files: Record<string, string>) {
   const validatedFiles: Record<string, string> = {}
   const errors: Array<{
@@ -122,7 +183,8 @@ function validateSourceFiles(files: Record<string, string>) {
     importPath?: string
   }> = []
 
-  for (const [filePath, content] of Object.entries(files)) {
+  for (const [rawFilePath, content] of Object.entries(files)) {
+    const filePath = normalizeFilePath(rawFilePath)
     const validation = validateArtifactSource({ filePath, content })
     if (!validation.valid) {
       errors.push(...validation.errors)
@@ -215,9 +277,24 @@ export async function orchestrateCreate(
 
   const promptSummary = summarizePrompt(ctx, params.title, params.description)
   const runtime = createE2BRuntime()
+
+  // For guest users, ensure a chat record exists so the artifact foreign key
+  // is satisfied. Ephemeral chats don't persist a DB row by default.
+  if (ctx.isGuest) {
+    await dbActions.ensureChatRecord({
+      id: ctx.chatId,
+      title: params.title,
+      visibility: 'private'
+    })
+  }
+
+  // Use GUEST_USER_ID sentinel for guest users so RLS context is established.
+  // The artifacts table has RLS policies requiring app.current_user_id to be set.
+  const effectiveUserId = ctx.isGuest ? GUEST_USER_ID : ctx.userId
+
   let artifact = await dbActions.createArtifactRecord({
     chatId: ctx.chatId,
-    userId: ctx.userId,
+    userId: effectiveUserId,
     title: params.title,
     framework: 'react-spa',
     status: 'building'
@@ -261,33 +338,52 @@ export async function orchestrateCreate(
         startedAt: new Date(),
         ...(ctx.isGuest ? { expiresAt: getGuestExpiryDate() } : {})
       },
-      ctx.userId
+      effectiveUserId
     )
+
+    const skipInstall = shouldSkipInstall()
 
     ctx.emitArtifactLog({
       artifactId: artifact.id,
-      message: 'Writing template and source files...',
+      message: skipInstall
+        ? 'Writing source files...'
+        : 'Writing template and source files...',
       level: 'info'
     })
 
-    const templateFiles = await readTemplateFiles()
+    // When using a custom template, template files (configs, UI components,
+    // node_modules) are already baked into the image — only write model-
+    // generated source files. For the base template, merge everything.
+    const files = skipInstall
+      ? validation.files
+      : { ...(await readTemplateFiles()), ...validation.files }
     await runtime.writeFiles({
       sandboxId: createdSession.sandboxId,
-      files: {
-        ...templateFiles,
-        ...validation.files
-      }
+      files
     })
 
-    if (!shouldSkipInstall()) {
+    if (!skipInstall) {
       ctx.emitArtifactLog({
         artifactId: artifact.id,
         message: 'Installing dependencies...',
         level: 'info'
       })
-      await runtime.installDependencies({
-        sandboxId: createdSession.sandboxId
-      })
+      try {
+        await runtime.installDependencies({
+          sandboxId: createdSession.sandboxId
+        })
+      } catch (installError) {
+        const installMessage =
+          installError instanceof Error
+            ? installError.message
+            : 'npm install failed'
+        ctx.emitArtifactLog({
+          artifactId: artifact.id,
+          message: installMessage,
+          level: 'error'
+        })
+        throw installError
+      }
     }
 
     ctx.emitArtifactLog({
@@ -312,11 +408,11 @@ export async function orchestrateCreate(
         expiresAt: runtimeSession.expiresAt,
         lastHeartbeatAt: new Date()
       },
-      ctx.userId
+      effectiveUserId
     )
 
     const revision =
-      ctx.userId && ctx.triggeringMessageId
+      effectiveUserId && ctx.triggeringMessageId
         ? await dbActions.appendArtifactRevision(
             {
               artifactId: artifact.id,
@@ -388,7 +484,7 @@ export async function orchestrateCreate(
           expiresAt: runtimeSession.expiresAt,
           lastHeartbeatAt: new Date()
         },
-        ctx.userId
+        effectiveUserId
       )
     } else {
       artifact =
@@ -397,7 +493,7 @@ export async function orchestrateCreate(
             id: artifact.id,
             status: 'failed'
           },
-          ctx.userId
+          effectiveUserId
         )) ?? artifact
     }
 

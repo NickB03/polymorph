@@ -3,14 +3,63 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createE2BRuntime } from './e2b-runtime'
 import { ArtifactRuntimeConfigError } from './types'
 
-// Mock global fetch
-const mockFetch = vi.fn()
-vi.stubGlobal('fetch', mockFetch)
+// Mock the e2b SDK module
+vi.mock('e2b', () => {
+  const mockCommandsRun = vi.fn()
+  const mockFilesWrite = vi.fn()
+  const mockGetHost = vi.fn((port: number) => `${port}-sandbox-mock.e2b.app`)
+
+  const mockSandboxInstance = {
+    sandboxId: 'sandbox-mock',
+    commands: { run: mockCommandsRun },
+    files: { write: mockFilesWrite },
+    getHost: mockGetHost
+  }
+
+  return {
+    Sandbox: {
+      create: vi.fn().mockResolvedValue(mockSandboxInstance),
+      connect: vi.fn().mockResolvedValue(mockSandboxInstance),
+      kill: vi.fn().mockResolvedValue(undefined)
+    },
+    __mockInstance: mockSandboxInstance,
+    __mockCommandsRun: mockCommandsRun,
+    __mockFilesWrite: mockFilesWrite,
+    __mockGetHost: mockGetHost
+  }
+})
+
+async function getE2BMocks() {
+  const e2b = await import('e2b')
+  const mocks = e2b as typeof e2b & {
+    __mockInstance: {
+      sandboxId: string
+      commands: { run: ReturnType<typeof vi.fn> }
+      files: { write: ReturnType<typeof vi.fn> }
+      getHost: ReturnType<typeof vi.fn>
+    }
+    __mockCommandsRun: ReturnType<typeof vi.fn>
+    __mockFilesWrite: ReturnType<typeof vi.fn>
+    __mockGetHost: ReturnType<typeof vi.fn>
+  }
+  return {
+    Sandbox: mocks.Sandbox,
+    instance: mocks.__mockInstance,
+    commandsRun: mocks.__mockCommandsRun,
+    filesWrite: mocks.__mockFilesWrite,
+    getHost: mocks.__mockGetHost
+  }
+}
 
 describe('E2B Runtime Adapter', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
     vi.unstubAllEnvs()
+
+    const { commandsRun, filesWrite, getHost } = await getE2BMocks()
+    commandsRun.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '' })
+    filesWrite.mockResolvedValue(undefined)
+    getHost.mockImplementation((port: number) => `${port}-sandbox-mock.e2b.app`)
   })
 
   describe('configuration validation', () => {
@@ -38,109 +87,57 @@ describe('E2B Runtime Adapter', () => {
     })
   })
 
-  describe('request construction', () => {
+  describe('session lifecycle', () => {
     beforeEach(() => {
       vi.stubEnv('E2B_API_KEY', 'test-api-key')
     })
 
-    it('sends correct auth headers on createSession', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          sandboxID: 'sandbox-123',
-          clientID: 'client-abc'
-        })
-      })
+    it('creates a session with the specified template', async () => {
+      const { Sandbox, instance, getHost } = await getE2BMocks()
+      instance.sandboxId = 'sandbox-456'
+      getHost.mockImplementation(
+        (port: number) => `${port}-sandbox-456.e2b.app`
+      )
 
       const runtime = createE2BRuntime()
-      await runtime.createSession({})
+      const result = await runtime.createSession({ templateId: 'my-template' })
 
-      expect(mockFetch).toHaveBeenCalledTimes(1)
-      const [url, options] = mockFetch.mock.calls[0]
-
-      expect(url).toContain('/sandboxes')
-      expect(options.method).toBe('POST')
-      expect(options.headers).toMatchObject({
-        Authorization: 'Bearer test-api-key',
-        'Content-Type': 'application/json'
+      expect(Sandbox.create).toHaveBeenCalledWith('my-template', {
+        timeoutMs: 300_000
       })
-    })
-
-    it('uses the correct E2B API base URL', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          sandboxID: 'sandbox-123',
-          clientID: 'client-abc'
-        })
-      })
-
-      const runtime = createE2BRuntime()
-      await runtime.createSession({})
-
-      const [url] = mockFetch.mock.calls[0]
-      expect(url).toMatch(/^https:\/\/api\.e2b\.dev/)
-    })
-
-    it('sends sandbox template ID in createSession body', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          sandboxID: 'sandbox-123',
-          clientID: 'client-abc'
-        })
-      })
-
-      const runtime = createE2BRuntime()
-      await runtime.createSession({ templateId: 'my-template' })
-
-      const [, options] = mockFetch.mock.calls[0]
-      const body = JSON.parse(options.body)
-      expect(body.templateID).toBe('my-template')
-    })
-
-    it('returns structured result from createSession', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          sandboxID: 'sandbox-456',
-          clientID: 'client-xyz'
-        })
-      })
-
-      const runtime = createE2BRuntime()
-      const result = await runtime.createSession({})
-
       expect(result.sandboxId).toBe('sandbox-456')
       expect(result.sandboxUrl).toContain('sandbox-456')
     })
 
-    it('sends auth header on destroySession', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: true })
+    it('uses base template when templateId is not specified', async () => {
+      const { Sandbox } = await getE2BMocks()
+
+      const runtime = createE2BRuntime()
+      await runtime.createSession({})
+
+      expect(Sandbox.create).toHaveBeenCalledWith('base', {
+        timeoutMs: 300_000
+      })
+    })
+
+    it('converts timeoutSeconds to timeoutMs', async () => {
+      const { Sandbox } = await getE2BMocks()
+
+      const runtime = createE2BRuntime()
+      await runtime.createSession({ timeoutSeconds: 60 })
+
+      expect(Sandbox.create).toHaveBeenCalledWith('base', {
+        timeoutMs: 60_000
+      })
+    })
+
+    it('destroys a session via Sandbox.kill', async () => {
+      const { Sandbox } = await getE2BMocks()
 
       const runtime = createE2BRuntime()
       await runtime.destroySession({ sandboxId: 'sandbox-123' })
 
-      const [url, options] = mockFetch.mock.calls[0]
-      expect(url).toContain('sandbox-123')
-      expect(options.method).toBe('DELETE')
-      expect(options.headers).toMatchObject({
-        Authorization: 'Bearer test-api-key'
-      })
-    })
-
-    it('throws on non-OK API response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        statusText: 'Unauthorized',
-        text: async () => 'Invalid API key'
-      })
-
-      const runtime = createE2BRuntime()
-      await expect(runtime.createSession({})).rejects.toThrow(
-        /E2B API error.*401/
-      )
+      expect(Sandbox.kill).toHaveBeenCalledWith('sandbox-123')
     })
   })
 
@@ -149,8 +146,8 @@ describe('E2B Runtime Adapter', () => {
       vi.stubEnv('E2B_API_KEY', 'test-api-key')
     })
 
-    it('writes files with correct endpoint and payload', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: true })
+    it('writes files with resolved sandbox paths', async () => {
+      const { Sandbox, filesWrite } = await getE2BMocks()
 
       const runtime = createE2BRuntime()
       await runtime.writeFiles({
@@ -160,18 +157,17 @@ describe('E2B Runtime Adapter', () => {
         }
       })
 
-      expect(mockFetch).toHaveBeenCalledTimes(1)
-      const [url, options] = mockFetch.mock.calls[0]
-      expect(url).toContain('sandbox-123')
-      expect(options.headers).toMatchObject({
-        Authorization: 'Bearer test-api-key'
-      })
-      const body = JSON.parse(options.body)
-      expect(body.path).toBe('/home/user/app/src/App.tsx')
+      expect(Sandbox.connect).toHaveBeenCalledWith('sandbox-123')
+      expect(filesWrite).toHaveBeenCalledWith([
+        {
+          path: '/home/user/app/src/App.tsx',
+          data: 'export default function App() { return <div /> }'
+        }
+      ])
     })
 
-    it('applySourceUpdate delegates to writeFiles with same contract', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: true })
+    it('applySourceUpdate delegates to files.write with same contract', async () => {
+      const { filesWrite } = await getE2BMocks()
 
       const runtime = createE2BRuntime()
       await runtime.applySourceUpdate({
@@ -179,7 +175,12 @@ describe('E2B Runtime Adapter', () => {
         files: { 'src/App.tsx': 'updated content' }
       })
 
-      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(filesWrite).toHaveBeenCalledWith([
+        {
+          path: '/home/user/app/src/App.tsx',
+          data: 'updated content'
+        }
+      ])
     })
   })
 
@@ -188,14 +189,12 @@ describe('E2B Runtime Adapter', () => {
       vi.stubEnv('E2B_API_KEY', 'test-api-key')
     })
 
-    it('runs commands with correct endpoint', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          exitCode: 0,
-          stdout: 'success',
-          stderr: ''
-        })
+    it('runs commands and returns the result', async () => {
+      const { commandsRun } = await getE2BMocks()
+      commandsRun.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: 'success',
+        stderr: ''
       })
 
       const runtime = createE2BRuntime()
@@ -206,10 +205,37 @@ describe('E2B Runtime Adapter', () => {
 
       expect(result.exitCode).toBe(0)
       expect(result.stdout).toBe('success')
+      expect(commandsRun).toHaveBeenCalledWith('npm run build', {
+        cwd: '/home/user/app'
+      })
+    })
 
-      const [url, options] = mockFetch.mock.calls[0]
-      expect(url).toContain('sandbox-123')
-      expect(options.method).toBe('POST')
+    it('installs dependencies and throws on failure', async () => {
+      const { commandsRun } = await getE2BMocks()
+      commandsRun.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'ERESOLVE unable to resolve'
+      })
+
+      const runtime = createE2BRuntime()
+      await expect(
+        runtime.installDependencies({ sandboxId: 'sandbox-123' })
+      ).rejects.toThrow(/npm install failed/)
+    })
+
+    it('includes both stdout and stderr in install failure message', async () => {
+      const { commandsRun } = await getE2BMocks()
+      commandsRun.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: 'npm warn deprecated',
+        stderr: 'ERR! peer dep'
+      })
+
+      const runtime = createE2BRuntime()
+      await expect(
+        runtime.installDependencies({ sandboxId: 'sandbox-123' })
+      ).rejects.toThrow(/npm warn deprecated/)
     })
   })
 
@@ -218,15 +244,14 @@ describe('E2B Runtime Adapter', () => {
       vi.stubEnv('E2B_API_KEY', 'test-api-key')
     })
 
-    it('startPreview returns a preview URL and status', async () => {
-      // startPreview runs the dev server command
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          exitCode: 0,
-          stdout: '',
-          stderr: ''
-        })
+    it('startPreview returns immediately when port is already listening (custom template)', async () => {
+      const { commandsRun } = await getE2BMocks()
+
+      // Pre-running server check succeeds immediately
+      commandsRun.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '',
+        stderr: ''
       })
 
       const runtime = createE2BRuntime()
@@ -235,22 +260,73 @@ describe('E2B Runtime Adapter', () => {
         port: 5173
       })
 
-      expect(result.previewUrl).toContain('sandbox-123')
       expect(result.previewUrl).toContain('5173')
       expect(result.status).toBe('ready')
+      // Only the initial port check — no dev server start needed
+      expect(commandsRun).toHaveBeenCalledTimes(1)
+      expect(commandsRun).toHaveBeenCalledWith(
+        expect.stringContaining('curl'),
+        { requestTimeoutMs: 5_000 }
+      )
     })
 
-    it('restartPreview returns updated preview result', async () => {
-      // Kill existing process then start again
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ exitCode: 0, stdout: '', stderr: '' })
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ exitCode: 0, stdout: '', stderr: '' })
-        })
+    it('startPreview falls back to starting dev server when port is not listening', async () => {
+      const { commandsRun } = await getE2BMocks()
+
+      commandsRun
+        // Initial port check: not listening
+        .mockResolvedValueOnce({ exitCode: 1, stdout: '', stderr: '' })
+        // Dev server start (background)
+        .mockResolvedValueOnce({ exitCode: 0, stdout: '', stderr: '' })
+        // Port poll: ready
+        .mockResolvedValueOnce({ exitCode: 0, stdout: '', stderr: '' })
+
+      const runtime = createE2BRuntime()
+      const result = await runtime.startPreview({
+        sandboxId: 'sandbox-123',
+        port: 5173
+      })
+
+      expect(result.previewUrl).toContain('5173')
+      expect(result.status).toBe('ready')
+      expect(commandsRun).toHaveBeenCalledTimes(3)
+      expect(commandsRun).toHaveBeenNthCalledWith(2, 'npm run dev', {
+        cwd: '/home/user/app',
+        background: true
+      })
+    })
+
+    it('startPreview retries port check until ready', async () => {
+      const { commandsRun } = await getE2BMocks()
+
+      commandsRun
+        // Initial port check: not listening
+        .mockResolvedValueOnce({ exitCode: 1, stdout: '', stderr: '' })
+        // Dev server start
+        .mockResolvedValueOnce({ exitCode: 0, stdout: '', stderr: '' })
+        // Port not ready yet
+        .mockResolvedValueOnce({ exitCode: 1, stdout: '', stderr: '' })
+        // Port ready
+        .mockResolvedValueOnce({ exitCode: 0, stdout: '', stderr: '' })
+
+      const runtime = createE2BRuntime()
+      const result = await runtime.startPreview({
+        sandboxId: 'sandbox-123',
+        port: 5173
+      })
+
+      expect(result.status).toBe('ready')
+      expect(commandsRun).toHaveBeenCalledTimes(4)
+    })
+
+    it('restartPreview kills existing process, starts new one, and polls port', async () => {
+      const { commandsRun } = await getE2BMocks()
+
+      // Kill, start, port check
+      commandsRun
+        .mockResolvedValueOnce({ exitCode: 0, stdout: '', stderr: '' })
+        .mockResolvedValueOnce({ exitCode: 0, stdout: '', stderr: '' })
+        .mockResolvedValueOnce({ exitCode: 0, stdout: '', stderr: '' })
 
       const runtime = createE2BRuntime()
       const result = await runtime.restartPreview({
@@ -258,8 +334,9 @@ describe('E2B Runtime Adapter', () => {
         port: 5173
       })
 
-      expect(result.previewUrl).toContain('sandbox-123')
+      expect(result.previewUrl).toContain('5173')
       expect(result.status).toBe('ready')
+      expect(commandsRun).toHaveBeenCalledTimes(3)
     })
   })
 
