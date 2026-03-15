@@ -406,11 +406,19 @@ export function Chat({
                   : 'text'
         })
       )
-      updateWorkspace({ sourceFiles })
+      updateWorkspace({ sourceFiles, canRebuild: sourceFiles.length > 0 })
     }
 
-    // If workspace is already showing this artifact, just apply status updates
+    // If workspace is already showing this artifact, just apply status updates.
+    // IMPORTANT: Never let persisted message part data override an 'expired'
+    // status that was set by the refresh probe or rebuild API. The probe is
+    // authoritative; message parts contain stale pre-expiration status.
     if (artifactState.workspace.artifactId === artifactId) {
+      if (artifactState.workspace.status === 'expired') {
+        // Status was set by refresh probe — don't let stale data overwrite it
+        lastOpenedArtifactIdRef.current = artifactId
+        return
+      }
       const statusData = latestStatus?.data
       if (statusData && statusData.id === artifactId) {
         updateWorkspace({

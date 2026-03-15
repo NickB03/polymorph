@@ -1,14 +1,17 @@
 import { NextRequest } from 'next/server'
 
 import {
+  getTtlMs,
   signGuestArtifactToken,
-  verifyGuestArtifactToken
+  verifyGuestArtifactToken,
+  verifyGuestArtifactTokenAllowExpired
 } from '@/lib/artifacts/guest-token'
 import { createE2BRuntime } from '@/lib/artifacts/runtime'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import {
   loadArtifactById,
   loadArtifactRuntimeSession,
+  loadLatestRevisionWithSource,
   upsertArtifactRuntimeSession
 } from '@/lib/db/actions'
 import { jsonError } from '@/lib/utils/json-error'
@@ -27,7 +30,7 @@ export async function POST(
   }
 
   const { action } = body
-  if (!action || (action !== 'refresh' && action !== 'retry')) {
+  if (!action || !['refresh', 'retry', 'rebuild'].includes(action)) {
     return jsonError('BAD_REQUEST', 'Unknown action', 400)
   }
 
@@ -44,7 +47,25 @@ export async function POST(
       return jsonError('AUTH_REQUIRED', 'Authentication required', 401)
     }
 
-    const handle = await verifyGuestArtifactToken(token)
+    let handle = await verifyGuestArtifactToken(token)
+
+    // For rebuild: accept expired tokens (signature still proves identity)
+    if (!handle && action === 'rebuild') {
+      handle = await verifyGuestArtifactTokenAllowExpired(token)
+    }
+
+    // For non-rebuild actions: detect expired tokens and return a specific code
+    if (!handle && action !== 'rebuild') {
+      const expiredHandle = await verifyGuestArtifactTokenAllowExpired(token)
+      if (expiredHandle && expiredHandle.artifactId === artifactId) {
+        return jsonError(
+          'TOKEN_EXPIRED',
+          'Session expired — rebuild to continue',
+          401
+        )
+      }
+    }
+
     if (!handle || handle.artifactId !== artifactId) {
       return jsonError('AUTH_REQUIRED', 'Invalid or expired guest token', 401)
     }
@@ -80,6 +101,46 @@ export async function POST(
       chatId: artifact.chatId,
       expiresAt: (input?.expiresAt ?? guestHandle.expiresAt).getTime()
     })
+  }
+
+  // For rebuild, spin up a fresh sandbox from the latest stored source
+  if (action === 'rebuild') {
+    try {
+      const { rebuildArtifactFromRevision } =
+        await import('@/lib/artifacts/rebuild')
+      const result = await rebuildArtifactFromRevision({
+        artifactId,
+        userId: isGuest ? null : (userId ?? null)
+      })
+
+      if (!result.success) {
+        const status = result.alreadyInProgress ? 409 : 500
+        const code = result.alreadyInProgress
+          ? 'REBUILD_IN_PROGRESS'
+          : 'REBUILD_FAILED'
+        return jsonError(code, result.error, status)
+      }
+
+      // Issue a FRESH guest token with new expiry
+      const guestArtifactToken = await issueGuestArtifactToken({
+        runtimeSessionId: result.runtimeSessionId,
+        sandboxId: result.sandboxId,
+        expiresAt: new Date(Date.now() + getTtlMs())
+      })
+
+      return Response.json({
+        id: artifact.id,
+        title: artifact.title,
+        status: result.status,
+        previewUrl: result.previewUrl,
+        revisionId: artifact.currentRevisionId,
+        canRebuild: true,
+        ...(guestArtifactToken ? { guestArtifactToken } : {})
+      })
+    } catch (error) {
+      console.error('Failed to rebuild artifact:', error)
+      return jsonError('REBUILD_FAILED', 'Failed to rebuild artifact', 500)
+    }
   }
 
   // For retry, actually restart the preview via the runtime adapter
@@ -138,12 +199,20 @@ export async function POST(
     expiresAt: session?.expiresAt
   })
 
+  // Check if the latest revision has stored source files (rebuild-capable)
+  const latestRevision = await loadLatestRevisionWithSource(
+    artifactId,
+    isGuest ? null : userId
+  )
+  const canRebuild = latestRevision?.sourceFiles != null
+
   return Response.json({
     id: artifact.id,
     title: artifact.title,
     status: artifact.status,
     previewUrl: session?.previewUrl ?? null,
     revisionId: artifact.currentRevisionId,
+    canRebuild,
     ...(guestArtifactToken ? { guestArtifactToken } : {})
   })
 }

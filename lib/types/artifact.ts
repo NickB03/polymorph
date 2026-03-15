@@ -63,6 +63,7 @@ export interface ArtifactRevisionRecord {
   promptSummary: string
   title: string
   sandboxSnapshotRef: string | null
+  sourceFiles: Record<string, string> | null
   createdAt: Date
 }
 
@@ -96,6 +97,7 @@ export interface AppendArtifactRevisionInput {
   promptSummary: string
   title: string
   sandboxSnapshotRef?: string | null
+  sourceFiles?: Record<string, string> | null
 }
 
 export interface UpsertArtifactRuntimeSessionInput {

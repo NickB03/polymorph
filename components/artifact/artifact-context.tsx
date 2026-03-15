@@ -32,6 +32,7 @@ export interface ArtifactWorkspaceState {
   previewUrl: string | null
   guestArtifactToken: string | null
   sourceFiles: ArtifactSourceFile[]
+  canRebuild: boolean
   isOpen: boolean
 }
 
@@ -48,6 +49,7 @@ const initialWorkspace: ArtifactWorkspaceState = {
   previewUrl: null,
   guestArtifactToken: null,
   sourceFiles: [],
+  canRebuild: false,
   isOpen: false
 }
 
@@ -206,7 +208,7 @@ export function useArtifact() {
  * Shared hook for calling artifact action endpoints (refresh, retry).
  * Eliminates duplicated fetch + updateWorkspace logic across components.
  */
-export function useArtifactAction(action: 'refresh' | 'retry') {
+export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
   const { state, updateWorkspace } = useArtifact()
   const { workspace } = state
   const [isPending, setIsPending] = useState(false)
@@ -234,8 +236,20 @@ export function useArtifactAction(action: 'refresh' | 'retry') {
           revisionId: data.revisionId ?? workspace.revisionId,
           title: data.title ?? workspace.title,
           guestArtifactToken:
-            data.guestArtifactToken ?? workspace.guestArtifactToken
+            data.guestArtifactToken ?? workspace.guestArtifactToken,
+          ...(data.canRebuild !== undefined
+            ? { canRebuild: data.canRebuild }
+            : {})
         })
+      } else {
+        try {
+          const err = await res.json()
+          if (err.code === 'TOKEN_EXPIRED') {
+            updateWorkspace({ status: 'expired', previewUrl: null })
+          }
+        } catch {
+          // Response wasn't JSON — ignore
+        }
       }
     } finally {
       setIsPending(false)

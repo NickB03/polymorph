@@ -154,6 +154,69 @@ export async function verifyGuestArtifactToken(
   }
 }
 
+const MAX_EXPIRED_TOKEN_AGE_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
+
+/**
+ * Verify a guest artifact token, accepting expired tokens.
+ *
+ * Used exclusively by the `rebuild` action: the user's token has expired
+ * (because the sandbox expired), but the signature still proves identity.
+ * The rebuild handler immediately issues a fresh token after success.
+ *
+ * Security invariants:
+ * - Signature is validated (forgery is rejected).
+ * - A 30-day max-age ceiling prevents indefinite replay of leaked tokens.
+ * - Only the standard time check is skipped — all other validation applies.
+ * - The caller MUST check `handle.artifactId` against the route parameter.
+ */
+export async function verifyGuestArtifactTokenAllowExpired(
+  token: string
+): Promise<ValidatedGuestArtifactHandle | null> {
+  try {
+    const secret = process.env.GUEST_ARTIFACT_SECRET
+    if (!secret) return null
+
+    const dotIndex = token.indexOf('.')
+    if (dotIndex === -1) return null
+
+    const payloadB64 = token.slice(0, dotIndex)
+    const signatureB64 = token.slice(dotIndex + 1)
+    if (!payloadB64 || !signatureB64) return null
+
+    const key = await importKey(secret)
+    const encoder = new TextEncoder()
+    const signatureBytes = base64urlDecode(signatureB64)
+    const signatureBytesForCrypto = new Uint8Array(signatureBytes.length)
+    signatureBytesForCrypto.set(signatureBytes)
+
+    const valid = await crypto.subtle.verify(
+      'HMAC',
+      key,
+      signatureBytesForCrypto,
+      encoder.encode(payloadB64)
+    )
+    if (!valid) return null
+
+    const payloadBytes = base64urlDecode(payloadB64)
+    const payloadJson = new TextDecoder().decode(payloadBytes)
+    const payload: GuestArtifactTokenPayload = JSON.parse(payloadJson)
+
+    // Skip standard expiry check but enforce 30-day max-age ceiling
+    if (Date.now() - payload.expiresAt > MAX_EXPIRED_TOKEN_AGE_MS) return null
+
+    return {
+      artifactId: payload.artifactId,
+      runtimeSessionId: payload.runtimeSessionId,
+      sandboxId: payload.sandboxId,
+      chatId: payload.chatId,
+      expiresAt: new Date(payload.expiresAt)
+    }
+  } catch {
+    // Fail closed: any parse/crypto error returns null
+    return null
+  }
+}
+
 /**
  * Create a new token with refreshed expiry from a validated handle.
  *

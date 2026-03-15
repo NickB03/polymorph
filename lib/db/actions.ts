@@ -1,6 +1,6 @@
 'use server'
 
-import { and, asc, desc, eq, gt, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, inArray, sql } from 'drizzle-orm'
 
 import type { UIMessage } from '@/lib/types/ai'
 import type {
@@ -315,6 +315,34 @@ export async function updateArtifactRecord(
 }
 
 /**
+ * Atomically claim an artifact for rebuild by transitioning its status
+ * to 'building', but only if it is not already building.
+ *
+ * Returns the updated artifact if the claim succeeded, or null if
+ * another rebuild is already in progress. This prevents concurrent
+ * rebuild requests from orphaning E2B sandboxes.
+ */
+export async function claimArtifactForRebuild(
+  artifactId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [artifact] = await tx
+      .update(artifacts)
+      .set({ status: 'building', updatedAt: new Date() })
+      .where(
+        and(
+          eq(artifacts.id, artifactId),
+          sql`${artifacts.status} != 'building'`
+        )
+      )
+      .returning()
+
+    return artifact ?? null
+  })
+}
+
+/**
  * Append a revision and promote it to the current artifact revision
  */
 export async function appendArtifactRevision(
@@ -331,7 +359,8 @@ export async function appendArtifactRevision(
           triggeringMessageId: input.triggeringMessageId,
           promptSummary: input.promptSummary,
           title: input.title,
-          sandboxSnapshotRef: input.sandboxSnapshotRef ?? null
+          sandboxSnapshotRef: input.sandboxSnapshotRef ?? null,
+          sourceFiles: input.sourceFiles ?? null
         })
         .returning()
 
@@ -346,6 +375,26 @@ export async function appendArtifactRevision(
 
       return revision
     })
+  })
+}
+
+/**
+ * Load the latest revision for an artifact, including source files.
+ * Used by rebuild-on-demand to reconstruct expired sandboxes,
+ * and by orchestrateUpdate to merge partial file deltas.
+ */
+export async function loadLatestRevisionWithSource(
+  artifactId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [revision] = await tx
+      .select()
+      .from(artifactRevisions)
+      .where(eq(artifactRevisions.artifactId, artifactId))
+      .orderBy(desc(artifactRevisions.createdAt))
+      .limit(1)
+    return revision ?? null
   })
 }
 

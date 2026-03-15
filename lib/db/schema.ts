@@ -319,6 +319,7 @@ export const artifactRevisions = pgTable(
     promptSummary: text('prompt_summary').notNull(),
     title: text('title').notNull(),
     sandboxSnapshotRef: text('sandbox_snapshot_ref'),
+    sourceFiles: jsonb('source_files').$type<Record<string, string>>(),
     createdAt: timestamp('created_at').notNull().defaultNow()
   },
   table => [

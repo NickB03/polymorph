@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/artifacts/guest-token', () => ({
+  getTtlMs: vi.fn().mockReturnValue(30 * 60 * 1000),
   signGuestArtifactToken: vi.fn(),
-  verifyGuestArtifactToken: vi.fn()
+  verifyGuestArtifactToken: vi.fn(),
+  verifyGuestArtifactTokenAllowExpired: vi.fn()
 }))
 
 vi.mock('@/lib/artifacts/runtime', () => ({
@@ -16,6 +18,7 @@ vi.mock('@/lib/auth/get-current-user', () => ({
 vi.mock('@/lib/db/actions', () => ({
   loadArtifactById: vi.fn(),
   loadArtifactRuntimeSession: vi.fn(),
+  loadLatestRevisionWithSource: vi.fn(),
   upsertArtifactRuntimeSession: vi.fn()
 }))
 

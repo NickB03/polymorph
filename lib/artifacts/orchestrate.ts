@@ -400,7 +400,8 @@ export async function orchestrateCreate(
               artifactId: artifact.id,
               triggeringMessageId: ctx.triggeringMessageId,
               promptSummary,
-              title: params.title
+              title: params.title,
+              sourceFiles: validation.files
             },
             ctx.userId
           )
@@ -562,6 +563,23 @@ export async function orchestrateUpdate(
       ctx.userId
     )
 
+    // Load previous revision's source files so we can merge the delta.
+    // NOTE: This merge is additive-only -- it cannot represent file deletions.
+    // If the model removes a file by no longer importing it, the file content
+    // persists in the stored revision. This is harmless: Vite tree-shakes
+    // unreferenced modules, so orphaned files don't affect the running app.
+    // The live sandbox has the same behavior (applySourceUpdate never deletes).
+    const previousRevision = await dbActions.loadLatestRevisionWithSource(
+      existing.artifact.id,
+      ctx.userId
+    )
+
+    // Merge: previous full source + current update delta = new full source
+    const mergedSourceFiles = {
+      ...(previousRevision?.sourceFiles ?? {}),
+      ...validation.files
+    }
+
     const revision =
       ctx.userId && ctx.triggeringMessageId
         ? await dbActions.appendArtifactRevision(
@@ -569,7 +587,8 @@ export async function orchestrateUpdate(
               artifactId: existing.artifact.id,
               triggeringMessageId: ctx.triggeringMessageId,
               promptSummary,
-              title
+              title,
+              sourceFiles: mergedSourceFiles
             },
             ctx.userId
           )

@@ -81,6 +81,8 @@ export function ArtifactWorkspaceHeader({
     useArtifactAction('refresh')
   const { execute: handleRetry, isPending: isRetrying } =
     useArtifactAction('retry')
+  const { execute: handleRebuild, isPending: isRebuilding } =
+    useArtifactAction('rebuild')
   const { isCopied: copied, copyToClipboard } = useCopyToClipboard({
     timeout: 2000
   })
@@ -95,6 +97,8 @@ export function ArtifactWorkspaceHeader({
   }, [workspace.previewUrl, copyToClipboard])
 
   const isFailed = workspace.status === 'failed'
+  const isExpired = workspace.status === 'expired'
+  const canRebuild = workspace.canRebuild
 
   return (
     <TooltipProvider>
@@ -194,6 +198,22 @@ export function ArtifactWorkspaceHeader({
                 </TooltipButton>
               )}
             </>
+          )}
+
+          {isExpired && canRebuild && (
+            <TooltipButton
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleRebuild}
+              disabled={isRebuilding}
+              aria-label="Rebuild preview"
+              tooltipContent="Rebuild preview"
+            >
+              <RotateCcw
+                className={`h-3.5 w-3.5 ${isRebuilding ? 'animate-spin' : ''}`}
+              />
+            </TooltipButton>
           )}
 
           {workspace.previewUrl && (
