@@ -32,6 +32,17 @@ type StatusParams = {
   reason?: string
 }
 
+/** Detect errors that indicate the E2B sandbox has expired or been removed. */
+function isSandboxNotFoundError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const msg = error.message.toLowerCase()
+  return (
+    msg.includes('sandbox not found') ||
+    msg.includes('sandbox does not exist') ||
+    msg.includes('paused sandbox')
+  )
+}
+
 function getGuestExpiryDate(): Date {
   return new Date(Date.now() + getTtlMs())
 }
@@ -724,6 +735,141 @@ export async function orchestrateUpdate(
       ...(guestArtifactToken ? { guestArtifactToken } : {})
     }
   } catch (error) {
+    // Transparent recovery: if the sandbox expired, rebuild from the latest
+    // revision then apply the pending update on top.
+    if (isSandboxNotFoundError(error)) {
+      try {
+        logArtifactEvent('artifact.update.sandbox-recovery', {
+          artifactId: existing.artifact.id,
+          chatId: ctx.chatId,
+          isGuest: ctx.isGuest
+        })
+
+        emitStatusOnly(ctx, {
+          artifactId: existing.artifact.id,
+          status: 'building'
+        })
+
+        ctx.emitArtifactLog({
+          artifactId: existing.artifact.id,
+          message: 'Sandbox expired — rebuilding from last revision...',
+          level: 'info'
+        })
+
+        const { rebuildArtifactFromRevision } =
+          await import('@/lib/artifacts/rebuild')
+        const rebuildResult = await rebuildArtifactFromRevision({
+          artifactId: existing.artifact.id,
+          userId: ctx.isGuest ? null : ctx.userId
+        })
+
+        if (!rebuildResult.success) {
+          throw new Error(rebuildResult.error || 'Rebuild failed')
+        }
+
+        // Apply the pending update to the freshly rebuilt sandbox
+        ctx.emitArtifactLog({
+          artifactId: existing.artifact.id,
+          message: 'Applying source update to rebuilt sandbox...',
+          level: 'info'
+        })
+
+        const newRuntime = createE2BRuntime()
+        await newRuntime.applySourceUpdate({
+          sandboxId: rebuildResult.sandboxId,
+          files: validation.files
+        })
+
+        // Load the new runtime session that rebuild created
+        const newRuntimeSession = await dbActions.loadArtifactRuntimeSession(
+          existing.artifact.id,
+          ctx.isGuest ? null : ctx.userId
+        )
+
+        if (newRuntimeSession) {
+          await dbActions.upsertArtifactRuntimeSession(
+            {
+              id: newRuntimeSession.id,
+              artifactId: existing.artifact.id,
+              provider: 'e2b',
+              sandboxId: rebuildResult.sandboxId,
+              previewUrl: rebuildResult.previewUrl,
+              status: 'ready',
+              startedAt: newRuntimeSession.startedAt,
+              expiresAt: newRuntimeSession.expiresAt,
+              lastHeartbeatAt: new Date()
+            },
+            ctx.userId
+          )
+        }
+
+        // Store the merged revision (same logic as the happy path)
+        const previousRevision = await dbActions.loadLatestRevisionWithSource(
+          existing.artifact.id,
+          ctx.userId
+        )
+        const mergedSourceFiles = {
+          ...(previousRevision?.sourceFiles ?? {}),
+          ...validation.files
+        }
+
+        const revision =
+          ctx.userId && ctx.triggeringMessageId
+            ? await dbActions.appendArtifactRevision(
+                {
+                  artifactId: existing.artifact.id,
+                  triggeringMessageId: ctx.triggeringMessageId,
+                  promptSummary,
+                  title,
+                  sourceFiles: mergedSourceFiles
+                },
+                ctx.userId
+              )
+            : null
+
+        const guestArtifactToken = newRuntimeSession
+          ? await issueGuestToken({
+              ctx,
+              artifactId: existing.artifact.id,
+              runtimeSession: newRuntimeSession
+            })
+          : undefined
+
+        emitArtifactState(ctx, {
+          artifactId: existing.artifact.id,
+          title,
+          status: 'ready',
+          previewUrl: rebuildResult.previewUrl,
+          ...(revision ? { revisionId: revision.id } : {}),
+          ...(guestArtifactToken ? { guestArtifactToken } : {})
+        })
+
+        return {
+          success: true as const,
+          title: params.title,
+          description: params.description,
+          files: validation.files,
+          action: 'update' as const,
+          artifactId: existing.artifact.id,
+          previewUrl: rebuildResult.previewUrl,
+          ...(revision ? { revisionId: revision.id } : {}),
+          ...(guestArtifactToken ? { guestArtifactToken } : {})
+        }
+      } catch (recoveryError) {
+        // Recovery failed — fall through to the generic error handler below
+        const recoveryMessage =
+          recoveryError instanceof Error
+            ? recoveryError.message
+            : 'Recovery failed'
+
+        logArtifactEvent('artifact.update.sandbox-recovery.failed', {
+          artifactId: existing.artifact.id,
+          chatId: ctx.chatId,
+          error: recoveryMessage
+        })
+      }
+    }
+
     const message =
       error instanceof Error ? error.message : 'Artifact update failed'
 

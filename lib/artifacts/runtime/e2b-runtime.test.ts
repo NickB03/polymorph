@@ -20,7 +20,8 @@ vi.mock('e2b', () => {
     Sandbox: {
       create: vi.fn().mockResolvedValue(mockSandboxInstance),
       connect: vi.fn().mockResolvedValue(mockSandboxInstance),
-      kill: vi.fn().mockResolvedValue(undefined)
+      kill: vi.fn().mockResolvedValue(undefined),
+      setTimeout: vi.fn().mockResolvedValue(undefined)
     },
     __mockInstance: mockSandboxInstance,
     __mockCommandsRun: mockCommandsRun,
@@ -103,7 +104,8 @@ describe('E2B Runtime Adapter', () => {
       const result = await runtime.createSession({ templateId: 'my-template' })
 
       expect(Sandbox.create).toHaveBeenCalledWith('my-template', {
-        timeoutMs: 300_000
+        timeoutMs: 300_000,
+        lifecycle: { onTimeout: 'pause' }
       })
       expect(result.sandboxId).toBe('sandbox-456')
       expect(result.sandboxUrl).toContain('sandbox-456')
@@ -116,7 +118,8 @@ describe('E2B Runtime Adapter', () => {
       await runtime.createSession({})
 
       expect(Sandbox.create).toHaveBeenCalledWith('base', {
-        timeoutMs: 300_000
+        timeoutMs: 300_000,
+        lifecycle: { onTimeout: 'pause' }
       })
     })
 
@@ -127,7 +130,8 @@ describe('E2B Runtime Adapter', () => {
       await runtime.createSession({ timeoutSeconds: 60 })
 
       expect(Sandbox.create).toHaveBeenCalledWith('base', {
-        timeoutMs: 60_000
+        timeoutMs: 60_000,
+        lifecycle: { onTimeout: 'pause' }
       })
     })
 

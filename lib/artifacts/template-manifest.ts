@@ -30,8 +30,10 @@ export const ALLOWED_SOURCE_ROOTS = ['src/']
 
 /**
  * UI components installed in the template under src/components/ui/.
- * This is the single source of truth — prompt, normalizer, and validator
- * all derive from this set.
+ * This is the single source of truth for prompt generation and import
+ * validation. The normalizer rewrites shadcn-style import paths
+ * independently — components it maps to that aren't in this set will
+ * be caught and rejected by the validator.
  */
 export const TEMPLATE_UI_COMPONENTS = new Set([
   'avatar',
