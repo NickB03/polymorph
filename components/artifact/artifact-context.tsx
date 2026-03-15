@@ -7,16 +7,23 @@ import {
   useContext,
   useEffect,
   useReducer,
+  useRef,
   useState
 } from 'react'
 
 import type { Part } from '@/lib/types/ai'
-import type { ArtifactLogData, ArtifactStatus } from '@/lib/types/artifact'
+import type {
+  ArtifactLogData,
+  ArtifactSourceFile,
+  ArtifactStatus
+} from '@/lib/types/artifact'
 
 import { useSidebar } from '../ui/sidebar'
 
 // Animation duration should match CSS transition duration
 const ANIMATION_DURATION = 300
+
+export type WorkspaceTab = 'preview' | 'code' | 'logs'
 
 export interface ArtifactWorkspaceState {
   artifactId: string | null
@@ -24,6 +31,9 @@ export interface ArtifactWorkspaceState {
   title: string | null
   status: ArtifactStatus | null
   previewUrl: string | null
+  guestArtifactToken: string | null
+  sourceFiles: ArtifactSourceFile[]
+  canRebuild: boolean
   isOpen: boolean
 }
 
@@ -38,6 +48,9 @@ const initialWorkspace: ArtifactWorkspaceState = {
   title: null,
   status: null,
   previewUrl: null,
+  guestArtifactToken: null,
+  sourceFiles: [],
+  canRebuild: false,
   isOpen: false
 }
 
@@ -101,6 +114,8 @@ interface ArtifactContextValue {
   closeWorkspace: () => void
   appendWorkspaceLog: (log: ArtifactLogData) => void
   workspaceLogs: ArtifactLogData[]
+  requestAiFix: ((errorContext: string) => void) | null
+  setRequestAiFix: (cb: ((errorContext: string) => void) | null) => void
 }
 
 const ArtifactContext = createContext<ArtifactContextValue | undefined>(
@@ -111,6 +126,9 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(artifactReducer, initialState)
   const { setOpen, open: sidebarOpen } = useSidebar()
   const [workspaceLogs, setWorkspaceLogs] = useState<ArtifactLogData[]>([])
+  const [requestAiFix, setRequestAiFix] = useState<
+    ((errorContext: string) => void) | null
+  >(null)
   const isInspectorOpen =
     state.inspectedPart !== null && !state.workspace.isOpen
 
@@ -156,7 +174,7 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const appendWorkspaceLog = useCallback((log: ArtifactLogData) => {
-    setWorkspaceLogs(prev => [...prev, log])
+    setWorkspaceLogs(prev => [...prev, log].slice(-200))
   }, [])
 
   return (
@@ -169,7 +187,9 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
         updateWorkspace,
         closeWorkspace,
         appendWorkspaceLog,
-        workspaceLogs
+        workspaceLogs,
+        requestAiFix,
+        setRequestAiFix
       }}
     >
       {children}
@@ -183,4 +203,93 @@ export function useArtifact() {
     throw new Error('useArtifact must be used within an ArtifactProvider')
   }
   return context
+}
+
+/**
+ * Shared hook for calling artifact action endpoints (refresh, retry).
+ * Eliminates duplicated fetch + updateWorkspace logic across components.
+ */
+export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
+  const { state, updateWorkspace } = useArtifact()
+  const { workspace } = state
+  const [isPending, setIsPending] = useState(false)
+  const abortRef = useRef<AbortController | null>(null)
+
+  // Abort any in-flight request on unmount
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
+
+  const execute = useCallback(async () => {
+    if (!workspace.artifactId || isPending) return
+
+    // Cancel any previous in-flight request to prevent stale responses
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    setIsPending(true)
+    try {
+      const res = await fetch(
+        `/api/artifacts/${workspace.artifactId}/actions`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action,
+            guestArtifactToken: workspace.guestArtifactToken ?? undefined
+          }),
+          signal: controller.signal
+        }
+      )
+      if (controller.signal.aborted) return
+      if (res.ok) {
+        const data = await res.json()
+        if (controller.signal.aborted) return
+        updateWorkspace({
+          status: data.status ?? workspace.status,
+          previewUrl: data.previewUrl ?? workspace.previewUrl,
+          revisionId: data.revisionId ?? workspace.revisionId,
+          title: data.title ?? workspace.title,
+          guestArtifactToken:
+            data.guestArtifactToken ?? workspace.guestArtifactToken,
+          ...(data.canRebuild !== undefined
+            ? { canRebuild: data.canRebuild }
+            : {})
+        })
+      } else {
+        try {
+          const err = await res.json()
+          if (controller.signal.aborted) return
+          if (err.code === 'TOKEN_EXPIRED') {
+            updateWorkspace({ status: 'expired', previewUrl: null })
+          }
+        } catch {
+          // Response wasn't JSON — ignore
+        }
+      }
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return
+      throw e
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsPending(false)
+      }
+    }
+  }, [workspace, isPending, updateWorkspace, action])
+
+  return { execute, isPending }
+}
+
+/** Format workspace logs into an "Ask AI to fix" prompt. */
+export function formatArtifactFixPrompt(
+  logs: { message: string; level?: string }[]
+): string {
+  const context = logs
+    .slice(-20)
+    .map(l => l.message)
+    .join('\n')
+  return `The artifact build failed with the following error. Please diagnose and fix the source code:\n\n\`\`\`\n${context}\n\`\`\``
 }

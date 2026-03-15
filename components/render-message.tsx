@@ -196,6 +196,18 @@ export function RenderMessage({
   const todoScan = scanTodoWriteParts(message.parts)
   const { firstTodoWriteIndex } = todoScan
 
+  // Pre-scan: for each artifact ID, find the index of the LAST data-artifact
+  // part so we can deduplicate inline cards (only render the latest per artifact).
+  const lastArtifactPartByArtifactId = new Map<string, number>()
+  message.parts?.forEach((part, index) => {
+    if (part.type === 'data-artifact') {
+      const artifactPart = part as DataArtifactPart
+      if (artifactPart.data?.id) {
+        lastArtifactPartByArtifactId.set(artifactPart.data.id, index)
+      }
+    }
+  })
+
   // New rendering: interleave text parts with grouped non-text segments
   const elements: React.ReactNode[] = []
   // Buffer collects non-text parts for ResearchProcessSection.
@@ -443,16 +455,25 @@ export function RenderMessage({
         )
       }
     } else if (part.type === 'data-artifact') {
-      // Render artifact card inline — not buffered into ResearchProcessSection
-      flushBuffer(`seg-${index}`)
+      // Render artifact card inline — only the latest part per artifact ID.
+      // Earlier parts (e.g. building → ready) are skipped to avoid duplicates.
       const artifactPart = part as DataArtifactPart
-      const rendered = tryRenderArtifactCard(artifactPart.data)
-      if (rendered) {
-        elements.push(
-          <div key={`${messageId}-artifact-${index}`} className="my-2">
-            {rendered}
-          </div>
-        )
+      const artifactId = artifactPart.data?.id
+      if (
+        artifactId &&
+        lastArtifactPartByArtifactId.get(artifactId) !== index
+      ) {
+        // Skip — a later part for the same artifact supersedes this one
+      } else {
+        flushBuffer(`seg-${index}`)
+        const rendered = tryRenderArtifactCard(artifactPart.data)
+        if (rendered) {
+          elements.push(
+            <div key={`${messageId}-artifact-${index}`} className="my-2">
+              {rendered}
+            </div>
+          )
+        }
       }
     } else if (
       part.type === 'data-artifactStatus' ||

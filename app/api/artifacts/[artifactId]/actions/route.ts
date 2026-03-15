@@ -1,9 +1,19 @@
 import { NextRequest } from 'next/server'
 
-import { verifyGuestArtifactToken } from '@/lib/artifacts/guest-token'
+import {
+  getTtlMs,
+  signGuestArtifactToken,
+  verifyGuestArtifactToken,
+  verifyGuestArtifactTokenAllowExpired
+} from '@/lib/artifacts/guest-token'
 import { createE2BRuntime } from '@/lib/artifacts/runtime'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
-import { loadArtifactById, loadArtifactRuntimeSession } from '@/lib/db/actions'
+import {
+  loadArtifactById,
+  loadArtifactRuntimeSession,
+  loadLatestRevisionWithSource,
+  upsertArtifactRuntimeSession
+} from '@/lib/db/actions'
 import { jsonError } from '@/lib/utils/json-error'
 
 export async function POST(
@@ -20,13 +30,14 @@ export async function POST(
   }
 
   const { action } = body
-  if (!action || (action !== 'refresh' && action !== 'retry')) {
+  if (!action || !['refresh', 'retry', 'rebuild'].includes(action)) {
     return jsonError('BAD_REQUEST', 'Unknown action', 400)
   }
 
   // Auth: try authenticated user first, fall back to guest token
   const userId = await getCurrentUserId()
   let isGuest = false
+  let guestHandle: Awaited<ReturnType<typeof verifyGuestArtifactToken>> = null
   let guestSandboxId: string | null = null
 
   if (!userId) {
@@ -36,12 +47,31 @@ export async function POST(
       return jsonError('AUTH_REQUIRED', 'Authentication required', 401)
     }
 
-    const handle = await verifyGuestArtifactToken(token)
+    let handle = await verifyGuestArtifactToken(token)
+
+    // For rebuild: accept expired tokens (signature still proves identity)
+    if (!handle && action === 'rebuild') {
+      handle = await verifyGuestArtifactTokenAllowExpired(token)
+    }
+
+    // For non-rebuild actions: detect expired tokens and return a specific code
+    if (!handle && action !== 'rebuild') {
+      const expiredHandle = await verifyGuestArtifactTokenAllowExpired(token)
+      if (expiredHandle && expiredHandle.artifactId === artifactId) {
+        return jsonError(
+          'TOKEN_EXPIRED',
+          'Session expired — rebuild to continue',
+          401
+        )
+      }
+    }
+
     if (!handle || handle.artifactId !== artifactId) {
       return jsonError('AUTH_REQUIRED', 'Invalid or expired guest token', 401)
     }
 
     isGuest = true
+    guestHandle = handle
     guestSandboxId = handle.sandboxId
   }
 
@@ -56,6 +86,62 @@ export async function POST(
     artifactId,
     isGuest ? null : userId
   )
+
+  const issueGuestArtifactToken = async (input?: {
+    runtimeSessionId?: string
+    sandboxId?: string
+    expiresAt?: Date | null
+  }) => {
+    if (!isGuest || !guestHandle) return undefined
+
+    return signGuestArtifactToken({
+      artifactId: artifact.id,
+      runtimeSessionId: input?.runtimeSessionId ?? guestHandle.runtimeSessionId,
+      sandboxId: input?.sandboxId ?? guestHandle.sandboxId,
+      chatId: artifact.chatId,
+      expiresAt: (input?.expiresAt ?? guestHandle.expiresAt).getTime()
+    })
+  }
+
+  // For rebuild, spin up a fresh sandbox from the latest stored source
+  if (action === 'rebuild') {
+    try {
+      const { rebuildArtifactFromRevision } =
+        await import('@/lib/artifacts/rebuild')
+      const result = await rebuildArtifactFromRevision({
+        artifactId,
+        userId: isGuest ? null : (userId ?? null)
+      })
+
+      if (!result.success) {
+        const status = result.alreadyInProgress ? 409 : 500
+        const code = result.alreadyInProgress
+          ? 'REBUILD_IN_PROGRESS'
+          : 'REBUILD_FAILED'
+        return jsonError(code, result.error, status)
+      }
+
+      // Issue a FRESH guest token with new expiry
+      const guestArtifactToken = await issueGuestArtifactToken({
+        runtimeSessionId: result.runtimeSessionId,
+        sandboxId: result.sandboxId,
+        expiresAt: new Date(Date.now() + getTtlMs())
+      })
+
+      return Response.json({
+        id: artifact.id,
+        title: artifact.title,
+        status: result.status,
+        previewUrl: result.previewUrl,
+        revisionId: artifact.currentRevisionId,
+        canRebuild: true,
+        ...(guestArtifactToken ? { guestArtifactToken } : {})
+      })
+    } catch (error) {
+      console.error('Failed to rebuild artifact:', error)
+      return jsonError('REBUILD_FAILED', 'Failed to rebuild artifact', 500)
+    }
+  }
 
   // For retry, actually restart the preview via the runtime adapter
   if (action === 'retry') {
@@ -72,13 +158,33 @@ export async function POST(
     try {
       const runtime = createE2BRuntime()
       const result = await runtime.restartPreview({ sandboxId })
+      const persistedSession = await upsertArtifactRuntimeSession(
+        {
+          id: session?.id ?? guestHandle?.runtimeSessionId,
+          artifactId: artifact.id,
+          provider: 'e2b',
+          sandboxId,
+          previewUrl: result.previewUrl,
+          status: result.status,
+          startedAt: session?.startedAt ?? new Date(),
+          expiresAt: session?.expiresAt ?? guestHandle?.expiresAt ?? null,
+          lastHeartbeatAt: new Date()
+        },
+        isGuest ? null : userId
+      )
+      const guestArtifactToken = await issueGuestArtifactToken({
+        runtimeSessionId: persistedSession?.id,
+        sandboxId,
+        expiresAt: persistedSession?.expiresAt
+      })
 
       return Response.json({
         id: artifact.id,
         title: artifact.title,
         status: result.status,
         previewUrl: result.previewUrl,
-        revisionId: artifact.currentRevisionId
+        revisionId: artifact.currentRevisionId,
+        ...(guestArtifactToken ? { guestArtifactToken } : {})
       })
     } catch (error) {
       console.error('Failed to restart artifact preview:', error)
@@ -87,11 +193,26 @@ export async function POST(
   }
 
   // For refresh, just return the current status
+  const guestArtifactToken = await issueGuestArtifactToken({
+    runtimeSessionId: session?.id,
+    sandboxId: session?.sandboxId,
+    expiresAt: session?.expiresAt
+  })
+
+  // Check if the latest revision has stored source files (rebuild-capable)
+  const latestRevision = await loadLatestRevisionWithSource(
+    artifactId,
+    isGuest ? null : userId
+  )
+  const canRebuild = latestRevision?.sourceFiles != null
+
   return Response.json({
     id: artifact.id,
     title: artifact.title,
     status: artifact.status,
     previewUrl: session?.previewUrl ?? null,
-    revisionId: artifact.currentRevisionId
+    revisionId: artifact.currentRevisionId,
+    canRebuild,
+    ...(guestArtifactToken ? { guestArtifactToken } : {})
   })
 }

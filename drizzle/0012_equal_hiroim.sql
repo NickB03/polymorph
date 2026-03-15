@@ -1,0 +1,1 @@
+ALTER TABLE "artifact_revisions" ADD COLUMN "source_files" jsonb;

@@ -1,10 +1,11 @@
 'use server'
 
-import { and, asc, desc, eq, gt, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, inArray, sql } from 'drizzle-orm'
 
 import type { UIMessage } from '@/lib/types/ai'
 import type {
   AppendArtifactRevisionInput,
+  ArtifactStatus,
   CreateArtifactInput,
   UpsertArtifactRuntimeSessionInput
 } from '@/lib/types/artifact'
@@ -17,6 +18,7 @@ import {
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 import { incrementDbOperationCount } from '@/lib/utils/perf-tracking'
 
+import { GUEST_USER_ID } from './constants'
 import type { Chat, Message } from './schema'
 import {
   artifactRevisions,
@@ -30,6 +32,32 @@ import {
 import type { TxInstance } from './with-rls'
 import { withOptionalRLS, withRLS } from './with-rls'
 import { db } from '.'
+
+/**
+ * Ensure a chat record exists for the given ID.
+ *
+ * Used by the artifact flow to satisfy the foreign key constraint
+ * on artifacts.chat_id for guest/ephemeral sessions where no chat
+ * row was previously created.
+ *
+ * Uses INSERT ... ON CONFLICT DO NOTHING so it is safe to call
+ * concurrently or repeatedly for the same chatId.
+ */
+export async function ensureChatRecord(input: {
+  id: string
+  title: string
+  visibility?: 'public' | 'private'
+}): Promise<void> {
+  await db
+    .insert(chats)
+    .values({
+      id: input.id,
+      title: input.title,
+      userId: GUEST_USER_ID,
+      visibility: input.visibility ?? 'private'
+    })
+    .onConflictDoNothing({ target: chats.id })
+}
 
 /**
  * Create a new chat
@@ -255,6 +283,65 @@ export async function createArtifactRecord(input: CreateArtifactInput) {
   })
 }
 
+export async function updateArtifactRecord(
+  input: {
+    id: string
+    title?: string
+    status?: ArtifactStatus
+    currentRevisionId?: string | null
+    currentRuntimeSessionId?: string | null
+  },
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [artifact] = await tx
+      .update(artifacts)
+      .set({
+        ...(input.title !== undefined ? { title: input.title } : {}),
+        ...(input.status !== undefined ? { status: input.status } : {}),
+        ...(input.currentRevisionId !== undefined
+          ? { currentRevisionId: input.currentRevisionId }
+          : {}),
+        ...(input.currentRuntimeSessionId !== undefined
+          ? { currentRuntimeSessionId: input.currentRuntimeSessionId }
+          : {}),
+        updatedAt: new Date()
+      })
+      .where(eq(artifacts.id, input.id))
+      .returning()
+
+    return artifact ?? null
+  })
+}
+
+/**
+ * Atomically claim an artifact for rebuild by transitioning its status
+ * to 'building', but only if it is not already building.
+ *
+ * Returns the updated artifact if the claim succeeded, or null if
+ * another rebuild is already in progress. This prevents concurrent
+ * rebuild requests from orphaning E2B sandboxes.
+ */
+export async function claimArtifactForRebuild(
+  artifactId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [artifact] = await tx
+      .update(artifacts)
+      .set({ status: 'building', updatedAt: new Date() })
+      .where(
+        and(
+          eq(artifacts.id, artifactId),
+          sql`${artifacts.status} != 'building'`
+        )
+      )
+      .returning()
+
+    return artifact ?? null
+  })
+}
+
 /**
  * Append a revision and promote it to the current artifact revision
  */
@@ -272,7 +359,8 @@ export async function appendArtifactRevision(
           triggeringMessageId: input.triggeringMessageId,
           promptSummary: input.promptSummary,
           title: input.title,
-          sandboxSnapshotRef: input.sandboxSnapshotRef ?? null
+          sandboxSnapshotRef: input.sandboxSnapshotRef ?? null,
+          sourceFiles: input.sourceFiles ?? null
         })
         .returning()
 
@@ -287,6 +375,26 @@ export async function appendArtifactRevision(
 
       return revision
     })
+  })
+}
+
+/**
+ * Load the latest revision for an artifact, including source files.
+ * Used by rebuild-on-demand to reconstruct expired sandboxes,
+ * and by orchestrateUpdate to merge partial file deltas.
+ */
+export async function loadLatestRevisionWithSource(
+  artifactId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [revision] = await tx
+      .select()
+      .from(artifactRevisions)
+      .where(eq(artifactRevisions.artifactId, artifactId))
+      .orderBy(desc(artifactRevisions.createdAt))
+      .limit(1)
+    return revision ?? null
   })
 }
 

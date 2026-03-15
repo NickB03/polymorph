@@ -132,6 +132,7 @@ describe('Artifact Actions', () => {
       promptSummary: input.promptSummary,
       title: input.title,
       sandboxSnapshotRef: null,
+      sourceFiles: null,
       createdAt: new Date()
     }
 

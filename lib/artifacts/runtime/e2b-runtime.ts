@@ -1,3 +1,5 @@
+import { Sandbox } from 'e2b'
+
 import type {
   ApplySourceUpdateInput,
   ArtifactRuntime,
@@ -16,127 +18,128 @@ import type {
 } from './types'
 import { ArtifactRuntimeConfigError } from './types'
 
-const E2B_API_BASE_URL = 'https://api.e2b.dev/v1'
-const DEFAULT_SANDBOX_TIMEOUT_SECONDS = 300
+const APP_ROOT = '/home/user/app'
+const DEFAULT_SANDBOX_TIMEOUT_MS = 300_000
 const DEFAULT_DEV_SERVER_PORT = 5173
 const DEFAULT_DEV_SERVER_COMMAND = 'npm run dev'
+const PORT_POLL_INTERVAL_MS = 500
+const PORT_POLL_TIMEOUT_MS = 30_000
 
-function getApiKey(): string {
-  const key = process.env.E2B_API_KEY
-  if (!key) {
+async function checkPortReady(
+  sandbox: Sandbox,
+  port: number
+): Promise<boolean> {
+  // Prefer curl (guaranteed in custom template via aptInstall).
+  // Falls back to ss for base template compatibility.
+  const result = await sandbox.commands.run(
+    `curl -s -o /dev/null -w '' http://localhost:${port} 2>/dev/null || ss -tuln 2>/dev/null | grep -q :${port}`,
+    { requestTimeoutMs: 5_000 }
+  )
+  return result.exitCode === 0
+}
+
+async function waitUntilPortReady(
+  sandbox: Sandbox,
+  port: number
+): Promise<void> {
+  const deadline = Date.now() + PORT_POLL_TIMEOUT_MS
+
+  while (Date.now() < deadline) {
+    if (await checkPortReady(sandbox, port)) return
+
+    await new Promise(resolve => setTimeout(resolve, PORT_POLL_INTERVAL_MS))
+  }
+
+  // Diagnose: is the dev server process running but not listening?
+  const psResult = await sandbox.commands.run(
+    'ps aux | grep -i vite | grep -v grep',
+    { requestTimeoutMs: 5_000 }
+  )
+  const diagnostic = psResult.stdout.trim()
+    ? `Vite process found:\n${psResult.stdout.trim()}`
+    : 'No Vite process found — the dev server may have crashed.'
+
+  throw new Error(
+    `Dev server did not start listening on port ${port} within ${PORT_POLL_TIMEOUT_MS}ms. ${diagnostic}`
+  )
+}
+
+function resolveSandboxPath(filePath: string): string {
+  const normalized = filePath.replace(/^\/+/, '')
+  return `${APP_ROOT}/${normalized}`
+}
+
+function toWriteEntries(files: Record<string, string>) {
+  return Object.entries(files).map(([filePath, content]) => ({
+    path: resolveSandboxPath(filePath),
+    data: content
+  }))
+}
+
+/**
+ * Create an E2B-backed artifact runtime.
+ *
+ * Fails immediately if `E2B_API_KEY` is not set.
+ * Uses the official E2B SDK for sandbox operations.
+ */
+export function createE2BRuntime(): ArtifactRuntime {
+  if (!process.env.E2B_API_KEY) {
     throw new ArtifactRuntimeConfigError(
       'E2B_API_KEY environment variable is required but not set'
     )
   }
-  return key
-}
 
-function getSandboxPreviewUrl(sandboxId: string, port: number): string {
-  return `https://${port}-${sandboxId}.e2b.dev`
-}
-
-async function e2bFetch(
-  path: string,
-  apiKey: string,
-  options: RequestInit = {}
-): Promise<Response> {
-  const url = `${E2B_API_BASE_URL}${path}`
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      ...options.headers
-    }
-  })
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new Error(
-      `E2B API error ${response.status} ${response.statusText}: ${body}`
-    )
-  }
-
-  return response
-}
-
-function createRuntime(apiKey: string): ArtifactRuntime {
   return {
     async createSession(
       input: CreateSessionInput
     ): Promise<CreateSessionResult> {
-      const response = await e2bFetch('/sandboxes', apiKey, {
-        method: 'POST',
-        body: JSON.stringify({
-          templateID: input.templateId || 'base',
-          timeout: input.timeoutSeconds || DEFAULT_SANDBOX_TIMEOUT_SECONDS
-        })
+      const sandbox = await Sandbox.create(input.templateId || 'base', {
+        timeoutMs:
+          (input.timeoutSeconds || 0) * 1000 || DEFAULT_SANDBOX_TIMEOUT_MS
       })
 
-      const data = await response.json()
-      const sandboxId = data.sandboxID
-
       return {
-        sandboxId,
-        sandboxUrl: `https://${sandboxId}.e2b.dev`
+        sandboxId: sandbox.sandboxId,
+        sandboxUrl: `https://${sandbox.getHost(DEFAULT_DEV_SERVER_PORT)}`
       }
     },
 
     async writeFiles(input: WriteFilesInput): Promise<void> {
-      // Write each file to the sandbox filesystem
-      for (const [filePath, content] of Object.entries(input.files)) {
-        await e2bFetch(`/sandboxes/${input.sandboxId}/files`, apiKey, {
-          method: 'POST',
-          body: JSON.stringify({
-            path: filePath,
-            content
-          })
-        })
-      }
+      const sandbox = await Sandbox.connect(input.sandboxId)
+      await sandbox.files.write(toWriteEntries(input.files))
     },
 
     async applySourceUpdate(input: ApplySourceUpdateInput): Promise<void> {
-      // Source updates use the same file write mechanism
-      for (const [filePath, content] of Object.entries(input.files)) {
-        await e2bFetch(`/sandboxes/${input.sandboxId}/files`, apiKey, {
-          method: 'POST',
-          body: JSON.stringify({
-            path: filePath,
-            content
-          })
-        })
-      }
+      const sandbox = await Sandbox.connect(input.sandboxId)
+      await sandbox.files.write(toWriteEntries(input.files))
     },
 
     async installDependencies(input: InstallDependenciesInput): Promise<void> {
-      await e2bFetch(`/sandboxes/${input.sandboxId}/commands`, apiKey, {
-        method: 'POST',
-        body: JSON.stringify({
-          command: 'npm install',
-          cwd: input.cwd || '/home/user/app'
-        })
+      const sandbox = await Sandbox.connect(input.sandboxId)
+      const result = await sandbox.commands.run('npm install', {
+        cwd: input.cwd || APP_ROOT,
+        requestTimeoutMs: 120_000
       })
+
+      if (result.exitCode !== 0) {
+        const output = [result.stderr, result.stdout].filter(Boolean).join('\n')
+        throw new Error(
+          `npm install failed (exit ${result.exitCode}): ${output}`
+        )
+      }
     },
 
     async runCommand(input: RunCommandInput): Promise<RunCommandResult> {
-      const response = await e2bFetch(
-        `/sandboxes/${input.sandboxId}/commands`,
-        apiKey,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            command: input.command,
-            cwd: input.cwd || '/home/user/app',
-            timeout: input.timeoutMs
-          })
-        }
-      )
+      const sandbox = await Sandbox.connect(input.sandboxId)
+      const result = await sandbox.commands.run(input.command, {
+        cwd: input.cwd || APP_ROOT,
+        ...(input.timeoutMs ? { requestTimeoutMs: input.timeoutMs } : {})
+      })
 
-      const data = await response.json()
       return {
-        exitCode: data.exitCode ?? 0,
-        stdout: data.stdout ?? '',
-        stderr: data.stderr ?? ''
+        exitCode: result.exitCode,
+        stdout: result.stdout,
+        stderr: result.stderr
       }
     },
 
@@ -144,17 +147,27 @@ function createRuntime(apiKey: string): ArtifactRuntime {
       const port = input.port || DEFAULT_DEV_SERVER_PORT
       const command = input.startCommand || DEFAULT_DEV_SERVER_COMMAND
 
-      await e2bFetch(`/sandboxes/${input.sandboxId}/commands`, apiKey, {
-        method: 'POST',
-        body: JSON.stringify({
-          command,
-          cwd: '/home/user/app',
-          background: true
-        })
+      const sandbox = await Sandbox.connect(input.sandboxId)
+
+      // With custom templates using setStartCmd, the dev server is already
+      // running when the sandbox boots. Check before starting a second one.
+      if (await checkPortReady(sandbox, port)) {
+        return {
+          previewUrl: `https://${sandbox.getHost(port)}`,
+          status: 'ready'
+        }
+      }
+
+      // Fallback: start the dev server (base template or restart scenario)
+      await sandbox.commands.run(command, {
+        cwd: APP_ROOT,
+        background: true
       })
 
+      await waitUntilPortReady(sandbox, port)
+
       return {
-        previewUrl: getSandboxPreviewUrl(input.sandboxId, port),
+        previewUrl: `https://${sandbox.getHost(port)}`,
         status: 'ready'
       }
     },
@@ -165,67 +178,39 @@ function createRuntime(apiKey: string): ArtifactRuntime {
       const port = input.port || DEFAULT_DEV_SERVER_PORT
       const command = input.startCommand || DEFAULT_DEV_SERVER_COMMAND
 
-      // Kill existing dev server process
-      await e2bFetch(`/sandboxes/${input.sandboxId}/commands`, apiKey, {
-        method: 'POST',
-        body: JSON.stringify({
-          command: `kill $(lsof -t -i:${port}) 2>/dev/null; sleep 1`,
-          cwd: '/home/user/app'
-        })
+      const sandbox = await Sandbox.connect(input.sandboxId)
+
+      // Kill any existing process on the dev server port
+      await sandbox.commands.run(
+        `kill $(lsof -t -i:${port}) 2>/dev/null || true`,
+        { cwd: APP_ROOT }
+      )
+
+      // Start a fresh dev server
+      await sandbox.commands.run(command, {
+        cwd: APP_ROOT,
+        background: true
       })
 
-      // Start fresh
-      await e2bFetch(`/sandboxes/${input.sandboxId}/commands`, apiKey, {
-        method: 'POST',
-        body: JSON.stringify({
-          command,
-          cwd: '/home/user/app',
-          background: true
-        })
-      })
+      await waitUntilPortReady(sandbox, port)
 
       return {
-        previewUrl: getSandboxPreviewUrl(input.sandboxId, port),
+        previewUrl: `https://${sandbox.getHost(port)}`,
         status: 'ready'
       }
     },
 
     async getLogs(input: GetLogsInput): Promise<RuntimeLog[]> {
-      const params = new URLSearchParams()
-      if (input.after) params.set('after', input.after)
-
-      const queryString = params.toString()
-      const path = `/sandboxes/${input.sandboxId}/logs${queryString ? `?${queryString}` : ''}`
-
-      const response = await e2bFetch(path, apiKey, { method: 'GET' })
-      const data = await response.json()
-
-      if (!Array.isArray(data)) return []
-
-      return data.map(
-        (entry: { timestamp?: string; level?: string; message?: string }) => ({
-          timestamp: entry.timestamp || new Date().toISOString(),
-          level: (entry.level as RuntimeLog['level']) || 'info',
-          message: entry.message || ''
-        })
-      )
+      // The SDK does not expose a persistent log endpoint.
+      // Logs are streamed via onStdout/onStderr callbacks during command
+      // execution. Return an empty array for now — the orchestration layer
+      // emits structured log events via ctx.emitArtifactLog instead.
+      void input
+      return []
     },
 
     async destroySession(input: DestroySessionInput): Promise<void> {
-      await e2bFetch(`/sandboxes/${input.sandboxId}`, apiKey, {
-        method: 'DELETE'
-      })
+      await Sandbox.kill(input.sandboxId)
     }
   }
-}
-
-/**
- * Create an E2B-backed artifact runtime.
- *
- * Fails immediately if `E2B_API_KEY` is not set.
- * Uses raw HTTP requests — no E2B SDK dependency.
- */
-export function createE2BRuntime(): ArtifactRuntime {
-  const apiKey = getApiKey()
-  return createRuntime(apiKey)
 }

@@ -16,7 +16,7 @@ import type {
   UIMessage,
   UIMessageMetadata
 } from '@/lib/types/ai'
-import type { ArtifactLogData } from '@/lib/types/artifact'
+import type { ArtifactEventData, ArtifactLogData } from '@/lib/types/artifact'
 import {
   isDynamicToolPart,
   isInteractiveToolPart,
@@ -34,6 +34,10 @@ import { useFileDropzone } from '@/hooks/use-file-dropzone'
 import { useArtifact } from './artifact/artifact-context'
 import { ChatMessages } from './chat-messages'
 import { ChatPanel } from './chat-panel'
+import {
+  buildChatRequestBody,
+  getLatestGuestArtifactToken
+} from './chat-request'
 import { DragOverlay } from './drag-overlay'
 import { ErrorModal } from './error-modal'
 
@@ -62,6 +66,7 @@ export function Chat({
     openWorkspace,
     updateWorkspace,
     appendWorkspaceLog,
+    setRequestAiFix,
     state: artifactState
   } = useArtifact()
 
@@ -109,13 +114,26 @@ export function Chat({
     }
   }, [providedId, savedMessages])
 
+  useEffect(() => {
+    if (isGuest) {
+      const token = getLatestGuestArtifactToken(savedMessages)
+      setGuestArtifactToken(token)
+      guestArtifactTokenRef.current = token
+    }
+  }, [isGuest, savedMessages])
+
   const autoSendFiredRef = useRef<Set<string>>(new Set())
   // Track the last artifact id we auto-opened to avoid re-opening on every render
   const lastOpenedArtifactIdRef = useRef<string | null>(null)
+  // Ref for guestArtifactToken so the transport closure reads the latest value
+  const guestArtifactTokenRef = useRef<string | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [input, setInput] = useState('')
+  const [guestArtifactToken, setGuestArtifactToken] = useState<string | null>(
+    null
+  )
   const [errorModal, setErrorModal] = useState<{
     open: boolean
     type: 'rate-limit' | 'auth' | 'forbidden' | 'general'
@@ -140,71 +158,16 @@ export function Chat({
     id: chatId, // use the client-generated or provided chatId
     transport: new DefaultChatTransport({
       api: '/api/chat',
-      prepareSendMessagesRequest: ({ messages, trigger, messageId }) => {
-        // Simplify by passing AI SDK's default trigger values directly
-        const lastMessage = messages[messages.length - 1]
-        const messageToRegenerate =
-          trigger === 'regenerate-message'
-            ? messages.find(m => m.id === messageId)
-            : undefined
-
-        // Detect tool-result continuation: sendAutomaticallyWhen fires with
-        // trigger="submit-message" but last message is assistant (not user)
-        const isToolResultContinuation =
-          trigger === 'submit-message' && lastMessage?.role === 'assistant'
-
-        // For tool-result continuation, extract the minimal delta
-        if (isToolResultContinuation) {
-          const resolvedPart = lastMessage?.parts?.find(
-            (p: any) =>
-              isInteractiveToolPart(p) &&
-              'state' in p &&
-              p.state === 'output-available'
-          ) as { toolCallId: string; output: unknown } | undefined
-
-          if (resolvedPart && resolvedPart.output !== undefined) {
-            return {
-              body: {
-                trigger: 'tool-result',
-                chatId,
-                toolResult: {
-                  toolCallId: resolvedPart.toolCallId,
-                  output: resolvedPart.output
-                },
-                // Guest: include full messages (already resolved by addToolResult)
-                // so the ephemeral stream can continue without DB access
-                ...(isGuest ? { messages } : {})
-              }
-            }
-          }
-
-          // No valid resolved part found — fall through to the normal request
-          // path rather than sending an invalid tool-result continuation
-          console.warn(
-            '[chat] tool-result continuation: no resolved part found, falling back to normal request'
-          )
-        }
-
-        return {
-          body: {
-            trigger,
-            chatId,
-            messageId,
-            ...(isGuest ? { messages } : {}),
-            message:
-              trigger === 'regenerate-message' &&
-              messageToRegenerate?.role === 'user'
-                ? messageToRegenerate
-                : trigger === 'submit-message'
-                  ? lastMessage
-                  : undefined,
-            isNewChat:
-              trigger === 'submit-message' &&
-              messages.length === 1 &&
-              savedMessages.length === 0
-          }
-        }
-      }
+      prepareSendMessagesRequest: ({ messages, trigger, messageId }) =>
+        buildChatRequestBody({
+          messages: messages as UIMessage[],
+          trigger,
+          messageId,
+          chatId,
+          isGuest,
+          guestArtifactToken: guestArtifactTokenRef.current,
+          savedMessagesCount: savedMessages.length
+        })
     }),
     messages: savedMessages,
     onData: dataPart => {
@@ -219,9 +182,20 @@ export function Chat({
           appendWorkspaceLog(logData)
           window.dispatchEvent(new CustomEvent(type, { detail: logData }))
         } else if (type === 'data-artifactEvent') {
+          const eventData = (dataPart as { data: ArtifactEventData }).data
+          if (
+            eventData.event === 'guest-token-refreshed' &&
+            typeof eventData.payload?.token === 'string'
+          ) {
+            setGuestArtifactToken(eventData.payload.token)
+            guestArtifactTokenRef.current = eventData.payload.token
+            updateWorkspace({
+              guestArtifactToken: eventData.payload.token
+            })
+          }
           window.dispatchEvent(
             new CustomEvent(type, {
-              detail: (dataPart as { data: unknown }).data
+              detail: eventData
             })
           )
         }
@@ -359,12 +333,25 @@ export function Chat({
     generateId
   })
 
+  // Wire the "Ask AI to fix" callback so the error panel can submit a repair message.
+  // The caller (error panel / header) passes the full formatted prompt via formatArtifactFixPrompt.
+  useEffect(() => {
+    setRequestAiFix(() => (formattedPrompt: string) => {
+      sendMessage({
+        role: 'user',
+        parts: [{ type: 'text', text: formattedPrompt }]
+      })
+    })
+    return () => setRequestAiFix(null)
+  }, [sendMessage, setRequestAiFix])
+
   // Auto-open workspace when artifact data parts arrive in messages.
   // Reconcile by stable artifact id to avoid re-opening the same artifact.
   useEffect(() => {
-    // Scan all messages for the latest artifact data part
+    // Single pass: scan all messages for artifact data, status, and source files
     let latestArtifact: DataArtifactPart | null = null
     let latestStatus: DataArtifactStatusPart | null = null
+    let latestFiles: Record<string, string> | null = null
 
     for (const msg of messages) {
       if (msg.role !== 'assistant') continue
@@ -373,6 +360,15 @@ export function Chat({
           latestArtifact = part as DataArtifactPart
         } else if (part.type === 'data-artifactStatus') {
           latestStatus = part as DataArtifactStatusPart
+        } else if (
+          (part.type === 'tool-createWebappArtifact' ||
+            part.type === 'tool-updateWebappArtifact') &&
+          'output' in part &&
+          (part as { output?: { files?: Record<string, string> } }).output
+            ?.files
+        ) {
+          latestFiles = (part as { output: { files: Record<string, string> } })
+            .output.files
         }
       }
     }
@@ -380,15 +376,59 @@ export function Chat({
     if (!latestArtifact) return
 
     const artifactId = latestArtifact.data.id
+    const persistedGuestArtifactToken =
+      latestStatus?.data.id === artifactId
+        ? (latestStatus.data.guestArtifactToken ??
+          latestArtifact.data.guestArtifactToken)
+        : latestArtifact.data.guestArtifactToken
 
-    // If workspace is already showing this artifact, just apply status updates
+    if (
+      persistedGuestArtifactToken &&
+      persistedGuestArtifactToken !== guestArtifactToken
+    ) {
+      setGuestArtifactToken(persistedGuestArtifactToken)
+      guestArtifactTokenRef.current = persistedGuestArtifactToken
+    }
+
+    // Update code viewer with source files from tool results
+    if (latestFiles) {
+      const sourceFiles = Object.entries(latestFiles).map(
+        ([path, content]) => ({
+          path,
+          content,
+          language:
+            path.endsWith('.tsx') || path.endsWith('.ts')
+              ? 'typescript'
+              : path.endsWith('.css')
+                ? 'css'
+                : path.endsWith('.json')
+                  ? 'json'
+                  : 'text'
+        })
+      )
+      updateWorkspace({ sourceFiles, canRebuild: sourceFiles.length > 0 })
+    }
+
+    // If workspace is already showing this artifact, just apply status updates.
+    // IMPORTANT: Never let persisted message part data override an 'expired'
+    // status that was set by the refresh probe or rebuild API. The probe is
+    // authoritative; message parts contain stale pre-expiration status.
     if (artifactState.workspace.artifactId === artifactId) {
+      if (artifactState.workspace.status === 'expired') {
+        // Status was set by refresh probe — don't let stale data overwrite it
+        lastOpenedArtifactIdRef.current = artifactId
+        return
+      }
       const statusData = latestStatus?.data
       if (statusData && statusData.id === artifactId) {
         updateWorkspace({
           status: statusData.status,
           previewUrl: statusData.previewUrl ?? undefined,
-          revisionId: statusData.revisionId ?? undefined
+          revisionId: statusData.revisionId ?? undefined,
+          guestArtifactToken:
+            statusData.guestArtifactToken ??
+            persistedGuestArtifactToken ??
+            undefined
         })
       } else if (
         latestArtifact.data.status !== artifactState.workspace.status
@@ -397,7 +437,8 @@ export function Chat({
         updateWorkspace({
           status: latestArtifact.data.status,
           previewUrl: latestArtifact.data.previewUrl ?? undefined,
-          revisionId: latestArtifact.data.revisionId ?? undefined
+          revisionId: latestArtifact.data.revisionId ?? undefined,
+          guestArtifactToken: persistedGuestArtifactToken ?? undefined
         })
       }
       lastOpenedArtifactIdRef.current = artifactId
@@ -413,13 +454,15 @@ export function Chat({
       title: latestArtifact.data.title,
       status: latestArtifact.data.status,
       previewUrl: latestArtifact.data.previewUrl,
-      revisionId: latestArtifact.data.revisionId
+      revisionId: latestArtifact.data.revisionId,
+      guestArtifactToken: persistedGuestArtifactToken ?? undefined
     })
     lastOpenedArtifactIdRef.current = artifactId
   }, [
     messages,
     artifactState.workspace.artifactId,
     artifactState.workspace.status,
+    guestArtifactToken,
     openWorkspace,
     updateWorkspace
   ])

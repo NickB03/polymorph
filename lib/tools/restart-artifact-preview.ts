@@ -1,6 +1,7 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 
+import { orchestrateRestart } from '@/lib/artifacts/orchestrate'
 import { getArtifactContext } from '@/lib/artifacts/tool-context'
 
 const RestartArtifactPreviewSchema = z.object({
@@ -24,10 +25,15 @@ export const restartArtifactPreviewTool = tool({
       }
     }
 
-    return {
-      success: true,
-      action: 'restart' as const,
-      reason: params.reason
+    try {
+      return await orchestrateRestart(params, artifactCtx)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('[restartArtifactPreview]', message)
+      return {
+        success: false,
+        error: `Artifact preview restart failed: ${message}`
+      }
     }
   }
 })

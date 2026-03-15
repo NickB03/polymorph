@@ -1,6 +1,7 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 
+import { queryArtifactStatus } from '@/lib/artifacts/orchestrate'
 import { getArtifactContext } from '@/lib/artifacts/tool-context'
 
 const GetArtifactStatusSchema = z.object({
@@ -21,10 +22,15 @@ export const getArtifactStatusTool = tool({
       }
     }
 
-    return {
-      success: true,
-      action: 'status' as const,
-      reason: params.reason
+    try {
+      return await queryArtifactStatus(params, artifactCtx)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('[getArtifactStatus]', message)
+      return {
+        success: false,
+        error: `Artifact status check failed: ${message}`
+      }
     }
   }
 })

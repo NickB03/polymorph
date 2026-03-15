@@ -14,6 +14,7 @@ export type ArtifactData = {
   status: ArtifactStatus
   previewUrl?: string
   revisionId?: string
+  guestArtifactToken?: string
 }
 
 export type ArtifactStatusData = {
@@ -21,6 +22,13 @@ export type ArtifactStatusData = {
   status: ArtifactStatus
   previewUrl?: string
   revisionId?: string
+  guestArtifactToken?: string
+}
+
+export interface ArtifactSourceFile {
+  path: string
+  content: string
+  language: string
 }
 
 export type ArtifactLogData = {
@@ -55,6 +63,7 @@ export interface ArtifactRevisionRecord {
   promptSummary: string
   title: string
   sandboxSnapshotRef: string | null
+  sourceFiles: Record<string, string> | null
   createdAt: Date
 }
 
@@ -88,6 +97,7 @@ export interface AppendArtifactRevisionInput {
   promptSummary: string
   title: string
   sandboxSnapshotRef?: string | null
+  sourceFiles?: Record<string, string> | null
 }
 
 export interface UpsertArtifactRuntimeSessionInput {

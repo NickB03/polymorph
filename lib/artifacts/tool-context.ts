@@ -32,6 +32,7 @@ export interface ArtifactToolContext {
   userId: string | null
   isGuest: boolean
   messages: UIMessage[]
+  triggeringMessageId: string | null
 
   /** Resolve the guest artifact token from incoming message history */
   resolveGuestArtifactToken(): Promise<ValidatedGuestArtifactHandle | null>

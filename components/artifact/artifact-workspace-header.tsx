@@ -1,27 +1,33 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 
 import {
   Check,
   Code2,
   Copy,
   Eye,
+  FileCode,
   Minimize2,
   RefreshCw,
   RotateCcw,
-  ScrollText
+  ScrollText,
+  Sparkles
 } from 'lucide-react'
 
+import { useCopyToClipboard } from '@/lib/hooks/use-copy-to-clipboard'
 import type { ArtifactStatus } from '@/lib/types/artifact'
 
 import { Separator } from '@/components/ui/separator'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { TooltipButton } from '@/components/ui/tooltip-button'
 
-import { useArtifact } from './artifact-context'
-
-type WorkspaceTab = 'preview' | 'logs'
+import {
+  formatArtifactFixPrompt,
+  useArtifact,
+  useArtifactAction,
+  type WorkspaceTab
+} from './artifact-context'
 
 interface ArtifactWorkspaceHeaderProps {
   activeTab: WorkspaceTab
@@ -69,78 +75,30 @@ export function ArtifactWorkspaceHeader({
   activeTab,
   onTabChange
 }: ArtifactWorkspaceHeaderProps) {
-  const { state, updateWorkspace, closeWorkspace } = useArtifact()
+  const { state, closeWorkspace, requestAiFix, workspaceLogs } = useArtifact()
   const { workspace } = state
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [isRetrying, setIsRetrying] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const { execute: handleRefresh, isPending: isRefreshing } =
+    useArtifactAction('refresh')
+  const { execute: handleRetry, isPending: isRetrying } =
+    useArtifactAction('retry')
+  const { execute: handleRebuild, isPending: isRebuilding } =
+    useArtifactAction('rebuild')
+  const { isCopied: copied, copyToClipboard } = useCopyToClipboard({
+    timeout: 2000
+  })
 
-  const handleRefresh = useCallback(async () => {
-    if (!workspace.artifactId || isRefreshing) return
-    setIsRefreshing(true)
-    try {
-      const res = await fetch(
-        `/api/artifacts/${workspace.artifactId}/actions`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'refresh' })
-        }
-      )
-      if (res.ok) {
-        const data = await res.json()
-        updateWorkspace({
-          status: data.status ?? workspace.status,
-          previewUrl: data.previewUrl ?? workspace.previewUrl,
-          revisionId: data.revisionId ?? workspace.revisionId,
-          title: data.title ?? workspace.title
-        })
-      }
-    } finally {
-      setIsRefreshing(false)
-    }
-  }, [workspace, isRefreshing, updateWorkspace])
-
-  const handleRetry = useCallback(async () => {
-    if (!workspace.artifactId || isRetrying) return
-    setIsRetrying(true)
-    try {
-      const res = await fetch(
-        `/api/artifacts/${workspace.artifactId}/actions`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'retry' })
-        }
-      )
-      if (res.ok) {
-        const data = await res.json()
-        updateWorkspace({
-          status: data.status ?? workspace.status,
-          previewUrl: data.previewUrl ?? workspace.previewUrl,
-          revisionId: data.revisionId ?? workspace.revisionId,
-          title: data.title ?? workspace.title
-        })
-      }
-    } finally {
-      setIsRetrying(false)
-    }
-  }, [workspace, isRetrying, updateWorkspace])
+  const handleAskAiFix = useCallback(() => {
+    if (!requestAiFix) return
+    requestAiFix(formatArtifactFixPrompt(workspaceLogs))
+  }, [requestAiFix, workspaceLogs])
 
   const handleShare = useCallback(() => {
-    if (!workspace.previewUrl || copied) return
-    navigator.clipboard.writeText(workspace.previewUrl).then(
-      () => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-      },
-      err => {
-        console.error('Failed to copy preview URL to clipboard:', err)
-      }
-    )
-  }, [workspace.previewUrl, copied])
+    if (workspace.previewUrl) copyToClipboard(workspace.previewUrl)
+  }, [workspace.previewUrl, copyToClipboard])
 
   const isFailed = workspace.status === 'failed'
+  const isExpired = workspace.status === 'expired'
+  const canRebuild = workspace.canRebuild
 
   return (
     <TooltipProvider>
@@ -155,32 +113,50 @@ export function ArtifactWorkspaceHeader({
 
         <div className="flex items-center gap-0.5 shrink-0">
           {/* Tab switcher */}
-          <TooltipButton
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => onTabChange('preview')}
-            aria-label="Preview"
-            aria-pressed={activeTab === 'preview'}
-            tooltipContent="Preview"
-          >
-            <Eye
-              className={`h-3.5 w-3.5 ${activeTab === 'preview' ? 'text-foreground' : 'text-muted-foreground'}`}
-            />
-          </TooltipButton>
-          <TooltipButton
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => onTabChange('logs')}
-            aria-label="Logs"
-            aria-pressed={activeTab === 'logs'}
-            tooltipContent="Logs"
-          >
-            <ScrollText
-              className={`h-3.5 w-3.5 ${activeTab === 'logs' ? 'text-foreground' : 'text-muted-foreground'}`}
-            />
-          </TooltipButton>
+          <div role="tablist" className="flex items-center gap-0.5">
+            <TooltipButton
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              role="tab"
+              onClick={() => onTabChange('preview')}
+              aria-label="Preview"
+              aria-selected={activeTab === 'preview'}
+              tooltipContent="Preview"
+            >
+              <Eye
+                className={`h-3.5 w-3.5 ${activeTab === 'preview' ? 'text-foreground' : 'text-muted-foreground'}`}
+              />
+            </TooltipButton>
+            <TooltipButton
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              role="tab"
+              onClick={() => onTabChange('code')}
+              aria-label="Code"
+              aria-selected={activeTab === 'code'}
+              tooltipContent="Code"
+            >
+              <FileCode
+                className={`h-3.5 w-3.5 ${activeTab === 'code' ? 'text-foreground' : 'text-muted-foreground'}`}
+              />
+            </TooltipButton>
+            <TooltipButton
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              role="tab"
+              onClick={() => onTabChange('logs')}
+              aria-label="Logs"
+              aria-selected={activeTab === 'logs'}
+              tooltipContent="Logs"
+            >
+              <ScrollText
+                className={`h-3.5 w-3.5 ${activeTab === 'logs' ? 'text-foreground' : 'text-muted-foreground'}`}
+              />
+            </TooltipButton>
+          </div>
 
           <Separator orientation="vertical" className="mx-1 h-4" />
 
@@ -200,17 +176,47 @@ export function ArtifactWorkspaceHeader({
           </TooltipButton>
 
           {isFailed && (
+            <>
+              <TooltipButton
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleRetry}
+                disabled={isRetrying}
+                aria-label="Retry"
+                tooltipContent="Retry"
+              >
+                <RotateCcw
+                  className={`h-3.5 w-3.5 ${isRetrying ? 'animate-spin' : ''}`}
+                />
+              </TooltipButton>
+              {requestAiFix && (
+                <TooltipButton
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={handleAskAiFix}
+                  aria-label="Ask AI to fix"
+                  tooltipContent="Ask AI to fix"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                </TooltipButton>
+              )}
+            </>
+          )}
+
+          {isExpired && canRebuild && (
             <TooltipButton
               variant="ghost"
               size="icon"
               className="h-7 w-7"
-              onClick={handleRetry}
-              disabled={isRetrying}
-              aria-label="Retry"
-              tooltipContent="Retry"
+              onClick={handleRebuild}
+              disabled={isRebuilding}
+              aria-label="Rebuild preview"
+              tooltipContent="Rebuild preview"
             >
               <RotateCcw
-                className={`h-3.5 w-3.5 ${isRetrying ? 'animate-spin' : ''}`}
+                className={`h-3.5 w-3.5 ${isRebuilding ? 'animate-spin' : ''}`}
               />
             </TooltipButton>
           )}

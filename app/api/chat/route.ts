@@ -37,7 +37,8 @@ export async function POST(req: Request) {
       trigger,
       messageId,
       isNewChat,
-      toolResult
+      toolResult,
+      guestArtifactToken
     } = body
 
     perfLog(
@@ -208,7 +209,8 @@ export async function POST(req: Request) {
           searchMode,
           modelType,
           chatId,
-          trigger: validatedTrigger
+          trigger: validatedTrigger,
+          guestArtifactToken
         })
       : await createChatStreamResponse({
           message: validatedTrigger === 'tool-result' ? null : message,

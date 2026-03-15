@@ -149,6 +149,7 @@ export async function createEphemeralChatStreamResponse(
           userId: null,
           isGuest: true,
           messages,
+          triggeringMessageId: null,
           resolveGuestArtifactToken,
           ...artifactEmitter
         }

@@ -43,9 +43,9 @@ const nextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.e2b.app",
               "font-src 'self'",
-              "frame-src 'none'"
+              'frame-src https://*.e2b.app'
             ].join('; ')
           }
         ]

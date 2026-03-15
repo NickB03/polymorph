@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import {
+  orchestrateCreate,
+  orchestrateRestart,
+  orchestrateUpdate,
+  queryArtifactStatus
+} from '@/lib/artifacts/orchestrate'
 import type { ArtifactToolContext } from '@/lib/artifacts/tool-context'
 import { getArtifactContext } from '@/lib/artifacts/tool-context'
 
@@ -7,6 +13,13 @@ import { createWebappArtifactTool } from '../create-webapp-artifact'
 import { getArtifactStatusTool } from '../get-artifact-status'
 import { restartArtifactPreviewTool } from '../restart-artifact-preview'
 import { updateWebappArtifactTool } from '../update-webapp-artifact'
+
+vi.mock('@/lib/artifacts/orchestrate', () => ({
+  orchestrateCreate: vi.fn(),
+  orchestrateUpdate: vi.fn(),
+  orchestrateRestart: vi.fn(),
+  queryArtifactStatus: vi.fn()
+}))
 
 function createMockContext(overrides: Partial<ArtifactToolContext> = {}): {
   experimental_context: { artifactToolContext: ArtifactToolContext }
@@ -18,6 +31,7 @@ function createMockContext(overrides: Partial<ArtifactToolContext> = {}): {
         userId: 'user-1',
         isGuest: false,
         messages: [],
+        triggeringMessageId: 'message-1',
         resolveGuestArtifactToken: vi.fn().mockResolvedValue(null),
         emitArtifact: vi.fn(),
         emitArtifactStatus: vi.fn(),
@@ -57,6 +71,14 @@ describe('createWebappArtifact tool', () => {
   })
 
   it('returns success with create action when context is available', async () => {
+    vi.mocked(orchestrateCreate).mockResolvedValueOnce({
+      success: true,
+      action: 'create',
+      title: 'My App',
+      description: 'A test app',
+      files: { 'src/App.tsx': 'export default function App() {}' }
+    } as any)
+
     const mockCtx = createMockContext()
     const result = await createWebappArtifactTool.execute!(
       {
@@ -72,9 +94,21 @@ describe('createWebappArtifact tool', () => {
       title: 'My App',
       files: { 'src/App.tsx': expect.any(String) }
     })
+    expect(orchestrateCreate).toHaveBeenCalledWith(
+      {
+        title: 'My App',
+        description: 'A test app',
+        files: { 'src/App.tsx': 'export default function App() {}' }
+      },
+      mockCtx.experimental_context.artifactToolContext
+    )
   })
 
-  it('emits create-started event', async () => {
+  it('delegates create to the request-scoped context', async () => {
+    vi.mocked(orchestrateCreate).mockResolvedValueOnce({
+      success: true,
+      action: 'create'
+    } as any)
     const mockCtx = createMockContext()
     await createWebappArtifactTool.execute!(
       {
@@ -84,13 +118,9 @@ describe('createWebappArtifact tool', () => {
       },
       mockCtx as any
     )
-    const emitEvent =
-      mockCtx.experimental_context.artifactToolContext.emitArtifactEvent
-    expect(emitEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        event: 'create-started',
-        payload: { title: 'My App' }
-      })
+    expect(orchestrateCreate).toHaveBeenCalledWith(
+      expect.any(Object),
+      mockCtx.experimental_context.artifactToolContext
     )
   })
 
@@ -112,6 +142,10 @@ describe('createWebappArtifact tool', () => {
 
 describe('updateWebappArtifact tool', () => {
   it('returns success with update action', async () => {
+    vi.mocked(orchestrateUpdate).mockResolvedValueOnce({
+      success: true,
+      action: 'update'
+    } as any)
     const mockCtx = createMockContext()
     const result = await updateWebappArtifactTool.execute!(
       {
@@ -124,9 +158,20 @@ describe('updateWebappArtifact tool', () => {
       success: true,
       action: 'update'
     })
+    expect(orchestrateUpdate).toHaveBeenCalledWith(
+      {
+        description: 'Updated the header',
+        files: { 'src/App.tsx': 'updated content' }
+      },
+      mockCtx.experimental_context.artifactToolContext
+    )
   })
 
-  it('emits update-started event', async () => {
+  it('delegates update to the request-scoped context', async () => {
+    vi.mocked(orchestrateUpdate).mockResolvedValueOnce({
+      success: true,
+      action: 'update'
+    } as any)
     const mockCtx = createMockContext()
     await updateWebappArtifactTool.execute!(
       {
@@ -135,16 +180,19 @@ describe('updateWebappArtifact tool', () => {
       },
       mockCtx as any
     )
-    const emitEvent =
-      mockCtx.experimental_context.artifactToolContext.emitArtifactEvent
-    expect(emitEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ event: 'update-started' })
+    expect(orchestrateUpdate).toHaveBeenCalledWith(
+      expect.any(Object),
+      mockCtx.experimental_context.artifactToolContext
     )
   })
 })
 
 describe('getArtifactStatus tool', () => {
   it('returns success with status action', async () => {
+    vi.mocked(queryArtifactStatus).mockResolvedValueOnce({
+      success: true,
+      action: 'status'
+    } as any)
     const mockCtx = createMockContext()
     const result = await getArtifactStatusTool.execute!(
       { reason: 'checking before update' },
@@ -154,11 +202,19 @@ describe('getArtifactStatus tool', () => {
       success: true,
       action: 'status'
     })
+    expect(queryArtifactStatus).toHaveBeenCalledWith(
+      { reason: 'checking before update' },
+      mockCtx.experimental_context.artifactToolContext
+    )
   })
 })
 
 describe('restartArtifactPreview tool', () => {
   it('returns success with restart action', async () => {
+    vi.mocked(orchestrateRestart).mockResolvedValueOnce({
+      success: true,
+      action: 'restart'
+    } as any)
     const mockCtx = createMockContext()
     const result = await restartArtifactPreviewTool.execute!(
       { reason: 'preview stuck' },
@@ -168,11 +224,25 @@ describe('restartArtifactPreview tool', () => {
       success: true,
       action: 'restart'
     })
+    expect(orchestrateRestart).toHaveBeenCalledWith(
+      { reason: 'preview stuck' },
+      mockCtx.experimental_context.artifactToolContext
+    )
   })
 })
 
 describe('create artifact result shape', () => {
   it('returns all required fields: success, action, title, description, files', async () => {
+    vi.mocked(orchestrateCreate).mockResolvedValueOnce({
+      success: true,
+      action: 'create',
+      title: 'Dashboard',
+      description: 'An analytics dashboard',
+      files: {
+        'src/App.tsx': 'export default function App() { return <div /> }',
+        'src/utils.ts': 'export const add = (a: number, b: number) => a + b'
+      }
+    } as any)
     const mockCtx = createMockContext()
     const result = await createWebappArtifactTool.execute!(
       {
@@ -199,7 +269,12 @@ describe('create artifact result shape', () => {
     })
   })
 
-  it('does not include an id in the create result (id is assigned downstream)', async () => {
+  it('returns the orchestrator payload unchanged', async () => {
+    vi.mocked(orchestrateCreate).mockResolvedValueOnce({
+      success: true,
+      action: 'create',
+      artifactId: 'artifact-123'
+    } as any)
     const mockCtx = createMockContext()
     const result = (await createWebappArtifactTool.execute!(
       {
@@ -210,12 +285,16 @@ describe('create artifact result shape', () => {
       mockCtx as any
     )) as Record<string, unknown>
 
-    expect(result.id).toBeUndefined()
+    expect(result.artifactId).toBe('artifact-123')
   })
 })
 
 describe('update artifact preserves artifact id', () => {
   it('multi-turn edits use the same context and return update action', async () => {
+    vi.mocked(orchestrateUpdate).mockResolvedValue({
+      success: true,
+      action: 'update'
+    } as any)
     // Simulate two sequential updates using the same context
     const mockCtx = createMockContext({ chatId: 'chat-1' })
 
@@ -248,6 +327,16 @@ describe('update artifact preserves artifact id', () => {
 
   it('update includes optional title only when explicitly provided', async () => {
     const mockCtx = createMockContext()
+    vi.mocked(orchestrateUpdate)
+      .mockResolvedValueOnce({
+        success: true,
+        action: 'update',
+        title: 'New Title'
+      } as any)
+      .mockResolvedValueOnce({
+        success: true,
+        action: 'update'
+      } as any)
 
     const withTitle = await updateWebappArtifactTool.execute!(
       {

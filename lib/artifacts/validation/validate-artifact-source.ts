@@ -1,6 +1,7 @@
 import {
   ALLOWED_IMPORT_PATTERNS,
   BANNED_IMPORT_PATTERNS,
+  isAllowedSourcePath,
   isTemplateOwnedFile,
   PREINSTALLED_PACKAGES
 } from '../template-manifest'
@@ -8,7 +9,11 @@ import {
 import { normalizeImports } from './normalize-imports'
 
 export interface ValidationError {
-  code: 'TEMPLATE_OWNED_FILE' | 'BANNED_IMPORT' | 'UNSUPPORTED_PACKAGE'
+  code:
+    | 'INVALID_SOURCE_PATH'
+    | 'TEMPLATE_OWNED_FILE'
+    | 'BANNED_IMPORT'
+    | 'UNSUPPORTED_PACKAGE'
   message: string
   line?: number
   importPath?: string
@@ -96,10 +101,19 @@ export function validateArtifactSource(input: {
     return { valid: false, errors, repaired: false }
   }
 
-  // 2. Normalize imports (auto-repair shadcn and some Next.js imports)
+  // 2. Check if file is within the allowed app source roots
+  if (!isAllowedSourcePath(input.filePath)) {
+    errors.push({
+      code: 'INVALID_SOURCE_PATH',
+      message: `Artifact files must live under src/: ${input.filePath}`
+    })
+    return { valid: false, errors, repaired: false }
+  }
+
+  // 3. Normalize imports (auto-repair shadcn and some Next.js imports)
   const normalized = normalizeImports(input.content)
 
-  // 3. Validate imports in the normalized code
+  // 4. Validate imports in the normalized code
   const importPaths = extractImportPaths(normalized.code)
 
   for (const [line, importPath] of importPaths) {

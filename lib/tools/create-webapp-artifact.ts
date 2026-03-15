@@ -1,7 +1,11 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 
+import { orchestrateCreate } from '@/lib/artifacts/orchestrate'
 import { getArtifactContext } from '@/lib/artifacts/tool-context'
+
+const MAX_FILES = 50
+const MAX_FILE_SIZE = 102_400 // 100 KB per file
 
 const CreateWebappArtifactSchema = z.object({
   title: z
@@ -13,6 +17,15 @@ const CreateWebappArtifactSchema = z.object({
     .record(
       z.string().describe('Relative file path (e.g. "src/App.tsx")'),
       z.string().describe('File content')
+    )
+    .refine(f => Object.keys(f).length <= MAX_FILES, {
+      message: `Artifact cannot contain more than ${MAX_FILES} files`
+    })
+    .refine(
+      f => Object.values(f).every(content => content.length <= MAX_FILE_SIZE),
+      {
+        message: `Each file must be under ${MAX_FILE_SIZE} characters (100 KB)`
+      }
     )
     .describe(
       'Map of source file paths to contents. Only app source files — do not include package.json, config files, or components/ui files.'
@@ -33,23 +46,15 @@ export const createWebappArtifactTool = tool({
       }
     }
 
-    // Emit building event
-    artifactCtx.emitArtifactEvent({
-      artifactId: 'pending',
-      event: 'create-started',
-      payload: { title: params.title }
-    })
-
-    // For now, return the structured output that the streaming layer will use
-    // to drive the actual runtime operations. The full pipeline (runtime
-    // session creation, file writing, build, preview) is orchestrated by
-    // the streaming layer using this tool's output.
-    return {
-      success: true,
-      title: params.title,
-      description: params.description,
-      files: params.files,
-      action: 'create' as const
+    try {
+      return await orchestrateCreate(params, artifactCtx)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('[createWebappArtifact]', message)
+      return {
+        success: false,
+        error: `Artifact creation failed: ${message}`
+      }
     }
   }
 })

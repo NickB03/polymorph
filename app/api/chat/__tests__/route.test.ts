@@ -248,6 +248,36 @@ describe('POST /api/chat', () => {
     delete process.env.ENABLE_GUEST_CHAT
   })
 
+  it('forwards guestArtifactToken to the ephemeral chat stream', async () => {
+    vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+      undefined as unknown as string
+    )
+    process.env.ENABLE_GUEST_CHAT = 'true'
+
+    const req = createRequest({
+      message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+      messages: [
+        {
+          role: 'user',
+          parts: [{ type: 'text', text: 'hello' }]
+        }
+      ],
+      chatId: 'c1',
+      trigger: 'submit-message',
+      guestArtifactToken: 'guest-token-123'
+    })
+
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+    expect(createEphemeralChatStreamResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guestArtifactToken: 'guest-token-123'
+      })
+    )
+
+    delete process.env.ENABLE_GUEST_CHAT
+  })
+
   it('validates guest message shape', async () => {
     vi.mocked(getCurrentUserId).mockResolvedValueOnce(
       undefined as unknown as string
