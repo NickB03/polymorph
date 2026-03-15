@@ -44,3 +44,6 @@ next-env.d.ts
 
 # AI tool instruction files (non-Claude)
 AGENTS.md
+
+# Claude Code local settings (personal preferences)
+.claude/settings.local.json
