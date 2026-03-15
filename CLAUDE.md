@@ -29,17 +29,19 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → tools → streaming response.
 
 - **Researcher agent** (`lib/agents/researcher.ts`): Uses Vercel AI SDK's `ToolLoopAgent` with two modes:
-  - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline]`
-  - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline, todoWrite]` (todoWrite when writer available)
+  - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline]` + artifact tools when `ENABLE_ARTIFACTS=true`
+  - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline, todoWrite]` + artifact tools when `ENABLE_ARTIFACTS=true`
+- **Artifact tools** (gated by `ENABLE_ARTIFACTS=true`): `createWebappArtifact`, `updateWebappArtifact`, `getArtifactStatus`, `restartArtifactPreview` — generate and iterate on React SPA artifacts in E2B sandboxes
 - **Tools** (`lib/tools/`): `search` (Tavily primary, Brave multimedia, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todo` (task management), `dynamic` (MCP/runtime-defined tools)
 - **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Gemini 3 Flash (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway
 - **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
 
 ### Database (Drizzle + Supabase PostgreSQL)
 
-Schema in `lib/db/schema.ts` with three core tables:
+Schema in `lib/db/schema.ts` with six core tables:
 
 - **chats** → **messages** → **parts** (cascade delete)
+- **artifacts** → **artifactRevisions** + **artifactRuntimeSessions** (cascade delete)
 - `parts` is a wide table storing all message part types (text, reasoning, files, sources, tool calls) with check constraints per type
 - All tables use Row-Level Security (RLS) via `current_setting('app.current_user_id')` — users see only their own data, public chats are readable by all
 - Server actions in `lib/actions/chat.ts` use `unstable_cache` with revalidation tags
@@ -58,6 +60,17 @@ Supabase Auth with three client patterns:
 - `lib/supabase/server.ts` — server-side client (cookies-based)
 - `lib/supabase/middleware.ts` — session refresh in middleware
 - **Guest mode** (default): `ENABLE_GUEST_CHAT=true` lets unauthenticated users search immediately. Guest chats are ephemeral (not persisted), use speed-mode models only, and are rate-limited per IP via Upstash Redis. A gentle inline nudge encourages sign-up after the 5th search.
+
+### Artifacts (E2B)
+
+React SPA artifact generation in E2B sandboxes, gated by `ENABLE_ARTIFACTS=true`:
+
+- **Runtime adapter** (`lib/artifacts/runtime/e2b-runtime.ts`): HTTP-backed E2B sandbox operations (create session, write files, build, preview, destroy)
+- **Template** (`lib/artifacts/templates/react-spa/`): Immutable Vite + React + Tailwind template with 15 preinstalled shadcn/Radix UI components. Model edits app source only — `package.json` and `components/ui/` are template-owned
+- **Validation** (`lib/artifacts/validation/`): Import normalization and source validation against template manifest
+- **Guest security** (`lib/artifacts/guest-token.ts`): HMAC-SHA256 signed tokens for guest artifact continuity, fail-closed verification, token rotation on success
+- **Workspace UI** (`components/artifact/`): Split-view workspace with Preview, Code (read-only), and Logs tabs; error recovery panel with "Ask AI to fix"
+- **Observability** (`lib/artifacts/observability.ts`): Structured JSON lifecycle logging at tool boundaries
 
 ### Generative UI
 
@@ -100,6 +113,9 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 - `TAVILY_API_KEY` — search
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase
 - `DATABASE_SSL_DISABLED=true` — for local dev with Supabase CLI
+- `ENABLE_ARTIFACTS` — set to `true` to enable artifact generation tools (default: `false`)
+- `E2B_API_KEY` — E2B sandbox API key (required when artifacts enabled)
+- `GUEST_ARTIFACT_SECRET` — HMAC secret for guest artifact tokens (required when artifacts enabled)
 
 ## Key Files
 
@@ -112,3 +128,7 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 - `lib/utils/registry.ts` — AI provider registry
 - `config/models/` — model configuration JSON files (default.json, cloud.json)
 - `proxy.ts` — Supabase session + base URL propagation (Next.js middleware entry point)
+- `lib/artifacts/` — E2B artifact runtime, validation, guest tokens, observability
+- `lib/tools/*-artifact*.ts` — artifact tool definitions (create, update, status, restart)
+- `app/api/artifacts/` — artifact workspace action endpoints (refresh, retry)
+- `components/artifact/` — workspace shell, preview frame, code viewer, error panel
