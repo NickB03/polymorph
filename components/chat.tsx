@@ -65,7 +65,6 @@ export function Chat({
   const {
     openWorkspace,
     updateWorkspace,
-    updateSourceFiles,
     appendWorkspaceLog,
     setRequestAiFix,
     state: artifactState
@@ -117,19 +116,23 @@ export function Chat({
 
   useEffect(() => {
     if (isGuest) {
-      setGuestArtifactToken(getLatestGuestArtifactToken(savedMessages))
+      const token = getLatestGuestArtifactToken(savedMessages)
+      setGuestArtifactToken(token)
+      guestArtifactTokenRef.current = token
     }
   }, [isGuest, savedMessages])
 
   const autoSendFiredRef = useRef<Set<string>>(new Set())
   // Track the last artifact id we auto-opened to avoid re-opening on every render
   const lastOpenedArtifactIdRef = useRef<string | null>(null)
+  // Ref for guestArtifactToken so the transport closure reads the latest value
+  const guestArtifactTokenRef = useRef<string | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [input, setInput] = useState('')
   const [guestArtifactToken, setGuestArtifactToken] = useState<string | null>(
-    () => (isGuest ? getLatestGuestArtifactToken(savedMessages) : null)
+    null
   )
   const [errorModal, setErrorModal] = useState<{
     open: boolean
@@ -162,7 +165,7 @@ export function Chat({
           messageId,
           chatId,
           isGuest,
-          guestArtifactToken,
+          guestArtifactToken: guestArtifactTokenRef.current,
           savedMessagesCount: savedMessages.length
         })
     }),
@@ -185,6 +188,7 @@ export function Chat({
             typeof eventData.payload?.token === 'string'
           ) {
             setGuestArtifactToken(eventData.payload.token)
+            guestArtifactTokenRef.current = eventData.payload.token
             updateWorkspace({
               guestArtifactToken: eventData.payload.token
             })
@@ -329,17 +333,13 @@ export function Chat({
     generateId
   })
 
-  // Wire the "Ask AI to fix" callback so the error panel can submit a repair message
+  // Wire the "Ask AI to fix" callback so the error panel can submit a repair message.
+  // The caller (error panel / header) passes the full formatted prompt via formatArtifactFixPrompt.
   useEffect(() => {
-    setRequestAiFix(() => (errorContext: string) => {
+    setRequestAiFix(() => (formattedPrompt: string) => {
       sendMessage({
         role: 'user',
-        parts: [
-          {
-            type: 'text',
-            text: `The artifact build failed with the following error. Please diagnose and fix the source code:\n\n\`\`\`\n${errorContext}\n\`\`\``
-          }
-        ]
+        parts: [{ type: 'text', text: formattedPrompt }]
       })
     })
     return () => setRequestAiFix(null)
@@ -348,9 +348,10 @@ export function Chat({
   // Auto-open workspace when artifact data parts arrive in messages.
   // Reconcile by stable artifact id to avoid re-opening the same artifact.
   useEffect(() => {
-    // Scan all messages for the latest artifact data part
+    // Single pass: scan all messages for artifact data, status, and source files
     let latestArtifact: DataArtifactPart | null = null
     let latestStatus: DataArtifactStatusPart | null = null
+    let latestFiles: Record<string, string> | null = null
 
     for (const msg of messages) {
       if (msg.role !== 'assistant') continue
@@ -359,17 +360,7 @@ export function Chat({
           latestArtifact = part as DataArtifactPart
         } else if (part.type === 'data-artifactStatus') {
           latestStatus = part as DataArtifactStatusPart
-        }
-      }
-    }
-
-    // Extract source files from the latest artifact tool result.
-    // AI SDK v6 uses `tool-{toolName}` as the part type with `output` for results.
-    let latestFiles: Record<string, string> | null = null
-    for (const msg of messages) {
-      if (msg.role !== 'assistant') continue
-      for (const part of msg.parts ?? []) {
-        if (
+        } else if (
           (part.type === 'tool-createWebappArtifact' ||
             part.type === 'tool-updateWebappArtifact') &&
           'output' in part &&
@@ -396,6 +387,7 @@ export function Chat({
       persistedGuestArtifactToken !== guestArtifactToken
     ) {
       setGuestArtifactToken(persistedGuestArtifactToken)
+      guestArtifactTokenRef.current = persistedGuestArtifactToken
     }
 
     // Update code viewer with source files from tool results
@@ -414,7 +406,7 @@ export function Chat({
                   : 'text'
         })
       )
-      updateSourceFiles(sourceFiles)
+      updateWorkspace({ sourceFiles })
     }
 
     // If workspace is already showing this artifact, just apply status updates
@@ -464,8 +456,7 @@ export function Chat({
     artifactState.workspace.status,
     guestArtifactToken,
     openWorkspace,
-    updateWorkspace,
-    updateSourceFiles
+    updateWorkspace
   ])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 
 import { AlertTriangle, RotateCcw, Sparkles } from 'lucide-react'
 
@@ -8,60 +8,24 @@ import { cn } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
 
-import { useArtifact } from './artifact-context'
-
-function formatErrorContext(
-  logs: { message: string; level?: 'info' | 'warn' | 'error' }[]
-): string {
-  const tail = logs.slice(-20)
-  return tail.map(l => l.message).join('\n')
-}
+import {
+  formatArtifactFixPrompt,
+  useArtifact,
+  useArtifactAction
+} from './artifact-context'
 
 export function ArtifactErrorPanel() {
-  const { state, workspaceLogs, updateWorkspace, requestAiFix } = useArtifact()
+  const { state, workspaceLogs, requestAiFix } = useArtifact()
   const { workspace } = state
-  const [isRetrying, setIsRetrying] = useState(false)
+  const { execute: handleRetry, isPending: isRetrying } =
+    useArtifactAction('retry')
 
   const errorLogs = workspaceLogs.filter(l => l.level === 'error')
   const recentLogs = workspaceLogs.slice(-10)
 
-  const handleRetry = useCallback(async () => {
-    if (!workspace.artifactId || isRetrying) return
-    setIsRetrying(true)
-    try {
-      const res = await fetch(
-        `/api/artifacts/${workspace.artifactId}/actions`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'retry',
-            guestArtifactToken: workspace.guestArtifactToken ?? undefined
-          })
-        }
-      )
-      if (res.ok) {
-        const data = await res.json()
-        updateWorkspace({
-          status: data.status ?? workspace.status,
-          previewUrl: data.previewUrl ?? workspace.previewUrl,
-          revisionId: data.revisionId ?? workspace.revisionId,
-          title: data.title ?? workspace.title,
-          guestArtifactToken:
-            data.guestArtifactToken ?? workspace.guestArtifactToken
-        })
-      }
-    } finally {
-      setIsRetrying(false)
-    }
-  }, [workspace, isRetrying, updateWorkspace])
-
   const handleAskAiFix = useCallback(() => {
     if (!requestAiFix) return
-    const context = formatErrorContext(workspaceLogs)
-    requestAiFix(
-      `The artifact build failed with the following error. Please diagnose and fix the source code:\n\n\`\`\`\n${context}\n\`\`\``
-    )
+    requestAiFix(formatArtifactFixPrompt(workspaceLogs))
   }, [requestAiFix, workspaceLogs])
 
   return (

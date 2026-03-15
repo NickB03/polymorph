@@ -1,4 +1,4 @@
-import { signGuestArtifactToken } from '@/lib/artifacts/guest-token'
+import { getTtlMs, signGuestArtifactToken } from '@/lib/artifacts/guest-token'
 import { logArtifactEvent } from '@/lib/artifacts/observability'
 import { createE2BRuntime } from '@/lib/artifacts/runtime'
 import { readTemplateFiles } from '@/lib/artifacts/templates/read-template'
@@ -7,14 +7,10 @@ import { validateArtifactSource } from '@/lib/artifacts/validation/validate-arti
 import * as dbActions from '@/lib/db/actions'
 import { GUEST_USER_ID } from '@/lib/db/constants'
 import type {
-  ArtifactData,
   ArtifactRuntimeSessionRecord,
-  ArtifactStatus,
-  ArtifactStatusData
+  ArtifactStatus
 } from '@/lib/types/artifact'
 import { getTextFromParts } from '@/lib/utils/message-utils'
-
-const DEFAULT_GUEST_TOKEN_TTL_MS = 30 * 60 * 1000
 
 type CreateParams = {
   title: string
@@ -36,20 +32,8 @@ type StatusParams = {
   reason?: string
 }
 
-function getGuestTokenTtlMs(): number {
-  const raw = process.env.GUEST_ARTIFACT_TOKEN_TTL_MS
-  if (!raw) return DEFAULT_GUEST_TOKEN_TTL_MS
-
-  const parsed = Number(raw)
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return DEFAULT_GUEST_TOKEN_TTL_MS
-  }
-
-  return parsed
-}
-
 function getGuestExpiryDate(): Date {
-  return new Date(Date.now() + getGuestTokenTtlMs())
+  return new Date(Date.now() + getTtlMs())
 }
 
 function shouldSkipInstall(): boolean {
@@ -76,16 +60,22 @@ function summarizePrompt(
   return fallbackTitle
 }
 
-function buildStatusPayload(input: {
+/** Shared payload fields for both artifact card and status emits. */
+type EmitPayload = {
   artifactId: string
+  title: string
   status: ArtifactStatus
   previewUrl?: string
   revisionId?: string
   guestArtifactToken?: string
-}): ArtifactStatusData {
+}
+
+function buildOptionalFields(input: {
+  previewUrl?: string
+  revisionId?: string
+  guestArtifactToken?: string
+}) {
   return {
-    id: input.artifactId,
-    status: input.status,
     ...(input.previewUrl ? { previewUrl: input.previewUrl } : {}),
     ...(input.revisionId ? { revisionId: input.revisionId } : {}),
     ...(input.guestArtifactToken
@@ -94,24 +84,31 @@ function buildStatusPayload(input: {
   }
 }
 
-function buildArtifactPayload(input: {
-  artifactId: string
-  title: string
-  status: ArtifactStatus
-  previewUrl?: string
-  revisionId?: string
-  guestArtifactToken?: string
-}): ArtifactData {
-  return {
+/**
+ * Emit both the artifact card and status update in one call.
+ * Keeps the two emitters in sync — they always share the same data.
+ */
+function emitArtifactState(ctx: ArtifactToolContext, input: EmitPayload) {
+  const optional = buildOptionalFields(input)
+  ctx.emitArtifact({
     id: input.artifactId,
     title: input.title,
     status: input.status,
-    ...(input.previewUrl ? { previewUrl: input.previewUrl } : {}),
-    ...(input.revisionId ? { revisionId: input.revisionId } : {}),
-    ...(input.guestArtifactToken
-      ? { guestArtifactToken: input.guestArtifactToken }
-      : {})
-  }
+    ...optional
+  })
+  ctx.emitArtifactStatus({
+    id: input.artifactId,
+    status: input.status,
+    ...optional
+  })
+}
+
+/** Emit only a status update (no card) — used for transient states like 'building'. */
+function emitStatusOnly(
+  ctx: ArtifactToolContext,
+  input: { artifactId: string; status: ArtifactStatus }
+) {
+  ctx.emitArtifactStatus({ id: input.artifactId, status: input.status })
 }
 
 /**
@@ -297,12 +294,7 @@ export async function orchestrateCreate(
   // Only emit status (drives workspace panel) — not a card.
   // The inline card is emitted once at the final state (ready/failed)
   // to avoid duplicate cards in chat.
-  ctx.emitArtifactStatus(
-    buildStatusPayload({
-      artifactId: artifact.id,
-      status: 'building'
-    })
-  )
+  emitStatusOnly(ctx, { artifactId: artifact.id, status: 'building' })
 
   let runtimeSession: ArtifactRuntimeSessionRecord | null = null
   let sandboxId: string | null = null
@@ -420,25 +412,14 @@ export async function orchestrateCreate(
       runtimeSession
     })
 
-    ctx.emitArtifact(
-      buildArtifactPayload({
-        artifactId: artifact.id,
-        title: params.title,
-        status: 'ready',
-        previewUrl: preview.previewUrl,
-        ...(revision ? { revisionId: revision.id } : {}),
-        ...(guestArtifactToken ? { guestArtifactToken } : {})
-      })
-    )
-    ctx.emitArtifactStatus(
-      buildStatusPayload({
-        artifactId: artifact.id,
-        status: 'ready',
-        previewUrl: preview.previewUrl,
-        ...(revision ? { revisionId: revision.id } : {}),
-        ...(guestArtifactToken ? { guestArtifactToken } : {})
-      })
-    )
+    emitArtifactState(ctx, {
+      artifactId: artifact.id,
+      title: params.title,
+      status: 'ready',
+      previewUrl: preview.previewUrl,
+      ...(revision ? { revisionId: revision.id } : {}),
+      ...(guestArtifactToken ? { guestArtifactToken } : {})
+    })
 
     logArtifactEvent('artifact.create.complete', {
       artifactId: artifact.id,
@@ -500,21 +481,12 @@ export async function orchestrateCreate(
       message,
       level: 'error'
     })
-    ctx.emitArtifact(
-      buildArtifactPayload({
-        artifactId: artifact.id,
-        title: params.title,
-        status: 'failed',
-        ...(guestArtifactToken ? { guestArtifactToken } : {})
-      })
-    )
-    ctx.emitArtifactStatus(
-      buildStatusPayload({
-        artifactId: artifact.id,
-        status: 'failed',
-        ...(guestArtifactToken ? { guestArtifactToken } : {})
-      })
-    )
+    emitArtifactState(ctx, {
+      artifactId: artifact.id,
+      title: params.title,
+      status: 'failed',
+      ...(guestArtifactToken ? { guestArtifactToken } : {})
+    })
 
     if (sandboxId) {
       runtime.destroySession({ sandboxId }).catch(() => {})
@@ -561,12 +533,7 @@ export async function orchestrateUpdate(
   const promptSummary = summarizePrompt(ctx, title, params.description)
   const runtime = createE2BRuntime()
 
-  ctx.emitArtifactStatus(
-    buildStatusPayload({
-      artifactId: existing.artifact.id,
-      status: 'building'
-    })
-  )
+  emitStatusOnly(ctx, { artifactId: existing.artifact.id, status: 'building' })
 
   try {
     ctx.emitArtifactLog({
@@ -614,29 +581,16 @@ export async function orchestrateUpdate(
       runtimeSession
     })
 
-    ctx.emitArtifact(
-      buildArtifactPayload({
-        artifactId: existing.artifact.id,
-        title,
-        status: 'ready',
-        ...(runtimeSession.previewUrl
-          ? { previewUrl: runtimeSession.previewUrl }
-          : {}),
-        ...(revision ? { revisionId: revision.id } : {}),
-        ...(guestArtifactToken ? { guestArtifactToken } : {})
-      })
-    )
-    ctx.emitArtifactStatus(
-      buildStatusPayload({
-        artifactId: existing.artifact.id,
-        status: 'ready',
-        ...(runtimeSession.previewUrl
-          ? { previewUrl: runtimeSession.previewUrl }
-          : {}),
-        ...(revision ? { revisionId: revision.id } : {}),
-        ...(guestArtifactToken ? { guestArtifactToken } : {})
-      })
-    )
+    emitArtifactState(ctx, {
+      artifactId: existing.artifact.id,
+      title,
+      status: 'ready',
+      ...(runtimeSession.previewUrl
+        ? { previewUrl: runtimeSession.previewUrl }
+        : {}),
+      ...(revision ? { revisionId: revision.id } : {}),
+      ...(guestArtifactToken ? { guestArtifactToken } : {})
+    })
 
     return {
       success: true as const,
@@ -673,12 +627,10 @@ export async function orchestrateUpdate(
       message,
       level: 'error'
     })
-    ctx.emitArtifactStatus(
-      buildStatusPayload({
-        artifactId: existing.artifact.id,
-        status: 'failed'
-      })
-    )
+    emitStatusOnly(ctx, {
+      artifactId: existing.artifact.id,
+      status: 'failed'
+    })
 
     return {
       success: false as const,
@@ -703,12 +655,10 @@ export async function orchestrateRestart(
 
   const runtime = createE2BRuntime()
 
-  ctx.emitArtifactStatus(
-    buildStatusPayload({
-      artifactId: existing.artifact.id,
-      status: 'restarting'
-    })
-  )
+  emitStatusOnly(ctx, {
+    artifactId: existing.artifact.id,
+    status: 'restarting'
+  })
 
   try {
     const preview = await runtime.restartPreview({
@@ -736,29 +686,16 @@ export async function orchestrateRestart(
       runtimeSession
     })
 
-    ctx.emitArtifact(
-      buildArtifactPayload({
-        artifactId: existing.artifact.id,
-        title: existing.artifact.title,
-        status: 'ready',
-        previewUrl: preview.previewUrl,
-        ...(existing.artifact.currentRevisionId
-          ? { revisionId: existing.artifact.currentRevisionId }
-          : {}),
-        ...(guestArtifactToken ? { guestArtifactToken } : {})
-      })
-    )
-    ctx.emitArtifactStatus(
-      buildStatusPayload({
-        artifactId: existing.artifact.id,
-        status: 'ready',
-        previewUrl: preview.previewUrl,
-        ...(existing.artifact.currentRevisionId
-          ? { revisionId: existing.artifact.currentRevisionId }
-          : {}),
-        ...(guestArtifactToken ? { guestArtifactToken } : {})
-      })
-    )
+    emitArtifactState(ctx, {
+      artifactId: existing.artifact.id,
+      title: existing.artifact.title,
+      status: 'ready',
+      previewUrl: preview.previewUrl,
+      ...(existing.artifact.currentRevisionId
+        ? { revisionId: existing.artifact.currentRevisionId }
+        : {}),
+      ...(guestArtifactToken ? { guestArtifactToken } : {})
+    })
 
     return {
       success: true as const,
@@ -791,12 +728,10 @@ export async function orchestrateRestart(
       message,
       level: 'error'
     })
-    ctx.emitArtifactStatus(
-      buildStatusPayload({
-        artifactId: existing.artifact.id,
-        status: 'failed'
-      })
-    )
+    emitStatusOnly(ctx, {
+      artifactId: existing.artifact.id,
+      status: 'failed'
+    })
 
     return {
       success: false as const,
@@ -827,33 +762,18 @@ export async function queryArtifactStatus(
       runtimeSession: existing.runtimeSession
     }))
 
-  ctx.emitArtifact(
-    buildArtifactPayload({
-      artifactId: existing.artifact.id,
-      title: existing.artifact.title,
-      status: existing.runtimeSession?.status ?? existing.artifact.status,
-      ...(existing.runtimeSession?.previewUrl
-        ? { previewUrl: existing.runtimeSession.previewUrl }
-        : {}),
-      ...(existing.artifact.currentRevisionId
-        ? { revisionId: existing.artifact.currentRevisionId }
-        : {}),
-      ...(guestArtifactToken ? { guestArtifactToken } : {})
-    })
-  )
-  ctx.emitArtifactStatus(
-    buildStatusPayload({
-      artifactId: existing.artifact.id,
-      status: existing.runtimeSession?.status ?? existing.artifact.status,
-      ...(existing.runtimeSession?.previewUrl
-        ? { previewUrl: existing.runtimeSession.previewUrl }
-        : {}),
-      ...(existing.artifact.currentRevisionId
-        ? { revisionId: existing.artifact.currentRevisionId }
-        : {}),
-      ...(guestArtifactToken ? { guestArtifactToken } : {})
-    })
-  )
+  emitArtifactState(ctx, {
+    artifactId: existing.artifact.id,
+    title: existing.artifact.title,
+    status: existing.runtimeSession?.status ?? existing.artifact.status,
+    ...(existing.runtimeSession?.previewUrl
+      ? { previewUrl: existing.runtimeSession.previewUrl }
+      : {}),
+    ...(existing.artifact.currentRevisionId
+      ? { revisionId: existing.artifact.currentRevisionId }
+      : {}),
+    ...(guestArtifactToken ? { guestArtifactToken } : {})
+  })
 
   return {
     success: true as const,

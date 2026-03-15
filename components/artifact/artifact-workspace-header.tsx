@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 
 import {
   Check,
@@ -15,15 +15,19 @@ import {
   Sparkles
 } from 'lucide-react'
 
+import { useCopyToClipboard } from '@/lib/hooks/use-copy-to-clipboard'
 import type { ArtifactStatus } from '@/lib/types/artifact'
 
 import { Separator } from '@/components/ui/separator'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { TooltipButton } from '@/components/ui/tooltip-button'
 
-import { useArtifact } from './artifact-context'
-
-type WorkspaceTab = 'preview' | 'code' | 'logs'
+import {
+  formatArtifactFixPrompt,
+  useArtifact,
+  useArtifactAction,
+  type WorkspaceTab
+} from './artifact-context'
 
 interface ArtifactWorkspaceHeaderProps {
   activeTab: WorkspaceTab
@@ -71,103 +75,24 @@ export function ArtifactWorkspaceHeader({
   activeTab,
   onTabChange
 }: ArtifactWorkspaceHeaderProps) {
-  const {
-    state,
-    updateWorkspace,
-    closeWorkspace,
-    requestAiFix,
-    workspaceLogs
-  } = useArtifact()
+  const { state, closeWorkspace, requestAiFix, workspaceLogs } = useArtifact()
   const { workspace } = state
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [isRetrying, setIsRetrying] = useState(false)
-  const [copied, setCopied] = useState(false)
-
-  const handleRefresh = useCallback(async () => {
-    if (!workspace.artifactId || isRefreshing) return
-    setIsRefreshing(true)
-    try {
-      const res = await fetch(
-        `/api/artifacts/${workspace.artifactId}/actions`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'refresh',
-            guestArtifactToken: workspace.guestArtifactToken ?? undefined
-          })
-        }
-      )
-      if (res.ok) {
-        const data = await res.json()
-        updateWorkspace({
-          status: data.status ?? workspace.status,
-          previewUrl: data.previewUrl ?? workspace.previewUrl,
-          revisionId: data.revisionId ?? workspace.revisionId,
-          title: data.title ?? workspace.title,
-          guestArtifactToken:
-            data.guestArtifactToken ?? workspace.guestArtifactToken
-        })
-      }
-    } finally {
-      setIsRefreshing(false)
-    }
-  }, [workspace, isRefreshing, updateWorkspace])
-
-  const handleRetry = useCallback(async () => {
-    if (!workspace.artifactId || isRetrying) return
-    setIsRetrying(true)
-    try {
-      const res = await fetch(
-        `/api/artifacts/${workspace.artifactId}/actions`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'retry',
-            guestArtifactToken: workspace.guestArtifactToken ?? undefined
-          })
-        }
-      )
-      if (res.ok) {
-        const data = await res.json()
-        updateWorkspace({
-          status: data.status ?? workspace.status,
-          previewUrl: data.previewUrl ?? workspace.previewUrl,
-          revisionId: data.revisionId ?? workspace.revisionId,
-          title: data.title ?? workspace.title,
-          guestArtifactToken:
-            data.guestArtifactToken ?? workspace.guestArtifactToken
-        })
-      }
-    } finally {
-      setIsRetrying(false)
-    }
-  }, [workspace, isRetrying, updateWorkspace])
+  const { execute: handleRefresh, isPending: isRefreshing } =
+    useArtifactAction('refresh')
+  const { execute: handleRetry, isPending: isRetrying } =
+    useArtifactAction('retry')
+  const { isCopied: copied, copyToClipboard } = useCopyToClipboard({
+    timeout: 2000
+  })
 
   const handleAskAiFix = useCallback(() => {
     if (!requestAiFix) return
-    const context = workspaceLogs
-      .slice(-20)
-      .map(l => l.message)
-      .join('\n')
-    requestAiFix(
-      `The artifact build failed with the following error. Please diagnose and fix the source code:\n\n\`\`\`\n${context}\n\`\`\``
-    )
+    requestAiFix(formatArtifactFixPrompt(workspaceLogs))
   }, [requestAiFix, workspaceLogs])
 
   const handleShare = useCallback(() => {
-    if (!workspace.previewUrl || copied) return
-    navigator.clipboard.writeText(workspace.previewUrl).then(
-      () => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-      },
-      err => {
-        console.error('Failed to copy preview URL to clipboard:', err)
-      }
-    )
-  }, [workspace.previewUrl, copied])
+    if (workspace.previewUrl) copyToClipboard(workspace.previewUrl)
+  }, [workspace.previewUrl, copyToClipboard])
 
   const isFailed = workspace.status === 'failed'
 

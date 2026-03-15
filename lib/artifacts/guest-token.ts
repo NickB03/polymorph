@@ -42,7 +42,7 @@ function getSecret(): string {
   return secret
 }
 
-function getTtlMs(): number {
+export function getTtlMs(): number {
   const raw = process.env.GUEST_ARTIFACT_TOKEN_TTL_MS
   if (!raw) return DEFAULT_TTL_MS
   const parsed = Number(raw)

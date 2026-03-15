@@ -5,13 +5,11 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
 import { ArtifactCodeViewer } from './artifact-code-viewer'
-import { useArtifact } from './artifact-context'
+import { useArtifact, type WorkspaceTab } from './artifact-context'
 import { ArtifactErrorPanel } from './artifact-error-panel'
 import { ArtifactLogsPanel } from './artifact-logs-panel'
 import { ArtifactPreviewFrame } from './artifact-preview-frame'
 import { ArtifactWorkspaceHeader } from './artifact-workspace-header'
-
-type WorkspaceTab = 'preview' | 'code' | 'logs'
 
 export function ArtifactWorkspace() {
   const { state } = useArtifact()

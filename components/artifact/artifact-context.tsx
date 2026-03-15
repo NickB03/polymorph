@@ -22,6 +22,8 @@ import { useSidebar } from '../ui/sidebar'
 // Animation duration should match CSS transition duration
 const ANIMATION_DURATION = 300
 
+export type WorkspaceTab = 'preview' | 'code' | 'logs'
+
 export interface ArtifactWorkspaceState {
   artifactId: string | null
   revisionId: string | null
@@ -60,7 +62,6 @@ type ArtifactAction =
   | { type: 'CLEAR_INSPECTOR' }
   | { type: 'OPEN_WORKSPACE'; payload: Partial<ArtifactWorkspaceState> }
   | { type: 'UPDATE_WORKSPACE'; payload: Partial<ArtifactWorkspaceState> }
-  | { type: 'UPDATE_SOURCE_FILES'; payload: ArtifactSourceFile[] }
   | { type: 'CLOSE_WORKSPACE' }
 
 function artifactReducer(
@@ -91,14 +92,6 @@ function artifactReducer(
           ...action.payload
         }
       }
-    case 'UPDATE_SOURCE_FILES':
-      return {
-        ...state,
-        workspace: {
-          ...state.workspace,
-          sourceFiles: action.payload
-        }
-      }
     case 'CLOSE_WORKSPACE':
       return {
         ...state,
@@ -115,7 +108,6 @@ interface ArtifactContextValue {
   close: () => void
   openWorkspace: (ws: Partial<ArtifactWorkspaceState>) => void
   updateWorkspace: (ws: Partial<ArtifactWorkspaceState>) => void
-  updateSourceFiles: (files: ArtifactSourceFile[]) => void
   closeWorkspace: () => void
   appendWorkspaceLog: (log: ArtifactLogData) => void
   workspaceLogs: ArtifactLogData[]
@@ -173,17 +165,13 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'UPDATE_WORKSPACE', payload: ws })
   }, [])
 
-  const updateSourceFiles = useCallback((files: ArtifactSourceFile[]) => {
-    dispatch({ type: 'UPDATE_SOURCE_FILES', payload: files })
-  }, [])
-
   const closeWorkspace = useCallback(() => {
     dispatch({ type: 'CLOSE_WORKSPACE' })
     setWorkspaceLogs([])
   }, [])
 
   const appendWorkspaceLog = useCallback((log: ArtifactLogData) => {
-    setWorkspaceLogs(prev => [...prev, log])
+    setWorkspaceLogs(prev => [...prev, log].slice(-200))
   }, [])
 
   return (
@@ -194,7 +182,6 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
         close,
         openWorkspace,
         updateWorkspace,
-        updateSourceFiles,
         closeWorkspace,
         appendWorkspaceLog,
         workspaceLogs,
@@ -213,4 +200,58 @@ export function useArtifact() {
     throw new Error('useArtifact must be used within an ArtifactProvider')
   }
   return context
+}
+
+/**
+ * Shared hook for calling artifact action endpoints (refresh, retry).
+ * Eliminates duplicated fetch + updateWorkspace logic across components.
+ */
+export function useArtifactAction(action: 'refresh' | 'retry') {
+  const { state, updateWorkspace } = useArtifact()
+  const { workspace } = state
+  const [isPending, setIsPending] = useState(false)
+
+  const execute = useCallback(async () => {
+    if (!workspace.artifactId || isPending) return
+    setIsPending(true)
+    try {
+      const res = await fetch(
+        `/api/artifacts/${workspace.artifactId}/actions`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action,
+            guestArtifactToken: workspace.guestArtifactToken ?? undefined
+          })
+        }
+      )
+      if (res.ok) {
+        const data = await res.json()
+        updateWorkspace({
+          status: data.status ?? workspace.status,
+          previewUrl: data.previewUrl ?? workspace.previewUrl,
+          revisionId: data.revisionId ?? workspace.revisionId,
+          title: data.title ?? workspace.title,
+          guestArtifactToken:
+            data.guestArtifactToken ?? workspace.guestArtifactToken
+        })
+      }
+    } finally {
+      setIsPending(false)
+    }
+  }, [workspace, isPending, updateWorkspace, action])
+
+  return { execute, isPending }
+}
+
+/** Format workspace logs into an "Ask AI to fix" prompt. */
+export function formatArtifactFixPrompt(
+  logs: { message: string; level?: string }[]
+): string {
+  const context = logs
+    .slice(-20)
+    .map(l => l.message)
+    .join('\n')
+  return `The artifact build failed with the following error. Please diagnose and fix the source code:\n\n\`\`\`\n${context}\n\`\`\``
 }

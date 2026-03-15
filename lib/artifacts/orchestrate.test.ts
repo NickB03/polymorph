@@ -16,7 +16,8 @@ vi.mock('@/lib/artifacts/validation/validate-artifact-source', () => ({
 
 vi.mock('@/lib/artifacts/guest-token', () => ({
   signGuestArtifactToken: vi.fn(),
-  refreshGuestArtifactToken: vi.fn()
+  refreshGuestArtifactToken: vi.fn(),
+  getTtlMs: vi.fn(() => 30 * 60 * 1000)
 }))
 
 vi.mock('@/lib/db/actions', () => ({
@@ -25,7 +26,8 @@ vi.mock('@/lib/db/actions', () => ({
   loadArtifactByChatId: vi.fn(),
   loadArtifactRuntimeSession: vi.fn(),
   appendArtifactRevision: vi.fn(),
-  upsertArtifactRuntimeSession: vi.fn()
+  upsertArtifactRuntimeSession: vi.fn(),
+  ensureChatRecord: vi.fn()
 }))
 
 vi.mock('@/lib/artifacts/observability', () => ({
