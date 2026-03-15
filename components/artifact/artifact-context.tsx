@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useReducer,
+  useRef,
   useState
 } from 'react'
 
@@ -212,9 +213,23 @@ export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
   const { state, updateWorkspace } = useArtifact()
   const { workspace } = state
   const [isPending, setIsPending] = useState(false)
+  const abortRef = useRef<AbortController | null>(null)
+
+  // Abort any in-flight request on unmount
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
 
   const execute = useCallback(async () => {
     if (!workspace.artifactId || isPending) return
+
+    // Cancel any previous in-flight request to prevent stale responses
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     setIsPending(true)
     try {
       const res = await fetch(
@@ -225,11 +240,14 @@ export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
           body: JSON.stringify({
             action,
             guestArtifactToken: workspace.guestArtifactToken ?? undefined
-          })
+          }),
+          signal: controller.signal
         }
       )
+      if (controller.signal.aborted) return
       if (res.ok) {
         const data = await res.json()
+        if (controller.signal.aborted) return
         updateWorkspace({
           status: data.status ?? workspace.status,
           previewUrl: data.previewUrl ?? workspace.previewUrl,
@@ -244,6 +262,7 @@ export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
       } else {
         try {
           const err = await res.json()
+          if (controller.signal.aborted) return
           if (err.code === 'TOKEN_EXPIRED') {
             updateWorkspace({ status: 'expired', previewUrl: null })
           }
@@ -251,8 +270,13 @@ export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
           // Response wasn't JSON — ignore
         }
       }
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return
+      throw e
     } finally {
-      setIsPending(false)
+      if (!controller.signal.aborted) {
+        setIsPending(false)
+      }
     }
   }, [workspace, isPending, updateWorkspace, action])
 

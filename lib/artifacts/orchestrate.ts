@@ -121,6 +121,10 @@ function emitStatusOnly(
 function normalizeFilePath(filePath: string): string {
   let normalized = filePath.trim()
 
+  if (!normalized) {
+    throw new Error('File path cannot be empty')
+  }
+
   // Strip JSON array wrapper (literal `["src/App.tsx"]` → `"src/App.tsx"`)
   if (normalized.startsWith('[') && normalized.endsWith(']')) {
     try {
@@ -175,7 +179,16 @@ function validateSourceFiles(files: Record<string, string>) {
   }> = []
 
   for (const [rawFilePath, content] of Object.entries(files)) {
-    const filePath = normalizeFilePath(rawFilePath)
+    let filePath: string
+    try {
+      filePath = normalizeFilePath(rawFilePath)
+    } catch {
+      errors.push({
+        code: 'EMPTY_FILE_PATH',
+        message: `File path is empty or whitespace-only: "${rawFilePath}"`
+      })
+      continue
+    }
     const validation = validateArtifactSource({ filePath, content })
     if (!validation.valid) {
       errors.push(...validation.errors)
@@ -257,6 +270,34 @@ export async function orchestrateCreate(
   params: CreateParams,
   ctx: ArtifactToolContext
 ) {
+  // Guard: check for an existing artifact to prevent duplicates and orphaned
+  // sandboxes when a create races with a rebuild or another create.
+  const effectiveUserId = ctx.isGuest ? GUEST_USER_ID : ctx.userId
+  const existingArtifact = await dbActions.loadArtifactByChatId(
+    ctx.chatId,
+    ctx.isGuest ? null : ctx.userId
+  )
+  if (existingArtifact) {
+    const inProgress: Array<ArtifactStatus> = ['building', 'restarting']
+    if (inProgress.includes(existingArtifact.status)) {
+      return {
+        success: false as const,
+        action: 'create' as const,
+        error: `An artifact is already ${existingArtifact.status} for this chat. Wait for it to finish or check its status.`
+      }
+    }
+    // For 'ready' artifacts, the model should use updateWebappArtifact instead.
+    if (existingArtifact.status === 'ready') {
+      return {
+        success: false as const,
+        action: 'create' as const,
+        error:
+          'An artifact already exists for this chat. Use updateWebappArtifact to modify it.'
+      }
+    }
+    // 'expired' and 'failed' statuses are OK — allow re-creation.
+  }
+
   const validation = validateSourceFiles(params.files)
   if (!validation.valid) {
     return {
@@ -278,10 +319,6 @@ export async function orchestrateCreate(
       visibility: 'private'
     })
   }
-
-  // Use GUEST_USER_ID sentinel for guest users so RLS context is established.
-  // The artifacts table has RLS policies requiring app.current_user_id to be set.
-  const effectiveUserId = ctx.isGuest ? GUEST_USER_ID : ctx.userId
 
   let artifact = await dbActions.createArtifactRecord({
     chatId: ctx.chatId,

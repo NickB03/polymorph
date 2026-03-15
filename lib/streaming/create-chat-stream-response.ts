@@ -307,18 +307,25 @@ export async function createChatStreamResponse(
     onFinish: async ({ responseMessage, isAborted }) => {
       if (isAborted || !responseMessage) return
 
-      // Persist stream results to database
-      await persistStreamResults(
-        responseMessage,
-        chatId,
-        userId,
-        titlePromise,
-        parentTraceId,
-        searchMode,
-        context.modelId,
-        context.pendingInitialSave,
-        context.pendingInitialUserMessage
-      )
+      try {
+        // Persist stream results to database
+        await persistStreamResults(
+          responseMessage,
+          chatId,
+          userId,
+          titlePromise,
+          parentTraceId,
+          searchMode,
+          context.modelId,
+          context.pendingInitialSave,
+          context.pendingInitialUserMessage
+        )
+      } catch (error) {
+        console.error(
+          `[onFinish] Failed to persist stream results for chat ${chatId}:`,
+          error
+        )
+      }
     }
   })
 

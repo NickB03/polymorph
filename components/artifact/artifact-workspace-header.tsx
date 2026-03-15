@@ -113,45 +113,50 @@ export function ArtifactWorkspaceHeader({
 
         <div className="flex items-center gap-0.5 shrink-0">
           {/* Tab switcher */}
-          <TooltipButton
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => onTabChange('preview')}
-            aria-label="Preview"
-            aria-pressed={activeTab === 'preview'}
-            tooltipContent="Preview"
-          >
-            <Eye
-              className={`h-3.5 w-3.5 ${activeTab === 'preview' ? 'text-foreground' : 'text-muted-foreground'}`}
-            />
-          </TooltipButton>
-          <TooltipButton
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => onTabChange('code')}
-            aria-label="Code"
-            aria-pressed={activeTab === 'code'}
-            tooltipContent="Code"
-          >
-            <FileCode
-              className={`h-3.5 w-3.5 ${activeTab === 'code' ? 'text-foreground' : 'text-muted-foreground'}`}
-            />
-          </TooltipButton>
-          <TooltipButton
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => onTabChange('logs')}
-            aria-label="Logs"
-            aria-pressed={activeTab === 'logs'}
-            tooltipContent="Logs"
-          >
-            <ScrollText
-              className={`h-3.5 w-3.5 ${activeTab === 'logs' ? 'text-foreground' : 'text-muted-foreground'}`}
-            />
-          </TooltipButton>
+          <div role="tablist" className="flex items-center gap-0.5">
+            <TooltipButton
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              role="tab"
+              onClick={() => onTabChange('preview')}
+              aria-label="Preview"
+              aria-selected={activeTab === 'preview'}
+              tooltipContent="Preview"
+            >
+              <Eye
+                className={`h-3.5 w-3.5 ${activeTab === 'preview' ? 'text-foreground' : 'text-muted-foreground'}`}
+              />
+            </TooltipButton>
+            <TooltipButton
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              role="tab"
+              onClick={() => onTabChange('code')}
+              aria-label="Code"
+              aria-selected={activeTab === 'code'}
+              tooltipContent="Code"
+            >
+              <FileCode
+                className={`h-3.5 w-3.5 ${activeTab === 'code' ? 'text-foreground' : 'text-muted-foreground'}`}
+              />
+            </TooltipButton>
+            <TooltipButton
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              role="tab"
+              onClick={() => onTabChange('logs')}
+              aria-label="Logs"
+              aria-selected={activeTab === 'logs'}
+              tooltipContent="Logs"
+            >
+              <ScrollText
+                className={`h-3.5 w-3.5 ${activeTab === 'logs' ? 'text-foreground' : 'text-muted-foreground'}`}
+              />
+            </TooltipButton>
+          </div>
 
           <Separator orientation="vertical" className="mx-1 h-4" />
 
