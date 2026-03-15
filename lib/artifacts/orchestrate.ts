@@ -415,6 +415,70 @@ export async function orchestrateCreate(
       sandboxId: createdSession.sandboxId
     })
 
+    // Quick compilation check — catch broken imports/syntax before
+    // reporting success. Without this, Vite serves an error overlay
+    // but the tool returns { success: true } and the model can't
+    // self-correct.
+    ctx.emitArtifactLog({
+      artifactId: artifact.id,
+      message: 'Verifying build...',
+      level: 'info'
+    })
+
+    const buildCheck = await runtime.runCommand({
+      sandboxId: createdSession.sandboxId,
+      command: 'npx vite build 2>&1 | tail -30',
+      timeoutMs: 30_000
+    })
+
+    if (buildCheck.exitCode !== 0) {
+      const buildError =
+        buildCheck.stderr ||
+        buildCheck.stdout ||
+        'Build failed with unknown error'
+
+      ctx.emitArtifactLog({
+        artifactId: artifact.id,
+        message: `Build verification failed: ${buildError}`,
+        level: 'error'
+      })
+
+      // Clean up the session as failed
+      runtimeSession = await dbActions.upsertArtifactRuntimeSession(
+        {
+          id: runtimeSession!.id,
+          artifactId: artifact.id,
+          provider: 'e2b',
+          sandboxId: createdSession.sandboxId,
+          previewUrl: preview.previewUrl,
+          status: 'failed',
+          startedAt: runtimeSession!.startedAt,
+          expiresAt: runtimeSession!.expiresAt,
+          lastHeartbeatAt: new Date()
+        },
+        effectiveUserId
+      )
+
+      emitArtifactState(ctx, {
+        artifactId: artifact.id,
+        title: params.title,
+        status: 'failed'
+      })
+
+      // Return structured error so the model's ToolLoopAgent can self-correct
+      return {
+        success: false as const,
+        action: 'create' as const,
+        error: `Artifact build failed. Fix these errors and try again:\n${buildError}`,
+        errors: [
+          {
+            code: 'BUILD_FAILED' as const,
+            message: buildError
+          }
+        ]
+      }
+    }
+
     runtimeSession = await dbActions.upsertArtifactRuntimeSession(
       {
         id: runtimeSession.id,

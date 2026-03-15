@@ -28,6 +28,29 @@ export const TEMPLATE_OWNED_DIRS = ['src/components/ui/']
 /** Directories where model-generated source files are allowed */
 export const ALLOWED_SOURCE_ROOTS = ['src/']
 
+/**
+ * UI components installed in the template under src/components/ui/.
+ * This is the single source of truth — prompt, normalizer, and validator
+ * all derive from this set.
+ */
+export const TEMPLATE_UI_COMPONENTS = new Set([
+  'avatar',
+  'badge',
+  'button',
+  'card',
+  'dialog',
+  'dropdown-menu',
+  'input',
+  'label',
+  'select',
+  'separator',
+  'skeleton',
+  'switch',
+  'tabs',
+  'textarea',
+  'tooltip'
+])
+
 /** Packages preinstalled in the template (available for import) */
 export const PREINSTALLED_PACKAGES = new Set([
   'react',

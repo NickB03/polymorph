@@ -1,7 +1,13 @@
+import { TEMPLATE_UI_COMPONENTS } from '@/lib/artifacts/template-manifest'
 import {
   getContentTypesGuidance,
   isGeneralSearchProviderAvailable
 } from '@/lib/utils/search-config'
+
+/** Generate the exhaustive UI component list for artifact prompts. */
+function getAvailableComponentsList(): string {
+  return [...TEMPLATE_UI_COMPONENTS].join(', ')
+}
 
 // Search mode system prompts
 
@@ -178,7 +184,7 @@ You have tools to create and update live React webapp artifacts. Use them when t
 - TRIGGER: User asks to "build", "create", "make", or "design" a webapp, app, page, dashboard, calculator, form, game, or interactive UI
 - Provide complete source files in the \`files\` parameter (e.g., \`src/App.tsx\` and any additional component files)
 - Use React + TypeScript + Tailwind for styling
-- Import UI components from \`@/components/ui/\` (e.g., \`@/components/ui/button\`, \`@/components/ui/card\`, \`@/components/ui/input\`)
+- Available UI components (ONLY these — do NOT import others): ${getAvailableComponentsList()}. Import from \`@/components/ui/<name>\`
 - Import \`cn\` utility from \`@/lib/utils\` for conditional classes
 - Available packages: react, lucide-react, framer-motion, recharts, react-hook-form, zod, date-fns, sonner, clsx, tailwind-merge, class-variance-authority
 - Do NOT use Next.js APIs (no next/link, next/image, next/navigation, next/server)
@@ -530,7 +536,7 @@ You have tools to create and update live React webapp artifacts. Use them when t
 - TRIGGER: User asks to "build", "create", "make", or "design" a webapp, app, page, dashboard, calculator, form, game, or interactive UI
 - Provide complete source files in the \`files\` parameter (e.g., \`src/App.tsx\` and any additional component files)
 - Use React + TypeScript + Tailwind for styling
-- Import UI components from \`@/components/ui/\` (e.g., \`@/components/ui/button\`, \`@/components/ui/card\`, \`@/components/ui/input\`)
+- Available UI components (ONLY these — do NOT import others): ${getAvailableComponentsList()}. Import from \`@/components/ui/<name>\`
 - Import \`cn\` utility from \`@/lib/utils\` for conditional classes
 - Available packages: react, lucide-react, framer-motion, recharts, react-hook-form, zod, date-fns, sonner, clsx, tailwind-merge, class-variance-authority
 - Do NOT use Next.js APIs (no next/link, next/image, next/navigation, next/server)
