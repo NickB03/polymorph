@@ -61,7 +61,9 @@ export function Chat({
   const {
     openWorkspace,
     updateWorkspace,
+    updateSourceFiles,
     appendWorkspaceLog,
+    setRequestAiFix,
     state: artifactState
   } = useArtifact()
 
@@ -359,6 +361,22 @@ export function Chat({
     generateId
   })
 
+  // Wire the "Ask AI to fix" callback so the error panel can submit a repair message
+  useEffect(() => {
+    setRequestAiFix(() => (errorContext: string) => {
+      sendMessage({
+        role: 'user',
+        parts: [
+          {
+            type: 'text',
+            text: `The artifact build failed with the following error. Please diagnose and fix the source code:\n\n\`\`\`\n${errorContext}\n\`\`\``
+          }
+        ]
+      })
+    })
+    return () => setRequestAiFix(null)
+  }, [sendMessage, setRequestAiFix])
+
   // Auto-open workspace when artifact data parts arrive in messages.
   // Reconcile by stable artifact id to avoid re-opening the same artifact.
   useEffect(() => {
@@ -377,9 +395,47 @@ export function Chat({
       }
     }
 
+    // Extract source files from the latest artifact tool result.
+    // AI SDK v6 uses `tool-{toolName}` as the part type with `output` for results.
+    let latestFiles: Record<string, string> | null = null
+    for (const msg of messages) {
+      if (msg.role !== 'assistant') continue
+      for (const part of msg.parts ?? []) {
+        if (
+          (part.type === 'tool-createWebappArtifact' ||
+            part.type === 'tool-updateWebappArtifact') &&
+          'output' in part &&
+          (part as { output?: { files?: Record<string, string> } }).output
+            ?.files
+        ) {
+          latestFiles = (part as { output: { files: Record<string, string> } })
+            .output.files
+        }
+      }
+    }
+
     if (!latestArtifact) return
 
     const artifactId = latestArtifact.data.id
+
+    // Update code viewer with source files from tool results
+    if (latestFiles) {
+      const sourceFiles = Object.entries(latestFiles).map(
+        ([path, content]) => ({
+          path,
+          content,
+          language:
+            path.endsWith('.tsx') || path.endsWith('.ts')
+              ? 'typescript'
+              : path.endsWith('.css')
+                ? 'css'
+                : path.endsWith('.json')
+                  ? 'json'
+                  : 'text'
+        })
+      )
+      updateSourceFiles(sourceFiles)
+    }
 
     // If workspace is already showing this artifact, just apply status updates
     if (artifactState.workspace.artifactId === artifactId) {
@@ -421,7 +477,8 @@ export function Chat({
     artifactState.workspace.artifactId,
     artifactState.workspace.status,
     openWorkspace,
-    updateWorkspace
+    updateWorkspace,
+    updateSourceFiles
   ])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
