@@ -63,6 +63,18 @@ describe('normalizeImports', () => {
 
 describe('validateArtifactSource', () => {
   describe('template-owned file protection', () => {
+    it('rejects writes outside the src/ source root', () => {
+      const result = validateArtifactSource({
+        filePath: 'scripts/build.ts',
+        content: 'console.log("nope")'
+      })
+
+      expect(result.valid).toBe(false)
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({ code: 'INVALID_SOURCE_PATH' })
+      )
+    })
+
     it('rejects writes to package.json', () => {
       const result = validateArtifactSource({
         filePath: 'package.json',

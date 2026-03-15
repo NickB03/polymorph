@@ -1,9 +1,16 @@
 import { NextRequest } from 'next/server'
 
-import { verifyGuestArtifactToken } from '@/lib/artifacts/guest-token'
+import {
+  signGuestArtifactToken,
+  verifyGuestArtifactToken
+} from '@/lib/artifacts/guest-token'
 import { createE2BRuntime } from '@/lib/artifacts/runtime'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
-import { loadArtifactById, loadArtifactRuntimeSession } from '@/lib/db/actions'
+import {
+  loadArtifactById,
+  loadArtifactRuntimeSession,
+  upsertArtifactRuntimeSession
+} from '@/lib/db/actions'
 import { jsonError } from '@/lib/utils/json-error'
 
 export async function POST(
@@ -27,6 +34,7 @@ export async function POST(
   // Auth: try authenticated user first, fall back to guest token
   const userId = await getCurrentUserId()
   let isGuest = false
+  let guestHandle: Awaited<ReturnType<typeof verifyGuestArtifactToken>> = null
   let guestSandboxId: string | null = null
 
   if (!userId) {
@@ -42,6 +50,7 @@ export async function POST(
     }
 
     isGuest = true
+    guestHandle = handle
     guestSandboxId = handle.sandboxId
   }
 
@@ -56,6 +65,22 @@ export async function POST(
     artifactId,
     isGuest ? null : userId
   )
+
+  const issueGuestArtifactToken = async (input?: {
+    runtimeSessionId?: string
+    sandboxId?: string
+    expiresAt?: Date | null
+  }) => {
+    if (!isGuest || !guestHandle) return undefined
+
+    return signGuestArtifactToken({
+      artifactId: artifact.id,
+      runtimeSessionId: input?.runtimeSessionId ?? guestHandle.runtimeSessionId,
+      sandboxId: input?.sandboxId ?? guestHandle.sandboxId,
+      chatId: artifact.chatId,
+      expiresAt: (input?.expiresAt ?? guestHandle.expiresAt).getTime()
+    })
+  }
 
   // For retry, actually restart the preview via the runtime adapter
   if (action === 'retry') {
@@ -72,13 +97,33 @@ export async function POST(
     try {
       const runtime = createE2BRuntime()
       const result = await runtime.restartPreview({ sandboxId })
+      const persistedSession = await upsertArtifactRuntimeSession(
+        {
+          id: session?.id ?? guestHandle?.runtimeSessionId,
+          artifactId: artifact.id,
+          provider: 'e2b',
+          sandboxId,
+          previewUrl: result.previewUrl,
+          status: result.status,
+          startedAt: session?.startedAt ?? new Date(),
+          expiresAt: session?.expiresAt ?? guestHandle?.expiresAt ?? null,
+          lastHeartbeatAt: new Date()
+        },
+        isGuest ? null : userId
+      )
+      const guestArtifactToken = await issueGuestArtifactToken({
+        runtimeSessionId: persistedSession?.id,
+        sandboxId,
+        expiresAt: persistedSession?.expiresAt
+      })
 
       return Response.json({
         id: artifact.id,
         title: artifact.title,
         status: result.status,
         previewUrl: result.previewUrl,
-        revisionId: artifact.currentRevisionId
+        revisionId: artifact.currentRevisionId,
+        ...(guestArtifactToken ? { guestArtifactToken } : {})
       })
     } catch (error) {
       console.error('Failed to restart artifact preview:', error)
@@ -87,11 +132,18 @@ export async function POST(
   }
 
   // For refresh, just return the current status
+  const guestArtifactToken = await issueGuestArtifactToken({
+    runtimeSessionId: session?.id,
+    sandboxId: session?.sandboxId,
+    expiresAt: session?.expiresAt
+  })
+
   return Response.json({
     id: artifact.id,
     title: artifact.title,
     status: artifact.status,
     previewUrl: session?.previewUrl ?? null,
-    revisionId: artifact.currentRevisionId
+    revisionId: artifact.currentRevisionId,
+    ...(guestArtifactToken ? { guestArtifactToken } : {})
   })
 }

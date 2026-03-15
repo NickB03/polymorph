@@ -16,7 +16,7 @@ import type {
   UIMessage,
   UIMessageMetadata
 } from '@/lib/types/ai'
-import type { ArtifactLogData } from '@/lib/types/artifact'
+import type { ArtifactEventData, ArtifactLogData } from '@/lib/types/artifact'
 import {
   isDynamicToolPart,
   isInteractiveToolPart,
@@ -34,6 +34,10 @@ import { useFileDropzone } from '@/hooks/use-file-dropzone'
 import { useArtifact } from './artifact/artifact-context'
 import { ChatMessages } from './chat-messages'
 import { ChatPanel } from './chat-panel'
+import {
+  buildChatRequestBody,
+  getLatestGuestArtifactToken
+} from './chat-request'
 import { DragOverlay } from './drag-overlay'
 import { ErrorModal } from './error-modal'
 
@@ -111,6 +115,12 @@ export function Chat({
     }
   }, [providedId, savedMessages])
 
+  useEffect(() => {
+    if (isGuest) {
+      setGuestArtifactToken(getLatestGuestArtifactToken(savedMessages))
+    }
+  }, [isGuest, savedMessages])
+
   const autoSendFiredRef = useRef<Set<string>>(new Set())
   // Track the last artifact id we auto-opened to avoid re-opening on every render
   const lastOpenedArtifactIdRef = useRef<string | null>(null)
@@ -118,6 +128,9 @@ export function Chat({
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [input, setInput] = useState('')
+  const [guestArtifactToken, setGuestArtifactToken] = useState<string | null>(
+    () => (isGuest ? getLatestGuestArtifactToken(savedMessages) : null)
+  )
   const [errorModal, setErrorModal] = useState<{
     open: boolean
     type: 'rate-limit' | 'auth' | 'forbidden' | 'general'
@@ -142,71 +155,16 @@ export function Chat({
     id: chatId, // use the client-generated or provided chatId
     transport: new DefaultChatTransport({
       api: '/api/chat',
-      prepareSendMessagesRequest: ({ messages, trigger, messageId }) => {
-        // Simplify by passing AI SDK's default trigger values directly
-        const lastMessage = messages[messages.length - 1]
-        const messageToRegenerate =
-          trigger === 'regenerate-message'
-            ? messages.find(m => m.id === messageId)
-            : undefined
-
-        // Detect tool-result continuation: sendAutomaticallyWhen fires with
-        // trigger="submit-message" but last message is assistant (not user)
-        const isToolResultContinuation =
-          trigger === 'submit-message' && lastMessage?.role === 'assistant'
-
-        // For tool-result continuation, extract the minimal delta
-        if (isToolResultContinuation) {
-          const resolvedPart = lastMessage?.parts?.find(
-            (p: any) =>
-              isInteractiveToolPart(p) &&
-              'state' in p &&
-              p.state === 'output-available'
-          ) as { toolCallId: string; output: unknown } | undefined
-
-          if (resolvedPart && resolvedPart.output !== undefined) {
-            return {
-              body: {
-                trigger: 'tool-result',
-                chatId,
-                toolResult: {
-                  toolCallId: resolvedPart.toolCallId,
-                  output: resolvedPart.output
-                },
-                // Guest: include full messages (already resolved by addToolResult)
-                // so the ephemeral stream can continue without DB access
-                ...(isGuest ? { messages } : {})
-              }
-            }
-          }
-
-          // No valid resolved part found — fall through to the normal request
-          // path rather than sending an invalid tool-result continuation
-          console.warn(
-            '[chat] tool-result continuation: no resolved part found, falling back to normal request'
-          )
-        }
-
-        return {
-          body: {
-            trigger,
-            chatId,
-            messageId,
-            ...(isGuest ? { messages } : {}),
-            message:
-              trigger === 'regenerate-message' &&
-              messageToRegenerate?.role === 'user'
-                ? messageToRegenerate
-                : trigger === 'submit-message'
-                  ? lastMessage
-                  : undefined,
-            isNewChat:
-              trigger === 'submit-message' &&
-              messages.length === 1 &&
-              savedMessages.length === 0
-          }
-        }
-      }
+      prepareSendMessagesRequest: ({ messages, trigger, messageId }) =>
+        buildChatRequestBody({
+          messages: messages as UIMessage[],
+          trigger,
+          messageId,
+          chatId,
+          isGuest,
+          guestArtifactToken,
+          savedMessagesCount: savedMessages.length
+        })
     }),
     messages: savedMessages,
     onData: dataPart => {
@@ -221,9 +179,19 @@ export function Chat({
           appendWorkspaceLog(logData)
           window.dispatchEvent(new CustomEvent(type, { detail: logData }))
         } else if (type === 'data-artifactEvent') {
+          const eventData = (dataPart as { data: ArtifactEventData }).data
+          if (
+            eventData.event === 'guest-token-refreshed' &&
+            typeof eventData.payload?.token === 'string'
+          ) {
+            setGuestArtifactToken(eventData.payload.token)
+            updateWorkspace({
+              guestArtifactToken: eventData.payload.token
+            })
+          }
           window.dispatchEvent(
             new CustomEvent(type, {
-              detail: (dataPart as { data: unknown }).data
+              detail: eventData
             })
           )
         }
@@ -417,6 +385,18 @@ export function Chat({
     if (!latestArtifact) return
 
     const artifactId = latestArtifact.data.id
+    const persistedGuestArtifactToken =
+      latestStatus?.data.id === artifactId
+        ? (latestStatus.data.guestArtifactToken ??
+          latestArtifact.data.guestArtifactToken)
+        : latestArtifact.data.guestArtifactToken
+
+    if (
+      persistedGuestArtifactToken &&
+      persistedGuestArtifactToken !== guestArtifactToken
+    ) {
+      setGuestArtifactToken(persistedGuestArtifactToken)
+    }
 
     // Update code viewer with source files from tool results
     if (latestFiles) {
@@ -444,7 +424,11 @@ export function Chat({
         updateWorkspace({
           status: statusData.status,
           previewUrl: statusData.previewUrl ?? undefined,
-          revisionId: statusData.revisionId ?? undefined
+          revisionId: statusData.revisionId ?? undefined,
+          guestArtifactToken:
+            statusData.guestArtifactToken ??
+            persistedGuestArtifactToken ??
+            undefined
         })
       } else if (
         latestArtifact.data.status !== artifactState.workspace.status
@@ -453,7 +437,8 @@ export function Chat({
         updateWorkspace({
           status: latestArtifact.data.status,
           previewUrl: latestArtifact.data.previewUrl ?? undefined,
-          revisionId: latestArtifact.data.revisionId ?? undefined
+          revisionId: latestArtifact.data.revisionId ?? undefined,
+          guestArtifactToken: persistedGuestArtifactToken ?? undefined
         })
       }
       lastOpenedArtifactIdRef.current = artifactId
@@ -469,13 +454,15 @@ export function Chat({
       title: latestArtifact.data.title,
       status: latestArtifact.data.status,
       previewUrl: latestArtifact.data.previewUrl,
-      revisionId: latestArtifact.data.revisionId
+      revisionId: latestArtifact.data.revisionId,
+      guestArtifactToken: persistedGuestArtifactToken ?? undefined
     })
     lastOpenedArtifactIdRef.current = artifactId
   }, [
     messages,
     artifactState.workspace.artifactId,
     artifactState.workspace.status,
+    guestArtifactToken,
     openWorkspace,
     updateWorkspace,
     updateSourceFiles

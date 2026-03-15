@@ -5,6 +5,7 @@ import { and, asc, desc, eq, gt, inArray } from 'drizzle-orm'
 import type { UIMessage } from '@/lib/types/ai'
 import type {
   AppendArtifactRevisionInput,
+  ArtifactStatus,
   CreateArtifactInput,
   UpsertArtifactRuntimeSessionInput
 } from '@/lib/types/artifact'
@@ -252,6 +253,37 @@ export async function createArtifactRecord(input: CreateArtifactInput) {
       .returning()
 
     return artifact
+  })
+}
+
+export async function updateArtifactRecord(
+  input: {
+    id: string
+    title?: string
+    status?: ArtifactStatus
+    currentRevisionId?: string | null
+    currentRuntimeSessionId?: string | null
+  },
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [artifact] = await tx
+      .update(artifacts)
+      .set({
+        ...(input.title !== undefined ? { title: input.title } : {}),
+        ...(input.status !== undefined ? { status: input.status } : {}),
+        ...(input.currentRevisionId !== undefined
+          ? { currentRevisionId: input.currentRevisionId }
+          : {}),
+        ...(input.currentRuntimeSessionId !== undefined
+          ? { currentRuntimeSessionId: input.currentRuntimeSessionId }
+          : {}),
+        updatedAt: new Date()
+      })
+      .where(eq(artifacts.id, input.id))
+      .returning()
+
+    return artifact ?? null
   })
 }
 

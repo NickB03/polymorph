@@ -14,6 +14,7 @@ export type ArtifactData = {
   status: ArtifactStatus
   previewUrl?: string
   revisionId?: string
+  guestArtifactToken?: string
 }
 
 export type ArtifactStatusData = {
@@ -21,6 +22,7 @@ export type ArtifactStatusData = {
   status: ArtifactStatus
   previewUrl?: string
   revisionId?: string
+  guestArtifactToken?: string
 }
 
 export interface ArtifactSourceFile {

@@ -166,6 +166,8 @@ describe('E2B Runtime Adapter', () => {
       expect(options.headers).toMatchObject({
         Authorization: 'Bearer test-api-key'
       })
+      const body = JSON.parse(options.body)
+      expect(body.path).toBe('/home/user/app/src/App.tsx')
     })
 
     it('applySourceUpdate delegates to writeFiles with same contract', async () => {

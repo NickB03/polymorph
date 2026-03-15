@@ -164,11 +164,15 @@ export async function createChatStreamResponse(
 
         // Build request-scoped artifact tool context with writer-backed emitters.
         const artifactEmitter = createArtifactEmitter(writer)
+        const lastUserMessageId =
+          [...messagesToModel].reverse().find(m => m.role === 'user')?.id ??
+          null
         const artifactToolContext: ArtifactToolContext = {
           chatId,
           userId,
           isGuest: false,
           messages: messagesToModel,
+          triggeringMessageId: lastUserMessageId,
           resolveGuestArtifactToken: async () => null,
           ...artifactEmitter
         }

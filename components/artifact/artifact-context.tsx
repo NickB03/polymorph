@@ -28,6 +28,7 @@ export interface ArtifactWorkspaceState {
   title: string | null
   status: ArtifactStatus | null
   previewUrl: string | null
+  guestArtifactToken: string | null
   sourceFiles: ArtifactSourceFile[]
   isOpen: boolean
 }
@@ -43,6 +44,7 @@ const initialWorkspace: ArtifactWorkspaceState = {
   title: null,
   status: null,
   previewUrl: null,
+  guestArtifactToken: null,
   sourceFiles: [],
   isOpen: false
 }

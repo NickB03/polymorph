@@ -14,6 +14,7 @@ interface GuestArtifactTokenPayload {
   artifactId: string
   runtimeSessionId: string
   sandboxId: string
+  chatId: string
   expiresAt: number // Unix timestamp (ms)
 }
 
@@ -144,7 +145,7 @@ export async function verifyGuestArtifactToken(
       artifactId: payload.artifactId,
       runtimeSessionId: payload.runtimeSessionId,
       sandboxId: payload.sandboxId,
-      chatId: payload.artifactId, // guest artifacts use artifactId as chatId context
+      chatId: payload.chatId,
       expiresAt: new Date(payload.expiresAt)
     }
   } catch {
@@ -170,6 +171,7 @@ export async function refreshGuestArtifactToken(
     artifactId: handle.artifactId,
     runtimeSessionId: handle.runtimeSessionId,
     sandboxId: handle.sandboxId,
+    chatId: handle.chatId,
     expiresAt: Date.now() + getTtlMs()
   })
 }

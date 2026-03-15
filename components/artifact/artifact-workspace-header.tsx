@@ -92,7 +92,10 @@ export function ArtifactWorkspaceHeader({
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'refresh' })
+          body: JSON.stringify({
+            action: 'refresh',
+            guestArtifactToken: workspace.guestArtifactToken ?? undefined
+          })
         }
       )
       if (res.ok) {
@@ -101,7 +104,9 @@ export function ArtifactWorkspaceHeader({
           status: data.status ?? workspace.status,
           previewUrl: data.previewUrl ?? workspace.previewUrl,
           revisionId: data.revisionId ?? workspace.revisionId,
-          title: data.title ?? workspace.title
+          title: data.title ?? workspace.title,
+          guestArtifactToken:
+            data.guestArtifactToken ?? workspace.guestArtifactToken
         })
       }
     } finally {
@@ -118,7 +123,10 @@ export function ArtifactWorkspaceHeader({
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'retry' })
+          body: JSON.stringify({
+            action: 'retry',
+            guestArtifactToken: workspace.guestArtifactToken ?? undefined
+          })
         }
       )
       if (res.ok) {
@@ -127,7 +135,9 @@ export function ArtifactWorkspaceHeader({
           status: data.status ?? workspace.status,
           previewUrl: data.previewUrl ?? workspace.previewUrl,
           revisionId: data.revisionId ?? workspace.revisionId,
-          title: data.title ?? workspace.title
+          title: data.title ?? workspace.title,
+          guestArtifactToken:
+            data.guestArtifactToken ?? workspace.guestArtifactToken
         })
       }
     } finally {

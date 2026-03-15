@@ -20,6 +20,12 @@ const E2B_API_BASE_URL = 'https://api.e2b.dev/v1'
 const DEFAULT_SANDBOX_TIMEOUT_SECONDS = 300
 const DEFAULT_DEV_SERVER_PORT = 5173
 const DEFAULT_DEV_SERVER_COMMAND = 'npm run dev'
+const APP_ROOT = '/home/user/app'
+
+function resolveSandboxPath(filePath: string): string {
+  const normalized = filePath.replace(/^\/+/, '')
+  return `${APP_ROOT}/${normalized}`
+}
 
 function getApiKey(): string {
   const key = process.env.E2B_API_KEY
@@ -88,7 +94,7 @@ function createRuntime(apiKey: string): ArtifactRuntime {
         await e2bFetch(`/sandboxes/${input.sandboxId}/files`, apiKey, {
           method: 'POST',
           body: JSON.stringify({
-            path: filePath,
+            path: resolveSandboxPath(filePath),
             content
           })
         })
@@ -101,7 +107,7 @@ function createRuntime(apiKey: string): ArtifactRuntime {
         await e2bFetch(`/sandboxes/${input.sandboxId}/files`, apiKey, {
           method: 'POST',
           body: JSON.stringify({
-            path: filePath,
+            path: resolveSandboxPath(filePath),
             content
           })
         })
@@ -113,7 +119,7 @@ function createRuntime(apiKey: string): ArtifactRuntime {
         method: 'POST',
         body: JSON.stringify({
           command: 'npm install',
-          cwd: input.cwd || '/home/user/app'
+          cwd: input.cwd || APP_ROOT
         })
       })
     },
@@ -126,7 +132,7 @@ function createRuntime(apiKey: string): ArtifactRuntime {
           method: 'POST',
           body: JSON.stringify({
             command: input.command,
-            cwd: input.cwd || '/home/user/app',
+            cwd: input.cwd || APP_ROOT,
             timeout: input.timeoutMs
           })
         }
@@ -148,7 +154,7 @@ function createRuntime(apiKey: string): ArtifactRuntime {
         method: 'POST',
         body: JSON.stringify({
           command,
-          cwd: '/home/user/app',
+          cwd: APP_ROOT,
           background: true
         })
       })
@@ -170,7 +176,7 @@ function createRuntime(apiKey: string): ArtifactRuntime {
         method: 'POST',
         body: JSON.stringify({
           command: `kill $(lsof -t -i:${port}) 2>/dev/null; sleep 1`,
-          cwd: '/home/user/app'
+          cwd: APP_ROOT
         })
       })
 
@@ -179,7 +185,7 @@ function createRuntime(apiKey: string): ArtifactRuntime {
         method: 'POST',
         body: JSON.stringify({
           command,
-          cwd: '/home/user/app',
+          cwd: APP_ROOT,
           background: true
         })
       })

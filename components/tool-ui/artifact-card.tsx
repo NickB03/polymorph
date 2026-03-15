@@ -86,7 +86,8 @@ const ArtifactCardInner = memo(function ArtifactCardInner({
       title: data.title,
       status: data.status,
       previewUrl: data.previewUrl,
-      revisionId: data.revisionId
+      revisionId: data.revisionId,
+      guestArtifactToken: data.guestArtifactToken ?? null
     })
   }
 
