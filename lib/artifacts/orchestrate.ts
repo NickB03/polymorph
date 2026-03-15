@@ -5,6 +5,7 @@ import { readTemplateFiles } from '@/lib/artifacts/templates/read-template'
 import type { ArtifactToolContext } from '@/lib/artifacts/tool-context'
 import { validateArtifactSource } from '@/lib/artifacts/validation/validate-artifact-source'
 import * as dbActions from '@/lib/db/actions'
+import { GUEST_USER_ID } from '@/lib/db/constants'
 import type {
   ArtifactData,
   ArtifactRuntimeSessionRecord,
@@ -12,13 +13,6 @@ import type {
   ArtifactStatusData
 } from '@/lib/types/artifact'
 import { getTextFromParts } from '@/lib/utils/message-utils'
-
-/**
- * Sentinel user ID for guest artifact operations.
- * Must match the value used in dbActions.ensureChatRecord for
- * the guest chat row it creates.
- */
-const GUEST_USER_ID = 'guest'
 
 const DEFAULT_GUEST_TOKEN_TTL_MS = 30 * 60 * 1000
 
@@ -300,13 +294,9 @@ export async function orchestrateCreate(
     status: 'building'
   })
 
-  ctx.emitArtifact(
-    buildArtifactPayload({
-      artifactId: artifact.id,
-      title: params.title,
-      status: 'building'
-    })
-  )
+  // Only emit status (drives workspace panel) — not a card.
+  // The inline card is emitted once at the final state (ready/failed)
+  // to avoid duplicate cards in chat.
   ctx.emitArtifactStatus(
     buildStatusPayload({
       artifactId: artifact.id,

@@ -36,6 +36,15 @@ export const updateWebappArtifactTool = tool({
       }
     }
 
-    return orchestrateUpdate(params, artifactCtx)
+    try {
+      return await orchestrateUpdate(params, artifactCtx)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('[updateWebappArtifact]', message)
+      return {
+        success: false,
+        error: `Artifact update failed: ${message}`
+      }
+    }
   }
 })

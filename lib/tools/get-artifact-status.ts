@@ -22,6 +22,15 @@ export const getArtifactStatusTool = tool({
       }
     }
 
-    return queryArtifactStatus(params, artifactCtx)
+    try {
+      return await queryArtifactStatus(params, artifactCtx)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('[getArtifactStatus]', message)
+      return {
+        success: false,
+        error: `Artifact status check failed: ${message}`
+      }
+    }
   }
 })

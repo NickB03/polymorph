@@ -82,6 +82,34 @@ Custom React hooks in `hooks/`: `use-activity-feed`, `use-auth-check`, `use-cont
 
 ## Code Conventions
 
+### Skill Invocation Policy (Claude Code)
+
+To keep quality consistent, Claude Code should automatically invoke the following project-scoped skills based on task type:
+
+**Important UX rule:** Users should not need to say the word "skill" or mention skill names. Infer intent from normal requests and invoke relevant skills automatically.
+
+- **Bug, test failure, unexpected behavior** → `systematic-debugging`
+- **Multi-step feature, refactor, migration** → `writing-plans` (before implementation)
+- **Before claiming done / opening PR** → `verification-before-completion`
+- **When preparing for review** → `requesting-code-review`
+- **When applying review feedback** → `receiving-code-review`
+- **UI behavior changes / interaction regressions** → `webapp-testing`
+- **E2B sandbox/artifact runtime issues** (preview iframe, sandbox lifecycle, env propagation, build/preview failures) → `e2b-sandbox`
+- **Supabase/Postgres schema/query/perf changes** → `supabase-postgres-best-practices`
+- **Next.js App Router architecture decisions** → `nextjs-app-router-patterns`
+
+#### Precedence rules
+
+1. Prefer **process/quality skills first** (debugging/planning/verification/review).
+2. Then apply **domain skills** (Next.js, Supabase, testing) for implementation details.
+3. If multiple skills could apply, invoke all relevant ones in this order:
+   `systematic-debugging` → `writing-plans` → domain skill(s) (including `e2b-sandbox` when artifacts/sandbox are involved) → `verification-before-completion` → review skill(s).
+
+#### Prompting hint for reliable auto-selection
+
+When tasks are ambiguous, begin with:
+"Select and invoke any relevant skills before answering, then proceed."
+
 ### Quality Standards
 
 - **Fix every warning and error you encounter.** Never dismiss issues as "pre-existing," "unrelated to our changes," or "from a previous session." If you see it, you own it. Either fix it immediately or explicitly flag it to the user as something that needs attention — do not silently pass over it.

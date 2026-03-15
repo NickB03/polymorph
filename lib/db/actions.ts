@@ -18,6 +18,7 @@ import {
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 import { incrementDbOperationCount } from '@/lib/utils/perf-tracking'
 
+import { GUEST_USER_ID } from './constants'
 import type { Chat, Message } from './schema'
 import {
   artifactRevisions,
@@ -31,6 +32,32 @@ import {
 import type { TxInstance } from './with-rls'
 import { withOptionalRLS, withRLS } from './with-rls'
 import { db } from '.'
+
+/**
+ * Ensure a chat record exists for the given ID.
+ *
+ * Used by the artifact flow to satisfy the foreign key constraint
+ * on artifacts.chat_id for guest/ephemeral sessions where no chat
+ * row was previously created.
+ *
+ * Uses INSERT ... ON CONFLICT DO NOTHING so it is safe to call
+ * concurrently or repeatedly for the same chatId.
+ */
+export async function ensureChatRecord(input: {
+  id: string
+  title: string
+  visibility?: 'public' | 'private'
+}): Promise<void> {
+  await db
+    .insert(chats)
+    .values({
+      id: input.id,
+      title: input.title,
+      userId: GUEST_USER_ID,
+      visibility: input.visibility ?? 'private'
+    })
+    .onConflictDoNothing({ target: chats.id })
+}
 
 /**
  * Create a new chat

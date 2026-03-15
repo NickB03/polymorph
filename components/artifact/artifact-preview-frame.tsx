@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
 import { AlertCircle, Loader2 } from 'lucide-react'
 
 import { useArtifact } from './artifact-context'
@@ -8,6 +10,11 @@ export function ArtifactPreviewFrame() {
   const { state } = useArtifact()
   const { workspace } = state
   const { previewUrl, status } = workspace
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (previewUrl) setIsLoading(true)
+  }, [previewUrl])
 
   const isFailed = status === 'failed'
   const isExpired = status === 'expired'
@@ -40,11 +47,20 @@ export function ArtifactPreviewFrame() {
   }
 
   return (
-    <iframe
-      src={previewUrl}
-      className="w-full h-full border-0"
-      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-      title={workspace.title || 'Artifact preview'}
-    />
+    <div className="relative w-full h-full">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      )}
+      <iframe
+        key={previewUrl}
+        src={previewUrl}
+        className="w-full h-full border-0"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        title={workspace.title || 'Artifact preview'}
+        onLoad={() => setIsLoading(false)}
+      />
+    </div>
   )
 }

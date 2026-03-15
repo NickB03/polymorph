@@ -34,6 +34,15 @@ export const createWebappArtifactTool = tool({
       }
     }
 
-    return orchestrateCreate(params, artifactCtx)
+    try {
+      return await orchestrateCreate(params, artifactCtx)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('[createWebappArtifact]', message)
+      return {
+        success: false,
+        error: `Artifact creation failed: ${message}`
+      }
+    }
   }
 })

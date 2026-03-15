@@ -25,6 +25,15 @@ export const restartArtifactPreviewTool = tool({
       }
     }
 
-    return orchestrateRestart(params, artifactCtx)
+    try {
+      return await orchestrateRestart(params, artifactCtx)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('[restartArtifactPreview]', message)
+      return {
+        success: false,
+        error: `Artifact preview restart failed: ${message}`
+      }
+    }
   }
 })
