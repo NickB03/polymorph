@@ -45,5 +45,6 @@ next-env.d.ts
 # AI tool instruction files (non-Claude)
 AGENTS.md
 
-# Claude Code local settings (personal preferences)
+# Claude Code local/ephemeral files
 .claude/settings.local.json
+skills-lock.json
