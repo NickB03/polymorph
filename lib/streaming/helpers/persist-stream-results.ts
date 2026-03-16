@@ -1,3 +1,5 @@
+import { revalidateTag } from 'next/cache'
+
 import { createChatWithFirstMessage, upsertMessage } from '@/lib/actions/chat'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import { updateChatTitle } from '@/lib/db/actions'
@@ -105,6 +107,9 @@ export async function persistStreamResults(
   if (chatTitle && chatTitle !== DEFAULT_CHAT_TITLE) {
     try {
       await updateChatTitle(chatId, chatTitle, userId)
+      // updateChatTitle is a raw DB call that bypasses the action wrapper,
+      // so it never invalidates the cache on its own. Do it here.
+      revalidateTag(`chat-${chatId}`, 'max')
     } catch (error) {
       console.error('Error updating title:', error)
       // Don't throw here as title update is not critical

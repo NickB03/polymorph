@@ -20,6 +20,7 @@ import { isTracingEnabled } from '@/lib/utils/telemetry'
 
 import { loadChat } from '../actions/chat'
 import { generateChatTitle } from '../agents/title-generator'
+import { loadChatWithMessages } from '../db/actions'
 import { maybeTruncateMessages } from '../utils/context-window'
 import { getTextFromParts } from '../utils/message-utils'
 import { perfLog, perfTime } from '../utils/perf-logging'
@@ -63,9 +64,19 @@ export async function createChatStreamResponse(
   let initialChat = null
   if (!isNewChat) {
     const loadChatStart = performance.now()
-    // Fetch chat data for authorization check and cache it
-    initialChat = await loadChat(chatId, userId)
-    perfTime('loadChat completed', loadChatStart)
+    if (toolResult) {
+      // Tool-result continuations bypass the unstable_cache layer to avoid a
+      // race where a premature revalidateTag re-fetches stale data before
+      // onFinish has persisted the latest assistant message.
+      initialChat = await loadChatWithMessages(chatId, userId)
+      perfTime(
+        'loadChatWithMessages (direct DB, tool-result) completed',
+        loadChatStart
+      )
+    } else {
+      initialChat = await loadChat(chatId, userId)
+      perfTime('loadChat (cached) completed', loadChatStart)
+    }
 
     // Authorization check: if chat exists, it must belong to the user
     if (initialChat && initialChat.userId !== userId) {

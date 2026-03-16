@@ -1,4 +1,3 @@
-import { revalidateTag } from 'next/cache'
 import { cookies } from 'next/headers'
 
 import { loadChat } from '@/lib/actions/chat'
@@ -260,12 +259,6 @@ export async function POST(req: Request) {
         console.error('Analytics tracking failed:', error)
       }
     })()
-
-    // Invalidate the cache for this specific chat after creating the response
-    // This ensures the next load will get fresh data
-    if (chatId && !isGuest) {
-      revalidateTag(`chat-${chatId}`, 'max')
-    }
 
     const totalTime = performance.now() - startTime
     perfLog(`Total API route time: ${totalTime.toFixed(2)}ms`)
