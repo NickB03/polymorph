@@ -1,4 +1,5 @@
 import { upsertMessage } from '@/lib/actions/chat'
+import { loadChatWithMessages } from '@/lib/db/actions'
 import type { UIMessage } from '@/lib/types/ai'
 import { isInteractiveToolPart } from '@/lib/types/dynamic-tools'
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
@@ -37,8 +38,8 @@ export async function prepareToolResultMessages(
     throw new ToolResultValidationError('Chat not found or has no messages')
   }
 
-  const messages = initialChat.messages
-  const lastMessage = messages[messages.length - 1]
+  let messages = initialChat.messages
+  let lastMessage = messages[messages.length - 1]
 
   if (lastMessage.role !== 'assistant') {
     throw new ToolResultValidationError(
@@ -51,15 +52,41 @@ export async function prepareToolResultMessages(
   }
 
   // Find the matching interactive tool part by toolCallId
-  const matchingPartIndex = lastMessage.parts.findIndex(
+  let matchingPartIndex = lastMessage.parts.findIndex(
     p =>
       'toolCallId' in p &&
       (p as { toolCallId: string }).toolCallId === toolResult.toolCallId
   )
 
+  // Defense in depth: if not found, retry once from DB after a short delay.
+  // This handles edge cases where onFinish persistence is still in-flight
+  // (e.g. the cached loadChat returned stale data).
   if (matchingPartIndex === -1) {
-    throw new ToolResultValidationError(
-      `No tool part found with toolCallId: ${toolResult.toolCallId}`
+    perfLog(
+      `[tool-result] toolCallId ${toolResult.toolCallId} not found — retrying from DB after 200ms`
+    )
+    await new Promise(resolve => setTimeout(resolve, 200))
+
+    const freshChat = await loadChatWithMessages(chatId, userId)
+    if (freshChat && freshChat.messages.length > 0) {
+      messages = freshChat.messages
+      lastMessage = messages[messages.length - 1]
+      if (lastMessage.role === 'assistant' && lastMessage.parts) {
+        matchingPartIndex = lastMessage.parts.findIndex(
+          p =>
+            'toolCallId' in p &&
+            (p as { toolCallId: string }).toolCallId === toolResult.toolCallId
+        )
+      }
+    }
+
+    if (matchingPartIndex === -1) {
+      throw new ToolResultValidationError(
+        `No tool part found with toolCallId: ${toolResult.toolCallId} (after DB retry)`
+      )
+    }
+    perfLog(
+      `[tool-result] toolCallId ${toolResult.toolCallId} found after DB retry`
     )
   }
 

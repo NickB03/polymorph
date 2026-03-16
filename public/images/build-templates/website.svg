@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0f4ff"/>
+      <stop offset="100%" stop-color="#e0e7ff"/>
+    </linearGradient>
+  </defs>
+  <rect fill="url(#bg)" width="600" height="400" rx="12"/>
+  <!-- Nav bar -->
+  <rect fill="#ffffff" x="0" y="0" width="600" height="48" rx="12" opacity="0.7"/>
+  <rect fill="#c7d2fe" x="20" y="14" width="72" height="20" rx="4"/>
+  <rect fill="#e0e7ff" x="380" y="14" width="48" height="20" rx="4"/>
+  <rect fill="#e0e7ff" x="440" y="14" width="48" height="20" rx="4"/>
+  <rect fill="#6366f1" x="504" y="10" width="76" height="28" rx="14"/>
+  <!-- Hero -->
+  <rect fill="#c7d2fe" x="120" y="90" width="360" height="28" rx="6"/>
+  <rect fill="#ddd6fe" x="160" y="130" width="280" height="16" rx="4"/>
+  <rect fill="#ddd6fe" x="190" y="154" width="220" height="16" rx="4"/>
+  <rect fill="#6366f1" x="230" y="190" width="140" height="40" rx="20"/>
+  <!-- Feature cards -->
+  <rect fill="#ffffff" x="32" y="268" width="164" height="108" rx="10" opacity="0.8"/>
+  <rect fill="#c7d2fe" x="52" y="288" width="32" height="32" rx="8"/>
+  <rect fill="#e0e7ff" x="52" y="330" width="120" height="10" rx="3"/>
+  <rect fill="#e0e7ff" x="52" y="348" width="90" height="10" rx="3"/>
+  <rect fill="#ffffff" x="218" y="268" width="164" height="108" rx="10" opacity="0.8"/>
+  <rect fill="#c7d2fe" x="238" y="288" width="32" height="32" rx="8"/>
+  <rect fill="#e0e7ff" x="238" y="330" width="120" height="10" rx="3"/>
+  <rect fill="#e0e7ff" x="238" y="348" width="90" height="10" rx="3"/>
+  <rect fill="#ffffff" x="404" y="268" width="164" height="108" rx="10" opacity="0.8"/>
+  <rect fill="#c7d2fe" x="424" y="288" width="32" height="32" rx="8"/>
+  <rect fill="#e0e7ff" x="424" y="330" width="120" height="10" rx="3"/>
+  <rect fill="#e0e7ff" x="424" y="348" width="90" height="10" rx="3"/>
+</svg>
