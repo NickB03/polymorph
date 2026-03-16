@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 
-import { AlertTriangle, RotateCcw, Sparkles } from 'lucide-react'
+import { AlertTriangle, Hammer, RotateCcw, Sparkles } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
@@ -19,6 +19,8 @@ export function ArtifactErrorPanel() {
   const { workspace } = state
   const { execute: handleRetry, isPending: isRetrying } =
     useArtifactAction('retry')
+  const { execute: handleRebuild, isPending: isRebuilding } =
+    useArtifactAction('rebuild')
 
   const errorLogs = workspaceLogs.filter(l => l.level === 'error')
   const recentLogs = workspaceLogs.slice(-10)
@@ -74,13 +76,29 @@ export function ArtifactErrorPanel() {
           variant="outline"
           size="sm"
           onClick={handleRetry}
-          disabled={isRetrying || !workspace.artifactId}
+          disabled={isRetrying || isRebuilding || !workspace.artifactId}
         >
           <RotateCcw
             className={cn('h-3.5 w-3.5 mr-1.5', isRetrying && 'animate-spin')}
           />
           Retry
         </Button>
+        {workspace.canRebuild && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRebuild}
+            disabled={isRebuilding || isRetrying || !workspace.artifactId}
+          >
+            <Hammer
+              className={cn(
+                'h-3.5 w-3.5 mr-1.5',
+                isRebuilding && 'animate-spin'
+              )}
+            />
+            Rebuild
+          </Button>
+        )}
         {requestAiFix && (
           <Button variant="default" size="sm" onClick={handleAskAiFix}>
             <Sparkles className="h-3.5 w-3.5 mr-1.5" />

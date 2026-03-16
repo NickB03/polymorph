@@ -3,7 +3,8 @@ import {
   BANNED_IMPORT_PATTERNS,
   isAllowedSourcePath,
   isTemplateOwnedFile,
-  PREINSTALLED_PACKAGES
+  PREINSTALLED_PACKAGES,
+  TEMPLATE_UI_COMPONENTS
 } from '../template-manifest'
 
 import { normalizeImports } from './normalize-imports'
@@ -124,7 +125,27 @@ export function validateArtifactSource(input: {
         line,
         importPath
       })
-    } else if (!isAllowedImport(importPath)) {
+      continue
+    }
+
+    // Specific enforcement for @/components/ui/* — only template-installed
+    // components are allowed. This catches phantom component imports early
+    // with a helpful error listing what's actually available.
+    const uiMatch = importPath.match(/^@\/components\/ui\/(.+)$/)
+    if (uiMatch) {
+      const name = uiMatch[1]
+      if (!TEMPLATE_UI_COMPONENTS.has(name)) {
+        errors.push({
+          code: 'UNSUPPORTED_PACKAGE',
+          message: `UI component "${name}" is not available. Installed components: ${[...TEMPLATE_UI_COMPONENTS].join(', ')}`,
+          line,
+          importPath
+        })
+      }
+      continue
+    }
+
+    if (!isAllowedImport(importPath)) {
       errors.push({
         code: 'UNSUPPORTED_PACKAGE',
         message: `Package "${importPath}" is not preinstalled in the artifact template`,

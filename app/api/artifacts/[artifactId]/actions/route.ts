@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server'
 
+import { Sandbox } from 'e2b'
+
 import {
   getTtlMs,
   signGuestArtifactToken,
@@ -187,6 +189,21 @@ export async function POST(
         ...(guestArtifactToken ? { guestArtifactToken } : {})
       })
     } catch (error) {
+      // Sandbox gone — return 410 so the frontend can show the rebuild UI
+      if (
+        error instanceof Error &&
+        (error.name === 'NotFoundError' ||
+          (error.message.toLowerCase().includes('sandbox') &&
+            (error.message.toLowerCase().includes('not found') ||
+              error.message.toLowerCase().includes('not running') ||
+              error.message.toLowerCase().includes("wasn't found"))))
+      ) {
+        return jsonError(
+          'SANDBOX_EXPIRED',
+          'Sandbox has expired — rebuild to continue',
+          410
+        )
+      }
       console.error('Failed to restart artifact preview:', error)
       return jsonError('RESTART_FAILED', 'Failed to restart preview', 500)
     }
@@ -205,6 +222,55 @@ export async function POST(
     isGuest ? null : userId
   )
   const canRebuild = latestRevision?.sourceFiles != null
+
+  // Liveness probe: verify the sandbox is still alive when status looks ready.
+  // Cost: ~100ms single API call. Benefit: user sees "expired + rebuild"
+  // immediately instead of waiting for the iframe ceiling timeout.
+  const sandboxId = session?.sandboxId
+  if (
+    sandboxId &&
+    session?.status === 'ready' &&
+    artifact.status !== 'expired'
+  ) {
+    try {
+      await Sandbox.connect(sandboxId)
+    } catch (probeError) {
+      if (
+        probeError instanceof Error &&
+        (probeError.name === 'NotFoundError' ||
+          (probeError.message.toLowerCase().includes('sandbox') &&
+            (probeError.message.toLowerCase().includes('not found') ||
+              probeError.message.toLowerCase().includes('not running') ||
+              probeError.message.toLowerCase().includes("wasn't found"))))
+      ) {
+        await upsertArtifactRuntimeSession(
+          {
+            id: session.id,
+            artifactId: artifact.id,
+            provider: 'e2b',
+            sandboxId,
+            previewUrl: session.previewUrl,
+            status: 'expired',
+            startedAt: session.startedAt,
+            expiresAt: session.expiresAt,
+            lastHeartbeatAt: new Date()
+          },
+          isGuest ? null : userId
+        )
+
+        return Response.json({
+          id: artifact.id,
+          title: artifact.title,
+          status: 'expired',
+          previewUrl: null,
+          revisionId: artifact.currentRevisionId,
+          canRebuild,
+          ...(guestArtifactToken ? { guestArtifactToken } : {})
+        })
+      }
+      // Non-sandbox errors (network blip, etc.) — fall through to normal response
+    }
+  }
 
   return Response.json({
     id: artifact.id,

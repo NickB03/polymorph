@@ -317,15 +317,16 @@ export function Chat({
       // Auto-continue when a displayOptionList has been resolved with a selection.
       // Use a ref to track which toolCallIds have already triggered auto-send
       // to prevent re-triggering on subsequent evaluations.
+      // Find the first resolved part that hasn't already triggered auto-send
+      // (not just the first resolved part — earlier ones may already be fired).
       const resolvedOptionPart = parts.find(
         (p: any) =>
           isInteractiveToolPart(p) &&
           'state' in p &&
-          p.state === 'output-available'
+          p.state === 'output-available' &&
+          !autoSendFiredRef.current.has(p.toolCallId)
       ) as { toolCallId: string } | undefined
       if (!resolvedOptionPart) return false
-      if (autoSendFiredRef.current.has(resolvedOptionPart.toolCallId))
-        return false
       autoSendFiredRef.current.add(resolvedOptionPart.toolCallId)
       return true
     },

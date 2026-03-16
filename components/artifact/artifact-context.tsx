@@ -10,6 +10,7 @@ import {
   useRef,
   useState
 } from 'react'
+import { usePathname } from 'next/navigation'
 
 import type { Part } from '@/lib/types/ai'
 import type {
@@ -23,7 +24,7 @@ import { useSidebar } from '../ui/sidebar'
 // Animation duration should match CSS transition duration
 const ANIMATION_DURATION = 300
 
-export type WorkspaceTab = 'preview' | 'code' | 'logs'
+export type WorkspaceTab = 'preview' | 'code'
 
 export interface ArtifactWorkspaceState {
   artifactId: string | null
@@ -132,6 +133,20 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
   const isInspectorOpen =
     state.inspectedPart !== null && !state.workspace.isOpen
 
+  // Auto-close workspace and inspector when the user navigates away.
+  // ArtifactProvider lives in the root layout so its state survives
+  // route transitions — this effect ensures stale panels don't linger.
+  const pathname = usePathname()
+  const prevPathRef = useRef(pathname)
+  useEffect(() => {
+    if (prevPathRef.current !== pathname) {
+      prevPathRef.current = pathname
+      dispatch({ type: 'CLOSE_WORKSPACE' })
+      dispatch({ type: 'CLEAR_INSPECTOR' })
+      setWorkspaceLogs([])
+    }
+  }, [pathname])
+
   const close = useCallback(() => {
     dispatch({ type: 'CLOSE_INSPECTOR' })
     // Keep content for animation purposes, clear after transition
@@ -215,6 +230,15 @@ export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
   const [isPending, setIsPending] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
+  // Use refs for values read inside the callback so they don't
+  // destabilize the callback identity. Without this, `workspace`
+  // (a new object on every dispatch) causes `execute` to regenerate,
+  // which triggers a probe-refresh loop in ArtifactPreviewFrame.
+  const workspaceRef = useRef(workspace)
+  workspaceRef.current = workspace
+  const isPendingRef = useRef(isPending)
+  isPendingRef.current = isPending
+
   // Abort any in-flight request on unmount
   useEffect(() => {
     return () => {
@@ -223,7 +247,8 @@ export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
   }, [])
 
   const execute = useCallback(async () => {
-    if (!workspace.artifactId || isPending) return
+    const ws = workspaceRef.current
+    if (!ws.artifactId || isPendingRef.current) return
 
     // Cancel any previous in-flight request to prevent stale responses
     abortRef.current?.abort()
@@ -232,29 +257,25 @@ export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
 
     setIsPending(true)
     try {
-      const res = await fetch(
-        `/api/artifacts/${workspace.artifactId}/actions`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action,
-            guestArtifactToken: workspace.guestArtifactToken ?? undefined
-          }),
-          signal: controller.signal
-        }
-      )
+      const res = await fetch(`/api/artifacts/${ws.artifactId}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          guestArtifactToken: ws.guestArtifactToken ?? undefined
+        }),
+        signal: controller.signal
+      })
       if (controller.signal.aborted) return
       if (res.ok) {
         const data = await res.json()
         if (controller.signal.aborted) return
         updateWorkspace({
-          status: data.status ?? workspace.status,
-          previewUrl: data.previewUrl ?? workspace.previewUrl,
-          revisionId: data.revisionId ?? workspace.revisionId,
-          title: data.title ?? workspace.title,
-          guestArtifactToken:
-            data.guestArtifactToken ?? workspace.guestArtifactToken,
+          status: data.status ?? ws.status,
+          previewUrl: data.previewUrl ?? ws.previewUrl,
+          revisionId: data.revisionId ?? ws.revisionId,
+          title: data.title ?? ws.title,
+          guestArtifactToken: data.guestArtifactToken ?? ws.guestArtifactToken,
           ...(data.canRebuild !== undefined
             ? { canRebuild: data.canRebuild }
             : {})
@@ -263,8 +284,12 @@ export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
         try {
           const err = await res.json()
           if (controller.signal.aborted) return
-          if (err.code === 'TOKEN_EXPIRED') {
-            updateWorkspace({ status: 'expired', previewUrl: null })
+          if (err.code === 'TOKEN_EXPIRED' || err.code === 'SANDBOX_EXPIRED') {
+            updateWorkspace({
+              status: 'expired',
+              previewUrl: null,
+              canRebuild: true
+            })
           }
         } catch {
           // Response wasn't JSON — ignore
@@ -278,7 +303,7 @@ export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
         setIsPending(false)
       }
     }
-  }, [workspace, isPending, updateWorkspace, action])
+  }, [updateWorkspace, action])
 
   return { execute, isPending }
 }

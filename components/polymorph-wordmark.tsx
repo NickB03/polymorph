@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 const SUFFIX_WORDS = [
+  'morph',
   'learn',
   'create',
   'discover',
@@ -13,7 +14,7 @@ const SUFFIX_WORDS = [
 ] as const
 
 const SUFFIX_MAX_LEN = Math.max(...SUFFIX_WORDS.map(w => w.length))
-const FINAL_WORD = SUFFIX_WORDS[SUFFIX_WORDS.length - 1]
+const FINAL_WORD = 'morph'
 
 function useReducedMotion() {
   const [reduced, setReduced] = useState(false)
@@ -27,13 +28,7 @@ function useReducedMotion() {
   return reduced
 }
 
-function getSuffixHoldDelay(index: number, total: number): number {
-  const center = (total - 1) / 2
-  const distFromCenter = Math.abs(index - center) / center
-  return 600 + distFromCenter * distFromCenter * 500
-}
-
-function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
+function PolySuffixFluid({ staggerMs = 70 }: { staggerMs?: number }) {
   const reducedMotion = useReducedMotion()
   const [word, setWord] = useState('')
   const [wordKey, setWordKey] = useState(0)
@@ -41,8 +36,8 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
   const [wordIndex, setWordIndex] = useState(-1)
   const [settled, setSettled] = useState(false)
 
-  const enterDuration = 280
-  const exitDuration = 150
+  const enterDuration = 50
+  const exitDuration = 40
 
   // In reduced-motion mode, skip animation and show final word immediately
   useEffect(() => {
@@ -62,20 +57,21 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
       return
     }
 
+    // First word types in immediately, others hold briefly before transitioning
     const holdDelay =
       wordIndex === -1
-        ? 800
-        : Math.max(
-            enterDuration + staggerMs * SUFFIX_MAX_LEN + 100,
-            getSuffixHoldDelay(wordIndex, SUFFIX_WORDS.length)
-          )
+        ? 100
+        : enterDuration +
+          staggerMs * (SUFFIX_WORDS[wordIndex] as string).length +
+          400
 
     const timeout = setTimeout(() => {
       const target = SUFFIX_WORDS[nextIdx] as string
 
       if (wordIndex >= 0) {
         setIsExiting(true)
-        const totalExit = exitDuration + staggerMs * SUFFIX_MAX_LEN
+        const currentWord = SUFFIX_WORDS[wordIndex] as string
+        const totalExit = exitDuration + staggerMs * currentWord.length
         setTimeout(() => {
           setIsExiting(false)
           setWord(target)
@@ -105,9 +101,12 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
         </span>
         <span style={{ minWidth: `${SUFFIX_MAX_LEN}ch` }}>
           {word.split('').map((char, i) => {
-            const isFinal = word === FINAL_WORD
-            const enter = isFinal ? 650 : enterDuration
-            const stagger = isFinal ? staggerMs * 2.5 : staggerMs
+            const isFinal =
+              word === FINAL_WORD && wordIndex === SUFFIX_WORDS.length - 1
+            const enter = isFinal ? 60 : enterDuration
+            const entryStagger = isFinal ? staggerMs * 1.2 : staggerMs
+            // Exit in reverse order (backspace: last char disappears first)
+            const exitDelay = staggerMs * (word.length - 1 - i)
             return (
               <span
                 key={`${wordKey}-${i}`}
@@ -116,9 +115,9 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
                   animation: reducedMotion
                     ? undefined
                     : isExiting
-                      ? `morphFluidExit ${exitDuration}ms ease-in ${staggerMs * i}ms forwards`
+                      ? `morphFluidExit ${exitDuration}ms linear ${exitDelay}ms forwards`
                       : word
-                        ? `morphFluidEnter ${enter}ms ease-out ${stagger * i}ms both`
+                        ? `morphFluidEnter ${enter}ms linear ${entryStagger * i}ms both`
                         : undefined
                 }}
               >
@@ -135,7 +134,7 @@ function PolySuffixFluid({ staggerMs = 30 }: { staggerMs?: number }) {
 export function PolymorphWordmark({ className }: { className?: string }) {
   return (
     <span className={cn('text-[2.5rem]', className)}>
-      <PolySuffixFluid staggerMs={30} />
+      <PolySuffixFluid staggerMs={70} />
     </span>
   )
 }

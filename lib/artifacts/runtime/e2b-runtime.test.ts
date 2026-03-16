@@ -20,7 +20,8 @@ vi.mock('e2b', () => {
     Sandbox: {
       create: vi.fn().mockResolvedValue(mockSandboxInstance),
       connect: vi.fn().mockResolvedValue(mockSandboxInstance),
-      kill: vi.fn().mockResolvedValue(undefined)
+      kill: vi.fn().mockResolvedValue(undefined),
+      setTimeout: vi.fn().mockResolvedValue(undefined)
     },
     __mockInstance: mockSandboxInstance,
     __mockCommandsRun: mockCommandsRun,
@@ -103,7 +104,8 @@ describe('E2B Runtime Adapter', () => {
       const result = await runtime.createSession({ templateId: 'my-template' })
 
       expect(Sandbox.create).toHaveBeenCalledWith('my-template', {
-        timeoutMs: 300_000
+        timeoutMs: 300_000,
+        lifecycle: { onTimeout: 'pause' }
       })
       expect(result.sandboxId).toBe('sandbox-456')
       expect(result.sandboxUrl).toContain('sandbox-456')
@@ -116,7 +118,8 @@ describe('E2B Runtime Adapter', () => {
       await runtime.createSession({})
 
       expect(Sandbox.create).toHaveBeenCalledWith('base', {
-        timeoutMs: 300_000
+        timeoutMs: 300_000,
+        lifecycle: { onTimeout: 'pause' }
       })
     })
 
@@ -127,7 +130,8 @@ describe('E2B Runtime Adapter', () => {
       await runtime.createSession({ timeoutSeconds: 60 })
 
       expect(Sandbox.create).toHaveBeenCalledWith('base', {
-        timeoutMs: 60_000
+        timeoutMs: 60_000,
+        lifecycle: { onTimeout: 'pause' }
       })
     })
 
@@ -167,7 +171,7 @@ describe('E2B Runtime Adapter', () => {
     })
 
     it('applySourceUpdate delegates to files.write with same contract', async () => {
-      const { filesWrite } = await getE2BMocks()
+      const { Sandbox, filesWrite } = await getE2BMocks()
 
       const runtime = createE2BRuntime()
       await runtime.applySourceUpdate({
@@ -181,6 +185,7 @@ describe('E2B Runtime Adapter', () => {
           data: 'updated content'
         }
       ])
+      expect(Sandbox.setTimeout).toHaveBeenCalledWith('sandbox-123', 300_000)
     })
   })
 
@@ -245,7 +250,7 @@ describe('E2B Runtime Adapter', () => {
     })
 
     it('startPreview returns immediately when port is already listening (custom template)', async () => {
-      const { commandsRun } = await getE2BMocks()
+      const { Sandbox, commandsRun } = await getE2BMocks()
 
       // Pre-running server check succeeds immediately
       commandsRun.mockResolvedValueOnce({
@@ -268,6 +273,7 @@ describe('E2B Runtime Adapter', () => {
         expect.stringContaining('curl'),
         { requestTimeoutMs: 5_000 }
       )
+      expect(Sandbox.setTimeout).toHaveBeenCalledWith('sandbox-123', 300_000)
     })
 
     it('startPreview falls back to starting dev server when port is not listening', async () => {
@@ -320,7 +326,7 @@ describe('E2B Runtime Adapter', () => {
     })
 
     it('restartPreview kills existing process, starts new one, and polls port', async () => {
-      const { commandsRun } = await getE2BMocks()
+      const { Sandbox, commandsRun } = await getE2BMocks()
 
       // Kill, start, port check
       commandsRun
@@ -337,6 +343,7 @@ describe('E2B Runtime Adapter', () => {
       expect(result.previewUrl).toContain('5173')
       expect(result.status).toBe('ready')
       expect(commandsRun).toHaveBeenCalledTimes(3)
+      expect(Sandbox.setTimeout).toHaveBeenCalledWith('sandbox-123', 300_000)
     })
   })
 

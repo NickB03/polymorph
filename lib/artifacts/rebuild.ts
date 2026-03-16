@@ -58,6 +58,13 @@ export async function rebuildArtifactFromRevision(
     }
   }
 
+  // Preserve the existing session's expiresAt so guest tokens don't get
+  // a fresh TTL decoupled from the actual sandbox lifetime.
+  const existingSession = await dbActions.loadArtifactRuntimeSession(
+    input.artifactId,
+    input.userId
+  )
+
   const runtime = createE2BRuntime()
   let sandboxId: string | null = null
 
@@ -96,6 +103,7 @@ export async function rebuildArtifactFromRevision(
         previewUrl: preview.previewUrl,
         status: 'ready',
         startedAt: new Date(),
+        expiresAt: existingSession?.expiresAt ?? undefined,
         lastHeartbeatAt: new Date()
       },
       input.userId

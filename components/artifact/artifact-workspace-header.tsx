@@ -7,11 +7,9 @@ import {
   Code2,
   Copy,
   Eye,
-  FileCode,
   Minimize2,
   RefreshCw,
   RotateCcw,
-  ScrollText,
   Sparkles
 } from 'lucide-react'
 
@@ -103,8 +101,40 @@ export function ArtifactWorkspaceHeader({
   return (
     <TooltipProvider>
       <div className="flex items-center justify-between px-3 py-2 gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <Code2 size={16} className="shrink-0 text-muted-foreground" />
+        <div className="flex items-center gap-2.5 min-w-0">
+          {/* Tab switcher */}
+          <div
+            role="tablist"
+            className="flex items-center shrink-0 rounded-full bg-muted p-0.5"
+          >
+            <button
+              role="tab"
+              onClick={() => onTabChange('preview')}
+              aria-label="Preview"
+              aria-selected={activeTab === 'preview'}
+              className={`flex items-center justify-center h-6 w-6 rounded-full transition-colors ${
+                activeTab === 'preview'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Eye className="h-3.5 w-3.5" />
+            </button>
+            <button
+              role="tab"
+              onClick={() => onTabChange('code')}
+              aria-label="Code"
+              aria-selected={activeTab === 'code'}
+              className={`flex items-center justify-center h-6 w-6 rounded-full transition-colors ${
+                activeTab === 'code'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Code2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
           <span className="text-sm font-medium truncate">
             {workspace.title || 'Artifact'}
           </span>
@@ -112,54 +142,6 @@ export function ArtifactWorkspaceHeader({
         </div>
 
         <div className="flex items-center gap-0.5 shrink-0">
-          {/* Tab switcher */}
-          <div role="tablist" className="flex items-center gap-0.5">
-            <TooltipButton
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              role="tab"
-              onClick={() => onTabChange('preview')}
-              aria-label="Preview"
-              aria-selected={activeTab === 'preview'}
-              tooltipContent="Preview"
-            >
-              <Eye
-                className={`h-3.5 w-3.5 ${activeTab === 'preview' ? 'text-foreground' : 'text-muted-foreground'}`}
-              />
-            </TooltipButton>
-            <TooltipButton
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              role="tab"
-              onClick={() => onTabChange('code')}
-              aria-label="Code"
-              aria-selected={activeTab === 'code'}
-              tooltipContent="Code"
-            >
-              <FileCode
-                className={`h-3.5 w-3.5 ${activeTab === 'code' ? 'text-foreground' : 'text-muted-foreground'}`}
-              />
-            </TooltipButton>
-            <TooltipButton
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              role="tab"
-              onClick={() => onTabChange('logs')}
-              aria-label="Logs"
-              aria-selected={activeTab === 'logs'}
-              tooltipContent="Logs"
-            >
-              <ScrollText
-                className={`h-3.5 w-3.5 ${activeTab === 'logs' ? 'text-foreground' : 'text-muted-foreground'}`}
-              />
-            </TooltipButton>
-          </div>
-
-          <Separator orientation="vertical" className="mx-1 h-4" />
-
           {/* Actions */}
           <TooltipButton
             variant="ghost"

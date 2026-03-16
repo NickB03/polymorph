@@ -253,6 +253,56 @@ describe('validateArtifactSource', () => {
       })
       expect(result.valid).toBe(true)
     })
+
+    it('rejects non-template UI component imports with helpful message', () => {
+      const result = validateArtifactSource({
+        filePath: 'src/App.tsx',
+        content: `import { Checkbox } from '@/components/ui/checkbox'\nexport default function App() { return <Checkbox /> }`
+      })
+      expect(result.valid).toBe(false)
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'UNSUPPORTED_PACKAGE',
+          message: expect.stringContaining('checkbox')
+        })
+      )
+      // Message should list available components
+      expect(result.errors[0].message).toContain('button')
+      expect(result.errors[0].message).toContain('card')
+    })
+
+    it('allows template-installed UI component imports', () => {
+      const result = validateArtifactSource({
+        filePath: 'src/App.tsx',
+        content: `import { Button } from '@/components/ui/button'\nexport default function App() { return <Button /> }`
+      })
+      expect(result.valid).toBe(true)
+    })
+
+    it('rejects shadcn/ui import normalized to non-template component', () => {
+      // shadcn/ui/checkbox gets normalized to @/components/ui/checkbox,
+      // then the validator rejects it because checkbox is not in the template
+      const result = validateArtifactSource({
+        filePath: 'src/App.tsx',
+        content: `import { Checkbox } from 'shadcn/ui/checkbox'\nexport default function App() { return <Checkbox /> }`
+      })
+      expect(result.valid).toBe(false)
+      expect(result.repaired).toBe(true)
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'UNSUPPORTED_PACKAGE',
+          message: expect.stringContaining('checkbox')
+        })
+      )
+    })
+
+    it('still allows other @/ imports like @/lib/utils', () => {
+      const result = validateArtifactSource({
+        filePath: 'src/App.tsx',
+        content: `import { cn } from '@/lib/utils'\nimport { myHelper } from '@/helpers/format'\nexport default function App() { return <div className={cn('foo')} /> }`
+      })
+      expect(result.valid).toBe(true)
+    })
   })
 
   describe('repairable errors', () => {

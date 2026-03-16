@@ -95,7 +95,8 @@ export function createE2BRuntime(): ArtifactRuntime {
     ): Promise<CreateSessionResult> {
       const sandbox = await Sandbox.create(input.templateId || 'base', {
         timeoutMs:
-          (input.timeoutSeconds || 0) * 1000 || DEFAULT_SANDBOX_TIMEOUT_MS
+          (input.timeoutSeconds || 0) * 1000 || DEFAULT_SANDBOX_TIMEOUT_MS,
+        lifecycle: { onTimeout: 'pause' }
       })
 
       return {
@@ -111,6 +112,8 @@ export function createE2BRuntime(): ArtifactRuntime {
 
     async applySourceUpdate(input: ApplySourceUpdateInput): Promise<void> {
       const sandbox = await Sandbox.connect(input.sandboxId)
+      // Reset the timeout so actively-used sandboxes stay alive between turns
+      await Sandbox.setTimeout(input.sandboxId, DEFAULT_SANDBOX_TIMEOUT_MS)
       await sandbox.files.write(toWriteEntries(input.files))
     },
 
@@ -148,6 +151,7 @@ export function createE2BRuntime(): ArtifactRuntime {
       const command = input.startCommand || DEFAULT_DEV_SERVER_COMMAND
 
       const sandbox = await Sandbox.connect(input.sandboxId)
+      await Sandbox.setTimeout(input.sandboxId, DEFAULT_SANDBOX_TIMEOUT_MS)
 
       // With custom templates using setStartCmd, the dev server is already
       // running when the sandbox boots. Check before starting a second one.
@@ -179,6 +183,7 @@ export function createE2BRuntime(): ArtifactRuntime {
       const command = input.startCommand || DEFAULT_DEV_SERVER_COMMAND
 
       const sandbox = await Sandbox.connect(input.sandboxId)
+      await Sandbox.setTimeout(input.sandboxId, DEFAULT_SANDBOX_TIMEOUT_MS)
 
       // Kill any existing process on the dev server port
       await sandbox.commands.run(
