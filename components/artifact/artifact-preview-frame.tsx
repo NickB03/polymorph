@@ -45,9 +45,13 @@ export function ArtifactPreviewFrame() {
       setHasProbed(true)
       lastProbedUrlRef.current = previewUrl
       let cancelled = false
-      probeRefresh().then(() => {
-        if (!cancelled) setProbeSettled(true)
-      })
+      probeRefresh()
+        .then(() => {
+          if (!cancelled) setProbeSettled(true)
+        })
+        .catch(() => {
+          if (!cancelled) setProbeSettled(true)
+        })
       return () => {
         cancelled = true
       }
