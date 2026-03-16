@@ -44,20 +44,8 @@ export function parseWithSchema<T>(
  */
 export function safeParseWithSchema<T>(
   schema: z.ZodType<T>,
-  input: unknown,
-  componentName?: string
+  input: unknown
 ): T | null {
   const res = schema.safeParse(input)
-  if (!res.success) {
-    if (process.env.NODE_ENV === 'development' && componentName) {
-      console.warn(
-        `[${componentName}] Parse failed:`,
-        formatZodError(res.error),
-        '\nInput:',
-        JSON.stringify(input, null, 2)?.slice(0, 500)
-      )
-    }
-    return null
-  }
-  return res.data
+  return res.success ? res.data : null
 }

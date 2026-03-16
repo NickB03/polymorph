@@ -12,10 +12,14 @@ import type { ToolPart, UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 import { cn, isChatLoading } from '@/lib/utils'
 import { syncModelType } from '@/lib/utils/model-type'
 import { syncSearchMode } from '@/lib/utils/search-mode'
+import type { VoiceState } from '@/lib/voice/config'
+import { isVoiceEnabled } from '@/lib/voice/config'
 
 import { useTrendingSuggestions } from '@/hooks/use-trending-suggestions'
 
 import { Button } from './ui/button'
+import { VoiceIndicator } from './voice/voice-indicator'
+import { VoiceModeToggle } from './voice/voice-mode-toggle'
 import { ActionButtons } from './action-buttons'
 import { FileUploadButton } from './file-upload-button'
 import { ModelTypeSelector } from './model-type-selector'
@@ -44,6 +48,11 @@ interface ChatPanelProps {
   setUploadedFiles: React.Dispatch<React.SetStateAction<UploadedFile[]>>
   /** Whether the current session is guest */
   isGuest?: boolean
+  /** Voice conversation state (from useVoiceConversation in Chat) */
+  voiceState?: VoiceState
+  isVoiceActive?: boolean
+  onStartVoice?: () => void
+  onStopVoice?: () => void
 }
 
 export function ChatPanel({
@@ -60,7 +69,11 @@ export function ChatPanel({
   uploadedFiles,
   setUploadedFiles,
   scrollContainerRef,
-  isGuest = false
+  isGuest = false,
+  voiceState,
+  isVoiceActive = false,
+  onStartVoice,
+  onStopVoice
 }: ChatPanelProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const isFirstRender = useRef(true)
@@ -69,6 +82,7 @@ export function ChatPanel({
   const [isInputFocused, setIsInputFocused] = useState(false) // Track input focus
   const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
+  const voiceEnabled = isVoiceEnabled()
 
   const handleCompositionStart = () => setIsComposing(true)
 
@@ -272,6 +286,17 @@ export function ChatPanel({
               <SearchModeSelector />
             </div>
             <div className="flex items-center gap-2">
+              {voiceEnabled && voiceState && voiceState !== 'idle' && (
+                <VoiceIndicator state={voiceState} />
+              )}
+              {voiceEnabled && onStartVoice && onStopVoice && (
+                <VoiceModeToggle
+                  isActive={isVoiceActive}
+                  onStart={onStartVoice}
+                  onStop={onStopVoice}
+                  disabled={isLoading}
+                />
+              )}
               <ModelTypeSelector disabled={false} />
               <Button
                 type={isLoading ? 'button' : 'submit'}

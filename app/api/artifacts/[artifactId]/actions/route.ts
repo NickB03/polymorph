@@ -9,6 +9,7 @@ import {
   verifyGuestArtifactTokenAllowExpired
 } from '@/lib/artifacts/guest-token'
 import { createE2BRuntime } from '@/lib/artifacts/runtime'
+import { isSandboxNotFoundError } from '@/lib/artifacts/runtime/errors'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import {
   loadArtifactById,
@@ -189,15 +190,24 @@ export async function POST(
         ...(guestArtifactToken ? { guestArtifactToken } : {})
       })
     } catch (error) {
-      // Sandbox gone — return 410 so the frontend can show the rebuild UI
-      if (
-        error instanceof Error &&
-        (error.name === 'NotFoundError' ||
-          (error.message.toLowerCase().includes('sandbox') &&
-            (error.message.toLowerCase().includes('not found') ||
-              error.message.toLowerCase().includes('not running') ||
-              error.message.toLowerCase().includes("wasn't found"))))
-      ) {
+      // Sandbox gone — persist expired state, then return 410 for rebuild UI
+      if (isSandboxNotFoundError(error)) {
+        if (session) {
+          await upsertArtifactRuntimeSession(
+            {
+              id: session.id,
+              artifactId: artifact.id,
+              provider: 'e2b',
+              sandboxId: session.sandboxId,
+              previewUrl: null,
+              status: 'expired',
+              startedAt: session.startedAt,
+              expiresAt: session.expiresAt,
+              lastHeartbeatAt: new Date()
+            },
+            isGuest ? null : userId
+          )
+        }
         return jsonError(
           'SANDBOX_EXPIRED',
           'Sandbox has expired — rebuild to continue',
@@ -235,21 +245,14 @@ export async function POST(
     try {
       await Sandbox.connect(sandboxId)
     } catch (probeError) {
-      if (
-        probeError instanceof Error &&
-        (probeError.name === 'NotFoundError' ||
-          (probeError.message.toLowerCase().includes('sandbox') &&
-            (probeError.message.toLowerCase().includes('not found') ||
-              probeError.message.toLowerCase().includes('not running') ||
-              probeError.message.toLowerCase().includes("wasn't found"))))
-      ) {
+      if (isSandboxNotFoundError(probeError)) {
         await upsertArtifactRuntimeSession(
           {
             id: session.id,
             artifactId: artifact.id,
             provider: 'e2b',
             sandboxId,
-            previewUrl: session.previewUrl,
+            previewUrl: null,
             status: 'expired',
             startedAt: session.startedAt,
             expiresAt: session.expiresAt,

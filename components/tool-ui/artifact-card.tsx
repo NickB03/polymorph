@@ -3,8 +3,8 @@
 import { memo } from 'react'
 
 import {
+  AppWindow,
   CheckCircle2,
-  ExternalLink,
   Loader2,
   RotateCw,
   Timer,
@@ -12,8 +12,8 @@ import {
 } from 'lucide-react'
 
 import type { ArtifactData, ArtifactStatus } from '@/lib/types/artifact'
+import { cn } from '@/lib/utils'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
 import { useArtifact } from '@/components/artifact/artifact-context'
@@ -25,36 +25,36 @@ const statusConfig: Record<
   {
     label: string
     icon: typeof Loader2
-    variant: 'default' | 'secondary' | 'destructive' | 'outline'
+    iconColor: string
     animate?: boolean
   }
 > = {
   building: {
     label: 'Building',
     icon: Loader2,
-    variant: 'secondary',
+    iconColor: 'text-blue-600 dark:text-blue-400',
     animate: true
   },
   ready: {
     label: 'Ready',
     icon: CheckCircle2,
-    variant: 'default'
+    iconColor: 'text-emerald-600 dark:text-emerald-400'
   },
   failed: {
     label: 'Failed',
     icon: XCircle,
-    variant: 'destructive'
+    iconColor: 'text-red-600 dark:text-red-400'
   },
   restarting: {
     label: 'Restarting',
     icon: RotateCw,
-    variant: 'secondary',
+    iconColor: 'text-amber-600 dark:text-amber-400',
     animate: true
   },
   expired: {
     label: 'Expired',
     icon: Timer,
-    variant: 'outline'
+    iconColor: 'text-slate-600 dark:text-slate-400'
   }
 }
 
@@ -76,11 +76,11 @@ const ArtifactCardInner = memo(function ArtifactCardInner({
 }) {
   const { openWorkspace, state } = useArtifact()
   const config = statusConfig[data.status]
-  const Icon = config.icon
+  const StatusIcon = config.icon
 
   const isAlreadyOpen = state.workspace.artifactId === data.id
 
-  const handleView = () => {
+  const handleOpen = () => {
     openWorkspace({
       artifactId: data.id,
       title: data.title,
@@ -92,28 +92,37 @@ const ArtifactCardInner = memo(function ArtifactCardInner({
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 text-card-foreground shadow-sm max-w-md">
-      <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
-      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-        <span className="text-sm font-medium truncate">{data.title}</span>
-        <Badge
-          variant={config.variant}
-          className="w-fit text-[10px] px-1.5 py-0"
-        >
-          <Icon
-            className={`mr-1 size-3 ${config.animate ? 'animate-spin' : ''}`}
-          />
-          {config.label}
-        </Badge>
+    <div className="flex w-full items-center gap-3.5 rounded-xl border border-border/60 bg-card px-4 py-3 shadow-xs">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+        <AppWindow className="size-5 text-muted-foreground" />
       </div>
+
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate text-sm font-medium">{data.title}</span>
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          App
+          <span className="text-muted-foreground/40">·</span>
+          <StatusIcon
+            className={cn(
+              'size-3',
+              config.iconColor,
+              config.animate && 'animate-spin'
+            )}
+          />
+          <span className={cn('text-xs', config.iconColor)}>
+            {config.label}
+          </span>
+        </span>
+      </div>
+
       <Button
-        variant="ghost"
+        variant="outline"
         size="sm"
         className="shrink-0 text-xs"
-        onClick={handleView}
+        onClick={handleOpen}
         disabled={isAlreadyOpen}
       >
-        {isAlreadyOpen ? 'Viewing' : 'View'}
+        {isAlreadyOpen ? 'Viewing' : 'Open App'}
       </Button>
     </div>
   )

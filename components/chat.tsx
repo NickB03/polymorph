@@ -28,10 +28,14 @@ import { isValidSearchMode } from '@/lib/types/search'
 import { cn } from '@/lib/utils'
 import { syncModelType } from '@/lib/utils/model-type'
 import { syncSearchMode } from '@/lib/utils/search-mode'
+import { isVoiceEnabled } from '@/lib/voice/config'
 
 import { useFileDropzone } from '@/hooks/use-file-dropzone'
+import { useVoiceConversation } from '@/hooks/use-voice-conversation'
 
 import { useArtifact } from './artifact/artifact-context'
+import { VoiceOverlay } from './voice/voice-overlay'
+import { loadVoiceConfig } from './voice/voice-settings'
 import { ChatMessages } from './chat-messages'
 import { ChatPanel } from './chat-panel'
 import {
@@ -78,6 +82,7 @@ export function Chat({
   // Callback to reset chat state when user clicks "New" button
   const handleNewChat = () => {
     stop() // Cancel any in-flight stream before switching chat
+    stopVoiceRef.current?.() // Stop voice mode (mic, TTS, overlay)
     const newId = generateId()
     setChatId(newId)
     // Clear other chat-related state that persists due to Next.js 16 component caching
@@ -128,6 +133,7 @@ export function Chat({
   // Ref for guestArtifactToken so the transport closure reads the latest value
   const guestArtifactTokenRef = useRef<string | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const stopVoiceRef = useRef<(() => void) | null>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [input, setInput] = useState('')
@@ -472,14 +478,20 @@ export function Chat({
     setInput(e.target.value)
   }
 
-  // Convert messages array to sections array
+  // Convert messages array to sections array, deduplicating by user message ID
+  // to prevent React key collisions during streaming reconciliation.
   const sections = useMemo<ChatSection[]>(() => {
     const result: ChatSection[] = []
     let currentSection: ChatSection | null = null
+    const seenUserIds = new Set<string>()
 
     for (const message of messages) {
       if (message.role === 'user') {
-        // Start a new section when a user message is found
+        // Skip duplicate user messages (can occur during auto-continuations
+        // or error retries when the SDK re-adds messages with existing IDs)
+        if (seenUserIds.has(message.id)) continue
+        seenUserIds.add(message.id)
+
         if (currentSection) {
           result.push(currentSection)
         }
@@ -489,13 +501,10 @@ export function Chat({
           assistantMessages: []
         }
       } else if (currentSection && message.role === 'assistant') {
-        // Add assistant message to the current section
         currentSection.assistantMessages.push(message)
       }
-      // Ignore other role types like 'system' for now
     }
 
-    // Add the last section if exists
     if (currentSection) {
       result.push(currentSection)
     }
@@ -682,6 +691,17 @@ export function Chat({
     ? guestDragHandlers
     : { isDragging, handleDragOver, handleDragLeave, handleDrop }
 
+  // Voice conversation loop (Phase 3) — hook is always called (React rules)
+  // but UI is only rendered when NEXT_PUBLIC_ENABLE_VOICE=true
+  const voiceConversation = useVoiceConversation({
+    sendMessage: msg => sendMessage(msg),
+    status,
+    messages,
+    config: loadVoiceConfig()
+  })
+  stopVoiceRef.current = voiceConversation.stopVoice
+  const voiceEnabled = isVoiceEnabled()
+
   return (
     <div
       className={cn(
@@ -751,7 +771,22 @@ export function Chat({
         setUploadedFiles={setUploadedFiles}
         scrollContainerRef={scrollContainerRef}
         isGuest={isGuest}
+        {...(voiceEnabled
+          ? {
+              voiceState: voiceConversation.voiceState,
+              isVoiceActive: voiceConversation.isVoiceActive,
+              onStartVoice: voiceConversation.startVoice,
+              onStopVoice: voiceConversation.stopVoice
+            }
+          : {})}
       />
+      {voiceEnabled && voiceConversation.isVoiceActive && (
+        <VoiceOverlay
+          state={voiceConversation.voiceState}
+          onStop={voiceConversation.stopVoice}
+          interimTranscript={voiceConversation.interimTranscript}
+        />
+      )}
       <DragOverlay visible={dragHandlers.isDragging} />
       <ErrorModal
         open={errorModal.open}
@@ -760,13 +795,15 @@ export function Chat({
         onRetry={
           errorModal.type !== 'rate-limit'
             ? () => {
-                // Retry the last message if not rate limited
+                // Retry by regenerating from the last user message.
+                // Using regenerate instead of sendMessage avoids re-adding
+                // the same message object (with its existing ID) as a duplicate.
                 if (messages.length > 0) {
                   const lastUserMessage = messages
                     .filter(m => m.role === 'user')
                     .pop()
                   if (lastUserMessage) {
-                    sendMessage(lastUserMessage)
+                    regenerate({ messageId: lastUserMessage.id })
                   }
                 }
               }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { AlertCircle, Loader2, RotateCcw } from 'lucide-react'
 
@@ -30,13 +30,28 @@ export function ArtifactPreviewFrame() {
   // status and canRebuild flag.
   const [hasProbed, setHasProbed] = useState(false)
   const [probeSettled, setProbeSettled] = useState(false)
+  // Track the URL we last probed to prevent infinite loops: if the probe
+  // response returns the same previewUrl, the reset effect fires but we
+  // skip re-probing because the URL hasn't actually changed.
+  const lastProbedUrlRef = useRef<string | null>(null)
   useEffect(() => {
     if (status === 'ready' && previewUrl && !hasProbed) {
+      if (lastProbedUrlRef.current === previewUrl) {
+        // Same URL already probed (probe returned it unchanged) — skip
+        setHasProbed(true)
+        setProbeSettled(true)
+        return
+      }
       setHasProbed(true)
+      lastProbedUrlRef.current = previewUrl
       let cancelled = false
-      probeRefresh().then(() => {
-        if (!cancelled) setProbeSettled(true)
-      })
+      probeRefresh()
+        .then(() => {
+          if (!cancelled) setProbeSettled(true)
+        })
+        .catch(() => {
+          if (!cancelled) setProbeSettled(true)
+        })
       return () => {
         cancelled = true
       }

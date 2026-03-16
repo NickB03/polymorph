@@ -10,8 +10,10 @@ import type { SearchResultItem } from '@/lib/types'
 import type { UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 import { cn, isChatLoading } from '@/lib/utils'
 import { processCitations } from '@/lib/utils/citation'
+import { isVoiceEnabled } from '@/lib/voice/config'
 
 import { Button } from './ui/button'
+import { SpeakButton } from './voice/speak-button'
 import { ChatShare } from './chat-share'
 import { RetryButton } from './retry-button'
 
@@ -116,6 +118,7 @@ export function MessageActions({
       >
         <Copy size={14} />
       </Button>
+      {isVoiceEnabled() && <SpeakButton text={mappedMessage} />}
       {traceId && (
         <>
           {(feedbackScore === null || feedbackScore === 1) && (
