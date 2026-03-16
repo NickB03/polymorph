@@ -82,6 +82,7 @@ export function Chat({
   // Callback to reset chat state when user clicks "New" button
   const handleNewChat = () => {
     stop() // Cancel any in-flight stream before switching chat
+    stopVoiceRef.current?.() // Stop voice mode (mic, TTS, overlay)
     const newId = generateId()
     setChatId(newId)
     // Clear other chat-related state that persists due to Next.js 16 component caching
@@ -132,6 +133,7 @@ export function Chat({
   // Ref for guestArtifactToken so the transport closure reads the latest value
   const guestArtifactTokenRef = useRef<string | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const stopVoiceRef = useRef<(() => void) | null>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [input, setInput] = useState('')
@@ -697,6 +699,7 @@ export function Chat({
     messages,
     config: loadVoiceConfig()
   })
+  stopVoiceRef.current = voiceConversation.stopVoice
   const voiceEnabled = isVoiceEnabled()
 
   return (
