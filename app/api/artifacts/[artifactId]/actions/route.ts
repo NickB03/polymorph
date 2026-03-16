@@ -190,8 +190,24 @@ export async function POST(
         ...(guestArtifactToken ? { guestArtifactToken } : {})
       })
     } catch (error) {
-      // Sandbox gone — return 410 so the frontend can show the rebuild UI
+      // Sandbox gone — persist expired state, then return 410 for rebuild UI
       if (isSandboxNotFoundError(error)) {
+        if (session) {
+          await upsertArtifactRuntimeSession(
+            {
+              id: session.id,
+              artifactId: artifact.id,
+              provider: 'e2b',
+              sandboxId: session.sandboxId,
+              previewUrl: null,
+              status: 'expired',
+              startedAt: session.startedAt,
+              expiresAt: session.expiresAt,
+              lastHeartbeatAt: new Date()
+            },
+            isGuest ? null : userId
+          )
+        }
         return jsonError(
           'SANDBOX_EXPIRED',
           'Sandbox has expired — rebuild to continue',
@@ -236,7 +252,7 @@ export async function POST(
             artifactId: artifact.id,
             provider: 'e2b',
             sandboxId,
-            previewUrl: session.previewUrl,
+            previewUrl: null,
             status: 'expired',
             startedAt: session.startedAt,
             expiresAt: session.expiresAt,
