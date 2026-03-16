@@ -13,6 +13,8 @@ import {
   Search
 } from 'lucide-react'
 
+import type { BuildTemplate } from '@/lib/constants/build-templates'
+import { BUILD_TEMPLATES } from '@/lib/constants/build-templates'
 import type { SuggestionCategory } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -55,37 +57,6 @@ const actionCategories: ActionCategory[] = [
   }
 ]
 
-interface BuildTemplate {
-  key: string
-  label: string
-  prompt: string
-  thumbnail: string
-}
-
-const buildTemplates: BuildTemplate[] = [
-  {
-    key: 'website',
-    label: 'Websites',
-    prompt:
-      'Build a modern, responsive landing page with a hero section, features grid, testimonials, and footer',
-    thumbnail: '/images/build-templates/website.svg'
-  },
-  {
-    key: 'game',
-    label: 'Games',
-    prompt:
-      'Build a fun, interactive browser game with score tracking, animations, and a restart button',
-    thumbnail: '/images/build-templates/game.svg'
-  },
-  {
-    key: 'dashboard',
-    label: 'Dashboards',
-    prompt:
-      'Build an analytics dashboard with interactive charts, stat cards, and a sidebar navigation',
-    thumbnail: '/images/build-templates/dashboard.svg'
-  }
-]
-
 type ActiveView = SuggestionCategory | 'build' | null
 
 interface ActionButtonsProps {
@@ -120,9 +91,11 @@ export function ActionButtons({
   }
 
   const handlePromptClick = (prompt: string) => {
-    const category = activeView as SuggestionCategory
-    setActiveView(null)
-    onSelectPrompt(prompt, category)
+    if (activeView && activeView !== 'build') {
+      const category = activeView
+      setActiveView(null)
+      onSelectPrompt(prompt, category)
+    }
   }
 
   const handleBuildTemplateClick = (template: BuildTemplate) => {
@@ -291,7 +264,7 @@ export function ActionButtons({
         >
           {isBuildActive && (
             <div className="grid grid-cols-3 gap-3 h-full">
-              {buildTemplates.map(template => (
+              {BUILD_TEMPLATES.map(template => (
                 <button
                   key={template.key}
                   type="button"
