@@ -34,6 +34,7 @@ import { useFileDropzone } from '@/hooks/use-file-dropzone'
 import { useVoiceConversation } from '@/hooks/use-voice-conversation'
 
 import { useArtifact } from './artifact/artifact-context'
+import { VoiceOverlay } from './voice/voice-overlay'
 import { loadVoiceConfig } from './voice/voice-settings'
 import { ChatMessages } from './chat-messages'
 import { ChatPanel } from './chat-panel'
@@ -776,6 +777,13 @@ export function Chat({
             }
           : {})}
       />
+      {voiceEnabled && voiceConversation.isVoiceActive && (
+        <VoiceOverlay
+          state={voiceConversation.voiceState}
+          onStop={voiceConversation.stopVoice}
+          interimTranscript={voiceConversation.interimTranscript}
+        />
+      )}
       <DragOverlay visible={dragHandlers.isDragging} />
       <ErrorModal
         open={errorModal.open}

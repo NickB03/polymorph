@@ -29,6 +29,7 @@ interface UseVoiceConversationReturn {
   stopVoice: () => void
   config: VoiceConfig
   updateConfig: (updates: Partial<VoiceConfig>) => void
+  interimTranscript: string
 }
 
 /**
@@ -57,6 +58,7 @@ export function useVoiceConversation({
   const lastSpokenMessageIdRef = useRef<string | null>(null)
   const prevStatusRef = useRef(status)
   const prevPlaybackStateRef = useRef<'idle' | 'loading' | 'playing'>('idle')
+  const stopListeningRef = useRef<() => void>(() => {})
 
   const resolvedProvider = useCallback(() => {
     if (config.ttsProvider === 'elevenlabs' && isQuotaExhausted()) {
@@ -71,6 +73,9 @@ export function useVoiceConversation({
     (transcript: string) => {
       if (!voiceActiveRef.current || !transcript.trim()) return
 
+      // Pause recognition while the LLM processes and TTS plays.
+      // The "back to listening" effect restarts it after TTS finishes.
+      stopListeningRef.current()
       setVoiceState('waiting')
       sendMessage({
         role: 'user',
@@ -87,6 +92,9 @@ export function useVoiceConversation({
     isSupported,
     interimTranscript
   } = useVoiceInput({ onTranscript })
+
+  // Keep ref in sync so onTranscript can call it without circular deps
+  stopListeningRef.current = stopListening
 
   const startVoice = useCallback(() => {
     if (!isSupported) return
@@ -193,6 +201,7 @@ export function useVoiceConversation({
     startVoice,
     stopVoice,
     config,
-    updateConfig
+    updateConfig,
+    interimTranscript: interimTranscript ?? ''
   }
 }
