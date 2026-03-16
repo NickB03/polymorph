@@ -53,7 +53,10 @@ export function buildChatRequestBody({
     trigger === 'submit-message' && lastMessage?.role === 'assistant'
 
   if (isToolResultContinuation) {
-    const resolvedPart = lastMessage?.parts?.find(
+    // Use findLast to get the most recently resolved interactive tool part.
+    // When multiple displayOptionList calls are resolved sequentially,
+    // the first one is already persisted — we need the latest one.
+    const resolvedPart = lastMessage?.parts?.findLast(
       part =>
         isInteractiveToolPart(part) &&
         'state' in part &&

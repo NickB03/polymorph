@@ -29,16 +29,24 @@ export function ArtifactPreviewFrame() {
   // false before timeouts fire. The server probe returns the authoritative
   // status and canRebuild flag.
   const [hasProbed, setHasProbed] = useState(false)
+  const [probeSettled, setProbeSettled] = useState(false)
   useEffect(() => {
     if (status === 'ready' && previewUrl && !hasProbed) {
       setHasProbed(true)
-      probeRefresh()
+      let cancelled = false
+      probeRefresh().then(() => {
+        if (!cancelled) setProbeSettled(true)
+      })
+      return () => {
+        cancelled = true
+      }
     }
   }, [status, previewUrl, hasProbed, probeRefresh])
 
-  // Reset probe flag when previewUrl changes (rebuild happened)
+  // Reset probe flags when previewUrl changes (rebuild happened)
   useEffect(() => {
     setHasProbed(false)
+    setProbeSettled(false)
   }, [previewUrl])
 
   // Fallback: if iframe is still loading after 10s, show hint.
@@ -127,6 +135,19 @@ export function ArtifactPreviewFrame() {
       <div className="flex flex-col items-center justify-center h-full gap-3 p-6">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         <p className="text-xs text-muted-foreground">Preparing preview...</p>
+      </div>
+    )
+  }
+
+  // Don't render the iframe until the initial probe confirms the sandbox is
+  // alive. Without this gate, the iframe eagerly loads the stale previewUrl,
+  // E2B returns an error page, onLoad fires, the overlay disappears, and the
+  // red E2B error page flashes for ~100ms before the probe updates status.
+  if (status === 'ready' && previewUrl && !probeSettled) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 p-6">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <p className="text-xs text-muted-foreground">Checking preview...</p>
       </div>
     )
   }

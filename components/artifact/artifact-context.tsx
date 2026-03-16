@@ -10,6 +10,7 @@ import {
   useRef,
   useState
 } from 'react'
+import { usePathname } from 'next/navigation'
 
 import type { Part } from '@/lib/types/ai'
 import type {
@@ -23,7 +24,7 @@ import { useSidebar } from '../ui/sidebar'
 // Animation duration should match CSS transition duration
 const ANIMATION_DURATION = 300
 
-export type WorkspaceTab = 'preview' | 'code' | 'logs'
+export type WorkspaceTab = 'preview' | 'code'
 
 export interface ArtifactWorkspaceState {
   artifactId: string | null
@@ -131,6 +132,20 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
   >(null)
   const isInspectorOpen =
     state.inspectedPart !== null && !state.workspace.isOpen
+
+  // Auto-close workspace and inspector when the user navigates away.
+  // ArtifactProvider lives in the root layout so its state survives
+  // route transitions — this effect ensures stale panels don't linger.
+  const pathname = usePathname()
+  const prevPathRef = useRef(pathname)
+  useEffect(() => {
+    if (prevPathRef.current !== pathname) {
+      prevPathRef.current = pathname
+      dispatch({ type: 'CLOSE_WORKSPACE' })
+      dispatch({ type: 'CLEAR_INSPECTOR' })
+      setWorkspaceLogs([])
+    }
+  }, [pathname])
 
   const close = useCallback(() => {
     dispatch({ type: 'CLOSE_INSPECTOR' })
@@ -269,8 +284,12 @@ export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
         try {
           const err = await res.json()
           if (controller.signal.aborted) return
-          if (err.code === 'TOKEN_EXPIRED') {
-            updateWorkspace({ status: 'expired', previewUrl: null })
+          if (err.code === 'TOKEN_EXPIRED' || err.code === 'SANDBOX_EXPIRED') {
+            updateWorkspace({
+              status: 'expired',
+              previewUrl: null,
+              canRebuild: true
+            })
           }
         } catch {
           // Response wasn't JSON — ignore

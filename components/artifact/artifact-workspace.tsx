@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button'
 import { ArtifactCodeViewer } from './artifact-code-viewer'
 import { useArtifact, type WorkspaceTab } from './artifact-context'
 import { ArtifactErrorPanel } from './artifact-error-panel'
-import { ArtifactLogsPanel } from './artifact-logs-panel'
 import { ArtifactPreviewFrame } from './artifact-preview-frame'
 import { ArtifactWorkspaceHeader } from './artifact-workspace-header'
 
@@ -101,9 +100,6 @@ export function ArtifactWorkspace() {
             </div>
             <div className={cn(activeTab !== 'code' && 'hidden', 'h-full')}>
               <ArtifactCodeViewer />
-            </div>
-            <div className={cn(activeTab !== 'logs' && 'hidden', 'h-full')}>
-              <ArtifactLogsPanel />
             </div>
           </div>
         </WorkspaceErrorBoundary>

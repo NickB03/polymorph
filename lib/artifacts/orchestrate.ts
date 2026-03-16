@@ -35,11 +35,16 @@ type StatusParams = {
 /** Detect errors that indicate the E2B sandbox has expired or been removed. */
 function isSandboxNotFoundError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
+  // Primary: E2B SDK sets error.name = 'NotFoundError' for all sandbox-gone cases.
+  // Preferred over instanceof to avoid cross-module-boundary issues with bundlers.
+  if (error.name === 'NotFoundError') return true
+  // Fallback: broad string matching for non-SDK errors or wrapped messages
   const msg = error.message.toLowerCase()
   return (
-    msg.includes('sandbox not found') ||
-    msg.includes('sandbox does not exist') ||
-    msg.includes('paused sandbox')
+    msg.includes('sandbox') &&
+    (msg.includes('not found') ||
+      msg.includes('not running') ||
+      msg.includes("wasn't found"))
   )
 }
 
@@ -971,6 +976,86 @@ export async function orchestrateRestart(
       ...(guestArtifactToken ? { guestArtifactToken } : {})
     }
   } catch (error) {
+    // Transparent recovery: if the sandbox expired, rebuild from the latest
+    // revision then report ready. Unlike orchestrateUpdate, no pending file
+    // changes need to be applied after rebuild.
+    if (isSandboxNotFoundError(error)) {
+      try {
+        logArtifactEvent('artifact.restart.sandbox-recovery', {
+          artifactId: existing.artifact.id,
+          chatId: ctx.chatId,
+          isGuest: ctx.isGuest
+        })
+
+        emitStatusOnly(ctx, {
+          artifactId: existing.artifact.id,
+          status: 'building'
+        })
+
+        ctx.emitArtifactLog({
+          artifactId: existing.artifact.id,
+          message: 'Sandbox expired — rebuilding from last revision...',
+          level: 'info'
+        })
+
+        const { rebuildArtifactFromRevision } =
+          await import('@/lib/artifacts/rebuild')
+        const rebuildResult = await rebuildArtifactFromRevision({
+          artifactId: existing.artifact.id,
+          userId: ctx.isGuest ? null : ctx.userId
+        })
+
+        if (!rebuildResult.success) {
+          throw new Error(rebuildResult.error || 'Rebuild failed')
+        }
+
+        // Load the new runtime session that rebuild created
+        const newRuntimeSession = await dbActions.loadArtifactRuntimeSession(
+          existing.artifact.id,
+          ctx.isGuest ? null : ctx.userId
+        )
+
+        const guestArtifactToken = newRuntimeSession
+          ? await issueGuestToken({
+              ctx,
+              artifactId: existing.artifact.id,
+              runtimeSession: newRuntimeSession
+            })
+          : undefined
+
+        emitArtifactState(ctx, {
+          artifactId: existing.artifact.id,
+          title: existing.artifact.title,
+          status: 'ready',
+          previewUrl: rebuildResult.previewUrl,
+          ...(existing.artifact.currentRevisionId
+            ? { revisionId: existing.artifact.currentRevisionId }
+            : {}),
+          ...(guestArtifactToken ? { guestArtifactToken } : {})
+        })
+
+        return {
+          success: true as const,
+          action: 'restart' as const,
+          artifactId: existing.artifact.id,
+          previewUrl: rebuildResult.previewUrl,
+          ...(guestArtifactToken ? { guestArtifactToken } : {})
+        }
+      } catch (recoveryError) {
+        // Recovery failed — fall through to the generic error handler below
+        const recoveryMessage =
+          recoveryError instanceof Error
+            ? recoveryError.message
+            : 'Recovery failed'
+
+        logArtifactEvent('artifact.restart.sandbox-recovery.failed', {
+          artifactId: existing.artifact.id,
+          chatId: ctx.chatId,
+          error: recoveryMessage
+        })
+      }
+    }
+
     const message =
       error instanceof Error ? error.message : 'Artifact restart failed'
 
