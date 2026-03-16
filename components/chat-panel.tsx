@@ -7,6 +7,7 @@ import { UseChatHelpers } from '@ai-sdk/react'
 import { ArrowUp, ChevronDown, Square } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { isArtifactsEnabled } from '@/lib/artifacts/config'
 import { UploadedFile } from '@/lib/types'
 import type { ToolPart, UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 import { cn, isChatLoading } from '@/lib/utils'
@@ -83,6 +84,7 @@ export function ChatPanel({
   const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
   const voiceEnabled = isVoiceEnabled()
+  const artifactsEnabled = isArtifactsEnabled()
 
   const handleCompositionStart = () => setIsComposing(true)
 
@@ -316,6 +318,7 @@ export function ChatPanel({
         {messages.length === 0 && (
           <ActionButtons
             promptSamples={suggestions}
+            artifactsEnabled={artifactsEnabled}
             onSelectPrompt={(message, category) => {
               // Auto-switch to Research + Quality for research suggestions
               if (category === 'research') {
@@ -330,6 +333,16 @@ export function ChatPanel({
               setTimeout(() => {
                 inputRef.current?.form?.requestSubmit()
                 // Reset focus state after action button submission
+                setIsInputFocused(false)
+                inputRef.current?.blur()
+              }, INPUT_UPDATE_DELAY_MS)
+            }}
+            onBuildTemplateSelect={prompt => {
+              handleInputChange({
+                target: { value: prompt }
+              } as React.ChangeEvent<HTMLTextAreaElement>)
+              setTimeout(() => {
+                inputRef.current?.form?.requestSubmit()
                 setIsInputFocused(false)
                 inputRef.current?.blur()
               }, INPUT_UPDATE_DELAY_MS)
