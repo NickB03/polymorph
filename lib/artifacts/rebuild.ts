@@ -1,5 +1,9 @@
 import { logArtifactEvent } from '@/lib/artifacts/observability'
 import { createE2BRuntime } from '@/lib/artifacts/runtime'
+import {
+  getTemplateId,
+  shouldSkipInstall
+} from '@/lib/artifacts/runtime/config'
 import { readTemplateFiles } from '@/lib/artifacts/templates/read-template'
 import * as dbActions from '@/lib/db/actions'
 
@@ -22,10 +26,6 @@ type RebuildResult =
       error: string
       alreadyInProgress?: true
     }
-
-function getTemplateId(): string {
-  return process.env.E2B_TEMPLATE_ID || 'base'
-}
 
 export async function rebuildArtifactFromRevision(
   input: RebuildInput
@@ -79,7 +79,7 @@ export async function rebuildArtifactFromRevision(
     })
     sandboxId = session.sandboxId
 
-    const skipInstall = process.env.E2B_SKIP_INSTALL === 'true'
+    const skipInstall = shouldSkipInstall()
 
     // When using a custom template, template files are baked into the image —
     // only write model-generated source files. For the base template, merge.

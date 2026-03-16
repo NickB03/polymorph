@@ -96,6 +96,63 @@ export async function signGuestArtifactToken(
   return `${payloadB64}.${signatureB64}`
 }
 
+const MAX_EXPIRED_TOKEN_AGE_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
+
+/**
+ * Core token verification: parse, check signature, return payload.
+ *
+ * Shared by both `verifyGuestArtifactToken` and
+ * `verifyGuestArtifactTokenAllowExpired` — the only difference is the
+ * time-based validity check applied by each caller.
+ *
+ * Security invariants:
+ * - Fails closed: any error (malformed, bad signature) returns `null`.
+ * - Uses `crypto.subtle.verify` with HMAC-SHA256.
+ */
+async function verifyTokenSignature(
+  token: string
+): Promise<GuestArtifactTokenPayload | null> {
+  const secret = process.env.GUEST_ARTIFACT_SECRET
+  if (!secret) return null
+
+  const dotIndex = token.indexOf('.')
+  if (dotIndex === -1) return null
+
+  const payloadB64 = token.slice(0, dotIndex)
+  const signatureB64 = token.slice(dotIndex + 1)
+  if (!payloadB64 || !signatureB64) return null
+
+  const key = await importKey(secret)
+  const encoder = new TextEncoder()
+  const signatureBytes = base64urlDecode(signatureB64)
+  const signatureBytesForCrypto = new Uint8Array(signatureBytes.length)
+  signatureBytesForCrypto.set(signatureBytes)
+
+  const valid = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    signatureBytesForCrypto,
+    encoder.encode(payloadB64)
+  )
+  if (!valid) return null
+
+  const payloadBytes = base64urlDecode(payloadB64)
+  const payloadJson = new TextDecoder().decode(payloadBytes)
+  return JSON.parse(payloadJson) as GuestArtifactTokenPayload
+}
+
+function payloadToHandle(
+  payload: GuestArtifactTokenPayload
+): ValidatedGuestArtifactHandle {
+  return {
+    artifactId: payload.artifactId,
+    runtimeSessionId: payload.runtimeSessionId,
+    sandboxId: payload.sandboxId,
+    chatId: payload.chatId,
+    expiresAt: new Date(payload.expiresAt)
+  }
+}
+
 /**
  * Verify a signed guest artifact token and return the validated handle.
  *
@@ -110,51 +167,14 @@ export async function verifyGuestArtifactToken(
   token: string
 ): Promise<ValidatedGuestArtifactHandle | null> {
   try {
-    const secret = process.env.GUEST_ARTIFACT_SECRET
-    if (!secret) return null
-
-    const dotIndex = token.indexOf('.')
-    if (dotIndex === -1) return null
-
-    const payloadB64 = token.slice(0, dotIndex)
-    const signatureB64 = token.slice(dotIndex + 1)
-    if (!payloadB64 || !signatureB64) return null
-
-    const key = await importKey(secret)
-    const encoder = new TextEncoder()
-    const signatureBytes = base64urlDecode(signatureB64)
-    const signatureBytesForCrypto = new Uint8Array(signatureBytes.length)
-    signatureBytesForCrypto.set(signatureBytes)
-
-    const valid = await crypto.subtle.verify(
-      'HMAC',
-      key,
-      signatureBytesForCrypto,
-      encoder.encode(payloadB64)
-    )
-    if (!valid) return null
-
-    const payloadBytes = base64urlDecode(payloadB64)
-    const payloadJson = new TextDecoder().decode(payloadBytes)
-    const payload: GuestArtifactTokenPayload = JSON.parse(payloadJson)
-
-    // Check expiry
+    const payload = await verifyTokenSignature(token)
+    if (!payload) return null
     if (Date.now() >= payload.expiresAt) return null
-
-    return {
-      artifactId: payload.artifactId,
-      runtimeSessionId: payload.runtimeSessionId,
-      sandboxId: payload.sandboxId,
-      chatId: payload.chatId,
-      expiresAt: new Date(payload.expiresAt)
-    }
+    return payloadToHandle(payload)
   } catch {
-    // Fail closed: any parse/crypto error returns null
     return null
   }
 }
-
-const MAX_EXPIRED_TOKEN_AGE_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 
 /**
  * Verify a guest artifact token, accepting expired tokens.
@@ -173,46 +193,11 @@ export async function verifyGuestArtifactTokenAllowExpired(
   token: string
 ): Promise<ValidatedGuestArtifactHandle | null> {
   try {
-    const secret = process.env.GUEST_ARTIFACT_SECRET
-    if (!secret) return null
-
-    const dotIndex = token.indexOf('.')
-    if (dotIndex === -1) return null
-
-    const payloadB64 = token.slice(0, dotIndex)
-    const signatureB64 = token.slice(dotIndex + 1)
-    if (!payloadB64 || !signatureB64) return null
-
-    const key = await importKey(secret)
-    const encoder = new TextEncoder()
-    const signatureBytes = base64urlDecode(signatureB64)
-    const signatureBytesForCrypto = new Uint8Array(signatureBytes.length)
-    signatureBytesForCrypto.set(signatureBytes)
-
-    const valid = await crypto.subtle.verify(
-      'HMAC',
-      key,
-      signatureBytesForCrypto,
-      encoder.encode(payloadB64)
-    )
-    if (!valid) return null
-
-    const payloadBytes = base64urlDecode(payloadB64)
-    const payloadJson = new TextDecoder().decode(payloadBytes)
-    const payload: GuestArtifactTokenPayload = JSON.parse(payloadJson)
-
-    // Skip standard expiry check but enforce 30-day max-age ceiling
+    const payload = await verifyTokenSignature(token)
+    if (!payload) return null
     if (Date.now() - payload.expiresAt > MAX_EXPIRED_TOKEN_AGE_MS) return null
-
-    return {
-      artifactId: payload.artifactId,
-      runtimeSessionId: payload.runtimeSessionId,
-      sandboxId: payload.sandboxId,
-      chatId: payload.chatId,
-      expiresAt: new Date(payload.expiresAt)
-    }
+    return payloadToHandle(payload)
   } catch {
-    // Fail closed: any parse/crypto error returns null
     return null
   }
 }

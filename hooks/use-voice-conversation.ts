@@ -56,6 +56,7 @@ export function useVoiceConversation({
   const voiceActiveRef = useRef(false)
   const lastSpokenMessageIdRef = useRef<string | null>(null)
   const prevStatusRef = useRef(status)
+  const prevPlaybackStateRef = useRef<'idle' | 'loading' | 'playing'>('idle')
 
   const resolvedProvider = useCallback(() => {
     if (config.ttsProvider === 'elevenlabs' && isQuotaExhausted()) {
@@ -64,7 +65,7 @@ export function useVoiceConversation({
     return config.ttsProvider
   }, [config.ttsProvider])
 
-  const { play, stop: stopAudio, isPlaying } = useVoicePlayer()
+  const { play, stop: stopAudio, isPlaying, playbackState } = useVoicePlayer()
 
   const onTranscript = useCallback(
     (transcript: string) => {
@@ -115,9 +116,7 @@ export function useVoiceConversation({
     if (!voiceActiveRef.current || !wasStreaming || !isReady) return
 
     // Find the last assistant message
-    const lastAssistant = [...messages]
-      .reverse()
-      .find(m => m.role === 'assistant')
+    const lastAssistant = messages.findLast(m => m.role === 'assistant')
     if (!lastAssistant) return
     if (lastAssistant.id === lastSpokenMessageIdRef.current) return
 
@@ -127,20 +126,40 @@ export function useVoiceConversation({
       .map(p => p.text)
       .join(' ')
 
-    if (!text?.trim()) return
+    if (!text?.trim()) {
+      console.warn(
+        '[voice] No text found in assistant parts:',
+        lastAssistant.parts?.map(p => p.type)
+      )
+      return
+    }
 
     lastSpokenMessageIdRef.current = lastAssistant.id
     setVoiceState('speaking')
-    play(text, resolvedProvider())
+    const provider = resolvedProvider()
+    console.debug(`[voice] Synthesizing ${text.length} chars via ${provider}`)
+    play(text, provider)
   }, [status, messages, play, resolvedProvider])
 
-  // Transition: when audio finishes playing, go back to listening
+  // Transition: when audio finishes playing, go back to listening.
+  // Track the playback state transition (playing/loading → idle) to avoid
+  // prematurely returning to listening before audio has started.
   useEffect(() => {
-    if (voiceActiveRef.current && voiceState === 'speaking' && !isPlaying) {
+    const wasActive =
+      prevPlaybackStateRef.current === 'playing' ||
+      prevPlaybackStateRef.current === 'loading'
+    prevPlaybackStateRef.current = playbackState
+
+    if (
+      voiceActiveRef.current &&
+      voiceState === 'speaking' &&
+      wasActive &&
+      playbackState === 'idle'
+    ) {
       setVoiceState('listening')
       startListening()
     }
-  }, [isPlaying, voiceState, startListening])
+  }, [playbackState, voiceState, startListening])
 
   // Transition: when status becomes submitted/streaming, show waiting
   useEffect(() => {
