@@ -443,7 +443,7 @@ export async function orchestrateCreate(
 
     const buildCheck = await runtime.runCommand({
       sandboxId: createdSession.sandboxId,
-      command: 'npx vite build 2>&1 | tail -30',
+      command: 'set -o pipefail; npx vite build 2>&1 | tail -30',
       timeoutMs: 30_000
     })
 
@@ -743,6 +743,7 @@ export async function orchestrateUpdate(
     // Transparent recovery: if the sandbox expired, rebuild from the latest
     // revision then apply the pending update on top.
     if (isSandboxNotFoundError(error)) {
+      let recoveredSandboxId: string | null = null
       try {
         logArtifactEvent('artifact.update.sandbox-recovery', {
           artifactId: existing.artifact.id,
@@ -771,6 +772,7 @@ export async function orchestrateUpdate(
         if (!rebuildResult.success) {
           throw new Error(rebuildResult.error || 'Rebuild failed')
         }
+        recoveredSandboxId = rebuildResult.sandboxId
 
         // Apply the pending update to the freshly rebuilt sandbox
         ctx.emitArtifactLog({
@@ -784,6 +786,24 @@ export async function orchestrateUpdate(
           sandboxId: rebuildResult.sandboxId,
           files: validation.files
         })
+
+        // Build verification — same gate as orchestrateCreate to catch
+        // broken imports/syntax in the recovered sandbox
+        const buildCheck = await newRuntime.runCommand({
+          sandboxId: rebuildResult.sandboxId,
+          command: 'set -o pipefail; npx vite build 2>&1 | tail -30',
+          timeoutMs: 30_000
+        })
+
+        if (buildCheck.exitCode !== 0) {
+          const buildError =
+            buildCheck.stderr ||
+            buildCheck.stdout ||
+            'Build failed with unknown error'
+          throw new Error(
+            `Recovered sandbox build verification failed: ${buildError}`
+          )
+        }
 
         // Load the new runtime session that rebuild created
         const newRuntimeSession = await dbActions.loadArtifactRuntimeSession(
@@ -861,7 +881,6 @@ export async function orchestrateUpdate(
           ...(guestArtifactToken ? { guestArtifactToken } : {})
         }
       } catch (recoveryError) {
-        // Recovery failed — fall through to the generic error handler below
         const recoveryMessage =
           recoveryError instanceof Error
             ? recoveryError.message
@@ -872,6 +891,13 @@ export async function orchestrateUpdate(
           chatId: ctx.chatId,
           error: recoveryMessage
         })
+
+        // Clean up the rebuilt sandbox if one was created
+        if (recoveredSandboxId) {
+          createE2BRuntime()
+            .destroySession({ sandboxId: recoveredSandboxId })
+            .catch(() => {})
+        }
       }
     }
 
@@ -980,6 +1006,7 @@ export async function orchestrateRestart(
     // revision then report ready. Unlike orchestrateUpdate, no pending file
     // changes need to be applied after rebuild.
     if (isSandboxNotFoundError(error)) {
+      let recoveredSandboxId: string | null = null
       try {
         logArtifactEvent('artifact.restart.sandbox-recovery', {
           artifactId: existing.artifact.id,
@@ -1008,6 +1035,7 @@ export async function orchestrateRestart(
         if (!rebuildResult.success) {
           throw new Error(rebuildResult.error || 'Rebuild failed')
         }
+        recoveredSandboxId = rebuildResult.sandboxId
 
         // Load the new runtime session that rebuild created
         const newRuntimeSession = await dbActions.loadArtifactRuntimeSession(
@@ -1042,7 +1070,6 @@ export async function orchestrateRestart(
           ...(guestArtifactToken ? { guestArtifactToken } : {})
         }
       } catch (recoveryError) {
-        // Recovery failed — fall through to the generic error handler below
         const recoveryMessage =
           recoveryError instanceof Error
             ? recoveryError.message
@@ -1053,6 +1080,13 @@ export async function orchestrateRestart(
           chatId: ctx.chatId,
           error: recoveryMessage
         })
+
+        // Clean up the rebuilt sandbox if one was created
+        if (recoveredSandboxId) {
+          createE2BRuntime()
+            .destroySession({ sandboxId: recoveredSandboxId })
+            .catch(() => {})
+        }
       }
     }
 
