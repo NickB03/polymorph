@@ -8,7 +8,7 @@ import { User } from '@supabase/supabase-js'
 
 import { cn } from '@/lib/utils'
 
-import { useSidebar } from '@/components/ui/sidebar'
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
 
 import { FeedbackModal } from './feedback-modal'
 // import { Button } from './ui/button' // No longer needed directly here for Sign In button
@@ -20,7 +20,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ user }) => {
-  const { open } = useSidebar()
+  const { open, isMobile } = useSidebar()
   const pathname = usePathname()
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const isRootPage = pathname === '/'
@@ -34,8 +34,11 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
           'w-full'
         )}
       >
-        {/* This div can be used for a logo or title on the left if needed */}
-        <div></div>
+        <div>
+          {(!open || isMobile) && (
+            <SidebarTrigger className="animate-fade-in" />
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           {user ? (

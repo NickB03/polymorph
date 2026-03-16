@@ -6,11 +6,12 @@ import {
   Check,
   Code2,
   Copy,
+  ExternalLink,
   Eye,
-  Minimize2,
   RefreshCw,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react'
 
 import { useCopyToClipboard } from '@/lib/hooks/use-copy-to-clipboard'
@@ -204,20 +205,34 @@ export function ArtifactWorkspaceHeader({
           )}
 
           {workspace.previewUrl && (
-            <TooltipButton
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={handleShare}
-              aria-label="Copy preview URL"
-              tooltipContent={copied ? 'Copied!' : 'Copy link'}
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5 text-green-500" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-            </TooltipButton>
+            <>
+              <TooltipButton
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleShare}
+                aria-label="Copy preview URL"
+                tooltipContent={copied ? 'Copied!' : 'Copy link'}
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-green-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </TooltipButton>
+              <TooltipButton
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() =>
+                  window.open(workspace.previewUrl!, '_blank', 'noopener')
+                }
+                aria-label="Open in new tab"
+                tooltipContent="Open in new tab"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </TooltipButton>
+            </>
           )}
 
           <TooltipButton
@@ -226,9 +241,9 @@ export function ArtifactWorkspaceHeader({
             className="h-7 w-7"
             onClick={closeWorkspace}
             aria-label="Close workspace"
-            tooltipContent="Minimize"
+            tooltipContent="Close"
           >
-            <Minimize2 className="h-3.5 w-3.5" />
+            <X className="h-3.5 w-3.5" />
           </TooltipButton>
         </div>
       </div>

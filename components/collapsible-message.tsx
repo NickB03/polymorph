@@ -45,12 +45,17 @@ export function CollapsibleMessage({
   const content = children
 
   return (
-    <div className="flex">
+    <div className={cn('flex', role === 'user' && 'gap-3 items-start')}>
       {renderLeft ? (
         renderLeft
       ) : showIcon ? (
-        <div className="relative flex flex-col items-center">
-          <div className="w-5">
+        <div
+          className={cn(
+            'relative flex flex-col items-center shrink-0',
+            role === 'user' && 'mt-1.5'
+          )}
+        >
+          <div className={role === 'assistant' ? 'w-5' : 'w-7'}>
             {role === 'assistant' ? (
               <IconLogo className="size-5" />
             ) : (
@@ -163,7 +168,7 @@ export function CollapsibleMessage({
         <div
           className={cn(
             'flex-1 rounded-2xl w-full',
-            role === 'assistant' ? 'px-0' : 'px-3'
+            role === 'assistant' ? 'px-0' : 'px-3 py-2.5 bg-muted'
           )}
         >
           {content}

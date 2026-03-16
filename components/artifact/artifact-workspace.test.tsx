@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Part } from '@/lib/types/ai'
 
@@ -11,21 +11,30 @@ import type { Part } from '@/lib/types/ai'
  *       InspectorPanel renders the correct title/icon for artifact parts
  * - #7: Legacy search/reasoning inspector still opens after context refactor
  * - #12: Workspace header action path (close button renders and fires)
- *
- * Since there is no standalone "ArtifactWorkspace" component, the workspace
- * behavior is provided by InspectorPanel + ArtifactContent + the context.
- * We test InspectorPanel rendering with different part types.
+ * - Open in new tab renders when previewUrl exists, calls window.open
  */
 
 // Mock lucide-react icons to simple spans
 vi.mock('lucide-react', () => ({
+  AlertCircle: (props: any) => <span data-testid="icon-alert" {...props} />,
+  Check: (props: any) => <span data-testid="icon-check" {...props} />,
+  Code2: (props: any) => <span data-testid="icon-code" {...props} />,
+  Copy: (props: any) => <span data-testid="icon-copy" {...props} />,
+  ExternalLink: (props: any) => (
+    <span data-testid="icon-external-link" {...props} />
+  ),
+  Eye: (props: any) => <span data-testid="icon-eye" {...props} />,
   LightbulbIcon: (props: any) => (
     <span data-testid="icon-lightbulb" {...props} />
   ),
   ListTodo: (props: any) => <span data-testid="icon-todo" {...props} />,
   MessageSquare: (props: any) => <span data-testid="icon-message" {...props} />,
   Minimize2: (props: any) => <span data-testid="icon-minimize" {...props} />,
-  Search: (props: any) => <span data-testid="icon-search" {...props} />
+  RefreshCw: (props: any) => <span data-testid="icon-refresh" {...props} />,
+  RotateCcw: (props: any) => <span data-testid="icon-rotate" {...props} />,
+  Search: (props: any) => <span data-testid="icon-search" {...props} />,
+  Sparkles: (props: any) => <span data-testid="icon-sparkles" {...props} />,
+  X: (props: any) => <span data-testid="icon-close" {...props} />
 }))
 
 // Mock the separator
@@ -58,6 +67,14 @@ vi.mock('@/components/ui/tooltip-button', () => ({
   )
 }))
 
+// Mock useCopyToClipboard for workspace header tests
+vi.mock('@/lib/hooks/use-copy-to-clipboard', () => ({
+  useCopyToClipboard: () => ({
+    isCopied: false,
+    copyToClipboard: vi.fn()
+  })
+}))
+
 // Mock ArtifactContent so we isolate InspectorPanel logic
 vi.mock('@/components/artifact/artifact-content', () => ({
   ArtifactContent: ({ part }: { part: Part | null }) => (
@@ -67,23 +84,35 @@ vi.mock('@/components/artifact/artifact-content', () => ({
 
 // Dynamic mock for the artifact context
 const mockClose = vi.fn()
+const mockCloseWorkspace = vi.fn()
+const mockRequestAiFix = vi.fn()
 let mockInspectedPart: Part | null = null
+let mockWorkspaceState = {
+  isOpen: false,
+  artifactId: null as string | null,
+  revisionId: null as string | null,
+  title: null as string | null,
+  status: null as string | null,
+  previewUrl: null as string | null,
+  canRebuild: false
+}
 
 vi.mock('@/components/artifact/artifact-context', () => ({
   useArtifact: () => ({
     state: {
       inspectedPart: mockInspectedPart,
-      workspace: {
-        isOpen: false,
-        artifactId: null,
-        revisionId: null,
-        title: null,
-        status: null,
-        previewUrl: null
-      }
+      workspace: mockWorkspaceState
     },
-    close: mockClose
-  })
+    close: mockClose,
+    closeWorkspace: mockCloseWorkspace,
+    requestAiFix: mockRequestAiFix,
+    workspaceLogs: []
+  }),
+  useArtifactAction: () => ({
+    execute: vi.fn(),
+    isPending: false
+  }),
+  formatArtifactFixPrompt: () => 'fix prompt'
 }))
 
 // Import after mocks
@@ -191,6 +220,65 @@ describe('InspectorPanel (workspace behavior)', () => {
 
       const content = screen.getByTestId('artifact-content')
       expect(content.getAttribute('data-type')).toBe('tool-search')
+    })
+  })
+})
+
+// Import workspace header after mocks
+import { ArtifactWorkspaceHeader } from '@/components/artifact/artifact-workspace-header'
+
+describe('ArtifactWorkspaceHeader (open-in-new-tab)', () => {
+  beforeEach(() => {
+    mockWorkspaceState = {
+      isOpen: true,
+      artifactId: 'art-1',
+      revisionId: 'rev-1',
+      title: 'Test App',
+      status: 'ready',
+      previewUrl: 'https://e2b-preview.example.com/abc',
+      canRebuild: false
+    }
+  })
+
+  describe('open in new tab', () => {
+    it('renders when previewUrl exists', () => {
+      render(
+        <ArtifactWorkspaceHeader activeTab="preview" onTabChange={vi.fn()} />
+      )
+
+      expect(screen.getByLabelText('Open in new tab')).toBeDefined()
+      expect(screen.getByTestId('icon-external-link')).toBeDefined()
+    })
+
+    it('calls window.open with preview URL', () => {
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+
+      render(
+        <ArtifactWorkspaceHeader activeTab="preview" onTabChange={vi.fn()} />
+      )
+
+      screen.getByLabelText('Open in new tab').click()
+
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://e2b-preview.example.com/abc',
+        '_blank',
+        'noopener'
+      )
+
+      openSpy.mockRestore()
+    })
+
+    it('does not render when previewUrl is null', () => {
+      mockWorkspaceState = {
+        ...mockWorkspaceState,
+        previewUrl: null
+      }
+
+      render(
+        <ArtifactWorkspaceHeader activeTab="preview" onTabChange={vi.fn()} />
+      )
+
+      expect(screen.queryByLabelText('Open in new tab')).toBeNull()
     })
   })
 })

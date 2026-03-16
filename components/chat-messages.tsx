@@ -17,6 +17,7 @@ import { extractCitationMapsFromMessages } from '@/lib/utils/citation'
 import { useActivityFeed } from '@/hooks/use-activity-feed'
 
 import { AnimatedLogo } from './ui/animated-logo'
+import { useSidebar } from './ui/sidebar'
 import { Skeleton } from './ui/skeleton'
 import { ChatError } from './chat-error'
 import { GuestSignupNudge } from './guest-signup-nudge'
@@ -69,6 +70,7 @@ export function ChatMessages({
   }
   const isLoading = isChatLoading(status)
   const isMobile = useMediaQuery('(max-width: 767px)')
+  const { open: sidebarOpen } = useSidebar()
 
   // Flatten sections into messages for the activity feed hook
   const allMessages = useMemo(
@@ -208,7 +210,12 @@ export function ChatMessages({
         sections.length > 0 ? 'flex-1 overflow-y-auto' : ''
       )}
     >
-      <div className="relative mx-auto w-full max-w-full md:max-w-3xl px-4">
+      <div
+        className={cn(
+          'relative mx-auto w-full max-w-full md:max-w-3xl px-4',
+          !sidebarOpen && 'md:pl-12'
+        )}
+      >
         {sections.map((section, sectionIndex) => (
           <div
             key={section.id}
