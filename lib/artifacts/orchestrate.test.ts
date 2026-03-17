@@ -178,8 +178,13 @@ describe('artifact orchestration', () => {
       success: true,
       action: 'create',
       artifactId: 'artifact-1',
-      previewUrl: 'https://5173-sandbox-1.e2b.dev'
+      previewUrl: 'https://5173-sandbox-1.e2b.dev',
+      acceptedFiles: ['src/App.tsx'],
+      status:
+        'Artifact is live and ready. No further file changes needed unless the user requests modifications.'
     })
+    // Success responses must NOT echo file content back to the LLM
+    expect(result).not.toHaveProperty('files')
     expect(dbActions.createArtifactRecord).toHaveBeenCalled()
     expect(dbActions.appendArtifactRevision).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -266,8 +271,10 @@ describe('artifact orchestration', () => {
     expect(result).toMatchObject({
       success: true,
       action: 'create',
-      guestArtifactToken: 'guest-token-123'
+      guestArtifactToken: 'guest-token-123',
+      acceptedFiles: ['src/App.tsx']
     })
+    expect(result).not.toHaveProperty('files')
     expect(ctx.emitArtifact).toHaveBeenCalledWith(
       expect.objectContaining({
         guestArtifactToken: 'guest-token-123'
@@ -278,6 +285,42 @@ describe('artifact orchestration', () => {
         guestArtifactToken: 'guest-token-123'
       })
     )
+  })
+
+  it('includes autoRepairs when file paths or imports were normalized', async () => {
+    // Simulate a model that sends "App.tsx" without the "src/" prefix
+    vi.mocked(validateArtifactSource).mockReturnValue({
+      valid: true,
+      errors: [],
+      repaired: true,
+      repairedContent:
+        'import React from "react"\nexport default function App() { return <div>Fixed</div> }'
+    })
+
+    const ctx = createContext()
+    const result = await orchestrateCreate(
+      {
+        title: 'Repaired App',
+        description: 'has path and import fixes',
+        files: {
+          'App.tsx':
+            'import React from "react"\nexport default function App() { return <div>Fixed</div> }'
+        }
+      },
+      ctx
+    )
+
+    expect(result).toMatchObject({
+      success: true,
+      action: 'create',
+      acceptedFiles: ['src/App.tsx'],
+      autoRepairs: [
+        'Fixed path: App.tsx → src/App.tsx',
+        'Auto-fixed imports in src/App.tsx'
+      ],
+      note: 'These fixes were applied automatically. Do not re-submit corrected files.'
+    })
+    expect(result).not.toHaveProperty('files')
   })
 
   it('persists failed artifact state when sandbox setup fails', async () => {

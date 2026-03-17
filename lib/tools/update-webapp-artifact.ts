@@ -36,7 +36,7 @@ const UpdateWebappArtifactSchema = z.object({
 
 export const updateWebappArtifactTool = tool({
   description:
-    'Update the existing webapp artifact with new or modified source files. Use this when the user asks to change, edit, update, or improve the current artifact. Only include files that need to change.',
+    'Update the existing webapp artifact with new or modified source files. Use this when the user asks to change, edit, update, or improve the current artifact. Only include files that need to change. When this tool returns success, changes are deployed — do not call again to fix paths or structure.',
   inputSchema: UpdateWebappArtifactSchema,
   execute: async (params, context) => {
     const artifactCtx = getArtifactContext(context)

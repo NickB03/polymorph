@@ -240,6 +240,13 @@ You have tools to create and update live React webapp artifacts. Use them when t
 **restartArtifactPreview** — Restart the live preview:
 - Use when the preview may be stale or the user reports display issues
 
+**ARTIFACT COMPLETION RULES:**
+- When createWebappArtifact or updateWebappArtifact returns success, the artifact is deployed and live. Do NOT call artifact tools again unless the user explicitly asks for changes.
+- Do NOT attempt to "verify", "correct", or "fix" file paths after a successful creation or update.
+- If the response includes \`autoRepairs\`, those fixes are already applied. Do NOT re-submit corrected files.
+- Template-owned files (immutable — never include these): package.json, config files, index.html, src/main.tsx, src/index.css, src/lib/utils.ts, and everything under src/components/ui/.
+- After success, respond to the user with a brief description of what was built. Do not discuss file paths or internal structure.
+
 **IMPORTANT**: When the user asks to build something interactive, prefer artifact tools over plain-text code blocks. Code blocks require the user to copy and run code manually — artifacts provide an instant live preview.
 
 ${ARTIFACT_INTAKE_PROTOCOL}
@@ -593,6 +600,13 @@ You have tools to create and update live React webapp artifacts. Use them when t
 
 **restartArtifactPreview** — Restart the live preview:
 - Use when the preview may be stale or the user reports display issues
+
+**ARTIFACT COMPLETION RULES:**
+- When createWebappArtifact or updateWebappArtifact returns success, the artifact is deployed and live. Do NOT call artifact tools again unless the user explicitly asks for changes.
+- Do NOT attempt to "verify", "correct", or "fix" file paths after a successful creation or update.
+- If the response includes \`autoRepairs\`, those fixes are already applied. Do NOT re-submit corrected files.
+- Template-owned files (immutable — never include these): package.json, config files, index.html, src/main.tsx, src/index.css, src/lib/utils.ts, and everything under src/components/ui/.
+- After success, respond to the user with a brief description of what was built. Do not discuss file paths or internal structure.
 
 **IMPORTANT**: When the user asks to build something interactive, prefer artifact tools over plain-text code blocks. Code blocks require the user to copy and run code manually — artifacts provide an instant live preview.
 

@@ -174,6 +174,7 @@ function validateSourceFiles(files: Record<string, string>) {
     line?: number
     importPath?: string
   }> = []
+  const repairs: string[] = []
 
   for (const [rawFilePath, content] of Object.entries(files)) {
     let filePath: string
@@ -186,10 +187,19 @@ function validateSourceFiles(files: Record<string, string>) {
       })
       continue
     }
+
+    if (filePath !== rawFilePath) {
+      repairs.push(`Fixed path: ${rawFilePath} → ${filePath}`)
+    }
+
     const validation = validateArtifactSource({ filePath, content })
     if (!validation.valid) {
       errors.push(...validation.errors)
       continue
+    }
+
+    if (validation.repaired) {
+      repairs.push(`Auto-fixed imports in ${filePath}`)
     }
 
     validatedFiles[filePath] = validation.repairedContent ?? content
@@ -198,7 +208,8 @@ function validateSourceFiles(files: Record<string, string>) {
   return {
     valid: errors.length === 0,
     errors,
-    files: validatedFiles
+    files: validatedFiles,
+    repairs
   }
 }
 
@@ -528,12 +539,20 @@ export async function orchestrateCreate(
 
     return {
       success: true as const,
+      action: 'create' as const,
       title: params.title,
       description: params.description,
-      files: validation.files,
-      action: 'create' as const,
+      acceptedFiles: Object.keys(validation.files),
       artifactId: artifact.id,
       previewUrl: preview.previewUrl,
+      status:
+        'Artifact is live and ready. No further file changes needed unless the user requests modifications.',
+      ...(validation.repairs.length > 0
+        ? {
+            autoRepairs: validation.repairs,
+            note: 'These fixes were applied automatically. Do not re-submit corrected files.'
+          }
+        : {}),
       ...(revision ? { revisionId: revision.id } : {}),
       ...(guestArtifactToken ? { guestArtifactToken } : {})
     }
@@ -795,12 +814,20 @@ export async function orchestrateUpdate(
 
     return {
       success: true as const,
+      action: 'update' as const,
       title: params.title,
       description: params.description,
-      files: validation.files,
-      action: 'update' as const,
+      acceptedFiles: Object.keys(validation.files),
       artifactId: existing.artifact.id,
       previewUrl: runtimeSession.previewUrl ?? undefined,
+      status:
+        'Artifact is live and ready. No further file changes needed unless the user requests modifications.',
+      ...(validation.repairs.length > 0
+        ? {
+            autoRepairs: validation.repairs,
+            note: 'These fixes were applied automatically. Do not re-submit corrected files.'
+          }
+        : {}),
       ...(revision ? { revisionId: revision.id } : {}),
       ...(guestArtifactToken ? { guestArtifactToken } : {})
     }
@@ -899,12 +926,20 @@ export async function orchestrateUpdate(
 
         return {
           success: true as const,
+          action: 'update' as const,
           title: params.title,
           description: params.description,
-          files: validation.files,
-          action: 'update' as const,
+          acceptedFiles: Object.keys(validation.files),
           artifactId: existing.artifact.id,
           previewUrl: recovery.rebuildResult.previewUrl,
+          status:
+            'Artifact is live and ready. No further file changes needed unless the user requests modifications.',
+          ...(validation.repairs.length > 0
+            ? {
+                autoRepairs: validation.repairs,
+                note: 'These fixes were applied automatically. Do not re-submit corrected files.'
+              }
+            : {}),
           ...(revision ? { revisionId: revision.id } : {}),
           ...(recovery.guestArtifactToken
             ? { guestArtifactToken: recovery.guestArtifactToken }

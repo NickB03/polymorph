@@ -34,7 +34,7 @@ const CreateWebappArtifactSchema = z.object({
 
 export const createWebappArtifactTool = tool({
   description:
-    'Create a new React webapp artifact with live preview. Use this when the user asks to build, create, or make a webapp, app, page, dashboard, or interactive UI. Provide complete source files for the artifact.',
+    'Create a new React webapp artifact with live preview. Use this when the user asks to build, create, or make a webapp, app, page, dashboard, or interactive UI. Provide complete source files for the artifact. When this tool returns success, the artifact is deployed — do not call again to fix paths or structure.',
   inputSchema: CreateWebappArtifactSchema,
   execute: async (params, context) => {
     const artifactCtx = getArtifactContext(context)
