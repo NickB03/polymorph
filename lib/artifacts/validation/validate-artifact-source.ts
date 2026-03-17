@@ -32,21 +32,52 @@ export interface ValidationResult {
 /**
  * Extract import paths from source code.
  * Returns tuples of [lineNumber, importPath].
+ *
+ * Handles both single-line and multi-line destructured imports:
+ *   import { Foo, Bar } from 'module'        // single-line
+ *   import {                                   // multi-line
+ *     Foo,
+ *     Bar
+ *   } from 'module'
  */
 function extractImportPaths(code: string): [number, string][] {
   const imports: [number, string][] = []
   const lines = code.split('\n')
 
-  for (let i = 0; i < lines.length; i++) {
+  let i = 0
+  while (i < lines.length) {
+    // Single-line static imports
     const match = lines[i].match(/^\s*import\s+.*?\s+from\s+['"]([^'"]+)['"]/)
     if (match) {
       imports.push([i + 1, match[1]])
+      i++
+      continue
     }
-    // Also catch dynamic imports
+
+    // Dynamic imports
     const dynamicMatch = lines[i].match(/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/)
     if (dynamicMatch) {
       imports.push([i + 1, dynamicMatch[1]])
     }
+
+    // Multi-line import: line has `import` keyword and opening brace but
+    // no from-clause — the `} from '...'` must appear on a subsequent line.
+    if (
+      /^\s*import\s/.test(lines[i]) &&
+      /\{/.test(lines[i]) &&
+      !/\bfrom\s+['"]/.test(lines[i])
+    ) {
+      for (let j = i + 1; j < lines.length && j <= i + 30; j++) {
+        const fromMatch = lines[j].match(/\}\s*from\s+['"]([^'"]+)['"]/)
+        if (fromMatch) {
+          imports.push([i + 1, fromMatch[1]])
+          i = j
+          break
+        }
+      }
+    }
+
+    i++
   }
 
   return imports

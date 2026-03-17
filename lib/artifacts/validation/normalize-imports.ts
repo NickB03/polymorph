@@ -108,55 +108,114 @@ const NEXT_IMPORT_REPLACEMENTS: Record<string, string> = {
  *
  * - Rewrites shadcn package imports to local @/components/ui/* paths
  * - Replaces Next.js imports with browser-compatible comments
+ * - Handles both single-line and multi-line destructured imports
  * - Leaves valid imports unchanged
  */
 export function normalizeImports(code: string): NormalizeResult {
   let repaired = false
-  let result = code
-
-  // Process line by line to handle imports
-  const lines = result.split('\n')
+  const lines = code.split('\n')
   const outputLines: string[] = []
 
-  for (const line of lines) {
-    // Match import statements
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+
+    // Match single-line import statements
     const importMatch = line.match(
       /^(\s*import\s+)(.*?)\s+from\s+['"]([^'"]+)['"]/
     )
 
-    if (!importMatch) {
+    if (importMatch) {
+      const [, importKeyword, importClause, importPath] = importMatch
+
+      // Handle shadcn-style imports
+      if (isShadcnImport(importPath)) {
+        const componentFromPath = extractComponentFromPath(importPath)
+        const component =
+          componentFromPath || inferComponentFromImports(importClause)
+        outputLines.push(
+          `${importKeyword}${importClause} from '@/components/ui/${component}'`
+        )
+        repaired = true
+        i++
+        continue
+      }
+
+      // Handle Next.js imports
+      const nextReplacement = NEXT_IMPORT_REPLACEMENTS[importPath]
+      if (nextReplacement) {
+        outputLines.push(nextReplacement)
+        repaired = true
+        i++
+        continue
+      }
+
+      // Non-replaceable next/* imports are left intact for the validator
+      // to reject as BANNED_IMPORT with a structured error.
       outputLines.push(line)
+      i++
       continue
     }
 
-    const [, importKeyword, importClause, importPath] = importMatch
+    // Multi-line import: import keyword + opening brace, no from clause
+    if (
+      /^\s*import\s/.test(line) &&
+      /\{/.test(line) &&
+      !/\bfrom\s+['"]/.test(line)
+    ) {
+      let found = false
+      for (let j = i + 1; j < lines.length && j <= i + 30; j++) {
+        const fromMatch = lines[j].match(/\}\s*from\s+['"]([^'"]+)['"]/)
+        if (fromMatch) {
+          const importPath = fromMatch[1]
 
-    // Handle shadcn-style imports
-    if (isShadcnImport(importPath)) {
-      const componentFromPath = extractComponentFromPath(importPath)
-      const component =
-        componentFromPath || inferComponentFromImports(importClause)
-      outputLines.push(
-        `${importKeyword}${importClause} from '@/components/ui/${component}'`
-      )
-      repaired = true
+          if (isShadcnImport(importPath)) {
+            // Collapse multi-line import to single line with local path
+            const importLines = lines.slice(i, j + 1)
+            const fullImport = importLines.join(' ')
+            const clauseMatch = fullImport.match(
+              /^\s*import\s+([\s\S]*?)\s+from\s+/
+            )
+            const importClause = clauseMatch
+              ? clauseMatch[1].replace(/\s+/g, ' ').trim()
+              : ''
+            const componentFromPath = extractComponentFromPath(importPath)
+            const component =
+              componentFromPath || inferComponentFromImports(importClause)
+            outputLines.push(
+              `import ${importClause} from '@/components/ui/${component}'`
+            )
+            repaired = true
+          } else {
+            const nextReplacement = NEXT_IMPORT_REPLACEMENTS[importPath]
+            if (nextReplacement) {
+              outputLines.push(nextReplacement)
+              repaired = true
+            } else {
+              // Keep original multi-line import as-is
+              for (let k = i; k <= j; k++) {
+                outputLines.push(lines[k])
+              }
+            }
+          }
+
+          i = j + 1
+          found = true
+          break
+        }
+      }
+
+      if (!found) {
+        outputLines.push(line)
+        i++
+      }
       continue
     }
 
-    // Handle Next.js imports
-    const nextReplacement = NEXT_IMPORT_REPLACEMENTS[importPath]
-    if (nextReplacement) {
-      outputLines.push(nextReplacement)
-      repaired = true
-      continue
-    }
-
-    // Non-replaceable next/* imports are left intact for the validator
-    // to reject as BANNED_IMPORT with a structured error.
+    // Non-import line, pass through
     outputLines.push(line)
+    i++
   }
 
-  result = outputLines.join('\n')
-
-  return { code: result, repaired }
+  return { code: outputLines.join('\n'), repaired }
 }

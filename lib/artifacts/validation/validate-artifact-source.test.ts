@@ -59,6 +59,41 @@ describe('normalizeImports', () => {
     expect(result.code).toContain("from '@/components/ui/button'")
     expect(result.repaired).toBe(true)
   })
+
+  it('rewrites multi-line shadcn imports to single-line local paths', () => {
+    const code = [
+      `import {`,
+      `  Button,`,
+      `  buttonVariants`,
+      `} from 'shadcn/ui/button'`
+    ].join('\n')
+    const result = normalizeImports(code)
+    expect(result.code).toContain("from '@/components/ui/button'")
+    expect(result.repaired).toBe(true)
+    // Should be collapsed to a single line
+    expect(result.code.split('\n').length).toBe(1)
+  })
+
+  it('leaves multi-line non-shadcn imports unchanged', () => {
+    const code = [
+      `import {`,
+      `  useState,`,
+      `  useEffect`,
+      `} from 'react'`
+    ].join('\n')
+    const result = normalizeImports(code)
+    expect(result.code).toBe(code)
+    expect(result.repaired).toBe(false)
+  })
+
+  it('handles multi-line next/link imports', () => {
+    const code = [`import {`, `  default as Link`, `} from 'next/link'`].join(
+      '\n'
+    )
+    const result = normalizeImports(code)
+    expect(result.code).not.toContain('next/link')
+    expect(result.repaired).toBe(true)
+  })
 })
 
 describe('validateArtifactSource', () => {
@@ -300,6 +335,77 @@ describe('validateArtifactSource', () => {
       const result = validateArtifactSource({
         filePath: 'src/App.tsx',
         content: `import { cn } from '@/lib/utils'\nimport { myHelper } from '@/helpers/format'\nexport default function App() { return <div className={cn('foo')} /> }`
+      })
+      expect(result.valid).toBe(true)
+    })
+
+    it('rejects multi-line non-template UI component imports', () => {
+      const code = [
+        `import {`,
+        `  AccordionItem,`,
+        `  AccordionTrigger`,
+        `} from '@/components/ui/accordion'`,
+        `export default function FAQ() { return <div /> }`
+      ].join('\n')
+      const result = validateArtifactSource({
+        filePath: 'src/components/FAQ.tsx',
+        content: code
+      })
+      expect(result.valid).toBe(false)
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'UNSUPPORTED_PACKAGE',
+          message: expect.stringContaining('accordion')
+        })
+      )
+    })
+
+    it('allows multi-line template-installed UI component imports', () => {
+      const code = [
+        `import {`,
+        `  Card,`,
+        `  CardHeader,`,
+        `  CardTitle`,
+        `} from '@/components/ui/card'`,
+        `export default function App() { return <Card /> }`
+      ].join('\n')
+      const result = validateArtifactSource({
+        filePath: 'src/App.tsx',
+        content: code
+      })
+      expect(result.valid).toBe(true)
+    })
+
+    it('rejects multi-line unsupported npm package imports', () => {
+      const code = [
+        `import {`,
+        `  AxiosResponse,`,
+        `  AxiosError`,
+        `} from 'axios'`,
+        `export default function App() { return <div /> }`
+      ].join('\n')
+      const result = validateArtifactSource({
+        filePath: 'src/App.tsx',
+        content: code
+      })
+      expect(result.valid).toBe(false)
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({ code: 'UNSUPPORTED_PACKAGE' })
+      )
+    })
+
+    it('allows multi-line preinstalled package imports', () => {
+      const code = [
+        `import {`,
+        `  useState,`,
+        `  useEffect,`,
+        `  useCallback`,
+        `} from 'react'`,
+        `export default function App() { return <div /> }`
+      ].join('\n')
+      const result = validateArtifactSource({
+        filePath: 'src/App.tsx',
+        content: code
       })
       expect(result.valid).toBe(true)
     })
