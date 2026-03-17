@@ -34,6 +34,25 @@ export function ArtifactPreviewFrame() {
   // response returns the same previewUrl, the reset effect fires but we
   // skip re-probing because the URL hasn't actually changed.
   const lastProbedUrlRef = useRef<string | null>(null)
+
+  // Track status transitions to force re-probe when the workspace recovers
+  // from a non-ready state (e.g., building → ready after an update tool call
+  // with the same previewUrl). Without this, the probe wouldn't re-fire for
+  // the same URL and the iframe would keep stale content.
+  const prevStatusRef = useRef<string | null>(null)
+  const [probeGeneration, setProbeGeneration] = useState(0)
+
+  useEffect(() => {
+    if (
+      status === 'ready' &&
+      prevStatusRef.current !== null &&
+      prevStatusRef.current !== 'ready'
+    ) {
+      setProbeGeneration(g => g + 1)
+    }
+    prevStatusRef.current = status
+  }, [status])
+
   useEffect(() => {
     if (status === 'ready' && previewUrl && !hasProbed) {
       if (lastProbedUrlRef.current === previewUrl) {
@@ -58,16 +77,33 @@ export function ArtifactPreviewFrame() {
     }
   }, [status, previewUrl, hasProbed, probeRefresh])
 
-  // Reset probe flags when previewUrl changes (rebuild happened)
+  // Reset probe flags when previewUrl changes (rebuild) or when a status
+  // recovery triggers a new probeGeneration (update with same URL).
+  // Also clear lastProbedUrlRef so the re-probe actually fires.
   useEffect(() => {
     setHasProbed(false)
     setProbeSettled(false)
-  }, [previewUrl])
+    lastProbedUrlRef.current = null
+  }, [previewUrl, probeGeneration])
+
+  // Safety net: if the probe fetch hangs indefinitely (server never responds),
+  // force probeSettled after 15s so the ceiling timer can start and the user
+  // isn't stuck on "Checking preview..." forever.
+  useEffect(() => {
+    if (!probeSettled && hasProbed) {
+      const fallback = setTimeout(() => {
+        setProbeSettled(true)
+      }, 15_000)
+      return () => clearTimeout(fallback)
+    }
+  }, [probeSettled, hasProbed])
 
   // Fallback: if iframe is still loading after 10s, show hint.
   // After 30s hard ceiling, declare expired.
+  // IMPORTANT: Only start the timer after the probe settles — the iframe is
+  // gated behind the probe, so counting during probe wastes load budget.
   useEffect(() => {
-    if (status !== 'ready' || !previewUrl || !isLoading) return
+    if (status !== 'ready' || !previewUrl || !isLoading || !probeSettled) return
 
     let cancelled = false
 
@@ -79,7 +115,7 @@ export function ArtifactPreviewFrame() {
 
     const ceilingTimeout = setTimeout(() => {
       if (!cancelled && isLoading) {
-        updateWorkspace({ status: 'expired' })
+        updateWorkspace({ status: 'expired', canRebuild: true })
       }
     }, 30_000)
 
@@ -88,7 +124,7 @@ export function ArtifactPreviewFrame() {
       clearTimeout(hintTimeout)
       clearTimeout(ceilingTimeout)
     }
-  }, [status, previewUrl, isLoading, updateWorkspace])
+  }, [status, previewUrl, isLoading, probeSettled, updateWorkspace])
 
   // Reset slow-loading state when previewUrl changes (rebuild/refresh)
   useEffect(() => {
@@ -190,7 +226,7 @@ export function ArtifactPreviewFrame() {
           setLoadSlow(false)
         }}
         onError={() => {
-          updateWorkspace({ status: 'expired' })
+          updateWorkspace({ status: 'expired', canRebuild: true })
         }}
       />
     </div>

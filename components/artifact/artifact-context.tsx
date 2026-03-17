@@ -272,7 +272,11 @@ export function useArtifactAction(action: 'refresh' | 'retry' | 'rebuild') {
         if (controller.signal.aborted) return
         updateWorkspace({
           status: data.status ?? ws.status,
-          previewUrl: data.previewUrl ?? ws.previewUrl,
+          // Use explicit undefined check: the API returns `null` to clear
+          // the preview URL on expiry. `null ?? ws.previewUrl` would
+          // incorrectly preserve the stale URL.
+          previewUrl:
+            data.previewUrl !== undefined ? data.previewUrl : ws.previewUrl,
           revisionId: data.revisionId ?? ws.revisionId,
           title: data.title ?? ws.title,
           guestArtifactToken: data.guestArtifactToken ?? ws.guestArtifactToken,

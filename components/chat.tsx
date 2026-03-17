@@ -422,9 +422,24 @@ export function Chat({
     // authoritative; message parts contain stale pre-expiration status.
     if (artifactState.workspace.artifactId === artifactId) {
       if (artifactState.workspace.status === 'expired') {
-        // Status was set by refresh probe — don't let stale data overwrite it
-        lastOpenedArtifactIdRef.current = artifactId
-        return
+        // The probe or ceiling timeout set 'expired' authoritatively.
+        // Only allow recovery when a NEW tool invocation starts, signalled
+        // by status='building'. This is unambiguous because every tool call
+        // emits 'building' first — it can never be stale pre-expiration data.
+        // We do NOT allow 'ready' here because the old data-artifactStatus
+        // with status='ready' from the original create persists in messages
+        // and would immediately undo the probe's authoritative 'expired'.
+        const freshStatus = latestStatus?.data
+        const isNewToolInvocation =
+          freshStatus &&
+          freshStatus.id === artifactId &&
+          freshStatus.status === 'building'
+
+        if (!isNewToolInvocation) {
+          lastOpenedArtifactIdRef.current = artifactId
+          return
+        }
+        // Fall through to apply the recovery update below
       }
       const statusData = latestStatus?.data
       if (statusData && statusData.id === artifactId) {
