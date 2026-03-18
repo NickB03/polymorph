@@ -161,10 +161,15 @@ V1 contract boundaries:
 
 V1 asset and network behavior:
 
-- author-controlled assets must be embedded in the artifact output or handled through a constrained asset path selected during implementation
+- author-controlled assets must be embedded in the exported artifact output or handled through a constrained asset path selected during implementation
 - exported HTML must not depend on repo-local files
-- remote images, media, and fonts may be referenced, but they are external dependencies and should be surfaced as such in diagnostics or UI
-- runtime browser requests to external HTTPS APIs may occur as normal browser behavior, but the platform does not provision, manage, or guarantee those services
+- the export contract for "self-contained" means:
+  - all project-owned code is inlined
+  - all project-owned styles are inlined
+  - all project-owned embedded assets are inlined
+  - the exported file runs on its own without local companion files
+- remote images, media, and fonts may be referenced, but they are external dependencies rather than embedded artifact contents and should be surfaced as such in diagnostics or UI
+- runtime browser requests to external HTTPS APIs may occur as normal browser behavior, but those are runtime dependencies rather than part of the embedded artifact payload
 - requests that imply backend ownership remain out of scope and should be clarified or redirected in chat
 
 ### 2. Canvas Compiler/Renderer
@@ -224,6 +229,23 @@ Restore semantics:
 - the system then recompiles and produces a new current draft/preview state
 - historical versions remain immutable
 
+Version creation rules for v1:
+
+- a version is created only on explicit save points chosen by the product flow:
+  - successful AI-authored artifact creation
+  - successful AI-authored artifact update
+  - explicit user save/version action after manual edits
+- successful background recompiles during typing update draft preview state but do not automatically create immutable versions
+- draft state may diverge from the latest saved version
+
+Draft and restore semantics:
+
+- manual edits and AI edits both apply to the same active draft source state
+- if a restore is requested while unsaved draft changes exist, the UI must force an explicit choice:
+  - discard current draft changes and restore
+  - cancel restore
+- v1 should not attempt three-way merge of historical restore against unsaved draft state
+
 ### 4. Canvas Editor UI
 
 Responsibility:
@@ -265,11 +287,14 @@ Identity and lifecycle semantics for v1:
 
 - one chat may own at most one active canvas artifact
 - the active artifact for a user session is the artifact attached to the currently open chat
+- artifact identity must be persisted explicitly and not derived heuristically from latest message parts
 - create behavior in a chat with no artifact creates that chat's artifact
 - update behavior in a chat with an existing artifact updates that same artifact
 - if a user asks for a fundamentally different artifact in a chat that already has one, the system should clarify whether to conceptually replace the current artifact or start a new chat
 - the UI may allow viewing historical versions of the same artifact, but not multiple concurrent active artifacts within one chat in v1
 - chat history should reference artifact identity explicitly so reopening a chat reopens the same canvas artifact, not a heuristic "latest artifact" guess
+- authenticated users reopening a chat in a later session should resolve the same persisted artifact by chat-to-artifact linkage
+- guest users should follow the same one-chat-to-one-artifact rule, but with the guest continuity model chosen during implementation replacing the current guest sandbox token model
 
 ## V1 Constraints
 
@@ -315,6 +340,12 @@ The output of Stage 1 should be:
 - no prompts/tool descriptions steering the LLM toward the old model
 
 This stage should happen on the replacement branch, not as a standalone mainline change that leaves the product without an artifact system.
+
+Release/cutover rule:
+
+- Stage 1 is a branch-local cleanup and extraction step, not a production release milestone on its own
+- the user-facing release happens only once Stage 2 is complete enough to replace the current artifact experience
+- rollback means retaining the old system in the separate repo/project until the new system is accepted, not keeping both models active in this repo
 
 ### Stage 2: Add New Canvas Artifact System
 
@@ -379,6 +410,21 @@ Acceptance:
 Acceptance:
 
 - no active E2B artifact references remain in runtime code, prompts, or current docs in this repo
+
+### Legacy Data Handling
+
+The replacement must explicitly define how existing artifact-related data is handled.
+
+Migration rules:
+
+- existing E2B-specific runtime/session/rebuild behavior should not be carried forward into the new model
+- existing chats that referenced old artifacts should not silently point at incompatible new canvas artifacts
+- legacy artifact records, legacy references in chat history, and legacy public links should be handled through one of these explicit behaviors selected during implementation:
+  - read-only legacy experience
+  - migration banner with "legacy artifact unavailable in new canvas system"
+  - one-time migration only if the old artifact can be meaningfully represented in the new model
+
+V1 should assume no automatic semantic migration from old sandbox projects to new canvas artifacts unless a narrow, deterministic migration path is proven during implementation.
 
 ## Testing Strategy
 
