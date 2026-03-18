@@ -158,7 +158,7 @@ V1 contract boundaries:
 
 - authoring files may only import:
   - other files inside the constrained virtual file set
-  - a fixed built-in runtime surface selected during implementation
+  - the fixed built-in runtime surface defined below
 - arbitrary package installation is not allowed
 - remote module imports are not allowed
 - remote `<script>` tags and remote stylesheet injection are not allowed
@@ -184,6 +184,27 @@ Export rule clarification:
 - if an artifact references remote media, fonts, images, or external APIs, the exported HTML is still valid, but those dependencies must be reported explicitly to the user
 - implementation planning should define how export metadata or UI communicates remaining external dependencies
 
+Locked v1 runtime surface:
+
+- allowed package imports:
+  - `react`
+  - `react-dom/client`
+- allowed non-package imports:
+  - relative imports within the constrained virtual file set
+- allowed browser capabilities:
+  - standard DOM APIs
+  - SVG
+  - Canvas 2D
+  - timers
+  - keyboard, mouse, and pointer events
+  - Web Audio
+  - `fetch` to external HTTPS endpoints
+- disallowed in v1:
+  - arbitrary npm package imports
+  - Node.js APIs
+  - server-only framework APIs
+  - remote ESM or CDN imports
+
 ### 2. Canvas Compiler/Renderer
 
 Responsibility:
@@ -208,6 +229,23 @@ This is the key architectural shift:
 
 - old model: source -> sandbox runtime -> preview URL
 - new model: source -> compile -> HTML artifact -> preview
+
+Preview isolation model:
+
+- preview runs inside a sandboxed iframe
+- the iframe must not share application origin state with the host app
+- host-to-preview coordination should use a narrow `postMessage` bridge
+- preview sandbox permissions should allow script execution and browser interaction needed for frontend artifacts while blocking direct host-app access and parent navigation
+- the preview document should use a restrictive CSP aligned to the locked v1 runtime surface:
+  - inline bundled code and styles allowed
+  - embedded assets allowed
+  - external runtime requests limited to the dependency classes allowed by the v1 contract
+
+Locked v1 compiler choice:
+
+- use `esbuild` to transpile and bundle the constrained virtual file set
+- use a host-controlled HTML assembler to inject bundled JS/CSS into a single HTML output
+- do not introduce a repo/project-style package manager flow for artifact generation
 
 ### 3. Canvas Persistence
 
@@ -259,6 +297,27 @@ Draft and restore semantics:
   - cancel restore
 - v1 should not attempt three-way merge of historical restore against unsaved draft state
 
+Locked v1 persistence shape:
+
+- one `canvasArtifacts` record per artifact:
+  - `id`
+  - `chatId`
+  - `userId` or guest ownership reference
+  - `title`
+  - `draftSource` as the virtual file set payload
+  - `draftCompiledHtml`
+  - `draftRevision`
+  - `currentVersionId`
+  - timestamps
+- one `canvasArtifactVersions` record per immutable version:
+  - `id`
+  - `artifactId`
+  - `versionNumber`
+  - `sourceSnapshot`
+  - `compiledHtmlSnapshot`
+  - `createdBy` (`ai`, `user`, or `restore`)
+  - timestamps
+
 ### 4. Canvas Editor UI
 
 Responsibility:
@@ -275,6 +334,11 @@ Capabilities:
 - runtime error display
 - export/download
 - AI revision entry point
+
+Locked v1 editing mode:
+
+- desktop uses split-pane preview and code editing
+- mobile uses tabbed preview/code switching
 
 The UI should not include old concepts such as:
 
@@ -325,6 +389,16 @@ Identity and lifecycle semantics for v1:
 - chat history should reference artifact identity explicitly so reopening a chat reopens the same canvas artifact, not a heuristic "latest artifact" guess
 - authenticated users reopening a chat in a later session should resolve the same persisted artifact by chat-to-artifact linkage
 - guest users should follow the same one-chat-to-one-artifact rule, but with the guest continuity model chosen during implementation replacing the current guest sandbox token model
+
+Concurrency semantics for v1:
+
+- the draft is single-writer logical state protected by optimistic concurrency
+- every manual save or AI update must include the current `draftRevision`
+- if the submitted base revision is stale, the write is rejected with a conflict instead of silently overwriting newer state
+- v1 conflict handling is explicit:
+  - show stale-tab or stale-edit warning
+  - require reload, reapply, or regenerate against the latest draft
+- v1 does not attempt automatic merge of simultaneous manual and AI edits
 
 ## V1 Constraints
 
@@ -528,13 +602,27 @@ Mitigation:
 - remove the old system entirely from this repo
 - rewrite docs and references so only one artifact model is described as active
 
-## Open Decisions For Implementation Planning
+## Locked V1 Decisions
 
-These do not block the design, but the implementation plan must choose them explicitly:
+The following design choices are fixed for implementation planning:
 
-- exact built-in runtime surface for allowed imports/packages
-- exact virtual file schema for v1
-- exact compiler/bundler stack
-- exact canvas storage schema
-- whether code editing is split-pane or tabbed in the canvas UI
-- whether asset embedding in v1 is inline-only or supports limited uploads
+- virtual file schema:
+  - required: `App.tsx`
+  - optional: `styles.css`
+  - optional: `components.tsx`
+  - optional: `meta.json`
+- runtime surface:
+  - `react`
+  - `react-dom/client`
+  - relative imports within the virtual file set
+  - browser APIs defined in the v1 runtime contract
+- compiler/bundler:
+  - `esbuild` plus host-controlled HTML assembly
+- persistence model:
+  - `canvasArtifacts` plus `canvasArtifactVersions`
+- editing mode:
+  - split-pane on desktop
+  - tabbed on mobile
+- asset strategy:
+  - limited asset support in v1
+  - project-owned assets must be embedded into the generated/exported artifact path rather than emitted as loose companion files
