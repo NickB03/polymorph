@@ -11,7 +11,7 @@ The replacement should behave like the canvas/artifact experiences in Claude, Ge
 - the user can edit code in-browser
 - the user can ask the AI to make changes to the same artifact
 - the artifact can be versioned and restored
-- the artifact can be exported as a single self-contained HTML file
+- the artifact can be exported as a single HTML file
 
 The current E2B artifact system should be moved out of this repo entirely and treated as a separate focused project. It should not remain in this repo behind flags or inactive docs because that would continue to confuse the LLM and future contributors.
 
@@ -35,7 +35,7 @@ Out of scope:
 - sandbox rebuild/restart flows
 - deployment orchestration
 
-If a request fits inside a frontend-only canvas artifact that can compile into a self-contained HTML experience, it is in scope. If it requires backend services, databases, server authority, infrastructure, or project scaffolding, it is out of scope and should be clarified or redirected by the existing chat/Q&A flow.
+If a request fits inside a frontend-only canvas artifact that can compile into a single-file HTML experience, it is in scope. If it requires backend services, databases, server authority, infrastructure, or project scaffolding, it is out of scope and should be clarified or redirected by the existing chat/Q&A flow.
 
 Important distinction:
 
@@ -54,7 +54,7 @@ User-facing behavior:
 - code editing happens in the browser
 - AI updates mutate the same artifact
 - version history is part of the artifact experience
-- export/download produces one self-contained HTML file
+- export/download produces one single-file HTML artifact
 
 The system should support frontend-only interactive experiences broadly, not a narrow whitelist of artifact categories. This includes:
 
@@ -74,7 +74,7 @@ The product boundary should be principle-based:
 
 ## Canonical Artifact Format
 
-The canonical authoring model should be a small constrained virtual file set that compiles into a single self-contained HTML artifact.
+The canonical authoring model should be a small constrained virtual file set that compiles into a single HTML artifact.
 
 Recommended virtual files:
 
@@ -86,7 +86,7 @@ Recommended virtual files:
 The compiled/exported artifact should be:
 
 - one `artifact.html` file
-- self-contained with inline JS/CSS/assets where feasible
+- single-file, with all project-owned code/styles/assets inlined
 
 This gives the system:
 
@@ -154,6 +154,15 @@ Requirements:
 
 This contract replaces the current multi-file project/sandbox tool contract.
 
+Locked v1 size limits:
+
+- maximum virtual files per artifact: 4
+- maximum size per source file: 150 KB
+- maximum total source size per artifact draft: 400 KB
+- maximum compiled HTML size: 2 MB
+- maximum embedded project-owned asset payload across the artifact: 5 MB
+- maximum retained immutable versions per artifact: 50
+
 V1 contract boundaries:
 
 - authoring files may only import:
@@ -181,8 +190,9 @@ V1 asset and network behavior:
 Export rule clarification:
 
 - v1 guarantees single-file export, not offline-only execution
+- v1 does not promise a fully offline/self-contained runtime in the strict sense if the artifact intentionally references external network resources
 - if an artifact references remote media, fonts, images, or external APIs, the exported HTML is still valid, but those dependencies must be reported explicitly to the user
-- implementation planning should define how export metadata or UI communicates remaining external dependencies
+- export UI must communicate remaining external dependencies explicitly
 
 Locked v1 runtime surface:
 
@@ -209,7 +219,7 @@ Locked v1 runtime surface:
 
 Responsibility:
 
-- compile the virtual file set into one self-contained HTML artifact
+- compile the virtual file set into one single-file HTML artifact
 
 Outputs:
 
@@ -406,7 +416,7 @@ V1 should be intentionally frontend-only, but not artificially narrow beyond tha
 
 Supported:
 
-- anything that can compile into a frontend-only self-contained browser artifact
+- anything that can compile into a frontend-only single-file browser artifact
 
 Not supported:
 
@@ -519,16 +529,23 @@ Acceptance:
 
 The replacement must explicitly define how existing artifact-related data is handled.
 
-Migration rules:
+Locked default legacy behavior for v1:
 
 - existing E2B-specific runtime/session/rebuild behavior should not be carried forward into the new model
 - existing chats that referenced old artifacts should not silently point at incompatible new canvas artifacts
-- legacy artifact records, legacy references in chat history, and legacy public links should be handled through one of these explicit behaviors selected during implementation:
-  - read-only legacy experience
-  - migration banner with "legacy artifact unavailable in new canvas system"
-  - one-time migration only if the old artifact can be meaningfully represented in the new model
+- legacy artifact records remain unmigrated by default
+- legacy references in chat history resolve to a deterministic legacy notice, not to a best-effort converted canvas artifact
+- legacy public links, if encountered, should resolve to a read-only legacy-unavailable notice
+- v1 does not attempt automatic semantic migration from old sandbox projects to new canvas artifacts
+- a future migration may exist only if a narrow deterministic conversion path is proven separately
 
-V1 should assume no automatic semantic migration from old sandbox projects to new canvas artifacts unless a narrow, deterministic migration path is proven during implementation.
+Locked guest continuity behavior for v1:
+
+- guest artifacts use a signed guest canvas token bound to `chatId` and `artifactId`
+- the token is the anonymous continuity mechanism for reopening the same guest chat/artifact pair
+- guest writes rotate or refresh the token as needed
+- no anonymous cross-device recovery is guaranteed beyond possession of the guest token
+- guest users follow the same one-chat-to-one-artifact rule as authenticated users
 
 ## Testing Strategy
 
@@ -569,7 +586,7 @@ The replacement is successful when:
 - the user can directly edit the artifact code in the browser
 - the user can ask the AI to make iterative changes to the same artifact
 - the artifact supports version history and restore
-- the artifact can be exported as a self-contained HTML file
+- the artifact can be exported as a single HTML file with project-owned code/styles/assets inlined
 - the old E2B artifact system is no longer present in the active repo, active docs, or active prompts
 
 ## Risks And Mitigations
