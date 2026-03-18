@@ -37,6 +37,12 @@ Out of scope:
 
 If a request fits inside a frontend-only canvas artifact that can compile into a self-contained HTML experience, it is in scope. If it requires backend services, databases, server authority, infrastructure, or project scaffolding, it is out of scope and should be clarified or redirected by the existing chat/Q&A flow.
 
+Important distinction:
+
+- the generated artifact itself is frontend-only
+- the product implementation is allowed to reuse the app's existing server-side persistence, auth, and chat infrastructure to store artifact state, versions, identity, and access control
+- the non-goals above apply to generated artifact capabilities, not to the host product's implementation surface
+
 ## Product Model
 
 The primary unit is a single canvas artifact, not a mini app project.
@@ -163,7 +169,7 @@ V1 asset and network behavior:
 
 - author-controlled assets must be embedded in the exported artifact output or handled through a constrained asset path selected during implementation
 - exported HTML must not depend on repo-local files
-- the export contract for "self-contained" means:
+- the export contract for v1 means:
   - all project-owned code is inlined
   - all project-owned styles are inlined
   - all project-owned embedded assets are inlined
@@ -171,6 +177,12 @@ V1 asset and network behavior:
 - remote images, media, and fonts may be referenced, but they are external dependencies rather than embedded artifact contents and should be surfaced as such in diagnostics or UI
 - runtime browser requests to external HTTPS APIs may occur as normal browser behavior, but those are runtime dependencies rather than part of the embedded artifact payload
 - requests that imply backend ownership remain out of scope and should be clarified or redirected in chat
+
+Export rule clarification:
+
+- v1 guarantees single-file export, not offline-only execution
+- if an artifact references remote media, fonts, images, or external APIs, the exported HTML is still valid, but those dependencies must be reported explicitly to the user
+- implementation planning should define how export metadata or UI communicates remaining external dependencies
 
 ### 2. Canvas Compiler/Renderer
 
@@ -190,6 +202,7 @@ Requirements:
 - fast enough for iterative edits
 - supports frontend interactivity, state, events, timers, animation, and lightweight assets
 - no server/runtime lifecycle concepts
+- produces both compile diagnostics and runtime diagnostics contracts for the canvas UI
 
 This is the key architectural shift:
 
@@ -259,6 +272,7 @@ Capabilities:
 - code pane
 - version restore
 - compile/error display
+- runtime error display
 - export/download
 - AI revision entry point
 
@@ -268,6 +282,22 @@ The UI should not include old concepts such as:
 - restart preview
 - expired preview
 - runtime logs tied to sandbox execution
+
+Runtime diagnostics model:
+
+- validation failures prevent compile and are shown as source-level diagnostics
+- compile failures do not replace the last successful preview
+- runtime failures in the browser preview should surface through a dedicated runtime diagnostics view or overlay
+- runtime failures include:
+  - synchronous browser exceptions
+  - unhandled promise rejections
+  - asset load failures
+  - external request failures visible to the browser runtime
+- after a runtime failure, the user should still be able to:
+  - inspect the error
+  - continue editing
+  - ask the AI to fix the artifact
+- recovery should happen through source edits and recompilation, not restart/rebuild controls
 
 ### 5. Chat Integration
 
