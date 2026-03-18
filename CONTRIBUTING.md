@@ -130,7 +130,7 @@ import { z } from 'zod'
 // 3. Internal paths (ordered by depth)
 import { SearchResults } from '@/lib/types'
 import { getModel } from '@/lib/utils/registry'
-import { useChat } from '@/hooks/use-chat'
+import { useCurrentUser } from '@/hooks/use-current-user'
 import { Button } from '@/components/ui/button'
 import { SearchSection } from '@/components/search-section'
 ```

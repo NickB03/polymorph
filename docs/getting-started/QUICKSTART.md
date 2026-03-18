@@ -74,7 +74,7 @@ See [Environment Reference](ENVIRONMENT.md) for the full variable matrix.
 bun run migrate
 ```
 
-This creates the `chats`, `messages`, and `parts` tables with Row-Level Security policies.
+This creates the database tables (`chats`, `messages`, `parts`, `artifacts`, `artifact_revisions`, `artifact_runtime_sessions`, `feedback`) with Row-Level Security policies.
 
 ## 5. Start the Dev Server
 

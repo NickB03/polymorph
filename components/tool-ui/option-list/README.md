@@ -1,6 +1,6 @@
 # Option List
 
-Implementation for the "option-list" Tool UI surface.
+Renders a selectable list of options with single or multi selection modes, configurable min/max selection constraints, embedded action buttons, and a receipt confirmation view driven by the `choice` prop.
 
 ## Files
 

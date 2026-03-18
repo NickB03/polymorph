@@ -21,7 +21,6 @@ This document describes the generative UI system in Polymorph — how AI tool in
 - [Research Process Section](#research-process-section)
 - [How to Add a New Generative UI Tool](#how-to-add-a-new-generative-ui-tool)
 - [Key File Reference](#key-file-reference)
-- [Future Capabilities](#future-capabilities)
 
 ---
 
@@ -119,9 +118,7 @@ Display tools transition quickly through these states since their `execute` func
 
 Display tools are defined in `lib/tools/display-*.ts`. Each is a Vercel AI SDK `tool()` with a Zod input schema and a passthrough execute function.
 
-### Design principle
-
-Display tools do not perform any computation — they serve as a structured output channel for the AI agent. The agent fills in the schema, and the frontend renders it. This separation means the AI provides the data structure while the React components own all presentation logic.
+Display tools do not perform any computation. They serve as a structured output channel for the AI agent. The agent fills in the schema, and the frontend renders it.
 
 ### Tool definitions
 
@@ -302,13 +299,9 @@ graph TD
 | `timeline/`     | `cn`                                                                                     |
 | `shared/`       | Button, `cn`                                                                             |
 
-### Why adapters?
+### Adapter behavior
 
-The adapter pattern provides two benefits:
-
-1. **Portability** — Tool UI components can be extracted into a shared package without carrying application-specific imports. A different host application would provide its own adapters.
-
-2. **Single point of change** — If the host switches from shadcn/ui to a different component library, only the adapter files need to be updated.
+The adapter pattern decouples tool UI components from the host application's design system. Tool UI components import only from their local `_adapter.tsx`, which re-exports host dependencies. A different host application can provide its own adapters without modifying component logic.
 
 **Source files:** `components/tool-ui/*/\_adapter.tsx`
 
@@ -712,13 +705,12 @@ graph TD
 
 `ArtifactContent` dispatches based on `part.type`:
 
-| Part type          | Component                                         | Content shown                                 |
-| ------------------ | ------------------------------------------------- | --------------------------------------------- |
-| `tool-search`      | `ToolInvocationContent` → `SearchArtifactContent` | Search results with source links and snippets |
-| `tool-fetch`       | `ToolInvocationContent`                           | Generic tool display                          |
-| `tool-askQuestion` | `ToolInvocationContent`                           | Generic tool display                          |
-| `tool-todoWrite`   | `TodoInvocationContent`                           | Todo list with progress                       |
-| `reasoning`        | `ReasoningContent`                                | Full reasoning text as markdown               |
+| Part type        | Component                                         | Content shown                                 |
+| ---------------- | ------------------------------------------------- | --------------------------------------------- |
+| `tool-search`    | `ToolInvocationContent` → `SearchArtifactContent` | Search results with source links and snippets |
+| `tool-fetch`     | `ToolInvocationContent`                           | Generic tool display                          |
+| `tool-todoWrite` | `TodoInvocationContent`                           | Todo list with progress                       |
+| `reasoning`      | `ReasoningContent`                                | Full reasoning text as markdown               |
 
 **Source files:** [`components/artifact/artifact-root.tsx`](../components/artifact/artifact-root.tsx), [`components/artifact/artifact-context.tsx`](../components/artifact/artifact-context.tsx), [`components/artifact/artifact-content.tsx`](../components/artifact/artifact-content.tsx), [`components/artifact/chat-artifact-container.tsx`](../components/artifact/chat-artifact-container.tsx)
 
@@ -952,31 +944,20 @@ activeTools: [...existingTools, 'displayTimeline']
 
 ### Artifact / Inspector
 
-| File                                              | Purpose                                        |
-| ------------------------------------------------- | ---------------------------------------------- |
-| `components/artifact/artifact-root.tsx`           | Provider + container wrapper                   |
-| `components/artifact/artifact-context.tsx`        | React context with open/close state            |
-| `components/artifact/artifact-content.tsx`        | Part type -> content dispatcher                |
-| `components/artifact/chat-artifact-container.tsx` | Resizable desktop + mobile drawer              |
-| `components/artifact/tool-invocation-content.tsx` | Tool part dispatcher (search, fetch, question) |
-| `components/artifact/search-artifact-content.tsx` | Full search results view                       |
-| `components/artifact/reasoning-content.tsx`       | Full reasoning markdown view                   |
-| `components/artifact/todo-invocation-content.tsx` | Todo list detail view                          |
-| `components/inspector/inspector-panel.tsx`        | Panel chrome with icon + close                 |
+| File                                              | Purpose                                    |
+| ------------------------------------------------- | ------------------------------------------ |
+| `components/artifact/artifact-root.tsx`           | Provider + container wrapper               |
+| `components/artifact/artifact-context.tsx`        | React context with open/close state        |
+| `components/artifact/artifact-content.tsx`        | Part type -> content dispatcher            |
+| `components/artifact/chat-artifact-container.tsx` | Resizable desktop + mobile drawer          |
+| `components/artifact/tool-invocation-content.tsx` | Tool part dispatcher (search, fetch, etc.) |
+| `components/artifact/search-artifact-content.tsx` | Full search results view                   |
+| `components/artifact/reasoning-content.tsx`       | Full reasoning markdown view               |
+| `components/artifact/todo-invocation-content.tsx` | Todo list detail view                      |
+| `components/inspector/inspector-panel.tsx`        | Panel chrome with icon + close             |
 
 ### Types
 
 | File                         | Purpose                          |
 | ---------------------------- | -------------------------------- |
 | `lib/types/dynamic-tools.ts` | DynamicToolPart type definitions |
-
----
-
-## Future Capabilities
-
-Polymorph's generative UI system is designed to expand beyond research. Planned display components include:
-
-- **Code Artifacts** — Live code rendering with syntax highlighting and execution previews
-- **Image Generation** — Display components for AI-generated images with variant selection
-- **Multimodal Input/Output** — Components for handling mixed media (text, images, audio, video)
-- **Website Previews** — Interactive iframe-based previews for generated web content

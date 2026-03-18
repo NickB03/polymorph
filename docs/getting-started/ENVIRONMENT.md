@@ -46,6 +46,7 @@ Required when `ENABLE_AUTH=true`:
 - `BRAVE_SEARCH_API_KEY` (multimedia/general search)
 - `SEARCH_API` (`tavily`, `exa`, `searxng`, `firecrawl`, `brave`)
 - `EXA_API_KEY` / `FIRECRAWL_API_KEY` (if selected)
+- `SEARXNG_API_URL` (required when `SEARCH_API=searxng`)
 
 ## AI provider options (Direct)
 

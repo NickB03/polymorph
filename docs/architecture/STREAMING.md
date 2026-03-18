@@ -51,7 +51,7 @@ Key characteristics:
 - Persists user messages and AI responses to the database via `persistStreamResults`
 - Generates chat titles in parallel for new conversations
 - Creates Langfuse traces for observability when tracing is enabled
-- Handles both `submit-message` and `regenerate-message` triggers
+- Handles `submit-message`, `regenerate-message`, and `tool-result` triggers
 
 ### Ephemeral Streams (`create-ephemeral-chat-stream-response.ts`)
 
@@ -106,7 +106,7 @@ The React `Chat` component (`components/chat.tsx`) uses the AI SDK's `useChat` h
 
 ### 3. Model Selection
 
-The route reads `searchMode` and `modelType` from cookies, then calls `selectModel()` to resolve the appropriate model configuration. Guest users and cloud deployments are forced to `speed` model type. The selected model is validated against the provider registry.
+The route reads `searchMode` and `modelType` from cookies, then calls `selectModel()` to resolve the appropriate model configuration. The selected model is validated against the provider registry.
 
 ### 4. Stream Path Dispatch
 

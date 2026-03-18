@@ -40,7 +40,7 @@ ANONYMOUS_USER_ID=anonymous-user
 ### Primary optimized provider (required)
 
 - **Tavily** (default)
-- Alternative: Exa or Firecrawl
+- Alternative: Exa, Firecrawl, or SearXNG
 
 ### Optional general/multimedia provider
 
@@ -58,6 +58,7 @@ Default model config ships with Vercel AI Gateway. Direct providers are also sup
 - Anthropic (`ANTHROPIC_API_KEY`)
 - Google (`GOOGLE_GENERATIVE_AI_API_KEY`)
 - Ollama (`OLLAMA_BASE_URL`)
+- OpenAI-compatible (`OPENAI_COMPATIBLE_API_KEY` + `OPENAI_COMPATIBLE_API_BASE_URL`)
 
 If you change providers, ensure model IDs in `config/models/*.json` are compatible.
 
@@ -71,6 +72,16 @@ UPSTASH_REDIS_REST_URL=[YOUR_UPSTASH_URL]
 UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 ```
 
+## Artifacts (E2B)
+
+Enable React SPA artifact generation in E2B sandboxes:
+
+```bash
+ENABLE_ARTIFACTS=true
+E2B_API_KEY=[YOUR_E2B_API_KEY]
+GUEST_ARTIFACT_SECRET=[YOUR_HMAC_SECRET]
+```
+
 ## Optional Features
 
 - Guest chat: `ENABLE_GUEST_CHAT=true`
@@ -79,4 +90,4 @@ UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 - File uploads: `SUPABASE_STORAGE_BUCKET=user-uploads`
 - Perf logging: `ENABLE_PERF_LOGGING=true`
 
-For full variable documentation, see `.env.local.example` and `docs/ENVIRONMENT.md`.
+For full variable documentation, see `.env.local.example` and [Environment Reference](ENVIRONMENT.md).

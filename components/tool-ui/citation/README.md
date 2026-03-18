@@ -1,6 +1,6 @@
 # Citation
 
-Implementation for the "citation" Tool UI surface.
+Renders source citations as cards, inline chips with hover popovers, or stacked favicon groups. Includes a `CitationList` wrapper with overflow truncation via `maxVisible`.
 
 ## Files
 

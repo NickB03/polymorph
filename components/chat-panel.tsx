@@ -86,6 +86,18 @@ export function ChatPanel({
   const voiceEnabled = isVoiceEnabled()
   const artifactsEnabled = isArtifactsEnabled()
 
+  // Submit after a brief delay so React flushes the input state update first
+  const submitPromptValue = (value: string) => {
+    handleInputChange({
+      target: { value }
+    } as React.ChangeEvent<HTMLTextAreaElement>)
+    setTimeout(() => {
+      inputRef.current?.form?.requestSubmit()
+      setIsInputFocused(false)
+      inputRef.current?.blur()
+    }, INPUT_UPDATE_DELAY_MS)
+  }
+
   const handleCompositionStart = () => setIsComposing(true)
 
   const handleCompositionEnd = () => {
@@ -325,27 +337,10 @@ export function ChatPanel({
                 syncSearchMode('research')
                 syncModelType('quality')
               }
-              // Set the input value and submit
-              handleInputChange({
-                target: { value: message }
-              } as React.ChangeEvent<HTMLTextAreaElement>)
-              // Submit the form after a small delay to ensure the input is updated
-              setTimeout(() => {
-                inputRef.current?.form?.requestSubmit()
-                // Reset focus state after action button submission
-                setIsInputFocused(false)
-                inputRef.current?.blur()
-              }, INPUT_UPDATE_DELAY_MS)
+              submitPromptValue(message)
             }}
             onBuildTemplateSelect={prompt => {
-              handleInputChange({
-                target: { value: prompt }
-              } as React.ChangeEvent<HTMLTextAreaElement>)
-              setTimeout(() => {
-                inputRef.current?.form?.requestSubmit()
-                setIsInputFocused(false)
-                inputRef.current?.blur()
-              }, INPUT_UPDATE_DELAY_MS)
+              submitPromptValue(prompt)
             }}
             onCategoryClick={category => {
               // Set the category in the input

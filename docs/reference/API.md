@@ -53,23 +53,30 @@ The primary chat endpoint. Accepts a user message and returns a Server-Sent Even
 
 ```typescript
 {
-  message: string          // Required for trigger="submit-message"
-  messages?: Message[]     // Full message history (used for guest/ephemeral chats)
-  chatId: string           // Chat session identifier
-  trigger: string          // "submit-message" | "regenerate-message"
-  messageId?: string       // Required for trigger="regenerate-message"
-  isNewChat?: boolean      // Whether this is the first message in a chat
+  message: string              // Required for trigger="submit-message"
+  messages?: Message[]         // Full message history (used for guest/ephemeral chats)
+  chatId: string               // Chat session identifier
+  trigger: string              // "submit-message" | "regenerate-message" | "tool-result"
+  messageId?: string           // Required for trigger="regenerate-message"
+  isNewChat?: boolean          // Whether this is the first message in a chat
+  toolResult?: {               // Required for trigger="tool-result"
+    toolCallId: string
+    output: unknown
+  }
+  guestArtifactToken?: string  // HMAC-signed token for guest artifact continuity
 }
 ```
 
-| Field       | Type        | Required    | Description                                                                                        |
-| ----------- | ----------- | ----------- | -------------------------------------------------------------------------------------------------- |
-| `message`   | `string`    | Conditional | The user's message text. Required when `trigger` is `"submit-message"`.                            |
-| `messages`  | `Message[]` | No          | Full conversation history. Used for guest/ephemeral streaming.                                     |
-| `chatId`    | `string`    | Yes         | Unique identifier for the chat session.                                                            |
-| `trigger`   | `string`    | Yes         | Action type: `"submit-message"` for new messages, `"regenerate-message"` to regenerate a response. |
-| `messageId` | `string`    | Conditional | ID of the message to regenerate. Required when `trigger` is `"regenerate-message"`.                |
-| `isNewChat` | `boolean`   | No          | Indicates a new chat session. Affects analytics tracking.                                          |
+| Field                | Type        | Required    | Description                                                                                                              |
+| -------------------- | ----------- | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `message`            | `string`    | Conditional | The user's message text. Required when `trigger` is `"submit-message"`.                                                  |
+| `messages`           | `Message[]` | No          | Full conversation history. Used for guest/ephemeral streaming.                                                           |
+| `chatId`             | `string`    | Yes         | Unique identifier for the chat session.                                                                                  |
+| `trigger`            | `string`    | Yes         | Action type: `"submit-message"`, `"regenerate-message"`, or `"tool-result"` for interactive tool continuations.          |
+| `messageId`          | `string`    | Conditional | ID of the message to regenerate. Required when `trigger` is `"regenerate-message"`.                                      |
+| `isNewChat`          | `boolean`   | No          | Indicates a new chat session. Affects analytics tracking.                                                                |
+| `toolResult`         | `object`    | Conditional | Tool result payload with `toolCallId` and `output`. Required when `trigger` is `"tool-result"`.                          |
+| `guestArtifactToken` | `string`    | No          | HMAC-SHA256 signed token for guest artifact continuity. Passed through to artifact tools for guest session verification. |
 
 #### Cookies Read
 
@@ -86,14 +93,14 @@ The response is a streaming SSE connection. Message parts (text, search results,
 
 #### Error Responses
 
-| Status                      | Condition                                                                                                            |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `400 Bad Request`           | Missing `message` for submit trigger, or missing `messageId` for regenerate trigger.                                 |
-| `401 Unauthorized`          | No authenticated user and guest mode is disabled. Also returned when guest rate limit is exceeded (prompts sign-in). |
-| `403 Forbidden`             | Request originated from a `/share/` page. Chat API is blocked on share pages.                                        |
-| `404 Not Found`             | Selected AI provider is not enabled in the registry.                                                                 |
-| `429 Too Many Requests`     | Authenticated user exceeded daily chat limit (cloud deployments only).                                               |
-| `500 Internal Server Error` | Unexpected server error during processing.                                                                           |
+| Status                      | Condition                                                                                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `400 Bad Request`           | Missing `message` for submit trigger, missing `messageId` for regenerate trigger, or missing/invalid `toolResult` for tool-result trigger. |
+| `401 Unauthorized`          | No authenticated user and guest mode is disabled. Also returned when guest rate limit is exceeded (prompts sign-in).                       |
+| `403 Forbidden`             | Request originated from a `/share/` page. Chat API is blocked on share pages.                                                              |
+| `404 Not Found`             | Selected AI provider is not enabled in the registry.                                                                                       |
+| `429 Too Many Requests`     | Authenticated user exceeded daily chat limit (cloud deployments only).                                                                     |
+| `500 Internal Server Error` | Unexpected server error during processing.                                                                                                 |
 
 #### Example
 
@@ -354,6 +361,137 @@ Performs a SearXNG-powered web search with optional deep crawling and relevance 
 | `SEARXNG_TIME_RANGE`       | `"None"`                             | Time range filter (e.g., `"day"`, `"week"`, `"month"`). |
 | `SEARXNG_SAFESEARCH`       | `"0"`                                | Safe search level (0=off, 1=moderate, 2=strict).        |
 | `SEARXNG_CRAWL_MULTIPLIER` | `"4"`                                | Multiplier for pages to crawl in advanced mode.         |
+
+---
+
+### GET `/api/suggestions`
+
+Returns trending topic suggestions for the homepage, grouped by category. Results are cached in Redis for 4 hours with stale fallback support.
+
+**Authentication:** None
+**Dynamic:** `force-dynamic`
+
+#### Response
+
+**Content-Type:** `application/json`
+
+```typescript
+{
+  research: string[]
+  compare: string[]
+  creative: string[]
+  technical: string[]
+}
+```
+
+**Headers:**
+
+- `x-suggestions-source` -- Source of suggestions (`cache`, `tavily`, `brave`, `default`)
+- `x-suggestions-serve-mode` -- How the response was served (`primary-cache`, `fresh-generated`, `stale-cache`)
+
+---
+
+### POST `/api/voice/synthesize`
+
+Synthesizes text-to-speech audio using a server-side TTS provider (OpenAI or ElevenLabs).
+
+**Authentication:** Required (or guest mode enabled)
+**Dynamic:** `force-dynamic`
+
+#### Request Body
+
+```typescript
+{
+  text: string              // Text to synthesize (truncated to max chars limit)
+  provider?: string         // Preferred TTS provider ("openai" or "elevenlabs")
+  voiceId?: string          // Voice ID for the selected provider
+}
+```
+
+#### Response
+
+**Content-Type:** `audio/mpeg`
+
+Returns a streaming audio response.
+
+#### Error Responses
+
+| Status | Condition                                                             |
+| ------ | --------------------------------------------------------------------- |
+| `400`  | Missing or invalid `text` field.                                      |
+| `401`  | User not authenticated and guest mode disabled.                       |
+| `404`  | Voice feature not enabled (`NEXT_PUBLIC_ENABLE_VOICE` is not `true`). |
+| `422`  | No server-side TTS provider configured.                               |
+
+---
+
+### POST `/api/artifacts/[artifactId]/actions`
+
+Performs workspace actions on an artifact's E2B sandbox (refresh, retry, rebuild).
+
+**Authentication:** Required (authenticated user or valid guest artifact token)
+
+#### Request Body
+
+```typescript
+{
+  action: string                // "refresh" | "retry" | "rebuild"
+  guestArtifactToken?: string   // Required for guest users
+}
+```
+
+| Field                | Type     | Required    | Description                                                           |
+| -------------------- | -------- | ----------- | --------------------------------------------------------------------- |
+| `action`             | `string` | Yes         | Workspace action: `"refresh"`, `"retry"`, or `"rebuild"`.             |
+| `guestArtifactToken` | `string` | Conditional | HMAC-signed guest token. Required when no authenticated user session. |
+
+#### Response
+
+**Content-Type:** `application/json`
+
+Returns sandbox status with preview URL and optional refreshed guest token.
+
+#### Error Responses
+
+| Status | Condition                                  |
+| ------ | ------------------------------------------ |
+| `400`  | Invalid JSON body or unknown action value. |
+| `401`  | No authenticated user and no guest token.  |
+| `404`  | Artifact not found in database.            |
+| `500`  | Sandbox operation failed.                  |
+
+---
+
+### GET `/api/health`
+
+Health check endpoint for monitoring and load balancers. Verifies database connectivity with a 5-second timeout.
+
+**Authentication:** None
+**Dynamic:** `force-dynamic`
+
+#### Response
+
+**Content-Type:** `application/json`
+
+**Healthy (200):**
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-01-15T10:30:00.000Z",
+  "db": "connected"
+}
+```
+
+**Unhealthy (503):**
+
+```json
+{
+  "status": "error",
+  "timestamp": "2025-01-15T10:30:00.000Z",
+  "db": "error"
+}
+```
 
 ---
 

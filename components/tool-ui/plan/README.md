@@ -1,6 +1,6 @@
 # Plan
 
-Implementation for the "plan" Tool UI surface.
+Renders a task plan card with a progress bar, todo items (pending, in-progress, completed, cancelled), staggered entrance animations, and collapsible overflow. Also exports a `Plan.Compact` variant without the header or progress bar.
 
 ## Files
 

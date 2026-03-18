@@ -23,7 +23,7 @@ This document describes the internal architecture of Polymorph — an AI platfor
 
 ## System Overview
 
-Polymorph is built on Next.js 16 (App Router) with React 19. A single chat API endpoint orchestrates an AI agent that performs multi-step research using tools (search, fetch, question, todo) and streams structured responses back to the browser as Server-Sent Events (SSE). The generative UI layer renders each message part — text, reasoning, tool results, data attachments — using dedicated React components.
+Polymorph is built on Next.js 16 (App Router) with React 19. A single chat API endpoint orchestrates an AI agent that performs multi-step research using tools (search, fetch, display, todo) and streams structured responses back to the browser as Server-Sent Events (SSE). The generative UI layer renders each message part — text, reasoning, tool results, data attachments — using dedicated React components.
 
 ```mermaid
 graph TD
@@ -78,7 +78,6 @@ flowchart TD
     GuestLimit["checkAndEnforceGuestLimit()<br/>(extract IP from x-forwarded-for)"]
     OverallLimit["checkAndEnforceOverallChatLimit()"]
     Cookies["Read cookies<br/>(searchMode, modelType)"]
-    ForceSpeed{"isGuest OR<br/>isCloudDeployment?"}
     SelectModel["selectModel()<br/>(mode + type lookup)"]
     ProviderCheck{"isProviderEnabled()?"}
     StreamBranch{"isGuest?"}
@@ -102,11 +101,7 @@ flowchart TD
     GuestLimit --> Cookies
     GuestCheck -->|Has user| OverallLimit
     OverallLimit --> Cookies
-    Cookies --> ForceSpeed
-    ForceSpeed -->|Yes| ForcedSpeed["Force modelType=speed"]
-    ForceSpeed -->|No| ReadPref["Use cookie preference"]
-    ForcedSpeed --> SelectModel
-    ReadPref --> SelectModel
+    Cookies --> SelectModel
     SelectModel --> ProviderCheck
     ProviderCheck -->|No| ProviderErr["404 Not Found"]
     ProviderCheck -->|Yes| StreamBranch
@@ -126,14 +121,16 @@ The `createResearcher` function in [`lib/agents/researcher.ts`](../lib/agents/re
 
 **Request body fields:**
 
-| Field       | Purpose                                               |
-| ----------- | ----------------------------------------------------- |
-| `message`   | The user's message (required for `submit-message`)    |
-| `messages`  | Full message history (used by ephemeral/guest path)   |
-| `chatId`    | Chat identifier                                       |
-| `trigger`   | `submit-message` or `regenerate-message`              |
-| `messageId` | Target message ID (required for `regenerate-message`) |
-| `isNewChat` | Optimization flag to skip loading existing chat       |
+| Field                | Purpose                                                  |
+| -------------------- | -------------------------------------------------------- |
+| `message`            | The user's message (required for `submit-message`)       |
+| `messages`           | Full message history (used by ephemeral/guest path)      |
+| `chatId`             | Chat identifier                                          |
+| `trigger`            | `submit-message`, `regenerate-message`, or `tool-result` |
+| `messageId`          | Target message ID (required for `regenerate-message`)    |
+| `isNewChat`          | Optimization flag to skip loading existing chat          |
+| `toolResult`         | Tool call continuation data (required for `tool-result`) |
+| `guestArtifactToken` | HMAC-signed token for guest artifact continuity          |
 
 ---
 
@@ -146,7 +143,6 @@ graph LR
     subgraph Core["Core Tools"]
         search["search<br/>Multi-provider web search"]
         fetch["fetch<br/>URL content extraction"]
-        question["askQuestion<br/>Clarifying questions<br/>(no server execute)"]
         todo["todoWrite<br/>Research task tracking"]
     end
 
@@ -181,28 +177,25 @@ graph LR
 
 ### Tool Availability by Mode
 
-| Tool                 |            Chat Mode             |          Research Mode           |
-| -------------------- | :------------------------------: | :------------------------------: |
-| `search`             |  Yes (forced `type: optimized`)  | Yes (full: general + optimized)  |
-| `fetch`              |               Yes                |               Yes                |
-| `askQuestion`        | Defined but not in `activeTools` | Defined but not in `activeTools` |
-| `displayPlan`        |               Yes                |                No                |
-| `displayTable`       |               Yes                |               Yes                |
-| `displayChart`       |               Yes                |               Yes                |
-| `displayCitations`   |               Yes                |               Yes                |
-| `displayLinkPreview` |               Yes                |               Yes                |
-| `displayOptionList`  |               Yes                |               Yes                |
-| `displayCallout`     |               Yes                |               Yes                |
-| `displayTimeline`    |               Yes                |               Yes                |
-| `todoWrite`          |                No                |   Yes (when writer available)    |
+| Tool                 |           Chat Mode            |          Research Mode          |
+| -------------------- | :----------------------------: | :-----------------------------: |
+| `search`             | Yes (forced `type: optimized`) | Yes (full: general + optimized) |
+| `fetch`              |              Yes               |               Yes               |
+| `displayPlan`        |              Yes               |               No                |
+| `displayTable`       |              Yes               |               Yes               |
+| `displayChart`       |              Yes               |               Yes               |
+| `displayCitations`   |              Yes               |               Yes               |
+| `displayLinkPreview` |              Yes               |               Yes               |
+| `displayOptionList`  |              Yes               |               Yes               |
+| `displayCallout`     |              Yes               |               Yes               |
+| `displayTimeline`    |              Yes               |               Yes               |
+| `todoWrite`          |               No               |   Yes (when writer available)   |
 
 **Tool implementation details:**
 
 - **search** (`lib/tools/search.ts`): Uses `async *execute` generator pattern. Yields `{ state: 'searching', query }` immediately, then calls the configured search provider, and yields `{ state: 'complete', ...results }` with citation mapping. The search provider is selected by `SEARCH_API` env var (default: `tavily`). For `type: 'general'`, a dedicated general search provider can be configured separately.
 
 - **fetch** (`lib/tools/fetch.ts`): Also uses streaming generator. Has two modes: `regular` (direct HTTP fetch with HTML parsing, 50k char limit, 10s timeout) and `api` (Jina Reader or Tavily Extract for JavaScript-rendered pages and PDFs).
-
-- **askQuestion** (`lib/tools/question.ts`): Has no server-side `execute` function — it relies on frontend confirmation via `addToolResult`. The tool is in the `tools` object but not in either mode's `activeTools` list.
 
 - **todoWrite** (`lib/tools/todo.ts`): Session-scoped task tracking. Uses content-based merge logic — sending a todo with the same content as an existing one updates it rather than creating a duplicate. Returns `completedCount` and `totalCount` for progress tracking.
 
@@ -308,7 +301,7 @@ sequenceDiagram
 
 ## Database Schema
 
-The database uses Drizzle ORM with Supabase PostgreSQL. The schema follows a three-level hierarchy: **chats** contain **messages**, and messages contain **parts**. A separate **feedback** table stores user feedback.
+The database uses Drizzle ORM with Supabase PostgreSQL. The schema follows a three-level hierarchy: **chats** contain **messages**, and messages contain **parts**. Three artifact tables track generated React SPA artifacts. A separate **feedback** table stores user feedback.
 
 ```mermaid
 erDiagram
@@ -356,6 +349,42 @@ erDiagram
         json provider_metadata "provider-specific"
     }
 
+    artifacts {
+        varchar id PK "cuid2, 191 chars"
+        varchar chat_id FK "NOT NULL, CASCADE DELETE"
+        varchar user_id "optional, 255 chars"
+        varchar current_revision_id "optional"
+        varchar current_runtime_session_id "optional"
+        text title "NOT NULL"
+        varchar framework "react-spa, default react-spa"
+        varchar status "building | ready | failed | restarting | expired"
+        timestamp created_at "NOT NULL, default now()"
+        timestamp updated_at "NOT NULL, default now()"
+    }
+
+    artifact_revisions {
+        varchar id PK "cuid2, 191 chars"
+        varchar artifact_id FK "NOT NULL, CASCADE DELETE"
+        varchar triggering_message_id FK "NOT NULL, CASCADE DELETE"
+        text prompt_summary "NOT NULL"
+        text title "NOT NULL"
+        text sandbox_snapshot_ref "optional"
+        jsonb source_files "optional"
+        timestamp created_at "NOT NULL, default now()"
+    }
+
+    artifact_runtime_sessions {
+        varchar id PK "cuid2, 191 chars"
+        varchar artifact_id FK "NOT NULL, CASCADE DELETE"
+        varchar provider "e2b, default e2b"
+        text sandbox_id "NOT NULL"
+        text preview_url "optional"
+        varchar status "building | ready | failed | restarting | expired"
+        timestamp started_at "NOT NULL, default now()"
+        timestamp expires_at "optional"
+        timestamp last_heartbeat_at "optional"
+    }
+
     feedback {
         varchar id PK "cuid2, 191 chars"
         varchar user_id "optional, 255 chars"
@@ -368,9 +397,12 @@ erDiagram
 
     chats ||--o{ messages : "has many"
     messages ||--o{ parts : "has many"
+    chats ||--o{ artifacts : "has many"
+    artifacts ||--o{ artifact_revisions : "has many"
+    artifacts ||--o{ artifact_runtime_sessions : "has many"
 ```
 
-### Design notes
+### Schema details
 
 - The `parts` table is a **wide table** — it stores all message part types (text, reasoning, file, source URL, source document, tool calls, todo, dynamic tools, data parts) using nullable columns with check constraints per type:
   - `type = 'text'` requires `text_text IS NOT NULL`
@@ -387,15 +419,21 @@ erDiagram
 
 ### Indexes
 
-| Table    | Index                             | Purpose                          |
-| -------- | --------------------------------- | -------------------------------- |
-| chats    | `chats_user_id_idx`               | User's chat list                 |
-| chats    | `chats_user_id_created_at_idx`    | Sorted chat list                 |
-| chats    | `chats_id_user_id_idx`            | RLS subquery from messages/parts |
-| messages | `messages_chat_id_idx`            | Load messages by chat            |
-| messages | `messages_chat_id_created_at_idx` | Ordered message load             |
-| parts    | `parts_message_id_idx`            | Load parts by message            |
-| parts    | `parts_message_id_order_idx`      | Ordered part load                |
+| Table                     | Index                                                  | Purpose                          |
+| ------------------------- | ------------------------------------------------------ | -------------------------------- |
+| chats                     | `chats_user_id_idx`                                    | User's chat list                 |
+| chats                     | `chats_user_id_created_at_idx`                         | Sorted chat list                 |
+| chats                     | `chats_created_at_idx`                                 | Global recency ordering          |
+| chats                     | `chats_id_user_id_idx`                                 | RLS subquery from messages/parts |
+| messages                  | `messages_chat_id_idx`                                 | Load messages by chat            |
+| messages                  | `messages_chat_id_created_at_idx`                      | Ordered message load             |
+| parts                     | `parts_message_id_idx`                                 | Load parts by message            |
+| parts                     | `parts_message_id_order_idx`                           | Ordered part load                |
+| artifacts                 | `artifacts_chat_id_idx`                                | Artifacts by chat                |
+| artifact_revisions        | `artifact_revisions_artifact_id_created_at_idx`        | Ordered revisions per artifact   |
+| artifact_runtime_sessions | `artifact_runtime_sessions_artifact_id_started_at_idx` | Ordered sessions per artifact    |
+| feedback                  | `feedback_user_id_idx`                                 | Feedback by user                 |
+| feedback                  | `feedback_created_at_idx`                              | Feedback by recency              |
 
 **Source file:** [`lib/db/schema.ts`](../lib/db/schema.ts)
 
@@ -515,7 +553,7 @@ The `RenderMessage` component in [`components/render-message.tsx`](../components
 
 1. **Buffer non-text parts** (reasoning, tool results, data) into a temporary array
 2. **When a text part arrives**, flush the buffer as a `ResearchProcessSection` (with `hasSubsequentText=true`), then render the text as an `AnswerSection`
-3. **Display tools** (`tool-display*` prefix) are flushed and rendered inline using `tryRenderToolUIByName` from the tool UI registry. They can be clicked to open in the artifact panel.
+3. **Display tools** (`tool-display*` prefix) are flushed and rendered inline using `tryRenderToolUIByName` from the tool UI registry.
 4. **Dynamic tools** (`dynamic-tool` type) are rendered via `DynamicToolDisplay` for MCP and runtime-defined tools
 5. **After all parts**, flush any remaining buffered parts as a tail `ResearchProcessSection`
 
@@ -595,7 +633,7 @@ From [`config/models/default.json`](../config/models/default.json):
 | Research          | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
 | Related Questions | --      | `google/gemini-3-flash`       | Gateway  |
 
-**Force-speed behavior:** Guest users and cloud deployments (`POLYMORPH_CLOUD_DEPLOYMENT=true`) are forced to `modelType=speed` regardless of cookie preference. This is implemented by replacing the cookie store with a mock that always returns `{ value: 'speed' }` for the `modelType` cookie.
+**Cloud deployment behavior:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag controls config profile selection (uses `cloud.json` instead of `default.json`), rate limiting enforcement, and analytics event tracking.
 
 **Source files:** [`lib/utils/model-selection.ts`](../lib/utils/model-selection.ts), [`lib/utils/registry.ts`](../lib/utils/registry.ts), [`lib/config/model-types.ts`](../lib/config/model-types.ts), [`config/models/default.json`](../config/models/default.json)
 
@@ -646,7 +684,7 @@ tool_state IN ('input-streaming', 'input-available', 'output-available', 'output
 
 ## RLS Policy Chain
 
-Row-Level Security (RLS) is enabled on all four tables. Policies use `current_setting('app.current_user_id', true)` to identify the current user, which is set by the application layer before each database operation.
+Row-Level Security (RLS) is enabled on all seven tables. Policies use `current_setting('app.current_user_id', true)` to identify the current user, which is set by the application layer before each database operation.
 
 ```mermaid
 graph TD
@@ -669,6 +707,18 @@ graph TD
         PublicParts["public_chat_parts_readable<br/>USING: EXISTS subquery joining<br/>messages + chats<br/>WHERE visibility = 'public'<br/>FOR: SELECT only"]
     end
 
+    subgraph ArtifactsRLS["artifacts table"]
+        OwnArtifacts["users_manage_own_artifacts<br/>USING: user_id = current_user_id<br/>FOR: ALL operations"]
+    end
+
+    subgraph ArtifactRevisionsRLS["artifact_revisions table"]
+        OwnRevisions["users_manage_own_artifact_revisions<br/>USING: EXISTS subquery into artifacts<br/>WHERE artifacts.user_id = current_user_id<br/>FOR: ALL operations"]
+    end
+
+    subgraph ArtifactSessionsRLS["artifact_runtime_sessions table"]
+        OwnSessions["users_manage_own_artifact_runtime_sessions<br/>USING: EXISTS subquery into artifacts<br/>WHERE artifacts.user_id = current_user_id<br/>FOR: ALL operations"]
+    end
+
     subgraph FeedbackRLS["feedback table"]
         FeedbackSelect["feedback_select_policy<br/>USING: true (all can read)"]
         FeedbackInsert["anyone_can_insert_feedback<br/>WITH CHECK: true (all can insert)"]
@@ -677,6 +727,8 @@ graph TD
     AppLayer --> ChatsRLS
     OwnChats -->|"Ownership propagates via subquery"| OwnMessages
     OwnMessages -->|"Ownership propagates via subquery"| OwnParts
+    OwnArtifacts -->|"Ownership propagates via subquery"| OwnRevisions
+    OwnArtifacts -->|"Ownership propagates via subquery"| OwnSessions
     PublicChats -->|"Public access via subquery"| PublicMessages
     PublicMessages -->|"Public access via subquery"| PublicParts
 ```
@@ -691,11 +743,15 @@ The RLS chain cascades through the table hierarchy:
 
 3. **parts**: Access requires a two-table join — from `parts` through `messages` to `chats` — checking ownership or public visibility.
 
-4. **feedback**: Open access — anyone can insert and read feedback.
+4. **artifacts**: Users can perform all operations on artifacts where `user_id = current_user_id`.
 
-### Performance considerations
+5. **artifact_revisions** / **artifact_runtime_sessions**: Access is granted via `EXISTS` subquery checking if the parent artifact belongs to the current user.
 
-The `current_setting('app.current_user_id', true)` call uses `true` as the second argument, which returns `NULL` instead of erroring when the setting is not set. This is critical for the public access path where no user ID is available.
+6. **feedback**: Open access — anyone can insert and read feedback.
+
+### Implementation details
+
+The `current_setting('app.current_user_id', true)` call uses `true` as the second argument, which returns `NULL` instead of erroring when the setting is not set. This is required for the public access path where no user ID is available.
 
 **Performance indexes** support the RLS subqueries:
 
@@ -715,7 +771,6 @@ The `current_setting('app.current_user_id', true)` call uses `true` as the secon
 | `lib/agents/prompts/search-mode-prompts.ts`              | System prompts for chat/research modes                                                      |
 | `lib/tools/search.ts`                                    | Multi-provider search tool with streaming generator                                         |
 | `lib/tools/fetch.ts`                                     | Web content extraction (regular + API-based)                                                |
-| `lib/tools/question.ts`                                  | Clarifying question tool (frontend confirmation only)                                       |
 | `lib/tools/todo.ts`                                      | Session-scoped task tracking with content-based merge                                       |
 | `lib/tools/display-*.ts`                                 | Display tools (plan, table, chart, citations, link preview, option list, callout, timeline) |
 | `lib/tools/search/providers/`                            | Search provider implementations (tavily, brave, exa, searxng, firecrawl)                    |
