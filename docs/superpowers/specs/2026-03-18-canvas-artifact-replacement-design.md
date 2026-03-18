@@ -148,6 +148,25 @@ Requirements:
 
 This contract replaces the current multi-file project/sandbox tool contract.
 
+V1 contract boundaries:
+
+- authoring files may only import:
+  - other files inside the constrained virtual file set
+  - a fixed built-in runtime surface selected during implementation
+- arbitrary package installation is not allowed
+- remote module imports are not allowed
+- remote `<script>` tags and remote stylesheet injection are not allowed
+- server-only APIs are not allowed
+- unsupported imports and unsupported APIs must produce explicit validation or compile diagnostics
+
+V1 asset and network behavior:
+
+- author-controlled assets must be embedded in the artifact output or handled through a constrained asset path selected during implementation
+- exported HTML must not depend on repo-local files
+- remote images, media, and fonts may be referenced, but they are external dependencies and should be surfaced as such in diagnostics or UI
+- runtime browser requests to external HTTPS APIs may occur as normal browser behavior, but the platform does not provision, manage, or guarantee those services
+- requests that imply backend ownership remain out of scope and should be clarified or redirected in chat
+
 ### 2. Canvas Compiler/Renderer
 
 Responsibility:
@@ -188,6 +207,23 @@ Requirements:
 
 The persistence model should be artifact-history-centric, not runtime-centric.
 
+Authoritative state model:
+
+- editable virtual source is the single source of truth
+- compiled HTML is a persisted derivative of a source snapshot, never the canonical editable state
+- each artifact has one active draft source state
+- each successful compile updates the draft preview artifact
+- immutable versions store:
+  - source snapshot
+  - compiled HTML snapshot
+  - metadata required for restore/history
+
+Restore semantics:
+
+- restoring a historical version loads that version's source snapshot back into the active draft
+- the system then recompiles and produces a new current draft/preview state
+- historical versions remain immutable
+
 ### 4. Canvas Editor UI
 
 Responsibility:
@@ -224,6 +260,16 @@ Requirements:
 - artifact events in chat open or focus the canvas
 - "Ask AI to change it" updates the same artifact object
 - clarification/redirection remains available when a request crosses the frontend-only boundary
+
+Identity and lifecycle semantics for v1:
+
+- one chat may own at most one active canvas artifact
+- the active artifact for a user session is the artifact attached to the currently open chat
+- create behavior in a chat with no artifact creates that chat's artifact
+- update behavior in a chat with an existing artifact updates that same artifact
+- if a user asks for a fundamentally different artifact in a chat that already has one, the system should clarify whether to conceptually replace the current artifact or start a new chat
+- the UI may allow viewing historical versions of the same artifact, but not multiple concurrent active artifacts within one chat in v1
+- chat history should reference artifact identity explicitly so reopening a chat reopens the same canvas artifact, not a heuristic "latest artifact" guess
 
 ## V1 Constraints
 
@@ -268,6 +314,8 @@ The output of Stage 1 should be:
 - no active docs that describe the old architecture as current
 - no prompts/tool descriptions steering the LLM toward the old model
 
+This stage should happen on the replacement branch, not as a standalone mainline change that leaves the product without an artifact system.
+
 ### Stage 2: Add New Canvas Artifact System
 
 Add:
@@ -279,6 +327,58 @@ Add:
 - chat integration
 - export flow
 - tests and docs for the new system only
+
+Implementation planning should break Stage 2 into explicit milestones with independent acceptance criteria:
+
+#### Milestone A: Canvas Data Model And Compiler Core
+
+- canvas artifact schema
+- draft/version persistence model
+- compile pipeline
+- validation/diagnostics contract
+- HTML export artifact generation
+
+Acceptance:
+
+- source can compile into a previewable/exportable HTML artifact
+- compile errors are deterministic and structured
+- versions and draft state have an unambiguous source-of-truth model
+
+#### Milestone B: Canvas Editor UI
+
+- canvas shell
+- preview pane
+- code pane
+- compile/error display
+- version browsing/restore
+- export/download action
+
+Acceptance:
+
+- a user can edit source in browser and see preview updates
+- compile failures are shown inline without runtime/session concepts
+
+#### Milestone C: Chat Integration
+
+- create/update artifact from chat
+- open/focus canvas from chat events
+- "Ask AI to change it" updates the same artifact
+- clarification/redirection when a request crosses the frontend-only boundary
+
+Acceptance:
+
+- one chat consistently maps to one active artifact
+- chat-driven edits and direct code edits converge on the same draft state
+
+#### Milestone D: Repo And Docs Cleanup
+
+- remove remaining old artifact references
+- update reference docs
+- update prompts/tool descriptions/types/tests to the new model only
+
+Acceptance:
+
+- no active E2B artifact references remain in runtime code, prompts, or current docs in this repo
 
 ## Testing Strategy
 
@@ -356,6 +456,7 @@ Mitigation:
 
 These do not block the design, but the implementation plan must choose them explicitly:
 
+- exact built-in runtime surface for allowed imports/packages
 - exact virtual file schema for v1
 - exact compiler/bundler stack
 - exact canvas storage schema
