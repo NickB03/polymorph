@@ -176,7 +176,11 @@ V1 contract boundaries:
 
 V1 asset and network behavior:
 
-- author-controlled assets must be embedded in the exported artifact output or handled through a constrained asset path selected during implementation
+- author-controlled assets in v1 are embedded-only
+- supported project-owned asset forms in v1:
+  - data URLs referenced directly from source
+  - structured asset entries declared in `meta.json` and compiled into the generated HTML output
+- v1 does not support loose uploaded asset files or a general asset storage pipeline
 - exported HTML must not depend on repo-local files
 - the export contract for v1 means:
   - all project-owned code is inlined
@@ -193,6 +197,7 @@ Export rule clarification:
 - v1 does not promise a fully offline/self-contained runtime in the strict sense if the artifact intentionally references external network resources
 - if an artifact references remote media, fonts, images, or external APIs, the exported HTML is still valid, but those dependencies must be reported explicitly to the user
 - export UI must communicate remaining external dependencies explicitly
+- preview and export resolve project-owned assets the same way: embedded into the compiled HTML artifact
 
 Locked v1 runtime surface:
 
@@ -398,7 +403,7 @@ Identity and lifecycle semantics for v1:
 - the UI may allow viewing historical versions of the same artifact, but not multiple concurrent active artifacts within one chat in v1
 - chat history should reference artifact identity explicitly so reopening a chat reopens the same canvas artifact, not a heuristic "latest artifact" guess
 - authenticated users reopening a chat in a later session should resolve the same persisted artifact by chat-to-artifact linkage
-- guest users should follow the same one-chat-to-one-artifact rule, but with the guest continuity model chosen during implementation replacing the current guest sandbox token model
+- guest users should follow the same one-chat-to-one-artifact rule using the locked guest continuity model defined in the legacy/guest section below
 
 Concurrency semantics for v1:
 
@@ -538,12 +543,18 @@ Locked default legacy behavior for v1:
 - legacy public links, if encountered, should resolve to a read-only legacy-unavailable notice
 - v1 does not attempt automatic semantic migration from old sandbox projects to new canvas artifacts
 - a future migration may exist only if a narrow deterministic conversion path is proven separately
+- the chat/canvas load layer is responsible for resolving legacy references before normal canvas-open logic runs
+- if a reopened chat points at a legacy artifact reference, the chat experience should surface the legacy notice state instead of attempting to hydrate a v1 canvas artifact
 
 Locked guest continuity behavior for v1:
 
 - guest artifacts use a signed guest canvas token bound to `chatId` and `artifactId`
 - the token is the anonymous continuity mechanism for reopening the same guest chat/artifact pair
-- guest writes rotate or refresh the token as needed
+- token TTL is 30 minutes
+- token is issued on guest artifact creation
+- token rotates on every successful guest write
+- token refreshes on successful guest restore because the restored artifact remains the same `artifactId`
+- token is invalidated when the guest artifact is replaced with a new artifact identity
 - no anonymous cross-device recovery is guaranteed beyond possession of the guest token
 - guest users follow the same one-chat-to-one-artifact rule as authenticated users
 
