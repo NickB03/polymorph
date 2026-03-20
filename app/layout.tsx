@@ -10,7 +10,7 @@ import { SidebarProvider } from '@/components/ui/sidebar'
 import { Toaster } from '@/components/ui/sonner'
 
 import AppSidebar from '@/components/app-sidebar'
-import ArtifactRoot from '@/components/artifact/artifact-root'
+import { CanvasRoot } from '@/components/canvas/canvas-root'
 import Header from '@/components/header'
 import { ThemeProvider } from '@/components/theme-provider'
 
@@ -84,7 +84,7 @@ export default async function RootLayout({
             <div className="flex flex-col flex-1 min-w-0">
               <Header user={user} />
               <main className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
-                <ArtifactRoot>{children}</ArtifactRoot>
+                <CanvasRoot>{children}</CanvasRoot>
               </main>
             </div>
           </SidebarProvider>

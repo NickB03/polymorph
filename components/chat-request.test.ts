@@ -1,48 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  buildChatRequestBody,
-  getLatestGuestArtifactToken
-} from './chat-request'
+import { buildChatRequestBody } from './chat-request'
 
 describe('chat request helpers', () => {
-  it('extracts the latest guest artifact token from persisted artifact data parts', () => {
-    const token = getLatestGuestArtifactToken([
-      {
-        id: 'assistant-1',
-        role: 'assistant',
-        parts: [
-          {
-            type: 'data-artifact',
-            data: {
-              id: 'artifact-1',
-              title: 'App',
-              status: 'ready',
-              guestArtifactToken: 'older-token'
-            }
-          }
-        ]
-      },
-      {
-        id: 'assistant-2',
-        role: 'assistant',
-        parts: [
-          {
-            type: 'data-artifactStatus',
-            data: {
-              id: 'artifact-1',
-              status: 'ready',
-              guestArtifactToken: 'latest-token'
-            }
-          }
-        ]
-      }
-    ] as any)
-
-    expect(token).toBe('latest-token')
-  })
-
-  it('includes guestArtifactToken in guest submit-message requests', () => {
+  it('builds a submit-message request for guest users', () => {
     const request = buildChatRequestBody({
       messages: [
         {
@@ -55,20 +16,18 @@ describe('chat request helpers', () => {
       messageId: undefined,
       chatId: 'chat-1',
       isGuest: true,
-      guestArtifactToken: 'guest-token-123',
       savedMessagesCount: 0
     })
 
     expect(request).toEqual({
       body: expect.objectContaining({
         trigger: 'submit-message',
-        chatId: 'chat-1',
-        guestArtifactToken: 'guest-token-123'
+        chatId: 'chat-1'
       })
     })
   })
 
-  it('includes guestArtifactToken in guest tool-result continuation requests', () => {
+  it('builds a tool-result continuation request for guest users', () => {
     const request = buildChatRequestBody({
       messages: [
         {
@@ -88,7 +47,6 @@ describe('chat request helpers', () => {
       messageId: undefined,
       chatId: 'chat-1',
       isGuest: true,
-      guestArtifactToken: 'guest-token-123',
       savedMessagesCount: 2
     })
 
@@ -100,8 +58,7 @@ describe('chat request helpers', () => {
           toolCallId: 'tool-1',
           output: { value: 'dark' }
         },
-        messages: expect.any(Array),
-        guestArtifactToken: 'guest-token-123'
+        messages: expect.any(Array)
       }
     })
   })

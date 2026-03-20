@@ -9,12 +9,7 @@ import type {
 import { fetchTool } from '@/lib/tools/fetch'
 import { searchTool } from '@/lib/tools/search'
 import { createTodoTools, type TodoItem } from '@/lib/tools/todo'
-import type {
-  ArtifactData,
-  ArtifactEventData,
-  ArtifactLogData,
-  ArtifactStatusData
-} from '@/lib/types/artifact'
+import type { CanvasArtifactStatus, CanvasDiagnostic } from '@/lib/types/canvas'
 import type { ModelType } from '@/lib/types/model-type'
 import type { SearchMode } from '@/lib/types/search'
 
@@ -48,39 +43,50 @@ export interface RelatedQuestionsData {
   questions?: Array<{ question: string }>
 }
 
+// ── Canvas data part payloads ────────────────────────────────────────
+
+export type CanvasArtifactData = {
+  artifactId: string
+  chatId: string
+  title: string
+  status: CanvasArtifactStatus
+  draftRevision: number
+  currentVersionId: string | null
+}
+
+export type CanvasArtifactStatusData = {
+  artifactId: string
+  chatId: string
+  status: CanvasArtifactStatus
+  draftRevision: number
+  currentVersionId: string | null
+  updatedAt: string
+  guestCanvasToken?: string
+}
+
+export type CanvasArtifactEventData = {
+  artifactId: string
+  event: string
+  payload?: Record<string, unknown>
+}
+
+export type CanvasDiagnosticsData = {
+  artifactId: string
+  diagnostics: CanvasDiagnostic[]
+}
+
+// ── UIDataTypes (drives the generic stream writer) ───────────────────
+
 export type UIDataTypes = {
-  artifact?: ArtifactData
-  artifactEvent?: ArtifactEventData
-  artifactLog?: ArtifactLogData
-  artifactStatus?: ArtifactStatusData
   sources?: any[]
   relatedQuestions?: RelatedQuestionsData
+  canvasArtifact?: CanvasArtifactData
+  canvasArtifactStatus?: CanvasArtifactStatusData
+  canvasArtifactEvent?: CanvasArtifactEventData
+  canvasDiagnostics?: CanvasDiagnosticsData
 }
 
-// Data part types for DataSection
-export type DataArtifactPart = {
-  type: 'data-artifact'
-  id?: string
-  data: ArtifactData
-}
-
-export type DataArtifactStatusPart = {
-  type: 'data-artifactStatus'
-  id?: string
-  data: ArtifactStatusData
-}
-
-export type DataArtifactLogPart = {
-  type: 'data-artifactLog'
-  id?: string
-  data: ArtifactLogData
-}
-
-export type DataArtifactEventPart = {
-  type: 'data-artifactEvent'
-  id?: string
-  data: ArtifactEventData
-}
+// ── Concrete data part types ─────────────────────────────────────────
 
 export type DataRelatedQuestionsPart = {
   type: 'data-relatedQuestions'
@@ -88,12 +94,40 @@ export type DataRelatedQuestionsPart = {
   data: RelatedQuestionsData
 }
 
+export type DataCanvasArtifactPart = {
+  type: 'data-canvasArtifact'
+  id?: string
+  data: CanvasArtifactData
+}
+
+export type DataCanvasArtifactStatusPart = {
+  type: 'data-canvasArtifactStatus'
+  id?: string
+  data: CanvasArtifactStatusData
+}
+
+/** Transient — not persisted to the database. */
+export type DataCanvasArtifactEventPart = {
+  type: 'data-canvasArtifactEvent'
+  id?: string
+  data: CanvasArtifactEventData
+  transient: true
+}
+
+/** Transient — not persisted to the database. */
+export type DataCanvasDiagnosticsPart = {
+  type: 'data-canvasDiagnostics'
+  id?: string
+  data: CanvasDiagnosticsData
+  transient: true
+}
+
 export type DataPart =
-  | DataArtifactPart
-  | DataArtifactStatusPart
-  | DataArtifactLogPart
-  | DataArtifactEventPart
   | DataRelatedQuestionsPart
+  | DataCanvasArtifactPart
+  | DataCanvasArtifactStatusPart
+  | DataCanvasArtifactEventPart
+  | DataCanvasDiagnosticsPart
 
 // Create todo tools instance for type inference
 const todoTools = createTodoTools()

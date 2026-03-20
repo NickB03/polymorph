@@ -1,176 +1,466 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 
-/**
- * Tests for transient artifact data handling in the Chat component.
- *
- * Coverage items:
- * - #11: Transient artifact logs/events handled via `useChat({ onData })`
- *        without persistence
- *
- * These tests verify the DOM-event dispatching logic from the `onData`
- * callback without rendering the full Chat component (which pulls in
- * too many unrelated dependencies). The behavior under test is the
- * conditional branching in onData — it should dispatch CustomEvents
- * for transient artifact types and ignore everything else.
- */
+import { buildLegacyCanvasNotice } from '@/lib/canvas/legacy'
+import type { UIMessage } from '@/lib/types/ai'
 
-// The onData handler extracted from Chat's useChat configuration.
-// This is the exact same logic — we test it in isolation because the
-// full component render requires the entire app context tree.
-function onDataHandler(dataPart: unknown) {
-  if (dataPart && typeof dataPart === 'object' && 'type' in dataPart) {
-    const { type } = dataPart as { type: string }
-    if (type === 'data-artifactLog' || type === 'data-artifactEvent') {
-      window.dispatchEvent(
-        new CustomEvent(type, {
-          detail: (dataPart as unknown as { data: unknown }).data
-        })
-      )
-    }
+import { CanvasRoot } from './canvas/canvas-root'
+import { buildChatRequestBody, getLatestGuestCanvasToken } from './chat-request'
+
+const mockUseChat = vi.fn()
+const mockCanvasContext = {
+  artifactId: null,
+  artifact: null,
+  isLoading: false,
+  isWorkspaceOpen: false,
+  legacyNotice: null,
+  guestCanvasToken: null,
+  openCanvasArtifact: vi.fn(),
+  focusCanvasArtifact: vi.fn(),
+  openLegacyCanvasNotice: vi.fn(),
+  closeWorkspace: vi.fn(),
+  requestCanvasAiUpdate: vi.fn(),
+  reloadArtifact: vi.fn(),
+  setGuestCanvasToken: vi.fn(),
+  setArtifact: vi.fn(),
+  updateDraft: vi.fn(),
+  saveVersion: vi.fn(),
+  restoreVersion: vi.fn(),
+  exportHtml: vi.fn()
+}
+
+function resetCanvasContext() {
+  mockCanvasContext.artifactId = null
+  mockCanvasContext.artifact = null
+  mockCanvasContext.isLoading = false
+  mockCanvasContext.isWorkspaceOpen = false
+  mockCanvasContext.legacyNotice = null
+  mockCanvasContext.guestCanvasToken = null
+  mockCanvasContext.openCanvasArtifact = vi.fn()
+  mockCanvasContext.focusCanvasArtifact = vi.fn()
+  mockCanvasContext.openLegacyCanvasNotice = vi.fn()
+  mockCanvasContext.closeWorkspace = vi.fn()
+  mockCanvasContext.requestCanvasAiUpdate = vi.fn()
+  mockCanvasContext.reloadArtifact = vi.fn()
+  mockCanvasContext.setGuestCanvasToken = vi.fn()
+  mockCanvasContext.setArtifact = vi.fn()
+  mockCanvasContext.updateDraft = vi.fn()
+  mockCanvasContext.saveVersion = vi.fn()
+  mockCanvasContext.restoreVersion = vi.fn()
+  mockCanvasContext.exportHtml = vi.fn()
+}
+
+function makeUseChatReturnValue(messages: UIMessage[] = []) {
+  return {
+    messages,
+    status: 'ready',
+    setMessages: vi.fn(),
+    stop: vi.fn(),
+    sendMessage: vi.fn(),
+    regenerate: vi.fn(),
+    addToolResult: vi.fn(),
+    error: null
   }
 }
 
-describe('Chat onData artifact handler', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn()
+  })
+}))
+
+vi.mock('@ai-sdk/react', () => ({
+  useChat: (...args: unknown[]) => mockUseChat(...args)
+}))
+
+vi.mock('ai', () => ({
+  DefaultChatTransport: class DefaultChatTransport {}
+}))
+
+vi.mock('sonner', () => ({
+  toast: {
+    error: vi.fn()
+  }
+}))
+
+vi.mock('@/hooks/use-file-dropzone', () => ({
+  useFileDropzone: () => ({
+    isDragging: false,
+    handleDragOver: vi.fn(),
+    handleDragLeave: vi.fn(),
+    handleDrop: vi.fn()
+  })
+}))
+
+vi.mock('@/hooks/use-voice-conversation', () => ({
+  useVoiceConversation: () => ({
+    stopVoice: vi.fn(),
+    voiceState: 'idle',
+    isVoiceActive: false,
+    startVoice: vi.fn(),
+    interimTranscript: ''
+  })
+}))
+
+vi.mock('./chat-messages', () => ({
+  ChatMessages: () => null
+}))
+
+vi.mock('./chat-panel', () => ({
+  ChatPanel: () => null
+}))
+
+vi.mock('./drag-overlay', () => ({
+  DragOverlay: () => null
+}))
+
+vi.mock('./error-modal', () => ({
+  ErrorModal: () => null
+}))
+
+vi.mock('./voice/voice-overlay', () => ({
+  VoiceOverlay: () => null
+}))
+
+vi.mock('./voice/voice-settings', () => ({
+  loadVoiceConfig: () => ({})
+}))
+
+vi.mock('./canvas/canvas-context', async () => {
+  const actual = await vi.importActual<
+    typeof import('./canvas/canvas-context')
+  >('./canvas/canvas-context')
+
+  return {
+    ...actual,
+    useCanvas: () => mockCanvasContext
+  }
+})
+
+// Old E2B artifact onData handler tests removed — that dispatch path
+// no longer exists. Canvas data parts use the canvas context instead.
+
+// --- Canvas migration-regression tests ---
+
+// Mock the sidebar context required by ChatCanvasShell (used internally by CanvasRoot)
+vi.mock('./ui/sidebar', () => ({
+  useSidebar: () => ({
+    setOpen: vi.fn(),
+    open: false
+  })
+}))
+
+// Mock useMediaQuery to avoid window.matchMedia issues in jsdom
+vi.mock('@/lib/hooks/use-media-query', () => ({
+  useMediaQuery: () => false
+}))
+
+// Mock InspectorPanel / InspectorDrawer to avoid pulling in heavy component
+// trees with additional unrelated dependencies (e.g., ArtifactContent).
+vi.mock('@/components/inspector/inspector-panel', () => ({
+  InspectorPanel: () => null
+}))
+vi.mock('@/components/inspector/inspector-drawer', () => ({
+  InspectorDrawer: () => null
+}))
+
+// Stub ResizeObserver which is not available in jsdom
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
+}
+
+describe('Canvas namespace — Stage 1 migration regression', () => {
+  it('mounts CanvasRoot with the preserved chat shell but without artifact runtime state', () => {
+    render(
+      <CanvasRoot>
+        <div>chat</div>
+      </CanvasRoot>
+    )
+
+    // Children render in both desktop and mobile layout slots
+    const chatElements = screen.getAllByText('chat')
+    expect(chatElements.length).toBeGreaterThanOrEqual(1)
+    expect(chatElements[0]).toBeInTheDocument()
   })
 
-  it('dispatches data-artifactLog as a CustomEvent on window', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
+  it('maps legacy artifact references to legacy notice state', () => {
+    expect(
+      buildLegacyCanvasNotice({
+        artifactId: 'legacy-artifact-1',
+        source: 'chat-history'
+      }).kind
+    ).toBe('legacy-unavailable')
+  })
 
-    const logPart = {
-      type: 'data-artifactLog',
-      data: {
-        artifactId: 'artifact-1',
-        message: 'Installing dependencies...',
-        level: 'info'
-      }
+  it('preserves all fields in the legacy notice', () => {
+    const notice = buildLegacyCanvasNotice({
+      artifactId: 'abc-123',
+      source: 'public-link'
+    })
+
+    expect(notice).toEqual({
+      kind: 'legacy-unavailable',
+      artifactId: 'abc-123',
+      source: 'public-link'
+    })
+  })
+
+  it('handles guest-token source in legacy notice', () => {
+    const notice = buildLegacyCanvasNotice({
+      artifactId: 'guest-artifact-1',
+      source: 'guest-token'
+    })
+
+    expect(notice.kind).toBe('legacy-unavailable')
+    expect(notice.source).toBe('guest-token')
+  })
+})
+
+// --- Canvas chat integration tests ---
+
+describe('Canvas guest token extraction', () => {
+  function makeMessage(role: 'user' | 'assistant', parts: any[]): UIMessage {
+    return {
+      id: `msg-${Math.random().toString(36).slice(2)}`,
+      role,
+      parts
     }
+  }
 
-    onDataHandler(logPart)
-
-    expect(dispatchSpy).toHaveBeenCalledTimes(1)
-    const event = dispatchSpy.mock.calls[0][0] as CustomEvent
-    expect(event.type).toBe('data-artifactLog')
-    expect(event.detail).toEqual({
-      artifactId: 'artifact-1',
-      message: 'Installing dependencies...',
-      level: 'info'
-    })
-  })
-
-  it('dispatches data-artifactEvent as a CustomEvent on window', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
-
-    const eventPart = {
-      type: 'data-artifactEvent',
-      data: {
-        artifactId: 'artifact-1',
-        event: 'build-complete',
-        payload: { duration: 3000 }
-      }
-    }
-
-    onDataHandler(eventPart)
-
-    expect(dispatchSpy).toHaveBeenCalledTimes(1)
-    const event = dispatchSpy.mock.calls[0][0] as CustomEvent
-    expect(event.type).toBe('data-artifactEvent')
-    expect(event.detail).toEqual({
-      artifactId: 'artifact-1',
-      event: 'build-complete',
-      payload: { duration: 3000 }
-    })
-  })
-
-  it('does NOT dispatch events for persistent artifact data types', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
-
-    onDataHandler({
-      type: 'data-artifact',
-      data: { id: 'a1', title: 'App', status: 'ready' }
-    })
-
-    onDataHandler({
-      type: 'data-artifactStatus',
-      data: { id: 'a1', status: 'building' }
-    })
-
-    expect(dispatchSpy).not.toHaveBeenCalled()
-  })
-
-  it('does NOT dispatch events for non-artifact data types', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
-
-    onDataHandler({
-      type: 'data-relatedQuestions',
-      data: { status: 'loading' }
-    })
-
-    expect(dispatchSpy).not.toHaveBeenCalled()
-  })
-
-  it('ignores null and undefined data parts', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
-
-    onDataHandler(null)
-    onDataHandler(undefined)
-
-    expect(dispatchSpy).not.toHaveBeenCalled()
-  })
-
-  it('ignores non-object data parts', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
-
-    onDataHandler('string-data')
-    onDataHandler(42)
-    onDataHandler(true)
-
-    expect(dispatchSpy).not.toHaveBeenCalled()
-  })
-
-  it('ignores objects without a type field', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
-
-    onDataHandler({ data: { message: 'no type field' } })
-
-    expect(dispatchSpy).not.toHaveBeenCalled()
-  })
-
-  it('transient parts are never included in message.parts (verified by mapping layer)', () => {
-    // This test verifies the contract: transient parts (artifactLog,
-    // artifactEvent) flow through onData only and are excluded from
-    // message persistence. The mapping layer test in
-    // message-mapping-display-tools.test.ts verifies
-    // mapUIMessagePartsToDBParts returns 0 rows for transient parts.
-    // Here we verify the onData handler is the *only* consumer path.
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
-
-    // Simulate a sequence of transient + persistent parts
-    const parts = [
-      {
-        type: 'data-artifactEvent',
-        data: { artifactId: 'a1', event: 'create-started' }
-      },
-      {
-        type: 'data-artifactLog',
-        data: { artifactId: 'a1', message: 'Building...' }
-      },
-      {
-        type: 'data-artifact',
-        data: { id: 'a1', title: 'App', status: 'building' }
-      }
+  it('extracts guestCanvasToken from data-canvasArtifactStatus parts', () => {
+    const messages: UIMessage[] = [
+      makeMessage('user', [{ type: 'text', text: 'make an app' }]),
+      makeMessage('assistant', [
+        { type: 'text', text: 'Creating your app...' },
+        {
+          type: 'data-canvasArtifactStatus',
+          data: {
+            artifactId: 'art-1',
+            chatId: 'chat-1',
+            status: 'ready',
+            draftRevision: 1,
+            currentVersionId: null,
+            updatedAt: '2026-03-19T00:00:00Z',
+            guestCanvasToken: 'guest-token-abc'
+          }
+        }
+      ])
     ]
 
-    parts.forEach(p => onDataHandler(p))
+    expect(getLatestGuestCanvasToken(messages)).toBe('guest-token-abc')
+  })
 
-    // Only transient parts produce DOM events
-    expect(dispatchSpy).toHaveBeenCalledTimes(2)
-    expect((dispatchSpy.mock.calls[0][0] as CustomEvent).type).toBe(
-      'data-artifactEvent'
+  it('returns the latest token when multiple status parts exist', () => {
+    const messages: UIMessage[] = [
+      makeMessage('assistant', [
+        {
+          type: 'data-canvasArtifactStatus',
+          data: {
+            artifactId: 'art-1',
+            chatId: 'chat-1',
+            status: 'compiling',
+            draftRevision: 1,
+            currentVersionId: null,
+            updatedAt: '2026-03-19T00:00:00Z',
+            guestCanvasToken: 'old-token'
+          }
+        }
+      ]),
+      makeMessage('assistant', [
+        {
+          type: 'data-canvasArtifactStatus',
+          data: {
+            artifactId: 'art-1',
+            chatId: 'chat-1',
+            status: 'ready',
+            draftRevision: 2,
+            currentVersionId: null,
+            updatedAt: '2026-03-19T01:00:00Z',
+            guestCanvasToken: 'new-token'
+          }
+        }
+      ])
+    ]
+
+    expect(getLatestGuestCanvasToken(messages)).toBe('new-token')
+  })
+
+  it('returns undefined when no status parts have a guestCanvasToken', () => {
+    const messages: UIMessage[] = [
+      makeMessage('user', [{ type: 'text', text: 'hello' }]),
+      makeMessage('assistant', [{ type: 'text', text: 'world' }])
+    ]
+
+    expect(getLatestGuestCanvasToken(messages)).toBeUndefined()
+  })
+
+  it('returns undefined for empty messages', () => {
+    expect(getLatestGuestCanvasToken([])).toBeUndefined()
+  })
+})
+
+describe('buildChatRequestBody with guestCanvasToken', () => {
+  function makeMessages(count: number): UIMessage[] {
+    return Array.from({ length: count }, (_, i) => ({
+      id: `msg-${i}`,
+      role: (i % 2 === 0 ? 'user' : 'assistant') as 'user' | 'assistant',
+      parts: [{ type: 'text' as const, text: `message ${i}` }]
+    }))
+  }
+
+  it('includes guestCanvasToken in submit-message body when provided', () => {
+    const messages = makeMessages(1)
+    const result = buildChatRequestBody({
+      messages,
+      trigger: 'submit-message',
+      messageId: undefined,
+      chatId: 'chat-1',
+      isGuest: false,
+      savedMessagesCount: 0,
+      guestCanvasToken: 'canvas-token-123'
+    })
+
+    expect(result.body).toHaveProperty('guestCanvasToken', 'canvas-token-123')
+  })
+
+  it('does not include guestCanvasToken when not provided', () => {
+    const messages = makeMessages(1)
+    const result = buildChatRequestBody({
+      messages,
+      trigger: 'submit-message',
+      messageId: undefined,
+      chatId: 'chat-1',
+      isGuest: false,
+      savedMessagesCount: 0
+    })
+
+    expect(result.body).not.toHaveProperty('guestCanvasToken')
+  })
+
+  it('includes guestCanvasToken in regenerate-message body when provided', () => {
+    const messages = makeMessages(2)
+    const result = buildChatRequestBody({
+      messages,
+      trigger: 'regenerate-message',
+      messageId: 'msg-0',
+      chatId: 'chat-1',
+      isGuest: false,
+      savedMessagesCount: 0,
+      guestCanvasToken: 'canvas-token-regen'
+    })
+
+    expect(result.body).toHaveProperty('guestCanvasToken', 'canvas-token-regen')
+  })
+})
+
+describe('Canvas workspace handoff from chat stream', () => {
+  it('passes the fresh guest token when opening a streamed canvas artifact', async () => {
+    resetCanvasContext()
+
+    mockUseChat.mockReturnValue(
+      makeUseChatReturnValue([
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          parts: [
+            {
+              type: 'data-canvasArtifactStatus',
+              data: {
+                artifactId: 'art-1',
+                chatId: 'chat-1',
+                status: 'ready',
+                draftRevision: 1,
+                currentVersionId: null,
+                updatedAt: '2026-03-19T00:00:00Z',
+                guestCanvasToken: 'guest-token-abc'
+              }
+            },
+            {
+              type: 'data-canvasArtifact',
+              data: {
+                artifactId: 'art-1',
+                chatId: 'chat-1',
+                title: 'Canvas',
+                status: 'ready',
+                draftRevision: 1,
+                currentVersionId: null
+              }
+            }
+          ]
+        }
+      ])
     )
-    expect((dispatchSpy.mock.calls[1][0] as CustomEvent).type).toBe(
-      'data-artifactLog'
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat savedMessages={[]} isGuest />)
+
+    await waitFor(() => {
+      expect(mockCanvasContext.setGuestCanvasToken).toHaveBeenCalledWith(
+        'guest-token-abc'
+      )
+      expect(mockCanvasContext.openCanvasArtifact).toHaveBeenCalledWith(
+        'art-1',
+        'guest-token-abc'
+      )
+    })
+  })
+
+  it('focuses an already-opened canvas artifact instead of reopening it', async () => {
+    resetCanvasContext()
+
+    mockUseChat.mockReturnValue(
+      makeUseChatReturnValue([
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          parts: [
+            {
+              type: 'data-canvasArtifact',
+              data: {
+                artifactId: 'art-1',
+                chatId: 'chat-1',
+                title: 'Canvas',
+                status: 'ready',
+                draftRevision: 1,
+                currentVersionId: null
+              }
+            }
+          ]
+        },
+        {
+          id: 'assistant-2',
+          role: 'assistant',
+          parts: [
+            {
+              type: 'data-canvasArtifact',
+              data: {
+                artifactId: 'art-1',
+                chatId: 'chat-1',
+                title: 'Canvas',
+                status: 'ready',
+                draftRevision: 1,
+                currentVersionId: null
+              }
+            }
+          ]
+        }
+      ])
     )
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat savedMessages={[]} />)
+
+    await waitFor(() => {
+      expect(mockCanvasContext.openCanvasArtifact).toHaveBeenCalledTimes(1)
+      expect(mockCanvasContext.focusCanvasArtifact).toHaveBeenCalledWith(
+        'art-1'
+      )
+    })
   })
 })

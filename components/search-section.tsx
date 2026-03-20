@@ -7,8 +7,6 @@ import type { SearchResults as TypeSearchResults } from '@/lib/types'
 import type { ToolPart, UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 import { cn, isChatLoading } from '@/lib/utils'
 
-import { useArtifact } from '@/components/artifact/artifact-context'
-
 import { StatusIndicator } from './ui/status-indicator'
 import { CollapsibleMessage } from './collapsible-message'
 import { SearchSkeleton } from './default-skeleton'
@@ -61,8 +59,6 @@ export function SearchSection({
       ? ` [${includeDomains.join(', ')}]`
       : ''
 
-  const { open } = useArtifact()
-
   const totalResults =
     (searchResults?.results?.length || 0) +
     (searchResults?.videos?.length || 0) +
@@ -70,7 +66,6 @@ export function SearchSection({
 
   const header = (
     <ProcessHeader
-      onInspect={() => open(tool)}
       isLoading={isLoading && (isToolLoading || isSearching)}
       ariaExpanded={isOpen}
       label={

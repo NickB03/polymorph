@@ -7,7 +7,6 @@ import { UseChatHelpers } from '@ai-sdk/react'
 import { ArrowUp, ChevronDown, Square } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { isArtifactsEnabled } from '@/lib/artifacts/config'
 import { UploadedFile } from '@/lib/types'
 import type { ToolPart, UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 import { cn, isChatLoading } from '@/lib/utils'
@@ -84,7 +83,6 @@ export function ChatPanel({
   const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
   const voiceEnabled = isVoiceEnabled()
-  const artifactsEnabled = isArtifactsEnabled()
 
   // Submit after a brief delay so React flushes the input state update first
   const submitPromptValue = (value: string) => {
@@ -330,7 +328,7 @@ export function ChatPanel({
         {messages.length === 0 && (
           <ActionButtons
             promptSamples={suggestions}
-            artifactsEnabled={artifactsEnabled}
+            artifactsEnabled={false}
             onSelectPrompt={(message, category) => {
               // Auto-switch to Research + Quality for research suggestions
               if (category === 'research') {

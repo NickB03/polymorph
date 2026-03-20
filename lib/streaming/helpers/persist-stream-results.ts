@@ -55,14 +55,23 @@ export async function persistStreamResults(
               fallbackError.message.includes('unique constraint'))
 
           if (isDuplicateKey) {
-            // Chat already exists, this is fine - continue to save the response message
+            // The chat row already exists, but the initial user message may not.
             console.log(
-              'Chat already exists (duplicate key), continuing with response save'
+              'Chat already exists (duplicate key), persisting initial user message'
             )
-            perfTime(
-              'initial chat persistence - duplicate detected',
-              fallbackStart
-            )
+            try {
+              await upsertMessage(chatId, initialUserMessage, userId)
+              perfTime(
+                'initial chat persistence - duplicate recovered via upsert',
+                fallbackStart
+              )
+            } catch (persistError) {
+              console.error(
+                'Fallback initial user message persistence failed:',
+                persistError
+              )
+              return
+            }
           } else {
             // Other error - log and return
             console.error('Fallback chat creation failed:', fallbackError)

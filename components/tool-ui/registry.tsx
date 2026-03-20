@@ -18,7 +18,7 @@ import { Plan } from './plan/plan'
 import { safeParseSerializablePlan } from './plan/schema'
 import { safeParseSerializableTimeline } from './timeline/schema'
 import { Timeline } from './timeline/timeline'
-import { tryRenderArtifactCard } from './artifact-card'
+import { tryRenderCanvasArtifactCard } from './canvas-artifact-card'
 import { ToolErrorBoundary } from './tool-error-boundary'
 
 type ToolUIEntry = {
@@ -139,8 +139,16 @@ const entries: ToolUIEntry[] = [
     }
   },
   {
-    name: 'artifactCard',
-    tryRender: output => tryRenderArtifactCard(output)
+    name: 'canvasArtifactCard',
+    tryRender: output => tryRenderCanvasArtifactCard(output)
+  },
+  {
+    name: 'createCanvasArtifact',
+    tryRender: output => tryRenderCanvasArtifactCard(output)
+  },
+  {
+    name: 'updateCanvasArtifact',
+    tryRender: output => tryRenderCanvasArtifactCard(output)
   }
 ]
 

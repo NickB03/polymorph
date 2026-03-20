@@ -1,29 +1,30 @@
-import type { UIMessage } from '@/lib/types/ai'
+import type { CanvasArtifactStatusData, UIMessage } from '@/lib/types/ai'
 import { isInteractiveToolPart } from '@/lib/types/dynamic-tools'
 
-export function getLatestGuestArtifactToken(
+/**
+ * Search messages for the most recent `data-canvasArtifactStatus` part
+ * and return its `guestCanvasToken` (if present).
+ */
+export function getLatestGuestCanvasToken(
   messages: UIMessage[]
-): string | null {
-  let latestToken: string | null = null
-
-  for (const message of messages) {
-    if (message.role !== 'assistant') continue
-
-    for (const part of message.parts ?? []) {
+): string | undefined {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const parts = messages[i].parts
+    if (!parts) continue
+    for (let j = parts.length - 1; j >= 0; j--) {
+      const part = parts[j] as {
+        type?: string
+        data?: CanvasArtifactStatusData
+      }
       if (
-        (part.type === 'data-artifact' ||
-          part.type === 'data-artifactStatus') &&
-        typeof part.data === 'object' &&
-        part.data !== null &&
-        'guestArtifactToken' in part.data &&
-        typeof part.data.guestArtifactToken === 'string'
+        part.type === 'data-canvasArtifactStatus' &&
+        part.data?.guestCanvasToken
       ) {
-        latestToken = part.data.guestArtifactToken
+        return part.data.guestCanvasToken
       }
     }
   }
-
-  return latestToken
+  return undefined
 }
 
 export function buildChatRequestBody({
@@ -32,16 +33,16 @@ export function buildChatRequestBody({
   messageId,
   chatId,
   isGuest,
-  guestArtifactToken,
-  savedMessagesCount
+  savedMessagesCount,
+  guestCanvasToken
 }: {
   messages: UIMessage[]
   trigger: 'submit-message' | 'regenerate-message' | 'tool-result' | undefined
   messageId: string | undefined
   chatId: string
   isGuest: boolean
-  guestArtifactToken: string | null
   savedMessagesCount: number
+  guestCanvasToken?: string
 }) {
   const lastMessage = messages[messages.length - 1]
   const messageToRegenerate =
@@ -74,7 +75,7 @@ export function buildChatRequestBody({
             output: resolvedPart.output
           },
           ...(isGuest ? { messages } : {}),
-          ...(isGuest && guestArtifactToken ? { guestArtifactToken } : {})
+          ...(guestCanvasToken ? { guestCanvasToken } : {})
         }
       }
     }
@@ -86,7 +87,7 @@ export function buildChatRequestBody({
       chatId,
       messageId,
       ...(isGuest ? { messages } : {}),
-      ...(isGuest && guestArtifactToken ? { guestArtifactToken } : {}),
+      ...(guestCanvasToken ? { guestCanvasToken } : {}),
       message:
         trigger === 'regenerate-message' && messageToRegenerate?.role === 'user'
           ? messageToRegenerate

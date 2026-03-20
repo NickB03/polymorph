@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { useChat } from '@ai-sdk/react'
@@ -10,13 +10,12 @@ import { toast } from 'sonner'
 import { generateId } from '@/lib/db/schema'
 import { UploadedFile } from '@/lib/types'
 import type {
+  CanvasArtifactData,
+  CanvasArtifactStatusData,
   ChatSection,
-  DataArtifactPart,
-  DataArtifactStatusPart,
   UIMessage,
   UIMessageMetadata
 } from '@/lib/types/ai'
-import type { ArtifactEventData, ArtifactLogData } from '@/lib/types/artifact'
 import {
   isDynamicToolPart,
   isInteractiveToolPart,
@@ -33,24 +32,14 @@ import { isVoiceEnabled } from '@/lib/voice/config'
 import { useFileDropzone } from '@/hooks/use-file-dropzone'
 import { useVoiceConversation } from '@/hooks/use-voice-conversation'
 
-import { useArtifact } from './artifact/artifact-context'
+import { useCanvas } from './canvas/canvas-context'
 import { VoiceOverlay } from './voice/voice-overlay'
 import { loadVoiceConfig } from './voice/voice-settings'
 import { ChatMessages } from './chat-messages'
 import { ChatPanel } from './chat-panel'
-import {
-  buildChatRequestBody,
-  getLatestGuestArtifactToken
-} from './chat-request'
+import { buildChatRequestBody, getLatestGuestCanvasToken } from './chat-request'
 import { DragOverlay } from './drag-overlay'
 import { ErrorModal } from './error-modal'
-
-/** Artifact-specific error codes displayed inline rather than in a modal */
-const ARTIFACT_ERROR_CODES = new Set([
-  'BUILD_FAILED',
-  'RUNTIME_UNAVAILABLE',
-  'PREVIEW_EXPIRED'
-])
 
 const EMPTY_MESSAGES: UIMessage[] = []
 
@@ -66,13 +55,12 @@ export function Chat({
   isGuest?: boolean
 }) {
   const router = useRouter()
-  const {
-    openWorkspace,
-    updateWorkspace,
-    appendWorkspaceLog,
-    setRequestAiFix,
-    state: artifactState
-  } = useArtifact()
+  const canvas = useCanvas()
+
+  // Track the latest guest canvas token from streamed/persisted parts
+  const guestCanvasTokenRef = useRef<string | undefined>(undefined)
+  // Track which canvas artifacts have been opened to avoid re-fetching
+  const canvasOpenedRef = useRef<Set<string>>(new Set())
 
   // Generate a stable chatId on the client side
   // - If providedId exists (e.g., /search/[id]), use it for existing chats
@@ -96,6 +84,9 @@ export function Chat({
     })
     syncSearchMode('chat')
     syncModelType('speed')
+    guestCanvasTokenRef.current = undefined
+    canvasOpenedRef.current.clear()
+    canvas.closeWorkspace()
   }
 
   // Restore search mode and model type from saved chat metadata, or reset for new conversations
@@ -119,27 +110,23 @@ export function Chat({
     }
   }, [providedId, savedMessages])
 
+  // Initialize guest canvas token from saved messages
   useEffect(() => {
-    if (isGuest) {
-      const token = getLatestGuestArtifactToken(savedMessages)
-      setGuestArtifactToken(token)
-      guestArtifactTokenRef.current = token
+    if (savedMessages.length > 0) {
+      const token = getLatestGuestCanvasToken(savedMessages)
+      if (token) {
+        guestCanvasTokenRef.current = token
+        canvas.setGuestCanvasToken(token)
+      }
     }
-  }, [isGuest, savedMessages])
+  }, [providedId, savedMessages]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const autoSendFiredRef = useRef<Set<string>>(new Set())
-  // Track the last artifact id we auto-opened to avoid re-opening on every render
-  const lastOpenedArtifactIdRef = useRef<string | null>(null)
-  // Ref for guestArtifactToken so the transport closure reads the latest value
-  const guestArtifactTokenRef = useRef<string | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const stopVoiceRef = useRef<(() => void) | null>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [input, setInput] = useState('')
-  const [guestArtifactToken, setGuestArtifactToken] = useState<string | null>(
-    null
-  )
   const [errorModal, setErrorModal] = useState<{
     open: boolean
     type: 'rate-limit' | 'auth' | 'forbidden' | 'general'
@@ -171,42 +158,11 @@ export function Chat({
           messageId,
           chatId,
           isGuest,
-          guestArtifactToken: guestArtifactTokenRef.current,
-          savedMessagesCount: savedMessages.length
+          savedMessagesCount: savedMessages.length,
+          guestCanvasToken: guestCanvasTokenRef.current
         })
     }),
     messages: savedMessages,
-    onData: dataPart => {
-      // Handle transient artifact data parts (not persisted in message.parts).
-      // Dispatched as custom DOM events so the artifact workspace can react
-      // without polling. Transient parts arrive via the stream but are
-      // excluded from message.parts by the SDK.
-      if (dataPart && typeof dataPart === 'object' && 'type' in dataPart) {
-        const { type } = dataPart as { type: string }
-        if (type === 'data-artifactLog') {
-          const logData = (dataPart as { data: ArtifactLogData }).data
-          appendWorkspaceLog(logData)
-          window.dispatchEvent(new CustomEvent(type, { detail: logData }))
-        } else if (type === 'data-artifactEvent') {
-          const eventData = (dataPart as { data: ArtifactEventData }).data
-          if (
-            eventData.event === 'guest-token-refreshed' &&
-            typeof eventData.payload?.token === 'string'
-          ) {
-            setGuestArtifactToken(eventData.payload.token)
-            guestArtifactTokenRef.current = eventData.payload.token
-            updateWorkspace({
-              guestArtifactToken: eventData.payload.token
-            })
-          }
-          window.dispatchEvent(
-            new CustomEvent(type, {
-              detail: eventData
-            })
-          )
-        }
-      }
-    },
     onFinish: () => {
       window.dispatchEvent(new CustomEvent('chat-history-updated'))
     },
@@ -223,25 +179,6 @@ export function Chat({
         }
       } catch {
         // Fall through to legacy detection
-      }
-
-      // Artifact-specific errors: show inline toast instead of modal
-      if (ARTIFACT_ERROR_CODES.has(errorCode)) {
-        const friendlyMessages: Record<string, string> = {
-          BUILD_FAILED: 'Artifact build failed — check logs for details',
-          RUNTIME_UNAVAILABLE:
-            'Artifact runtime is unavailable — try again shortly',
-          PREVIEW_EXPIRED:
-            'Artifact preview has expired — start a new conversation to rebuild'
-        }
-        toast.error(friendlyMessages[errorCode] ?? errorMessage)
-        // Update workspace status to reflect the error
-        if (errorCode === 'BUILD_FAILED') {
-          updateWorkspace({ status: 'failed' })
-        } else if (errorCode === 'PREVIEW_EXPIRED') {
-          updateWorkspace({ status: 'expired' })
-        }
-        return
       }
 
       const lowerMessage = errorMessage.toLowerCase()
@@ -340,139 +277,62 @@ export function Chat({
     generateId
   })
 
-  // Wire the "Ask AI to fix" callback so the error panel can submit a repair message.
-  // The caller (error panel / header) passes the full formatted prompt via formatArtifactFixPrompt.
+  // Track canvas data parts from streaming messages
   useEffect(() => {
-    setRequestAiFix(() => (formattedPrompt: string) => {
-      sendMessage({
-        role: 'user',
-        parts: [{ type: 'text', text: formattedPrompt }]
-      })
-    })
-    return () => setRequestAiFix(null)
-  }, [sendMessage, setRequestAiFix])
-
-  // Auto-open workspace when artifact data parts arrive in messages.
-  // Reconcile by stable artifact id to avoid re-opening the same artifact.
-  useEffect(() => {
-    // Single pass: scan all messages for artifact data, status, and source files
-    let latestArtifact: DataArtifactPart | null = null
-    let latestStatus: DataArtifactStatusPart | null = null
-    let latestFiles: Record<string, string> | null = null
-
     for (const msg of messages) {
-      if (msg.role !== 'assistant') continue
-      for (const part of msg.parts ?? []) {
-        if (part.type === 'data-artifact') {
-          latestArtifact = part as DataArtifactPart
-        } else if (part.type === 'data-artifactStatus') {
-          latestStatus = part as DataArtifactStatusPart
-        } else if (
-          (part.type === 'tool-createWebappArtifact' ||
-            part.type === 'tool-updateWebappArtifact') &&
-          'output' in part &&
-          (part as { output?: { files?: Record<string, string> } }).output
-            ?.files
-        ) {
-          latestFiles = (part as { output: { files: Record<string, string> } })
-            .output.files
+      if (msg.role !== 'assistant' || !msg.parts) continue
+      for (const part of msg.parts) {
+        const p = part as {
+          type?: string
+          data?: CanvasArtifactData | CanvasArtifactStatusData
+        }
+
+        // Extract guest canvas tokens from status parts
+        if (p.type === 'data-canvasArtifactStatus') {
+          const statusData = p.data as CanvasArtifactStatusData | undefined
+          if (statusData?.guestCanvasToken) {
+            guestCanvasTokenRef.current = statusData.guestCanvasToken
+            canvas.setGuestCanvasToken(statusData.guestCanvasToken)
+          }
+        }
+
+        // Open/focus the canvas workspace for artifact parts
+        if (p.type === 'data-canvasArtifact') {
+          const artifactData = p.data as CanvasArtifactData | undefined
+          if (artifactData?.artifactId) {
+            if (canvasOpenedRef.current.has(artifactData.artifactId)) {
+              // Already opened — just focus (no re-fetch)
+              canvas.focusCanvasArtifact(artifactData.artifactId)
+            } else {
+              canvasOpenedRef.current.add(artifactData.artifactId)
+              canvas.openCanvasArtifact(
+                artifactData.artifactId,
+                guestCanvasTokenRef.current
+              )
+            }
+          }
         }
       }
     }
+  }, [messages]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    if (!latestArtifact) return
+  // Canvas callbacks for RenderMessage → ChatMessages
+  const handleCanvasArtifactClick = useCallback(
+    (artifactId: string) => {
+      canvas.focusCanvasArtifact(artifactId)
+    },
+    [canvas]
+  )
 
-    const artifactId = latestArtifact.data.id
-    const persistedGuestArtifactToken =
-      latestStatus?.data.id === artifactId
-        ? (latestStatus.data.guestArtifactToken ??
-          latestArtifact.data.guestArtifactToken)
-        : latestArtifact.data.guestArtifactToken
-
-    if (
-      persistedGuestArtifactToken &&
-      persistedGuestArtifactToken !== guestArtifactToken
-    ) {
-      setGuestArtifactToken(persistedGuestArtifactToken)
-      guestArtifactTokenRef.current = persistedGuestArtifactToken
-    }
-
-    // Update code viewer with source files from tool results
-    if (latestFiles) {
-      const sourceFiles = Object.entries(latestFiles).map(
-        ([path, content]) => ({
-          path,
-          content,
-          language:
-            path.endsWith('.tsx') || path.endsWith('.ts')
-              ? 'typescript'
-              : path.endsWith('.css')
-                ? 'css'
-                : path.endsWith('.json')
-                  ? 'json'
-                  : 'text'
-        })
-      )
-      updateWorkspace({ sourceFiles, canRebuild: sourceFiles.length > 0 })
-    }
-
-    // If workspace is already showing this artifact, just apply status updates.
-    // IMPORTANT: Never let persisted message part data override an 'expired'
-    // status that was set by the refresh probe or rebuild API. The probe is
-    // authoritative; message parts contain stale pre-expiration status.
-    if (artifactState.workspace.artifactId === artifactId) {
-      if (artifactState.workspace.status === 'expired') {
-        // Status was set by refresh probe — don't let stale data overwrite it
-        lastOpenedArtifactIdRef.current = artifactId
-        return
-      }
-      const statusData = latestStatus?.data
-      if (statusData && statusData.id === artifactId) {
-        updateWorkspace({
-          status: statusData.status,
-          previewUrl: statusData.previewUrl ?? undefined,
-          revisionId: statusData.revisionId ?? undefined,
-          guestArtifactToken:
-            statusData.guestArtifactToken ??
-            persistedGuestArtifactToken ??
-            undefined
-        })
-      } else if (
-        latestArtifact.data.status !== artifactState.workspace.status
-      ) {
-        // Artifact part itself has updated status
-        updateWorkspace({
-          status: latestArtifact.data.status,
-          previewUrl: latestArtifact.data.previewUrl ?? undefined,
-          revisionId: latestArtifact.data.revisionId ?? undefined,
-          guestArtifactToken: persistedGuestArtifactToken ?? undefined
-        })
-      }
-      lastOpenedArtifactIdRef.current = artifactId
-      return
-    }
-
-    // Don't re-open if we already opened this artifact (user may have closed it)
-    if (lastOpenedArtifactIdRef.current === artifactId) return
-
-    // Open workspace for a new artifact
-    openWorkspace({
-      artifactId,
-      title: latestArtifact.data.title,
-      status: latestArtifact.data.status,
-      previewUrl: latestArtifact.data.previewUrl,
-      revisionId: latestArtifact.data.revisionId,
-      guestArtifactToken: persistedGuestArtifactToken ?? undefined
-    })
-    lastOpenedArtifactIdRef.current = artifactId
-  }, [
-    messages,
-    artifactState.workspace.artifactId,
-    artifactState.workspace.status,
-    guestArtifactToken,
-    openWorkspace,
-    updateWorkspace
-  ])
+  const handleLegacyArtifactClick = useCallback(
+    (artifactId: string) => {
+      canvas.openLegacyCanvasNotice({
+        artifactId,
+        source: 'chat-history'
+      })
+    },
+    [canvas]
+  )
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)
@@ -753,6 +613,8 @@ export function Chat({
         onUpdateMessage={handleUpdateAndReloadMessage}
         reload={handleReloadFrom}
         error={error}
+        onCanvasArtifactClick={handleCanvasArtifactClick}
+        onLegacyArtifactClick={handleLegacyArtifactClick}
       />
       <ChatPanel
         chatId={chatId}

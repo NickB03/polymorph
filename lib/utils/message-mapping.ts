@@ -80,14 +80,10 @@ const KNOWN_TOOL_NAMES = [
   'todoRead'
 ] as const
 
-const ARTIFACT_TOOL_NAMES = [
-  'createWebappArtifact',
-  'updateWebappArtifact',
-  'getArtifactStatus',
-  'restartArtifactPreview'
-] as const
-
-const TRANSIENT_DATA_PART_TYPES = new Set(['artifactEvent', 'artifactLog'])
+const TRANSIENT_DATA_PART_TYPES = new Set<string>([
+  'canvasArtifactEvent',
+  'canvasDiagnostics'
+])
 
 // Type guards
 function isToolCallPart(part: unknown): part is ToolCallPart {
@@ -145,10 +141,6 @@ function getDynamicToolType(toolName: string) {
 
   if (toolName.startsWith('display')) {
     return 'display'
-  }
-
-  if ((ARTIFACT_TOOL_NAMES as readonly string[]).includes(toolName)) {
-    return 'artifact'
   }
 
   return 'dynamic'
@@ -348,7 +340,8 @@ export function mapUIMessagePartsToDBParts(
 
         if (
           part.type.startsWith('tool-display') ||
-          (ARTIFACT_TOOL_NAMES as readonly string[]).includes(dynamicToolName)
+          part.type === 'tool-createCanvasArtifact' ||
+          part.type === 'tool-updateCanvasArtifact'
         ) {
           if (!isExtendedToolPart(part)) {
             console.error('Invalid extended tool part:', part)
@@ -468,9 +461,10 @@ export function mapDBPartToUIMessagePart(
         if (toolName === 'dynamic') {
           // Reconstruct display tools to their original type for rich rendering
           if (
+            part.tool_dynamic_name &&
             (part.tool_dynamic_type === 'display' ||
-              part.tool_dynamic_type === 'artifact') &&
-            part.tool_dynamic_name
+              part.tool_dynamic_name === 'createCanvasArtifact' ||
+              part.tool_dynamic_name === 'updateCanvasArtifact')
           ) {
             return {
               type: `tool-${part.tool_dynamic_name}` as any,
@@ -623,7 +617,11 @@ function getToolNameFromType(toolName: string): string {
     return 'dynamic'
   }
 
-  if ((ARTIFACT_TOOL_NAMES as readonly string[]).includes(toolName)) {
+  // Canvas artifact tools route to dynamic columns
+  if (
+    toolName === 'createCanvasArtifact' ||
+    toolName === 'updateCanvasArtifact'
+  ) {
     return 'dynamic'
   }
 
