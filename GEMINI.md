@@ -28,19 +28,19 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → tools → streaming response.
 
 - **Researcher agent** (`lib/agents/researcher.ts`): Uses Vercel AI SDK's `ToolLoopAgent` with two modes:
-  - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline]` + artifact tools when `ENABLE_ARTIFACTS=true`
-  - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline, todoWrite]` + artifact tools when `ENABLE_ARTIFACTS=true`
-- **Artifact tools** (gated by `ENABLE_ARTIFACTS=true`): `createWebappArtifact`, `updateWebappArtifact`, `getArtifactStatus`, `restartArtifactPreview` — generate and iterate on React SPA artifacts in E2B sandboxes
-- **Tools** (`lib/tools/`): `search` (Tavily primary, Brave multimedia, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todo` (task management), `dynamic` (MCP/runtime-defined tools)
+  - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline]` + canvas artifact tools
+  - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline, todoWrite]` + canvas artifact tools
+- **Canvas artifact tools**: `createCanvasArtifact`, `updateCanvasArtifact` — generate and iterate on React SPA artifacts compiled server-side via esbuild + Tailwind CSS v4
+- **Tools** (`lib/tools/`): `search` (Tavily primary, Brave multimedia, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todoWrite` (task management), `dynamic` (MCP/runtime-defined tools)
 - **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Gemini 3 Flash (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway
 - **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
 
 ### Database (Drizzle + Supabase PostgreSQL)
 
-Schema in `lib/db/schema.ts` with seven tables:
+Schema in `lib/db/schema.ts` with core tables:
 
 - **chats** → **messages** → **parts** (cascade delete)
-- **artifacts** → **artifactRevisions** + **artifactRuntimeSessions** (cascade delete)
+- **canvasArtifacts** → **canvasArtifactVersions** (cascade delete)
 - **feedback** — user feedback storage
 - `parts` is a wide table storing all message part types (text, reasoning, files, sources, tool calls) with check constraints per type
 - All tables use Row-Level Security (RLS) via `current_setting('app.current_user_id')`
@@ -61,19 +61,20 @@ Supabase Auth with three client patterns:
 - `lib/supabase/middleware.ts` — session refresh in middleware
 - **Guest mode** (default): `ENABLE_GUEST_CHAT=true` lets unauthenticated users search immediately. Guest chats are ephemeral (not persisted), use speed-mode models only, and are rate-limited per IP via Upstash Redis.
 
-### Artifacts (E2B)
+### Canvas Artifacts
 
-React SPA artifact generation in E2B sandboxes, gated by `ENABLE_ARTIFACTS=true`:
+Canvas is the active artifact model. It is always-on (no feature flag gating).
 
-- **Runtime adapter** (`lib/artifacts/runtime/e2b-runtime.ts`): HTTP-backed E2B sandbox operations (create session, write files, build, preview, destroy)
-- **Template** (`lib/artifacts/templates/react-spa/`): Immutable Vite + React + Tailwind template with preinstalled shadcn/Radix UI components
-- **Validation** (`lib/artifacts/validation/`): Import normalization and source validation against template manifest
-- **Guest security** (`lib/artifacts/guest-token.ts`): HMAC-SHA256 signed tokens for guest artifact continuity
-- **Workspace UI** (`components/artifact/`): Split-view workspace with Preview, Code, and Logs tabs; error recovery panel
+- **Compile pipeline** (`lib/canvas/compiler/`): Server-side esbuild + Tailwind CSS v4 compiles React SPA source into a single self-contained HTML string served via `iframe.srcdoc`
+- **One-artifact-per-chat rule:** Each chat maps to at most one canvas artifact
+- **Canvas service** (`lib/canvas/service.ts`): CRUD operations with optimistic concurrency (revision counter)
+- **Validation** (`lib/canvas/validation/`): Source validation and normalization before compilation
+- **Guest security** (`lib/canvas/guest-token.ts`): HMAC-SHA256 signed tokens for guest artifact continuity
+- **Workspace UI** (`components/canvas/`): Split-view workspace with live preview, CodeMirror editor, diagnostics panel, and version history
 
 ### Generative UI
 
-Components render different message part types: `answer-section.tsx`, `search-section.tsx`, `reasoning-section.tsx`, `artifact/` directory for rich artifacts. These map to part types from the `parts` database table.
+Components render different message part types: `answer-section.tsx`, `search-section.tsx`, `reasoning-section.tsx`, `canvas/` directory for canvas artifacts. These map to part types from the `parts` database table.
 
 ## Commands
 
@@ -125,9 +126,7 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 - `TAVILY_API_KEY` — search
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase
 - `DATABASE_SSL_DISABLED=true` — for local dev with Supabase CLI
-- `ENABLE_ARTIFACTS` — set to `true` to enable artifact generation tools (default: `false`)
-- `E2B_API_KEY` — E2B sandbox API key (required when artifacts enabled)
-- `GUEST_ARTIFACT_SECRET` — HMAC secret for guest artifact tokens (required when artifacts enabled)
+- `GUEST_CANVAS_SECRET` — HMAC secret for guest canvas artifact tokens
 
 ## Key Files
 
@@ -141,8 +140,9 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 - `config/models/` — model configuration JSON files (default.json, cloud.json)
 - `proxy.ts` — Supabase session + base URL propagation (Next.js middleware entry point)
 - `next.config.mjs` — Next.js configuration
-- `lib/artifacts/` — E2B artifact runtime, validation, guest tokens, observability
-- `lib/tools/*-artifact*.ts` — artifact tool definitions (create, update, status, restart)
-- `app/api/artifacts/` — artifact workspace action endpoints (refresh, retry)
-- `components/artifact/` — workspace shell, preview frame, code viewer, error panel
+- `lib/canvas/` — canvas artifact compile pipeline, validation, service, guest tokens
+- `lib/tools/create-canvas-artifact.ts` — AI tool: create a new canvas artifact
+- `lib/tools/update-canvas-artifact.ts` — AI tool: update existing canvas artifact source
+- `app/api/canvas-artifacts/` — REST routes for canvas artifact state, drafts, versions, export
+- `components/canvas/` — canvas workspace shell, live preview, CodeMirror editor, diagnostics
 - `docs/architecture/DECISIONS.md` — architectural decisions

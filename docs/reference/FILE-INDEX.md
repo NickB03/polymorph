@@ -14,7 +14,7 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
   - [Auth Components](#auth-components)
   - [Message & Chat Components](#message--chat-components)
   - [Search & Results Components](#search--results-components)
-  - [Artifact Components](#artifact-components)
+  - [Canvas Components](#canvas-components)
   - [Inspector Components](#inspector-components)
   - [Sidebar Components](#sidebar-components)
   - [Activity Components](#activity-components)
@@ -34,13 +34,13 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
   - [Auth](#auth)
   - [Supabase](#supabase)
   - [Rate Limiting](#rate-limiting)
-  - [Artifacts](#artifacts)
   - [Analytics](#analytics)
   - [Voice](#voice)
   - [Utils](#utils)
   - [External Clients](#external-clients)
   - [Lib Hooks](#lib-hooks)
   - [Constants](#constants)
+  - [Canvas](#canvas)
 - [Top-Level Hooks](#top-level-hooks)
 - [Config Files](#config-files)
 - [Scripts](#scripts)
@@ -89,17 +89,17 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 
 ### Pages
 
-| File                      | Purpose                                                                                           |
-| ------------------------- | ------------------------------------------------------------------------------------------------- |
-| `app/layout.tsx`          | Root layout with font loading, theme provider, sidebar, header, artifact container, and analytics |
-| `app/page.tsx`            | Home page; resolves current user and renders the Chat component                                   |
-| `app/globals.css`         | Global CSS with Tailwind directives and custom theme variables                                    |
-| `app/manifest.ts`         | PWA manifest with app name, icons, and display settings                                           |
-| `app/favicon.ico`         | Browser favicon                                                                                   |
-| `app/icon.png`            | 192px app icon for PWA                                                                            |
-| `app/apple-icon.png`      | Apple touch icon                                                                                  |
-| `app/opengraph-image.png` | OpenGraph social sharing image                                                                    |
-| `app/error.tsx`           | Global error boundary page with retry button                                                      |
+| File                      | Purpose                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------- |
+| `app/layout.tsx`          | Root layout with font loading, theme provider, sidebar, header, canvas shell, and analytics |
+| `app/page.tsx`            | Home page; resolves current user and renders the Chat component                             |
+| `app/globals.css`         | Global CSS with Tailwind directives and custom theme variables                              |
+| `app/manifest.ts`         | PWA manifest with app name, icons, and display settings                                     |
+| `app/favicon.ico`         | Browser favicon                                                                             |
+| `app/icon.png`            | 192px app icon for PWA                                                                      |
+| `app/apple-icon.png`      | Apple touch icon                                                                            |
+| `app/opengraph-image.png` | OpenGraph social sharing image                                                              |
+| `app/error.tsx`           | Global error boundary page with retry button                                                |
 
 ### Search Routes
 
@@ -124,17 +124,27 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 
 ### API Routes
 
-| File                                              | Purpose                                                                                                                                             |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/chat/route.ts`                           | Main chat endpoint (POST, 300s timeout); handles auth, rate limiting, model selection, and delegates to authenticated or ephemeral stream responses |
-| `app/api/chats/route.ts`                          | Chat history endpoint (GET); returns paginated list of user chats                                                                                   |
-| `app/api/feedback/route.ts`                       | Feedback endpoint (POST); records thumbs up/down scores to Langfuse and updates message metadata                                                    |
-| `app/api/upload/route.ts`                         | File upload endpoint (POST); validates file type/size and uploads to Supabase Storage                                                               |
-| `app/api/advanced-search/route.ts`                | SearXNG advanced search endpoint (POST); performs cached deep-crawl searches with relevance scoring                                                 |
-| `app/api/suggestions/route.ts`                    | Trending suggestions endpoint; returns generated topic suggestions for the homepage                                                                 |
-| `app/api/voice/synthesize/route.ts`               | TTS synthesis endpoint (POST); synthesizes text to speech via OpenAI or ElevenLabs                                                                  |
-| `app/api/artifacts/[artifactId]/actions/route.ts` | Artifact workspace actions endpoint (POST); handles refresh, retry, and rebuild for E2B sandboxes                                                   |
-| `app/api/health/route.ts`                         | Health check endpoint; returns server status and database connectivity for monitoring                                                               |
+| File                                | Purpose                                                                                                                                             |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/chat/route.ts`             | Main chat endpoint (POST, 300s timeout); handles auth, rate limiting, model selection, and delegates to authenticated or ephemeral stream responses |
+| `app/api/chats/route.ts`            | Chat history endpoint (GET); returns paginated list of user chats                                                                                   |
+| `app/api/feedback/route.ts`         | Feedback endpoint (POST); records thumbs up/down scores to Langfuse and updates message metadata                                                    |
+| `app/api/upload/route.ts`           | File upload endpoint (POST); validates file type/size and uploads to Supabase Storage                                                               |
+| `app/api/advanced-search/route.ts`  | SearXNG advanced search endpoint (POST); performs cached deep-crawl searches with relevance scoring                                                 |
+| `app/api/suggestions/route.ts`      | Trending suggestions endpoint; returns generated topic suggestions for the homepage                                                                 |
+| `app/api/voice/synthesize/route.ts` | TTS synthesis endpoint (POST); synthesizes text to speech via OpenAI or ElevenLabs                                                                  |
+| `app/api/health/route.ts`           | Health check endpoint; returns server status and database connectivity for monitoring                                                               |
+
+### Canvas API Routes
+
+| File                                                                 | Purpose                                                                                     |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `app/api/canvas-artifacts/[artifactId]/route.ts`                     | Load canvas artifact state (GET); supports Supabase auth and guest token                    |
+| `app/api/canvas-artifacts/[artifactId]/draft/route.ts`               | Update draft source with optimistic concurrency (PATCH); compiles via esbuild + Tailwind v4 |
+| `app/api/canvas-artifacts/[artifactId]/versions/route.ts`            | Create immutable version snapshot of the current draft (POST)                               |
+| `app/api/canvas-artifacts/[artifactId]/restore/route.ts`             | Restore a previous version as the current draft (POST); uses optimistic concurrency         |
+| `app/api/canvas-artifacts/[artifactId]/export/route.ts`              | Export compiled HTML as a downloadable `.html` file attachment (GET)                        |
+| `app/api/canvas-artifacts/[artifactId]/runtime-diagnostics/route.ts` | Persist runtime diagnostics (errors, warnings) from the preview iframe (POST)               |
 
 ---
 
@@ -147,7 +157,7 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | `components/chat.tsx`               | Main chat orchestrator; manages `useChat`, file uploads, message sections, and error handling |
 | `components/chat-messages.tsx`      | Renders the scrollable message list, grouped into user/assistant sections                     |
 | `components/chat-panel.tsx`         | Chat input panel with textarea, send/stop buttons, search mode selector, and file upload      |
-| `components/chat-request.ts`        | Chat request utilities including guest artifact token extraction from messages                |
+| `components/chat-request.ts`        | Chat request utilities including guest canvas token extraction from messages                  |
 | `components/render-message.tsx`     | Routes each message part to the appropriate section renderer (text, tool, dynamic tool)       |
 | `components/polymorph-wordmark.tsx` | Animated Polymorph wordmark with rotating suffix words                                        |
 | `components/header.tsx`             | Top navigation bar with sidebar trigger, feedback button, and user/guest menu                 |
@@ -238,31 +248,26 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | `components/external-link-items.tsx` | Menu items linking to external resources (GitHub, docs)               |
 | `components/theme-menu-items.tsx`    | Theme switching menu items (light, dark, system)                      |
 
-### Artifact Components
+### Canvas Components
 
-| File                                                | Purpose                                                                          |
-| --------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `components/artifact/artifact-root.tsx`             | Root wrapper providing ArtifactProvider and container                            |
-| `components/artifact/artifact-context.tsx`          | React context for artifact panel state (open/close, active part)                 |
-| `components/artifact/artifact-content.tsx`          | Part type dispatcher routing to search, reasoning, todo, or generic content      |
-| `components/artifact/artifact-workspace.tsx`        | Artifact workspace shell with Preview, Code, and Logs tabs                       |
-| `components/artifact/artifact-workspace-header.tsx` | Workspace header with tab selector, copy, refresh, and close actions             |
-| `components/artifact/artifact-preview-frame.tsx`    | Iframe preview for artifact sandbox with loading and error states                |
-| `components/artifact/artifact-code-viewer.tsx`      | Read-only code viewer with syntax highlighting and file tabs                     |
-| `components/artifact/artifact-error-panel.tsx`      | Error recovery panel with rebuild and "Ask AI to fix" actions                    |
-| `components/artifact/artifact-logs-panel.tsx`       | Scrollable build/runtime log viewer for artifact sandboxes                       |
-| `components/artifact/chat-artifact-container.tsx`   | Resizable split layout between chat and artifact/inspector panel                 |
-| `components/artifact/tool-invocation-content.tsx`   | Tool part dispatcher routing search tool artifacts (default fallback for others) |
-| `components/artifact/search-artifact-content.tsx`   | Renders search results, images, and videos in the artifact panel                 |
-| `components/artifact/reasoning-content.tsx`         | Renders model reasoning text in the artifact panel                               |
-| `components/artifact/todo-invocation-content.tsx`   | Renders todo list output in the artifact panel                                   |
+| File                                             | Purpose                                                                             |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| `components/canvas/canvas-root.tsx`              | Provider + shell wrapper that mounts the canvas workspace                           |
+| `components/canvas/canvas-context.tsx`           | React context for canvas artifact state, draft updates, and version management      |
+| `components/canvas/chat-canvas-shell.tsx`        | Resizable split-pane layout (desktop + mobile) containing chat and canvas workspace |
+| `components/canvas/canvas-workspace.tsx`         | Main workspace with Preview, Code, and Diagnostics tabs                             |
+| `components/canvas/canvas-preview.tsx`           | Live preview rendering compiled HTML via `iframe.srcdoc`                            |
+| `components/canvas/canvas-editor.tsx`            | CodeMirror 6 editor for viewing and editing canvas artifact source                  |
+| `components/canvas/canvas-diagnostics-panel.tsx` | Panel displaying runtime errors and warnings from the preview iframe                |
+| `components/canvas/canvas-version-history.tsx`   | Version history panel with save, restore, and version listing                       |
+| `components/canvas/canvas-legacy-notice.tsx`     | Static notice shown when old sandbox artifact references are encountered            |
 
 ### Inspector Components
 
-| File                                        | Purpose                                                                  |
-| ------------------------------------------- | ------------------------------------------------------------------------ |
-| `components/inspector/inspector-drawer.tsx` | Mobile drawer for the inspector panel using bottom sheet                 |
-| `components/inspector/inspector-panel.tsx`  | Desktop panel showing artifact content (search, reasoning, todo details) |
+| File                                        | Purpose                                                                   |
+| ------------------------------------------- | ------------------------------------------------------------------------- |
+| `components/inspector/inspector-drawer.tsx` | Mobile drawer for the inspector panel using bottom sheet                  |
+| `components/inspector/inspector-panel.tsx`  | Desktop panel showing inspector content (search, reasoning, todo details) |
 
 ### Sidebar Components
 
@@ -303,7 +308,6 @@ The `components/tool-ui/` directory contains generative UI components rendered b
 | -------------------------------------------- | ----------------------------------------------------------------------------- |
 | `components/tool-ui/index.ts`                | Barrel export for all tool UI components and registry                         |
 | `components/tool-ui/registry.tsx`            | Tool UI registry mapping tool names to render functions via schema validation |
-| `components/tool-ui/artifact-card.tsx`       | Artifact status card with progress indicators and workspace launch action     |
 | `components/tool-ui/tool-error-boundary.tsx` | Error boundary component wrapping tool UI renders with fallback display       |
 
 #### Callout Tool
@@ -475,24 +479,22 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Tools
 
-| File                                    | Purpose                                                                                          |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `lib/tools/search.ts`                   | Multi-provider search tool with streaming progress; supports general and optimized search types  |
-| `lib/tools/fetch.ts`                    | Web content extraction tool; supports regular HTML fetch and API-based extraction (Jina, Tavily) |
-| `lib/tools/todo.ts`                     | Task list management tool; creates and updates structured todo items                             |
-| `lib/tools/display-callout.ts`          | Display tool that renders a styled callout box with variant-specific icons and colors            |
-| `lib/tools/display-chart.ts`            | Display tool that renders bar and line charts                                                    |
-| `lib/tools/display-citations.ts`        | Display tool that renders a formatted citation list                                              |
-| `lib/tools/display-link-preview.ts`     | Display tool that renders a rich link preview card                                               |
-| `lib/tools/display-plan.ts`             | Display tool that renders a step-by-step research plan                                           |
-| `lib/tools/display-table.ts`            | Display tool that renders a formatted data table with column types                               |
-| `lib/tools/display-option-list.ts`      | Display tool that renders an interactive option list for user selection                          |
-| `lib/tools/display-timeline.ts`         | Display tool that renders a chronological event timeline with category styling                   |
-| `lib/tools/create-webapp-artifact.ts`   | Tool for creating a new React SPA artifact in an E2B sandbox                                     |
-| `lib/tools/update-webapp-artifact.ts`   | Tool for updating an existing artifact's source files                                            |
-| `lib/tools/get-artifact-status.ts`      | Tool for checking the current build/preview status of an artifact                                |
-| `lib/tools/restart-artifact-preview.ts` | Tool for restarting an artifact's preview server                                                 |
-| `lib/tools/dynamic.ts`                  | Factory for creating runtime-defined tools (MCP tools, user-defined functions)                   |
+| File                                  | Purpose                                                                                          |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `lib/tools/search.ts`                 | Multi-provider search tool with streaming progress; supports general and optimized search types  |
+| `lib/tools/fetch.ts`                  | Web content extraction tool; supports regular HTML fetch and API-based extraction (Jina, Tavily) |
+| `lib/tools/todo.ts`                   | Task list management tool; creates and updates structured todo items                             |
+| `lib/tools/display-callout.ts`        | Display tool that renders a styled callout box with variant-specific icons and colors            |
+| `lib/tools/display-chart.ts`          | Display tool that renders bar and line charts                                                    |
+| `lib/tools/display-citations.ts`      | Display tool that renders a formatted citation list                                              |
+| `lib/tools/display-link-preview.ts`   | Display tool that renders a rich link preview card                                               |
+| `lib/tools/display-plan.ts`           | Display tool that renders a step-by-step research plan                                           |
+| `lib/tools/display-table.ts`          | Display tool that renders a formatted data table with column types                               |
+| `lib/tools/display-option-list.ts`    | Display tool that renders an interactive option list for user selection                          |
+| `lib/tools/display-timeline.ts`       | Display tool that renders a chronological event timeline with category styling                   |
+| `lib/tools/create-canvas-artifact.ts` | AI tool: creates a new canvas artifact in the current chat with initial React SPA source         |
+| `lib/tools/update-canvas-artifact.ts` | AI tool: updates the existing canvas artifact source with a full replacement                     |
+| `lib/tools/dynamic.ts`                | Factory for creating runtime-defined tools (MCP tools, user-defined functions)                   |
 
 ### Search Providers
 
@@ -519,27 +521,25 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/streaming/helpers/has-pending-interactive-tool.ts`  | Checks if the response has pending interactive tools awaiting user input                                            |
 | `lib/streaming/helpers/stream-related-questions.ts`      | Generates and streams related follow-up questions alongside the main response                                       |
 | `lib/streaming/helpers/strip-reasoning-parts.ts`         | Strips reasoning parts from messages to avoid OpenAI API compatibility issues                                       |
-| `lib/streaming/helpers/write-artifact-data.ts`           | Artifact stream emitter functions for writing artifact data, status, logs, and events to SSE                        |
 | `lib/streaming/helpers/types.ts`                         | TypeScript interfaces for streaming context (StreamContext)                                                         |
 
 ### Database
 
-| File                  | Purpose                                                                                                                                                    |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `artifacts`, `artifactRevisions`, `artifactRuntimeSessions`, and `feedback` tables with RLS policies |
-| `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                                                            |
-| `lib/db/relations.ts` | Drizzle relation definitions (chats -> messages -> parts, artifacts -> revisions/sessions)                                                                 |
-| `lib/db/actions.ts`   | Database CRUD operations (create/load/update/delete chats, messages, parts, artifacts) with RLS enforcement                                                |
-| `lib/db/constants.ts` | Database constants (query limits, default values)                                                                                                          |
-| `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                                                                    |
-| `lib/db/migrate.ts`   | Standalone migration runner script using Drizzle Kit                                                                                                       |
+| File                  | Purpose                                                                                                        |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `feedback`, and legacy artifact tables with RLS policies |
+| `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                |
+| `lib/db/relations.ts` | Drizzle relation definitions (chats -> messages -> parts)                                                      |
+| `lib/db/actions.ts`   | Database CRUD operations (create/load/update/delete chats, messages, parts) with RLS enforcement               |
+| `lib/db/constants.ts` | Database constants (query limits, default values)                                                              |
+| `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                        |
+| `lib/db/migrate.ts`   | Standalone migration runner script using Drizzle Kit                                                           |
 
 ### Server Actions
 
 | File                           | Purpose                                                                        |
 | ------------------------------ | ------------------------------------------------------------------------------ |
 | `lib/actions/chat.ts`          | Server actions for chat operations with `unstable_cache` and revalidation tags |
-| `lib/actions/artifact.ts`      | Server actions for artifact workspace operations (refresh, retry, rebuild)     |
 | `lib/actions/feedback.ts`      | Server action to update message feedback score in the database and Langfuse    |
 | `lib/actions/site-feedback.ts` | Server action to submit site-wide user feedback (sentiment + message)          |
 
@@ -553,17 +553,16 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Types
 
-| File                               | Purpose                                                                                       |
-| ---------------------------------- | --------------------------------------------------------------------------------------------- |
-| `lib/types/index.ts`               | Core type definitions for SearchResults, SearchResultItem, SearXNG types, and UploadedFile    |
-| `lib/types/search.ts`              | SearchMode type definition (`'chat' \| 'research'`)                                           |
-| `lib/types/models.ts`              | Model interface (id, name, provider, providerId, providerOptions)                             |
-| `lib/types/model-type.ts`          | ModelType definition (`'speed' \| 'quality'`)                                                 |
-| `lib/types/agent.ts`               | ResearcherTools type, ResearcherAgent alias, and per-tool UIToolInvocation types              |
-| `lib/types/ai.ts`                  | Extended AI SDK types: UIMessage, UIMessageMetadata, UITools, UIDataTypes, Part, ToolPart     |
-| `lib/types/artifact.ts`            | Artifact type definitions (ArtifactData, ArtifactStatus, ArtifactSourceFile, ArtifactLogData) |
-| `lib/types/dynamic-tools.ts`       | Type definitions for MCP client, dynamic tool configuration, and DynamicToolPart variants     |
-| `lib/types/message-persistence.ts` | Database message part types (DBMessagePart, ToolState) and metadata schemas                   |
+| File                               | Purpose                                                                                    |
+| ---------------------------------- | ------------------------------------------------------------------------------------------ |
+| `lib/types/index.ts`               | Core type definitions for SearchResults, SearchResultItem, SearXNG types, and UploadedFile |
+| `lib/types/search.ts`              | SearchMode type definition (`'chat' \| 'research'`)                                        |
+| `lib/types/models.ts`              | Model interface (id, name, provider, providerId, providerOptions)                          |
+| `lib/types/model-type.ts`          | ModelType definition (`'speed' \| 'quality'`)                                              |
+| `lib/types/agent.ts`               | ResearcherTools type, ResearcherAgent alias, and per-tool UIToolInvocation types           |
+| `lib/types/ai.ts`                  | Extended AI SDK types: UIMessage, UIMessageMetadata, UITools, UIDataTypes, Part, ToolPart  |
+| `lib/types/dynamic-tools.ts`       | Type definitions for MCP client, dynamic tool configuration, and DynamicToolPart variants  |
+| `lib/types/message-persistence.ts` | Database message part types (DBMessagePart, ToolState) and metadata schemas                |
 
 ### Config
 
@@ -592,35 +591,12 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Rate Limiting
 
-| File                                | Purpose                                                                         |
-| ----------------------------------- | ------------------------------------------------------------------------------- |
-| `lib/rate-limit/guest-limit.ts`     | Guest user daily rate limiting via Upstash Redis (default 10/day)               |
-| `lib/rate-limit/chat-limits.ts`     | Authenticated user daily chat rate limiting via Upstash Redis (default 100/day) |
-| `lib/rate-limit/artifact-limits.ts` | Artifact-specific rate limiting for sandbox operations                          |
-| `lib/rate-limit/redis.ts`           | Upstash Redis client initialization and configuration                           |
-| `lib/rate-limit/memory-limiter.ts`  | In-memory rate limiter fallback when Redis is unavailable                       |
-
-### Artifacts
-
-| File                                                   | Purpose                                                                           |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| `lib/artifacts/orchestrate.ts`                         | Orchestrates artifact creation and update lifecycle (write files, build, preview) |
-| `lib/artifacts/rebuild.ts`                             | Rebuilds an artifact sandbox from the latest revision source                      |
-| `lib/artifacts/config.ts`                              | Artifact feature configuration and environment flag checks                        |
-| `lib/artifacts/errors.ts`                              | Artifact-specific error types (ArtifactError, isArtifactError)                    |
-| `lib/artifacts/guest-token.ts`                         | HMAC-SHA256 signed token generation and verification for guest artifact sessions  |
-| `lib/artifacts/observability.ts`                       | Structured JSON lifecycle logging at tool boundaries                              |
-| `lib/artifacts/tool-context.ts`                        | ArtifactToolContext type for passing emitter functions to artifact tools          |
-| `lib/artifacts/template-manifest.ts`                   | Template manifest defining allowed imports and preinstalled packages              |
-| `lib/artifacts/runtime/index.ts`                       | Barrel export for E2B runtime adapter                                             |
-| `lib/artifacts/runtime/e2b-runtime.ts`                 | HTTP-backed E2B sandbox operations (create, write files, build, preview, destroy) |
-| `lib/artifacts/runtime/config.ts`                      | Runtime configuration (template ID, install skip logic)                           |
-| `lib/artifacts/runtime/types.ts`                       | Type definitions for runtime adapter interfaces                                   |
-| `lib/artifacts/runtime/errors.ts`                      | Runtime-specific error detection (sandbox not found, timeout)                     |
-| `lib/artifacts/runtime/cleanup.ts`                     | Sandbox cleanup and session expiry utilities                                      |
-| `lib/artifacts/templates/read-template.ts`             | Reads template files from disk for sandbox initialization                         |
-| `lib/artifacts/validation/validate-artifact-source.ts` | Validates artifact source code against template manifest constraints              |
-| `lib/artifacts/validation/normalize-imports.ts`        | Normalizes import paths in artifact source to match template structure            |
+| File                               | Purpose                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------- |
+| `lib/rate-limit/guest-limit.ts`    | Guest user daily rate limiting via Upstash Redis (default 10/day)               |
+| `lib/rate-limit/chat-limits.ts`    | Authenticated user daily chat rate limiting via Upstash Redis (default 100/day) |
+| `lib/rate-limit/redis.ts`          | Upstash Redis client initialization and configuration                           |
+| `lib/rate-limit/memory-limiter.ts` | In-memory rate limiter fallback when Redis is unavailable                       |
 
 ### Analytics
 
@@ -684,8 +660,24 @@ shadcn/ui-based primitives and custom UI components.
 | File                                   | Purpose                                                                                    |
 | -------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `lib/constants/index.ts`               | Application constants (`CHAT_ID = 'search'`)                                               |
-| `lib/constants/build-templates.ts`     | Build template cards (website, game, dashboard) shown when artifacts are enabled           |
+| `lib/constants/build-templates.ts`     | Build template cards (website, game, dashboard) for canvas artifact creation               |
 | `lib/constants/default-suggestions.ts` | Default prompt suggestions used as instant state and fallback for trending suggestions API |
+
+### Canvas
+
+Server-side compile pipeline, validation, service layer, and guest token support for canvas artifacts.
+
+| File                                              | Purpose                                                                                              |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `lib/canvas/service.ts`                           | Canvas CRUD service: load state, update draft, save/restore versions, export, record diagnostics     |
+| `lib/canvas/compiler/compile-canvas-artifact.ts`  | Orchestrates the full compile pipeline: validate source, esbuild bundle, Tailwind CSS, assemble HTML |
+| `lib/canvas/compiler/build-tailwind-css.ts`       | Generates Tailwind CSS v4 from the bundled source using the Tailwind compiler                        |
+| `lib/canvas/compiler/assemble-canvas-html.ts`     | Assembles the final single-file HTML from bundled JS and CSS                                         |
+| `lib/canvas/validation/validate-canvas-source.ts` | Validates and normalizes canvas source before compilation                                            |
+| `lib/canvas/guest-token.ts`                       | HMAC-SHA256 guest token signing, verification, and rotation for scoped artifact access               |
+| `lib/canvas/tool-context.ts`                      | Context object passed to canvas AI tools with chat/artifact identity and guest token                 |
+| `lib/canvas/constants.ts`                         | Canvas system constants (max source size, revision limits, compile timeouts)                         |
+| `lib/canvas/legacy.ts`                            | Legacy artifact detection: maps old sandbox artifact references to a deterministic notice path       |
 
 ---
 
@@ -774,7 +766,7 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 | `docs/architecture/MODEL-CONFIGURATION.md`     | Guide for configuring AI model profiles (default, cloud, Ollama)                                                                          |
 | `docs/architecture/SEARCH-PROVIDERS.md`        | Search provider setup guide (Tavily, Brave, Exa, Firecrawl, SearXNG)                                                                      |
 | `docs/architecture/DECISIONS.md`               | Architectural decision records (ADRs)                                                                                                     |
-| `docs/reference/API.md`                        | API endpoint reference for all REST endpoints (chat, chats, upload, feedback, search, suggestions, voice, artifacts, health)              |
+| `docs/reference/API.md`                        | API endpoint reference for all REST endpoints (chat, chats, upload, feedback, search, suggestions, voice, health)                         |
 | `docs/reference/FILE-INDEX.md`                 | This file; every file in the repository with a one-line description                                                                       |
 | `docs/operations/DEPLOYMENT.md`                | Deployment guide for Vercel, Docker, and self-hosted setups                                                                               |
 | `docs/operations/DOCKER.md`                    | Docker-specific setup and configuration instructions                                                                                      |
@@ -828,22 +820,14 @@ Test files are co-located with their source files using `__tests__/` directories
 | `app/api/feedback/__tests__/route.test.ts`                              | Tests for the feedback API route                 |
 | `app/api/suggestions/__tests__/route.test.ts`                           | Tests for the suggestions API route              |
 | `app/api/advanced-search/__tests__/route.test.ts`                       | Tests for the advanced search API route          |
-| `app/api/artifacts/[artifactId]/actions/route.test.ts`                  | Tests for the artifact actions API route         |
 | `components/__tests__/research-process-section.test.tsx`                | Tests for the research process section component |
-| `components/artifact/artifact-context.test.tsx`                         | Tests for artifact context state management      |
-| `components/artifact/artifact-workspace.test.tsx`                       | Tests for artifact workspace component           |
 | `components/chat-request.test.ts`                                       | Tests for chat request utilities                 |
 | `components/chat.test.tsx`                                              | Tests for the main chat component                |
-| `lib/actions/__tests__/artifact.test.ts`                                | Tests for artifact server actions                |
 | `lib/actions/__tests__/chat.test.ts`                                    | Tests for chat server actions                    |
 | `lib/actions/__tests__/feedback.test.ts`                                | Tests for feedback server actions                |
 | `lib/agents/__tests__/generate-trending-suggestions.test.ts`            | Tests for trending suggestions generation        |
 | `lib/agents/__tests__/researcher.test.ts`                               | Tests for the researcher agent                   |
 | `lib/agents/__tests__/title-generator.test.ts`                          | Tests for chat title generation                  |
-| `lib/artifacts/orchestrate.test.ts`                                     | Tests for artifact orchestration lifecycle       |
-| `lib/artifacts/runtime/e2b-runtime.test.ts`                             | Tests for E2B runtime adapter                    |
-| `lib/artifacts/templates/read-template.test.ts`                         | Tests for template file reading                  |
-| `lib/artifacts/validation/validate-artifact-source.test.ts`             | Tests for artifact source validation             |
 | `lib/db/__tests__/rls-policies.integration.test.ts`                     | Integration tests for RLS policy enforcement     |
 | `lib/db/__tests__/with-rls.test.ts`                                     | Tests for RLS helper functions                   |
 | `lib/rate-limit/__tests__/guest-limit.test.ts`                          | Tests for guest rate limiting logic              |
@@ -851,8 +835,6 @@ Test files are co-located with their source files using `__tests__/` directories
 | `lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts` | Tests for ephemeral streaming                    |
 | `lib/streaming/__tests__/prune-messages-integration.test.ts`            | Integration tests for message pruning            |
 | `lib/streaming/helpers/__tests__/prepare-messages.test.ts`              | Tests for message preparation                    |
-| `lib/streaming/helpers/write-artifact-data.test.ts`                     | Tests for artifact stream data writing           |
-| `lib/tools/__tests__/artifact-tools.test.ts`                            | Tests for artifact tool definitions              |
 | `lib/tools/__tests__/fetch.test.ts`                                     | Tests for the fetch tool                         |
 | `lib/tools/search/providers/__tests__/providers.test.ts`                | Tests for search provider implementations        |
 | `lib/utils/__tests__/citation.test.ts`                                  | Tests for citation extraction and processing     |

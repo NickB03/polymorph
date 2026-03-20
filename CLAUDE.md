@@ -29,19 +29,17 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → tools → streaming response.
 
 - **Researcher agent** (`lib/agents/researcher.ts`): Uses Vercel AI SDK's `ToolLoopAgent` with two modes:
-  - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline]` + artifact tools when `ENABLE_ARTIFACTS=true`
-  - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline, todoWrite]` + artifact tools when `ENABLE_ARTIFACTS=true`
-- **Artifact tools** (gated by `ENABLE_ARTIFACTS=true`): `createWebappArtifact`, `updateWebappArtifact`, `getArtifactStatus`, `restartArtifactPreview` — generate and iterate on React SPA artifacts in E2B sandboxes
+  - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline]` + canvas artifact tools
+  - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline, todoWrite]` + canvas artifact tools
 - **Tools** (`lib/tools/`): `search` (Tavily primary, Brave multimedia, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todo` (task management), `dynamic` (MCP/runtime-defined tools)
 - **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Gemini 3 Flash (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway
 - **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
 
 ### Database (Drizzle + Supabase PostgreSQL)
 
-Schema in `lib/db/schema.ts` with six core tables:
+Schema in `lib/db/schema.ts` with core tables:
 
 - **chats** → **messages** → **parts** (cascade delete)
-- **artifacts** → **artifactRevisions** + **artifactRuntimeSessions** (cascade delete)
 - `parts` is a wide table storing all message part types (text, reasoning, files, sources, tool calls) with check constraints per type
 - All tables use Row-Level Security (RLS) via `current_setting('app.current_user_id')` — users see only their own data, public chats are readable by all
 - Server actions in `lib/actions/chat.ts` use `unstable_cache` with revalidation tags
@@ -61,16 +59,24 @@ Supabase Auth with three client patterns:
 - `lib/supabase/middleware.ts` — session refresh in middleware
 - **Guest mode** (default): `ENABLE_GUEST_CHAT=true` lets unauthenticated users search immediately. Guest chats are ephemeral (not persisted), use speed-mode models only, and are rate-limited per IP via Upstash Redis. A gentle inline nudge encourages sign-up after the 5th search.
 
-### Artifacts (E2B)
+### Canvas Artifacts
 
-React SPA artifact generation in E2B sandboxes, gated by `ENABLE_ARTIFACTS=true`:
+Canvas is the active artifact model. It is always-on (no feature flag gating).
 
-- **Runtime adapter** (`lib/artifacts/runtime/e2b-runtime.ts`): HTTP-backed E2B sandbox operations (create session, write files, build, preview, destroy)
-- **Template** (`lib/artifacts/templates/react-spa/`): Immutable Vite + React + Tailwind template with 15 preinstalled shadcn/Radix UI components. Model edits app source only — `package.json` and `components/ui/` are template-owned
-- **Validation** (`lib/artifacts/validation/`): Import normalization and source validation against template manifest
-- **Guest security** (`lib/artifacts/guest-token.ts`): HMAC-SHA256 signed tokens for guest artifact continuity, fail-closed verification, token rotation on success
-- **Workspace UI** (`components/artifact/`): Split-view workspace with Preview, Code (read-only), and Logs tabs; error recovery panel with "Ask AI to fix"
-- **Observability** (`lib/artifacts/observability.ts`): Structured JSON lifecycle logging at tool boundaries
+- **Compile pipeline** (`lib/canvas/compiler/`): Server-side esbuild + Tailwind CSS v4 compiles React SPA source into a single self-contained HTML string. The compiled HTML is persisted in the database and served via `iframe.srcdoc` for preview and export.
+- **One-artifact-per-chat rule:** Each chat maps to at most one canvas artifact. The `createCanvasArtifact` tool creates it; `updateCanvasArtifact` mutates it. Both are always available in the researcher tool set.
+- **Canvas service** (`lib/canvas/service.ts`): CRUD operations with optimistic concurrency (revision counter). Draft updates, version saves, restores, exports, and runtime diagnostics all go through this service layer.
+- **Guest access** (`lib/canvas/guest-token.ts`): HMAC-SHA256 signed tokens grant guest users scoped access to a specific artifact. Tokens rotate on every successful write.
+- **Legacy notice** (`components/canvas/canvas-legacy-notice.tsx`): Old artifact references from the removed sandbox system fail closed into a static "artifact unavailable" notice.
+- **Canvas API routes** (`app/api/canvas-artifacts/[artifactId]/`):
+  - `GET /` — Load artifact state
+  - `PATCH /draft` — Update draft source (optimistic concurrency)
+  - `POST /versions` — Create immutable version snapshot
+  - `POST /restore` — Restore a previous version
+  - `GET /export` — Download compiled HTML as a file
+  - `POST /runtime-diagnostics` — Persist iframe runtime errors
+- **Source validation** (`lib/canvas/validation/`): Validates and normalizes canvas source before compilation
+- **Canvas workspace UI** (`components/canvas/`): Split-view workspace with live preview, CodeMirror editor, diagnostics panel, and version history
 
 ### Generative UI
 
@@ -94,7 +100,7 @@ To keep quality consistent, Claude Code should automatically invoke the followin
 - **When preparing for review** → `requesting-code-review`
 - **When applying review feedback** → `receiving-code-review`
 - **UI behavior changes / interaction regressions** → `webapp-testing`
-- **E2B sandbox/artifact runtime issues** (preview iframe, sandbox lifecycle, env propagation, build/preview failures) → `e2b-sandbox`
+- **Canvas artifact issues** (preview iframe, compile pipeline, diagnostics) → `e2b-sandbox`
 - **Supabase/Postgres schema/query/perf changes** → `supabase-postgres-best-practices`
 - **Next.js App Router architecture decisions** → `nextjs-app-router-patterns`
 
@@ -103,7 +109,7 @@ To keep quality consistent, Claude Code should automatically invoke the followin
 1. Prefer **process/quality skills first** (debugging/planning/verification/review).
 2. Then apply **domain skills** (Next.js, Supabase, testing) for implementation details.
 3. If multiple skills could apply, invoke all relevant ones in this order:
-   `systematic-debugging` → `writing-plans` → domain skill(s) (including `e2b-sandbox` when artifacts/sandbox are involved) → `verification-before-completion` → review skill(s).
+   `systematic-debugging` → `writing-plans` → domain skill(s) (including `e2b-sandbox` when canvas artifacts are involved) → `verification-before-completion` → review skill(s).
 
 #### Prompting hint for reliable auto-selection
 
@@ -141,9 +147,7 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 - `TAVILY_API_KEY` — search
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase
 - `DATABASE_SSL_DISABLED=true` — for local dev with Supabase CLI
-- `ENABLE_ARTIFACTS` — set to `true` to enable artifact generation tools (default: `false`)
-- `E2B_API_KEY` — E2B sandbox API key (required when artifacts enabled)
-- `GUEST_ARTIFACT_SECRET` — HMAC secret for guest artifact tokens (required when artifacts enabled)
+- `GUEST_CANVAS_SECRET` — HMAC secret for guest canvas artifact tokens
 
 ## Key Files
 
@@ -156,7 +160,8 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 - `lib/utils/registry.ts` — AI provider registry
 - `config/models/` — model configuration JSON files (default.json, cloud.json)
 - `proxy.ts` — Supabase session + base URL propagation (Next.js middleware entry point)
-- `lib/artifacts/` — E2B artifact runtime, validation, guest tokens, observability
-- `lib/tools/*-artifact*.ts` — artifact tool definitions (create, update, status, restart)
-- `app/api/artifacts/` — artifact workspace action endpoints (refresh, retry)
-- `components/artifact/` — workspace shell, preview frame, code viewer, error panel
+- `lib/canvas/` — canvas artifact compile pipeline, validation, service, guest tokens, legacy notice path
+- `lib/tools/create-canvas-artifact.ts` — AI tool: create a new canvas artifact in the current chat
+- `lib/tools/update-canvas-artifact.ts` — AI tool: update the existing canvas artifact source
+- `components/canvas/` — canvas workspace shell, live preview, CodeMirror editor, diagnostics, version history
+- `app/api/canvas-artifacts/` — REST routes for canvas artifact state, drafts, versions, restore, export, diagnostics

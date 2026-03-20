@@ -29,7 +29,7 @@ Polymorph is an AI platform with a generative UI. It combines multi-step researc
 - Vercel AI SDK-powered chat + tool workflows
 - Search provider support (Tavily, Brave, Exa, SearXNG, Firecrawl)
 - 8 generative UI display tools for rich interactive responses
-- Artifact generation (React SPA) via E2B sandboxes
+- Canvas artifact generation with persisted single-file HTML previews
 - Voice mode with speech input and TTS playback
 - PostgreSQL + Drizzle for persisted chat history (via Supabase)
 - Supabase Auth, Supabase Storage, and Redis-backed rate limiting
@@ -46,7 +46,7 @@ Polymorph is an AI platform with a generative UI. It combines multi-step researc
 | Auth      | Supabase Auth                                                                                        |
 | AI        | Vercel AI SDK + AI Gateway                                                                           |
 | Search    | Tavily (primary), Brave (multimedia), Exa, SearXNG, Firecrawl                                        |
-| Artifacts | E2B sandboxes (React SPA generation)                                                                 |
+| Artifacts | Canvas artifact compiler + workspace (single-file HTML preview/export)                               |
 | Styling   | Tailwind CSS v4 + shadcn/ui                                                                          |
 | Testing   | Vitest                                                                                               |
 | Tracing   | Langfuse                                                                                             |
@@ -62,7 +62,7 @@ graph TD
     Agent["Researcher Agent (ToolLoopAgent)"]
     AI["AI Providers (Gateway, OpenAI, Anthropic, Google, Ollama)"]
     Search["Search Providers (Tavily, Brave, Exa, SearXNG, Firecrawl)"]
-    E2B["E2B Sandboxes (Artifact Runtime)"]
+    Canvas["Canvas Artifact Compiler + Workspace"]
     DB["Supabase PostgreSQL (Drizzle ORM)"]
     Redis["Upstash Redis (Rate Limiting)"]
     Auth["Supabase Auth"]
@@ -75,7 +75,7 @@ graph TD
     API --> Agent
     Agent -->|"LLM Calls"| AI
     Agent -->|"Tool Calls"| Search
-    Agent -->|"Artifacts"| E2B
+    Agent -->|"Canvas Tools"| Canvas
     Agent -->|"Persist Results"| DB
     Agent -.->|"Telemetry"| Langfuse
     Auth -->|"Session Cookies"| Browser

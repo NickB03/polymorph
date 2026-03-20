@@ -709,7 +709,7 @@ export const myTool = tool({
 })
 ```
 
-2. Add the tool to the `ResearcherTools` type in [`lib/types/agent.ts`](../lib/types/agent.ts).
+2. Add the tool to the `ResearcherTools` type in [`lib/types/agent.ts`](../../lib/types/agent.ts).
 
 3. Register the tool in `createResearcher` ([`lib/agents/researcher.ts`](../lib/agents/researcher.ts)):
 

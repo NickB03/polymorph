@@ -72,16 +72,6 @@ UPSTASH_REDIS_REST_URL=[YOUR_UPSTASH_URL]
 UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 ```
 
-## Artifacts (E2B)
-
-Enable React SPA artifact generation in E2B sandboxes:
-
-```bash
-ENABLE_ARTIFACTS=true
-E2B_API_KEY=[YOUR_E2B_API_KEY]
-GUEST_ARTIFACT_SECRET=[YOUR_HMAC_SECRET]
-```
-
 ## Optional Features
 
 - Guest chat: `ENABLE_GUEST_CHAT=true`

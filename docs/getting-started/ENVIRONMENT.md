@@ -56,14 +56,11 @@ Required when `ENABLE_AUTH=true`:
 - `OPENAI_COMPATIBLE_API_KEY` + `OPENAI_COMPATIBLE_API_BASE_URL` (any OpenAI-compatible API)
 - `OLLAMA_BASE_URL`
 
-## Artifacts (E2B)
+## Canvas artifacts
 
-| Variable                      | Default            | Purpose                                                                                |
-| ----------------------------- | ------------------ | -------------------------------------------------------------------------------------- |
-| `ENABLE_ARTIFACTS`            | `false`            | Set to `true` to enable artifact generation tools                                      |
-| `E2B_API_KEY`                 | —                  | E2B sandbox API key (required when artifacts enabled)                                  |
-| `GUEST_ARTIFACT_SECRET`       | —                  | HMAC-SHA256 secret for signing guest artifact tokens (required when artifacts enabled) |
-| `GUEST_ARTIFACT_TOKEN_TTL_MS` | `1800000` (30 min) | Guest artifact token TTL in milliseconds                                               |
+| Variable              | Default | Purpose                                                                              |
+| --------------------- | ------- | ------------------------------------------------------------------------------------ |
+| `GUEST_CANVAS_SECRET` | —       | HMAC-SHA256 secret for signing guest canvas tokens (required for guest artifact use) |
 
 ## Optional platform features
 

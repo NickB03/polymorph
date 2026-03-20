@@ -1,3 +1,5 @@
+> **Archived:** This plan describes the removed E2B artifact system. See the [canvas artifact replacement plan](../superpowers/plans/2026-03-18-canvas-artifact-replacement-implementation.md) for the current architecture.
+
 # E2B Artifact Rollout & Future Work
 
 **Status:** Code-complete. MVP (Tasks 1-12) + Batch 4 (Tasks 13-17) merged.

@@ -121,16 +121,16 @@ The `createResearcher` function in [`lib/agents/researcher.ts`](../lib/agents/re
 
 **Request body fields:**
 
-| Field                | Purpose                                                  |
-| -------------------- | -------------------------------------------------------- |
-| `message`            | The user's message (required for `submit-message`)       |
-| `messages`           | Full message history (used by ephemeral/guest path)      |
-| `chatId`             | Chat identifier                                          |
-| `trigger`            | `submit-message`, `regenerate-message`, or `tool-result` |
-| `messageId`          | Target message ID (required for `regenerate-message`)    |
-| `isNewChat`          | Optimization flag to skip loading existing chat          |
-| `toolResult`         | Tool call continuation data (required for `tool-result`) |
-| `guestArtifactToken` | HMAC-signed token for guest artifact continuity          |
+| Field              | Purpose                                                  |
+| ------------------ | -------------------------------------------------------- |
+| `message`          | The user's message (required for `submit-message`)       |
+| `messages`         | Full message history (used by ephemeral/guest path)      |
+| `chatId`           | Chat identifier                                          |
+| `trigger`          | `submit-message`, `regenerate-message`, or `tool-result` |
+| `messageId`        | Target message ID (required for `regenerate-message`)    |
+| `isNewChat`        | Optimization flag to skip loading existing chat          |
+| `toolResult`       | Tool call continuation data (required for `tool-result`) |
+| `guestCanvasToken` | HMAC-signed token for guest canvas artifact continuity   |
 
 ---
 
@@ -301,7 +301,7 @@ sequenceDiagram
 
 ## Database Schema
 
-The database uses Drizzle ORM with Supabase PostgreSQL. The schema follows a three-level hierarchy: **chats** contain **messages**, and messages contain **parts**. Three artifact tables track generated React SPA artifacts. A separate **feedback** table stores user feedback.
+The database uses Drizzle ORM with Supabase PostgreSQL. The schema follows a three-level hierarchy: **chats** contain **messages**, and messages contain **parts**. Legacy artifact tables remain in the schema for data continuity but are no longer part of the active architecture. A separate **feedback** table stores user feedback.
 
 ```mermaid
 erDiagram
@@ -373,18 +373,6 @@ erDiagram
         timestamp created_at "NOT NULL, default now()"
     }
 
-    artifact_runtime_sessions {
-        varchar id PK "cuid2, 191 chars"
-        varchar artifact_id FK "NOT NULL, CASCADE DELETE"
-        varchar provider "e2b, default e2b"
-        text sandbox_id "NOT NULL"
-        text preview_url "optional"
-        varchar status "building | ready | failed | restarting | expired"
-        timestamp started_at "NOT NULL, default now()"
-        timestamp expires_at "optional"
-        timestamp last_heartbeat_at "optional"
-    }
-
     feedback {
         varchar id PK "cuid2, 191 chars"
         varchar user_id "optional, 255 chars"
@@ -399,7 +387,6 @@ erDiagram
     messages ||--o{ parts : "has many"
     chats ||--o{ artifacts : "has many"
     artifacts ||--o{ artifact_revisions : "has many"
-    artifacts ||--o{ artifact_runtime_sessions : "has many"
 ```
 
 ### Schema details
@@ -419,21 +406,20 @@ erDiagram
 
 ### Indexes
 
-| Table                     | Index                                                  | Purpose                          |
-| ------------------------- | ------------------------------------------------------ | -------------------------------- |
-| chats                     | `chats_user_id_idx`                                    | User's chat list                 |
-| chats                     | `chats_user_id_created_at_idx`                         | Sorted chat list                 |
-| chats                     | `chats_created_at_idx`                                 | Global recency ordering          |
-| chats                     | `chats_id_user_id_idx`                                 | RLS subquery from messages/parts |
-| messages                  | `messages_chat_id_idx`                                 | Load messages by chat            |
-| messages                  | `messages_chat_id_created_at_idx`                      | Ordered message load             |
-| parts                     | `parts_message_id_idx`                                 | Load parts by message            |
-| parts                     | `parts_message_id_order_idx`                           | Ordered part load                |
-| artifacts                 | `artifacts_chat_id_idx`                                | Artifacts by chat                |
-| artifact_revisions        | `artifact_revisions_artifact_id_created_at_idx`        | Ordered revisions per artifact   |
-| artifact_runtime_sessions | `artifact_runtime_sessions_artifact_id_started_at_idx` | Ordered sessions per artifact    |
-| feedback                  | `feedback_user_id_idx`                                 | Feedback by user                 |
-| feedback                  | `feedback_created_at_idx`                              | Feedback by recency              |
+| Table              | Index                                           | Purpose                          |
+| ------------------ | ----------------------------------------------- | -------------------------------- |
+| chats              | `chats_user_id_idx`                             | User's chat list                 |
+| chats              | `chats_user_id_created_at_idx`                  | Sorted chat list                 |
+| chats              | `chats_created_at_idx`                          | Global recency ordering          |
+| chats              | `chats_id_user_id_idx`                          | RLS subquery from messages/parts |
+| messages           | `messages_chat_id_idx`                          | Load messages by chat            |
+| messages           | `messages_chat_id_created_at_idx`               | Ordered message load             |
+| parts              | `parts_message_id_idx`                          | Load parts by message            |
+| parts              | `parts_message_id_order_idx`                    | Ordered part load                |
+| artifacts          | `artifacts_chat_id_idx`                         | Artifacts by chat                |
+| artifact_revisions | `artifact_revisions_artifact_id_created_at_idx` | Ordered revisions per artifact   |
+| feedback           | `feedback_user_id_idx`                          | Feedback by user                 |
+| feedback           | `feedback_created_at_idx`                       | Feedback by recency              |
 
 **Source file:** [`lib/db/schema.ts`](../lib/db/schema.ts)
 
@@ -715,9 +701,6 @@ graph TD
         OwnRevisions["users_manage_own_artifact_revisions<br/>USING: EXISTS subquery into artifacts<br/>WHERE artifacts.user_id = current_user_id<br/>FOR: ALL operations"]
     end
 
-    subgraph ArtifactSessionsRLS["artifact_runtime_sessions table"]
-        OwnSessions["users_manage_own_artifact_runtime_sessions<br/>USING: EXISTS subquery into artifacts<br/>WHERE artifacts.user_id = current_user_id<br/>FOR: ALL operations"]
-    end
 
     subgraph FeedbackRLS["feedback table"]
         FeedbackSelect["feedback_select_policy<br/>USING: true (all can read)"]
@@ -728,7 +711,6 @@ graph TD
     OwnChats -->|"Ownership propagates via subquery"| OwnMessages
     OwnMessages -->|"Ownership propagates via subquery"| OwnParts
     OwnArtifacts -->|"Ownership propagates via subquery"| OwnRevisions
-    OwnArtifacts -->|"Ownership propagates via subquery"| OwnSessions
     PublicChats -->|"Public access via subquery"| PublicMessages
     PublicMessages -->|"Public access via subquery"| PublicParts
 ```
@@ -745,7 +727,7 @@ The RLS chain cascades through the table hierarchy:
 
 4. **artifacts**: Users can perform all operations on artifacts where `user_id = current_user_id`.
 
-5. **artifact_revisions** / **artifact_runtime_sessions**: Access is granted via `EXISTS` subquery checking if the parent artifact belongs to the current user.
+5. **artifact_revisions**: Access is granted via `EXISTS` subquery checking if the parent artifact belongs to the current user.
 
 6. **feedback**: Open access — anyone can insert and read feedback.
 

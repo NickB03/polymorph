@@ -17,7 +17,7 @@ This document describes the generative UI system in Polymorph — how AI tool in
 - [Display Tool Components](#display-tool-components)
 - [Interactive Tool: OptionList](#interactive-tool-optionlist)
 - [Dynamic Tool Display](#dynamic-tool-display)
-- [Artifact / Inspector Panel](#artifact--inspector-panel)
+- [Inspector Panel](#inspector-panel)
 - [Research Process Section](#research-process-section)
 - [How to Add a New Generative UI Tool](#how-to-add-a-new-generative-ui-tool)
 - [Key File Reference](#key-file-reference)
@@ -656,63 +656,17 @@ The `DynamicToolDisplay` component (`components/dynamic-tool-display.tsx`) handl
 
 ---
 
-## Artifact / Inspector Panel
+## Inspector Panel
 
-The artifact system provides a detail panel that opens when users click on research process items (search results, reasoning, todo lists). It is separate from the display tool system — it shows expanded views of core tool results rather than generative UI components.
+The inspector system provides a detail panel that opens when users click on research process items (search results, reasoning, todo lists). It is separate from the display tool system — it shows expanded views of core tool results rather than generative UI components.
 
-```mermaid
-graph TD
-    subgraph ChatPane["Chat Pane"]
-        SearchSection["SearchSection<br/>(click to inspect)"]
-        ReasoningSection["ReasoningSection<br/>(click to inspect)"]
-        TodoSection["TodoSection<br/>(click to inspect)"]
-    end
+The inspector uses a resizable split-pane layout provided by `ChatCanvasShell`:
 
-    subgraph ArtifactSystem["Artifact System"]
-        Context["ArtifactContext<br/>(useReducer: OPEN/CLOSE/CLEAR)"]
-        Container["ChatArtifactContainer<br/>(desktop: resizable panel<br/>mobile: drawer)"]
-        Content["ArtifactContent<br/>(part type dispatcher)"]
-    end
+- **Desktop:** side-by-side panels with a draggable resize handle (320px min, 800px max, 500px default). Width persists to localStorage.
+- **Mobile:** full-width drawer overlay via `InspectorDrawer`
+- **Mutual exclusion** with sidebar: opening the inspector closes the sidebar and vice versa
 
-    subgraph ContentTypes["Artifact Content Types"]
-        SearchArtifact["SearchArtifactContent<br/>(full search results,<br/>images, videos)"]
-        ReasoningArtifact["ReasoningContent<br/>(full reasoning markdown)"]
-        TodoArtifact["TodoInvocationContent<br/>(todo list with progress)"]
-        ToolArtifact["ToolInvocationContent<br/>(generic tool display)"]
-    end
-
-    SearchSection -->|"useArtifact().open(part)"| Context
-    ReasoningSection -->|"useArtifact().open(part)"| Context
-    TodoSection -->|"useArtifact().open(part)"| Context
-
-    Context --> Container --> Content
-    Content --> SearchArtifact
-    Content --> ReasoningArtifact
-    Content --> TodoArtifact
-    Content --> ToolArtifact
-```
-
-### Architecture
-
-- **`ArtifactRoot`** wraps the chat in `ArtifactProvider` + `ChatArtifactContainer`
-- **`ArtifactContext`** uses `useReducer` with three actions: `OPEN` (set part + show), `CLOSE` (hide), `CLEAR_CONTENT` (delayed cleanup after animation)
-- **`ChatArtifactContainer`** renders differently per viewport:
-  - **Desktop:** side-by-side panels with a draggable resize handle (320px min, 800px max, 500px default). Width persists to localStorage.
-  - **Mobile:** full-width drawer overlay via `InspectorDrawer`
-- **Mutual exclusion** with sidebar: opening the artifact closes the sidebar and vice versa
-
-### Content dispatch
-
-`ArtifactContent` dispatches based on `part.type`:
-
-| Part type        | Component                                         | Content shown                                 |
-| ---------------- | ------------------------------------------------- | --------------------------------------------- |
-| `tool-search`    | `ToolInvocationContent` → `SearchArtifactContent` | Search results with source links and snippets |
-| `tool-fetch`     | `ToolInvocationContent`                           | Generic tool display                          |
-| `tool-todoWrite` | `TodoInvocationContent`                           | Todo list with progress                       |
-| `reasoning`      | `ReasoningContent`                                | Full reasoning text as markdown               |
-
-**Source files:** [`components/artifact/artifact-root.tsx`](../components/artifact/artifact-root.tsx), [`components/artifact/artifact-context.tsx`](../components/artifact/artifact-context.tsx), [`components/artifact/artifact-content.tsx`](../components/artifact/artifact-content.tsx), [`components/artifact/chat-artifact-container.tsx`](../components/artifact/chat-artifact-container.tsx)
+**Source files:** [`components/canvas/chat-canvas-shell.tsx`](../components/canvas/chat-canvas-shell.tsx), [`components/canvas/canvas-context.tsx`](../components/canvas/canvas-context.tsx)
 
 ---
 
@@ -942,19 +896,15 @@ activeTools: [...existingTools, 'displayTimeline']
 | `components/research-process-section.tsx` | Collapsible research steps          |
 | `components/reasoning-section.tsx`        | Reasoning display with preview      |
 
-### Artifact / Inspector
+### Canvas / Inspector
 
-| File                                              | Purpose                                    |
-| ------------------------------------------------- | ------------------------------------------ |
-| `components/artifact/artifact-root.tsx`           | Provider + container wrapper               |
-| `components/artifact/artifact-context.tsx`        | React context with open/close state        |
-| `components/artifact/artifact-content.tsx`        | Part type -> content dispatcher            |
-| `components/artifact/chat-artifact-container.tsx` | Resizable desktop + mobile drawer          |
-| `components/artifact/tool-invocation-content.tsx` | Tool part dispatcher (search, fetch, etc.) |
-| `components/artifact/search-artifact-content.tsx` | Full search results view                   |
-| `components/artifact/reasoning-content.tsx`       | Full reasoning markdown view               |
-| `components/artifact/todo-invocation-content.tsx` | Todo list detail view                      |
-| `components/inspector/inspector-panel.tsx`        | Panel chrome with icon + close             |
+| File                                         | Purpose                                        |
+| -------------------------------------------- | ---------------------------------------------- |
+| `components/canvas/canvas-root.tsx`          | Provider + shell wrapper                       |
+| `components/canvas/canvas-context.tsx`       | React context for canvas/inspector state       |
+| `components/canvas/chat-canvas-shell.tsx`    | Resizable split-pane layout (desktop + mobile) |
+| `components/canvas/canvas-legacy-notice.tsx` | Legacy artifact unavailable notice             |
+| `components/inspector/inspector-panel.tsx`   | Panel chrome with icon + close                 |
 
 ### Types
 
