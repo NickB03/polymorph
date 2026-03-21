@@ -1,13 +1,15 @@
 import React from 'react'
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CanvasArtifactState } from '@/lib/canvas/service'
 import type {
   CanvasArtifactStatus,
   CanvasDiagnostics
 } from '@/lib/types/canvas'
+
+import type { ActivityState } from '@/components/activity/activity-context'
 
 import type { CanvasContextValue } from './canvas-context'
 
@@ -43,6 +45,26 @@ const mockCanvasContext: CanvasContextValue = {
 
 vi.mock('./canvas-context', () => ({
   useCanvas: () => mockCanvasContext
+}))
+
+const mockActivityState: ActivityState = {
+  isOpen: false,
+  isResearchMode: false,
+  items: [],
+  searchModeLabel: null
+}
+
+vi.mock('@/components/activity/activity-context', () => ({
+  useActivity: () => ({
+    state: mockActivityState,
+    open: vi.fn(),
+    close: vi.fn(),
+    toggle: vi.fn(),
+    setResearchMode: vi.fn(),
+    addItem: vi.fn(),
+    updateItem: vi.fn(),
+    reset: vi.fn()
+  })
 }))
 
 // Mock CodeMirror — JSDOM does not support CM6
@@ -84,6 +106,13 @@ vi.mock('@codemirror/theme-one-dark', () => ({
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
+beforeAll(() => {
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+    configurable: true,
+    value: vi.fn()
+  })
+})
+
 function makeArtifact(
   overrides: Partial<CanvasArtifactState> = {}
 ): CanvasArtifactState {
@@ -115,6 +144,12 @@ function resetCanvasState() {
     isWorkspaceOpen: false,
     legacyNotice: null,
     guestCanvasToken: null
+  })
+  Object.assign(mockActivityState, {
+    isOpen: false,
+    isResearchMode: false,
+    items: [],
+    searchModeLabel: null
   })
   vi.clearAllMocks()
   mockCodeMirrorProps = {}
@@ -276,6 +311,136 @@ describe('CanvasWorkspace', () => {
     expect(screen.getByTestId('canvas-preview-slot')).toBeInTheDocument()
   })
 
+  it('shows an activity pill when activity items exist', () => {
+    const artifact = makeArtifact()
+    mockActivityState.items = [
+      {
+        id: 'search-1',
+        type: 'search',
+        data: {
+          type: 'tool-search',
+          toolCallId: 'search-1',
+          state: 'input-available',
+          input: { query: 'vana' }
+        } as any,
+        state: 'active',
+        timestamp: Date.now()
+      }
+    ]
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    expect(screen.getByTestId('canvas-pill-activity')).toBeInTheDocument()
+  })
+
+  it('does not show an activity pill when there are no activity items', () => {
+    const artifact = makeArtifact()
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    expect(screen.queryByTestId('canvas-pill-activity')).not.toBeInTheDocument()
+  })
+
+  it('switches to activity view when the activity pill is clicked', () => {
+    const artifact = makeArtifact()
+    mockActivityState.items = [
+      {
+        id: 'search-1',
+        type: 'search',
+        data: {
+          type: 'tool-search',
+          toolCallId: 'search-1',
+          state: 'input-available',
+          input: { query: 'vana' }
+        } as any,
+        state: 'active',
+        timestamp: Date.now()
+      }
+    ]
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    fireEvent.click(screen.getByTestId('canvas-pill-activity'))
+
+    expect(screen.getByTestId('canvas-activity-slot')).toBeInTheDocument()
+    expect(screen.queryByTestId('canvas-preview-slot')).not.toBeInTheDocument()
+  })
+
+  it('shows and clears the unseen activity indicator', async () => {
+    const artifact = makeArtifact()
+    const { rerender } = render(<CanvasWorkspace />)
+
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+    rerender(<CanvasWorkspace />)
+
+    expect(
+      screen.queryByTestId('canvas-pill-activity-unseen')
+    ).not.toBeInTheDocument()
+
+    mockActivityState.items = [
+      {
+        id: 'search-1',
+        type: 'search',
+        data: {
+          type: 'tool-search',
+          toolCallId: 'search-1',
+          state: 'input-available',
+          input: { query: 'vana' }
+        } as any,
+        state: 'active',
+        timestamp: Date.now()
+      }
+    ]
+    rerender(<CanvasWorkspace />)
+
+    expect(
+      screen.getByTestId('canvas-pill-activity-unseen')
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('canvas-pill-activity'))
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('canvas-pill-activity-unseen')
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  it('returns to preview if activity disappears while activity tab is active', async () => {
+    const artifact = makeArtifact()
+    mockActivityState.items = [
+      {
+        id: 'search-1',
+        type: 'search',
+        data: {
+          type: 'tool-search',
+          toolCallId: 'search-1',
+          state: 'input-available',
+          input: { query: 'vana' }
+        } as any,
+        state: 'active',
+        timestamp: Date.now()
+      }
+    ]
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    const { rerender } = render(<CanvasWorkspace />)
+
+    fireEvent.click(screen.getByTestId('canvas-pill-activity'))
+    expect(screen.getByTestId('canvas-activity-slot')).toBeInTheDocument()
+
+    mockActivityState.items = []
+    rerender(<CanvasWorkspace />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('canvas-preview-slot')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('canvas-pill-activity')).not.toBeInTheDocument()
+  })
+
   // ── Desktop code sub-tabs ──────────────────────────────────────
 
   it('shows code sub-tabs when code pill is active', () => {
@@ -353,6 +518,30 @@ describe('CanvasWorkspace', () => {
     fireEvent.click(screen.getByTestId('canvas-tab-code'))
 
     expect(screen.getByTestId('canvas-code-slot')).toBeInTheDocument()
+  })
+
+  it('shows activity tab on mobile when activity items exist', () => {
+    mockIsMobile = true
+    const artifact = makeArtifact()
+    mockActivityState.items = [
+      {
+        id: 'search-1',
+        type: 'search',
+        data: {
+          type: 'tool-search',
+          toolCallId: 'search-1',
+          state: 'input-available',
+          input: { query: 'vana' }
+        } as any,
+        state: 'active',
+        timestamp: Date.now()
+      }
+    ]
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    expect(screen.getByTestId('canvas-tab-activity')).toBeInTheDocument()
   })
 
   // ── Close action ───────────────────────────────────────────────

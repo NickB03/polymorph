@@ -6,6 +6,7 @@ import type { ToolPart, UIMessage, UIMessageMetadata } from '@/lib/types/ai'
 import type { ChatStatus } from '@/lib/utils'
 
 import { useActivity } from '@/components/activity/activity-context'
+import { useCanvas } from '@/components/canvas/canvas-context'
 import { safeParseSerializableCitation } from '@/components/tool-ui/citation/schema'
 import { safeParseSerializableLinkPreview } from '@/components/tool-ui/link-preview/schema'
 
@@ -27,8 +28,10 @@ export function useActivityFeed(
 ): { isResearchMode: boolean } {
   const { state, addItem, updateItem, setResearchMode, reset, open } =
     useActivity()
+  const canvas = useCanvas()
   const seenIds = useRef<Set<string>>(new Set())
   const hasAutoOpened = useRef(false)
+  const pendingAutoOpen = useRef(false)
   const prevChatId = useRef<string | undefined>(chatId)
 
   // Reset on chatId change
@@ -37,9 +40,22 @@ export function useActivityFeed(
       prevChatId.current = chatId
       seenIds.current.clear()
       hasAutoOpened.current = false
+      pendingAutoOpen.current = false
       reset()
     }
   }, [chatId, reset])
+
+  useEffect(() => {
+    if (
+      !canvas.isWorkspaceOpen &&
+      pendingAutoOpen.current &&
+      !hasAutoOpened.current
+    ) {
+      pendingAutoOpen.current = false
+      hasAutoOpened.current = true
+      open()
+    }
+  }, [canvas.isWorkspaceOpen, open])
 
   // Scan latest assistant message
   useEffect(() => {
@@ -141,8 +157,12 @@ export function useActivityFeed(
 
     // Auto-open panel on first activity in research mode
     if (addedNew && isResearch && !hasAutoOpened.current) {
-      hasAutoOpened.current = true
-      open()
+      if (canvas.isWorkspaceOpen) {
+        pendingAutoOpen.current = true
+      } else {
+        hasAutoOpened.current = true
+        open()
+      }
     }
   }, [
     messages,
@@ -151,6 +171,7 @@ export function useActivityFeed(
     addItem,
     updateItem,
     setResearchMode,
+    canvas.isWorkspaceOpen,
     open
   ])
 
