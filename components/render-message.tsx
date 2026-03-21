@@ -23,6 +23,7 @@ import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
 import { tryRenderToolUI, tryRenderToolUIByName } from './tool-ui/registry'
 import { AnswerSection } from './answer-section'
 import { DynamicToolDisplay } from './dynamic-tool-display'
+import { MessageActions } from './message-actions'
 import { ResearchPlan } from './research-plan'
 import ResearchProcessSection from './research-process-section'
 import { ResearchStatusLine } from './research-status-line'
@@ -230,6 +231,11 @@ export function RenderMessage({
   let hasSeenText = false
   const deferredDisplayParts: { part: any; index: number }[] = []
 
+  // Track whether actions were rendered inline (inside an AnswerSection)
+  // or need to be appended at the very end of the message.
+  let actionsShownInline = false
+  let lastTextContent = ''
+
   // Render a display tool part into a React element
   const renderDisplayToolElement = (
     displayPart: any,
@@ -370,12 +376,21 @@ export function RenderMessage({
       flushBuffer(`seg-${index}`)
 
       const remainingParts = message.parts?.slice(index + 1) || []
-      const hasMoreTextParts = remainingParts.some(p => p.type === 'text')
-      const isLastTextPart = !hasMoreTextParts
+      // Check for any remaining parts that produce visible UI —
+      // not just text, but also display tools, canvas artifacts, etc.
+      const hasMoreVisibleContent = remainingParts.some(p => {
+        if (p.type === 'text') return true
+        if (p.type?.startsWith?.('tool-display')) return true
+        if (p.type === 'data-canvasArtifact') return true
+        if (p.type === 'dynamic-tool') return true
+        if ((p.type as string) === 'data-artifact') return true
+        return false
+      })
+      const isLastVisiblePart = !hasMoreVisibleContent
       const isStreamingComplete =
         status !== 'streaming' && status !== 'submitted'
       const shouldShowActions =
-        isLastTextPart && (isLatestMessage ? isStreamingComplete : true)
+        isLastVisiblePart && (isLatestMessage ? isStreamingComplete : true)
 
       const segments = extractToolUIFromText(part.text)
       for (let si = 0; si < segments.length; si++) {
@@ -392,6 +407,9 @@ export function RenderMessage({
         } else if (segment.content.trim()) {
           // Only show actions on the very last text segment of the last text part
           const isLastSegment = si === segments.length - 1
+          const showActionsHere = shouldShowActions && isLastSegment
+          if (showActionsHere) actionsShownInline = true
+          lastTextContent = segment.content
           elements.push(
             <AnswerSection
               key={`${messageId}-text-${index}-${si}`}
@@ -404,7 +422,7 @@ export function RenderMessage({
               onOpenChange={open => onOpenChange(messageId, open)}
               chatId={chatId}
               isGuest={isGuest}
-              showActions={shouldShowActions && isLastSegment}
+              showActions={showActionsHere}
               messageId={messageId}
               metadata={message.metadata as UIMessageMetadata | undefined}
               reload={reload}
@@ -517,6 +535,31 @@ export function RenderMessage({
 
   // Flush tail (no subsequent text)
   flushBuffer('tail')
+
+  // If actions weren't shown inline (because visible content like cards
+  // appeared after the last text), render them at the very end.
+  if (!actionsShownInline && lastTextContent.trim()) {
+    const isStreamingComplete = status !== 'streaming' && status !== 'submitted'
+    const shouldShow = isLatestMessage ? isStreamingComplete : true
+    const metadata = message.metadata as UIMessageMetadata | undefined
+    const enableShare =
+      process.env.NEXT_PUBLIC_SUPABASE_URL !== undefined && !isGuest
+    elements.push(
+      <MessageActions
+        key={`${messageId}-trailing-actions`}
+        message={lastTextContent}
+        messageId={messageId}
+        traceId={metadata?.traceId}
+        feedbackScore={metadata?.feedbackScore}
+        chatId={chatId}
+        enableShare={enableShare}
+        reload={reload ? () => reload(messageId) : undefined}
+        status={status}
+        visible={shouldShow}
+        citationMaps={citationMaps}
+      />
+    )
+  }
 
   return <>{elements}</>
 }
