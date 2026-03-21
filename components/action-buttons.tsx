@@ -65,7 +65,7 @@ interface ActionButtonsProps {
   onBuildTemplateSelect?: (prompt: string) => void
   promptSamples: Record<SuggestionCategory, string[]>
   inputRef?: React.RefObject<HTMLTextAreaElement | null>
-  artifactsEnabled?: boolean
+  canvasEnabled?: boolean
   className?: string
 }
 
@@ -75,7 +75,7 @@ export function ActionButtons({
   onBuildTemplateSelect,
   promptSamples,
   inputRef,
-  artifactsEnabled = false,
+  canvasEnabled = false,
   className
 }: ActionButtonsProps) {
   const [activeView, setActiveView] = useState<ActiveView>(null)
@@ -205,7 +205,7 @@ export function ActionButtons({
                 </Button>
               )
             })}
-            {artifactsEnabled && (
+            {canvasEnabled && (
               <Button
                 type="button"
                 variant="outline"

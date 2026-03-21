@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import {
   refreshGuestCanvasToken,
@@ -9,6 +11,21 @@ import { jsonError } from '@/lib/utils/json-error'
 
 export const dynamic = 'force-dynamic'
 
+const canvasDiagnosticSchema = z.object({
+  severity: z.enum(['error', 'warning', 'info']),
+  message: z.string(),
+  file: z.string().optional(),
+  line: z.number().int().optional(),
+  column: z.number().int().optional(),
+  details: z.record(z.string(), z.unknown()).optional()
+})
+
+const runtimeDiagnosticsRequestSchema = z.object({
+  draftRevision: z.number().int().min(0),
+  diagnostics: z.array(canvasDiagnosticSchema),
+  guestCanvasToken: z.string().min(1).optional()
+})
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ artifactId: string }> }
@@ -16,15 +33,15 @@ export async function POST(
   try {
     const { artifactId } = await params
     const body = await req.json()
-    const { draftRevision, diagnostics, guestCanvasToken } = body
-
-    if (draftRevision === undefined || !Array.isArray(diagnostics)) {
+    const parsed = runtimeDiagnosticsRequestSchema.safeParse(body)
+    if (!parsed.success) {
       return jsonError(
         'BAD_REQUEST',
-        'draftRevision and diagnostics array are required',
+        'Invalid runtime diagnostics payload',
         400
       )
     }
+    const { draftRevision, diagnostics, guestCanvasToken } = parsed.data
 
     // Auth: Supabase session or guest token
     const userId = await getCurrentUserId()

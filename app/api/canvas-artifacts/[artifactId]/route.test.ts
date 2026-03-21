@@ -97,6 +97,7 @@ describe('GET /api/canvas-artifacts/[artifactId]', () => {
     })
 
     expect(response.status).toBe(200)
+    expect(mockVerifyGuestCanvasToken).toHaveBeenCalledTimes(1)
   })
 
   it('rejects unauthenticated request without guest token', async () => {
@@ -134,6 +135,25 @@ describe('GET /api/canvas-artifacts/[artifactId]', () => {
 
     const req = new Request(
       'http://localhost/api/canvas-artifacts/art-1?guestCanvasToken=mismatched'
+    )
+    const response = await GET(req, {
+      params: Promise.resolve({ artifactId: 'art-1' })
+    })
+
+    expect(response.status).toBe(403)
+  })
+
+  it('rejects guest token when the verified chatId does not match the loaded artifact', async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockVerifyGuestCanvasToken.mockResolvedValue({
+      chatId: 'chat-other',
+      artifactId: 'art-1',
+      exp: Date.now() + 60000
+    })
+    mockLoadCanvasArtifactState.mockResolvedValue(makeArtifactState())
+
+    const req = new Request(
+      'http://localhost/api/canvas-artifacts/art-1?guestCanvasToken=valid-token'
     )
     const response = await GET(req, {
       params: Promise.resolve({ artifactId: 'art-1' })

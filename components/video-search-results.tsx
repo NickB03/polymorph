@@ -7,7 +7,7 @@ import { VideoResultGrid } from './video-result-grid'
 
 export interface VideoSearchResultsProps {
   results: SerperSearchResults
-  displayMode?: 'chat' | 'artifact'
+  displayMode?: 'chat' | 'canvas'
 }
 
 // Utility function to ensure searchParameters are present

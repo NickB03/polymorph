@@ -265,7 +265,8 @@ window.__CANVAS_APP__ = { default: function App() { return null } }
       channel: 'canvas-preview',
       type: 'init',
       artifactId: 'art-1',
-      revisionId: '1'
+      revisionId: '1',
+      parentOrigin: window.location.origin
     })
     expect(message).toHaveProperty('nonce')
     expect(typeof message.nonce).toBe('string')
@@ -296,6 +297,7 @@ window.__CANVAS_APP__ = { default: function App() { return null } }
       'artifactId',
       'revisionId',
       'nonce',
+      'parentOrigin',
       'requestId',
       'payload'
     ])
@@ -325,6 +327,27 @@ window.__CANVAS_APP__ = { default: function App() { return null } }
     // Only one message sent, and it is 'init'
     expect(mockPostMessage).toHaveBeenCalledTimes(1)
     expect(mockPostMessage.mock.calls[0][0].type).toBe('init')
+  })
+
+  it('includes the parent origin in the init envelope', () => {
+    const artifact = makeArtifact()
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasPreview />)
+
+    const frame = screen.getByTitle(/canvas preview/i) as HTMLIFrameElement
+    const mockPostMessage = vi.fn()
+    Object.defineProperty(frame, 'contentWindow', {
+      value: { postMessage: mockPostMessage },
+      writable: true,
+      configurable: true
+    })
+
+    frame.dispatchEvent(new Event('load'))
+
+    expect(mockPostMessage.mock.calls[0][0]).toMatchObject({
+      parentOrigin: window.location.origin
+    })
   })
 
   // ── preview → host message handling ─────────────────────────────

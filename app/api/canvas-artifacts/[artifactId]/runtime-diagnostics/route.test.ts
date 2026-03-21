@@ -132,6 +132,32 @@ describe('POST /api/canvas-artifacts/[artifactId]/runtime-diagnostics', () => {
     expect(response.status).toBe(400)
   })
 
+  it('returns 400 when draftRevision is not a number', async () => {
+    mockGetCurrentUserId.mockResolvedValue('user-1')
+
+    const [req, ctx] = makeRequest({
+      draftRevision: '3',
+      diagnostics: [{ severity: 'error', message: 'err' }]
+    })
+    const response = await POST(req, ctx)
+
+    expect(response.status).toBe(400)
+    expect(mockRecordDiagnostics).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 when diagnostics entries do not match the expected shape', async () => {
+    mockGetCurrentUserId.mockResolvedValue('user-1')
+
+    const [req, ctx] = makeRequest({
+      draftRevision: 3,
+      diagnostics: [{ severity: 'nope', message: 42 }]
+    })
+    const response = await POST(req, ctx)
+
+    expect(response.status).toBe(400)
+    expect(mockRecordDiagnostics).not.toHaveBeenCalled()
+  })
+
   it('returns 409 when revision does not match', async () => {
     mockGetCurrentUserId.mockResolvedValue('user-1')
     mockRecordDiagnostics.mockResolvedValue({

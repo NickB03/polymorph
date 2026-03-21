@@ -30,6 +30,7 @@ export type CanvasPreviewEnvelope = {
   artifactId: string
   revisionId: string
   nonce: string
+  parentOrigin?: string
   requestId?: string
   payload?: unknown
 }
@@ -130,7 +131,8 @@ export function CanvasPreview() {
       type: 'init',
       artifactId: artifact.artifactId,
       revisionId: String(artifact.draftRevision),
-      nonce: nonceRef.current
+      nonce: nonceRef.current,
+      parentOrigin: window.location.origin
     }
 
     iframeRef.current.contentWindow.postMessage(initMessage, '*')

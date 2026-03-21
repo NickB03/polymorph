@@ -63,7 +63,7 @@ export type CanvasVersionResult = {
   ok: boolean
   artifact?: CanvasArtifactState
   error?: string
-  errorCode?: 'not-found' | 'not-ready'
+  errorCode?: 'not-found' | 'not-ready' | 'stale-revision'
 }
 
 export type CanvasExportResult = {
@@ -147,6 +147,15 @@ function logCompileFailure(input: {
   )
 }
 
+function isUniqueConstraintError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return (
+    message.includes('unique') ||
+    message.includes('duplicate') ||
+    message.includes('23505')
+  )
+}
+
 async function getNextVersionNumber(
   artifactId: string,
   userId?: string | null
@@ -163,9 +172,18 @@ async function enforceVersionCap(
   const versions = await listCanvasArtifactVersions(artifactId, userId)
   if (versions.length <= CANVAS_MAX_VERSIONS) return
 
-  // versions are ordered desc by createdAt, so excess are at the end
-  const excess = versions.slice(CANVAS_MAX_VERSIONS)
-  for (const v of excess) {
+  const artifact = await loadCanvasArtifactById(artifactId, userId)
+  const currentVersionId = artifact?.currentVersionId ?? null
+  const deleteCount = versions.length - CANVAS_MAX_VERSIONS
+
+  // versions are ordered desc by createdAt, so iterate from oldest forward
+  // while skipping the active current version snapshot when possible.
+  const deletableVersions = [...versions]
+    .reverse()
+    .filter(v => v.id !== currentVersionId)
+    .slice(0, deleteCount)
+
+  for (const v of deletableVersions) {
     await withOptionalRLS(userId ?? null, async tx => {
       await tx
         .delete(canvasArtifactVersions)
@@ -363,7 +381,7 @@ export async function updateCanvasArtifactDraftFromSource(input: {
   })
 
   // Update with compiled result (revision incremented by first update)
-  await updateCanvasArtifactDraft({
+  const persisted = await updateCanvasArtifactDraft({
     artifactId: input.artifactId,
     expectedRevision: updated.draftRevision,
     draftCompiledHtml: compileResult.html ?? null,
@@ -372,6 +390,14 @@ export async function updateCanvasArtifactDraftFromSource(input: {
     lastCompiledAt: new Date(),
     userId: input.userId
   })
+
+  if (!persisted) {
+    return {
+      ok: false,
+      error: 'Draft revision is stale',
+      errorCode: 'stale-revision'
+    }
+  }
 
   const state = await buildArtifactState(input.artifactId, input.userId)
   if (!compileResult.ok) {
@@ -407,26 +433,49 @@ export async function saveCanvasArtifactVersion(input: {
     }
   }
 
-  const versionNumber = await getNextVersionNumber(
-    input.artifactId,
-    input.userId
-  )
+  let version = null
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const versionNumber = await getNextVersionNumber(
+      input.artifactId,
+      input.userId
+    )
 
-  const version = await dbCreateCanvasArtifactVersion({
-    artifactId: input.artifactId,
-    versionNumber,
-    sourceSnapshot: artifact.draftSource as CanvasSourceFiles,
-    createdBy: input.createdBy,
-    userId: input.userId
-  })
+    try {
+      version = await dbCreateCanvasArtifactVersion({
+        artifactId: input.artifactId,
+        versionNumber,
+        sourceSnapshot: artifact.draftSource as CanvasSourceFiles,
+        createdBy: input.createdBy,
+        userId: input.userId
+      })
+      break
+    } catch (error) {
+      if (attempt === 0 && isUniqueConstraintError(error)) {
+        continue
+      }
+      throw error
+    }
+  }
+
+  if (!version) {
+    throw new Error('Failed to create canvas artifact version')
+  }
 
   // Update currentVersionId
-  await updateCanvasArtifactDraft({
+  const updated = await updateCanvasArtifactDraft({
     artifactId: input.artifactId,
     expectedRevision: artifact.draftRevision,
     currentVersionId: version.id,
     userId: input.userId
   })
+
+  if (!updated) {
+    return {
+      ok: false,
+      error: 'Draft revision is stale',
+      errorCode: 'stale-revision'
+    }
+  }
 
   // Enforce version cap
   await enforceVersionCap(input.artifactId, input.userId)
@@ -488,7 +537,7 @@ export async function restoreCanvasArtifactVersion(input: {
     compileResult
   })
 
-  await updateCanvasArtifactDraft({
+  const restored = await updateCanvasArtifactDraft({
     artifactId: input.artifactId,
     expectedRevision: updated.draftRevision,
     draftCompiledHtml: compileResult.html ?? null,
@@ -498,8 +547,29 @@ export async function restoreCanvasArtifactVersion(input: {
     userId: input.userId
   })
 
+  if (!restored) {
+    return {
+      ok: false,
+      error: 'Draft revision is stale',
+      errorCode: 'stale-revision'
+    }
+  }
+
   const state = await buildArtifactState(input.artifactId, input.userId)
-  return { ok: compileResult.ok, artifact: state ?? undefined }
+  if (!compileResult.ok) {
+    const compileErrors = compileResult.diagnostics
+      .filter(d => d.severity === 'error')
+      .map(d => (d.file ? `${d.file}: ${d.message}` : d.message))
+      .join('; ')
+    return {
+      ok: false,
+      artifact: state ?? undefined,
+      error: `Compilation failed: ${compileErrors || 'unknown error'}`,
+      errorCode: 'compile-failed'
+    }
+  }
+
+  return { ok: true, artifact: state ?? undefined }
 }
 
 export async function recordCanvasRuntimeDiagnostics(input: {

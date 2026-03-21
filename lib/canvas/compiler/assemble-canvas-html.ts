@@ -18,9 +18,22 @@ function buildBootstrapScript(opts: {
   var artifactId = ${JSON.stringify(opts.artifactId)};
   var revisionId = ${JSON.stringify(opts.revisionId)};
   var nonce = ${JSON.stringify(opts.nonce)};
+  var parentOrigin = (function() {
+    try {
+      return document.referrer ? new URL(document.referrer).origin : null;
+    } catch (_err) {
+      return null;
+    }
+  })();
+
+  function getParentOrigin() {
+    return parentOrigin;
+  }
 
   function postToHost(type, payload) {
     if (!window.parent || window.parent === window) return;
+    var targetOrigin = getParentOrigin();
+    if (!targetOrigin) return;
     window.parent.postMessage({
       channel: CHANNEL,
       type: type,
@@ -28,7 +41,7 @@ function buildBootstrapScript(opts: {
       revisionId: revisionId,
       nonce: nonce,
       payload: payload || null
-    }, '*');
+    }, targetOrigin);
   }
 
   function getDocumentHeight() {
@@ -95,11 +108,15 @@ function buildBootstrapScript(opts: {
 
   // Listen for init message from host — adopt authoritative values
   window.addEventListener('message', function(event) {
+    if (event.source !== window.parent) return;
     var data = event.data;
     if (!data || data.channel !== CHANNEL) return;
     if (data.type === 'init' && data.artifactId === artifactId) {
       if (data.revisionId) revisionId = data.revisionId;
       if (data.nonce) nonce = data.nonce;
+      if (typeof data.parentOrigin === 'string' && data.parentOrigin.length > 0) {
+        parentOrigin = data.parentOrigin;
+      }
     }
   });
 
@@ -185,15 +202,17 @@ export function assembleCanvasHtml(opts: AssembleCanvasHtmlOptions): string {
   const assetScript = meta?.assets ? buildAssetScript(meta.assets) : ''
 
   const bootstrap = buildBootstrapScript({ artifactId, revisionId, nonce })
+  const safeViewport = escapeHtml(viewport)
+  const safeCss = escapeStyleContent(css)
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="${viewport}">
+<meta name="viewport" content="${safeViewport}">
 <meta http-equiv="Content-Security-Policy" content="${CANVAS_CSP}">
 <title>${escapeHtml(title)}</title>
-<style>${css}</style>
+<style>${safeCss}</style>
 </head>
 <body>
 <div id="root"></div>
@@ -208,4 +227,8 @@ function escapeHtml(str: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+function escapeStyleContent(str: string): string {
+  return str.replace(/<\/style/gi, '<\\/style')
 }

@@ -209,8 +209,6 @@ export async function deleteChat(chatId: string) {
   const result = await dbActions.deleteChat(chatId, userId)
 
   if (result.success) {
-    revalidateTag('artifact', 'max')
-    revalidateTag(`artifact-chat-${chatId}`, 'max')
     revalidateTag(`chat-${chatId}`, 'max')
   }
 
@@ -228,7 +226,6 @@ export async function clearChats() {
 
   const result = await dbActions.clearAllChats(userId)
   if (result.success) {
-    revalidateTag('artifact', 'max')
     revalidateTag('chat', 'max')
   }
   return result

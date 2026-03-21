@@ -110,6 +110,8 @@ export default function App() {
     expect(result.html).toContain('test-artifact')
     expect(result.html).toContain('test-revision')
     expect(result.html).toContain('test-nonce-123')
+    expect(result.html).toContain('parentOrigin')
+    expect(result.html).not.toContain("}, '*');")
   })
 
   it('preview bootstrap includes runtime diagnostics hooks', async () => {
@@ -227,6 +229,59 @@ export default function Greeting({ name }: { name: string }) {
 
     expect(result.ok).toBe(true)
     expect(result.html).toContain('color: hotpink')
+  })
+
+  it('escapes viewport metadata before interpolating it into HTML', async () => {
+    const result = await compileCanvasArtifact({
+      source: {
+        'App.tsx': 'export default function App() { return <div>Hi</div> }',
+        'meta.json': JSON.stringify({
+          viewport: 'width=device-width"><script>alert(1)</script>'
+        })
+      }
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.html).toContain(
+      '&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;'
+    )
+    expect(result.html).not.toContain('<script>alert(1)</script>')
+  })
+
+  it('neutralizes authored CSS that tries to close the style tag', async () => {
+    const result = await compileCanvasArtifact({
+      source: {
+        'App.tsx': 'export default function App() { return <div>Hi</div> }',
+        'styles.css': '.safe { color: red; }</style><script>alert(1)</script>'
+      }
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.html).toContain('<\\/style><script>alert(1)</script>')
+    expect(result.html).not.toContain('</style><script>alert(1)</script>')
+  })
+
+  it('rejects unresolved parent-directory imports as missing virtual files', async () => {
+    const result = await compileCanvasArtifact({
+      source: {
+        'App.tsx': `
+import Missing from '../missing'
+export default function App() { return <Missing /> }
+        `
+      }
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'error',
+          message: expect.stringContaining(
+            'Virtual file "../missing" could not be resolved'
+          )
+        })
+      ])
+    )
   })
 
   // ── External dependencies from meta.json ────────────────────────────

@@ -328,7 +328,7 @@ export function ChatPanel({
         {messages.length === 0 && (
           <ActionButtons
             promptSamples={suggestions}
-            artifactsEnabled
+            canvasEnabled
             onSelectPrompt={(message, category) => {
               // Auto-switch to Research + Quality for research suggestions
               if (category === 'research') {

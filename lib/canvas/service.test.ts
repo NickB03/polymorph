@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('drizzle-orm', () => ({
+  eq: (_column: unknown, value: unknown) => ({ value })
+}))
+
 // Mock DB actions
 const mockCreateCanvasArtifact = vi.fn()
 const mockCreateCanvasArtifactVersion = vi.fn()
@@ -9,6 +13,7 @@ const mockLoadCanvasArtifactByChatId = vi.fn()
 const mockLoadCanvasArtifactById = vi.fn()
 const mockUpdateCanvasArtifactDiagnosticsOnly = vi.fn()
 const mockUpdateCanvasArtifactDraft = vi.fn()
+const mockDeleteWhere = vi.fn()
 
 vi.mock('@/lib/db/actions', () => ({
   createCanvasArtifact: (...args: unknown[]) =>
@@ -56,7 +61,7 @@ vi.mock('@/lib/db/with-rls', () => ({
     async (_userId: string | null, cb: (tx: unknown) => Promise<unknown>) =>
       cb({
         delete: vi.fn().mockReturnValue({
-          where: vi.fn()
+          where: mockDeleteWhere
         })
       })
   )
@@ -238,6 +243,28 @@ describe('Canvas Service', () => {
       expect(result.ok).toBe(false)
       expect(result.errorCode).toBe('stale-revision')
     })
+
+    it('returns stale-revision when persisting compile output loses the race', async () => {
+      mockUpdateCanvasArtifactDraft
+        .mockResolvedValueOnce(makeArtifactRow({ draftRevision: 1 }))
+        .mockResolvedValueOnce(null)
+      mockCompile.mockResolvedValue({
+        ok: true,
+        html: '<html>updated</html>',
+        diagnostics: [],
+        externalDependencies: []
+      })
+
+      const result = await updateCanvasArtifactDraftFromSource({
+        artifactId: 'art-1',
+        expectedRevision: 0,
+        draftSource: validSource
+      })
+
+      expect(result.ok).toBe(false)
+      expect(result.errorCode).toBe('stale-revision')
+      expect(result.error).toContain('stale')
+    })
   })
 
   describe('saveCanvasArtifactVersion', () => {
@@ -282,6 +309,126 @@ describe('Canvas Service', () => {
 
       expect(result.ok).toBe(false)
       expect(result.errorCode).toBe('not-found')
+    })
+
+    it('returns stale-revision when updating currentVersionId loses the race', async () => {
+      mockLoadCanvasArtifactById.mockResolvedValue(
+        makeArtifactRow({ status: 'ready', draftRevision: 4 })
+      )
+      mockCreateCanvasArtifactVersion.mockResolvedValue(makeVersionRow())
+      mockUpdateCanvasArtifactDraft.mockResolvedValue(null)
+
+      const result = await saveCanvasArtifactVersion({
+        artifactId: 'art-1',
+        createdBy: 'user'
+      })
+
+      expect(result.ok).toBe(false)
+      expect(result.errorCode).toBe('stale-revision')
+      expect(result.error).toContain('stale')
+    })
+
+    it('retries version creation once after a unique constraint collision', async () => {
+      mockLoadCanvasArtifactById
+        .mockResolvedValueOnce(
+          makeArtifactRow({ status: 'ready', draftRevision: 4 })
+        )
+        .mockResolvedValueOnce(
+          makeArtifactRow({
+            status: 'ready',
+            draftRevision: 5,
+            currentVersionId: 'ver-2'
+          })
+        )
+      mockListCanvasArtifactVersions
+        .mockResolvedValueOnce([
+          makeVersionRow({ id: 'ver-1', versionNumber: 1 })
+        ])
+        .mockResolvedValueOnce([
+          makeVersionRow({ id: 'ver-2', versionNumber: 2 }),
+          makeVersionRow({ id: 'ver-1', versionNumber: 1 })
+        ])
+        .mockResolvedValueOnce([
+          makeVersionRow({ id: 'ver-2', versionNumber: 2 }),
+          makeVersionRow({ id: 'ver-1', versionNumber: 1 })
+        ])
+      mockCreateCanvasArtifactVersion
+        .mockRejectedValueOnce(
+          new Error('duplicate key value violates unique constraint')
+        )
+        .mockResolvedValueOnce(
+          makeVersionRow({ id: 'ver-2', versionNumber: 2 })
+        )
+      mockUpdateCanvasArtifactDraft.mockResolvedValue(
+        makeArtifactRow({ draftRevision: 5, currentVersionId: 'ver-2' })
+      )
+
+      const result = await saveCanvasArtifactVersion({
+        artifactId: 'art-1',
+        createdBy: 'user'
+      })
+
+      expect(result.ok).toBe(true)
+      expect(mockCreateCanvasArtifactVersion).toHaveBeenCalledTimes(2)
+      expect(mockCreateCanvasArtifactVersion).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ versionNumber: 3 })
+      )
+    })
+
+    it('does not delete the current version when enforcing the version cap', async () => {
+      const olderVersions = Array.from({ length: 51 }, (_, index) =>
+        makeVersionRow({
+          id: `ver-${index + 1}`,
+          versionNumber: 51 - index,
+          createdAt: new Date(Date.now() - index * 1000)
+        })
+      )
+      const currentVersion = olderVersions[24]
+
+      mockLoadCanvasArtifactById
+        .mockResolvedValueOnce(
+          makeArtifactRow({
+            status: 'ready',
+            draftRevision: 7,
+            currentVersionId: currentVersion.id
+          })
+        )
+        .mockResolvedValueOnce(
+          makeArtifactRow({
+            status: 'ready',
+            draftRevision: 8,
+            currentVersionId: 'ver-new'
+          })
+        )
+      mockCreateCanvasArtifactVersion.mockResolvedValue(
+        makeVersionRow({ id: 'ver-new', versionNumber: 26 })
+      )
+      mockUpdateCanvasArtifactDraft.mockResolvedValue(
+        makeArtifactRow({ draftRevision: 8, currentVersionId: 'ver-new' })
+      )
+      mockListCanvasArtifactVersions
+        .mockResolvedValueOnce(olderVersions)
+        .mockResolvedValueOnce([
+          makeVersionRow({ id: 'ver-new', versionNumber: 26 }),
+          ...olderVersions
+        ])
+        .mockResolvedValueOnce([
+          makeVersionRow({ id: 'ver-new', versionNumber: 26 }),
+          ...olderVersions
+        ])
+
+      await saveCanvasArtifactVersion({
+        artifactId: 'art-1',
+        createdBy: 'user'
+      })
+
+      expect(mockDeleteWhere).toHaveBeenCalled()
+      expect(
+        mockDeleteWhere.mock.calls.some(
+          ([arg]) => arg?.value === currentVersion.id
+        )
+      ).toBe(false)
     })
   })
 
@@ -335,6 +482,33 @@ describe('Canvas Service', () => {
 
       expect(result.ok).toBe(false)
       expect(result.errorCode).toBe('stale-revision')
+    })
+
+    it('returns compile-failed details when restore recompilation fails', async () => {
+      mockListCanvasArtifactVersions.mockResolvedValue([makeVersionRow()])
+      mockUpdateCanvasArtifactDraft
+        .mockResolvedValueOnce(makeArtifactRow({ draftRevision: 1 }))
+        .mockResolvedValueOnce(
+          makeArtifactRow({ draftRevision: 2, status: 'compile_failed' })
+        )
+      mockCompile.mockResolvedValue({
+        ok: false,
+        diagnostics: [{ severity: 'error', message: 'Bad restore source' }],
+        externalDependencies: []
+      })
+      mockLoadCanvasArtifactById.mockResolvedValue(
+        makeArtifactRow({ draftRevision: 2, status: 'compile_failed' })
+      )
+
+      const result = await restoreCanvasArtifactVersion({
+        artifactId: 'art-1',
+        versionId: 'ver-1',
+        expectedRevision: 0
+      })
+
+      expect(result.ok).toBe(false)
+      expect(result.errorCode).toBe('compile-failed')
+      expect(result.error).toContain('Bad restore source')
     })
   })
 

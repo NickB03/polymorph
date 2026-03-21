@@ -63,7 +63,9 @@ function createVirtualPlugin(
       build.onResolve({ filter: /.*/, namespace: VIRTUAL_NAMESPACE }, args => {
         // Relative imports resolve to other virtual files
         if (args.path.startsWith('./') || args.path.startsWith('../')) {
-          const resolved = args.path.replace(/^\.\//, '')
+          const resolved = args.path.startsWith('./')
+            ? args.path.replace(/^\.\//, '')
+            : args.path
 
           // Try exact match first, then with extensions
           const extensions = ['', '.tsx', '.ts', '.css']
@@ -77,8 +79,13 @@ function createVirtualPlugin(
             }
           }
 
-          // Not found in virtual files — let esbuild handle the error
-          return undefined
+          return {
+            errors: [
+              {
+                text: `Virtual file "${args.path}" could not be resolved`
+              }
+            ]
+          }
         }
 
         // Bare specifiers: allowed ones fall through to esbuild's native

@@ -65,7 +65,7 @@ graph TD
 
 ## Agent Pipeline
 
-Every chat request follows a single path through the API route into the streaming infrastructure. The route authenticates the user (or validates guest access), selects a model, and delegates to either the authenticated or ephemeral stream handler.
+Every chat request follows a single path through the API route into the streaming infrastructure. The route authenticates the user (or validates guest access), selects a model, and delegates to either the authenticated or ephemeral stream handler. Guest requests are forced onto the speed model tier even if the `modelType` cookie is set to `quality`.
 
 ```mermaid
 flowchart TD
@@ -560,7 +560,7 @@ The `ChatMessages` component manages open/close state for tool results:
 
 ## Model Selection
 
-Models are resolved through a layered preference system that considers the user's cookie preferences, the active search mode, and provider availability. The system tries every combination of mode and type before falling back to a hardcoded default.
+Models are resolved through a layered preference system that considers the user's cookie preferences, the active search mode, and provider availability. Guest requests are a special case: they bypass quality selection and are pinned to the speed model tier before the normal preference ordering runs. Authenticated requests try every combination of mode and type before falling back to a hardcoded default.
 
 ```mermaid
 flowchart TD

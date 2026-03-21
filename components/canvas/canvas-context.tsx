@@ -1,6 +1,12 @@
 'use client'
 
-import { createContext, useCallback, useContext, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState
+} from 'react'
 
 import type { CanvasArtifactState } from '@/lib/canvas/service'
 import type { LegacyCanvasNotice } from '@/lib/types/canvas'
@@ -329,31 +335,51 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
   // ── Render ───────────────────────────────────────────────────────
 
+  const value = useMemo<CanvasContextValue>(
+    () => ({
+      artifactId,
+      artifact,
+      isLoading,
+      isWorkspaceOpen,
+      legacyNotice,
+      guestCanvasToken,
+      openCanvasArtifact,
+      focusCanvasArtifact,
+      openLegacyCanvasNotice,
+      closeWorkspace,
+      requestCanvasAiUpdate,
+      reloadArtifact,
+      setGuestCanvasToken,
+      setArtifact,
+      updateDraft,
+      saveVersion,
+      restoreVersion,
+      exportHtml
+    }),
+    [
+      artifactId,
+      artifact,
+      isLoading,
+      isWorkspaceOpen,
+      legacyNotice,
+      guestCanvasToken,
+      openCanvasArtifact,
+      focusCanvasArtifact,
+      openLegacyCanvasNotice,
+      closeWorkspace,
+      requestCanvasAiUpdate,
+      reloadArtifact,
+      setGuestCanvasToken,
+      setArtifact,
+      updateDraft,
+      saveVersion,
+      restoreVersion,
+      exportHtml
+    ]
+  )
+
   return (
-    <CanvasContext.Provider
-      value={{
-        artifactId,
-        artifact,
-        isLoading,
-        isWorkspaceOpen,
-        legacyNotice,
-        guestCanvasToken,
-        openCanvasArtifact,
-        focusCanvasArtifact,
-        openLegacyCanvasNotice,
-        closeWorkspace,
-        requestCanvasAiUpdate,
-        reloadArtifact,
-        setGuestCanvasToken,
-        setArtifact,
-        updateDraft,
-        saveVersion,
-        restoreVersion,
-        exportHtml
-      }}
-    >
-      {children}
-    </CanvasContext.Provider>
+    <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>
   )
 }
 

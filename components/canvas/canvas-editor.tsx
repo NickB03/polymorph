@@ -182,12 +182,16 @@ export function CanvasEditor() {
       if (!artifact || isReadOnly(artifact.status)) return
 
       editSequenceRef.current++
-      const updated = { ...localSource, [activeFile]: value }
+      const updated = {
+        ...localSourceRef.current,
+        [activeFile]: value
+      }
+      localSourceRef.current = updated
       setLocalSource(updated)
       setConflict(null)
       scheduleSave(updated)
     },
-    [artifact, activeFile, localSource, scheduleSave]
+    [artifact, activeFile, scheduleSave]
   )
 
   // ── Conflict recovery actions ─────────────────────────────────────
@@ -229,12 +233,16 @@ export function CanvasEditor() {
               : ''
 
       editSequenceRef.current++
-      const updated = { ...localSource, [file]: defaultContent }
+      const updated = {
+        ...localSourceRef.current,
+        [file]: defaultContent
+      }
+      localSourceRef.current = updated
       setLocalSource(updated)
       setActiveFile(file)
       scheduleSave(updated)
     },
-    [localSource, scheduleSave]
+    [scheduleSave]
   )
 
   // ── Render ────────────────────────────────────────────────────────

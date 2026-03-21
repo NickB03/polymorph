@@ -61,6 +61,11 @@ function isReadOnly(status: CanvasArtifactStatus): boolean {
 type ActiveTab = 'preview' | 'code'
 type CodeSubTab = 'code' | 'diagnostics' | 'history'
 type MobileTab = 'preview' | 'code' | 'diagnostics' | 'history'
+type CodeSubTabDefinition = {
+  id: CodeSubTab
+  icon: typeof Code2
+  label: string
+}
 
 // ── Error boundary ───────────────────────────────────────────────────
 
@@ -129,6 +134,35 @@ class WorkspaceErrorBoundary extends Component<
       )
     }
     return this.props.children
+  }
+}
+
+const codeSubTabs: CodeSubTabDefinition[] = [
+  { id: 'code', icon: Code2, label: 'Code' },
+  { id: 'diagnostics', icon: AlertCircle, label: 'Diagnostics' },
+  { id: 'history', icon: History, label: 'History' }
+]
+
+function CodeSubTabContent({ tab }: { tab: CodeSubTab }) {
+  switch (tab) {
+    case 'code':
+      return (
+        <div className="h-full" data-testid="canvas-code-slot">
+          <CanvasEditor />
+        </div>
+      )
+    case 'diagnostics':
+      return (
+        <div className="h-full" data-testid="canvas-diagnostics-slot">
+          <CanvasDiagnosticsPanel />
+        </div>
+      )
+    case 'history':
+      return (
+        <div className="h-full" data-testid="canvas-history-slot">
+          <CanvasVersionHistory />
+        </div>
+      )
   }
 }
 
@@ -268,13 +302,7 @@ export function CanvasWorkspace() {
 
   const codeSubTabBar = (
     <div className="flex border-b" data-testid="canvas-code-sub-tabs">
-      {(
-        [
-          { id: 'code', icon: Code2, label: 'Code' },
-          { id: 'diagnostics', icon: AlertCircle, label: 'Diagnostics' },
-          { id: 'history', icon: History, label: 'History' }
-        ] as const
-      ).map(tab => (
+      {codeSubTabs.map(tab => (
         <button
           key={tab.id}
           className={cn(
@@ -292,31 +320,6 @@ export function CanvasWorkspace() {
       ))}
     </div>
   )
-
-  // ── Code sub-tab content ──────────────────────────────────────
-
-  function renderCodeContent(tab: CodeSubTab) {
-    switch (tab) {
-      case 'code':
-        return (
-          <div className="h-full" data-testid="canvas-code-slot">
-            <CanvasEditor />
-          </div>
-        )
-      case 'diagnostics':
-        return (
-          <div className="h-full" data-testid="canvas-diagnostics-slot">
-            <CanvasDiagnosticsPanel />
-          </div>
-        )
-      case 'history':
-        return (
-          <div className="h-full" data-testid="canvas-history-slot">
-            <CanvasVersionHistory />
-          </div>
-        )
-    }
-  }
 
   // ── Mobile: tabbed view ────────────────────────────────────────
 
@@ -405,7 +408,7 @@ export function CanvasWorkspace() {
                 <div className="flex flex-col h-full">
                   {codeSubTabBar}
                   <div className="flex-1 min-h-0">
-                    {renderCodeContent(codeSubTab)}
+                    <CodeSubTabContent tab={codeSubTab} />
                   </div>
                 </div>
               )}
