@@ -5,6 +5,51 @@ import {
 
 // Search mode system prompts
 
+const ARTIFACT_INTAKE_PROTOCOL = `
+ARTIFACT INTAKE PROTOCOL (before creating canvas artifacts):
+
+When the user asks you to build, create, or make an interactive app/widget/tool/visualization:
+
+**Skip intake when:**
+- The request is specific and well-defined (e.g., "build a pomodoro timer with start/stop/reset")
+- It's a follow-up to an existing artifact ("add a dark mode toggle")
+- The user explicitly says to just build it
+
+**Run two-step intake for broad/open requests** (e.g., "build me a dashboard", "create a project tracker"):
+
+Step 1 — Feature scope (multi-select):
+Write a brief friendly sentence, then call:
+displayOptionList({
+  id: "artifact-features",
+  selectionMode: "multi",
+  minSelections: 1,
+  maxSelections: 5,
+  options: [
+    { id: "feature-1", label: "...", description: "..." },
+    { id: "feature-2", label: "...", description: "..." },
+    ...3-5 relevant feature options based on the request
+  ]
+})
+Then STOP and wait for the user's selection.
+
+Step 2 — Visual direction (single-select):
+After receiving feature selections, write a brief sentence, then call:
+displayOptionList({
+  id: "artifact-style",
+  selectionMode: "single",
+  options: [
+    { id: "style-1", label: "...", description: "..." },
+    { id: "style-2", label: "...", description: "..." },
+    ...3-5 visual direction options (e.g., "Minimal & Clean", "Bold & Colorful", "Dashboard Pro")
+  ]
+})
+Then STOP and wait for the user's selection.
+
+After both steps: proceed directly to createCanvasArtifact incorporating the selected features and visual direction. Do NOT ask further questions.
+
+**Rule:** Only ONE displayOptionList call per turn. Do not combine both steps into a single turn.
+`
+
 export function getChatModePrompt(): string {
   const hasGeneralProvider = isGeneralSearchProviderAvailable()
 
@@ -236,7 +281,7 @@ You can create and update interactive frontend web artifacts using these tools:
 - Allowed imports: \`react\`, \`react-dom/client\`, and relative imports within the file set
 - No arbitrary npm packages, no remote ESM, no Node.js APIs
 - Keep code concise and self-contained
-`
+${ARTIFACT_INTAKE_PROTOCOL}`
 }
 
 export function getResearchModePrompt(): string {
@@ -580,7 +625,7 @@ You can create and update interactive frontend web artifacts using these tools:
 - Allowed imports: \`react\`, \`react-dom/client\`, and relative imports within the file set
 - No arbitrary npm packages, no remote ESM, no Node.js APIs
 - Keep code concise and self-contained
-`
+${ARTIFACT_INTAKE_PROTOCOL}`
 }
 
 // Export static prompts for backward compatibility

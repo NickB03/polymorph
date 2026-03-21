@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Component, type ErrorInfo, type ReactNode, useState } from 'react'
 
 import {
   AlertCircle,
@@ -8,9 +8,8 @@ import {
   Download,
   Eye,
   History,
-  Save,
-  Sparkles,
-  X
+  Minimize2,
+  Save
 } from 'lucide-react'
 
 import type { CanvasArtifactStatus } from '@/lib/types/canvas'
@@ -20,7 +19,10 @@ import { useIsMobile } from '@/hooks/use-mobile'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { TooltipButton } from '@/components/ui/tooltip-button'
 
 import { useCanvas } from './canvas-context'
 import { CanvasDiagnosticsPanel } from './canvas-diagnostics-panel'
@@ -56,16 +58,88 @@ function isReadOnly(status: CanvasArtifactStatus): boolean {
 
 // ── Tab types ────────────────────────────────────────────────────────
 
+type ActiveTab = 'preview' | 'code'
+type CodeSubTab = 'code' | 'diagnostics' | 'history'
 type MobileTab = 'preview' | 'code' | 'diagnostics' | 'history'
-type RightPanelTab = 'code' | 'diagnostics' | 'history'
+
+// ── Error boundary ───────────────────────────────────────────────────
+
+interface ErrorBoundaryProps {
+  children: ReactNode
+  onClose: () => void
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean
+  error: Error | null
+}
+
+class WorkspaceErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[CanvasWorkspace] Render error:', error, info)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center"
+          data-testid="canvas-error-boundary"
+        >
+          <AlertCircle className="h-8 w-8 text-destructive" />
+          <div>
+            <h3 className="text-sm font-medium">
+              Something went wrong rendering the workspace
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {this.state.error?.message}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => this.setState({ hasError: false, error: null })}
+              data-testid="canvas-error-retry"
+            >
+              Retry
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={this.props.onClose}
+              data-testid="canvas-error-close"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 // ── Component ────────────────────────────────────────────────────────
 
 export function CanvasWorkspace() {
   const canvas = useCanvas()
   const isMobile = useIsMobile()
+  const [activeTab, setActiveTab] = useState<ActiveTab>('preview')
+  const [codeSubTab, setCodeSubTab] = useState<CodeSubTab>('code')
   const [mobileTab, setMobileTab] = useState<MobileTab>('preview')
-  const [rightTab, setRightTab] = useState<RightPanelTab>('code')
 
   // Loading state
   if (canvas.isLoading) {
@@ -92,11 +166,48 @@ export function CanvasWorkspace() {
   const { artifact } = canvas
   const readOnly = isReadOnly(artifact.status)
 
+  // ── Pill tab switcher ──────────────────────────────────────────
+
+  const pillSwitcher = (
+    <div
+      className="flex rounded-full bg-muted p-0.5"
+      data-testid="canvas-pill-switcher"
+    >
+      <button
+        className={cn(
+          'h-6 w-6 rounded-full flex items-center justify-center transition-colors',
+          activeTab === 'preview'
+            ? 'bg-background shadow-sm text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+        onClick={() => setActiveTab('preview')}
+        aria-label="Preview"
+        data-testid="canvas-pill-preview"
+      >
+        <Eye className="h-3.5 w-3.5" />
+      </button>
+      <button
+        className={cn(
+          'h-6 w-6 rounded-full flex items-center justify-center transition-colors',
+          activeTab === 'code'
+            ? 'bg-background shadow-sm text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+        onClick={() => setActiveTab('code')}
+        aria-label="Code"
+        data-testid="canvas-pill-code"
+      >
+        <Code2 className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  )
+
   // ── Header ─────────────────────────────────────────────────────
 
   const header = (
-    <div className="flex items-center justify-between border-b px-3 py-2 min-h-[49px]">
+    <div className="flex items-center justify-between px-4 py-2">
       <div className="flex items-center gap-2 min-w-0">
+        {!isMobile && pillSwitcher}
         <h2 className="text-sm font-medium truncate">{artifact.title}</h2>
         <Badge
           variant={STATUS_VARIANTS[artifact.status]}
@@ -114,53 +225,49 @@ export function CanvasWorkspace() {
         )}
       </div>
       <div className="flex items-center gap-1">
-        <Button
+        <TooltipButton
           variant="ghost"
-          size="sm"
+          size="icon"
+          className="h-7 w-7"
           onClick={() => canvas.saveVersion()}
           disabled={artifact.status !== 'ready'}
           data-testid="canvas-save-version"
           aria-label="Save version"
+          tooltipContent="Save version"
         >
           <Save className="h-4 w-4" />
-        </Button>
-        <Button
+        </TooltipButton>
+        <TooltipButton
           variant="ghost"
-          size="sm"
+          size="icon"
+          className="h-7 w-7"
           onClick={() => canvas.exportHtml()}
           disabled={!artifact.draftCompiledHtml}
           data-testid="canvas-export"
           aria-label="Export HTML"
+          tooltipContent="Export HTML"
         >
           <Download className="h-4 w-4" />
-        </Button>
-        <Button
+        </TooltipButton>
+        <TooltipButton
           variant="ghost"
-          size="sm"
-          disabled
-          title="AI-assisted editing coming soon"
-          data-testid="canvas-ask-ai"
-          aria-label="Ask AI to change it (coming soon)"
-        >
-          <Sparkles className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
+          size="icon"
+          className="h-7 w-7"
           onClick={() => canvas.closeWorkspace()}
           data-testid="canvas-close"
           aria-label="Close workspace"
+          tooltipContent="Minimize"
         >
-          <X className="h-4 w-4" />
-        </Button>
+          <Minimize2 className="h-4 w-4" />
+        </TooltipButton>
       </div>
     </div>
   )
 
-  // ── Right panel tab bar (desktop) ─────────────────────────────
+  // ── Code sub-tab bar ──────────────────────────────────────────
 
-  const rightPanelTabBar = (
-    <div className="flex border-b" data-testid="canvas-right-tabs">
+  const codeSubTabBar = (
+    <div className="flex border-b" data-testid="canvas-code-sub-tabs">
       {(
         [
           { id: 'code', icon: Code2, label: 'Code' },
@@ -172,12 +279,12 @@ export function CanvasWorkspace() {
           key={tab.id}
           className={cn(
             'flex-1 px-3 py-2 text-sm font-medium transition-colors',
-            rightTab === tab.id
+            codeSubTab === tab.id
               ? 'border-b-2 border-primary text-foreground'
               : 'text-muted-foreground hover:text-foreground'
           )}
-          onClick={() => setRightTab(tab.id)}
-          data-testid={`canvas-right-tab-${tab.id}`}
+          onClick={() => setCodeSubTab(tab.id)}
+          data-testid={`canvas-code-sub-tab-${tab.id}`}
         >
           <tab.icon className="inline h-4 w-4 mr-1" />
           {tab.label}
@@ -186,9 +293,9 @@ export function CanvasWorkspace() {
     </div>
   )
 
-  // ── Right panel content ───────────────────────────────────────
+  // ── Code sub-tab content ──────────────────────────────────────
 
-  function renderRightContent(tab: RightPanelTab) {
+  function renderCodeContent(tab: CodeSubTab) {
     switch (tab) {
       case 'code':
         return (
@@ -226,69 +333,86 @@ export function CanvasWorkspace() {
     ]
 
     return (
-      <div className="flex h-full flex-col" data-testid="canvas-workspace">
-        {header}
-        <div className="flex border-b">
-          {mobileTabs.map(tab => (
-            <button
-              key={tab.id}
-              className={cn(
-                'flex-1 px-3 py-2 text-sm font-medium transition-colors',
-                mobileTab === tab.id
-                  ? 'border-b-2 border-primary text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
+      <TooltipProvider>
+        <WorkspaceErrorBoundary onClose={() => canvas.closeWorkspace()}>
+          <div className="flex h-full flex-col" data-testid="canvas-workspace">
+            {header}
+            <div className="flex border-b">
+              {mobileTabs.map(tab => (
+                <button
+                  key={tab.id}
+                  className={cn(
+                    'flex-1 px-3 py-2 text-sm font-medium transition-colors',
+                    mobileTab === tab.id
+                      ? 'border-b-2 border-primary text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                  onClick={() => setMobileTab(tab.id)}
+                  data-testid={`canvas-tab-${tab.id}`}
+                >
+                  <tab.icon className="inline h-4 w-4 mr-1" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto">
+              {mobileTab === 'preview' && (
+                <div className="h-full" data-testid="canvas-preview-slot">
+                  <CanvasPreview />
+                </div>
               )}
-              onClick={() => setMobileTab(tab.id)}
-              data-testid={`canvas-tab-${tab.id}`}
-            >
-              <tab.icon className="inline h-4 w-4 mr-1" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex-1 min-h-0 overflow-auto">
-          {mobileTab === 'preview' && (
-            <div className="h-full" data-testid="canvas-preview-slot">
-              <CanvasPreview />
+              {mobileTab === 'code' && (
+                <div className="h-full" data-testid="canvas-code-slot">
+                  <CanvasEditor />
+                </div>
+              )}
+              {mobileTab === 'diagnostics' && (
+                <div className="h-full" data-testid="canvas-diagnostics-slot">
+                  <CanvasDiagnosticsPanel />
+                </div>
+              )}
+              {mobileTab === 'history' && (
+                <div className="h-full" data-testid="canvas-history-slot">
+                  <CanvasVersionHistory />
+                </div>
+              )}
             </div>
-          )}
-          {mobileTab === 'code' && (
-            <div className="h-full" data-testid="canvas-code-slot">
-              <CanvasEditor />
-            </div>
-          )}
-          {mobileTab === 'diagnostics' && (
-            <div className="h-full" data-testid="canvas-diagnostics-slot">
-              <CanvasDiagnosticsPanel />
-            </div>
-          )}
-          {mobileTab === 'history' && (
-            <div className="h-full" data-testid="canvas-history-slot">
-              <CanvasVersionHistory />
-            </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </WorkspaceErrorBoundary>
+      </TooltipProvider>
     )
   }
 
-  // ── Desktop: split-pane ────────────────────────────────────────
+  // ── Desktop: card-in-muted with tab-based layout ────────────────
 
   return (
-    <div className="flex h-full flex-col" data-testid="canvas-workspace">
-      {header}
-      <div className="flex flex-1 min-h-0" data-testid="canvas-split-pane">
+    <TooltipProvider>
+      <WorkspaceErrorBoundary onClose={() => canvas.closeWorkspace()}>
         <div
-          className="flex-1 min-w-0 border-r"
-          data-testid="canvas-preview-slot"
+          className="h-full flex flex-col overflow-hidden bg-muted md:px-4 md:pt-14 md:pb-4"
+          data-testid="canvas-workspace"
         >
-          <CanvasPreview />
+          <div className="flex flex-col h-full bg-background rounded-xl md:border overflow-hidden">
+            {header}
+            <Separator className="bg-border/50" />
+            <div className="flex-1 min-h-0">
+              {activeTab === 'preview' && (
+                <div className="h-full" data-testid="canvas-preview-slot">
+                  <CanvasPreview />
+                </div>
+              )}
+              {activeTab === 'code' && (
+                <div className="flex flex-col h-full">
+                  {codeSubTabBar}
+                  <div className="flex-1 min-h-0">
+                    {renderCodeContent(codeSubTab)}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="flex flex-1 min-w-0 flex-col">
-          {rightPanelTabBar}
-          <div className="flex-1 min-h-0">{renderRightContent(rightTab)}</div>
-        </div>
-      </div>
-    </div>
+      </WorkspaceErrorBoundary>
+    </TooltipProvider>
   )
 }

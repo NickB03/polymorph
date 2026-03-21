@@ -231,18 +231,100 @@ describe('CanvasWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  // ── Desktop split-pane layout ──────────────────────────────────
+  // ── Desktop pill tab layout ─────────────────────────────────────
 
-  it('renders split-pane on desktop', () => {
+  it('renders pill switcher and preview by default on desktop', () => {
     mockIsMobile = false
     const artifact = makeArtifact()
     setCanvasState({ artifact, artifactId: artifact.artifactId })
 
     render(<CanvasWorkspace />)
 
-    expect(screen.getByTestId('canvas-split-pane')).toBeInTheDocument()
+    expect(screen.getByTestId('canvas-pill-switcher')).toBeInTheDocument()
+    expect(screen.getByTestId('canvas-pill-preview')).toBeInTheDocument()
+    expect(screen.getByTestId('canvas-pill-code')).toBeInTheDocument()
     expect(screen.getByTestId('canvas-preview-slot')).toBeInTheDocument()
+  })
+
+  it('switches to code view when code pill is clicked', () => {
+    mockIsMobile = false
+    const artifact = makeArtifact()
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    fireEvent.click(screen.getByTestId('canvas-pill-code'))
+
+    expect(screen.getByTestId('canvas-code-sub-tabs')).toBeInTheDocument()
     expect(screen.getByTestId('canvas-code-slot')).toBeInTheDocument()
+    expect(screen.queryByTestId('canvas-preview-slot')).not.toBeInTheDocument()
+  })
+
+  it('switches back to preview when preview pill is clicked', () => {
+    mockIsMobile = false
+    const artifact = makeArtifact()
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    // Go to code
+    fireEvent.click(screen.getByTestId('canvas-pill-code'))
+    expect(screen.queryByTestId('canvas-preview-slot')).not.toBeInTheDocument()
+
+    // Go back to preview
+    fireEvent.click(screen.getByTestId('canvas-pill-preview'))
+    expect(screen.getByTestId('canvas-preview-slot')).toBeInTheDocument()
+  })
+
+  // ── Desktop code sub-tabs ──────────────────────────────────────
+
+  it('shows code sub-tabs when code pill is active', () => {
+    const artifact = makeArtifact()
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    fireEvent.click(screen.getByTestId('canvas-pill-code'))
+
+    expect(screen.getByTestId('canvas-code-sub-tabs')).toBeInTheDocument()
+    expect(screen.getByTestId('canvas-code-sub-tab-code')).toBeInTheDocument()
+    expect(
+      screen.getByTestId('canvas-code-sub-tab-diagnostics')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByTestId('canvas-code-sub-tab-history')
+    ).toBeInTheDocument()
+  })
+
+  it('switches to diagnostics sub-tab on desktop', () => {
+    const artifact = makeArtifact({
+      draftDiagnostics: {
+        validation: [{ severity: 'error', message: 'Bad import' }],
+        compile: [],
+        runtime: [],
+        externalDependencies: []
+      }
+    })
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    fireEvent.click(screen.getByTestId('canvas-pill-code'))
+    fireEvent.click(screen.getByTestId('canvas-code-sub-tab-diagnostics'))
+
+    expect(screen.getByTestId('canvas-diagnostics-slot')).toBeInTheDocument()
+  })
+
+  it('switches to history sub-tab on desktop', () => {
+    const artifact = makeArtifact()
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    fireEvent.click(screen.getByTestId('canvas-pill-code'))
+    fireEvent.click(screen.getByTestId('canvas-code-sub-tab-history'))
+
+    expect(screen.getByTestId('canvas-history-slot')).toBeInTheDocument()
   })
 
   // ── Mobile tab switching ───────────────────────────────────────
@@ -258,7 +340,7 @@ describe('CanvasWorkspace', () => {
     expect(screen.getByTestId('canvas-tab-code')).toBeInTheDocument()
     // Preview slot visible by default
     expect(screen.getByTestId('canvas-preview-slot')).toBeInTheDocument()
-    expect(screen.queryByTestId('canvas-split-pane')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('canvas-pill-switcher')).not.toBeInTheDocument()
   })
 
   it('switches to code tab on mobile', () => {
@@ -328,66 +410,12 @@ describe('CanvasWorkspace', () => {
     expect(screen.getByTestId('canvas-export')).toBeDisabled()
   })
 
-  it('Ask AI button is disabled until AI editing is implemented', () => {
-    const artifact = makeArtifact()
-    setCanvasState({ artifact, artifactId: artifact.artifactId })
-
-    render(<CanvasWorkspace />)
-
-    expect(screen.getByTestId('canvas-ask-ai')).toBeDisabled()
-  })
-
   // ── Returns null when no data ──────────────────────────────────
 
   it('returns null when no artifact, no loading, and no legacy notice', () => {
     const { container } = render(<CanvasWorkspace />)
 
     expect(container.innerHTML).toBe('')
-  })
-
-  // ── Desktop right-panel tabs ───────────────────────────────────
-
-  it('shows right panel tabs for Code/Diagnostics/History on desktop', () => {
-    const artifact = makeArtifact()
-    setCanvasState({ artifact, artifactId: artifact.artifactId })
-
-    render(<CanvasWorkspace />)
-
-    expect(screen.getByTestId('canvas-right-tabs')).toBeInTheDocument()
-    expect(screen.getByTestId('canvas-right-tab-code')).toBeInTheDocument()
-    expect(
-      screen.getByTestId('canvas-right-tab-diagnostics')
-    ).toBeInTheDocument()
-    expect(screen.getByTestId('canvas-right-tab-history')).toBeInTheDocument()
-  })
-
-  it('switches to diagnostics tab on desktop', () => {
-    const artifact = makeArtifact({
-      draftDiagnostics: {
-        validation: [{ severity: 'error', message: 'Bad import' }],
-        compile: [],
-        runtime: [],
-        externalDependencies: []
-      }
-    })
-    setCanvasState({ artifact, artifactId: artifact.artifactId })
-
-    render(<CanvasWorkspace />)
-
-    fireEvent.click(screen.getByTestId('canvas-right-tab-diagnostics'))
-
-    expect(screen.getByTestId('canvas-diagnostics-slot')).toBeInTheDocument()
-  })
-
-  it('switches to history tab on desktop', () => {
-    const artifact = makeArtifact()
-    setCanvasState({ artifact, artifactId: artifact.artifactId })
-
-    render(<CanvasWorkspace />)
-
-    fireEvent.click(screen.getByTestId('canvas-right-tab-history'))
-
-    expect(screen.getByTestId('canvas-history-slot')).toBeInTheDocument()
   })
 
   // ── Mobile tabs include diagnostics and history ────────────────
