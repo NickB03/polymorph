@@ -46,7 +46,8 @@ vi.mock('@/lib/canvas/validation/validate-canvas-source', () => ({
 
 // Mock Drizzle schema references
 vi.mock('@/lib/db/schema', () => ({
-  canvasArtifactVersions: { id: 'id' }
+  canvasArtifactVersions: { id: 'id' },
+  generateId: () => 'temp-id'
 }))
 
 // Mock with-rls

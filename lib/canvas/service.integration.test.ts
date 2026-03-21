@@ -29,7 +29,8 @@ vi.mock('@/lib/db/actions', () => ({
 }))
 
 vi.mock('@/lib/db/schema', () => ({
-  canvasArtifactVersions: { id: 'id' }
+  canvasArtifactVersions: { id: 'id' },
+  generateId: () => 'temp-id'
 }))
 
 vi.mock('@/lib/db/with-rls', () => ({
@@ -166,11 +167,7 @@ describe('canvas service compile integration', () => {
   })
 
   it('preserves compile diagnostics for createCanvasArtifactFromSource failures', async () => {
-    installStatefulDraftMocks(makeArtifactRow({ status: 'compiling' }))
     mockLoadCanvasArtifactByChatId.mockResolvedValue(null)
-    mockCreateCanvasArtifact.mockResolvedValue(
-      makeArtifactRow({ status: 'compiling' })
-    )
 
     const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -180,7 +177,27 @@ describe('canvas service compile integration', () => {
       draftSource: validCompileFailureSource
     })
 
-    expectCompileFailureResult(result, 'create', logSpy)
+    // With compile-before-persist, no artifact row is created on failure
+    expect(result.ok).toBe(false)
+    expect(result.errorCode).toBe('compile-failed')
+    expect(result.error).toContain('./missing')
+    expect(result.artifact).toBeUndefined()
+
+    // Compile failure is still logged
+    expect(logSpy).toHaveBeenCalledTimes(1)
+    expect(logSpy).toHaveBeenCalledWith('[canvas-service]', expect.any(String))
+
+    const payload = JSON.parse(logSpy.mock.calls[0][1] as string)
+    expect(payload).toMatchObject({
+      operation: 'create',
+      firstDiagnostic: {
+        severity: 'error',
+        message: expect.stringContaining('./missing')
+      }
+    })
+
+    // DB should NOT have been touched
+    expect(mockCreateCanvasArtifact).not.toHaveBeenCalled()
   })
 
   it('preserves compile diagnostics for updateCanvasArtifactDraftFromSource failures', async () => {

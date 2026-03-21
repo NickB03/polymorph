@@ -98,8 +98,20 @@ export async function prepareToolResultMessages(
   }
 
   if ('state' in matchedPart && matchedPart.state !== 'input-available') {
+    const state = (matchedPart as { state: string }).state
+
+    // Idempotent: if a duplicate continuation arrives after the first one
+    // already succeeded, return the existing messages without mutation.
+    if (state === 'output-available') {
+      perfLog(
+        `[tool-result] toolCallId ${toolResult.toolCallId} already at output-available — returning existing messages (idempotent)`
+      )
+      perfTime('prepareToolResultMessages - Total (idempotent)', startTime)
+      return messages
+    }
+
     throw new ToolResultValidationError(
-      `Tool part with toolCallId ${toolResult.toolCallId} is not awaiting input (state: ${(matchedPart as { state: string }).state})`
+      `Tool part with toolCallId ${toolResult.toolCallId} is not awaiting input (state: ${state})`
     )
   }
 

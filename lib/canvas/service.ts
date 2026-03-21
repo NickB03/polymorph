@@ -16,7 +16,7 @@ import {
   updateCanvasArtifactDiagnosticsOnly,
   updateCanvasArtifactDraft
 } from '@/lib/db/actions'
-import { canvasArtifactVersions } from '@/lib/db/schema'
+import { canvasArtifactVersions, generateId } from '@/lib/db/schema'
 import { withOptionalRLS } from '@/lib/db/with-rls'
 import type {
   CanvasArtifactStatus,
@@ -194,16 +194,51 @@ export async function createCanvasArtifactFromSource(input: {
     }
   }
 
-  // Validate source
+  // Validate source — include diagnostics so the model can self-correct
   const validation = validateCanvasSource(input.draftSource)
   if (!validation.ok) {
+    const errorDetails = validation.diagnostics
+      .filter(d => d.severity === 'error')
+      .map(d => (d.file ? `${d.file}: ${d.message}` : d.message))
+      .join('; ')
     return {
       ok: false,
-      error: 'Source validation failed',
+      error: `Source validation failed: ${errorDetails}`,
       errorCode: 'compile-failed'
     }
   }
 
+  // Compile BEFORE inserting to DB. This ensures failed compilations don't
+  // leave a DB row that blocks retries with "artifact-already-exists".
+  // Use a temporary ID for the compile step (the real ID is assigned on insert).
+  const tempArtifactId = generateId()
+  const compileResult = await compileCanvasArtifact({
+    source: input.draftSource,
+    artifactId: tempArtifactId,
+    revisionId: '0'
+  })
+
+  if (!compileResult.ok) {
+    const compileErrors = compileResult.diagnostics
+      .filter(d => d.severity === 'error')
+      .map(d => (d.file ? `${d.file}: ${d.message}` : d.message))
+      .join('; ')
+
+    logCompileFailure({
+      operation: 'create',
+      artifactId: tempArtifactId,
+      draftRevision: 0,
+      compileResult
+    })
+
+    return {
+      ok: false,
+      error: `Compilation failed: ${compileErrors || 'unknown error'}`,
+      errorCode: 'compile-failed'
+    }
+  }
+
+  // Compilation succeeded — now persist to DB
   // Ensure the chat row exists (guest/ephemeral sessions may not have one yet).
   // Uses ON CONFLICT DO NOTHING so it is safe for authenticated sessions too.
   await ensureChatRecord({
@@ -212,15 +247,15 @@ export async function createCanvasArtifactFromSource(input: {
     userId: input.userId
   })
 
-  // Create DB row with status compiling
   let artifact
   try {
     artifact = await dbCreateCanvasArtifact({
+      id: tempArtifactId,
       chatId: input.chatId,
       userId: input.userId,
       title: input.title ?? 'Untitled',
       draftSource: input.draftSource,
-      status: 'compiling'
+      status: 'ready'
     })
   } catch (err: unknown) {
     // Handle unique constraint violation (race condition on duplicate create)
@@ -239,58 +274,37 @@ export async function createCanvasArtifactFromSource(input: {
     throw err
   }
 
-  // Compile — pass draftRevision so the bootstrap script has a meaningful
-  // revisionId for pre-init error messages.
-  const compileResult = await compileCanvasArtifact({
-    source: input.draftSource,
-    artifactId: artifact.id,
-    revisionId: String(artifact.draftRevision)
-  })
-
-  const status: CanvasArtifactStatus = compileResult.ok
-    ? 'ready'
-    : 'compile_failed'
-
-  logCompileFailure({
-    operation: 'create',
-    artifactId: artifact.id,
-    draftRevision: artifact.draftRevision,
-    compileResult
-  })
-
-  // Update draft with compiled result
+  // Update draft with compiled HTML and diagnostics
   await updateCanvasArtifactDraft({
     artifactId: artifact.id,
     expectedRevision: 0,
     draftCompiledHtml: compileResult.html ?? null,
     draftDiagnostics: makeDiagnostics(compileResult),
-    status,
+    status: 'ready',
     lastCompiledAt: new Date(),
     userId: input.userId
   })
 
   // Auto-create version on successful compile
-  if (compileResult.ok) {
-    const versionNumber = 1
-    const version = await dbCreateCanvasArtifactVersion({
-      artifactId: artifact.id,
-      versionNumber,
-      sourceSnapshot: input.draftSource,
-      createdBy: 'ai',
-      userId: input.userId
-    })
+  const versionNumber = 1
+  const version = await dbCreateCanvasArtifactVersion({
+    artifactId: artifact.id,
+    versionNumber,
+    sourceSnapshot: input.draftSource,
+    createdBy: 'ai',
+    userId: input.userId
+  })
 
-    // Update currentVersionId (revision is now 1 after the draft update)
-    await updateCanvasArtifactDraft({
-      artifactId: artifact.id,
-      expectedRevision: 1,
-      currentVersionId: version.id,
-      userId: input.userId
-    })
-  }
+  // Update currentVersionId (revision is now 1 after the draft update)
+  await updateCanvasArtifactDraft({
+    artifactId: artifact.id,
+    expectedRevision: 1,
+    currentVersionId: version.id,
+    userId: input.userId
+  })
 
   const state = await buildArtifactState(artifact.id, input.userId)
-  return { ok: compileResult.ok, artifact: state ?? undefined }
+  return { ok: true, artifact: state ?? undefined }
 }
 
 export async function updateCanvasArtifactDraftFromSource(input: {
@@ -299,12 +313,16 @@ export async function updateCanvasArtifactDraftFromSource(input: {
   draftSource: CanvasSourceFiles
   userId?: string | null
 }): Promise<CanvasServiceResult> {
-  // Validate source
+  // Validate source — include diagnostics so the model can self-correct
   const validation = validateCanvasSource(input.draftSource)
   if (!validation.ok) {
+    const errorDetails = validation.diagnostics
+      .filter(d => d.severity === 'error')
+      .map(d => (d.file ? `${d.file}: ${d.message}` : d.message))
+      .join('; ')
     return {
       ok: false,
-      error: 'Source validation failed',
+      error: `Source validation failed: ${errorDetails}`,
       errorCode: 'compile-failed'
     }
   }
@@ -356,7 +374,19 @@ export async function updateCanvasArtifactDraftFromSource(input: {
   })
 
   const state = await buildArtifactState(input.artifactId, input.userId)
-  return { ok: compileResult.ok, artifact: state ?? undefined }
+  if (!compileResult.ok) {
+    const compileErrors = compileResult.diagnostics
+      .filter(d => d.severity === 'error')
+      .map(d => (d.file ? `${d.file}: ${d.message}` : d.message))
+      .join('; ')
+    return {
+      ok: false,
+      artifact: state ?? undefined,
+      error: `Compilation failed: ${compileErrors || 'unknown error'}`,
+      errorCode: 'compile-failed'
+    }
+  }
+  return { ok: true, artifact: state ?? undefined }
 }
 
 export async function saveCanvasArtifactVersion(input: {

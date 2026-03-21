@@ -137,15 +137,27 @@ export function createCanvasArtifactTool(ctx: CanvasToolContext) {
         } satisfies CreateCanvasArtifactOutput
       }
 
-      // Handle other failures
-      if (!result.ok || !result.artifact) {
+      // Handle other failures — include artifact info if it was partially created
+      if (!result.ok) {
+        return {
+          artifactId: result.artifact?.artifactId ?? '',
+          chatId: ctx.chatId,
+          status: result.artifact?.status ?? 'compile_failed',
+          draftRevision: result.artifact?.draftRevision ?? 0,
+          currentVersionId: result.artifact?.currentVersionId ?? null,
+          error: result.error ?? 'Failed to create artifact',
+          errorCode: result.errorCode
+        } satisfies CreateCanvasArtifactOutput
+      }
+
+      if (!result.artifact) {
         return {
           artifactId: '',
           chatId: ctx.chatId,
           status: 'compile_failed',
           draftRevision: 0,
           currentVersionId: null,
-          error: result.error ?? 'Failed to create artifact',
+          error: 'No artifact was created',
           errorCode: result.errorCode
         } satisfies CreateCanvasArtifactOutput
       }
