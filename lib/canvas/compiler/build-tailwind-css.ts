@@ -4,18 +4,20 @@ import { compile } from 'tailwindcss'
 
 import type { CanvasSourceFiles } from '@/lib/types/canvas'
 
-// Lazy-load the Tailwind CSS content on first use. We derive the CSS
-// path from the package's JS entry to avoid require.resolve on a .css
-// extension (which serverExternalPackages doesn't support).
+// Lazy-load the Tailwind CSS content on first use. We resolve the path
+// directly from node_modules to avoid Turbopack's virtual module
+// interception of require.resolve for serverExternalPackages.
 let _tailwindCssCache: { path: string; base: string; content: string } | null =
   null
 
 function getTailwindCss() {
   if (!_tailwindCssCache) {
-    // resolve the package JS entry, walk up to the package root, then
-    // find index.css there (the JS entry is in dist/ but CSS is at root)
-    const pkgEntry = require.resolve('tailwindcss')
-    const pkgDir = path.resolve(pkgEntry, '..', '..')
+    // Resolve the Tailwind CSS package directory directly from node_modules.
+    // We cannot use require.resolve() here because tailwindcss is listed in
+    // serverExternalPackages, and Turbopack intercepts require.resolve for
+    // externals — returning a virtual path like "[externals]/tailwindcss
+    // [external]..." that doesn't exist on the real filesystem.
+    const pkgDir = path.resolve(process.cwd(), 'node_modules', 'tailwindcss')
     const cssPath = path.join(pkgDir, 'index.css')
     _tailwindCssCache = {
       path: cssPath,
