@@ -16,8 +16,8 @@ import {
   Download,
   Eye,
   History,
-  Minimize2,
-  Save
+  MoreHorizontal,
+  X
 } from 'lucide-react'
 
 import type { CanvasArtifactStatus } from '@/lib/types/canvas'
@@ -27,6 +27,12 @@ import { useIsMobile } from '@/hooks/use-mobile'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -312,60 +318,54 @@ export function CanvasWorkspace() {
   // ── Header ─────────────────────────────────────────────────────
 
   const header = (
-    <div className="flex items-center justify-between px-4 py-2">
+    <div className="flex items-center justify-between pl-4 pr-2 py-2">
       <div className="flex items-center gap-2 min-w-0">
         {!isMobile && pillSwitcher}
         <h2 className="text-sm font-medium truncate">{artifact.title}</h2>
-        <Badge
-          variant={STATUS_VARIANTS[artifact.status]}
-          data-testid="canvas-status-badge"
-        >
-          {STATUS_LABELS[artifact.status]}
-        </Badge>
-        {readOnly && (
-          <span
-            className="text-xs text-muted-foreground"
-            data-testid="canvas-readonly-indicator"
+        {artifact.status !== 'ready' && (
+          <Badge
+            variant={STATUS_VARIANTS[artifact.status]}
+            data-testid="canvas-status-badge"
           >
-            Read-only
-          </span>
+            {STATUS_LABELS[artifact.status]}
+          </Badge>
         )}
       </div>
-      <div className="flex items-center gap-1">
-        <TooltipButton
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => canvas.saveVersion()}
-          disabled={artifact.status !== 'ready'}
-          data-testid="canvas-save-version"
-          aria-label="Save version"
-          tooltipContent="Save version"
-        >
-          <Save className="h-4 w-4" />
-        </TooltipButton>
-        <TooltipButton
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => canvas.exportHtml()}
-          disabled={!artifact.draftCompiledHtml}
-          data-testid="canvas-export"
-          aria-label="Export HTML"
-          tooltipContent="Export HTML"
-        >
-          <Download className="h-4 w-4" />
-        </TooltipButton>
+      <div className="flex items-center gap-0.5">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <TooltipButton
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              aria-label="More actions"
+              tooltipContent="More actions"
+              data-testid="canvas-more-actions"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </TooltipButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => canvas.exportHtml()}
+              disabled={!artifact.draftCompiledHtml}
+              data-testid="canvas-export"
+            >
+              <Download className="h-4 w-4" />
+              Export HTML
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <TooltipButton
           variant="ghost"
           size="icon"
           className="h-7 w-7"
           onClick={() => canvas.closeWorkspace()}
           data-testid="canvas-close"
-          aria-label="Close workspace"
-          tooltipContent="Minimize"
+          aria-label="Close"
+          tooltipContent="Close"
         >
-          <Minimize2 className="h-4 w-4" />
+          <X className="h-4 w-4" />
         </TooltipButton>
       </div>
     </div>

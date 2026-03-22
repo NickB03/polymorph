@@ -344,6 +344,7 @@ export function Chat({
     const result: ChatSection[] = []
     let currentSection: ChatSection | null = null
     const seenUserIds = new Set<string>()
+    let currentAssistantIds = new Set<string>()
 
     for (const message of messages) {
       if (message.role === 'user') {
@@ -360,7 +361,10 @@ export function Chat({
           userMessage: message,
           assistantMessages: []
         }
+        currentAssistantIds = new Set<string>()
       } else if (currentSection && message.role === 'assistant') {
+        if (currentAssistantIds.has(message.id)) continue
+        currentAssistantIds.add(message.id)
         currentSection.assistantMessages.push(message)
       }
     }

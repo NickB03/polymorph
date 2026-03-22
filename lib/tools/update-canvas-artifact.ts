@@ -32,6 +32,8 @@ export type UpdateCanvasArtifactInput = z.infer<
 
 export type UpdateCanvasArtifactOutput = {
   artifactId: string
+  chatId: string
+  title: string
   status: string
   draftRevision: number
   currentVersionId: string | null
@@ -58,6 +60,7 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
     inputSchema: UpdateCanvasArtifactSchema,
     execute: async ({ artifactId, baseRevision, files }) => {
       const draftSource = files as CanvasSourceFiles
+      const fallbackTitle = 'Canvas Artifact'
 
       // Emit generating status immediately
       ctx.emitter.emitCanvasArtifactStatus({
@@ -78,6 +81,8 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
       if (!currentState) {
         return {
           artifactId,
+          chatId: ctx.chatId,
+          title: fallbackTitle,
           status: 'compile_failed',
           draftRevision: baseRevision,
           currentVersionId: null,
@@ -112,6 +117,8 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
         }
         return {
           artifactId,
+          chatId: latest?.chatId ?? currentState.chatId,
+          title: latest?.title ?? currentState.title,
           status: latest?.status ?? currentState.status,
           draftRevision: latest?.draftRevision ?? currentState.draftRevision,
           currentVersionId:
@@ -125,6 +132,8 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
       if (!result.ok || !result.artifact) {
         return {
           artifactId,
+          chatId: currentState.chatId,
+          title: currentState.title,
           status: 'compile_failed',
           draftRevision: baseRevision,
           currentVersionId: currentState.currentVersionId,
@@ -176,6 +185,8 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
 
           return {
             artifactId: versioned.artifactId,
+            chatId: versioned.chatId,
+            title: versioned.title,
             status: versioned.status,
             draftRevision: versioned.draftRevision,
             currentVersionId: versioned.currentVersionId
@@ -213,6 +224,8 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
 
       return {
         artifactId: artifact.artifactId,
+        chatId: artifact.chatId,
+        title: artifact.title,
         status: artifact.status,
         draftRevision: artifact.draftRevision,
         currentVersionId: artifact.currentVersionId
