@@ -99,6 +99,13 @@
       "when": 1773922477418,
       "tag": "0013_canvas_artifacts",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1774000000000,
+      "tag": "0014_canvas_artifact_grants",
+      "breakpoints": true
     }
   ]
 }

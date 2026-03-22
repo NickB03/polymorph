@@ -174,9 +174,19 @@ export async function createChatStreamResponse(
         }
         perfTime('prepareMessages completed (stream)', prepareStart)
 
-        // Build canvas tool context: load current artifact if one exists
+        // Build canvas tool context: load current artifact if one exists.
+        // Wrap in try/catch so a DB failure (e.g. missing table, permission
+        // denied) degrades gracefully instead of crashing the entire stream.
         let canvasToolContext: CanvasToolContext | undefined
-        const canvasArtifact = await loadCanvasArtifactByChatId(chatId, userId)
+        let canvasArtifact = null
+        try {
+          canvasArtifact = await loadCanvasArtifactByChatId(chatId, userId)
+        } catch (err) {
+          console.error(
+            '[createChatStreamResponse] Failed to load canvas artifact context:',
+            err
+          )
+        }
         const emitter = createCanvasEmitter(writer)
         canvasToolContext = {
           chatId,
