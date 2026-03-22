@@ -126,7 +126,6 @@ export async function createEphemeralChatStreamResponse(
               ? {
                   currentArtifact: {
                     artifactId: currentArtifact.artifactId,
-                    draftSource: currentArtifact.draftSource,
                     draftRevision: currentArtifact.draftRevision
                   }
                 }

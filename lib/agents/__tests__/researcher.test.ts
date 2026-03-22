@@ -215,9 +215,6 @@ describe('createResearcher', () => {
         ...mockCanvasToolContext,
         currentArtifact: {
           artifactId: 'art-123',
-          draftSource: {
-            'App.tsx': 'export default function App() { return null }'
-          },
           draftRevision: 7
         }
       }

@@ -15,7 +15,6 @@ import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import { loadCanvasArtifactByChatId } from '@/lib/db/actions'
 import type { UIMessage } from '@/lib/types/ai'
-import type { CanvasSourceFiles } from '@/lib/types/canvas'
 import { createModelId } from '@/lib/utils'
 import { jsonError } from '@/lib/utils/json-error'
 import { isTracingEnabled } from '@/lib/utils/telemetry'
@@ -188,7 +187,6 @@ export async function createChatStreamResponse(
             ? {
                 currentArtifact: {
                   artifactId: canvasArtifact.id,
-                  draftSource: canvasArtifact.draftSource as CanvasSourceFiles,
                   draftRevision: canvasArtifact.draftRevision
                 }
               }
