@@ -4,11 +4,8 @@ import type {
   CanvasArtifactStatusData,
   CanvasDiagnosticsData
 } from '@/lib/types/ai'
-import type { CanvasSourceFiles } from '@/lib/types/canvas'
-
 export type CurrentCanvasArtifact = {
   artifactId: string
-  draftSource: CanvasSourceFiles
   draftRevision: number
 }
 

@@ -60,7 +60,6 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
     inputSchema: UpdateCanvasArtifactSchema,
     execute: async ({ artifactId, baseRevision, files }) => {
       const draftSource = files as CanvasSourceFiles
-      const fallbackTitle = 'Canvas Artifact'
 
       // Emit generating status immediately
       ctx.emitter.emitCanvasArtifactStatus({
@@ -82,7 +81,7 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
         return {
           artifactId,
           chatId: ctx.chatId,
-          title: fallbackTitle,
+          title: 'Canvas Artifact',
           status: 'compile_failed',
           draftRevision: baseRevision,
           currentVersionId: null,

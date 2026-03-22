@@ -101,12 +101,12 @@ export function createResearcher({
 }) {
   try {
     const currentDate = new Date().toLocaleString()
-    let instructions = `${CHAT_MODE_PROMPT}\nCurrent date and time: ${currentDate}`
 
     // Create model-specific tools with proper typing
     const originalSearchTool = createSearchTool(model)
     const todoTools = writer ? createTodoTools() : {}
 
+    let instructions: string
     let systemPrompt: string
     let activeToolsList: (keyof ResearcherTools)[] = []
     let maxSteps: number

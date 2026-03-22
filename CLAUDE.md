@@ -20,6 +20,8 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 - `bun run test -- path/to/file.test.ts` — run a single test file
 - `bun run test:watch` — Vitest watch mode
 - `bun run migrate` — run Drizzle migrations
+- `bun run chat` — CLI chat interface (`scripts/chat-cli.ts`)
+- `bun run build:template` — rebuild canvas artifact React SPA template
 - `npx supabase start` — local Supabase (DB:44322, API:44321, Studio:44323)
 
 ## Architecture
@@ -40,6 +42,8 @@ The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → too
 Schema in `lib/db/schema.ts` with core tables:
 
 - **chats** → **messages** → **parts** (cascade delete)
+- **canvasArtifacts** → **canvasArtifactVersions** (cascade delete)
+- **feedback** — user feedback storage
 - `parts` is a wide table storing all message part types (text, reasoning, files, sources, tool calls) with check constraints per type
 - All tables use Row-Level Security (RLS) via `current_setting('app.current_user_id')` — users see only their own data, public chats are readable by all
 - Server actions in `lib/actions/chat.ts` use `unstable_cache` with revalidation tags
@@ -77,6 +81,13 @@ Canvas is the active artifact model. It is always-on (no feature flag gating).
   - `POST /runtime-diagnostics` — Persist iframe runtime errors
 - **Source validation** (`lib/canvas/validation/`): Validates and normalizes canvas source before compilation
 - **Canvas workspace UI** (`components/canvas/`): Split-view workspace with live preview, CodeMirror editor, diagnostics panel, and version history
+
+### Voice
+
+Feature-gated behind `NEXT_PUBLIC_ENABLE_VOICE=true`.
+
+- **TTS providers** (`lib/voice/`): ElevenLabs (default), OpenAI, browser Web Speech API — configurable per-user
+- **API route** (`app/api/voice/synthesize/`): server-side TTS synthesis
 
 ### Generative UI
 
@@ -148,6 +159,8 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase
 - `DATABASE_SSL_DISABLED=true` — for local dev with Supabase CLI
 - `GUEST_CANVAS_SECRET` — HMAC secret for guest canvas artifact tokens
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` — Redis for guest rate limiting (required when `ENABLE_GUEST_CHAT=true` in cloud mode)
+- `NEXT_PUBLIC_ENABLE_VOICE` — enables voice input/output UI
 
 ## Key Files
 
