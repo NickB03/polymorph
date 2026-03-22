@@ -101,6 +101,7 @@ export function createResearcher({
 }) {
   try {
     const currentDate = new Date().toLocaleString()
+    let instructions = `${CHAT_MODE_PROMPT}\nCurrent date and time: ${currentDate}`
 
     // Create model-specific tools with proper typing
     const originalSearchTool = createSearchTool(model)
@@ -160,6 +161,12 @@ export function createResearcher({
         break
     }
 
+    instructions = `${systemPrompt}\nCurrent date and time: ${currentDate}`
+
+    if (canvasToolContext?.currentArtifact) {
+      instructions += `\n\nCurrent canvas artifact state:\n- artifactId: ${canvasToolContext.currentArtifact.artifactId}\n- baseRevision: ${canvasToolContext.currentArtifact.draftRevision}`
+    }
+
     // Build canvas tools when context is available
     const canvasTools = canvasToolContext
       ? {
@@ -194,7 +201,7 @@ export function createResearcher({
     // Create ToolLoopAgent with all configuration
     const agent = new ToolLoopAgent({
       model: getModel(model),
-      instructions: `${systemPrompt}\nCurrent date and time: ${currentDate}`,
+      instructions,
       tools,
       activeTools: activeToolsList,
       stopWhen: stepCountIs(maxSteps),

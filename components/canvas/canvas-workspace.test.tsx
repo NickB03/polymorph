@@ -67,6 +67,90 @@ vi.mock('@/components/activity/activity-context', () => ({
   })
 }))
 
+vi.mock('@/components/ui/dropdown-menu', async () => {
+  const React = await import('react')
+
+  const DropdownMenuContext = React.createContext<{
+    open: boolean
+    setOpen: React.Dispatch<React.SetStateAction<boolean>>
+  } | null>(null)
+
+  function DropdownMenu({ children }: { children: React.ReactNode }) {
+    const [open, setOpen] = React.useState(false)
+
+    return (
+      <DropdownMenuContext.Provider value={{ open, setOpen }}>
+        {children}
+      </DropdownMenuContext.Provider>
+    )
+  }
+
+  function DropdownMenuTrigger({
+    asChild,
+    children
+  }: {
+    asChild?: boolean
+    children: React.ReactElement
+  }) {
+    const ctx = React.useContext(DropdownMenuContext)
+    if (!ctx) return children
+
+    const child = React.Children.only(children) as React.ReactElement<{
+      onClick?: (event: React.MouseEvent) => void
+    }>
+    return React.cloneElement(child, {
+      onClick: (event: React.MouseEvent) => {
+        child.props.onClick?.(event)
+        ctx.setOpen(open => !open)
+      }
+    })
+  }
+
+  function DropdownMenuContent({
+    children
+  }: {
+    children: React.ReactNode
+    align?: string
+  }) {
+    const ctx = React.useContext(DropdownMenuContext)
+    if (!ctx?.open) return null
+    return <div>{children}</div>
+  }
+
+  function DropdownMenuItem({
+    children,
+    disabled,
+    onClick,
+    ...props
+  }: {
+    children: React.ReactNode
+    disabled?: boolean
+    onClick?: () => void
+    [key: string]: unknown
+  }) {
+    return (
+      <button
+        type="button"
+        data-disabled={disabled ? '' : undefined}
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled) onClick?.()
+        }}
+        {...props}
+      >
+        {children}
+      </button>
+    )
+  }
+
+  return {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
+  }
+})
+
 // Mock CodeMirror — JSDOM does not support CM6
 let mockCodeMirrorProps: Record<string, unknown> = {}
 vi.mock('@uiw/react-codemirror', () => ({
@@ -602,6 +686,32 @@ describe('CanvasWorkspace', () => {
     render(<CanvasWorkspace />)
 
     expect(screen.getByTestId('canvas-more-actions')).toBeInTheDocument()
+  })
+
+  it('calls exportHtml from the overflow menu', () => {
+    const artifact = makeArtifact()
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    fireEvent.click(screen.getByTestId('canvas-more-actions'))
+    fireEvent.click(screen.getByTestId('canvas-export'))
+
+    expect(mockCanvasContext.exportHtml).toHaveBeenCalledTimes(1)
+  })
+
+  it('disables exportHtml in the overflow menu when no compiled html exists', () => {
+    const artifact = makeArtifact({ draftCompiledHtml: null })
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    fireEvent.click(screen.getByTestId('canvas-more-actions'))
+
+    expect(screen.getByTestId('canvas-export')).toHaveAttribute(
+      'data-disabled',
+      ''
+    )
   })
 
   it('renders close button with X icon', () => {

@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { buildLegacyCanvasNotice } from '@/lib/canvas/legacy'
 import type { UIMessage } from '@/lib/types/ai'
@@ -8,6 +8,7 @@ import { CanvasRoot } from './canvas/canvas-root'
 import { buildChatRequestBody, getLatestGuestCanvasToken } from './chat-request'
 
 const mockUseChat = vi.fn()
+const mockChatMessages = vi.fn((_props?: unknown) => null)
 const mockCanvasContext = {
   artifactId: null,
   artifact: null,
@@ -103,7 +104,10 @@ vi.mock('@/hooks/use-voice-conversation', () => ({
 }))
 
 vi.mock('./chat-messages', () => ({
-  ChatMessages: () => null
+  ChatMessages: (props: unknown) => {
+    mockChatMessages(props)
+    return null
+  }
 }))
 
 vi.mock('./chat-panel', () => ({
@@ -172,6 +176,12 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
     disconnect() {}
   } as unknown as typeof ResizeObserver
 }
+
+beforeEach(() => {
+  resetCanvasContext()
+  mockUseChat.mockReset()
+  mockChatMessages.mockClear()
+})
 
 describe('Canvas namespace — Stage 1 migration regression', () => {
   it('mounts CanvasRoot with the preserved chat shell but without artifact runtime state', () => {
@@ -462,5 +472,40 @@ describe('Canvas workspace handoff from chat stream', () => {
         'art-1'
       )
     })
+  })
+})
+
+describe('Chat sections', () => {
+  it('deduplicates assistant messages with the same id within a section', async () => {
+    mockUseChat.mockReturnValue(
+      makeUseChatReturnValue([
+        {
+          id: 'user-1',
+          role: 'user',
+          parts: [{ type: 'text', text: 'Update the canvas' }]
+        },
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          parts: [{ type: 'text', text: 'Working on it' }]
+        },
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          parts: [{ type: 'text', text: 'Working on it' }]
+        }
+      ])
+    )
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat savedMessages={[]} />)
+
+    const lastCall = mockChatMessages.mock.calls.at(-1)?.[0] as
+      | { sections?: Array<{ assistantMessages: UIMessage[] }> }
+      | undefined
+
+    expect(lastCall?.sections).toHaveLength(1)
+    expect(lastCall?.sections?.[0]?.assistantMessages).toHaveLength(1)
   })
 })

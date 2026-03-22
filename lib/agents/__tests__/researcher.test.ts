@@ -203,6 +203,30 @@ describe('createResearcher', () => {
     const config = MockToolLoopAgent.mock.calls[0][0] as any
     expect(config.instructions).toContain('Chat mode system prompt')
     expect(config.instructions).toContain('Current date and time:')
+    expect(config.instructions).not.toContain('Current canvas artifact state:')
+  })
+
+  it('includes current canvas artifact state in instructions when available', () => {
+    MockToolLoopAgent.mockClear()
+
+    createResearcher({
+      model: 'gateway:google/gemini-3-flash',
+      canvasToolContext: {
+        ...mockCanvasToolContext,
+        currentArtifact: {
+          artifactId: 'art-123',
+          draftSource: {
+            'App.tsx': 'export default function App() { return null }'
+          },
+          draftRevision: 7
+        }
+      }
+    })
+
+    const config = MockToolLoopAgent.mock.calls[0][0] as any
+    expect(config.instructions).toContain('Current canvas artifact state:')
+    expect(config.instructions).toContain('- artifactId: art-123')
+    expect(config.instructions).toContain('- baseRevision: 7')
   })
 
   it('throws when model creation fails', async () => {

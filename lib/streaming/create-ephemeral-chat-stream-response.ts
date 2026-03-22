@@ -12,6 +12,7 @@ import { Langfuse } from 'langfuse'
 
 import { researcher } from '@/lib/agents/researcher'
 import { verifyGuestCanvasToken } from '@/lib/canvas/guest-token'
+import { loadCanvasArtifactState } from '@/lib/canvas/service'
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
@@ -108,6 +109,11 @@ export async function createEphemeralChatStreamResponse(
           if (guestCanvasToken) {
             verifiedToken = await verifyGuestCanvasToken(guestCanvasToken)
           }
+          const currentArtifact = verifiedToken
+            ? await loadCanvasArtifactState({
+                artifactId: verifiedToken.artifactId
+              })
+            : null
 
           const emitter = createCanvasEmitter(writer)
           canvasToolContext = {
@@ -115,7 +121,16 @@ export async function createEphemeralChatStreamResponse(
             userId: 'guest',
             isGuest: true,
             emitter,
-            ...(verifiedToken ? { guestCanvasToken } : {})
+            ...(verifiedToken ? { guestCanvasToken } : {}),
+            ...(currentArtifact
+              ? {
+                  currentArtifact: {
+                    artifactId: currentArtifact.artifactId,
+                    draftSource: currentArtifact.draftSource,
+                    draftRevision: currentArtifact.draftRevision
+                  }
+                }
+              : {})
           }
         }
 

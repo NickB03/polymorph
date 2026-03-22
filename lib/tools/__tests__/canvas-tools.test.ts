@@ -404,7 +404,41 @@ describe('updateCanvasArtifactTool', () => {
       userId: 'user-1'
     })
     expect(result).toMatchObject({
+      chatId: 'chat-1',
+      title: 'Test App',
       currentVersionId: 'v-2'
+    })
+  })
+
+  it('returns renderable metadata for stale revision conflicts', async () => {
+    const ctx = createCtx()
+    const latestArtifact = { ...READY_ARTIFACT, draftRevision: 5 }
+    mockLoadCanvasArtifactState
+      .mockResolvedValueOnce(READY_ARTIFACT)
+      .mockResolvedValueOnce(latestArtifact)
+    mockUpdateCanvasArtifactDraftFromSource.mockResolvedValue({
+      ok: false,
+      error: 'Draft revision is stale',
+      errorCode: 'stale-revision'
+    })
+
+    const toolInstance = updateCanvasArtifactTool(ctx)
+    const result = await toolInstance.execute!(
+      {
+        artifactId: 'art-1',
+        baseRevision: 1,
+        files: SAMPLE_FILES
+      },
+      { toolCallId: 'tc-1', messages: [] }
+    )
+
+    expect(result).toMatchObject({
+      artifactId: 'art-1',
+      chatId: 'chat-1',
+      title: 'Test App',
+      status: 'ready',
+      draftRevision: 5,
+      errorCode: 'stale-revision'
     })
   })
 
