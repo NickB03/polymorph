@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev -p 43100",
     "build": "next build",
+    "vercel-build": "bun run migrate && next build",
     "start": "next start -p 43100",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
