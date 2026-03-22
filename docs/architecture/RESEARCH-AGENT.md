@@ -121,7 +121,7 @@ flowchart TD
 
 1. **HTTP Request**: The client sends `POST /api/chat` with the user's message, chat ID, trigger type, and search mode/model type from cookies.
 
-2. **Authentication & Rate Limiting**: The API route authenticates the user via Supabase. Guest users are rate-limited by IP (Upstash Redis); authenticated users by overall chat limits. Guest users and cloud deployments are forced to `modelType=speed`.
+2. **Authentication & Rate Limiting**: The API route authenticates the user via Supabase. Guest users are rate-limited by IP (Upstash Redis); authenticated users by overall chat limits.
 
 3. **Model Selection**: `selectModel()` reads cookie preferences for model type (`speed` or `quality`) and search mode (`chat` or `research`), looks up the model in `config/models/*.json`, and verifies the provider is enabled (API key present). Falls back to Gemini 3 Flash via Gateway.
 
@@ -269,10 +269,6 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 | Prompt complexity assessment | No                           | Yes (simple/medium/complex)           |
 | Early stop criteria          | 4 criteria                   | 5 criteria (includes todo completion) |
 
-### `askQuestion` Tool
-
-The `askQuestion` tool is defined in the tools object but is **not** in either mode's `activeTools` list. It exists as a clarifying question mechanism with frontend confirmation (no server-side `execute` function). It is registered but not actively enabled for either mode.
-
 ---
 
 ## Tool System
@@ -322,12 +318,6 @@ Also uses the streaming generator pattern. Has two fetch strategies:
 5. Removes all remaining HTML tags
 6. Truncates to 50,000 characters
 
-#### `askQuestion` — Clarifying questions
-
-**Source:** [`lib/tools/question.ts`](../lib/tools/question.ts)
-
-Has **no server-side execute function**. When the agent calls this tool, the tool call is streamed to the client, and the frontend renders an interactive question UI. The user's response is sent back via `addToolResult` (Vercel AI SDK's frontend tool confirmation pattern).
-
 #### `todoWrite` — Research task tracking
 
 **Source:** [`lib/tools/todo.ts`](../lib/tools/todo.ts)
@@ -362,7 +352,7 @@ All display tools share a common pattern: they accept structured input, validate
 | `displayCallout`     | Styled callout box for key information      | `id`, `variant`, `title` (optional), `content`                   | "This API was deprecated in v3"                        |
 | `displayTimeline`    | Chronological event timeline                | `id`, `title`, `events[]` with `id`, `date`, `title`, `category` | "history of TypeScript", "timeline of SpaceX launches" |
 
-**`displayOptionList`** is unique: it has no `execute` function (like `askQuestion`), so the frontend resolves it via `addToolResult` when the user makes a selection.
+**`displayOptionList`** is unique: it has no `execute` function, so the frontend resolves it via `addToolResult` when the user makes a selection.
 
 **`displayTable` format types:** `text`, `number`, `currency`, `percent`, `date`, `delta`, `boolean`, `link`, `badge`, `status`, `array` — each with type-specific options (e.g., currency code, decimal places, color maps).
 
@@ -548,9 +538,9 @@ The provider registry ([`lib/utils/registry.ts`](../lib/utils/registry.ts)) wrap
 
 The `getModel(modelString)` function takes a `providerId:modelId` string (e.g., `gateway:google/gemini-3-flash`) and returns a `LanguageModel` instance from the registry.
 
-### Force-Speed Behavior
+### Cloud Deployment Behavior
 
-Guest users and cloud deployments (`POLYMORPH_CLOUD_DEPLOYMENT=true`) are forced to `modelType=speed` regardless of cookie preference. This is implemented by replacing the cookie store with a mock that always returns `{ value: 'speed' }` for the `modelType` cookie.
+The `POLYMORPH_CLOUD_DEPLOYMENT` flag controls config profile selection (uses `cloud.json` instead of `default.json`), rate limiting enforcement, and analytics event tracking.
 
 ---
 
@@ -664,7 +654,7 @@ messageMetadata: ({ part }) => {
 
 The `AbortSignal` from the HTTP request propagates through the entire pipeline. When the client disconnects or the 300-second timeout fires, all in-flight operations are canceled: LLM calls, tool executions, title generation, and related questions.
 
-For more details, see [`docs/STREAMING.md`](STREAMING.md).
+For more details, see [Streaming Architecture](STREAMING.md).
 
 ---
 
@@ -719,14 +709,7 @@ export const myTool = tool({
 })
 ```
 
-2. Add the tool to `ResearcherTools` in [`lib/types/agent.ts`](../lib/types/agent.ts):
-
-```typescript
-export type ResearcherTools = {
-  // ... existing tools
-  myTool: typeof myTool
-}
-```
+2. Add the tool to the `ResearcherTools` type in [`lib/types/agent.ts`](../../lib/types/agent.ts).
 
 3. Register the tool in `createResearcher` ([`lib/agents/researcher.ts`](../lib/agents/researcher.ts)):
 
@@ -828,7 +811,6 @@ case 'my-provider':
 | `lib/agents/title-generator.ts`                          | Parallel chat title generation                                              |
 | `lib/tools/search.ts`                                    | Multi-provider search tool with streaming and citation mapping              |
 | `lib/tools/fetch.ts`                                     | Web content extraction (regular HTML + API-based for PDFs)                  |
-| `lib/tools/question.ts`                                  | Clarifying question tool (frontend confirmation, no server execute)         |
 | `lib/tools/todo.ts`                                      | Session-scoped task tracking with content-based merge                       |
 | `lib/tools/dynamic.ts`                                   | Dynamic/MCP tool factory                                                    |
 | `lib/tools/display-plan.ts`                              | Step-by-step guide display tool                                             |

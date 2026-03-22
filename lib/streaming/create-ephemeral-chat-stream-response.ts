@@ -11,12 +11,8 @@ import { randomUUID } from 'crypto'
 import { Langfuse } from 'langfuse'
 
 import { researcher } from '@/lib/agents/researcher'
-import {
-  refreshGuestArtifactToken,
-  verifyGuestArtifactToken
-} from '@/lib/artifacts/guest-token'
-import type { ArtifactToolContext } from '@/lib/artifacts/tool-context'
-import type { ValidatedGuestArtifactHandle } from '@/lib/artifacts/tool-context'
+import { verifyGuestCanvasToken } from '@/lib/canvas/guest-token'
+import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
 import { jsonError } from '@/lib/utils/json-error'
@@ -27,7 +23,7 @@ import { maybeTruncateMessages } from '../utils/context-window'
 import { hasPendingInteractiveTool } from './helpers/has-pending-interactive-tool'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
-import { createArtifactEmitter } from './helpers/write-artifact-data'
+import { createCanvasEmitter } from './helpers/write-canvas-data'
 import { BaseStreamConfig } from './types'
 
 type EphemeralStreamConfig = Pick<
@@ -36,8 +32,7 @@ type EphemeralStreamConfig = Pick<
 > & {
   messages: UIMessage[]
   chatId?: string
-  /** Signed guest artifact token from a previous artifact operation. */
-  guestArtifactToken?: string
+  guestCanvasToken?: string
 }
 
 export async function createEphemeralChatStreamResponse(
@@ -51,7 +46,7 @@ export async function createEphemeralChatStreamResponse(
     modelType,
     chatId,
     trigger,
-    guestArtifactToken
+    guestCanvasToken
   } = config
   const modelId = createModelId(model)
 
@@ -103,55 +98,25 @@ export async function createEphemeralChatStreamResponse(
 
         modelMessages = maybeTruncateMessages(modelMessages, model)
 
-        // Build request-scoped artifact tool context for guest flow
-        // with writer-backed emitters for stream parity.
-        //
-        // Guest token resolution: verify the HMAC-signed token, fail closed
-        // on forged/expired tokens (returns null — no raw ID fallback).
-        // On successful verification, rotate the token and emit a refreshed
-        // version via the artifact event stream.
-        const artifactEmitter = createArtifactEmitter(writer)
-
-        /**
-         * Resolve and rotate a guest artifact token.
-         *
-         * Security invariants:
-         * - Forged tokens (bad HMAC) return null.
-         * - Expired tokens return null.
-         * - No raw ID fallback on failure (fail closed).
-         * - On success, a rotated token is emitted as a transient event
-         *   so the client can use it in subsequent requests.
-         */
-        const resolveGuestArtifactToken =
-          async (): Promise<ValidatedGuestArtifactHandle | null> => {
-            if (!guestArtifactToken) return null
-
-            const handle = await verifyGuestArtifactToken(guestArtifactToken)
-            if (!handle) return null
-
-            // Rotate: issue a refreshed token and emit it to the client
-            try {
-              const refreshedToken = await refreshGuestArtifactToken(handle)
-              artifactEmitter.emitArtifactEvent({
-                artifactId: handle.artifactId,
-                event: 'guest-token-refreshed',
-                payload: { token: refreshedToken }
-              })
-            } catch {
-              // Token refresh is best-effort; the current handle is still valid
-            }
-
-            return handle
+        // Build canvas tool context for guest users
+        let canvasToolContext: CanvasToolContext | undefined
+        if (chatId) {
+          // Verify guest canvas token if provided
+          let verifiedToken: Awaited<
+            ReturnType<typeof verifyGuestCanvasToken>
+          > = null
+          if (guestCanvasToken) {
+            verifiedToken = await verifyGuestCanvasToken(guestCanvasToken)
           }
 
-        const artifactToolContext: ArtifactToolContext = {
-          chatId: chatId || 'ephemeral',
-          userId: null,
-          isGuest: true,
-          messages,
-          triggeringMessageId: null,
-          resolveGuestArtifactToken,
-          ...artifactEmitter
+          const emitter = createCanvasEmitter(writer)
+          canvasToolContext = {
+            chatId,
+            userId: 'guest',
+            isGuest: true,
+            emitter,
+            ...(verifiedToken ? { guestCanvasToken } : {})
+          }
         }
 
         const researchAgent = researcher({
@@ -161,7 +126,7 @@ export async function createEphemeralChatStreamResponse(
           parentTraceId,
           searchMode,
           modelType,
-          experimentalContext: { artifactToolContext }
+          canvasToolContext
         })
 
         const result = await researchAgent.stream({

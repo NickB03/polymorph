@@ -1,3 +1,5 @@
+> **Archived:** This plan describes the removed E2B artifact system. See the [canvas artifact replacement plan](../superpowers/plans/2026-03-18-canvas-artifact-replacement-implementation.md) for the current architecture.
+
 # Artifact Rebuild-on-Demand Implementation Plan
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.

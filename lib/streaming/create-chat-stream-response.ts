@@ -11,9 +11,11 @@ import { randomUUID } from 'crypto'
 import { Langfuse } from 'langfuse'
 
 import { researcher } from '@/lib/agents/researcher'
-import type { ArtifactToolContext } from '@/lib/artifacts/tool-context'
+import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
+import { loadCanvasArtifactByChatId } from '@/lib/db/actions'
 import type { UIMessage } from '@/lib/types/ai'
+import type { CanvasSourceFiles } from '@/lib/types/canvas'
 import { createModelId } from '@/lib/utils'
 import { jsonError } from '@/lib/utils/json-error'
 import { isTracingEnabled } from '@/lib/utils/telemetry'
@@ -35,7 +37,7 @@ import {
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
 import type { StreamContext } from './helpers/types'
-import { createArtifactEmitter } from './helpers/write-artifact-data'
+import { createCanvasEmitter } from './helpers/write-canvas-data'
 import { BaseStreamConfig } from './types'
 
 export async function createChatStreamResponse(
@@ -173,19 +175,24 @@ export async function createChatStreamResponse(
         }
         perfTime('prepareMessages completed (stream)', prepareStart)
 
-        // Build request-scoped artifact tool context with writer-backed emitters.
-        const artifactEmitter = createArtifactEmitter(writer)
-        const lastUserMessageId =
-          [...messagesToModel].reverse().find(m => m.role === 'user')?.id ??
-          null
-        const artifactToolContext: ArtifactToolContext = {
+        // Build canvas tool context: load current artifact if one exists
+        let canvasToolContext: CanvasToolContext | undefined
+        const canvasArtifact = await loadCanvasArtifactByChatId(chatId, userId)
+        const emitter = createCanvasEmitter(writer)
+        canvasToolContext = {
           chatId,
           userId,
           isGuest: false,
-          messages: messagesToModel,
-          triggeringMessageId: lastUserMessageId,
-          resolveGuestArtifactToken: async () => null,
-          ...artifactEmitter
+          emitter,
+          ...(canvasArtifact
+            ? {
+                currentArtifact: {
+                  artifactId: canvasArtifact.id,
+                  draftSource: canvasArtifact.draftSource as CanvasSourceFiles,
+                  draftRevision: canvasArtifact.draftRevision
+                }
+              }
+            : {})
         }
 
         // Get the researcher agent with parent trace ID, search mode, and model type
@@ -196,7 +203,7 @@ export async function createChatStreamResponse(
           parentTraceId,
           searchMode,
           modelType,
-          experimentalContext: { artifactToolContext }
+          canvasToolContext
         })
 
         // For OpenAI models, strip reasoning parts from UIMessages before conversion

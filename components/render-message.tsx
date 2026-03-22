@@ -4,7 +4,8 @@ import { UseChatHelpers } from '@ai-sdk/react'
 
 import type { SearchResultItem } from '@/lib/types'
 import type {
-  DataArtifactPart,
+  CanvasArtifactData,
+  CanvasArtifactStatusData,
   ToolPart,
   UIDataTypes,
   UIMessage,
@@ -14,7 +15,7 @@ import type {
 import type { DynamicToolPart } from '@/lib/types/dynamic-tools'
 import { isChatLoading } from '@/lib/utils'
 
-import { tryRenderArtifactCard } from './tool-ui/artifact-card'
+import { CanvasArtifactCard } from './tool-ui/canvas-artifact-card'
 import { OptionList } from './tool-ui/option-list/option-list'
 import type { OptionListSelection } from './tool-ui/option-list/schema'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
@@ -22,6 +23,7 @@ import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
 import { tryRenderToolUI, tryRenderToolUIByName } from './tool-ui/registry'
 import { AnswerSection } from './answer-section'
 import { DynamicToolDisplay } from './dynamic-tool-display'
+import { MessageActions } from './message-actions'
 import { ResearchPlan } from './research-plan'
 import ResearchProcessSection from './research-process-section'
 import { ResearchStatusLine } from './research-status-line'
@@ -139,6 +141,10 @@ interface RenderMessageProps {
   isLatestMessage?: boolean
   citationMaps?: Record<string, Record<number, SearchResultItem>>
   isResearchMode?: boolean
+  /** Callback when a canvas artifact card is clicked */
+  onCanvasArtifactClick?: (artifactId: string) => void
+  /** Callback when a legacy artifact part is encountered */
+  onLegacyArtifactClick?: (artifactId: string) => void
 }
 
 export function RenderMessage({
@@ -155,7 +161,9 @@ export function RenderMessage({
   reload,
   isLatestMessage = false,
   citationMaps = {},
-  isResearchMode = false
+  isResearchMode = false,
+  onCanvasArtifactClick,
+  onLegacyArtifactClick
 }: RenderMessageProps) {
   // Use provided citation maps (from all messages)
   if (message.role === 'user') {
@@ -196,18 +204,6 @@ export function RenderMessage({
   const todoScan = scanTodoWriteParts(message.parts)
   const { firstTodoWriteIndex } = todoScan
 
-  // Pre-scan: for each artifact ID, find the index of the LAST data-artifact
-  // part so we can deduplicate inline cards (only render the latest per artifact).
-  const lastArtifactPartByArtifactId = new Map<string, number>()
-  message.parts?.forEach((part, index) => {
-    if (part.type === 'data-artifact') {
-      const artifactPart = part as DataArtifactPart
-      if (artifactPart.data?.id) {
-        lastArtifactPartByArtifactId.set(artifactPart.data.id, index)
-      }
-    }
-  })
-
   // New rendering: interleave text parts with grouped non-text segments
   const elements: React.ReactNode[] = []
   // Buffer collects non-text parts for ResearchProcessSection.
@@ -234,6 +230,11 @@ export function RenderMessage({
   // the first text part, then flush them immediately after the first text.
   let hasSeenText = false
   const deferredDisplayParts: { part: any; index: number }[] = []
+
+  // Track whether actions were rendered inline (inside an AnswerSection)
+  // or need to be appended at the very end of the message.
+  let actionsShownInline = false
+  let lastTextContent = ''
 
   // Render a display tool part into a React element
   const renderDisplayToolElement = (
@@ -375,12 +376,21 @@ export function RenderMessage({
       flushBuffer(`seg-${index}`)
 
       const remainingParts = message.parts?.slice(index + 1) || []
-      const hasMoreTextParts = remainingParts.some(p => p.type === 'text')
-      const isLastTextPart = !hasMoreTextParts
+      // Check for any remaining parts that produce visible UI —
+      // not just text, but also display tools, canvas artifacts, etc.
+      const hasMoreVisibleContent = remainingParts.some(p => {
+        if (p.type === 'text') return true
+        if (p.type?.startsWith?.('tool-display')) return true
+        if (p.type === 'data-canvasArtifact') return true
+        if (p.type === 'dynamic-tool') return true
+        if ((p.type as string) === 'data-artifact') return true
+        return false
+      })
+      const isLastVisiblePart = !hasMoreVisibleContent
       const isStreamingComplete =
         status !== 'streaming' && status !== 'submitted'
       const shouldShowActions =
-        isLastTextPart && (isLatestMessage ? isStreamingComplete : true)
+        isLastVisiblePart && (isLatestMessage ? isStreamingComplete : true)
 
       const segments = extractToolUIFromText(part.text)
       for (let si = 0; si < segments.length; si++) {
@@ -397,6 +407,9 @@ export function RenderMessage({
         } else if (segment.content.trim()) {
           // Only show actions on the very last text segment of the last text part
           const isLastSegment = si === segments.length - 1
+          const showActionsHere = shouldShowActions && isLastSegment
+          if (showActionsHere) actionsShownInline = true
+          lastTextContent = segment.content
           elements.push(
             <AnswerSection
               key={`${messageId}-text-${index}-${si}`}
@@ -409,7 +422,7 @@ export function RenderMessage({
               onOpenChange={open => onOpenChange(messageId, open)}
               chatId={chatId}
               isGuest={isGuest}
-              showActions={shouldShowActions && isLastSegment}
+              showActions={showActionsHere}
               messageId={messageId}
               metadata={message.metadata as UIMessageMetadata | undefined}
               reload={reload}
@@ -454,34 +467,50 @@ export function RenderMessage({
           />
         )
       }
-    } else if (part.type === 'data-artifact') {
-      // Render artifact card inline — only the latest part per artifact ID.
-      // Earlier parts (e.g. building → ready) are skipped to avoid duplicates.
-      const artifactPart = part as DataArtifactPart
-      const artifactId = artifactPart.data?.id
-      if (
-        artifactId &&
-        lastArtifactPartByArtifactId.get(artifactId) !== index
-      ) {
-        // Skip — a later part for the same artifact supersedes this one
-      } else {
-        flushBuffer(`seg-${index}`)
-        const rendered = tryRenderArtifactCard(artifactPart.data)
-        if (rendered) {
-          elements.push(
-            <div key={`${messageId}-artifact-${index}`} className="my-2">
-              {rendered}
-            </div>
-          )
-        }
+    } else if (part.type === 'data-canvasArtifact') {
+      // Render a clickable canvas artifact card
+      flushBuffer(`seg-${index}`)
+      const canvasData = (part as { data?: CanvasArtifactData }).data
+      if (canvasData?.artifactId) {
+        elements.push(
+          <div key={`${messageId}-canvas-artifact-${index}`} className="my-2">
+            <CanvasArtifactCard
+              data={canvasData}
+              onClick={
+                onCanvasArtifactClick
+                  ? () => onCanvasArtifactClick(canvasData.artifactId)
+                  : undefined
+              }
+            />
+          </div>
+        )
       }
-    } else if (
-      part.type === 'data-artifactStatus' ||
-      part.type === 'data-artifactLog' ||
-      part.type === 'data-artifactEvent'
-    ) {
-      // Artifact status/log/event parts are handled by chat.tsx (workspace context),
-      // not rendered as visible chat content
+    } else if (part.type === 'data-canvasArtifactStatus') {
+      // Status updates don't render a visible element in chat
+      // (the card already shows the latest status)
+    } else if ((part.type as string) === 'data-artifact') {
+      // Legacy artifact parts — render a notice card
+      flushBuffer(`seg-${index}`)
+      const legacyData = (part as { data?: { id?: string } }).data
+      const legacyId = legacyData?.id ?? 'unknown'
+      elements.push(
+        <div key={`${messageId}-legacy-artifact-${index}`} className="my-2">
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 rounded-lg border border-dashed border-border bg-card p-3 text-left text-sm text-muted-foreground"
+            onClick={
+              onLegacyArtifactClick
+                ? () => onLegacyArtifactClick(legacyId)
+                : undefined
+            }
+            data-testid="legacy-artifact-notice"
+            data-artifact-id={legacyId}
+          >
+            This artifact was created with a previous system and is no longer
+            available.
+          </button>
+        </div>
+      )
     } else if (
       part.type === 'reasoning' ||
       part.type?.startsWith?.('tool-') ||
@@ -506,6 +535,31 @@ export function RenderMessage({
 
   // Flush tail (no subsequent text)
   flushBuffer('tail')
+
+  // If actions weren't shown inline (because visible content like cards
+  // appeared after the last text), render them at the very end.
+  if (!actionsShownInline && lastTextContent.trim()) {
+    const isStreamingComplete = status !== 'streaming' && status !== 'submitted'
+    const shouldShow = isLatestMessage ? isStreamingComplete : true
+    const metadata = message.metadata as UIMessageMetadata | undefined
+    const enableShare =
+      process.env.NEXT_PUBLIC_SUPABASE_URL !== undefined && !isGuest
+    elements.push(
+      <MessageActions
+        key={`${messageId}-trailing-actions`}
+        message={lastTextContent}
+        messageId={messageId}
+        traceId={metadata?.traceId}
+        feedbackScore={metadata?.feedbackScore}
+        chatId={chatId}
+        enableShare={enableShare}
+        reload={reload ? () => reload(messageId) : undefined}
+        status={status}
+        visible={shouldShow}
+        citationMaps={citationMaps}
+      />
+    )
+  }
 
   return <>{elements}</>
 }

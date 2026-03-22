@@ -1,19 +1,16 @@
 # Progress Tracker
 
-Implementation for the "progress-tracker" Tool UI surface.
+Displays a vertical step-based progress indicator with live and receipt states. Steps transition through `pending`, `in-progress`, `completed`, and `failed` statuses with animated indicators. Supports an optional elapsed-time badge and a receipt view driven by a `choice` prop.
 
 ## Files
 
-- public exports: components/tool-ui/progress-tracker/index.tsx
-- serializable schema + parse helpers: components/tool-ui/progress-tracker/schema.ts
-
-## Companion assets
-
-- Docs page: app/docs/progress-tracker/content.mdx
-- Preset payload: lib/presets/progress-tracker.ts
+- Public exports: `components/tool-ui/progress-tracker/index.tsx`
+- Serializable schema + parse helpers: `components/tool-ui/progress-tracker/schema.ts`
 
 ## Quick check
 
 Run this after edits:
 
-pnpm test
+```bash
+bun run test
+```

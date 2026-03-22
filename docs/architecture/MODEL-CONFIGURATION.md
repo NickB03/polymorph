@@ -127,7 +127,7 @@ The loader provides both async (`loadModelsConfig`) and sync (`getModelsConfig`)
 
 Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. The algorithm reads user preferences from cookies and resolves a model through a priority cascade with fallbacks.
 
-> For a visual flowchart, see the [Model Selection Flow diagram in ARCHITECTURE.md](./OVERVIEW.md#model-selection-flow).
+> For a visual flowchart, see the [Model Selection diagram in OVERVIEW.md](./OVERVIEW.md#model-selection).
 
 ### Inputs
 
@@ -140,22 +140,18 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
 
 1. **Read user preference** — The `modelType` cookie is read. If the value is valid (`speed` or `quality`), it becomes the first choice in the type preference order.
 
-2. **Force speed for guests/cloud** — Before `selectModel` is called, `app/api/chat/route.ts` checks if the user is a guest or on a cloud deployment. If so, it overrides the cookie store to always return `modelType=speed`:
+2. **Build type preference order** — Starting with the user's preferred type, then appending the remaining valid type. For example, if the cookie says `quality`, the order is `[quality, speed]`. If no valid cookie, the order is `[speed, quality]`.
 
-   ```typescript
-   const forceSpeed = isGuest || isCloudDeployment
-   ```
+3. **Build mode preference order** — Starting with the requested search mode, then appending remaining modes. For example, if the requested mode is `research`, the order is `[research, chat]`.
 
-3. **Build type preference order** — Starting with the user's preferred type, then appending the remaining valid type. For example, if the cookie says `quality`, the order is `[quality, speed]`. If no valid cookie, the order is `[speed, quality]`.
-
-4. **Build mode preference order** — Starting with the requested search mode, then appending remaining modes. For example, if the requested mode is `research`, the order is `[research, chat]`.
-
-5. **Nested candidate loop** — For each candidate mode, for each candidate type:
+4. **Nested candidate loop** — For each (mode, type) pair:
    - Look up the model from the config via `getModelForModeAndType(mode, type)`
    - Check if the model's provider is enabled via `isProviderEnabled(providerId)`
    - If both succeed, return that model immediately
 
-6. **Fallback** — If no candidate succeeds (all providers disabled, or config loading fails), return the hardcoded `DEFAULT_MODEL` (Gemini 3 Flash via Gateway).
+5. **Fallback** — If no candidate succeeds (all providers disabled, or config loading fails), return the hardcoded `DEFAULT_MODEL` (Gemini 3 Flash via Gateway).
+
+**Cloud deployment:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag selects the `cloud.json` config profile instead of `default.json`. It does not force a specific model type.
 
 ### Full resolution order
 

@@ -16,7 +16,7 @@ Common issues and solutions for Polymorph development and deployment.
 cp .env.local.example .env.local
 ```
 
-Then fill in the required values. See [docs/ENVIRONMENT.md](../getting-started/ENVIRONMENT.md) for the full variable reference. At minimum you need:
+Then fill in the required values. See [Environment Reference](../getting-started/ENVIRONMENT.md) for the full variable reference. At minimum you need:
 
 - `DATABASE_URL`
 - `AI_GATEWAY_API_KEY`
@@ -234,7 +234,7 @@ SEARCH_API=searxng
 2. **Wrong `SEARCH_API` value.** If set to a provider that is not configured, searches will fail. Valid values: `tavily` (default), `exa`, `firecrawl`, `searxng`, `brave`.
 3. **Provider fallback.** If the primary provider fails, there is no automatic fallback. The error is thrown to the AI agent, which may retry or report the failure.
 
-**Fix:** Check that `TAVILY_API_KEY` is set. If using an alternative provider, ensure the corresponding API key and `SEARCH_API` variable are correctly configured. See [docs/SEARCH-PROVIDERS.md](../architecture/SEARCH-PROVIDERS.md) for provider setup details.
+**Fix:** Check that `TAVILY_API_KEY` is set. If using an alternative provider, ensure the corresponding API key and `SEARCH_API` variable are correctly configured. See [Search Providers](../architecture/SEARCH-PROVIDERS.md) for provider setup details.
 
 ## Database Issues
 

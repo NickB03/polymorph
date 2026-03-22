@@ -15,7 +15,7 @@ import { VideoCarouselDialog } from './video-carousel-dialog'
 interface VideoResultGridProps {
   videos: SerperSearchResultItem[]
   query: string
-  displayMode: 'chat' | 'artifact'
+  displayMode: 'chat' | 'canvas'
 }
 
 export function VideoResultGrid({

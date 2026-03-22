@@ -3,13 +3,48 @@
 import { and, asc, desc, eq, gt, inArray, sql } from 'drizzle-orm'
 
 import type { UIMessage } from '@/lib/types/ai'
-import type {
-  AppendArtifactRevisionInput,
-  ArtifactStatus,
-  CreateArtifactInput,
-  UpsertArtifactRuntimeSessionInput
-} from '@/lib/types/artifact'
 import type { PersistableUIMessage } from '@/lib/types/message-persistence'
+
+// Legacy artifact types inlined here since the old types file was deleted.
+// These are only used by the legacy DB functions below which are retained
+// for Drizzle schema compatibility but are not called from active code.
+type ArtifactStatus = 'building' | 'ready' | 'failed' | 'restarting' | 'expired'
+type CreateArtifactInput = {
+  id?: string
+  chatId: string
+  userId: string | null
+  currentRevisionId?: string | null
+  currentRuntimeSessionId?: string | null
+  title: string
+  framework: 'react-spa'
+  status: ArtifactStatus
+}
+type AppendArtifactRevisionInput = {
+  id?: string
+  artifactId: string
+  triggeringMessageId: string
+  promptSummary: string
+  title: string
+  sandboxSnapshotRef?: string | null
+  sourceFiles?: Record<string, string> | null
+}
+type UpsertArtifactRuntimeSessionInput = {
+  id?: string
+  artifactId: string
+  provider: 'e2b'
+  sandboxId: string
+  previewUrl?: string | null
+  status: ArtifactStatus
+  startedAt: Date
+  expiresAt?: Date | null
+  lastHeartbeatAt?: Date | null
+}
+import type {
+  CanvasArtifactStatus,
+  CanvasDiagnostics,
+  CanvasSourceFiles,
+  CanvasVersionCreatedBy
+} from '@/lib/types/canvas'
 import {
   buildUIMessageFromDB,
   mapUIMessagePartsToDBParts,
@@ -18,12 +53,13 @@ import {
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 import { incrementDbOperationCount } from '@/lib/utils/perf-tracking'
 
-import { GUEST_USER_ID } from './constants'
 import type { Chat, Message } from './schema'
 import {
   artifactRevisions,
   artifactRuntimeSessions,
   artifacts,
+  canvasArtifacts,
+  canvasArtifactVersions,
   chats,
   generateId,
   messages,
@@ -46,6 +82,7 @@ import { db } from '.'
 export async function ensureChatRecord(input: {
   id: string
   title: string
+  userId: string
   visibility?: 'public' | 'private'
 }): Promise<void> {
   await db
@@ -53,7 +90,7 @@ export async function ensureChatRecord(input: {
     .values({
       id: input.id,
       title: input.title,
-      userId: GUEST_USER_ID,
+      userId: input.userId,
       visibility: input.visibility ?? 'private'
     })
     .onConflictDoNothing({ target: chats.id })
@@ -320,7 +357,7 @@ export async function updateArtifactRecord(
  *
  * Returns the updated artifact if the claim succeeded, or null if
  * another rebuild is already in progress. This prevents concurrent
- * rebuild requests from orphaning E2B sandboxes.
+ * rebuild requests from creating duplicate sessions.
  */
 export async function claimArtifactForRebuild(
   artifactId: string,
@@ -752,5 +789,259 @@ export async function createChatWithFirstMessageTransaction({
 
     perfTime('DB - createChatWithFirstMessageTransaction completed', dbStart)
     return { chat, message: savedMessage }
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Canvas artifact actions
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a new canvas artifact for a chat.
+ *
+ * The unique index on `chatId` enforces one artifact per chat at the DB level.
+ */
+export async function createCanvasArtifact(input: {
+  id?: string
+  chatId: string
+  userId: string
+  title: string
+  draftSource: CanvasSourceFiles
+  status?: CanvasArtifactStatus
+}) {
+  return withOptionalRLS(input.userId, async tx => {
+    const [artifact] = await tx
+      .insert(canvasArtifacts)
+      .values({
+        id: input.id ?? generateId(),
+        chatId: input.chatId,
+        userId: input.userId,
+        title: input.title,
+        status: input.status ?? 'compiling',
+        draftSource: input.draftSource,
+        draftRevision: 0,
+        updatedAt: new Date()
+      })
+      .returning()
+
+    return artifact
+  })
+}
+
+/**
+ * Load a canvas artifact by its owning chat ID.
+ */
+export async function loadCanvasArtifactByChatId(
+  chatId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [artifact] = await tx
+      .select()
+      .from(canvasArtifacts)
+      .where(eq(canvasArtifacts.chatId, chatId))
+      .limit(1)
+
+    return artifact ?? null
+  })
+}
+
+/**
+ * Load a canvas artifact by its ID.
+ *
+ * **Security:** When `userId` is `null`, RLS is bypassed and the query runs
+ * without row-level permission checks. Callers MUST authenticate through an
+ * alternative mechanism (e.g. a signed guest canvas token) before passing
+ * `null`. Prefer passing a real `userId` whenever one is available.
+ */
+export async function loadCanvasArtifactById(
+  artifactId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [artifact] = await tx
+      .select()
+      .from(canvasArtifacts)
+      .where(eq(canvasArtifacts.id, artifactId))
+      .limit(1)
+
+    return artifact ?? null
+  })
+}
+
+/**
+ * Update the active draft of a canvas artifact with optimistic concurrency.
+ *
+ * The update only succeeds when the current `draftRevision` matches
+ * `expectedRevision`. On success the revision is atomically incremented.
+ * Returns the updated row, or `null` if the revision was stale (0 rows
+ * affected).
+ */
+export async function updateCanvasArtifactDraft(input: {
+  artifactId: string
+  expectedRevision: number
+  draftSource?: CanvasSourceFiles
+  draftCompiledHtml?: string | null
+  draftDiagnostics?: CanvasDiagnostics | null
+  status?: CanvasArtifactStatus
+  lastCompiledAt?: Date | null
+  title?: string
+  currentVersionId?: string | null
+  userId?: string | null
+}) {
+  return withOptionalRLS(input.userId ?? null, async tx => {
+    const setClause: Record<string, unknown> = {
+      draftRevision: sql`${canvasArtifacts.draftRevision} + 1`,
+      updatedAt: new Date()
+    }
+
+    if (input.draftSource !== undefined)
+      setClause.draftSource = input.draftSource
+    if (input.draftCompiledHtml !== undefined)
+      setClause.draftCompiledHtml = input.draftCompiledHtml
+    if (input.draftDiagnostics !== undefined)
+      setClause.draftDiagnostics = input.draftDiagnostics
+    if (input.status !== undefined) setClause.status = input.status
+    if (input.lastCompiledAt !== undefined)
+      setClause.lastCompiledAt = input.lastCompiledAt
+    if (input.title !== undefined) setClause.title = input.title
+    if (input.currentVersionId !== undefined)
+      setClause.currentVersionId = input.currentVersionId
+
+    const [updated] = await tx
+      .update(canvasArtifacts)
+      .set(setClause)
+      .where(
+        and(
+          eq(canvasArtifacts.id, input.artifactId),
+          eq(canvasArtifacts.draftRevision, input.expectedRevision)
+        )
+      )
+      .returning()
+
+    return updated ?? null
+  })
+}
+
+/**
+ * Update only the diagnostics of a canvas artifact draft WITHOUT
+ * incrementing `draftRevision`.
+ *
+ * This is used for runtime diagnostic updates that should not interfere
+ * with the optimistic concurrency control used by source/compile updates.
+ * The update only succeeds when `draftRevision` matches `expectedRevision`,
+ * preventing stale diagnostic writes, but does not bump the counter.
+ */
+export async function updateCanvasArtifactDiagnosticsOnly(input: {
+  artifactId: string
+  expectedRevision: number
+  draftDiagnostics: CanvasDiagnostics
+  userId?: string | null
+}) {
+  return withOptionalRLS(input.userId ?? null, async tx => {
+    const [updated] = await tx
+      .update(canvasArtifacts)
+      .set({
+        draftDiagnostics: input.draftDiagnostics,
+        updatedAt: new Date()
+      })
+      .where(
+        and(
+          eq(canvasArtifacts.id, input.artifactId),
+          eq(canvasArtifacts.draftRevision, input.expectedRevision)
+        )
+      )
+      .returning()
+
+    return updated ?? null
+  })
+}
+
+/**
+ * Create an immutable version snapshot from the current draft.
+ */
+export async function createCanvasArtifactVersion(input: {
+  artifactId: string
+  versionNumber: number
+  sourceSnapshot: CanvasSourceFiles
+  createdBy: CanvasVersionCreatedBy
+  userId?: string | null
+}) {
+  return withOptionalRLS(input.userId ?? null, async tx => {
+    const [version] = await tx
+      .insert(canvasArtifactVersions)
+      .values({
+        artifactId: input.artifactId,
+        versionNumber: input.versionNumber,
+        sourceSnapshot: input.sourceSnapshot,
+        createdBy: input.createdBy
+      })
+      .returning()
+
+    return version
+  })
+}
+
+/**
+ * List all immutable versions for a canvas artifact, ordered by creation
+ * time descending (newest first).
+ */
+export async function listCanvasArtifactVersions(
+  artifactId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    return tx
+      .select()
+      .from(canvasArtifactVersions)
+      .where(eq(canvasArtifactVersions.artifactId, artifactId))
+      .orderBy(desc(canvasArtifactVersions.createdAt))
+  })
+}
+
+/**
+ * Restore a saved version into the active draft.
+ *
+ * Loads the version's source snapshot and writes it into the draft,
+ * incrementing `draftRevision` via the standard optimistic concurrency
+ * path. Returns the updated artifact row, or `null` if the revision was
+ * stale.
+ */
+export async function restoreCanvasArtifactVersion(input: {
+  artifactId: string
+  versionId: string
+  expectedRevision: number
+  userId?: string | null
+}) {
+  return withOptionalRLS(input.userId ?? null, async tx => {
+    // Load the version to restore
+    const [version] = await tx
+      .select()
+      .from(canvasArtifactVersions)
+      .where(eq(canvasArtifactVersions.id, input.versionId))
+      .limit(1)
+
+    if (!version) return null
+
+    // Apply the restored source to the draft with optimistic concurrency
+    const [updated] = await tx
+      .update(canvasArtifacts)
+      .set({
+        draftSource: version.sourceSnapshot,
+        draftCompiledHtml: null,
+        draftDiagnostics: null,
+        status: 'restoring',
+        draftRevision: sql`${canvasArtifacts.draftRevision} + 1`,
+        updatedAt: new Date()
+      })
+      .where(
+        and(
+          eq(canvasArtifacts.id, input.artifactId),
+          eq(canvasArtifacts.draftRevision, input.expectedRevision)
+        )
+      )
+      .returning()
+
+    return updated ?? null
   })
 }

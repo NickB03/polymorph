@@ -1,7 +1,7 @@
 /**
  * Voice feature configuration and types.
  *
- * Feature-gated behind NEXT_PUBLIC_ENABLE_VOICE (mirrors ENABLE_ARTIFACTS pattern).
+ * Feature-gated behind NEXT_PUBLIC_ENABLE_VOICE.
  */
 
 export type VoiceState = 'idle' | 'listening' | 'waiting' | 'speaking'

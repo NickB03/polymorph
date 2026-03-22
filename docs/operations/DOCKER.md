@@ -16,7 +16,7 @@ cp .env.local.example .env.local
 2. Start your backend infrastructure (Supabase CLI):
 
 ```bash
-supabase start
+npx supabase start
 ```
 
 3. Edit `.env.local` and set at least:

@@ -6,7 +6,7 @@ import type {
   UIToolInvocation
 } from 'ai'
 
-import type { createWebappArtifactTool } from '../tools/create-webapp-artifact'
+import type { createCanvasArtifactTool } from '../tools/create-canvas-artifact'
 import type { displayCalloutTool } from '../tools/display-callout'
 import type { displayChartTool } from '../tools/display-chart'
 import type { displayCitationsTool } from '../tools/display-citations'
@@ -16,11 +16,9 @@ import type { displayPlanTool } from '../tools/display-plan'
 import type { displayTableTool } from '../tools/display-table'
 import type { displayTimelineTool } from '../tools/display-timeline'
 import type { fetchTool } from '../tools/fetch'
-import type { getArtifactStatusTool } from '../tools/get-artifact-status'
-import type { restartArtifactPreviewTool } from '../tools/restart-artifact-preview'
 import type { createSearchTool } from '../tools/search'
 import type { createTodoTools } from '../tools/todo'
-import type { updateWebappArtifactTool } from '../tools/update-webapp-artifact'
+import type { updateCanvasArtifactTool } from '../tools/update-canvas-artifact'
 
 // Define the tools type for researcher agent
 export type ResearcherTools = {
@@ -34,10 +32,8 @@ export type ResearcherTools = {
   displayOptionList: typeof displayOptionListTool
   displayCallout: typeof displayCalloutTool
   displayTimeline: typeof displayTimelineTool
-  createWebappArtifact: typeof createWebappArtifactTool
-  updateWebappArtifact: typeof updateWebappArtifactTool
-  getArtifactStatus: typeof getArtifactStatusTool
-  restartArtifactPreview: typeof restartArtifactPreviewTool
+  createCanvasArtifact: ReturnType<typeof createCanvasArtifactTool>
+  updateCanvasArtifact: ReturnType<typeof updateCanvasArtifactTool>
 } & ReturnType<typeof createTodoTools>
 
 // Type alias for the researcher agent using ToolLoopAgent
@@ -80,17 +76,11 @@ export type DisplayCalloutToolInvocation = UIToolInvocation<
 export type DisplayTimelineToolInvocation = UIToolInvocation<
   ResearcherTools['displayTimeline']
 >
-export type CreateWebappArtifactToolInvocation = UIToolInvocation<
-  ResearcherTools['createWebappArtifact']
+export type CreateCanvasArtifactToolInvocation = UIToolInvocation<
+  ResearcherTools['createCanvasArtifact']
 >
-export type UpdateWebappArtifactToolInvocation = UIToolInvocation<
-  ResearcherTools['updateWebappArtifact']
->
-export type GetArtifactStatusToolInvocation = UIToolInvocation<
-  ResearcherTools['getArtifactStatus']
->
-export type RestartArtifactPreviewToolInvocation = UIToolInvocation<
-  ResearcherTools['restartArtifactPreview']
+export type UpdateCanvasArtifactToolInvocation = UIToolInvocation<
+  ResearcherTools['updateCanvasArtifact']
 >
 
 // Union type for all tool invocations
@@ -106,10 +96,8 @@ export type ResearcherToolInvocation =
   | DisplayOptionListToolInvocation
   | DisplayCalloutToolInvocation
   | DisplayTimelineToolInvocation
-  | CreateWebappArtifactToolInvocation
-  | UpdateWebappArtifactToolInvocation
-  | GetArtifactStatusToolInvocation
-  | RestartArtifactPreviewToolInvocation
+  | CreateCanvasArtifactToolInvocation
+  | UpdateCanvasArtifactToolInvocation
 
 // Helper type to extract tool names
 export type ResearcherToolName = keyof ResearcherTools

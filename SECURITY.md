@@ -37,6 +37,7 @@ All database tables enforce PostgreSQL Row-Level Security via `current_setting('
 - **chats** -- Users can only read, create, update, and delete their own chats. Chats with `visibility = 'public'` are readable by anyone.
 - **messages** -- Access is granted only when the user owns the parent chat (verified via `EXISTS` subquery).
 - **parts** -- Access is granted only when the user owns the parent chat (verified via join through `messages` to `chats`).
+- **artifacts**, **artifactRevisions**, **artifactRuntimeSessions** -- Access scoped to the owning user via the parent artifact/chat chain.
 - **feedback** -- Anyone can insert feedback; all feedback is readable (no sensitive user data stored).
 
 RLS is enabled on every table (`enableRLS()` in the Drizzle schema at `lib/db/schema.ts`).
@@ -61,6 +62,15 @@ The upload endpoint (`app/api/upload/route.ts`) enforces the following:
 - Guest sessions are ephemeral and are not persisted to the database.
 - Guest users are forced to the `speed` model type and cannot select `quality` models.
 - Guest chat requires `ENABLE_GUEST_CHAT=true`; otherwise, unauthenticated requests receive `401 Unauthorized`.
+
+### Canvas Artifact Isolation
+
+Canvas artifacts are compiled from a locked virtual file set and rendered inside a sandboxed iframe:
+
+- **Source validation** -- only the allowed canvas files (`App.tsx`, `components.tsx`, `styles.css`, `meta.json`) are accepted. Arbitrary npm packages, Node.js APIs, remote script injection, and unsupported files are rejected before compile.
+- **Server-side compile pipeline** -- the server bundles validated source with `esbuild`, generates Tailwind CSS, and persists single-file HTML. User source is compiled, not executed, during this step.
+- **Sandboxed preview** -- rendered HTML is shown through `iframe.srcdoc` with `sandbox="allow-scripts"` and a locked CSP. Runtime diagnostics are posted back through a narrow `postMessage` contract.
+- **Guest canvas tokens** -- HMAC-SHA256 signed guest tokens (`GUEST_CANVAS_SECRET`) scope guest access to a specific `chatId` + `artifactId`. Verification is fail-closed, and successful write operations rotate the token.
 
 ## Out of Scope
 

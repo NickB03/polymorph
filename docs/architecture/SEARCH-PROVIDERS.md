@@ -387,7 +387,7 @@ MY_PROVIDER_API_KEY=...
 SEARCH_API=my-provider
 ```
 
-Update `docs/ENVIRONMENT.md` under "Search provider options" and add a commented entry to `.env.local.example`.
+Update `docs/getting-started/ENVIRONMENT.md` under "Search provider options" and add a commented entry to `.env.local.example`.
 
 ### 4. Test with the agent
 

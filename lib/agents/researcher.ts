@@ -5,11 +5,12 @@ import {
   type UIMessageStreamWriter
 } from 'ai'
 
+import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import type { ResearcherTools } from '@/lib/types/agent'
 import { type ModelType } from '@/lib/types/model-type'
 import { type Model } from '@/lib/types/models'
 
-import { createWebappArtifactTool } from '../tools/create-webapp-artifact'
+import { createCanvasArtifactTool } from '../tools/create-canvas-artifact'
 import { displayCalloutTool } from '../tools/display-callout'
 import { displayChartTool } from '../tools/display-chart'
 import { displayCitationsTool } from '../tools/display-citations'
@@ -19,11 +20,9 @@ import { displayPlanTool } from '../tools/display-plan'
 import { displayTableTool } from '../tools/display-table'
 import { displayTimelineTool } from '../tools/display-timeline'
 import { fetchTool } from '../tools/fetch'
-import { getArtifactStatusTool } from '../tools/get-artifact-status'
-import { restartArtifactPreviewTool } from '../tools/restart-artifact-preview'
 import { createSearchTool } from '../tools/search'
 import { createTodoTools } from '../tools/todo'
-import { updateWebappArtifactTool } from '../tools/update-webapp-artifact'
+import { updateCanvasArtifactTool } from '../tools/update-canvas-artifact'
 import { SearchMode } from '../types/search'
 import { getModel } from '../utils/registry'
 import { isTracingEnabled } from '../utils/telemetry'
@@ -88,7 +87,8 @@ export function createResearcher({
   parentTraceId,
   searchMode = 'research',
   modelType,
-  experimentalContext
+  experimentalContext,
+  canvasToolContext
 }: {
   model: string
   modelConfig?: Model
@@ -97,24 +97,14 @@ export function createResearcher({
   searchMode?: SearchMode
   modelType?: ModelType
   experimentalContext?: unknown
+  canvasToolContext?: CanvasToolContext
 }) {
   try {
     const currentDate = new Date().toLocaleString()
-    const artifactsEnabled = process.env.ENABLE_ARTIFACTS === 'true'
 
     // Create model-specific tools with proper typing
     const originalSearchTool = createSearchTool(model)
     const todoTools = writer ? createTodoTools() : {}
-
-    // Artifact tool names, conditionally included when enabled
-    const artifactToolNames: (keyof ResearcherTools)[] = artifactsEnabled
-      ? [
-          'createWebappArtifact',
-          'updateWebappArtifact',
-          'getArtifactStatus',
-          'restartArtifactPreview'
-        ]
-      : []
 
     let systemPrompt: string
     let activeToolsList: (keyof ResearcherTools)[] = []
@@ -135,8 +125,7 @@ export function createResearcher({
           'displayLinkPreview',
           'displayOptionList',
           'displayCallout',
-          'displayTimeline',
-          ...artifactToolNames
+          'displayTimeline'
         ]
         maxSteps = 20
         searchTool = wrapSearchToolForChatMode(originalSearchTool)
@@ -157,8 +146,7 @@ export function createResearcher({
           'displayLinkPreview',
           'displayOptionList',
           'displayCallout',
-          'displayTimeline',
-          ...artifactToolNames
+          'displayTimeline'
         ]
         // Enable todo tools when writer is available
         if (writer && 'todoWrite' in todoTools) {
@@ -170,6 +158,21 @@ export function createResearcher({
         maxSteps = 50
         searchTool = originalSearchTool
         break
+    }
+
+    // Build canvas tools when context is available
+    const canvasTools = canvasToolContext
+      ? {
+          createCanvasArtifact: createCanvasArtifactTool(canvasToolContext),
+          updateCanvasArtifact: updateCanvasArtifactTool(canvasToolContext)
+        }
+      : {}
+
+    if (canvasToolContext) {
+      activeToolsList.push(
+        'createCanvasArtifact' as keyof ResearcherTools,
+        'updateCanvasArtifact' as keyof ResearcherTools
+      )
     }
 
     // Build tools object with proper typing
@@ -184,13 +187,8 @@ export function createResearcher({
       displayOptionList: displayOptionListTool,
       displayCallout: displayCalloutTool,
       displayTimeline: displayTimelineTool,
-      ...(artifactsEnabled && {
-        createWebappArtifact: createWebappArtifactTool,
-        updateWebappArtifact: updateWebappArtifactTool,
-        getArtifactStatus: getArtifactStatusTool,
-        restartArtifactPreview: restartArtifactPreviewTool
-      }),
-      ...todoTools
+      ...todoTools,
+      ...canvasTools
     } as ResearcherTools
 
     // Create ToolLoopAgent with all configuration

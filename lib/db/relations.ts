@@ -4,6 +4,8 @@ import {
   artifactRevisions,
   artifactRuntimeSessions,
   artifacts,
+  canvasArtifacts,
+  canvasArtifactVersions,
   chats,
   messages,
   parts
@@ -11,6 +13,7 @@ import {
 
 export const chatsRelations = relations(chats, ({ many }) => ({
   artifacts: many(artifacts),
+  canvasArtifacts: many(canvasArtifacts),
   messages: many(messages)
 }))
 
@@ -62,3 +65,24 @@ export const partsRelations = relations(parts, ({ one }) => ({
     references: [messages.id]
   })
 }))
+
+export const canvasArtifactsRelations = relations(
+  canvasArtifacts,
+  ({ one, many }) => ({
+    chat: one(chats, {
+      fields: [canvasArtifacts.chatId],
+      references: [chats.id]
+    }),
+    versions: many(canvasArtifactVersions)
+  })
+)
+
+export const canvasArtifactVersionsRelations = relations(
+  canvasArtifactVersions,
+  ({ one }) => ({
+    artifact: one(canvasArtifacts, {
+      fields: [canvasArtifactVersions.artifactId],
+      references: [canvasArtifacts.id]
+    })
+  })
+)

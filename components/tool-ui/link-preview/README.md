@@ -1,6 +1,6 @@
 # Link Preview
 
-Implementation for the "link-preview" Tool UI surface.
+Renders an Open Graph-style card with optional image, favicon, title, description, and domain. Supports configurable aspect ratio and image fit.
 
 ## Files
 

@@ -34,12 +34,7 @@ export type DynamicToolInput = {
 export type DynamicToolOutput = unknown
 
 // Dynamic tool type for storage
-export type DynamicToolType =
-  | 'artifact'
-  | 'custom'
-  | 'display'
-  | 'dynamic'
-  | 'mcp'
+export type DynamicToolType = 'custom' | 'display' | 'dynamic' | 'mcp'
 
 // Common MCP tool type definition examples
 export type MCPGitHubInput = {

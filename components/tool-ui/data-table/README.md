@@ -1,6 +1,6 @@
 # Data Table
 
-Implementation for the "data-table" Tool UI surface.
+Renders sortable, responsive data tables with eleven cell format types (text, number, currency, percent, date, delta, status, boolean, link, badge, array). Automatically switches between a desktop table view and mobile accordion cards based on container width.
 
 ## Files
 

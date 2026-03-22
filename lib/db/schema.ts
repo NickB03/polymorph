@@ -10,8 +10,11 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   varchar
 } from 'drizzle-orm/pg-core'
+
+import type { CanvasDiagnostics } from '@/lib/types/canvas'
 
 // Constants
 const ID_LENGTH = 191
@@ -400,6 +403,114 @@ export const artifactRuntimeSessions = pgTable(
 
 export type ArtifactRuntimeSession = InferSelectModel<
   typeof artifactRuntimeSessions
+>
+
+// Canvas artifacts table
+export const canvasArtifacts = pgTable(
+  'canvas_artifacts',
+  {
+    id: varchar('id', { length: ID_LENGTH })
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    chatId: varchar('chat_id', { length: ID_LENGTH })
+      .notNull()
+      .references(() => chats.id, { onDelete: 'cascade' }),
+    userId: varchar('user_id', { length: USER_ID_LENGTH }).notNull(),
+    title: text('title').notNull(),
+    status: varchar('status', {
+      length: VARCHAR_LENGTH,
+      enum: ['generating', 'compiling', 'ready', 'compile_failed', 'restoring']
+    })
+      .notNull()
+      .default('compiling'),
+    draftSource: jsonb('draft_source')
+      .$type<Record<string, string>>()
+      .notNull(),
+    draftCompiledHtml: text('draft_compiled_html'),
+    draftDiagnostics: jsonb(
+      'draft_diagnostics'
+    ).$type<CanvasDiagnostics | null>(),
+    draftRevision: integer('draft_revision').notNull().default(0),
+    currentVersionId: varchar('current_version_id', { length: ID_LENGTH }),
+    lastCompiledAt: timestamp('last_compiled_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow()
+  },
+  table => [
+    // Unique: one artifact per chat
+    uniqueIndex('canvas_artifacts_chat_id_idx').on(table.chatId),
+    // Reopen/history lookups
+    index('canvas_artifacts_user_id_updated_at_idx').on(
+      table.userId,
+      table.updatedAt.desc()
+    ),
+
+    // RLS Policies
+    pgPolicy('users_manage_own_canvas_artifacts', {
+      as: 'permissive',
+      for: 'all',
+      to: 'public',
+      using: sql`user_id = current_setting('app.current_user_id', true)`,
+      withCheck: sql`user_id = current_setting('app.current_user_id', true)`
+    })
+  ]
+).enableRLS()
+
+export type CanvasArtifact = InferSelectModel<typeof canvasArtifacts>
+
+// Canvas artifact versions table
+export const canvasArtifactVersions = pgTable(
+  'canvas_artifact_versions',
+  {
+    id: varchar('id', { length: ID_LENGTH })
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    artifactId: varchar('artifact_id', { length: ID_LENGTH })
+      .notNull()
+      .references(() => canvasArtifacts.id, { onDelete: 'cascade' }),
+    versionNumber: integer('version_number').notNull(),
+    sourceSnapshot: jsonb('source_snapshot')
+      .$type<Record<string, string>>()
+      .notNull(),
+    createdBy: varchar('created_by', {
+      length: VARCHAR_LENGTH,
+      enum: ['ai', 'user', 'restore']
+    }).notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow()
+  },
+  table => [
+    // Unique: one version number per artifact
+    uniqueIndex('canvas_artifact_versions_artifact_id_version_number_idx').on(
+      table.artifactId,
+      table.versionNumber
+    ),
+    // Version browsing
+    index('canvas_artifact_versions_artifact_id_created_at_idx').on(
+      table.artifactId,
+      table.createdAt.desc()
+    ),
+
+    // RLS Policies - access through parent artifact ownership
+    pgPolicy('users_manage_own_canvas_artifact_versions', {
+      as: 'permissive',
+      for: 'all',
+      to: 'public',
+      using: sql`EXISTS (
+        SELECT 1 FROM ${canvasArtifacts}
+        WHERE ${canvasArtifacts}.id = artifact_id
+        AND ${canvasArtifacts}.user_id = current_setting('app.current_user_id', true)
+      )`,
+      withCheck: sql`EXISTS (
+        SELECT 1 FROM ${canvasArtifacts}
+        WHERE ${canvasArtifacts}.id = artifact_id
+        AND ${canvasArtifacts}.user_id = current_setting('app.current_user_id', true)
+      )`
+    })
+  ]
+).enableRLS()
+
+export type CanvasArtifactVersion = InferSelectModel<
+  typeof canvasArtifactVersions
 >
 
 // Feedback table

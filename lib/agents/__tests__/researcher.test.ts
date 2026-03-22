@@ -2,6 +2,16 @@ import { ToolLoopAgent } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 
 // Mock all tool imports
+vi.mock('@/lib/tools/create-canvas-artifact', () => ({
+  createCanvasArtifactTool: vi
+    .fn()
+    .mockReturnValue({ name: 'createCanvasArtifact' })
+}))
+vi.mock('@/lib/tools/update-canvas-artifact', () => ({
+  updateCanvasArtifactTool: vi
+    .fn()
+    .mockReturnValue({ name: 'updateCanvasArtifact' })
+}))
 vi.mock('@/lib/tools/display-callout', () => ({
   displayCalloutTool: { name: 'displayCallout' }
 }))
@@ -71,9 +81,23 @@ vi.mock('ai', async importOriginal => {
   }
 })
 
+import type { CanvasToolContext } from '@/lib/canvas/tool-context'
+
 import { createResearcher } from '../researcher'
 
 const MockToolLoopAgent = vi.mocked(ToolLoopAgent)
+
+const mockCanvasToolContext: CanvasToolContext = {
+  chatId: 'chat-1',
+  userId: 'user-1',
+  isGuest: false,
+  emitter: {
+    emitCanvasArtifact: vi.fn(),
+    emitCanvasArtifactStatus: vi.fn(),
+    emitCanvasArtifactEvent: vi.fn(),
+    emitCanvasDiagnostics: vi.fn()
+  }
+}
 
 describe('createResearcher', () => {
   it('creates a researcher agent with default research mode', () => {
@@ -190,5 +214,67 @@ describe('createResearcher', () => {
     expect(() => createResearcher({ model: 'invalid-model' })).toThrow(
       'Invalid model'
     )
+  })
+
+  it('registers canvas tools when canvasToolContext is provided', () => {
+    MockToolLoopAgent.mockClear()
+
+    const agent = createResearcher({
+      model: 'gateway:google/gemini-3-flash',
+      canvasToolContext: mockCanvasToolContext
+    })
+
+    expect(agent).toBeDefined()
+    const config = MockToolLoopAgent.mock.calls[0][0] as any
+    expect(Object.keys(config.tools)).toContain('createCanvasArtifact')
+    expect(Object.keys(config.tools)).toContain('updateCanvasArtifact')
+    expect(config.activeTools).toContain('createCanvasArtifact')
+    expect(config.activeTools).toContain('updateCanvasArtifact')
+  })
+
+  it('does not register canvas tools when canvasToolContext is absent', () => {
+    MockToolLoopAgent.mockClear()
+
+    const agent = createResearcher({
+      model: 'gateway:google/gemini-3-flash'
+    })
+
+    expect(agent).toBeDefined()
+    const config = MockToolLoopAgent.mock.calls[0][0] as any
+    expect(Object.keys(config.tools)).not.toContain('createCanvasArtifact')
+    expect(Object.keys(config.tools)).not.toContain('updateCanvasArtifact')
+    expect(config.activeTools).not.toContain('createCanvasArtifact')
+    expect(config.activeTools).not.toContain('updateCanvasArtifact')
+  })
+
+  it('registers canvas tools in both chat and research modes', () => {
+    for (const searchMode of ['chat', 'research'] as const) {
+      MockToolLoopAgent.mockClear()
+
+      createResearcher({
+        model: 'gateway:google/gemini-3-flash',
+        searchMode,
+        canvasToolContext: mockCanvasToolContext
+      })
+
+      const config = MockToolLoopAgent.mock.calls[0][0] as any
+      expect(config.activeTools).toContain('createCanvasArtifact')
+      expect(config.activeTools).toContain('updateCanvasArtifact')
+    }
+  })
+
+  it('does not include old artifact tools', () => {
+    MockToolLoopAgent.mockClear()
+
+    createResearcher({
+      model: 'gateway:google/gemini-3-flash',
+      canvasToolContext: mockCanvasToolContext
+    })
+
+    const config = MockToolLoopAgent.mock.calls[0][0] as any
+    expect(Object.keys(config.tools)).not.toContain('createWebappArtifact')
+    expect(Object.keys(config.tools)).not.toContain('updateWebappArtifact')
+    expect(Object.keys(config.tools)).not.toContain('getArtifactStatus')
+    expect(Object.keys(config.tools)).not.toContain('restartArtifactPreview')
   })
 })
