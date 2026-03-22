@@ -223,47 +223,44 @@ describe('CanvasWorkspace', () => {
     )
   })
 
-  // ── Read-only state ────────────────────────────────────────────
+  // ── Status badge visibility ────────────────────────────────────
 
-  it('shows read-only indicator when status is generating', () => {
+  it('shows status badge when status is generating', () => {
     const artifact = makeArtifact({ status: 'generating' })
     setCanvasState({ artifact, artifactId: artifact.artifactId })
 
     render(<CanvasWorkspace />)
 
-    expect(screen.getByTestId('canvas-readonly-indicator')).toBeInTheDocument()
-    expect(screen.getByText('Read-only')).toBeInTheDocument()
+    expect(screen.getByTestId('canvas-status-badge')).toBeInTheDocument()
+    expect(screen.getByText('Generating')).toBeInTheDocument()
   })
 
-  it('shows read-only indicator when status is restoring', () => {
+  it('shows status badge when status is restoring', () => {
     const artifact = makeArtifact({ status: 'restoring' })
     setCanvasState({ artifact, artifactId: artifact.artifactId })
 
     render(<CanvasWorkspace />)
 
-    expect(screen.getByTestId('canvas-readonly-indicator')).toBeInTheDocument()
+    expect(screen.getByTestId('canvas-status-badge')).toBeInTheDocument()
   })
 
-  it('does not show read-only indicator when status is ready', () => {
+  it('hides status badge when status is ready', () => {
     const artifact = makeArtifact({ status: 'ready' })
     setCanvasState({ artifact, artifactId: artifact.artifactId })
 
     render(<CanvasWorkspace />)
 
-    expect(
-      screen.queryByTestId('canvas-readonly-indicator')
-    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('canvas-status-badge')).not.toBeInTheDocument()
   })
 
-  it('does not show read-only indicator when status is compile_failed', () => {
+  it('shows status badge when status is compile_failed', () => {
     const artifact = makeArtifact({ status: 'compile_failed' })
     setCanvasState({ artifact, artifactId: artifact.artifactId })
 
     render(<CanvasWorkspace />)
 
-    expect(
-      screen.queryByTestId('canvas-readonly-indicator')
-    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('canvas-status-badge')).toBeInTheDocument()
+    expect(screen.getByText('Error')).toBeInTheDocument()
   })
 
   // ── Desktop pill tab layout ─────────────────────────────────────
@@ -598,44 +595,24 @@ describe('CanvasWorkspace', () => {
 
   // ── Action buttons ─────────────────────────────────────────────
 
-  it('calls saveVersion on save button click', () => {
-    const artifact = makeArtifact({ status: 'ready' })
-    setCanvasState({ artifact, artifactId: artifact.artifactId })
-
-    render(<CanvasWorkspace />)
-
-    fireEvent.click(screen.getByTestId('canvas-save-version'))
-
-    expect(mockCanvasContext.saveVersion).toHaveBeenCalledTimes(1)
-  })
-
-  it('disables save button when status is not ready', () => {
-    const artifact = makeArtifact({ status: 'generating' })
-    setCanvasState({ artifact, artifactId: artifact.artifactId })
-
-    render(<CanvasWorkspace />)
-
-    expect(screen.getByTestId('canvas-save-version')).toBeDisabled()
-  })
-
-  it('calls exportHtml on export button click', () => {
+  it('renders overflow menu button', () => {
     const artifact = makeArtifact()
     setCanvasState({ artifact, artifactId: artifact.artifactId })
 
     render(<CanvasWorkspace />)
 
-    fireEvent.click(screen.getByTestId('canvas-export'))
-
-    expect(mockCanvasContext.exportHtml).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('canvas-more-actions')).toBeInTheDocument()
   })
 
-  it('disables export button when no compiled HTML', () => {
-    const artifact = makeArtifact({ draftCompiledHtml: null })
+  it('renders close button with X icon', () => {
+    const artifact = makeArtifact()
     setCanvasState({ artifact, artifactId: artifact.artifactId })
 
     render(<CanvasWorkspace />)
 
-    expect(screen.getByTestId('canvas-export')).toBeDisabled()
+    const closeBtn = screen.getByTestId('canvas-close')
+    expect(closeBtn).toBeInTheDocument()
+    expect(closeBtn).toHaveAttribute('aria-label', 'Close')
   })
 
   // ── Returns null when no data ──────────────────────────────────
