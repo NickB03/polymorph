@@ -426,7 +426,7 @@ export function CanvasWorkspace() {
                 <button
                   key={tab.id}
                   className={cn(
-                    'flex-1 px-3 py-2 text-sm font-medium transition-colors',
+                    'relative flex-1 px-3 py-2 text-sm font-medium transition-colors',
                     mobileTab === tab.id
                       ? 'border-b-2 border-primary text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
@@ -436,6 +436,14 @@ export function CanvasWorkspace() {
                 >
                   <tab.icon className="inline h-4 w-4 mr-1" />
                   {tab.label}
+                  {tab.id === 'activity' &&
+                    hasUnseenActivity &&
+                    mobileTab !== 'activity' && (
+                      <span
+                        className="absolute top-2 right-3 h-1.5 w-1.5 rounded-full bg-primary"
+                        data-testid="canvas-tab-activity-unseen"
+                      />
+                    )}
                 </button>
               ))}
             </div>

@@ -544,6 +544,45 @@ describe('CanvasWorkspace', () => {
     expect(screen.getByTestId('canvas-tab-activity')).toBeInTheDocument()
   })
 
+  it('shows and clears the unseen activity indicator on mobile', async () => {
+    mockIsMobile = true
+    const artifact = makeArtifact()
+    const { rerender } = render(<CanvasWorkspace />)
+
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+    rerender(<CanvasWorkspace />)
+
+    expect(
+      screen.queryByTestId('canvas-tab-activity-unseen')
+    ).not.toBeInTheDocument()
+
+    mockActivityState.items = [
+      {
+        id: 'search-1',
+        type: 'search',
+        data: {
+          type: 'tool-search',
+          toolCallId: 'search-1',
+          state: 'input-available',
+          input: { query: 'vana' }
+        } as any,
+        state: 'active',
+        timestamp: Date.now()
+      }
+    ]
+    rerender(<CanvasWorkspace />)
+
+    expect(screen.getByTestId('canvas-tab-activity-unseen')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('canvas-tab-activity'))
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('canvas-tab-activity-unseen')
+      ).not.toBeInTheDocument()
+    })
+  })
+
   // ── Close action ───────────────────────────────────────────────
 
   it('calls closeWorkspace on close button click', () => {
