@@ -129,8 +129,21 @@ When tasks are ambiguous, begin with:
 
 ### Quality Standards
 
+- **Make the change, don't describe it.** When you identify a fix or improvement, implement it directly using the available tools. Never explain what needs to change and wait for permission — read the file, propose the edit, and apply it in one pass. The user can always revert.
 - **Fix every warning and error you encounter.** Never dismiss issues as "pre-existing," "unrelated to our changes," or "from a previous session." If you see it, you own it. Either fix it immediately or explicitly flag it to the user as something that needs attention — do not silently pass over it.
 - Before claiming any task is complete, run `bun lint` and `bun typecheck`. If either produces warnings or errors, fix them — all of them, not just the ones your changes introduced.
+
+### Investigation & Verification Standards
+
+**A hypothesis is not a conclusion.** Before declaring a root cause found or a fix correct:
+
+- **Read the actual code.** Don't reason about what a file probably contains — open it. A root cause claim must cite a specific file and line number.
+- **Trace the full path.** For bugs: follow the execution path from symptom → call site → implementation. Don't stop at the first plausible explanation.
+- **Verify, then fix.** Confirm the problem exists where you think it does before writing a fix. If you can write a failing test or log statement that proves the bug, do it.
+- **State your evidence.** When reporting a root cause, include the specific evidence (file:line, actual value, error message). "This is likely because..." is a hypothesis — say so explicitly, then go verify it.
+- **Don't trust your own prior analysis.** If you identified a probable cause in a previous step, re-check it before acting on it. Codebase state may have changed, or the initial read may have been incomplete.
+
+This applies to all debugging, architecture questions, and any claim that something "should work" or "is broken." The bar is: **could you point a skeptical reviewer to the exact evidence?** If not, keep investigating.
 
 ### Formatting (Prettier)
 
