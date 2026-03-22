@@ -20,12 +20,6 @@ import { ActivitySearchItem } from './activity-search-item'
 
 export function ActivityPanel() {
   const { state, close } = useActivity()
-  const bottomRef = useRef<HTMLDivElement>(null)
-
-  // Auto-scroll to bottom when new items arrive
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [state.items.length])
 
   return (
     <TooltipProvider>
@@ -49,27 +43,40 @@ export function ActivityPanel() {
             </TooltipButton>
           </div>
           <Separator className="my-1 bg-border/50" />
-          <div data-vaul-no-drag className="flex-1 overflow-y-auto px-2 py-2">
-            {state.items.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
-                Activity will appear here during research
-              </div>
-            ) : (
-              <div className="flex flex-col gap-0.5">
-                {state.items.map(item => (
-                  <ActivityItemRenderer key={item.id} item={item} />
-                ))}
-                <div ref={bottomRef} />
-              </div>
-            )}
-          </div>
+          <ActivityFeedContent items={state.items} />
         </div>
       </div>
     </TooltipProvider>
   )
 }
 
-function ActivityItemRenderer({ item }: { item: ActivityItem }) {
+export function ActivityFeedContent({ items }: { items: ActivityItem[] }) {
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to bottom when new items arrive
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' })
+  }, [items.length])
+
+  return (
+    <div data-vaul-no-drag className="flex-1 overflow-y-auto px-2 py-2">
+      {items.length === 0 ? (
+        <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+          Activity will appear here during research
+        </div>
+      ) : (
+        <div className="flex flex-col gap-0.5">
+          {items.map(item => (
+            <ActivityItemRenderer key={item.id} item={item} />
+          ))}
+          <div ref={bottomRef} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function ActivityItemRenderer({ item }: { item: ActivityItem }) {
   switch (item.type) {
     case 'search':
       return (

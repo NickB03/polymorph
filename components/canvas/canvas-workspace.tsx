@@ -1,8 +1,16 @@
 'use client'
 
-import { Component, type ErrorInfo, type ReactNode, useState } from 'react'
+import {
+  Component,
+  type ErrorInfo,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState
+} from 'react'
 
 import {
+  Activity,
   AlertCircle,
   Code2,
   Download,
@@ -23,6 +31,9 @@ import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { TooltipButton } from '@/components/ui/tooltip-button'
+
+import { useActivity } from '@/components/activity/activity-context'
+import { ActivityFeedContent } from '@/components/activity/activity-panel'
 
 import { useCanvas } from './canvas-context'
 import { CanvasDiagnosticsPanel } from './canvas-diagnostics-panel'
@@ -58,9 +69,9 @@ function isReadOnly(status: CanvasArtifactStatus): boolean {
 
 // ── Tab types ────────────────────────────────────────────────────────
 
-type ActiveTab = 'preview' | 'code'
+type ActiveTab = 'preview' | 'code' | 'activity'
 type CodeSubTab = 'code' | 'diagnostics' | 'history'
-type MobileTab = 'preview' | 'code' | 'diagnostics' | 'history'
+type MobileTab = 'preview' | 'code' | 'diagnostics' | 'history' | 'activity'
 type CodeSubTabDefinition = {
   id: CodeSubTab
   icon: typeof Code2
@@ -170,10 +181,51 @@ function CodeSubTabContent({ tab }: { tab: CodeSubTab }) {
 
 export function CanvasWorkspace() {
   const canvas = useCanvas()
+  const { state: activityState } = useActivity()
   const isMobile = useIsMobile()
   const [activeTab, setActiveTab] = useState<ActiveTab>('preview')
   const [codeSubTab, setCodeSubTab] = useState<CodeSubTab>('code')
   const [mobileTab, setMobileTab] = useState<MobileTab>('preview')
+  const [hasUnseenActivity, setHasUnseenActivity] = useState(false)
+  const previousItemCountRef = useRef(activityState.items.length)
+  const hasActivity = activityState.items.length > 0
+
+  useEffect(() => {
+    const previousItemCount = previousItemCountRef.current
+
+    if (activityState.items.length > previousItemCount) {
+      const isViewingActivity =
+        (isMobile && mobileTab === 'activity') ||
+        (!isMobile && activeTab === 'activity')
+
+      if (!isViewingActivity) {
+        setHasUnseenActivity(true)
+      }
+    }
+
+    previousItemCountRef.current = activityState.items.length
+  }, [activityState.items.length, activeTab, isMobile, mobileTab])
+
+  useEffect(() => {
+    if (!hasActivity) {
+      previousItemCountRef.current = 0
+      setHasUnseenActivity(false)
+
+      if (activeTab === 'activity') {
+        setActiveTab('preview')
+      }
+
+      if (mobileTab === 'activity') {
+        setMobileTab('preview')
+      }
+    }
+  }, [activeTab, hasActivity, mobileTab])
+
+  useEffect(() => {
+    if (activeTab === 'activity' || mobileTab === 'activity') {
+      setHasUnseenActivity(false)
+    }
+  }, [activeTab, mobileTab])
 
   // Loading state
   if (canvas.isLoading) {
@@ -197,7 +249,7 @@ export function CanvasWorkspace() {
     return null
   }
 
-  const { artifact } = canvas
+  const artifact = canvas.artifact
   const readOnly = isReadOnly(artifact.status)
 
   // ── Pill tab switcher ──────────────────────────────────────────
@@ -233,6 +285,27 @@ export function CanvasWorkspace() {
       >
         <Code2 className="h-3.5 w-3.5" />
       </button>
+      {hasActivity && (
+        <button
+          className={cn(
+            'relative h-6 w-6 rounded-full flex items-center justify-center transition-colors',
+            activeTab === 'activity'
+              ? 'bg-background shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+          onClick={() => setActiveTab('activity')}
+          aria-label="Activity"
+          data-testid="canvas-pill-activity"
+        >
+          <Activity className="h-3.5 w-3.5" />
+          {hasUnseenActivity && activeTab !== 'activity' && (
+            <span
+              className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary"
+              data-testid="canvas-pill-activity-unseen"
+            />
+          )}
+        </button>
+      )}
     </div>
   )
 
@@ -335,6 +408,14 @@ export function CanvasWorkspace() {
       { id: 'history' as MobileTab, icon: History, label: 'History' }
     ]
 
+    if (hasActivity) {
+      mobileTabs.push({
+        id: 'activity',
+        icon: Activity,
+        label: 'Activity'
+      })
+    }
+
     return (
       <TooltipProvider>
         <WorkspaceErrorBoundary onClose={() => canvas.closeWorkspace()}>
@@ -345,7 +426,7 @@ export function CanvasWorkspace() {
                 <button
                   key={tab.id}
                   className={cn(
-                    'flex-1 px-3 py-2 text-sm font-medium transition-colors',
+                    'relative flex-1 px-3 py-2 text-sm font-medium transition-colors',
                     mobileTab === tab.id
                       ? 'border-b-2 border-primary text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
@@ -355,6 +436,14 @@ export function CanvasWorkspace() {
                 >
                   <tab.icon className="inline h-4 w-4 mr-1" />
                   {tab.label}
+                  {tab.id === 'activity' &&
+                    hasUnseenActivity &&
+                    mobileTab !== 'activity' && (
+                      <span
+                        className="absolute top-2 right-3 h-1.5 w-1.5 rounded-full bg-primary"
+                        data-testid="canvas-tab-activity-unseen"
+                      />
+                    )}
                 </button>
               ))}
             </div>
@@ -377,6 +466,11 @@ export function CanvasWorkspace() {
               {mobileTab === 'history' && (
                 <div className="h-full" data-testid="canvas-history-slot">
                   <CanvasVersionHistory />
+                </div>
+              )}
+              {mobileTab === 'activity' && (
+                <div className="h-full" data-testid="canvas-activity-slot">
+                  <ActivityFeedContent items={activityState.items} />
                 </div>
               )}
             </div>
@@ -410,6 +504,11 @@ export function CanvasWorkspace() {
                   <div className="flex-1 min-h-0">
                     <CodeSubTabContent tab={codeSubTab} />
                   </div>
+                </div>
+              )}
+              {activeTab === 'activity' && (
+                <div className="h-full" data-testid="canvas-activity-slot">
+                  <ActivityFeedContent items={activityState.items} />
                 </div>
               )}
             </div>
