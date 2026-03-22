@@ -220,6 +220,69 @@ describe('POST /api/canvas-artifacts/[artifactId]/runtime-diagnostics', () => {
     expect(body.guestCanvasToken).toBe('rotated-token')
   })
 
+  it('rejects expired guest token', async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockVerifyGuestCanvasToken.mockResolvedValue(null)
+
+    const [req, ctx] = makeRequest({
+      draftRevision: 3,
+      diagnostics: [{ severity: 'error', message: 'err' }],
+      guestCanvasToken: 'expired-token'
+    })
+    const response = await POST(req, ctx)
+
+    expect(response.status).toBe(403)
+    expect(mockRecordDiagnostics).not.toHaveBeenCalled()
+  })
+
+  it('rejects guest token when artifactId does not match the route', async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockVerifyGuestCanvasToken.mockResolvedValue({
+      chatId: 'chat-1',
+      artifactId: 'other-artifact',
+      exp: Date.now() + 60000
+    })
+
+    const [req, ctx] = makeRequest(
+      {
+        draftRevision: 3,
+        diagnostics: [{ severity: 'error', message: 'err' }],
+        guestCanvasToken: 'bad-token'
+      },
+      'art-1'
+    )
+    const response = await POST(req, ctx)
+
+    expect(response.status).toBe(403)
+    expect(mockRecordDiagnostics).not.toHaveBeenCalled()
+  })
+
+  it('preserves a successful write when guest token rotation fails', async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockVerifyGuestCanvasToken.mockResolvedValue({
+      chatId: 'chat-1',
+      artifactId: 'art-1',
+      exp: Date.now() + 60000
+    })
+    mockRecordDiagnostics.mockResolvedValue({
+      ok: true,
+      artifact: makeArtifactState()
+    })
+    mockRefreshGuestCanvasToken.mockRejectedValue(new Error('rotate failed'))
+
+    const [req, ctx] = makeRequest({
+      draftRevision: 3,
+      diagnostics: [{ severity: 'error', message: 'err' }],
+      guestCanvasToken: 'original-token'
+    })
+    const response = await POST(req, ctx)
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.artifactId).toBe('art-1')
+    expect(body.guestCanvasToken).toBeUndefined()
+  })
+
   it('enforces rate limit', async () => {
     mockGetCurrentUserId.mockResolvedValue('user-1')
     mockCheckCanvasLimit.mockResolvedValue(

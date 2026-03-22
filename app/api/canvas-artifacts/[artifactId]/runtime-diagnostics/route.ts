@@ -26,6 +26,24 @@ const runtimeDiagnosticsRequestSchema = z.object({
   guestCanvasToken: z.string().min(1).optional()
 })
 
+async function maybeAttachRotatedGuestToken(
+  responseBody: Record<string, unknown>,
+  artifact: { chatId: string },
+  artifactId: string
+) {
+  try {
+    responseBody.guestCanvasToken = await refreshGuestCanvasToken({
+      chatId: artifact.chatId,
+      artifactId
+    })
+  } catch (error) {
+    console.error(
+      'Canvas runtime diagnostics guest token rotation error:',
+      error
+    )
+  }
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ artifactId: string }> }
@@ -93,11 +111,11 @@ export async function POST(
 
     // Rotate guest token on successful write
     if (isGuest && result.artifact) {
-      const newToken = await refreshGuestCanvasToken({
-        chatId: result.artifact.chatId,
+      await maybeAttachRotatedGuestToken(
+        responseBody,
+        result.artifact,
         artifactId
-      })
-      responseBody.guestCanvasToken = newToken
+      )
     }
 
     return Response.json(responseBody)

@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import {
   refreshGuestCanvasToken,
@@ -9,6 +11,27 @@ import { jsonError } from '@/lib/utils/json-error'
 
 export const dynamic = 'force-dynamic'
 
+const restoreRequestSchema = z.object({
+  versionId: z.string().min(1),
+  baseRevision: z.number().int().min(0),
+  guestCanvasToken: z.string().min(1).optional()
+})
+
+async function maybeAttachRotatedGuestToken(
+  responseBody: Record<string, unknown>,
+  artifact: { chatId: string },
+  artifactId: string
+) {
+  try {
+    responseBody.guestCanvasToken = await refreshGuestCanvasToken({
+      chatId: artifact.chatId,
+      artifactId
+    })
+  } catch (error) {
+    console.error('Canvas restore guest token rotation error:', error)
+  }
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ artifactId: string }> }
@@ -16,15 +39,11 @@ export async function POST(
   try {
     const { artifactId } = await params
     const body = await req.json()
-    const { versionId, baseRevision, guestCanvasToken } = body
-
-    if (!versionId || baseRevision === undefined) {
-      return jsonError(
-        'BAD_REQUEST',
-        'versionId and baseRevision are required',
-        400
-      )
+    const parsed = restoreRequestSchema.safeParse(body)
+    if (!parsed.success) {
+      return jsonError('BAD_REQUEST', 'Invalid restore payload', 400)
     }
+    const { versionId, baseRevision, guestCanvasToken } = parsed.data
 
     // Auth: Supabase session or guest token
     const userId = await getCurrentUserId()
@@ -80,11 +99,11 @@ export async function POST(
 
     // Rotate guest token on successful restore
     if (isGuest && result.artifact) {
-      const newToken = await refreshGuestCanvasToken({
-        chatId: result.artifact.chatId,
+      await maybeAttachRotatedGuestToken(
+        responseBody,
+        result.artifact,
         artifactId
-      })
-      responseBody.guestCanvasToken = newToken
+      )
     }
 
     return Response.json(responseBody)

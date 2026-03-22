@@ -147,6 +147,28 @@ describe('POST /api/canvas-artifacts/[artifactId]/versions', () => {
     expect(body.guestCanvasToken).toBe('rotated-token')
   })
 
+  it('preserves a successful version creation when guest token rotation fails', async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockVerifyGuestCanvasToken.mockResolvedValue({
+      chatId: 'chat-1',
+      artifactId: 'art-1',
+      exp: Date.now() + 60000
+    })
+    mockSaveVersion.mockResolvedValue({
+      ok: true,
+      artifact: makeArtifactState()
+    })
+    mockRefreshGuestCanvasToken.mockRejectedValue(new Error('rotate failed'))
+
+    const [req, ctx] = makeRequest({ guestCanvasToken: 'original-token' })
+    const response = await POST(req, ctx)
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.currentVersionId).toBe('ver-1')
+    expect(body.guestCanvasToken).toBeUndefined()
+  })
+
   it('enforces rate limit', async () => {
     mockGetCurrentUserId.mockResolvedValue('user-1')
     mockCheckCanvasLimit.mockResolvedValue(

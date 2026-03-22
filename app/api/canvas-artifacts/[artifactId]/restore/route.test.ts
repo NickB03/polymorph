@@ -122,6 +122,29 @@ describe('POST /api/canvas-artifacts/[artifactId]/restore', () => {
     expect(response.status).toBe(400)
   })
 
+  it('returns 400 when versionId is empty', async () => {
+    mockGetCurrentUserId.mockResolvedValue('user-1')
+
+    const [req, ctx] = makeRequest({ versionId: '', baseRevision: 0 })
+    const response = await POST(req, ctx)
+
+    expect(response.status).toBe(400)
+    expect(mockRestoreVersion).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 when baseRevision is not a non-negative integer', async () => {
+    mockGetCurrentUserId.mockResolvedValue('user-1')
+
+    const [req, ctx] = makeRequest({
+      versionId: 'ver-1',
+      baseRevision: '0'
+    })
+    const response = await POST(req, ctx)
+
+    expect(response.status).toBe(400)
+    expect(mockRestoreVersion).not.toHaveBeenCalled()
+  })
+
   it('returns 409 for stale revision', async () => {
     mockGetCurrentUserId.mockResolvedValue('user-1')
     mockRestoreVersion.mockResolvedValue({
@@ -176,6 +199,32 @@ describe('POST /api/canvas-artifacts/[artifactId]/restore', () => {
     expect(response.status).toBe(200)
     const body = await response.json()
     expect(body.guestCanvasToken).toBe('rotated-token')
+  })
+
+  it('preserves a successful restore when guest token rotation fails', async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockVerifyGuestCanvasToken.mockResolvedValue({
+      chatId: 'chat-1',
+      artifactId: 'art-1',
+      exp: Date.now() + 60000
+    })
+    mockRestoreVersion.mockResolvedValue({
+      ok: true,
+      artifact: makeArtifactState()
+    })
+    mockRefreshGuestCanvasToken.mockRejectedValue(new Error('rotate failed'))
+
+    const [req, ctx] = makeRequest({
+      versionId: 'ver-1',
+      baseRevision: 0,
+      guestCanvasToken: 'original-token'
+    })
+    const response = await POST(req, ctx)
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.artifactId).toBe('art-1')
+    expect(body.guestCanvasToken).toBeUndefined()
   })
 
   it('enforces rate limit', async () => {

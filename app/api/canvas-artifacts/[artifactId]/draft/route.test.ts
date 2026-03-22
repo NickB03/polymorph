@@ -122,6 +122,32 @@ describe('PATCH /api/canvas-artifacts/[artifactId]/draft', () => {
     expect(response.status).toBe(400)
   })
 
+  it('returns 400 when baseRevision is not a non-negative integer', async () => {
+    mockGetCurrentUserId.mockResolvedValue('user-1')
+
+    const [req, ctx] = makeRequest({
+      baseRevision: '0',
+      draftSource: validSource
+    })
+    const response = await PATCH(req, ctx)
+
+    expect(response.status).toBe(400)
+    expect(mockUpdateDraft).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 when draftSource is not a string record', async () => {
+    mockGetCurrentUserId.mockResolvedValue('user-1')
+
+    const [req, ctx] = makeRequest({
+      baseRevision: 0,
+      draftSource: []
+    })
+    const response = await PATCH(req, ctx)
+
+    expect(response.status).toBe(400)
+    expect(mockUpdateDraft).not.toHaveBeenCalled()
+  })
+
   it('returns 409 for stale revision', async () => {
     mockGetCurrentUserId.mockResolvedValue('user-1')
     mockUpdateDraft.mockResolvedValue({
@@ -183,6 +209,32 @@ describe('PATCH /api/canvas-artifacts/[artifactId]/draft', () => {
     expect(response.status).toBe(200)
     const body = await response.json()
     expect(body.guestCanvasToken).toBe('rotated-token')
+  })
+
+  it('preserves a successful write when guest token rotation fails', async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockVerifyGuestCanvasToken.mockResolvedValue({
+      chatId: 'chat-1',
+      artifactId: 'art-1',
+      exp: Date.now() + 60000
+    })
+    mockUpdateDraft.mockResolvedValue({
+      ok: true,
+      artifact: makeArtifactState()
+    })
+    mockRefreshGuestCanvasToken.mockRejectedValue(new Error('rotate failed'))
+
+    const [req, ctx] = makeRequest({
+      baseRevision: 0,
+      draftSource: validSource,
+      guestCanvasToken: 'original-token'
+    })
+    const response = await PATCH(req, ctx)
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.artifactId).toBe('art-1')
+    expect(body.guestCanvasToken).toBeUndefined()
   })
 
   it('enforces rate limit', async () => {
