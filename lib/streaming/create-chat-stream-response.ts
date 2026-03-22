@@ -177,30 +177,34 @@ export async function createChatStreamResponse(
         // Build canvas tool context: load current artifact if one exists.
         // Wrap in try/catch so a DB failure (e.g. missing table, permission
         // denied) degrades gracefully instead of crashing the entire stream.
+        // On failure, leave canvasToolContext undefined so canvas tools are
+        // not registered — avoids misleading the model into the wrong tool flow.
         let canvasToolContext: CanvasToolContext | undefined
-        let canvasArtifact = null
         try {
-          canvasArtifact = await loadCanvasArtifactByChatId(chatId, userId)
+          const canvasArtifact = await loadCanvasArtifactByChatId(
+            chatId,
+            userId
+          )
+          const emitter = createCanvasEmitter(writer)
+          canvasToolContext = {
+            chatId,
+            userId,
+            isGuest: false,
+            emitter,
+            ...(canvasArtifact
+              ? {
+                  currentArtifact: {
+                    artifactId: canvasArtifact.id,
+                    draftRevision: canvasArtifact.draftRevision
+                  }
+                }
+              : {})
+          }
         } catch (err) {
           console.error(
-            '[createChatStreamResponse] Failed to load canvas artifact context:',
+            '[createChatStreamResponse] Failed to load canvas artifact context; canvas tools will not be registered:',
             err
           )
-        }
-        const emitter = createCanvasEmitter(writer)
-        canvasToolContext = {
-          chatId,
-          userId,
-          isGuest: false,
-          emitter,
-          ...(canvasArtifact
-            ? {
-                currentArtifact: {
-                  artifactId: canvasArtifact.id,
-                  draftRevision: canvasArtifact.draftRevision
-                }
-              }
-            : {})
         }
 
         // Get the researcher agent with parent trace ID, search mode, and model type
