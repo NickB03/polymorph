@@ -48,3 +48,31 @@ AGENTS.md
 # Claude Code local/ephemeral files
 .claude/settings.local.json
 skills-lock.json
+
+# Local agent/skill workspace artifacts
+/.agent/
+/.agents/
+/skills/
+/.impeccable.md
+/canvas-activity-tab-plan.md
+/.claude/skills/adapt
+/.claude/skills/animate
+/.claude/skills/arrange
+/.claude/skills/audit
+/.claude/skills/bolder
+/.claude/skills/clarify
+/.claude/skills/colorize
+/.claude/skills/critique
+/.claude/skills/delight
+/.claude/skills/distill
+/.claude/skills/extract
+/.claude/skills/frontend-design
+/.claude/skills/harden
+/.claude/skills/normalize
+/.claude/skills/onboard
+/.claude/skills/optimize
+/.claude/skills/overdrive
+/.claude/skills/polish
+/.claude/skills/quieter
+/.claude/skills/teach-impeccable
+/.claude/skills/typeset
