@@ -1,5 +1,6 @@
 import {
   getContentTypesGuidance,
+  getSearchStrategyGuidance,
   isGeneralSearchProviderAvailable
 } from '@/lib/utils/search-config'
 
@@ -94,6 +95,8 @@ Search tool usage:
 - Rely on the search results' content snippets for your answers
 ${hasGeneralProvider ? '- For video/image content, you can use type="general" with appropriate content_types' : '- Note: Video/image search requires a dedicated general search provider (not available)'}
 
+${getSearchStrategyGuidance()}
+
 Search requirement (MANDATORY):
 - If the user's message contains a URL, start directly with fetch tool - do NOT search first
 - If the user's message is a question or asks for information/advice/comparison/explanation (not casual chit-chat like "hello", "thanks"), you MUST run at least one search before answering
@@ -102,13 +105,6 @@ Search requirement (MANDATORY):
  - For informational questions without URLs, your FIRST action in this turn MUST be the \`search\` tool. Do NOT compose a final answer before completing at least one search
  - Citation integrity: Only cite toolCallIds from searches you actually executed in this turn. Never fabricate or reuse IDs
  - If initial results are insufficient or stale, refine or split the query and search once more (or ask a clarifying question) before answering
-
-Fetch tool usage:
-- **ONLY use fetch tool when a URL is directly provided by the user in their query**
-- Do NOT use fetch to get more details from search results
-- This keeps responses fast and efficient
-- **For PDF URLs (ending in .pdf)**: ALWAYS use \`type: "api"\` - regular type will fail on PDFs
-- **For regular web pages**: Use default \`type: "regular"\` for fast HTML fetching
 
 Citation Format (MANDATORY):
 [number](#toolCallId) - Always use this EXACT format
@@ -321,15 +317,15 @@ APPROACH STRATEGY:
 
    Depth-level behavioral instructions:
    - **Overview**: Targeted searches on the core question, minimal fetching, skip todoWrite, concise output covering key findings only
-   - **Analysis**: Multiple search angles, selective fetching of top sources, todoWrite recommended for 3+ aspects, structured sections with balanced depth
-   - **Report**: Exhaustive searches across all facets, extensive fetching, todoWrite strongly recommended (if available), aggressive use of display tools (tables, timelines, citations), heavy inline citations throughout
+   - **Analysis**: Multiple search angles, selective follow-up fetches only when snippets are insufficient, todoWrite recommended for 3+ aspects, structured sections with balanced depth
+   - **Report**: Exhaustive searches across all facets, selective follow-up fetches only when needed, todoWrite strongly recommended (if available), aggressive use of display tools (tables, timelines, citations), heavy inline citations throughout
 
 2. **When using todoWrite:**
    - Create it as your FIRST action after depth is established - do NOT write plans in text output
    - Scale plan size by depth: Analysis gets 3–5 tasks, Report gets 5–10 tasks
    - Break down into specific, measurable tasks like:
      * "Search for [specific aspect]"
-     * "Fetch detailed content from top 3 sources"
+     * "Fetch a provided URL or PDF when snippets are insufficient"
      * "Compare perspectives from different sources"
      * "Synthesize findings into comprehensive answer"
    - Update task status as you progress (provides transparency)
@@ -337,8 +333,9 @@ APPROACH STRATEGY:
 
 3. **Search and fetch strategy:**
    - Use type="optimized" for research queries (immediate content)
-   - Use type="general" for current events/news (then fetch for content)
-   - Pattern: Search → Identify top sources → Fetch if needed → Synthesize
+   - Use type="general" for current events/news
+   - Treat search snippets as the primary evidence path and fetch only when the user provided a URL, the source is a PDF, or snippets are clearly insufficient
+   - Prefer regular fetch for normal web pages; use api only for PDFs or extractor-specific needs
    - Scale search breadth by depth: Overview uses 1-2 focused searches, Analysis uses 3-5 searches from different angles, Report uses 5+ searches aiming for exhaustive coverage
 
 Mandatory search for questions:
@@ -417,13 +414,7 @@ Search tool usage - UNDERSTAND THE DIFFERENCE:
 
 ${getContentTypesGuidance()}
 
-Fetch tool usage:
-- Use when you need deeper content analysis beyond search snippets
-- Fetch the top 2-3 most relevant/recent URLs for comprehensive coverage
-- Especially important for news, current events, and time-sensitive information
-- **For PDF URLs (ending in .pdf)**: ALWAYS use \`type: "api"\` - regular type will fail on PDFs
-- **For complex JavaScript-rendered pages**: Use \`type: "api"\` for better extraction
-- **For regular web pages**: Use default \`type: "regular"\` for fast HTML fetching
+${getSearchStrategyGuidance()}
 
 Citation Format:
 [number](#toolCallId) - Always use this EXACT format, e.g., [1](#toolu_abc123), [2](#toolu_def456)

@@ -4,6 +4,7 @@ import {
   getContentTypesGuidance,
   getGeneralSearchProviderName,
   getGeneralSearchProviderType,
+  getSearchStrategyGuidance,
   getSearchToolDescription,
   getSearchTypeDescription,
   isGeneralSearchProviderAvailable,
@@ -96,12 +97,24 @@ describe('search-config', () => {
       expect(guidance).toContain('Brave Search')
       expect(guidance).toContain('video')
       expect(guidance).toContain('image')
+      expect(guidance).toContain('fetch only when the result is a PDF')
     })
 
     it('notes no multimedia support when unavailable', () => {
       delete process.env.BRAVE_SEARCH_API_KEY
       const guidance = getContentTypesGuidance()
       expect(guidance).toContain('not supported')
+    })
+  })
+
+  describe('getSearchStrategyGuidance', () => {
+    it('keeps search as the primary evidence path', () => {
+      process.env.BRAVE_SEARCH_API_KEY = 'test-key'
+      const guidance = getSearchStrategyGuidance()
+
+      expect(guidance).toContain('primary evidence path')
+      expect(guidance).toContain('Fetch only when the user provided a URL')
+      expect(guidance).toContain('Prefer regular fetch for normal web pages')
     })
   })
 

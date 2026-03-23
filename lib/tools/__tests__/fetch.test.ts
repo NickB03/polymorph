@@ -14,6 +14,7 @@ vi.mock('@/lib/schema/fetch', () => ({
 
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
+const originalEnv = { ...process.env }
 
 // Must import after mocks
 const { fetchTool } = await import('../fetch')
@@ -204,6 +205,13 @@ describe('fetchTool - regular mode', () => {
 describe('fetchTool - API mode', () => {
   beforeEach(() => {
     mockFetch.mockReset()
+    process.env = { ...originalEnv }
+    delete process.env.JINA_API_KEY
+    delete process.env.TAVILY_API_KEY
+  })
+
+  afterEach(() => {
+    process.env = { ...originalEnv }
   })
 
   it('uses Jina Reader when JINA_API_KEY is set', async () => {
@@ -262,5 +270,114 @@ describe('fetchTool - API mode', () => {
       'https://api.tavily.com/extract',
       expect.any(Object)
     )
+  })
+
+  it('surfaces Jina Reader provider errors', async () => {
+    process.env.JINA_API_KEY = 'test-jina-key'
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      statusText: 'Too Many Requests',
+      text: () => Promise.resolve('Rate limit exceeded')
+    })
+
+    await expect(
+      collectStreamResults({
+        url: 'https://example.com/article.pdf',
+        type: 'api'
+      })
+    ).rejects.toThrow('Jina Reader error 429')
+  })
+
+  it('surfaces Tavily extract quota errors', async () => {
+    process.env.TAVILY_API_KEY = 'test-tavily-key'
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 432,
+      statusText: 'Request Failed',
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            detail: { error: 'Plan usage limit exceeded' }
+          })
+        )
+    })
+
+    await expect(
+      collectStreamResults({
+        url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11494604.pdf',
+        type: 'api'
+      })
+    ).rejects.toThrow('Tavily extract error 432')
+  })
+
+  it('throws when Tavily extract returns empty results', async () => {
+    process.env.TAVILY_API_KEY = 'test-tavily-key'
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          results: []
+        })
+    })
+
+    await expect(
+      collectStreamResults({
+        url: 'https://example.com/article.pdf',
+        type: 'api'
+      })
+    ).rejects.toThrow('No results returned from content extraction service')
+  })
+
+  it('falls back to regular fetch for recoverable HTML extractor failures', async () => {
+    process.env.TAVILY_API_KEY = 'test-tavily-key'
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 432,
+        statusText: 'Request Failed',
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              detail: { error: 'Plan usage limit exceeded' }
+            })
+          )
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'text/html' }),
+        text: () =>
+          Promise.resolve(
+            '<html><title>Recovered Page</title><body>Recovered content</body></html>'
+          )
+      })
+
+    const results = await collectStreamResults({
+      url: 'https://example.com/article',
+      type: 'api'
+    })
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(results[1].results[0].title).toBe('Recovered Page')
+    expect(results[1].results[0].content).toContain('Recovered content')
+  })
+
+  it('does not fall back to regular fetch for PDF URLs', async () => {
+    process.env.TAVILY_API_KEY = 'test-tavily-key'
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      statusText: 'Too Many Requests',
+      text: () => Promise.resolve('Rate limit exceeded')
+    })
+
+    await expect(
+      collectStreamResults({
+        url: 'https://example.com/report.pdf',
+        type: 'api'
+      })
+    ).rejects.toThrow('Tavily extract error 429')
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 })

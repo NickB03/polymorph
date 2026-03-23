@@ -73,7 +73,7 @@ export function getContentTypesGuidance(): string {
     - Videos: content_types: ['video'] or ['web', 'video']
     - Images: content_types: ['image'] or ['web', 'image']
     - When you need the LATEST information where recency matters
-  - Pattern: type="general" search → identify sources → fetch for content`
+  - Search snippets stay primary; fetch only when the result is a PDF, a URL was provided, or snippets are clearly insufficient`
   } else {
     return `- **type="general" and type="optimized":**
   - Both use the primary AI-focused provider (Tavily/Exa/SearXNG)
@@ -89,20 +89,21 @@ export function getContentTypesGuidance(): string {
  */
 export function getSearchStrategyGuidance(): string {
   const hasGeneralProvider = isGeneralSearchProviderAvailable()
-  const supportsMultimedia = supportsMultimediaContentTypes()
 
-  if (hasGeneralProvider && supportsMultimedia) {
+  if (hasGeneralProvider) {
     return `Search strategy:
+- Use search as the primary evidence path and answer from snippets/citations when sufficient
 - Use type="optimized" for most research queries (provides content snippets)
-- Use type="general" for time-sensitive info, videos, or images (requires fetch)
-- ALWAYS follow type="general" searches with fetch tool for content
-- For comprehensive research: multiple searches + selective fetching`
+- Use type="general" for time-sensitive info, videos, or images
+- Fetch only when the user provided a URL, the source is a PDF, or the snippets are clearly insufficient
+- Prefer regular fetch for normal web pages; use api only for PDFs or extractor-specific needs`
   } else {
     return `Search strategy:
+- Use search as the primary evidence path and answer from snippets/citations when sufficient
 - Use type="optimized" for all queries (provides content snippets from primary provider)
 - type="general" will behave the same as "optimized" (dedicated general search provider not available)
-- Fetch tool can be used optionally for deeper content analysis
-- For comprehensive research: multiple searches + selective fetching`
+- Fetch only when the user provided a URL, the source is a PDF, or the snippets are clearly insufficient
+- Prefer regular fetch for normal web pages; use api only for PDFs or extractor-specific needs`
   }
 }
 

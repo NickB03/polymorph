@@ -105,7 +105,9 @@ export function FetchSection({
         ) : displayStatus === 'error' ? (
           <>
             <AlertCircle size={16} className="text-destructive" />
-            <span>{error}</span>
+            <span className="max-w-64 truncate" title={error}>
+              {error}
+            </span>
           </>
         ) : isToolLoading ? (
           <span className="animate-pulse">Retrieving...</span>

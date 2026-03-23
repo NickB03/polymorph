@@ -11,7 +11,7 @@ This document defines the environment-variable matrix for Polymorph.
 | -------------------- | -------- | ------------------------------------------------- |
 | `DATABASE_URL`       | Yes      | PostgreSQL connection string for Drizzle/Supabase |
 | `AI_GATEWAY_API_KEY` | Yes      | Vercel AI Gateway provider key                    |
-| `TAVILY_API_KEY`     | Yes      | Primary search provider key                       |
+| `TAVILY_API_KEY`     | Optional | Secondary search / extract provider key           |
 
 ## Core behavior controls
 
@@ -43,10 +43,15 @@ Required when `ENABLE_AUTH=true`:
 
 ## Search provider options
 
-- `BRAVE_SEARCH_API_KEY` (multimedia/general search)
-- `SEARCH_API` (`tavily`, `exa`, `searxng`, `firecrawl`, `brave`)
-- `EXA_API_KEY` / `FIRECRAWL_API_KEY` (if selected)
+- `BRAVE_SEARCH_API_KEY` (primary search provider; preferred for general web research and multimedia results)
+- `TAVILY_API_KEY` (secondary search provider and optional extract fallback for `fetch type="api"`)
+- `EXA_API_KEY` (tertiary text-search fallback when Brave and Tavily fail)
+- `JINA_API_KEY` (optional extract provider for `fetch type="api"`, not required for the default setup)
+- `SEARCH_API` (`brave`, `tavily`, `exa`, `searxng`, `firecrawl`)
+- `FIRECRAWL_API_KEY` (if selected explicitly)
 - `SEARXNG_API_URL` (required when `SEARCH_API=searxng`)
+
+`fetch type="api"` is reserved for PDFs and explicit extraction needs on hard-to-parse pages. Normal HTML article pages should generally be handled by search results or `fetch type="regular"`, which keeps research resilient even when an extractor is rate-limited or quota-limited.
 
 ## AI provider options (Direct)
 
@@ -67,6 +72,12 @@ Required when `ENABLE_AUTH=true`:
 - Guest mode: `ENABLE_GUEST_CHAT` (recommended), `GUEST_CHAT_DAILY_LIMIT`
 - Tracing/observability: `ENABLE_LANGFUSE_TRACING`, `LANGFUSE_*`
 - Performance diagnostics: `ENABLE_PERF_LOGGING`
+
+### Troubleshooting research fetches
+
+- If an extractor is rate-limited or over quota, the UI now surfaces the provider message instead of a generic failure.
+- Typical symptoms include `Tavily extract error 432` or `Jina Reader error 429` in the fetch section and activity list.
+- Search-based research should still complete because Brave, Tavily, and Exa are used before extraction and normal article pages can fall back to regular HTML fetching.
 
 ## Local setup workflow
 

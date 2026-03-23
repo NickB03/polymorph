@@ -6,6 +6,85 @@ import { SearchResults as SearchResultsType } from '@/lib/types'
 const CONTENT_CHARACTER_LIMIT = 50000
 const TITLE_CHARACTER_LIMIT = 100
 
+function isPdfUrl(url: string): boolean {
+  try {
+    return new URL(url).pathname.toLowerCase().endsWith('.pdf')
+  } catch {
+    return url.toLowerCase().includes('.pdf')
+  }
+}
+
+function extractProviderMessage(body: string): string {
+  const trimmedBody = body.trim()
+  if (!trimmedBody) {
+    return 'Unknown provider error'
+  }
+
+  try {
+    const parsedBody = JSON.parse(trimmedBody)
+    const nestedMessage = findNestedProviderMessage(parsedBody)
+    if (nestedMessage) {
+      return nestedMessage
+    }
+  } catch {
+    // Ignore JSON parsing failures and fall back to the raw body text.
+  }
+
+  return trimmedBody
+}
+
+function findNestedProviderMessage(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const trimmedValue = value.trim()
+    return trimmedValue.length > 0 ? trimmedValue : null
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const nestedMessage = findNestedProviderMessage(item)
+      if (nestedMessage) {
+        return nestedMessage
+      }
+    }
+    return null
+  }
+
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const record = value as Record<string, unknown>
+  for (const key of ['error', 'message', 'detail', 'title']) {
+    const nestedMessage = findNestedProviderMessage(record[key])
+    if (nestedMessage) {
+      return nestedMessage
+    }
+  }
+
+  for (const nestedValue of Object.values(record)) {
+    const nestedMessage = findNestedProviderMessage(nestedValue)
+    if (nestedMessage) {
+      return nestedMessage
+    }
+  }
+
+  return null
+}
+
+function isRecoverableHtmlExtractFailure(url: string, error: unknown): boolean {
+  if (isPdfUrl(url) || !(error instanceof Error)) {
+    return false
+  }
+
+  const message = error.message.toLowerCase()
+  return (
+    message.includes('tavily extract') ||
+    message.includes('jina reader') ||
+    message.includes('content extraction service') ||
+    message.includes('no data returned from jina reader api')
+  )
+}
+
 async function fetchRegularData(
   url: string,
   abortSignal?: AbortSignal
@@ -106,6 +185,13 @@ async function fetchJinaReaderData(
       },
       signal: abortSignal
     })
+    if (!response.ok) {
+      const body = await response.text().catch(() => '')
+      throw new Error(
+        `Jina Reader error ${response.status}: ${extractProviderMessage(body)}`
+      )
+    }
+
     const json = await response.json()
     if (!json.data || !json.data.content) {
       throw new Error('No data returned from Jina Reader API')
@@ -126,7 +212,10 @@ async function fetchJinaReaderData(
     }
   } catch (error) {
     console.error('API Error:', error)
-    throw error instanceof Error ? error : new Error('Jina Reader API failed')
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Jina Reader API failed')
   }
 }
 
@@ -144,6 +233,13 @@ async function fetchTavilyExtractData(
       body: JSON.stringify({ api_key: apiKey, urls: [url] }),
       signal: abortSignal
     })
+    if (!response.ok) {
+      const body = await response.text().catch(() => '')
+      throw new Error(
+        `Tavily extract error ${response.status}: ${extractProviderMessage(body)}`
+      )
+    }
+
     const json = await response.json()
     if (!json.results || json.results.length === 0) {
       throw new Error('No results returned from content extraction service')
@@ -165,9 +261,10 @@ async function fetchTavilyExtractData(
     }
   } catch (error) {
     console.error('API Error:', error)
-    throw error instanceof Error
-      ? error
-      : new Error('Content extraction service failed')
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Content extraction service failed')
   }
 }
 
@@ -192,10 +289,18 @@ export const fetchTool = tool({
     } else {
       // Use API-based extraction (Jina or Tavily)
       const useJina = process.env.JINA_API_KEY
-      if (useJina) {
-        results = await fetchJinaReaderData(url, context?.abortSignal)
-      } else {
-        results = await fetchTavilyExtractData(url, context?.abortSignal)
+      try {
+        if (useJina) {
+          results = await fetchJinaReaderData(url, context?.abortSignal)
+        } else {
+          results = await fetchTavilyExtractData(url, context?.abortSignal)
+        }
+      } catch (error) {
+        if (isRecoverableHtmlExtractFailure(url, error)) {
+          results = await fetchRegularData(url, context?.abortSignal)
+        } else {
+          throw error
+        }
       }
     }
 
