@@ -113,7 +113,7 @@ export function useVoiceConversation({
     voiceActiveRef.current = true
     setIsVoiceActive(true)
     setVoiceState('listening')
-    startListening()
+    void startListening()
   }, [isSupported, startListening])
 
   const stopVoice = useCallback(() => {
@@ -222,7 +222,7 @@ export function useVoiceConversation({
       playbackState === 'idle'
     ) {
       setVoiceState('listening')
-      startListening()
+      void startListening()
     }
   }, [playbackState, voiceState, startListening])
 

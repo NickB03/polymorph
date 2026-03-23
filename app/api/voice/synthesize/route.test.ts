@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/auth/get-current-user', () => ({
   getCurrentUserId: vi.fn().mockResolvedValue('user-123')
@@ -39,9 +39,20 @@ function createRequest(body: unknown): Request {
 }
 
 describe('POST /api/voice/synthesize', () => {
+  const originalOpenAiApiKey = process.env.OPENAI_API_KEY
+
   beforeEach(() => {
     vi.clearAllMocks()
     process.env.OPENAI_API_KEY = 'test-openai-key'
+  })
+
+  afterEach(() => {
+    if (originalOpenAiApiKey === undefined) {
+      delete process.env.OPENAI_API_KEY
+      return
+    }
+
+    process.env.OPENAI_API_KEY = originalOpenAiApiKey
   })
 
   it('labels the fallback provider when ElevenLabs synthesis fails', async () => {
