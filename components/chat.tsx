@@ -32,6 +32,8 @@ import { isVoiceEnabled } from '@/lib/voice/config'
 import { useFileDropzone } from '@/hooks/use-file-dropzone'
 import { useVoiceConversation } from '@/hooks/use-voice-conversation'
 
+import { useSidebar } from '@/components/ui/sidebar'
+
 import { useCanvas } from './canvas/canvas-context'
 import { VoiceOverlay } from './voice/voice-overlay'
 import { loadVoiceConfig } from './voice/voice-settings'
@@ -56,6 +58,7 @@ export function Chat({
 }) {
   const router = useRouter()
   const canvas = useCanvas()
+  const { setOpen: setSidebarOpen } = useSidebar()
 
   // Track the latest guest canvas token from streamed/persisted parts
   const guestCanvasTokenRef = useRef<string | undefined>(undefined)
@@ -300,6 +303,7 @@ export function Chat({
         if (p.type === 'data-canvasArtifact') {
           const artifactData = p.data as CanvasArtifactData | undefined
           if (artifactData?.artifactId) {
+            setSidebarOpen(false)
             if (canvasOpenedRef.current.has(artifactData.artifactId)) {
               // Already opened — just focus (no re-fetch)
               canvas.focusCanvasArtifact(artifactData.artifactId)
@@ -319,19 +323,21 @@ export function Chat({
   // Canvas callbacks for RenderMessage → ChatMessages
   const handleCanvasArtifactClick = useCallback(
     (artifactId: string) => {
+      setSidebarOpen(false)
       canvas.focusCanvasArtifact(artifactId)
     },
-    [canvas]
+    [canvas, setSidebarOpen]
   )
 
   const handleLegacyArtifactClick = useCallback(
     (artifactId: string) => {
+      setSidebarOpen(false)
       canvas.openLegacyCanvasNotice({
         artifactId,
         source: 'chat-history'
       })
     },
-    [canvas]
+    [canvas, setSidebarOpen]
   )
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

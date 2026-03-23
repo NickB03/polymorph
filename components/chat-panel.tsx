@@ -180,7 +180,7 @@ export function ChatPanel({
           inputRef.current?.blur()
         }}
         className={cn(
-          'max-w-full md:max-w-3xl w-full mx-auto relative transition-all duration-500 ease-out'
+          'max-w-full md:max-w-4xl w-full mx-auto relative transition-all duration-500 ease-out'
         )}
       >
         {/* Scroll to bottom button - only shown when showScrollToBottomButton is true */}

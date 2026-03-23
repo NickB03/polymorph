@@ -452,7 +452,7 @@ This guard is intentionally conservative: text parts with substantive content (f
 
 A visual step-by-step guide with status indicators and progress tracking.
 
-**Props:** `id`, `title`, `description`, `todos[]` (each with `id`, `label`, `status`, optional `description`), `maxVisibleTodos`
+**Props:** `id`, `title`, `description`, `todos[]` (each with `id`, `label`, `status`, optional `description`)
 
 **Status types:** `pending` | `in_progress` | `completed` | `cancelled`
 

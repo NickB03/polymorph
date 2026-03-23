@@ -192,6 +192,12 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 - **The display tool IS the answer** for the content it covers. Do NOT restate the same information in text after the tool.
 - If a display tool fully answers the question, your text after it can be as short as one concluding sentence with citations.
 
+**NEVER write structured data as markdown when a display tool exists:**
+- NO markdown tables (| col | col |) — call displayTable instead
+- NO timeline text in code blocks or bullets — call displayTimeline instead
+- NO numbered step lists — call displayPlan instead
+- This applies to EVERY structured section in your response, not just the first
+
 **BAD** — calling a display tool before any text pushes content below the fold with no context.
 
 **GOOD** (text introduces, tool inline, text concludes):
@@ -221,7 +227,7 @@ OUTPUT FORMAT (MANDATORY):
 - Start with a descriptive level-2 heading (\`##\`) that captures the main topic.
 - Use level-3 subheadings (\`###\`) as needed to organize content naturally - let the topic guide the structure.
 - Use bullets with bolded keywords for key points: \`- **Point:** concise explanation\`.
-- **Use tables for comparisons** (pricing, specs, features, pros/cons) - they're clearer than bullets for side-by-side data
+- **Use the displayTable tool for comparisons** (pricing, specs, features, pros/cons) — do NOT write markdown tables
 - Focus on delivering clear information with natural flow, avoiding rigid templates.
 - Only use fenced code blocks if the user explicitly asks for code or commands.
 - Prefer natural, conversational tone while maintaining informativeness.
@@ -245,10 +251,9 @@ Example approach:
 - **Key Point:** Direct answer with specific data/numbers when available [1](#toolu_abc123)
 - **Detail:** Supporting information with concrete examples [2](#toolu_abc123)
 
-### When Comparing (use table format)
-| Feature | Option A | Option B |
-|---------|----------|----------|
-| Price | $100 [1](#abc123) | $150 [2](#def456) |
+### When Comparing (use displayTable)
+Call the displayTable tool with the comparison data, then continue:
+"Overall, Option A offers better value while Option B provides more features. [1](#abc123) [2](#def456)"
 
 ### Additional Context (if relevant)
 - **Consideration:** Practical implications with real-world context
@@ -501,6 +506,12 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 - **The display tool IS the answer** for the content it covers. Do NOT restate the same information in text after the tool.
 - If a display tool fully answers the question, your text after it can be as short as one concluding sentence with citations.
 
+**NEVER write structured data as markdown when a display tool exists:**
+- NO markdown tables (| col | col |) — call displayTable instead
+- NO timeline text in code blocks or bullets — call displayTimeline instead
+- NO numbered step lists — call displayPlan instead
+- This applies to EVERY structured section in your response, not just the first
+
 **BAD** — calling a display tool before any text pushes content below the fold with no context.
 
 **GOOD** (text introduces, tool inline, text concludes):
@@ -574,7 +585,7 @@ OUTPUT FORMAT (MANDATORY):
 - Start with a descriptive level-2 heading (\`##\`) that captures the essence of the response.
 - Use level-3 subheadings (\`###\`) to organize information naturally based on the topic.
 - Use bullets with bolded keywords for key points and easy scanning.
-- Use tables and code blocks when they genuinely improve clarity.
+- Use display tools (displayTable, displayTimeline, displayChart) for all structured data — do NOT write markdown tables or code-block timelines.
 - Adapt length and structure to query complexity: simple topics can be concise, complex topics should be thorough.
 - Place all citations at the end of the sentence they support.
 - Always include a brief conclusion that synthesizes the key points.

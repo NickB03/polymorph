@@ -218,7 +218,7 @@ export function ChatMessages({
     >
       <div
         className={cn(
-          'relative mx-auto w-full max-w-full md:max-w-3xl px-4',
+          'relative mx-auto w-full max-w-full md:max-w-4xl px-4',
           !sidebarOpen && 'md:pl-12'
         )}
       >
