@@ -3,11 +3,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { UIMessage } from '@/lib/types/ai'
 
+import type { ActivityItem } from '@/components/activity/activity-context'
+import type { SerializableLinkPreview } from '@/components/tool-ui/link-preview/schema'
+
 const mockCanvas = {
   isWorkspaceOpen: false
 }
 
-const mockActivityState = {
+let mockLinkPreviewResult: SerializableLinkPreview | null = null
+
+const mockActivityState: {
+  isOpen: boolean
+  isResearchMode: boolean
+  items: ActivityItem[]
+  searchModeLabel: string | null
+} = {
   isOpen: false,
   isResearchMode: false,
   items: [],
@@ -27,8 +37,17 @@ const mockActivity = {
     mockActivityState.isResearchMode = mode
     mockActivityState.searchModeLabel = label ?? null
   }),
-  addItem: vi.fn(),
-  updateItem: vi.fn(),
+  addItem: vi.fn(item => {
+    mockActivityState.items = [
+      ...mockActivityState.items,
+      { ...item, timestamp: Date.now() }
+    ]
+  }),
+  updateItem: vi.fn((id: string, updates: Record<string, unknown>) => {
+    mockActivityState.items = mockActivityState.items.map(item =>
+      item.id === id ? { ...item, ...updates } : item
+    )
+  }),
   reset: vi.fn(() => {
     mockActivityState.isOpen = false
     mockActivityState.isResearchMode = false
@@ -52,7 +71,7 @@ vi.mock('@/components/tool-ui/citation/schema', () => ({
 }))
 
 vi.mock('@/components/tool-ui/link-preview/schema', () => ({
-  safeParseSerializableLinkPreview: () => null
+  safeParseSerializableLinkPreview: () => mockLinkPreviewResult
 }))
 
 function makeAssistantMessage({
@@ -90,6 +109,7 @@ describe('useActivityFeed', () => {
     mockActivityState.isResearchMode = false
     mockActivityState.items = []
     mockActivityState.searchModeLabel = null
+    mockLinkPreviewResult = null
 
     vi.clearAllMocks()
     ;({ useActivityFeed } = await import('./use-activity-feed'))
@@ -190,6 +210,97 @@ describe('useActivityFeed', () => {
 
     await waitFor(() => {
       expect(mockActivity.open).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('does not append duplicate activity when the hook remounts for the same chat', async () => {
+    const messages = [makeAssistantMessage()]
+
+    const firstRender = renderHook(() =>
+      useActivityFeed(messages, undefined, 'chat-1')
+    )
+
+    await waitFor(() => {
+      expect(mockActivity.addItem).toHaveBeenCalledTimes(1)
+      expect(mockActivityState.items).toHaveLength(1)
+    })
+
+    firstRender.unmount()
+
+    renderHook(() => useActivityFeed(messages, undefined, 'chat-1'))
+
+    await waitFor(() => {
+      expect(mockActivityState.items).toHaveLength(1)
+    })
+  })
+
+  it('does not update unchanged activity items on rerender', async () => {
+    const messages = [makeAssistantMessage()]
+
+    const { rerender } = renderHook(
+      ({ nextMessages }) => useActivityFeed(nextMessages, undefined, 'chat-1'),
+      {
+        initialProps: { nextMessages: messages }
+      }
+    )
+
+    await waitFor(() => {
+      expect(mockActivity.addItem).toHaveBeenCalledTimes(1)
+      expect(mockActivityState.items).toHaveLength(1)
+    })
+
+    rerender({ nextMessages: messages })
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(mockActivity.updateItem).not.toHaveBeenCalled()
+  })
+
+  it('keeps different activity item types distinct when they share the same raw id', async () => {
+    mockLinkPreviewResult = {
+      id: 'call_shared',
+      href: 'https://example.com/article',
+      title: 'Example article'
+    }
+
+    const messages = [
+      {
+        id: 'chat-1-assistant',
+        role: 'assistant',
+        metadata: {
+          searchMode: 'research'
+        },
+        parts: [
+          {
+            type: 'tool-search',
+            toolCallId: 'call_shared',
+            input: { query: 'shared id search' },
+            state: 'output-available',
+            output: {
+              state: 'complete',
+              results: []
+            }
+          },
+          {
+            type: 'tool-displayLinkPreview',
+            toolCallId: 'display-call-1',
+            state: 'output-available',
+            output: {
+              id: 'call_shared'
+            }
+          }
+        ]
+      } as UIMessage
+    ]
+
+    renderHook(() => useActivityFeed(messages, undefined, 'chat-1'))
+
+    await waitFor(() => {
+      expect(mockActivityState.items).toHaveLength(2)
+      expect(mockActivityState.items.map(item => item.id)).toEqual([
+        'search:call_shared',
+        'link-preview:call_shared'
+      ])
     })
   })
 })

@@ -44,6 +44,7 @@ export function VoiceOrb({
   audioElement
 }: VoiceOrbProps) {
   const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const isMobileViewport = useMediaQuery('(max-width: 639px)')
 
   // Convert TTS HTMLAudioElement to MediaStream for the visualizer
   const ttsStream = useAudioStream(state === 'speaking' ? audioElement : null)
@@ -77,7 +78,7 @@ export function VoiceOrb({
             ? { duration: 0 }
             : { type: 'spring', stiffness: 300, damping: 25 }
         }
-        className="fixed bottom-24 right-6 z-40 flex flex-col items-center gap-2 max-md:inset-x-4 max-md:right-auto max-md:bottom-20"
+        className="fixed bottom-24 right-6 z-40 flex flex-col items-center gap-2 max-md:inset-x-4 max-md:right-auto max-md:bottom-32"
         role="status"
         aria-label={`Voice mode: ${stateLabels[state]}`}
         aria-live="polite"
@@ -89,7 +90,7 @@ export function VoiceOrb({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
-              className="max-w-xs rounded-xl bg-background/90 px-4 py-2 text-center text-sm text-foreground shadow-lg backdrop-blur-sm"
+              className="max-w-[calc(100vw-3rem)] sm:max-w-xs rounded-xl bg-background/90 px-4 py-2 text-center text-sm text-foreground shadow-lg backdrop-blur-sm"
             >
               {interimTranscript}
             </motion.div>
@@ -113,7 +114,7 @@ export function VoiceOrb({
               <BarVisualizer
                 state={agentStateMap[state]}
                 mediaStream={visualizerStream}
-                barCount={15}
+                barCount={isMobileViewport ? 10 : 15}
                 demo={!visualizerStream}
                 centerAlign
                 minHeight={15}
@@ -132,10 +133,10 @@ export function VoiceOrb({
               variant="ghost"
               size="icon"
               onClick={onStop}
-              className="size-7 rounded-full text-white/50 hover:bg-white/10 hover:text-white"
+              className="size-7 max-md:size-10 rounded-full text-white/50 hover:bg-white/10 hover:text-white"
               aria-label="End voice conversation"
             >
-              <X size={14} />
+              <X className="size-3.5 max-md:size-5" />
             </Button>
           </div>
         </div>

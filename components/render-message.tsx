@@ -126,6 +126,77 @@ function extractToolUIFromText(text: string): Segment[] {
   return segments
 }
 
+function isHiddenInfrastructurePart(part: { type?: string } | undefined) {
+  return (
+    part?.type === 'data-canvasArtifactStatus' || part?.type === 'step-start'
+  )
+}
+
+function mergeSequentialAssistantText(previous: string, next: string) {
+  const previousTrimmed = previous.trim()
+  const nextTrimmed = next.trim()
+
+  if (!previousTrimmed) return next
+  if (!nextTrimmed) return previous
+
+  if (previousTrimmed === nextTrimmed) {
+    return previous.length >= next.length ? previous : next
+  }
+
+  if (previousTrimmed.startsWith(nextTrimmed)) {
+    return previous
+  }
+
+  if (nextTrimmed.startsWith(previousTrimmed)) {
+    return next
+  }
+
+  return `${previous}\n\n${next}`
+}
+
+function normalizeRenderableParts(parts: UIMessage['parts']) {
+  if (!parts) return []
+
+  const normalizedParts: NonNullable<UIMessage['parts']> = []
+
+  for (const part of parts) {
+    if (isHiddenInfrastructurePart(part as { type?: string })) {
+      continue
+    }
+
+    const lastPart = normalizedParts[normalizedParts.length - 1] as
+      | { type?: string; text?: string; state?: string; providerMetadata?: any }
+      | undefined
+
+    if (part.type === 'text' && lastPart?.type === 'text') {
+      normalizedParts[normalizedParts.length - 1] = {
+        ...lastPart,
+        ...part,
+        text: mergeSequentialAssistantText(lastPart.text ?? '', part.text)
+      } as NonNullable<UIMessage['parts']>[number]
+      continue
+    }
+
+    normalizedParts.push(part)
+  }
+
+  return normalizedParts
+}
+
+function getPersistedCanvasArtifactIds(parts: UIMessage['parts']) {
+  const ids = new Set<string>()
+
+  for (const part of parts || []) {
+    if (part.type !== 'data-canvasArtifact') continue
+    const data = (part as { data?: CanvasArtifactData }).data
+    if (data?.artifactId) {
+      ids.add(data.artifactId)
+    }
+  }
+
+  return ids
+}
+
 interface RenderMessageProps {
   message: UIMessage
   messageId: string
@@ -202,7 +273,10 @@ export function RenderMessage({
   // Pre-scan: identify todoWrite parts for the Research Plan component.
   // Single pass collects the first index, latest resolved output, and state flags.
   const todoScan = scanTodoWriteParts(message.parts)
-  const { firstTodoWriteIndex } = todoScan
+  const renderParts = normalizeRenderableParts(message.parts)
+  const persistedCanvasArtifactIds = getPersistedCanvasArtifactIds(
+    message.parts
+  )
 
   // New rendering: interleave text parts with grouped non-text segments
   const elements: React.ReactNode[] = []
@@ -235,6 +309,7 @@ export function RenderMessage({
   // or need to be appended at the very end of the message.
   let actionsShownInline = false
   let lastTextContent = ''
+  let renderedTodoWrite = false
 
   // Render a display tool part into a React element
   const renderDisplayToolElement = (
@@ -360,11 +435,11 @@ export function RenderMessage({
     return null
   }
 
-  message.parts?.forEach((part, index) => {
+  renderParts.forEach((part, index) => {
     if (part.type === 'text') {
       // Suppress intro text preceding a completed research-depth option list.
       // The status line replaces both the question text and the receipt card.
-      const nextPart = message.parts?.[index + 1]
+      const nextPart = renderParts[index + 1]
       if (nextPart?.type === 'tool-displayOptionList') {
         const nextToolPart = nextPart as { state?: string; input?: unknown }
         if (nextToolPart.state === 'output-available') {
@@ -378,7 +453,7 @@ export function RenderMessage({
       // Flush accumulated non-text parts before rendering text
       flushBuffer(`seg-${index}`)
 
-      const remainingParts = message.parts?.slice(index + 1) || []
+      const remainingParts = renderParts.slice(index + 1)
       // Check for any remaining parts that produce visible UI —
       // not just text, but also display tools, canvas artifacts, etc.
       const hasMoreVisibleContent = remainingParts.some(p => {
@@ -420,7 +495,7 @@ export function RenderMessage({
               isOpen={getIsOpen(
                 messageId,
                 part.type,
-                index < (message.parts?.length ?? 0) - 1
+                index < renderParts.length - 1
               )}
               onOpenChange={open => onOpenChange(messageId, open)}
               chatId={chatId}
@@ -456,7 +531,8 @@ export function RenderMessage({
     } else if (part.type === 'tool-todoWrite') {
       // todoWrite parts render as a single Research Plan, not in the buffer.
       // Only the first position renders; subsequent parts are skipped.
-      if (index === firstTodoWriteIndex) {
+      if (!renderedTodoWrite) {
+        renderedTodoWrite = true
         flushBuffer(`seg-${index}`)
         elements.push(
           <ResearchPlan
@@ -522,10 +598,26 @@ export function RenderMessage({
       buffer.push(part)
     } else if (part.type === 'dynamic-tool') {
       flushBuffer(`seg-${index}`)
+      const dynamicToolPart = part as DynamicToolPart
+      if (
+        (dynamicToolPart.toolName === 'createCanvasArtifact' ||
+          dynamicToolPart.toolName === 'updateCanvasArtifact') &&
+        dynamicToolPart.state === 'output-available' &&
+        dynamicToolPart.output &&
+        typeof dynamicToolPart.output === 'object'
+      ) {
+        const output = dynamicToolPart.output as { artifactId?: unknown }
+        if (
+          typeof output.artifactId === 'string' &&
+          persistedCanvasArtifactIds.has(output.artifactId)
+        ) {
+          return
+        }
+      }
       elements.push(
         <DynamicToolDisplay
           key={`${messageId}-dynamic-tool-${index}`}
-          part={part as DynamicToolPart}
+          part={dynamicToolPart}
         />
       )
     }
