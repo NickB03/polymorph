@@ -122,12 +122,79 @@ export interface MultiBandVolumeOptions {
   analyserOptions?: AudioAnalyserOptions
 }
 
-const multibandDefaults: MultiBandVolumeOptions = {
+interface ResolvedMultiBandVolumeOptions {
+  bands: number
+  loPass: number
+  hiPass: number
+  updateInterval: number
+  analyserOptions: AudioAnalyserOptions
+}
+
+const multibandDefaults: ResolvedMultiBandVolumeOptions = {
   bands: 5,
   loPass: 100,
   hiPass: 600,
   updateInterval: 32,
   analyserOptions: { fftSize: 2048 }
+}
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max)
+
+export function resolveMultiBandOptions(
+  options: MultiBandVolumeOptions = {}
+): ResolvedMultiBandVolumeOptions {
+  const { bands, loPass, hiPass, updateInterval, analyserOptions } = options
+
+  return {
+    ...multibandDefaults,
+    ...(bands !== undefined ? { bands } : {}),
+    ...(loPass !== undefined ? { loPass } : {}),
+    ...(hiPass !== undefined ? { hiPass } : {}),
+    ...(updateInterval !== undefined ? { updateInterval } : {}),
+    analyserOptions: {
+      ...multibandDefaults.analyserOptions,
+      ...(analyserOptions?.fftSize !== undefined
+        ? { fftSize: analyserOptions.fftSize }
+        : {}),
+      ...(analyserOptions?.smoothingTimeConstant !== undefined
+        ? { smoothingTimeConstant: analyserOptions.smoothingTimeConstant }
+        : {}),
+      ...(analyserOptions?.minDecibels !== undefined
+        ? { minDecibels: analyserOptions.minDecibels }
+        : {}),
+      ...(analyserOptions?.maxDecibels !== undefined
+        ? { maxDecibels: analyserOptions.maxDecibels }
+        : {})
+    }
+  }
+}
+
+export function resolveFrequencyBinRange({
+  loPass,
+  hiPass,
+  frequencyBinCount,
+  sampleRate
+}: {
+  loPass: number
+  hiPass: number
+  frequencyBinCount: number
+  sampleRate: number
+}) {
+  const nyquist = sampleRate / 2
+  const maxBin = Math.max(0, frequencyBinCount - 1)
+  const loBin = clamp(
+    Math.floor((loPass / nyquist) * frequencyBinCount),
+    0,
+    maxBin
+  )
+  const hiBin = clamp(
+    Math.ceil((hiPass / nyquist) * frequencyBinCount),
+    loBin + 1,
+    frequencyBinCount
+  )
+
+  return { loBin, hiBin }
 }
 
 // Memoized normalization function to avoid recreating on each render
@@ -156,20 +223,27 @@ export function useMultibandVolume(
   const analyserMaxDecibels = analyserOptions?.maxDecibels
 
   const opts = useMemo(
-    () => ({
-      ...multibandDefaults,
-      bands,
-      loPass,
-      hiPass,
-      updateInterval,
-      analyserOptions: {
-        ...multibandDefaults.analyserOptions,
-        fftSize: analyserFftSize,
-        smoothingTimeConstant: analyserSmoothingTimeConstant,
-        minDecibels: analyserMinDecibels,
-        maxDecibels: analyserMaxDecibels
-      }
-    }),
+    () =>
+      resolveMultiBandOptions({
+        bands,
+        loPass,
+        hiPass,
+        updateInterval,
+        analyserOptions: {
+          ...(analyserFftSize !== undefined
+            ? { fftSize: analyserFftSize }
+            : {}),
+          ...(analyserSmoothingTimeConstant !== undefined
+            ? { smoothingTimeConstant: analyserSmoothingTimeConstant }
+            : {}),
+          ...(analyserMinDecibels !== undefined
+            ? { minDecibels: analyserMinDecibels }
+            : {}),
+          ...(analyserMaxDecibels !== undefined
+            ? { maxDecibels: analyserMaxDecibels }
+            : {})
+        }
+      }),
     [
       bands,
       loPass,
@@ -203,10 +277,14 @@ export function useMultibandVolume(
 
     const bufferLength = analyser.frequencyBinCount
     const dataArray = new Float32Array(bufferLength)
-    const sliceStart = opts.loPass!
-    const sliceEnd = opts.hiPass!
-    const sliceLength = sliceEnd - sliceStart
-    const chunkSize = Math.ceil(sliceLength / opts.bands!)
+    const { loBin, hiBin } = resolveFrequencyBinRange({
+      loPass: opts.loPass,
+      hiPass: opts.hiPass,
+      frequencyBinCount: bufferLength,
+      sampleRate: analyser.context.sampleRate
+    })
+    const sliceLength = hiBin - loBin
+    const chunkSize = Math.max(1, Math.ceil(sliceLength / opts.bands))
 
     let lastUpdate = 0
     const updateInterval = opts.updateInterval!
@@ -216,13 +294,13 @@ export function useMultibandVolume(
         analyser.getFloatFrequencyData(dataArray)
 
         // Process directly without creating intermediate arrays
-        const chunks = new Array(opts.bands!)
+        const chunks = new Array(opts.bands)
 
-        for (let i = 0; i < opts.bands!; i++) {
+        for (let i = 0; i < opts.bands; i++) {
           let sum = 0
           let count = 0
-          const startIdx = sliceStart + i * chunkSize
-          const endIdx = Math.min(sliceStart + (i + 1) * chunkSize, sliceEnd)
+          const startIdx = loBin + i * chunkSize
+          const endIdx = Math.min(loBin + (i + 1) * chunkSize, hiBin)
 
           for (let j = startIdx; j < endIdx; j++) {
             sum += normalizeDb(dataArray[j])
@@ -564,22 +642,7 @@ const Bar = React.memo<{
 Bar.displayName = 'Bar'
 
 // Wrap the main component with React.memo for prop comparison optimization
-const BarVisualizer = React.memo(
-  BarVisualizerComponent,
-  (prevProps, nextProps) => {
-    return (
-      prevProps.state === nextProps.state &&
-      prevProps.barCount === nextProps.barCount &&
-      prevProps.mediaStream === nextProps.mediaStream &&
-      prevProps.minHeight === nextProps.minHeight &&
-      prevProps.maxHeight === nextProps.maxHeight &&
-      prevProps.demo === nextProps.demo &&
-      prevProps.centerAlign === nextProps.centerAlign &&
-      prevProps.className === nextProps.className &&
-      JSON.stringify(prevProps.style) === JSON.stringify(nextProps.style)
-    )
-  }
-)
+const BarVisualizer = React.memo(BarVisualizerComponent)
 
 BarVisualizerComponent.displayName = 'BarVisualizerComponent'
 BarVisualizer.displayName = 'BarVisualizer'

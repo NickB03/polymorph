@@ -33,7 +33,7 @@ interface UseVoiceInputReturn {
   isListening: boolean
   transcript: string
   interimTranscript: string
-  startListening: () => void
+  startListening: () => Promise<void>
   stopListening: () => void
   isSupported: boolean
   /** Raw mic MediaStream for audio visualization (null when not listening) */
