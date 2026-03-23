@@ -17,7 +17,7 @@ export interface VoiceConfig {
 
 export const DEFAULT_VOICE_CONFIG: VoiceConfig = {
   ttsProvider: 'elevenlabs',
-  voiceId: '21m00Tcm4TlvDq8ikWAM', // ElevenLabs "Rachel"
+  voiceId: 'DXFkLCBUTmvXpp2QwZjA', // ElevenLabs "Eryn" — AI Assistant
   speechRate: 1.0,
   autoListen: true
 }

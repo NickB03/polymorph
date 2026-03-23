@@ -36,6 +36,8 @@ interface UseVoiceInputReturn {
   startListening: () => void
   stopListening: () => void
   isSupported: boolean
+  /** Raw mic MediaStream for audio visualization (null when not listening) */
+  mediaStream: MediaStream | null
 }
 
 function getSpeechRecognition(): (new () => SpeechRecognitionInstance) | null {
@@ -52,7 +54,10 @@ export function useVoiceInput(
   const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [interimTranscript, setInterimTranscript] = useState('')
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+  const mediaStreamRef = useRef<MediaStream | null>(null)
+  const listeningSessionRef = useRef(0)
   const onTranscriptRef = useRef(onTranscript)
   onTranscriptRef.current = onTranscript
 
@@ -63,13 +68,44 @@ export function useVoiceInput(
     setIsSupported(!!getSpeechRecognition())
   }, [])
 
-  const startListening = useCallback(() => {
+  const stopMediaStream = useCallback(() => {
+    if (!mediaStreamRef.current) {
+      setMediaStream(null)
+      return
+    }
+
+    mediaStreamRef.current.getTracks().forEach(track => track.stop())
+    mediaStreamRef.current = null
+    setMediaStream(null)
+  }, [])
+
+  const startListening = useCallback(async () => {
     const SpeechRecognitionClass = getSpeechRecognition()
     if (!SpeechRecognitionClass) return
+
+    const sessionId = ++listeningSessionRef.current
 
     // Stop any existing recognition
     if (recognitionRef.current) {
       recognitionRef.current.abort()
+      recognitionRef.current = null
+    }
+
+    // Request mic for visualization (SpeechRecognition uses its own internal stream)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (sessionId !== listeningSessionRef.current) {
+        stream.getTracks().forEach(track => track.stop())
+        return
+      }
+
+      mediaStreamRef.current = stream
+      setMediaStream(stream)
+    } catch {
+      if (sessionId !== listeningSessionRef.current) return
+
+      // Visualization won't work, but STT still functions
+      console.warn('getUserMedia unavailable — voice visualization disabled')
     }
 
     const recognition = new SpeechRecognitionClass()
@@ -98,15 +134,27 @@ export function useVoiceInput(
     }
 
     recognition.onerror = (event: any) => {
+      if (sessionId !== listeningSessionRef.current) return
+
       // 'aborted' is expected when we call stop/abort — not a real error
       if (event.error !== 'aborted') {
         console.warn('Speech recognition error:', event.error)
       }
+      recognitionRef.current = null
+      stopMediaStream()
       setIsListening(false)
     }
 
     recognition.onend = () => {
+      if (sessionId !== listeningSessionRef.current) return
+
+      recognitionRef.current = null
+      stopMediaStream()
       setIsListening(false)
+    }
+
+    if (sessionId !== listeningSessionRef.current) {
+      return
     }
 
     recognitionRef.current = recognition
@@ -114,15 +162,18 @@ export function useVoiceInput(
     setIsListening(true)
     setTranscript('')
     setInterimTranscript('')
-  }, [lang])
+  }, [lang, stopMediaStream])
 
   const stopListening = useCallback(() => {
+    listeningSessionRef.current += 1
+
     if (recognitionRef.current) {
       recognitionRef.current.stop()
       recognitionRef.current = null
     }
+    stopMediaStream()
     setIsListening(false)
-  }, [])
+  }, [stopMediaStream])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -131,8 +182,9 @@ export function useVoiceInput(
         recognitionRef.current.abort()
         recognitionRef.current = null
       }
+      stopMediaStream()
     }
-  }, [])
+  }, [stopMediaStream])
 
   return {
     isListening,
@@ -140,6 +192,7 @@ export function useVoiceInput(
     interimTranscript,
     startListening,
     stopListening,
-    isSupported
+    isSupported,
+    mediaStream
   }
 }

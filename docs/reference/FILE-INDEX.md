@@ -207,7 +207,6 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | `components/search-results.tsx`        | Displays search result cards with title, URL, and snippet                      |
 | `components/search-results-image.tsx`  | Image grid for search result images                                            |
 | `components/search-mode-selector.tsx`  | Toggle selector for Chat vs Research search modes                              |
-| `components/model-type-selector.tsx`   | Toggle selector for Speed vs Quality model types                               |
 | `components/fetch-section.tsx`         | Renders fetch tool invocation showing URL being retrieved                      |
 | `components/source-favicons.tsx`       | Row of favicon images for cited sources                                        |
 | `components/video-search-results.tsx`  | Renders video search results with thumbnails                                   |

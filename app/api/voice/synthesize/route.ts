@@ -40,11 +40,22 @@ export async function POST(req: Request) {
     }
 
     let audioStream: ReadableStream<Uint8Array>
+    let servedProvider = provider
 
     if (provider === 'elevenlabs') {
       const voice =
-        voiceId || process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM'
-      audioStream = await synthesizeElevenLabs(truncated, voice)
+        voiceId || process.env.ELEVENLABS_VOICE_ID || 'DXFkLCBUTmvXpp2QwZjA'
+      try {
+        audioStream = await synthesizeElevenLabs(truncated, voice)
+      } catch (elError) {
+        console.warn('ElevenLabs TTS failed, trying OpenAI fallback:', elError)
+        if (process.env.OPENAI_API_KEY) {
+          audioStream = await synthesizeOpenAI(truncated, 'alloy')
+          servedProvider = 'openai'
+        } else {
+          throw elError
+        }
+      }
     } else {
       // OpenAI
       audioStream = await synthesizeOpenAI(truncated, voiceId || 'alloy')
@@ -53,7 +64,8 @@ export async function POST(req: Request) {
     return new Response(audioStream, {
       headers: {
         'Content-Type': 'audio/mpeg',
-        'Cache-Control': 'no-store'
+        'Cache-Control': 'no-store',
+        'x-tts-provider': servedProvider
       }
     })
   } catch (error) {
