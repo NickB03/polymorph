@@ -590,11 +590,12 @@ export function Chat({
 
   // Voice conversation loop (Phase 3) — hook is always called (React rules)
   // but UI is only rendered when NEXT_PUBLIC_ENABLE_VOICE=true
+  const voiceConfigRef = useRef(loadVoiceConfig())
   const voiceConversation = useVoiceConversation({
     sendMessage: msg => sendMessage(msg),
     status,
     messages,
-    config: loadVoiceConfig()
+    config: voiceConfigRef.current
   })
   stopVoiceRef.current = voiceConversation.stopVoice
   const voiceEnabled = isVoiceEnabled()

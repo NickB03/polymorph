@@ -284,7 +284,9 @@ export const useBarAnimator = (
 
   // Memoize sequence generation
   const sequence = useMemo(() => {
-    if (state === 'thinking' || state === 'listening') {
+    if (state === 'thinking') {
+      return generateThinkingSequenceBar(columns)
+    } else if (state === 'listening') {
       return generateListeningSequenceBar(columns)
     } else if (state === 'connecting' || state === 'initializing') {
       return generateConnectingSequenceBar(columns)
@@ -340,6 +342,30 @@ const generateListeningSequenceBar = (columns: number): number[][] => {
   const center = Math.floor(columns / 2)
   const noIndex = -1
   return [[center], [noIndex]]
+}
+
+export const generateThinkingSequenceBar = (columns: number): number[][] => {
+  const center = Math.floor(columns / 2)
+  if (columns <= 1) return [[0]]
+
+  const seq: number[][] = []
+  // Expand outward from center
+  for (let r = 0; r <= center; r++) {
+    const left = center - r
+    const right = center + r
+    if (left === right) {
+      seq.push([center])
+    } else if (right < columns) {
+      seq.push([left, right])
+    } else {
+      seq.push([left, columns - 1])
+    }
+  }
+  // Contract back (skip first and last to avoid duplicates)
+  for (let i = seq.length - 2; i > 0; i--) {
+    seq.push(seq[i])
+  }
+  return seq
 }
 
 export type AgentState =
@@ -402,7 +428,11 @@ const BarVisualizerComponent = React.forwardRef<
     useEffect(() => {
       if (!demo) return
 
-      if (state !== 'speaking' && state !== 'listening') {
+      if (
+        state !== 'speaking' &&
+        state !== 'listening' &&
+        state !== 'thinking'
+      ) {
         const bands = new Array(barCount).fill(0.2)
         fakeVolumeBandsRef.current = bands
         setFakeVolumeBands(bands)
@@ -467,7 +497,7 @@ const BarVisualizerComponent = React.forwardRef<
       state === 'connecting'
         ? 2000 / barCount
         : state === 'thinking'
-          ? 150
+          ? 120
           : state === 'listening'
             ? 500
             : 1000
