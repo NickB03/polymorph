@@ -509,7 +509,7 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 **NEVER write structured data as markdown when a display tool exists:**
 - NO markdown tables (| col | col |) — call displayTable instead
 - NO timeline text in code blocks or bullets — call displayTimeline instead
-- NO numbered step lists — call displayPlan instead
+- Numbered step lists are allowed in research mode when they improve clarity
 - This applies to EVERY structured section in your response, not just the first
 
 **BAD** — calling a display tool before any text pushes content below the fold with no context.

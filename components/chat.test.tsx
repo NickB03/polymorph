@@ -9,6 +9,12 @@ import { buildChatRequestBody, getLatestGuestCanvasToken } from './chat-request'
 
 const mockUseChat = vi.fn()
 const mockChatMessages = vi.fn((_props?: unknown) => null)
+const mockSidebar = {
+  setOpen: vi.fn(),
+  setOpenMobile: vi.fn(),
+  open: false,
+  isMobile: false
+}
 const mockCanvasContext = {
   artifactId: null,
   artifact: null,
@@ -49,6 +55,13 @@ function resetCanvasContext() {
   mockCanvasContext.saveVersion = vi.fn()
   mockCanvasContext.restoreVersion = vi.fn()
   mockCanvasContext.exportHtml = vi.fn()
+}
+
+function resetSidebarContext() {
+  mockSidebar.setOpen = vi.fn()
+  mockSidebar.setOpenMobile = vi.fn()
+  mockSidebar.open = false
+  mockSidebar.isMobile = false
 }
 
 function makeUseChatReturnValue(messages: UIMessage[] = []) {
@@ -148,10 +161,7 @@ vi.mock('./canvas/canvas-context', async () => {
 
 // Mock the sidebar context required by ChatCanvasShell (used internally by CanvasRoot)
 vi.mock('./ui/sidebar', () => ({
-  useSidebar: () => ({
-    setOpen: vi.fn(),
-    open: false
-  })
+  useSidebar: () => mockSidebar
 }))
 
 // Mock useMediaQuery to avoid window.matchMedia issues in jsdom
@@ -179,6 +189,7 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
 
 beforeEach(() => {
   resetCanvasContext()
+  resetSidebarContext()
   mockUseChat.mockReset()
   mockChatMessages.mockClear()
 })
@@ -368,6 +379,43 @@ describe('buildChatRequestBody with guestCanvasToken', () => {
 })
 
 describe('Canvas workspace handoff from chat stream', () => {
+  it('closes the mobile sidebar sheet when a streamed canvas artifact opens', async () => {
+    resetCanvasContext()
+    resetSidebarContext()
+    mockSidebar.isMobile = true
+
+    mockUseChat.mockReturnValue(
+      makeUseChatReturnValue([
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          parts: [
+            {
+              type: 'data-canvasArtifact',
+              data: {
+                artifactId: 'art-1',
+                chatId: 'chat-1',
+                title: 'Canvas',
+                status: 'ready',
+                draftRevision: 1,
+                currentVersionId: null
+              }
+            }
+          ]
+        }
+      ])
+    )
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat savedMessages={[]} />)
+
+    await waitFor(() => {
+      expect(mockSidebar.setOpenMobile).toHaveBeenCalledWith(false)
+      expect(mockSidebar.setOpen).not.toHaveBeenCalled()
+    })
+  })
+
   it('passes the fresh guest token when opening a streamed canvas artifact', async () => {
     resetCanvasContext()
 
@@ -410,6 +458,7 @@ describe('Canvas workspace handoff from chat stream', () => {
     render(<Chat savedMessages={[]} isGuest />)
 
     await waitFor(() => {
+      expect(mockSidebar.setOpen).not.toHaveBeenCalled()
       expect(mockCanvasContext.setGuestCanvasToken).toHaveBeenCalledWith(
         'guest-token-abc'
       )

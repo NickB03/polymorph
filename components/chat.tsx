@@ -58,7 +58,7 @@ export function Chat({
 }) {
   const router = useRouter()
   const canvas = useCanvas()
-  const { setOpen: setSidebarOpen } = useSidebar()
+  const { isMobile, setOpenMobile } = useSidebar()
 
   // Track the latest guest canvas token from streamed/persisted parts
   const guestCanvasTokenRef = useRef<string | undefined>(undefined)
@@ -140,6 +140,12 @@ export function Chat({
     type: 'general',
     message: ''
   })
+
+  const closeArtifactSidebar = useCallback(() => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }, [isMobile, setOpenMobile])
 
   const {
     messages,
@@ -303,7 +309,7 @@ export function Chat({
         if (p.type === 'data-canvasArtifact') {
           const artifactData = p.data as CanvasArtifactData | undefined
           if (artifactData?.artifactId) {
-            setSidebarOpen(false)
+            closeArtifactSidebar()
             if (canvasOpenedRef.current.has(artifactData.artifactId)) {
               // Already opened — just focus (no re-fetch)
               canvas.focusCanvasArtifact(artifactData.artifactId)
@@ -318,26 +324,26 @@ export function Chat({
         }
       }
     }
-  }, [messages]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [messages, canvas, closeArtifactSidebar]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Canvas callbacks for RenderMessage → ChatMessages
   const handleCanvasArtifactClick = useCallback(
     (artifactId: string) => {
-      setSidebarOpen(false)
+      closeArtifactSidebar()
       canvas.focusCanvasArtifact(artifactId)
     },
-    [canvas, setSidebarOpen]
+    [canvas, closeArtifactSidebar]
   )
 
   const handleLegacyArtifactClick = useCallback(
     (artifactId: string) => {
-      setSidebarOpen(false)
+      closeArtifactSidebar()
       canvas.openLegacyCanvasNotice({
         artifactId,
         source: 'chat-history'
       })
     },
-    [canvas, setSidebarOpen]
+    [canvas, closeArtifactSidebar]
   )
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
