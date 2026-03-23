@@ -21,7 +21,6 @@ import { Button } from './ui/button'
 import { VoiceModeToggle } from './voice/voice-mode-toggle'
 import { ActionButtons } from './action-buttons'
 import { FileUploadButton } from './file-upload-button'
-import { ModelTypeSelector } from './model-type-selector'
 import { PolymorphWordmark } from './polymorph-wordmark'
 import { SearchModeSelector } from './search-mode-selector'
 import { UploadedFileList } from './uploaded-file-list'
@@ -305,7 +304,6 @@ export function ChatPanel({
                   disabled={isLoading}
                 />
               )}
-              <ModelTypeSelector disabled={false} />
               <Button
                 type={isLoading ? 'button' : 'submit'}
                 size={'icon'}
