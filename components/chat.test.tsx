@@ -524,6 +524,25 @@ describe('Canvas workspace handoff from chat stream', () => {
   })
 })
 
+describe('Chat route sync', () => {
+  it('resyncs the internal chatId when the route id prop changes', async () => {
+    mockUseChat.mockImplementation(() => makeUseChatReturnValue())
+
+    const { Chat } = await import('./chat')
+
+    const { rerender } = render(<Chat id="chat-a" savedMessages={[]} />)
+
+    rerender(<Chat id="chat-b" savedMessages={[]} />)
+
+    await waitFor(() => {
+      expect(mockUseChat.mock.calls.at(-1)?.[0]).toMatchObject({ id: 'chat-b' })
+      expect(mockChatMessages.mock.calls.at(-1)?.[0]).toMatchObject({
+        chatId: 'chat-b'
+      })
+    })
+  })
+})
+
 describe('Chat sections', () => {
   it('deduplicates assistant messages with the same id within a section', async () => {
     mockUseChat.mockReturnValue(

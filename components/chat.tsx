@@ -89,6 +89,7 @@ export function Chat({
     syncModelType('speed')
     guestCanvasTokenRef.current = undefined
     canvasOpenedRef.current.clear()
+    canvas.setGuestCanvasToken(null)
     canvas.closeWorkspace()
   }
 
@@ -285,6 +286,26 @@ export function Chat({
     experimental_throttle: 100,
     generateId
   })
+
+  useEffect(() => {
+    if (!providedId || providedId === chatId) return
+
+    stop()
+    stopVoiceRef.current?.()
+    setChatId(providedId)
+    setInput('')
+    setUploadedFiles([])
+    autoSendFiredRef.current.clear()
+    setErrorModal({
+      open: false,
+      type: 'general',
+      message: ''
+    })
+    guestCanvasTokenRef.current = undefined
+    canvasOpenedRef.current.clear()
+    canvas.setGuestCanvasToken(null)
+    canvas.closeWorkspace()
+  }, [canvas, chatId, providedId, stop])
 
   // Track canvas data parts from streaming messages
   useEffect(() => {

@@ -426,21 +426,24 @@ export function CanvasWorkspace() {
                 <button
                   key={tab.id}
                   className={cn(
-                    'relative flex-1 px-3 py-2 text-sm font-medium transition-colors',
+                    'relative flex-1 px-2 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-1',
                     mobileTab === tab.id
                       ? 'border-b-2 border-primary text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
                   )}
                   onClick={() => setMobileTab(tab.id)}
+                  aria-label={tab.label}
                   data-testid={`canvas-tab-${tab.id}`}
                 >
-                  <tab.icon className="inline h-4 w-4 mr-1" />
-                  {tab.label}
+                  <tab.icon className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline text-xs truncate">
+                    {tab.label}
+                  </span>
                   {tab.id === 'activity' &&
                     hasUnseenActivity &&
                     mobileTab !== 'activity' && (
                       <span
-                        className="absolute top-2 right-3 h-1.5 w-1.5 rounded-full bg-primary"
+                        className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary"
                         data-testid="canvas-tab-activity-unseen"
                       />
                     )}

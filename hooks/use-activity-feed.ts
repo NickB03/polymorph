@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react'
 import type { ToolPart, UIMessage, UIMessageMetadata } from '@/lib/types/ai'
 import type { ChatStatus } from '@/lib/utils'
 
+import type { ActivityItem } from '@/components/activity/activity-context'
 import { useActivity } from '@/components/activity/activity-context'
 import { useCanvas } from '@/components/canvas/canvas-context'
 import { safeParseSerializableCitation } from '@/components/tool-ui/citation/schema'
@@ -21,6 +22,21 @@ function getToolPartState(part: ToolPart): 'active' | 'complete' | 'error' {
   }
 }
 
+function getActivityItemId(
+  type: 'search' | 'fetch' | 'link-preview' | 'citation',
+  rawId: string
+) {
+  return `${type}:${rawId}`
+}
+
+function shouldUpdateItem(
+  item: ActivityItem | undefined,
+  nextState: ActivityItem['state'],
+  nextData: ActivityItem['data']
+) {
+  return !item || item.state !== nextState || item.data !== nextData
+}
+
 export function useActivityFeed(
   messages: UIMessage[],
   status: ChatStatus | undefined,
@@ -33,6 +49,8 @@ export function useActivityFeed(
   const hasAutoOpened = useRef(false)
   const pendingAutoOpen = useRef(false)
   const prevChatId = useRef<string | undefined>(chatId)
+  const activityItemsRef = useRef<ActivityItem[]>(state.items)
+  const didChatChange = prevChatId.current !== chatId
 
   // Reset on chatId change
   useEffect(() => {
@@ -44,6 +62,10 @@ export function useActivityFeed(
       reset()
     }
   }, [chatId, reset])
+
+  useEffect(() => {
+    activityItemsRef.current = state.items
+  }, [state.items])
 
   useEffect(() => {
     if (
@@ -79,17 +101,30 @@ export function useActivityFeed(
     if (!lastAssistant.parts) return
 
     let addedNew = false
+    const knownIds = new Set(seenIds.current)
+    if (!didChatChange && seenIds.current.size === 0) {
+      for (const item of activityItemsRef.current) {
+        knownIds.add(item.id)
+      }
+    }
+    const existingItems = new Map(
+      activityItemsRef.current.map(item => [item.id, item])
+    )
 
     for (const part of lastAssistant.parts) {
       if (part.type === 'tool-search') {
         const toolPart = part as ToolPart<'search'>
-        const id = toolPart.toolCallId
+        const id = getActivityItemId('search', toolPart.toolCallId)
         const itemState = getToolPartState(toolPart)
 
-        if (seenIds.current.has(id)) {
-          updateItem(id, { state: itemState, data: toolPart })
+        if (knownIds.has(id)) {
+          seenIds.current.add(id)
+          if (shouldUpdateItem(existingItems.get(id), itemState, toolPart)) {
+            updateItem(id, { state: itemState, data: toolPart })
+          }
         } else {
           seenIds.current.add(id)
+          knownIds.add(id)
           addItem({
             id,
             type: 'search',
@@ -100,13 +135,17 @@ export function useActivityFeed(
         }
       } else if (part.type === 'tool-fetch') {
         const toolPart = part as ToolPart<'fetch'>
-        const id = toolPart.toolCallId
+        const id = getActivityItemId('fetch', toolPart.toolCallId)
         const itemState = getToolPartState(toolPart)
 
-        if (seenIds.current.has(id)) {
-          updateItem(id, { state: itemState, data: toolPart })
+        if (knownIds.has(id)) {
+          seenIds.current.add(id)
+          if (shouldUpdateItem(existingItems.get(id), itemState, toolPart)) {
+            updateItem(id, { state: itemState, data: toolPart })
+          }
         } else {
           seenIds.current.add(id)
+          knownIds.add(id)
           addItem({
             id,
             type: 'fetch',
@@ -121,15 +160,24 @@ export function useActivityFeed(
       ) {
         const toolPart = part as ToolPart
         const parsed = safeParseSerializableLinkPreview(toolPart.output)
-        if (parsed && !seenIds.current.has(parsed.id)) {
-          seenIds.current.add(parsed.id)
-          addItem({
-            id: parsed.id,
-            type: 'link-preview',
-            data: parsed,
-            state: 'complete'
-          })
-          addedNew = true
+        if (parsed) {
+          const id = getActivityItemId('link-preview', parsed.id)
+          if (knownIds.has(id)) {
+            seenIds.current.add(id)
+            if (shouldUpdateItem(existingItems.get(id), 'complete', parsed)) {
+              updateItem(id, { state: 'complete', data: parsed })
+            }
+          } else {
+            seenIds.current.add(id)
+            knownIds.add(id)
+            addItem({
+              id,
+              type: 'link-preview',
+              data: parsed,
+              state: 'complete'
+            })
+            addedNew = true
+          }
         }
       } else if (
         part.type === 'tool-displayCitations' &&
@@ -140,15 +188,26 @@ export function useActivityFeed(
         if (output?.citations && Array.isArray(output.citations)) {
           for (const raw of output.citations) {
             const parsed = safeParseSerializableCitation(raw)
-            if (parsed && !seenIds.current.has(parsed.id)) {
-              seenIds.current.add(parsed.id)
-              addItem({
-                id: parsed.id,
-                type: 'citation',
-                data: parsed,
-                state: 'complete'
-              })
-              addedNew = true
+            if (parsed) {
+              const id = getActivityItemId('citation', parsed.id)
+              if (knownIds.has(id)) {
+                seenIds.current.add(id)
+                if (
+                  shouldUpdateItem(existingItems.get(id), 'complete', parsed)
+                ) {
+                  updateItem(id, { state: 'complete', data: parsed })
+                }
+              } else {
+                seenIds.current.add(id)
+                knownIds.add(id)
+                addItem({
+                  id,
+                  type: 'citation',
+                  data: parsed,
+                  state: 'complete'
+                })
+                addedNew = true
+              }
             }
           }
         }
@@ -167,12 +226,14 @@ export function useActivityFeed(
   }, [
     messages,
     status,
+    didChatChange,
     state.isResearchMode,
     addItem,
     updateItem,
     setResearchMode,
     canvas.isWorkspaceOpen,
-    open
+    open,
+    chatId
   ])
 
   return { isResearchMode: state.isResearchMode }

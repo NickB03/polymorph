@@ -103,7 +103,7 @@ export function MessageActions({
     <div
       aria-hidden={!visible}
       className={cn(
-        'flex items-center gap-0.5 self-end transition-opacity duration-200',
+        'flex flex-wrap items-center gap-0.5 self-end transition-opacity duration-200',
         visible ? 'opacity-100' : 'pointer-events-none opacity-0 invisible',
         className
       )}

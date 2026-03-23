@@ -190,7 +190,7 @@ export function CanvasVersionHistory() {
           <p className="text-xs font-medium text-destructive mb-2">
             Unsaved changes will be lost. Are you sure?
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="destructive"
               size="sm"

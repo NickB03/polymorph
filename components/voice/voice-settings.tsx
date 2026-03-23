@@ -77,7 +77,7 @@ export function VoiceSettings({ config, onUpdate }: VoiceSettingsProps) {
           <Settings2 size={16} />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72" align="end">
+      <PopoverContent className="w-72 max-w-[calc(100vw-2rem)]" align="end">
         <div className="space-y-4">
           <div className="text-sm font-medium">Voice Settings</div>
 
