@@ -40,6 +40,7 @@ export async function POST(req: Request) {
     }
 
     let audioStream: ReadableStream<Uint8Array>
+    let servedProvider = provider
 
     if (provider === 'elevenlabs') {
       const voice =
@@ -50,6 +51,7 @@ export async function POST(req: Request) {
         console.warn('ElevenLabs TTS failed, trying OpenAI fallback:', elError)
         if (process.env.OPENAI_API_KEY) {
           audioStream = await synthesizeOpenAI(truncated, 'alloy')
+          servedProvider = 'openai'
         } else {
           throw elError
         }
@@ -62,7 +64,8 @@ export async function POST(req: Request) {
     return new Response(audioStream, {
       headers: {
         'Content-Type': 'audio/mpeg',
-        'Cache-Control': 'no-store'
+        'Cache-Control': 'no-store',
+        'x-tts-provider': servedProvider
       }
     })
   } catch (error) {

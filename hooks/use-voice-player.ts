@@ -93,6 +93,9 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
           throw new Error(`TTS request failed: ${res.status}`)
         }
 
+        const servedProvider =
+          (res.headers.get('x-tts-provider') as TTSProvider | null) ?? provider
+
         const blob = await res.blob()
         const url = URL.createObjectURL(blob)
         objectUrlRef.current = url
@@ -114,7 +117,7 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
         await audio.play()
 
         // Track usage for ElevenLabs
-        if (provider === 'elevenlabs') {
+        if (servedProvider === 'elevenlabs') {
           addUsage(text.length)
         }
       } catch (err) {
