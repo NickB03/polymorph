@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 
 /**
  * Converts an HTMLAudioElement into a MediaStream for visualization.
@@ -16,7 +16,7 @@ export function useAudioStream(
   const contextRef = useRef<AudioContext | null>(null)
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!audioElement) {
       setStream(null)
       return
