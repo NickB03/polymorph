@@ -9,7 +9,7 @@ import {
   vi
 } from 'vitest'
 
-import { useVoiceInput } from './use-voice-input'
+import { useVoiceInput } from '@/hooks/use-voice-input'
 
 class MockSpeechRecognition {
   continuous = false
