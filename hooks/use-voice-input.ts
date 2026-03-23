@@ -36,6 +36,8 @@ interface UseVoiceInputReturn {
   startListening: () => void
   stopListening: () => void
   isSupported: boolean
+  /** Raw mic MediaStream for audio visualization (null when not listening) */
+  mediaStream: MediaStream | null
 }
 
 function getSpeechRecognition(): (new () => SpeechRecognitionInstance) | null {
@@ -52,7 +54,9 @@ export function useVoiceInput(
   const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [interimTranscript, setInterimTranscript] = useState('')
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+  const mediaStreamRef = useRef<MediaStream | null>(null)
   const onTranscriptRef = useRef(onTranscript)
   onTranscriptRef.current = onTranscript
 
@@ -63,13 +67,23 @@ export function useVoiceInput(
     setIsSupported(!!getSpeechRecognition())
   }, [])
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     const SpeechRecognitionClass = getSpeechRecognition()
     if (!SpeechRecognitionClass) return
 
     // Stop any existing recognition
     if (recognitionRef.current) {
       recognitionRef.current.abort()
+    }
+
+    // Request mic for visualization (SpeechRecognition uses its own internal stream)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaStreamRef.current = stream
+      setMediaStream(stream)
+    } catch {
+      // Visualization won't work, but STT still functions
+      console.warn('getUserMedia unavailable — voice visualization disabled')
     }
 
     const recognition = new SpeechRecognitionClass()
@@ -121,6 +135,9 @@ export function useVoiceInput(
       recognitionRef.current.stop()
       recognitionRef.current = null
     }
+    mediaStreamRef.current?.getTracks().forEach(track => track.stop())
+    mediaStreamRef.current = null
+    setMediaStream(null)
     setIsListening(false)
   }, [])
 
@@ -131,6 +148,8 @@ export function useVoiceInput(
         recognitionRef.current.abort()
         recognitionRef.current = null
       }
+      mediaStreamRef.current?.getTracks().forEach(track => track.stop())
+      mediaStreamRef.current = null
     }
   }, [])
 
@@ -140,6 +159,7 @@ export function useVoiceInput(
     interimTranscript,
     startListening,
     stopListening,
-    isSupported
+    isSupported,
+    mediaStream
   }
 }

@@ -135,8 +135,8 @@ vi.mock('./error-modal', () => ({
   ErrorModal: () => null
 }))
 
-vi.mock('./voice/voice-overlay', () => ({
-  VoiceOverlay: () => null
+vi.mock('./voice/voice-orb', () => ({
+  VoiceOrb: () => null
 }))
 
 vi.mock('./voice/voice-settings', () => ({

@@ -35,7 +35,7 @@ import { useVoiceConversation } from '@/hooks/use-voice-conversation'
 import { useSidebar } from '@/components/ui/sidebar'
 
 import { useCanvas } from './canvas/canvas-context'
-import { VoiceOverlay } from './voice/voice-overlay'
+import { VoiceOrb } from './voice/voice-orb'
 import { loadVoiceConfig } from './voice/voice-settings'
 import { ChatMessages } from './chat-messages'
 import { ChatPanel } from './chat-panel'
@@ -659,10 +659,12 @@ export function Chat({
           : {})}
       />
       {voiceEnabled && voiceConversation.isVoiceActive && (
-        <VoiceOverlay
+        <VoiceOrb
           state={voiceConversation.voiceState}
           onStop={voiceConversation.stopVoice}
           interimTranscript={voiceConversation.interimTranscript}
+          mediaStream={voiceConversation.mediaStream}
+          audioElement={voiceConversation.audioElement}
         />
       )}
       <DragOverlay visible={dragHandlers.isDragging} />

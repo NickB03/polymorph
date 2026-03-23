@@ -18,7 +18,6 @@ import { isVoiceEnabled } from '@/lib/voice/config'
 import { useTrendingSuggestions } from '@/hooks/use-trending-suggestions'
 
 import { Button } from './ui/button'
-import { VoiceIndicator } from './voice/voice-indicator'
 import { VoiceModeToggle } from './voice/voice-mode-toggle'
 import { ActionButtons } from './action-buttons'
 import { FileUploadButton } from './file-upload-button'
@@ -298,9 +297,6 @@ export function ChatPanel({
               <SearchModeSelector />
             </div>
             <div className="flex items-center gap-2">
-              {voiceEnabled && voiceState && voiceState !== 'idle' && (
-                <VoiceIndicator state={voiceState} />
-              )}
               {voiceEnabled && onStartVoice && onStopVoice && (
                 <VoiceModeToggle
                   isActive={isVoiceActive}

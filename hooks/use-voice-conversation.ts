@@ -30,6 +30,10 @@ interface UseVoiceConversationReturn {
   config: VoiceConfig
   updateConfig: (updates: Partial<VoiceConfig>) => void
   interimTranscript: string
+  /** Raw mic MediaStream for visualization */
+  mediaStream: MediaStream | null
+  /** TTS HTMLAudioElement for visualization */
+  audioElement: HTMLAudioElement | null
 }
 
 /**
@@ -67,7 +71,13 @@ export function useVoiceConversation({
     return config.ttsProvider
   }, [config.ttsProvider])
 
-  const { play, stop: stopAudio, isPlaying, playbackState } = useVoicePlayer()
+  const {
+    play,
+    stop: stopAudio,
+    isPlaying,
+    playbackState,
+    audioElement
+  } = useVoicePlayer()
 
   const onTranscript = useCallback(
     (transcript: string) => {
@@ -90,7 +100,8 @@ export function useVoiceConversation({
     startListening,
     stopListening,
     isSupported,
-    interimTranscript
+    interimTranscript,
+    mediaStream
   } = useVoiceInput({ onTranscript })
 
   // Keep ref in sync so onTranscript can call it without circular deps
@@ -202,6 +213,8 @@ export function useVoiceConversation({
     stopVoice,
     config,
     updateConfig,
-    interimTranscript: interimTranscript ?? ''
+    interimTranscript: interimTranscript ?? '',
+    mediaStream,
+    audioElement
   }
 }

@@ -13,6 +13,8 @@ interface UseVoicePlayerReturn {
   stop: () => void
   playbackState: PlaybackState
   isPlaying: boolean
+  /** Current HTMLAudioElement for server TTS playback (null for browser TTS) */
+  audioElement: HTMLAudioElement | null
 }
 
 /**
@@ -23,6 +25,9 @@ interface UseVoicePlayerReturn {
  */
 export function useVoicePlayer(): UseVoicePlayerReturn {
   const [playbackState, setPlaybackState] = useState<PlaybackState>('idle')
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
+    null
+  )
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const objectUrlRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -33,6 +38,7 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
       audioRef.current.removeAttribute('src')
       audioRef.current = null
     }
+    setAudioElement(null)
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current)
       objectUrlRef.current = null
@@ -93,6 +99,7 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
 
         const audio = new Audio(url)
         audioRef.current = audio
+        setAudioElement(audio)
 
         audio.onended = () => {
           setPlaybackState('idle')
@@ -148,6 +155,7 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
     play,
     stop,
     playbackState,
-    isPlaying: playbackState === 'playing'
+    isPlaying: playbackState === 'playing',
+    audioElement
   }
 }
