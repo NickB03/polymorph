@@ -3,13 +3,9 @@
 import * as React from 'react'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 
-import { Check, ChevronRight, Loader2, MoreHorizontal, X } from 'lucide-react'
+import { Check, ChevronRight, Loader2, X } from 'lucide-react'
 
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
   Card,
   CardContent,
   CardDescription,
@@ -22,8 +18,6 @@ import {
 } from './_adapter'
 import { calculatePlanProgress, shouldCelebrateProgress } from './progress'
 import type { PlanProps, PlanTodo, PlanTodoStatus } from './schema'
-
-const INITIAL_VISIBLE_TODO_COUNT = 4
 
 const TodoIcon = memo(function TodoIcon({
   status
@@ -291,7 +285,6 @@ function PlanRoot({
   title,
   description,
   todos,
-  maxVisibleTodos = INITIAL_VISIBLE_TODO_COUNT,
   className,
   compact = false
 }: PlanProps & { compact?: boolean }) {
@@ -300,20 +293,17 @@ function PlanRoot({
   const [isCelebrating, setIsCelebrating] = useState(false)
   const prevProgressRef = useRef(0)
 
-  const { visibleTodos, hiddenTodos, completedCount, allComplete, progress } =
-    useMemo(() => {
-      const completed = todos.filter(t => t.status === 'completed').length
-      return {
-        visibleTodos: todos.slice(0, maxVisibleTodos),
-        hiddenTodos: todos.slice(maxVisibleTodos),
+  const { completedCount, allComplete, progress } = useMemo(() => {
+    const completed = todos.filter(t => t.status === 'completed').length
+    return {
+      completedCount: completed,
+      allComplete: completed === todos.length,
+      progress: calculatePlanProgress({
         completedCount: completed,
-        allComplete: completed === todos.length,
-        progress: calculatePlanProgress({
-          completedCount: completed,
-          totalCount: todos.length
-        })
-      }
-    }, [todos, maxVisibleTodos])
+        totalCount: todos.length
+      })
+    }
+  }, [todos])
 
   useEffect(() => {
     const newIds = new Set<string>()
@@ -353,31 +343,13 @@ function PlanRoot({
 
   const todoList = (
     <ul className={cn('min-w-0 space-y-1', compact ? 'mt-0' : 'mt-4')}>
-      <TodoList todos={visibleTodos} newTodoIds={newTodoIds} />
-
-      {hiddenTodos.length > 0 && (
-        <li className="mt-1">
-          <Accordion type="single" collapsible>
-            <AccordionItem value="more" className="group border-0">
-              <AccordionTrigger className="text-muted-foreground hover:text-primary flex cursor-default items-start justify-start gap-2 py-1 text-sm font-normal [&>svg:last-child]:hidden group-data-[state=open]:hidden">
-                <MoreHorizontal className="text-muted-foreground/70 mt-0.5 size-4 shrink-0" />
-                <span>{hiddenTodos.length} more</span>
-              </AccordionTrigger>
-              <AccordionContent className="pt-2 pb-0">
-                <ul className="-mx-2 space-y-2 px-2">
-                  <TodoList todos={hiddenTodos} newTodoIds={newTodoIds} />
-                </ul>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </li>
-      )}
+      <TodoList todos={todos} newTodoIds={newTodoIds} />
     </ul>
   )
 
   return (
     <Card
-      className={cn('isolate w-full max-w-xl min-w-80 gap-4 py-4', className)}
+      className={cn('isolate w-full max-w-3xl min-w-80 gap-4 py-4', className)}
       data-tool-ui-id={id}
       data-slot="plan"
     >

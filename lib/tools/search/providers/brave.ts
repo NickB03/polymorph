@@ -140,18 +140,14 @@ export class BraveSearchProvider implements SearchProvider {
     maxResults: number,
     results: SearchResults
   ): Promise<void> {
-    try {
-      const data = await this.fetchBraveApi('web', query, maxResults)
-      results.results = (data.web?.results || [])
-        .slice(0, maxResults)
-        .map((result: BraveWebResult) => ({
-          title: result.title || 'No title',
-          description: result.description || 'No description available',
-          url: result.url
-        }))
-    } catch (error) {
-      console.error('Brave web search error:', error)
-    }
+    const data = await this.fetchBraveApi('web', query, maxResults)
+    results.results = (data.web?.results || [])
+      .slice(0, maxResults)
+      .map((result: BraveWebResult) => ({
+        title: result.title || 'No title',
+        description: result.description || 'No description available',
+        url: result.url
+      }))
   }
 
   private async searchVideos(

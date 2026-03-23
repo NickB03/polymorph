@@ -255,7 +255,10 @@ export function RenderMessage({
       (toolName === 'displayCitations' || toolName === 'displayLinkPreview')
     ) {
       return (
-        <span className="sr-only">
+        <span
+          key={`${messageId}-display-tool-${partIndex}`}
+          className="sr-only"
+        >
           Citations available in research activity panel
         </span>
       )

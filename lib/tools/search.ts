@@ -14,6 +14,53 @@ import {
   SearchProviderType
 } from './search/providers'
 
+const PROVIDER_ENV_KEYS: Partial<Record<SearchProviderType, string>> = {
+  brave: 'BRAVE_SEARCH_API_KEY',
+  tavily: 'TAVILY_API_KEY',
+  exa: 'EXA_API_KEY',
+  firecrawl: 'FIRECRAWL_API_KEY'
+}
+
+function isProviderConfigured(provider: SearchProviderType): boolean {
+  const envKey = PROVIDER_ENV_KEYS[provider]
+
+  return envKey ? Boolean(process.env[envKey]) : true
+}
+
+function getSearchProviderSequence(
+  primaryProvider: SearchProviderType
+): SearchProviderType[] {
+  const fallbackProviders: SearchProviderType[] =
+    primaryProvider === 'brave'
+      ? ['tavily', 'exa']
+      : primaryProvider === 'tavily'
+        ? ['exa']
+        : ['tavily', 'exa']
+
+  const orderedProviders = [primaryProvider, ...fallbackProviders]
+  const uniqueProviders = orderedProviders.filter(
+    (provider, index) => orderedProviders.indexOf(provider) === index
+  )
+
+  return uniqueProviders.filter(provider => {
+    if (isProviderConfigured(provider)) {
+      return true
+    }
+
+    if (provider === primaryProvider) {
+      console.warn(
+        `[Search] Provider ${provider} is selected but not configured. Skipping to the next available provider.`
+      )
+    }
+
+    return false
+  })
+}
+
+function formatSearchFailureMessage(message: string): string {
+  return `${message}. IMPORTANT: Do NOT use [number](#toolCallId) citations for this failed search — no results are available to cite.`
+}
+
 /**
  * Creates a search tool with the appropriate schema for the given model.
  */
@@ -51,7 +98,7 @@ export function createSearchTool(fullModel: string) {
 
       // Use the original query as is - any provider-specific handling will be done in the provider
       const filledQuery = query
-      let searchResult: SearchResults
+      let searchResult: SearchResults | null = null
 
       // Determine which provider to use based on type
       let searchAPI: SearchProviderType
@@ -80,8 +127,10 @@ export function createSearchTool(fullModel: string) {
           ? 'advanced'
           : effectiveSearchDepth || 'basic'
 
+      const searchProviders = getSearchProviderSequence(searchAPI)
+
       console.log(
-        `Using search API: ${searchAPI}, Type: ${type}, Search Depth: ${effectiveSearchDepthForAPI}`
+        `Using search API chain: ${searchProviders.join(' -> ') || searchAPI}, Type: ${type}, Search Depth: ${effectiveSearchDepthForAPI}`
       )
 
       if (context?.abortSignal?.aborted) return
@@ -139,45 +188,51 @@ export function createSearchTool(fullModel: string) {
         )
       }
 
-      // Determine fallback provider (Brave if available and not already primary)
-      const fallbackAPI: SearchProviderType | null =
-        searchAPI !== 'brave' && process.env.BRAVE_SEARCH_API_KEY
-          ? 'brave'
-          : searchAPI !== 'tavily' && process.env.TAVILY_API_KEY
-            ? 'tavily'
-            : null
-
-      try {
-        searchResult = await executeSearch(searchAPI)
-      } catch (primaryError) {
-        if (context?.abortSignal?.aborted) return
-
-        const primaryMessage =
-          primaryError instanceof Error
-            ? primaryError.message
-            : 'Unknown search error'
-
-        if (fallbackAPI) {
-          console.warn(
-            `[Search] Primary provider ${searchAPI} failed: ${primaryMessage}. Falling back to ${fallbackAPI}.`
+      if (searchProviders.length === 0) {
+        throw new Error(
+          formatSearchFailureMessage(
+            `No configured search providers available for ${searchAPI}`
           )
-          try {
-            searchResult = await executeSearch(fallbackAPI)
-          } catch (fallbackError) {
-            console.error(
-              `[Search] Fallback provider ${fallbackAPI} also failed:`,
-              fallbackError
+        )
+      }
+
+      const providerErrors: string[] = []
+
+      for (const [index, provider] of searchProviders.entries()) {
+        try {
+          searchResult = await executeSearch(provider)
+          break
+        } catch (providerError) {
+          if (context?.abortSignal?.aborted) return
+
+          const providerMessage =
+            providerError instanceof Error
+              ? providerError.message
+              : 'Unknown search error'
+          providerErrors.push(`${provider}: ${providerMessage}`)
+
+          const nextProvider = searchProviders[index + 1]
+          if (nextProvider) {
+            console.warn(
+              `[Search] Provider ${provider} failed: ${providerMessage}. Falling back to ${nextProvider}.`
             )
-            throw new Error(
-              `${primaryMessage}. IMPORTANT: Do NOT use [number](#toolCallId) citations for this failed search — no results are available to cite.`
-            )
+            continue
           }
-        } else {
-          console.error('Search API error:', primaryError)
-          throw new Error(
-            `${primaryMessage}. IMPORTANT: Do NOT use [number](#toolCallId) citations for this failed search — no results are available to cite.`
+
+          console.error(
+            `[Search] Search providers failed in order: ${providerErrors.join(' -> ')}`
           )
         }
+      }
+
+      if (!searchResult) {
+        throw new Error(
+          formatSearchFailureMessage(
+            providerErrors.length > 0
+              ? `Search failed across providers (${providerErrors.join(' -> ')})`
+              : `Search failed before any provider could run for ${searchAPI}`
+          )
+        )
       }
 
       // Add citation mapping and toolCallId to search results

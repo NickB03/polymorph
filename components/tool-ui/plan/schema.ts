@@ -31,8 +31,7 @@ export const PlanPropsSchema = z
     receipt: ToolUIReceiptSchema.optional(),
     title: z.string().min(1),
     description: z.string().optional(),
-    todos: z.array(PlanTodoSchema).min(1),
-    maxVisibleTodos: z.number().finite().int().min(1).optional()
+    todos: z.array(PlanTodoSchema).min(1)
   })
   .superRefine((value, ctx) => {
     const seenTodoIds = new Set<string>()

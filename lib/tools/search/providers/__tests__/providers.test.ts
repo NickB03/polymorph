@@ -258,17 +258,43 @@ describe('BraveSearchProvider', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2)
   })
 
-  it('handles API errors gracefully for individual content types', async () => {
+  it('throws on web API errors so higher-level search fallback can run', async () => {
     const { BraveSearchProvider } = await import('../brave')
     const provider = new BraveSearchProvider()
 
     mockFetch.mockRejectedValue(new Error('Network error'))
 
-    // Should not throw - errors are caught per content type
+    await expect(
+      provider.search('test', 10, 'basic', [], [], {
+        type: 'general',
+        content_types: ['web']
+      })
+    ).rejects.toThrow('Network error')
+  })
+
+  it('keeps auxiliary content type failures isolated', async () => {
+    const { BraveSearchProvider } = await import('../brave')
+    const provider = new BraveSearchProvider()
+
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            web: {
+              results: [{ title: 'Web', url: 'https://web.com' }]
+            }
+          })
+      })
+      .mockRejectedValueOnce(new Error('Video network error'))
+
     const result = await provider.search('test', 10, 'basic', [], [], {
       type: 'general',
-      content_types: ['web']
+      content_types: ['web', 'video']
     })
-    expect(result.results).toEqual([])
+
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0].title).toBe('Web')
+    expect(result.videos).toEqual([])
   })
 })

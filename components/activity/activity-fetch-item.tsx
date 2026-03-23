@@ -14,6 +14,7 @@ interface ActivityFetchItemProps {
 export function ActivityFetchItem({ tool }: ActivityFetchItemProps) {
   const url = tool.input?.url
   const domain = url ? getDomain(url) : null
+  const errorText = tool.errorText || 'Failed to retrieve content'
 
   const isActive =
     tool.state === 'input-streaming' || tool.state === 'input-available'
@@ -35,6 +36,7 @@ export function ActivityFetchItem({ tool }: ActivityFetchItemProps) {
         'flex items-center gap-2 py-1 px-2 rounded text-xs text-muted-foreground',
         'hover:bg-accent/50 transition-colors'
       )}
+      title={isError ? errorText : undefined}
     >
       <Globe className="h-3.5 w-3.5 shrink-0" />
       <span className="truncate min-w-0 flex-1">
@@ -46,7 +48,12 @@ export function ActivityFetchItem({ tool }: ActivityFetchItemProps) {
           Retrieving...
         </span>
       ) : isError ? (
-        <AlertCircle className="h-3 w-3 shrink-0 text-destructive" />
+        <>
+          <AlertCircle className="h-3 w-3 shrink-0 text-destructive" />
+          <span className="shrink-0 max-w-28 truncate text-[10px] text-destructive">
+            {errorText}
+          </span>
+        </>
       ) : fetchResults ? (
         <div className="flex items-center gap-1 shrink-0">
           <Check className="h-3 w-3 text-green-500" />
