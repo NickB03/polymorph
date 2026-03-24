@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { UIMessage } from '@/lib/types/ai'
 import type { VoiceConfig, VoiceState } from '@/lib/voice/config'
-import { DEFAULT_VOICE_CONFIG } from '@/lib/voice/config'
+import { DEFAULT_VOICE_CONFIG, TTS_TEXT_DEBOUNCE_MS } from '@/lib/voice/config'
 import { isQuotaExhausted } from '@/lib/voice/usage'
 
 import { useVoiceInput } from './use-voice-input'
@@ -60,9 +60,10 @@ export function useVoiceConversation({
 
   const voiceActiveRef = useRef(false)
   const lastSpokenMessageIdRef = useRef<string | null>(null)
-  const prevStatusRef = useRef(status)
   const prevPlaybackStateRef = useRef<'idle' | 'loading' | 'playing'>('idle')
   const stopListeningRef = useRef<() => void>(() => {})
+  const lastTextRef = useRef<string | null>(null)
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const resolvedProvider = useCallback(() => {
     if (config.ttsProvider === 'elevenlabs' && isQuotaExhausted()) {
@@ -112,7 +113,7 @@ export function useVoiceConversation({
     voiceActiveRef.current = true
     setIsVoiceActive(true)
     setVoiceState('listening')
-    startListening()
+    void startListening()
   }, [isSupported, startListening])
 
   const stopVoice = useCallback(() => {
@@ -122,43 +123,88 @@ export function useVoiceConversation({
     stopListening()
     stopAudio()
     lastSpokenMessageIdRef.current = null
+    lastTextRef.current = null
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = null
+    }
   }, [stopListening, stopAudio])
 
-  // Transition: when chat status goes from streaming → ready, synthesize response
-  useEffect(() => {
-    const wasStreaming =
-      prevStatusRef.current === 'streaming' ||
-      prevStatusRef.current === 'submitted'
-    const isReady = status === 'ready'
-    prevStatusRef.current = status
-
-    if (!voiceActiveRef.current || !wasStreaming || !isReady) return
-
-    // Find the last assistant message
-    const lastAssistant = messages.findLast(m => m.role === 'assistant')
-    if (!lastAssistant) return
-    if (lastAssistant.id === lastSpokenMessageIdRef.current) return
-
-    // Extract text from the assistant message parts
-    const text = lastAssistant.parts
+  // Extract text from the last assistant message for TTS
+  const lastAssistant = messages.findLast(m => m.role === 'assistant')
+  const assistantText =
+    lastAssistant?.parts
       ?.filter((p): p is { type: 'text'; text: string } => p.type === 'text')
       .map(p => p.text)
       .join(' ')
+      ?.trim() || null
 
-    if (!text?.trim()) {
-      console.warn(
-        '[voice] No text found in assistant parts:',
-        lastAssistant.parts?.map(p => p.type)
+  // Trigger TTS when assistant text stabilizes (debounced).
+  // Fires during streaming — no need to wait for status=ready.
+  useEffect(() => {
+    if (!voiceActiveRef.current) return
+    if (!assistantText) return
+    if (lastAssistant && lastAssistant.id === lastSpokenMessageIdRef.current)
+      return
+
+    // Only trigger during active response (streaming or just finished)
+    if (status !== 'streaming' && status !== 'ready') return
+
+    // If status is ready, fire immediately (no debounce needed)
+    if (status === 'ready') {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+        debounceTimerRef.current = null
+      }
+      lastSpokenMessageIdRef.current = lastAssistant!.id
+      // Stay in 'waiting' — the playbackState effect below will
+      // transition to 'speaking' once audio actually starts playing.
+      const provider = resolvedProvider()
+      console.debug(
+        `[voice] Synthesizing ${assistantText.length} chars via ${provider} (ready)`
       )
+      play(assistantText, provider)
       return
     }
 
-    lastSpokenMessageIdRef.current = lastAssistant.id
-    setVoiceState('speaking')
-    const provider = resolvedProvider()
-    console.debug(`[voice] Synthesizing ${text.length} chars via ${provider}`)
-    play(text, provider)
-  }, [status, messages, play, resolvedProvider])
+    // Streaming: debounce — wait for text to stop growing
+    if (assistantText !== lastTextRef.current) {
+      lastTextRef.current = assistantText
+
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+
+      debounceTimerRef.current = setTimeout(() => {
+        debounceTimerRef.current = null
+        if (!voiceActiveRef.current) return
+        if (lastAssistant!.id === lastSpokenMessageIdRef.current) return
+
+        lastSpokenMessageIdRef.current = lastAssistant!.id
+        const provider = resolvedProvider()
+        console.debug(
+          `[voice] Synthesizing ${assistantText.length} chars via ${provider} (debounced)`
+        )
+        play(assistantText, provider)
+      }, TTS_TEXT_DEBOUNCE_MS)
+    }
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+        debounceTimerRef.current = null
+      }
+    }
+  }, [assistantText, status, lastAssistant, play, resolvedProvider])
+
+  // Transition: when playback starts, show speaking state.
+  // This replaces the old approach of setting 'speaking' immediately
+  // when play() is called — now we wait for audio to actually play.
+  useEffect(() => {
+    if (voiceActiveRef.current && playbackState === 'playing') {
+      setVoiceState('speaking')
+    }
+  }, [playbackState])
 
   // Transition: when audio finishes playing, go back to listening.
   // Track the playback state transition (playing/loading → idle) to avoid
@@ -176,7 +222,7 @@ export function useVoiceConversation({
       playbackState === 'idle'
     ) {
       setVoiceState('listening')
-      startListening()
+      void startListening()
     }
   }, [playbackState, voiceState, startListening])
 

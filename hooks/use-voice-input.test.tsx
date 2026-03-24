@@ -1,7 +1,15 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  it,
+  vi
+} from 'vitest'
 
-import { useVoiceInput } from './use-voice-input'
+import { useVoiceInput } from '@/hooks/use-voice-input'
 
 class MockSpeechRecognition {
   continuous = false
@@ -53,6 +61,14 @@ describe('useVoiceInput', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('exposes async startListening in the public hook contract', () => {
+    const { result } = renderHook(() => useVoiceInput())
+
+    expectTypeOf(result.current.startListening).toEqualTypeOf<
+      () => Promise<void>
+    >()
   })
 
   it('does not start recognition if stopped while waiting for mic access', async () => {

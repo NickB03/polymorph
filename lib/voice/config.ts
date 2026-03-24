@@ -25,6 +25,10 @@ export const DEFAULT_VOICE_CONFIG: VoiceConfig = {
 /** Max characters to synthesize per response (long responses are truncated for voice) */
 export const TTS_MAX_CHARS = 2000
 
+/** How long assistant text must be stable before triggering TTS (ms).
+ *  Allows synthesis to start while the agent is still running tool calls. */
+export const TTS_TEXT_DEBOUNCE_MS = 1500
+
 export function isVoiceEnabled(): boolean {
   return process.env.NEXT_PUBLIC_ENABLE_VOICE === 'true'
 }

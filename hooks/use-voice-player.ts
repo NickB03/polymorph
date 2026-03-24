@@ -102,7 +102,6 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
 
         const audio = new Audio(url)
         audioRef.current = audio
-        setAudioElement(audio)
 
         audio.onended = () => {
           setPlaybackState('idle')
@@ -113,7 +112,15 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
           cleanup()
         }
 
+        // Expose audio element FIRST so useAudioStream's useLayoutEffect
+        // can connect the AudioContext before playback begins.
+        setAudioElement(audio)
         setPlaybackState('playing')
+
+        // Defer play to next microtask so React's synchronous render +
+        // useLayoutEffect cycle completes (wiring AudioContext) before
+        // audio actually starts.
+        await new Promise<void>(resolve => queueMicrotask(resolve))
         await audio.play()
 
         // Track usage for ElevenLabs
