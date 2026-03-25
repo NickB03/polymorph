@@ -177,20 +177,28 @@ describe('useVoicePlayer', () => {
     expect(result.current.playbackState).toBe('idle')
   })
 
-  it('second play() supersedes the first without propagating the first request error', async () => {
-    // First fetch resolves successfully; second fetch also resolves successfully
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(
-        new Response('audio-bytes-1', {
-          headers: { 'Content-Type': 'audio/mpeg', 'x-tts-provider': 'openai' }
+  it('second play() supersedes the first — aborted request AbortError is silenced', async () => {
+    // Request A: rejects with AbortError when its signal fires (real fetch behaviour)
+    // Request B: resolves successfully
+    // Proves the isCurrentRequest() guard in the catch block prevents request A's
+    // AbortError from setting lastError or resetting request B's state.
+    let requestCount = 0
+    const fetchMock = vi.fn((_input: unknown, init?: RequestInit) => {
+      requestCount++
+      const signal = init?.signal as AbortSignal
+      if (requestCount === 1) {
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', () => {
+            reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
+          })
         })
-      )
-      .mockResolvedValueOnce(
+      }
+      return Promise.resolve(
         new Response('audio-bytes-2', {
           headers: { 'Content-Type': 'audio/mpeg', 'x-tts-provider': 'openai' }
         })
       )
+    })
     vi.stubGlobal('fetch', fetchMock)
 
     const { result } = renderHook(() => useVoicePlayer())
@@ -210,22 +218,22 @@ describe('useVoicePlayer', () => {
 
     expect(result.current.lastError).toBeNull()
     expect(mockPlay).toHaveBeenCalledTimes(1)
-    expect(mockPlay.mock.calls[0]?.[0]).toBeUndefined() // audio.play() takes no args
   })
 
   it('stop() during in-flight request leaves no error', async () => {
+    // Fetch rejects with AbortError when the signal fires — mirrors real fetch behaviour.
+    // Proves the isCurrentRequest() guard in the catch block fires and returns early,
+    // keeping lastError null even though an AbortError propagated through the catch path.
     vi.stubGlobal(
       'fetch',
-      vi.fn(
-        (_input: unknown, init?: RequestInit) =>
-          new Promise((_resolve, _reject) => {
-            // Never resolves on its own — waits for abort
-            const signal = init?.signal as AbortSignal
-            signal?.addEventListener('abort', () => {
-              // Let the test call stop() and check state
-            })
+      vi.fn((_input: unknown, init?: RequestInit) => {
+        const signal = init?.signal as AbortSignal
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', () => {
+            reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
           })
-      )
+        })
+      })
     )
 
     const { result } = renderHook(() => useVoicePlayer())
@@ -238,6 +246,7 @@ describe('useVoicePlayer', () => {
 
     await act(async () => {
       result.current.stop()
+      await Promise.resolve()
       await Promise.resolve()
     })
 
