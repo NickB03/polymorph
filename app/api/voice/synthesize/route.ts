@@ -1,6 +1,10 @@
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import { jsonError } from '@/lib/utils/json-error'
-import { isVoiceEnabled, TTS_MAX_CHARS } from '@/lib/voice/config'
+import {
+  isVoiceEnabled,
+  TTS_MAX_CHARS,
+  VOICE_PROVIDER_TIMEOUT_MS
+} from '@/lib/voice/config'
 import {
   resolveProvider,
   synthesizeElevenLabs,
@@ -8,6 +12,22 @@ import {
 } from '@/lib/voice/tts-provider'
 
 export const dynamic = 'force-dynamic'
+
+async function withProviderTimeout<T>(
+  run: (signal: AbortSignal) => Promise<T>
+): Promise<T> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    VOICE_PROVIDER_TIMEOUT_MS
+  )
+
+  try {
+    return await run(controller.signal)
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
 
 export async function POST(req: Request) {
   if (!isVoiceEnabled()) {
@@ -41,34 +61,54 @@ export async function POST(req: Request) {
 
     let audioStream: ReadableStream<Uint8Array>
     let servedProvider = provider
+    let noticeCode: string | null = null
+    let noticeMessage: string | null = null
 
     if (provider === 'elevenlabs') {
       const voice =
         voiceId || process.env.ELEVENLABS_VOICE_ID || 'DXFkLCBUTmvXpp2QwZjA'
       try {
-        audioStream = await synthesizeElevenLabs(truncated, voice)
+        audioStream = await withProviderTimeout(signal =>
+          synthesizeElevenLabs(truncated, voice, signal)
+        )
       } catch (elError) {
+        if ((elError as Error).name === 'AbortError') {
+          return jsonError('TTS_TIMEOUT', 'Speech synthesis timed out', 504)
+        }
+
         console.warn('ElevenLabs TTS failed, trying OpenAI fallback:', elError)
         if (process.env.OPENAI_API_KEY) {
-          audioStream = await synthesizeOpenAI(truncated, 'alloy')
+          audioStream = await withProviderTimeout(signal =>
+            synthesizeOpenAI(truncated, 'alloy', signal)
+          )
           servedProvider = 'openai'
+          noticeCode = 'provider-fallback'
+          noticeMessage = 'Voice fallback: switched to OpenAI.'
         } else {
           throw elError
         }
       }
     } else {
       // OpenAI
-      audioStream = await synthesizeOpenAI(truncated, voiceId || 'alloy')
+      audioStream = await withProviderTimeout(signal =>
+        synthesizeOpenAI(truncated, voiceId || 'alloy', signal)
+      )
     }
 
     return new Response(audioStream, {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Cache-Control': 'no-store',
-        'x-tts-provider': servedProvider
+        'x-tts-provider': servedProvider,
+        ...(noticeCode ? { 'x-tts-notice': noticeCode } : {}),
+        ...(noticeMessage ? { 'x-tts-notice-message': noticeMessage } : {})
       }
     })
   } catch (error) {
+    if ((error as Error).name === 'AbortError') {
+      return jsonError('TTS_TIMEOUT', 'Speech synthesis timed out', 504)
+    }
+
     console.error('TTS synthesis error:', error)
     return jsonError(
       'TTS_ERROR',

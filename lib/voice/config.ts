@@ -8,6 +8,16 @@ export type VoiceState = 'idle' | 'listening' | 'waiting' | 'speaking'
 
 export type TTSProvider = 'elevenlabs' | 'openai' | 'browser'
 
+export interface VoiceError {
+  code: string
+  message: string
+}
+
+export interface VoiceNotice {
+  code: string
+  message: string
+}
+
 export interface VoiceConfig {
   ttsProvider: TTSProvider
   voiceId: string
@@ -24,6 +34,12 @@ export const DEFAULT_VOICE_CONFIG: VoiceConfig = {
 
 /** Max characters to synthesize per response (long responses are truncated for voice) */
 export const TTS_MAX_CHARS = 2000
+
+/** Client-side timeout waiting for synthesized audio before surfacing a failure. */
+export const VOICE_CLIENT_TIMEOUT_MS = 10_000
+
+/** Server-side provider timeout for upstream TTS requests. */
+export const VOICE_PROVIDER_TIMEOUT_MS = 8_000
 
 /** How long assistant text must be stable before triggering TTS (ms).
  *  Allows synthesis to start while the agent is still running tool calls. */

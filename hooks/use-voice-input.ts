@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import type { VoiceError } from '@/lib/voice/config'
+
 /**
  * Wraps the Web Speech API (SpeechRecognition) for voice-to-text input.
  *
@@ -38,6 +40,7 @@ interface UseVoiceInputReturn {
   isSupported: boolean
   /** Raw mic MediaStream for audio visualization (null when not listening) */
   mediaStream: MediaStream | null
+  lastError: VoiceError | null
 }
 
 function getSpeechRecognition(): (new () => SpeechRecognitionInstance) | null {
@@ -55,6 +58,7 @@ export function useVoiceInput(
   const [transcript, setTranscript] = useState('')
   const [interimTranscript, setInterimTranscript] = useState('')
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null)
+  const [lastError, setLastError] = useState<VoiceError | null>(null)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const listeningSessionRef = useRef(0)
@@ -84,6 +88,7 @@ export function useVoiceInput(
     if (!SpeechRecognitionClass) return
 
     const sessionId = ++listeningSessionRef.current
+    setLastError(null)
 
     // Stop any existing recognition
     if (recognitionRef.current) {
@@ -116,8 +121,10 @@ export function useVoiceInput(
     recognition.onresult = (event: any) => {
       let finalText = ''
       let interimText = ''
+      const startIndex =
+        typeof event.resultIndex === 'number' ? event.resultIndex : 0
 
-      for (let i = 0; i < event.results.length; i++) {
+      for (let i = startIndex; i < event.results.length; i++) {
         const result = event.results[i]
         if (result.isFinal) {
           finalText += result[0].transcript
@@ -139,6 +146,10 @@ export function useVoiceInput(
       // 'aborted' is expected when we call stop/abort — not a real error
       if (event.error !== 'aborted') {
         console.warn('Speech recognition error:', event.error)
+        setLastError({
+          code: 'speech-recognition-error',
+          message: `Speech recognition failed: ${event.error}`
+        })
       }
       recognitionRef.current = null
       stopMediaStream()
@@ -157,11 +168,24 @@ export function useVoiceInput(
       return
     }
 
-    recognitionRef.current = recognition
-    recognition.start()
-    setIsListening(true)
-    setTranscript('')
-    setInterimTranscript('')
+    try {
+      recognitionRef.current = recognition
+      recognition.start()
+      setIsListening(true)
+      setTranscript('')
+      setInterimTranscript('')
+    } catch (error) {
+      recognitionRef.current = null
+      stopMediaStream()
+      setIsListening(false)
+      setLastError({
+        code: 'recognition-start-failed',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to start speech recognition'
+      })
+    }
   }, [lang, stopMediaStream])
 
   const stopListening = useCallback(() => {
@@ -193,6 +217,7 @@ export function useVoiceInput(
     startListening,
     stopListening,
     isSupported,
-    mediaStream
+    mediaStream,
+    lastError
   }
 }

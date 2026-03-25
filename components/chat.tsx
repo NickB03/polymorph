@@ -128,6 +128,8 @@ export function Chat({
   const autoSendFiredRef = useRef<Set<string>>(new Set())
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const stopVoiceRef = useRef<(() => void) | null>(null)
+  const lastVoiceErrorRef = useRef<string | null>(null)
+  const lastVoiceNoticeRef = useRef<string | null>(null)
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [input, setInput] = useState('')
@@ -599,6 +601,32 @@ export function Chat({
   })
   stopVoiceRef.current = voiceConversation.stopVoice
   const voiceEnabled = isVoiceEnabled()
+
+  useEffect(() => {
+    if (!voiceConversation.voiceError) {
+      lastVoiceErrorRef.current = null
+      return
+    }
+
+    const fingerprint = `${voiceConversation.voiceError.code}:${voiceConversation.voiceError.message}`
+    if (lastVoiceErrorRef.current === fingerprint) return
+
+    lastVoiceErrorRef.current = fingerprint
+    toast.error(voiceConversation.voiceError.message)
+  }, [voiceConversation.voiceError])
+
+  useEffect(() => {
+    if (!voiceConversation.voiceNotice) {
+      lastVoiceNoticeRef.current = null
+      return
+    }
+
+    const fingerprint = `${voiceConversation.voiceNotice.code}:${voiceConversation.voiceNotice.message}`
+    if (lastVoiceNoticeRef.current === fingerprint) return
+
+    lastVoiceNoticeRef.current = fingerprint
+    toast(voiceConversation.voiceNotice.message)
+  }, [voiceConversation.voiceNotice])
 
   return (
     <div

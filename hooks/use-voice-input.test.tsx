@@ -129,4 +129,77 @@ describe('useVoiceInput', () => {
       })
     }
   )
+
+  it('captures recognition.start() failures and cleans up the mic stream', async () => {
+    const stop = vi.fn()
+    const stream = {
+      getTracks: () => [{ stop }]
+    } as unknown as MediaStream
+    getUserMedia.mockResolvedValueOnce(stream)
+
+    Object.defineProperty(window, 'SpeechRecognition', {
+      configurable: true,
+      value: vi.fn(() => {
+        const instance = new MockSpeechRecognition()
+        instance.start.mockImplementation(() => {
+          throw new Error('permission denied')
+        })
+        recognitionInstances.push(instance)
+        return instance
+      })
+    })
+
+    const { result } = renderHook(() => useVoiceInput())
+
+    await act(async () => {
+      await result.current.startListening()
+    })
+
+    await waitFor(() => {
+      expect(result.current.isListening).toBe(false)
+      expect(result.current.mediaStream).toBeNull()
+      expect(result.current.lastError).toEqual({
+        code: 'recognition-start-failed',
+        message: 'permission denied'
+      })
+      expect(stop).toHaveBeenCalled()
+    })
+  })
+
+  it('only processes speech results from event.resultIndex forward', async () => {
+    const onTranscript = vi.fn()
+    getUserMedia.mockResolvedValueOnce({
+      getTracks: () => [{ stop: vi.fn() }]
+    } as unknown as MediaStream)
+
+    const { result } = renderHook(() => useVoiceInput({ onTranscript }))
+
+    await act(async () => {
+      await result.current.startListening()
+    })
+
+    const recognition = recognitionInstances[0]
+
+    await act(async () => {
+      recognition.onresult?.({
+        resultIndex: 0,
+        results: [{ isFinal: true, 0: { transcript: 'hello' } }]
+      })
+    })
+
+    await act(async () => {
+      recognition.onresult?.({
+        resultIndex: 1,
+        results: [
+          { isFinal: true, 0: { transcript: 'hello' } },
+          { isFinal: true, 0: { transcript: 'world' } }
+        ]
+      })
+    })
+
+    expect(onTranscript).toHaveBeenNthCalledWith(1, 'hello')
+    expect(onTranscript).toHaveBeenNthCalledWith(2, 'world')
+    expect(result.current.transcript).toBe('world')
+    expect(result.current.lastError).toBeNull()
+  })
 })

@@ -14,34 +14,48 @@ export function useAudioStream(
 ): MediaStream | null {
   const [stream, setStream] = useState<MediaStream | null>(null)
   const contextRef = useRef<AudioContext | null>(null)
+  const destinationRef = useRef<MediaStreamAudioDestinationNode | null>(null)
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null)
 
   useLayoutEffect(() => {
-    if (!audioElement) {
-      setStream(null)
-      return
-    }
-
     const ctx = new AudioContext()
     if (ctx.state === 'suspended') ctx.resume()
 
     contextRef.current = ctx
+    destinationRef.current = ctx.createMediaStreamDestination()
+
+    return () => {
+      sourceRef.current?.disconnect()
+      sourceRef.current = null
+      destinationRef.current = null
+      ctx.close()
+      contextRef.current = null
+      setStream(null)
+    }
+  }, [])
+
+  useLayoutEffect(() => {
+    const ctx = contextRef.current
+    const destination = destinationRef.current
+
+    sourceRef.current?.disconnect()
+    sourceRef.current = null
+
+    if (!audioElement || !ctx || !destination) {
+      setStream(null)
+      return
+    }
 
     const source = ctx.createMediaElementSource(audioElement)
     sourceRef.current = source
 
-    const dest = ctx.createMediaStreamDestination()
-
-    // Route audio to both: visualizer (via dest.stream) AND speakers (via ctx.destination)
-    source.connect(dest)
+    // Route audio to both: visualizer (via destination.stream) AND speakers.
+    source.connect(destination)
     source.connect(ctx.destination)
-
-    setStream(dest.stream)
+    setStream(destination.stream)
 
     return () => {
       source.disconnect()
-      ctx.close()
-      contextRef.current = null
       sourceRef.current = null
       setStream(null)
     }
