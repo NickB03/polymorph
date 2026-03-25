@@ -293,4 +293,41 @@ describe('POST /api/voice/synthesize', () => {
     })
     vi.useRealTimers()
   })
+
+  it('returns 504 when ElevenLabs fails and OpenAI fallback times out', async () => {
+    vi.useFakeTimers()
+    resolveProvider.mockReturnValueOnce('elevenlabs')
+    synthesizeElevenLabs.mockRejectedValueOnce(
+      new Error('ElevenLabs unavailable')
+    )
+    synthesizeOpenAI.mockImplementationOnce(
+      (_text: string, _voice: string, signal?: AbortSignal) =>
+        signal
+          ? new Promise((_resolve, reject) => {
+              signal.addEventListener('abort', () => {
+                reject(
+                  Object.assign(new Error('aborted'), { name: 'AbortError' })
+                )
+              })
+            })
+          : Promise.reject(new Error('missing abort signal'))
+    )
+
+    const responsePromise = POST(
+      createRequest({
+        text: 'hello world',
+        provider: 'elevenlabs'
+      })
+    )
+
+    await vi.advanceTimersByTimeAsync(60)
+    const response = await responsePromise
+
+    expect(response.status).toBe(504)
+    await expect(readJson(response)).resolves.toEqual({
+      error: 'TTS_TIMEOUT',
+      message: 'Speech synthesis timed out'
+    })
+    vi.useRealTimers()
+  })
 })

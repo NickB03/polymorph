@@ -46,18 +46,6 @@ const TTS_PROVIDERS: {
 const OPENAI_VOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']
 const VALID_TTS_PROVIDERS: TTSProvider[] = ['elevenlabs', 'openai', 'browser']
 
-export function applyProviderDefaults(
-  provider: TTSProvider
-): Pick<VoiceConfig, 'ttsProvider' | 'voiceId'> {
-  const voiceId =
-    provider === 'elevenlabs'
-      ? DEFAULT_VOICE_CONFIG.voiceId
-      : provider === 'openai'
-        ? 'alloy'
-        : ''
-  return { ttsProvider: provider, voiceId }
-}
-
 export function VoiceSettings({ config, onUpdate }: VoiceSettingsProps) {
   const [open, setOpen] = useState(false)
   const usage = getUsage()
