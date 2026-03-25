@@ -121,10 +121,8 @@ export function useVoiceInput(
     recognition.onresult = (event: any) => {
       let finalText = ''
       let interimText = ''
-      const startIndex =
-        typeof event.resultIndex === 'number' ? event.resultIndex : 0
 
-      for (let i = startIndex; i < event.results.length; i++) {
+      for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i]
         if (result.isFinal) {
           finalText += result[0].transcript

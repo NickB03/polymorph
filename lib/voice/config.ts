@@ -35,8 +35,8 @@ export const DEFAULT_VOICE_CONFIG: VoiceConfig = {
 /** Max characters to synthesize per response (long responses are truncated for voice) */
 export const TTS_MAX_CHARS = 2000
 
-/** Client-side timeout waiting for synthesized audio before surfacing a failure. */
-export const VOICE_CLIENT_TIMEOUT_MS = 10_000
+/** Client-side timeout waiting for synthesized audio. Must exceed 2× VOICE_PROVIDER_TIMEOUT_MS to allow full provider fallback chain. */
+export const VOICE_CLIENT_TIMEOUT_MS = 20_000
 
 /** Server-side provider timeout for upstream TTS requests. */
 export const VOICE_PROVIDER_TIMEOUT_MS = 8_000

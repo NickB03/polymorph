@@ -6,10 +6,13 @@ import { Loader2, Volume2, VolumeX } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { cn } from '@/lib/utils'
+import { DEFAULT_VOICE_CONFIG } from '@/lib/voice/config'
 
 import { useVoicePlayer } from '@/hooks/use-voice-player'
 
 import { Button } from '@/components/ui/button'
+
+import { loadVoiceConfig } from '@/components/voice/voice-settings'
 
 interface SpeakButtonProps {
   text: string
@@ -53,8 +56,10 @@ export function SpeakButton({ text, className }: SpeakButtonProps) {
     if (playbackState === 'playing') {
       stop()
     } else {
-      // Try server-side TTS first; falls back gracefully
-      play(text, { provider: 'elevenlabs' })
+      const saved = loadVoiceConfig()
+      const provider = saved.ttsProvider ?? DEFAULT_VOICE_CONFIG.ttsProvider
+      const voiceId = saved.voiceId ?? DEFAULT_VOICE_CONFIG.voiceId
+      play(text, { provider, voiceId })
     }
   }
 
