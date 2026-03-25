@@ -166,7 +166,7 @@ describe('useVoiceInput', () => {
     })
   })
 
-  it('only processes speech results from event.resultIndex forward', async () => {
+  it('accumulates all final results across events, not just from event.resultIndex', async () => {
     const onTranscript = vi.fn()
     getUserMedia.mockResolvedValueOnce({
       getTracks: () => [{ stop: vi.fn() }]
@@ -198,8 +198,8 @@ describe('useVoiceInput', () => {
     })
 
     expect(onTranscript).toHaveBeenNthCalledWith(1, 'hello')
-    expect(onTranscript).toHaveBeenNthCalledWith(2, 'world')
-    expect(result.current.transcript).toBe('world')
+    expect(onTranscript).toHaveBeenNthCalledWith(2, 'helloworld')
+    expect(result.current.transcript).toBe('helloworld')
     expect(result.current.lastError).toBeNull()
   })
 })
