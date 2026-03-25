@@ -6,6 +6,7 @@ import { Settings2 } from 'lucide-react'
 
 import { getCookie, setCookie } from '@/lib/utils/cookies'
 import type { TTSProvider, VoiceConfig } from '@/lib/voice/config'
+import { DEFAULT_VOICE_CONFIG } from '@/lib/voice/config'
 import { getUsage, isQuotaWarning } from '@/lib/voice/usage'
 
 import { Button } from '@/components/ui/button'
@@ -43,6 +44,7 @@ const TTS_PROVIDERS: {
 ]
 
 const OPENAI_VOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']
+const VALID_TTS_PROVIDERS: TTSProvider[] = ['elevenlabs', 'openai', 'browser']
 
 export function VoiceSettings({ config, onUpdate }: VoiceSettingsProps) {
   const [open, setOpen] = useState(false)
@@ -50,8 +52,10 @@ export function VoiceSettings({ config, onUpdate }: VoiceSettingsProps) {
   const showWarning = isQuotaWarning()
 
   const handleProviderChange = (provider: TTSProvider) => {
-    onUpdate({ ttsProvider: provider })
+    const defaults = applyProviderDefaults(provider)
+    onUpdate(defaults)
     setCookie('voiceTTSProvider', provider)
+    setCookie('voiceVoiceId', defaults.voiceId)
   }
 
   const handleVoiceChange = (voiceId: string) => {
@@ -178,17 +182,52 @@ export function VoiceSettings({ config, onUpdate }: VoiceSettingsProps) {
   )
 }
 
+const isValidElevenLabsVoiceId = (id: string | null | undefined): boolean =>
+  !!id && id.length >= 10 && !OPENAI_VOICES.includes(id)
+
+/**
+ * Returns the default ttsProvider + voiceId for a given provider.
+ * Used when switching providers to avoid stale cross-provider voice IDs.
+ */
+export function applyProviderDefaults(
+  provider: TTSProvider
+): Pick<VoiceConfig, 'ttsProvider' | 'voiceId'> {
+  if (provider === 'openai') return { ttsProvider: 'openai', voiceId: 'alloy' }
+  if (provider === 'elevenlabs')
+    return {
+      ttsProvider: 'elevenlabs',
+      voiceId: DEFAULT_VOICE_CONFIG.voiceId
+    }
+  return { ttsProvider: 'browser', voiceId: '' }
+}
+
 /**
  * Load persisted voice config from cookies.
  */
 export function loadVoiceConfig(): Partial<VoiceConfig> {
-  const provider = getCookie('voiceTTSProvider') as TTSProvider | null
+  const rawProvider = getCookie('voiceTTSProvider')
   const voiceId = getCookie('voiceVoiceId')
   const autoListen = getCookie('voiceAutoListen')
+  const provider = VALID_TTS_PROVIDERS.includes(rawProvider as TTSProvider)
+    ? (rawProvider as TTSProvider)
+    : null
+  const normalizedAutoListen =
+    autoListen === 'false' ? false : autoListen === null ? null : true
+
+  const normalizedVoiceId =
+    provider === 'openai'
+      ? OPENAI_VOICES.includes(voiceId ?? '')
+        ? voiceId
+        : null
+      : provider === 'elevenlabs'
+        ? isValidElevenLabsVoiceId(voiceId)
+          ? voiceId
+          : null
+        : null
 
   return {
     ...(provider && { ttsProvider: provider }),
-    ...(voiceId && { voiceId }),
-    ...(autoListen !== null && { autoListen: autoListen !== 'false' })
+    ...(normalizedVoiceId && { voiceId: normalizedVoiceId }),
+    ...(normalizedAutoListen !== null && { autoListen: normalizedAutoListen })
   }
 }

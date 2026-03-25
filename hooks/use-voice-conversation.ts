@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { UIMessage } from '@/lib/types/ai'
-import type { VoiceConfig, VoiceState } from '@/lib/voice/config'
+import type {
+  VoiceConfig,
+  VoiceError,
+  VoiceNotice,
+  VoiceState
+} from '@/lib/voice/config'
 import { DEFAULT_VOICE_CONFIG, TTS_TEXT_DEBOUNCE_MS } from '@/lib/voice/config'
 import { isQuotaExhausted } from '@/lib/voice/usage'
 
@@ -34,6 +39,8 @@ interface UseVoiceConversationReturn {
   mediaStream: MediaStream | null
   /** TTS HTMLAudioElement for visualization */
   audioElement: HTMLAudioElement | null
+  voiceError: VoiceError | null
+  voiceNotice: VoiceNotice | null
 }
 
 /**
@@ -57,6 +64,9 @@ export function useVoiceConversation({
     ...DEFAULT_VOICE_CONFIG,
     ...configOverrides
   })
+  const [conversationError, setConversationError] = useState<VoiceError | null>(
+    null
+  )
 
   const voiceActiveRef = useRef(false)
   const lastSpokenMessageIdRef = useRef<string | null>(null)
@@ -75,9 +85,10 @@ export function useVoiceConversation({
   const {
     play,
     stop: stopAudio,
-    isPlaying,
     playbackState,
-    audioElement
+    audioElement,
+    lastError: playerError,
+    lastNotice: playerNotice
   } = useVoicePlayer()
 
   const onTranscript = useCallback(
@@ -88,6 +99,7 @@ export function useVoiceConversation({
       // The "back to listening" effect restarts it after TTS finishes.
       stopListeningRef.current()
       setVoiceState('waiting')
+      setConversationError(null)
       sendMessage({
         role: 'user',
         parts: [{ type: 'text', text: transcript }]
@@ -102,7 +114,8 @@ export function useVoiceConversation({
     stopListening,
     isSupported,
     interimTranscript,
-    mediaStream
+    mediaStream,
+    lastError: inputError
   } = useVoiceInput({ onTranscript })
 
   // Keep ref in sync so onTranscript can call it without circular deps
@@ -110,6 +123,7 @@ export function useVoiceConversation({
 
   const startVoice = useCallback(() => {
     if (!isSupported) return
+    setConversationError(null)
     voiceActiveRef.current = true
     setIsVoiceActive(true)
     setVoiceState('listening')
@@ -122,6 +136,7 @@ export function useVoiceConversation({
     setVoiceState('idle')
     stopListening()
     stopAudio()
+    setConversationError(null)
     lastSpokenMessageIdRef.current = null
     lastTextRef.current = null
     if (debounceTimerRef.current) {
@@ -163,7 +178,7 @@ export function useVoiceConversation({
       console.debug(
         `[voice] Synthesizing ${assistantText.length} chars via ${provider} (ready)`
       )
-      play(assistantText, provider)
+      play(assistantText, { provider, voiceId: config.voiceId })
       return
     }
 
@@ -185,7 +200,7 @@ export function useVoiceConversation({
         console.debug(
           `[voice] Synthesizing ${assistantText.length} chars via ${provider} (debounced)`
         )
-        play(assistantText, provider)
+        play(assistantText, { provider, voiceId: config.voiceId })
       }, TTS_TEXT_DEBOUNCE_MS)
     }
 
@@ -195,7 +210,14 @@ export function useVoiceConversation({
         debounceTimerRef.current = null
       }
     }
-  }, [assistantText, status, lastAssistant, play, resolvedProvider])
+  }, [
+    assistantText,
+    config.voiceId,
+    status,
+    lastAssistant,
+    play,
+    resolvedProvider
+  ])
 
   // Transition: when playback starts, show speaking state.
   // This replaces the old approach of setting 'speaking' immediately
@@ -215,16 +237,30 @@ export function useVoiceConversation({
       prevPlaybackStateRef.current === 'loading'
     prevPlaybackStateRef.current = playbackState
 
+    if (playerError) return // error recovery is handled by the playerError effect
+
     if (
       voiceActiveRef.current &&
       voiceState === 'speaking' &&
       wasActive &&
       playbackState === 'idle'
     ) {
-      setVoiceState('listening')
-      void startListening()
+      if (config.autoListen) {
+        setVoiceState('listening')
+        void startListening()
+      } else {
+        voiceActiveRef.current = false
+        setIsVoiceActive(false)
+        setVoiceState('idle')
+      }
     }
-  }, [playbackState, voiceState, startListening])
+  }, [
+    config.autoListen,
+    playerError,
+    playbackState,
+    voiceState,
+    startListening
+  ])
 
   // Transition: when status becomes submitted/streaming, show waiting
   useEffect(() => {
@@ -235,6 +271,20 @@ export function useVoiceConversation({
       setVoiceState('waiting')
     }
   }, [status])
+
+  useEffect(() => {
+    if (!voiceActiveRef.current || status !== 'error') return
+
+    voiceActiveRef.current = false
+    setIsVoiceActive(false)
+    setVoiceState('idle')
+    stopListening()
+    stopAudio()
+    setConversationError({
+      code: 'chat-response-failed',
+      message: 'Voice mode stopped because the chat response failed.'
+    })
+  }, [status, stopAudio, stopListening])
 
   // Interrupt: if user starts speaking during playback, stop audio
   useEffect(() => {
@@ -252,6 +302,32 @@ export function useVoiceConversation({
     setConfig(prev => ({ ...prev, ...updates }))
   }, [])
 
+  useEffect(() => {
+    if (!voiceActiveRef.current || !inputError) return
+
+    voiceActiveRef.current = false
+    setIsVoiceActive(false)
+    setVoiceState('idle')
+    setConversationError(inputError)
+  }, [inputError])
+
+  useEffect(() => {
+    if (!voiceActiveRef.current || !playerError) return
+
+    if (config.autoListen) {
+      setVoiceState('listening')
+      void startListening()
+      return
+    }
+
+    voiceActiveRef.current = false
+    setIsVoiceActive(false)
+    setVoiceState('idle')
+  }, [config.autoListen, playerError, startListening])
+
+  const voiceError = conversationError ?? inputError ?? playerError
+  const voiceNotice = playerNotice
+
   return {
     voiceState,
     isVoiceActive,
@@ -261,6 +337,8 @@ export function useVoiceConversation({
     updateConfig,
     interimTranscript: interimTranscript ?? '',
     mediaStream,
-    audioElement
+    audioElement,
+    voiceError,
+    voiceNotice
   }
 }

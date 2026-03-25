@@ -8,7 +8,10 @@ import { CanvasRoot } from './canvas/canvas-root'
 import { buildChatRequestBody, getLatestGuestCanvasToken } from './chat-request'
 
 const mockUseChat = vi.fn()
+const mockUseVoiceConversation = vi.fn()
 const mockChatMessages = vi.fn((_props?: unknown) => null)
+const mockToast = vi.fn()
+const mockToastError = vi.fn()
 const mockSidebar = {
   setOpen: vi.fn(),
   setOpenMobile: vi.fn(),
@@ -92,9 +95,9 @@ vi.mock('ai', () => ({
 }))
 
 vi.mock('sonner', () => ({
-  toast: {
-    error: vi.fn()
-  }
+  toast: Object.assign(mockToast, {
+    error: mockToastError
+  })
 }))
 
 vi.mock('@/hooks/use-file-dropzone', () => ({
@@ -107,13 +110,7 @@ vi.mock('@/hooks/use-file-dropzone', () => ({
 }))
 
 vi.mock('@/hooks/use-voice-conversation', () => ({
-  useVoiceConversation: () => ({
-    stopVoice: vi.fn(),
-    voiceState: 'idle',
-    isVoiceActive: false,
-    startVoice: vi.fn(),
-    interimTranscript: ''
-  })
+  useVoiceConversation: () => mockUseVoiceConversation()
 }))
 
 vi.mock('./chat-messages', () => ({
@@ -154,7 +151,7 @@ vi.mock('./canvas/canvas-context', async () => {
   }
 })
 
-// Old E2B artifact onData handler tests removed — that dispatch path
+// Old artifact onData handler tests removed — that dispatch path
 // no longer exists. Canvas data parts use the canvas context instead.
 
 // --- Canvas migration-regression tests ---
@@ -191,7 +188,21 @@ beforeEach(() => {
   resetCanvasContext()
   resetSidebarContext()
   mockUseChat.mockReset()
+  mockUseVoiceConversation.mockReset()
   mockChatMessages.mockClear()
+  mockToast.mockReset()
+  mockToastError.mockReset()
+  mockUseVoiceConversation.mockReturnValue({
+    stopVoice: vi.fn(),
+    voiceState: 'idle',
+    isVoiceActive: false,
+    startVoice: vi.fn(),
+    interimTranscript: '',
+    mediaStream: null,
+    audioElement: null,
+    voiceError: null,
+    voiceNotice: null
+  })
 })
 
 describe('Canvas namespace — Stage 1 migration regression', () => {
@@ -575,5 +586,63 @@ describe('Chat sections', () => {
 
     expect(lastCall?.sections).toHaveLength(1)
     expect(lastCall?.sections?.[0]?.assistantMessages).toHaveLength(1)
+  })
+})
+
+describe('Chat voice toasts', () => {
+  it('shows a toast error when voice mode reports a voice error', async () => {
+    mockUseChat.mockReturnValue(makeUseChatReturnValue())
+    mockUseVoiceConversation.mockReturnValue({
+      stopVoice: vi.fn(),
+      voiceState: 'idle',
+      isVoiceActive: false,
+      startVoice: vi.fn(),
+      interimTranscript: '',
+      mediaStream: null,
+      audioElement: null,
+      voiceError: {
+        code: 'tts-timeout',
+        message: 'Voice synthesis timed out. Please try again.'
+      },
+      voiceNotice: null
+    })
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat savedMessages={[]} />)
+
+    await waitFor(() => {
+      expect(mockToastError).toHaveBeenCalledWith(
+        'Voice synthesis timed out. Please try again.'
+      )
+    })
+  })
+
+  it('shows a toast notice when voice mode reports a provider fallback', async () => {
+    mockUseChat.mockReturnValue(makeUseChatReturnValue())
+    mockUseVoiceConversation.mockReturnValue({
+      stopVoice: vi.fn(),
+      voiceState: 'idle',
+      isVoiceActive: false,
+      startVoice: vi.fn(),
+      interimTranscript: '',
+      mediaStream: null,
+      audioElement: null,
+      voiceError: null,
+      voiceNotice: {
+        code: 'provider-fallback',
+        message: 'Voice fallback: switched to OpenAI.'
+      }
+    })
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat savedMessages={[]} />)
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(
+        'Voice fallback: switched to OpenAI.'
+      )
+    })
   })
 })

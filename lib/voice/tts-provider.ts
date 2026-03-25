@@ -24,7 +24,8 @@ export function resolveProvider(preferred?: TTSProvider): TTSProvider | null {
  */
 export async function synthesizeElevenLabs(
   text: string,
-  voiceId: string
+  voiceId: string,
+  signal?: AbortSignal
 ): Promise<ReadableStream<Uint8Array>> {
   const apiKey = process.env.ELEVENLABS_API_KEY
   if (!apiKey) throw new Error('ELEVENLABS_API_KEY not configured')
@@ -37,6 +38,7 @@ export async function synthesizeElevenLabs(
         'Content-Type': 'application/json',
         'xi-api-key': apiKey
       },
+      signal,
       body: JSON.stringify({
         text,
         model_id: 'eleven_flash_v2_5',
@@ -66,7 +68,8 @@ export async function synthesizeElevenLabs(
  */
 export async function synthesizeOpenAI(
   text: string,
-  voice = 'alloy'
+  voice = 'alloy',
+  signal?: AbortSignal
 ): Promise<ReadableStream<Uint8Array>> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error('OPENAI_API_KEY not configured')
@@ -77,6 +80,7 @@ export async function synthesizeOpenAI(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`
     },
+    signal,
     body: JSON.stringify({
       model: 'tts-1',
       input: text,
