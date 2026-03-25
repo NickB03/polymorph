@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { deleteCookie, setCookie } from '@/lib/utils/cookies'
 
-import { loadVoiceConfig } from './voice-settings'
+import { applyProviderDefaults, loadVoiceConfig } from './voice-settings'
 
 describe('loadVoiceConfig', () => {
   afterEach(() => {
@@ -30,6 +30,34 @@ describe('loadVoiceConfig', () => {
       ttsProvider: 'openai',
       voiceId: 'nova',
       autoListen: false
+    })
+  })
+
+  it('drops an OpenAI voice name when provider is elevenlabs', () => {
+    setCookie('voiceTTSProvider', 'elevenlabs')
+    setCookie('voiceVoiceId', 'nova')
+
+    expect(loadVoiceConfig()).toEqual({
+      ttsProvider: 'elevenlabs'
+    })
+  })
+})
+
+describe('applyProviderDefaults', () => {
+  it('resets voiceId for each provider', () => {
+    expect(applyProviderDefaults('elevenlabs')).toEqual({
+      ttsProvider: 'elevenlabs',
+      voiceId: 'DXFkLCBUTmvXpp2QwZjA'
+    })
+
+    expect(applyProviderDefaults('openai')).toEqual({
+      ttsProvider: 'openai',
+      voiceId: 'alloy'
+    })
+
+    expect(applyProviderDefaults('browser')).toEqual({
+      ttsProvider: 'browser',
+      voiceId: ''
     })
   })
 })
