@@ -1,12 +1,26 @@
 'use client'
 
+import { useCallback, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { User } from '@supabase/supabase-js'
-import { Link2, LogOut, MessageSquare, Palette } from 'lucide-react'
+import { Link2, LogOut, MessageSquare, Palette, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
+import { clearChats } from '@/lib/actions/chat'
 import { createClient } from '@/lib/supabase/client'
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -21,6 +35,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 import { Button } from './ui/button'
+import { Spinner } from './ui/spinner'
 import { ExternalLinkItems } from './external-link-items'
 import { ThemeMenuItems } from './theme-menu-items'
 
@@ -31,6 +46,23 @@ interface UserMenuProps {
 
 export default function UserMenu({ user, onFeedbackClick }: UserMenuProps) {
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [isClearAlertOpen, setIsClearAlertOpen] = useState(false)
+
+  const handleClearHistory = useCallback(() => {
+    startTransition(async () => {
+      const res = await clearChats()
+      if (res?.success) {
+        toast.success('History cleared')
+        router.push('/')
+        window.dispatchEvent(new CustomEvent('chat-history-updated'))
+      } else if (res?.error) {
+        toast.error(res.error)
+      }
+      setIsClearAlertOpen(false)
+    })
+  }, [router])
+
   const userName =
     user.user_metadata?.full_name || user.user_metadata?.name || 'User'
   const avatarUrl =
@@ -109,6 +141,38 @@ export default function UserMenu({ user, onFeedbackClick }: UserMenuProps) {
             <span>Feedback</span>
           </DropdownMenuItem>
         ) : null}
+        <AlertDialog open={isClearAlertOpen} onOpenChange={setIsClearAlertOpen}>
+          <AlertDialogTrigger asChild>
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onSelect={e => e.preventDefault()}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              <span>Clear History</span>
+            </DropdownMenuItem>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. It will permanently delete your
+                history.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isPending}
+                onClick={e => {
+                  e.preventDefault()
+                  handleClearHistory()
+                }}
+              >
+                {isPending ? <Spinner /> : 'Clear'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />

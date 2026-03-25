@@ -1330,9 +1330,12 @@
                   "name": "dlgCancel",
                   "x": 229,
                   "y": 0,
+                  "width": "fit_content",
                   "descendants": {
                     "IbUI1": {
-                      "content": "cancel"
+                      "content": "cancel",
+                      "x": 16,
+                      "y": 9
                     }
                   }
                 },
@@ -1343,9 +1346,12 @@
                   "name": "dlgConfirm",
                   "x": 313,
                   "y": 0,
+                  "width": "fit_content",
                   "descendants": {
                     "nRyir": {
-                      "content": "confirm"
+                      "content": "confirm",
+                      "x": 16,
+                      "y": 9
                     }
                   }
                 }
@@ -2014,9 +2020,12 @@
               "name": "signIn",
               "x": 1339,
               "y": 10,
+              "width": "fit_content",
               "descendants": {
                 "55ADz": {
-                  "content": "Sign in"
+                  "content": "Sign in",
+                  "x": 16,
+                  "y": 9
                 }
               }
             }
@@ -2187,34 +2196,27 @@
                           "children": [
                             {
                               "type": "frame",
-                              "id": "F1T7w",
-                              "name": "Speed Pill",
-                              "height": 28,
+                              "id": "nNpj7",
+                              "name": "Speech Button",
+                              "width": 32,
+                              "height": 32,
+                              "fill": "$--background",
                               "cornerRadius": 9999,
-                              "gap": 4,
-                              "padding": [
-                                0,
-                                10
-                              ],
+                              "stroke": {
+                                "align": "inside",
+                                "thickness": 1,
+                                "fill": "$--border"
+                              },
+                              "justifyContent": "center",
                               "alignItems": "center",
                               "children": [
                                 {
-                                  "type": "text",
-                                  "id": "aupTW",
-                                  "name": "speedLabel",
-                                  "fill": "$--muted-foreground",
-                                  "content": "Speed",
-                                  "fontFamily": "Geist",
-                                  "fontSize": 12,
-                                  "fontWeight": "500"
-                                },
-                                {
                                   "type": "icon_font",
-                                  "id": "FdtAN",
-                                  "name": "speedChevron",
-                                  "width": 12,
-                                  "height": 12,
-                                  "iconFontName": "chevron-down",
+                                  "id": "iuzuu",
+                                  "name": "micIcon",
+                                  "width": 18,
+                                  "height": 18,
+                                  "iconFontName": "audio-lines",
                                   "iconFontFamily": "lucide",
                                   "fill": "$--muted-foreground"
                                 }
@@ -2761,182 +2763,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "frame",
-          "id": "edTTc",
-          "layoutPosition": "absolute",
-          "x": 832,
-          "y": 528,
-          "name": "Model Selector Dropdown",
-          "width": 220,
-          "fill": "$--background",
-          "cornerRadius": "$--radius-md",
-          "stroke": {
-            "align": "outside",
-            "thickness": 1,
-            "fill": "$--border"
-          },
-          "effect": {
-            "type": "shadow",
-            "shadowType": "outer",
-            "color": "#0000001E",
-            "offset": {
-              "x": 0,
-              "y": 4
-            },
-            "blur": 16
-          },
-          "layout": "vertical",
-          "padding": 4,
-          "children": [
-            {
-              "type": "frame",
-              "id": "5LT6E",
-              "name": "hdr_l",
-              "width": "fill_container",
-              "padding": [
-                4,
-                8,
-                2,
-                8
-              ],
-              "children": [
-                {
-                  "type": "text",
-                  "id": "vn9lW",
-                  "fill": "$--muted-foreground",
-                  "content": "Model",
-                  "fontFamily": "Geist",
-                  "fontSize": 11,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "hWF8Y",
-              "name": "mr1_l",
-              "width": "fill_container",
-              "height": 48,
-              "fill": "$--accent",
-              "cornerRadius": "$--radius-sm",
-              "gap": 8,
-              "padding": [
-                0,
-                8
-              ],
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "icon_font",
-                  "id": "h8Hvl",
-                  "width": 14,
-                  "height": 14,
-                  "iconFontName": "zap",
-                  "iconFontFamily": "lucide",
-                  "fill": "$--foreground"
-                },
-                {
-                  "type": "frame",
-                  "id": "4M0rR",
-                  "name": "ts1_l",
-                  "width": "fill_container",
-                  "layout": "vertical",
-                  "gap": 2,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "7JeaS",
-                      "fill": "$--foreground",
-                      "content": "Speed",
-                      "fontFamily": "Geist",
-                      "fontSize": 13,
-                      "fontWeight": "600"
-                    },
-                    {
-                      "type": "text",
-                      "id": "p5Wqg",
-                      "fill": "$--muted-foreground",
-                      "content": "Gemini Flash 2.0",
-                      "fontFamily": "Geist",
-                      "fontSize": 11,
-                      "fontWeight": "normal"
-                    }
-                  ]
-                },
-                {
-                  "type": "icon_font",
-                  "id": "Smva4",
-                  "width": 14,
-                  "height": 14,
-                  "iconFontName": "check",
-                  "iconFontFamily": "lucide",
-                  "fill": "$--foreground"
-                }
-              ]
-            },
-            {
-              "type": "rectangle",
-              "id": "dV1PZ",
-              "fill": "$--border",
-              "width": "fill_container",
-              "height": 1
-            },
-            {
-              "type": "frame",
-              "id": "fP4Ju",
-              "name": "mr2_l",
-              "width": "fill_container",
-              "height": 48,
-              "cornerRadius": "$--radius-sm",
-              "gap": 8,
-              "padding": [
-                0,
-                8
-              ],
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "icon_font",
-                  "id": "jFau5",
-                  "width": 14,
-                  "height": 14,
-                  "iconFontName": "brain-circuit",
-                  "iconFontFamily": "lucide",
-                  "fill": "$--muted-foreground"
-                },
-                {
-                  "type": "frame",
-                  "id": "qNq3Z",
-                  "name": "ts2_l",
-                  "width": "fill_container",
-                  "layout": "vertical",
-                  "gap": 2,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "J53kg",
-                      "fill": "$--foreground",
-                      "content": "Quality",
-                      "fontFamily": "Geist",
-                      "fontSize": 13,
-                      "fontWeight": "normal"
-                    },
-                    {
-                      "type": "text",
-                      "id": "oF9MC",
-                      "fill": "$--muted-foreground",
-                      "content": "Grok 4.1 Reasoning",
-                      "fontFamily": "Geist",
-                      "fontSize": 11,
-                      "fontWeight": "normal"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
         }
       ]
     },
@@ -2985,9 +2811,12 @@
               "name": "signIn2",
               "x": 1339,
               "y": 10,
+              "width": "fit_content",
               "descendants": {
                 "55ADz": {
-                  "content": "Sign in"
+                  "content": "Sign in",
+                  "x": 16,
+                  "y": 9
                 }
               }
             }
@@ -3158,34 +2987,27 @@
                           "children": [
                             {
                               "type": "frame",
-                              "id": "f2aTm",
-                              "name": "spdPill",
-                              "height": 28,
+                              "id": "z6cIN",
+                              "name": "speechBtn",
+                              "width": 32,
+                              "height": 32,
+                              "fill": "$--background",
                               "cornerRadius": 9999,
-                              "gap": 4,
-                              "padding": [
-                                0,
-                                10
-                              ],
+                              "stroke": {
+                                "align": "inside",
+                                "thickness": 1,
+                                "fill": "$--border"
+                              },
+                              "justifyContent": "center",
                               "alignItems": "center",
                               "children": [
                                 {
-                                  "type": "text",
-                                  "id": "G6ppR",
-                                  "name": "spdLbl",
-                                  "fill": "$--muted-foreground",
-                                  "content": "Speed",
-                                  "fontFamily": "Geist",
-                                  "fontSize": 12,
-                                  "fontWeight": "500"
-                                },
-                                {
                                   "type": "icon_font",
-                                  "id": "bJUep",
-                                  "name": "spdChv",
-                                  "width": 12,
-                                  "height": 12,
-                                  "iconFontName": "chevron-down",
+                                  "id": "JBfLC",
+                                  "name": "micIcn",
+                                  "width": 18,
+                                  "height": 18,
+                                  "iconFontName": "audio-lines",
                                   "iconFontFamily": "lucide",
                                   "fill": "$--muted-foreground"
                                 }
@@ -3733,182 +3555,6 @@
               ]
             }
           ]
-        },
-        {
-          "type": "frame",
-          "id": "pBN2h",
-          "layoutPosition": "absolute",
-          "x": 832,
-          "y": 528,
-          "name": "Model Selector Dropdown",
-          "width": 220,
-          "fill": "$--background",
-          "cornerRadius": "$--radius-md",
-          "stroke": {
-            "align": "outside",
-            "thickness": 1,
-            "fill": "$--border"
-          },
-          "effect": {
-            "type": "shadow",
-            "shadowType": "outer",
-            "color": "#00000066",
-            "offset": {
-              "x": 0,
-              "y": 4
-            },
-            "blur": 16
-          },
-          "layout": "vertical",
-          "padding": 4,
-          "children": [
-            {
-              "type": "frame",
-              "id": "wLcqu",
-              "name": "hdr_d",
-              "width": "fill_container",
-              "padding": [
-                4,
-                8,
-                2,
-                8
-              ],
-              "children": [
-                {
-                  "type": "text",
-                  "id": "X5O6v",
-                  "fill": "$--muted-foreground",
-                  "content": "Model",
-                  "fontFamily": "Geist",
-                  "fontSize": 11,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "TypXb",
-              "name": "mr1_d",
-              "width": "fill_container",
-              "height": 48,
-              "fill": "$--accent",
-              "cornerRadius": "$--radius-sm",
-              "gap": 8,
-              "padding": [
-                0,
-                8
-              ],
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "icon_font",
-                  "id": "ykpIn",
-                  "width": 14,
-                  "height": 14,
-                  "iconFontName": "zap",
-                  "iconFontFamily": "lucide",
-                  "fill": "$--foreground"
-                },
-                {
-                  "type": "frame",
-                  "id": "NSXyk",
-                  "name": "ts1_d",
-                  "width": "fill_container",
-                  "layout": "vertical",
-                  "gap": 2,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "NHx1B",
-                      "fill": "$--foreground",
-                      "content": "Speed",
-                      "fontFamily": "Geist",
-                      "fontSize": 13,
-                      "fontWeight": "600"
-                    },
-                    {
-                      "type": "text",
-                      "id": "hRVdJ",
-                      "fill": "$--muted-foreground",
-                      "content": "Gemini Flash 2.0",
-                      "fontFamily": "Geist",
-                      "fontSize": 11,
-                      "fontWeight": "normal"
-                    }
-                  ]
-                },
-                {
-                  "type": "icon_font",
-                  "id": "2hBdh",
-                  "width": 14,
-                  "height": 14,
-                  "iconFontName": "check",
-                  "iconFontFamily": "lucide",
-                  "fill": "$--foreground"
-                }
-              ]
-            },
-            {
-              "type": "rectangle",
-              "id": "IaAPL",
-              "fill": "$--border",
-              "width": "fill_container",
-              "height": 1
-            },
-            {
-              "type": "frame",
-              "id": "2OCvp",
-              "name": "mr2_d",
-              "width": "fill_container",
-              "height": 48,
-              "cornerRadius": "$--radius-sm",
-              "gap": 8,
-              "padding": [
-                0,
-                8
-              ],
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "icon_font",
-                  "id": "bUbWD",
-                  "width": 14,
-                  "height": 14,
-                  "iconFontName": "brain-circuit",
-                  "iconFontFamily": "lucide",
-                  "fill": "$--muted-foreground"
-                },
-                {
-                  "type": "frame",
-                  "id": "mG9pI",
-                  "name": "ts2_d",
-                  "width": "fill_container",
-                  "layout": "vertical",
-                  "gap": 2,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "KWXWg",
-                      "fill": "$--foreground",
-                      "content": "Quality",
-                      "fontFamily": "Geist",
-                      "fontSize": 13,
-                      "fontWeight": "normal"
-                    },
-                    {
-                      "type": "text",
-                      "id": "u57Gq",
-                      "fill": "$--muted-foreground",
-                      "content": "Grok 4.1 Reasoning",
-                      "fontFamily": "Geist",
-                      "fontSize": 11,
-                      "fontWeight": "normal"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
         }
       ]
     },
@@ -3978,11 +3624,13 @@
                   "name": "sNewBtn",
                   "x": 170,
                   "y": 16,
+                  "width": "fit_content",
                   "descendants": {
                     "IbUI1": {
                       "y": 7,
                       "content": "New",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "x": 16
                     }
                   }
                 }
@@ -4584,6 +4232,33 @@
                 },
                 {
                   "type": "frame",
+                  "id": "UAYMk",
+                  "name": "Speech Button",
+                  "width": 36,
+                  "height": 36,
+                  "cornerRadius": 9999,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "n3XNF",
+                      "name": "micIcon",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "audio-lines",
+                      "iconFontFamily": "lucide",
+                      "fill": "$--muted-foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
                   "id": "8Mrdo",
                   "name": "Send Button",
                   "width": 36,
@@ -4969,11 +4644,13 @@
                   "name": "sNewBtn",
                   "x": 170,
                   "y": 16,
+                  "width": "fit_content",
                   "descendants": {
                     "IbUI1": {
                       "y": 7,
                       "content": "New",
-                      "fontSize": 12
+                      "fontSize": 12,
+                      "x": 16
                     }
                   }
                 }
@@ -5570,6 +5247,34 @@
                       "fontFamily": "Geist",
                       "fontSize": "$--font-size-sm",
                       "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "V3pZd",
+                  "name": "Speech Button",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "$--background",
+                  "cornerRadius": 9999,
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$--border"
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "TvHzv",
+                      "name": "micIcon",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "audio-lines",
+                      "iconFontFamily": "lucide",
+                      "fill": "$--muted-foreground"
                     }
                   ]
                 },
@@ -12908,7 +12613,8 @@
                           "fill": "$--foreground",
                           "content": "Regular (400)",
                           "fontFamily": "Geist",
-                          "fontSize": 16
+                          "fontSize": 16,
+                          "fontWeight": "normal"
                         },
                         {
                           "type": "text",
@@ -17427,13 +17133,18 @@
                   "height": "fit_content",
                   "descendants": {
                     "Qbpfz": {
-                      "width": "fill_container"
+                      "width": "fill_container",
+                      "height": "fit_content"
                     },
                     "S5jGK": {
-                      "content": "Profile"
+                      "content": "Profile",
+                      "x": 24,
+                      "y": 24
                     },
                     "Po9iC": {
-                      "content": "Manage your personal information"
+                      "content": "Manage your personal information",
+                      "x": 24,
+                      "y": 49
                     },
                     "1i4j6": {
                       "type": "frame",
@@ -17517,7 +17228,8 @@
                                 "IbUI1": {
                                   "y": 7.5,
                                   "content": "Change avatar",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "x": 16
                                 }
                               }
                             }
@@ -17582,7 +17294,8 @@
                                 "55ADz": {
                                   "y": 7.5,
                                   "content": "Edit",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "x": 16
                                 }
                               }
                             }
@@ -17638,7 +17351,8 @@
                                 "55ADz": {
                                   "y": 7.5,
                                   "content": "Edit",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "x": 16
                                 }
                               }
                             }
@@ -17659,13 +17373,18 @@
                   "height": "fit_content",
                   "descendants": {
                     "Qbpfz": {
-                      "width": "fill_container"
+                      "width": "fill_container",
+                      "height": "fit_content"
                     },
                     "S5jGK": {
-                      "content": "Preferences"
+                      "content": "Preferences",
+                      "x": 24,
+                      "y": 24
                     },
                     "Po9iC": {
-                      "content": "Customize your experience"
+                      "content": "Customize your experience",
+                      "x": 24,
+                      "y": 49
                     },
                     "1i4j6": {
                       "type": "frame",
@@ -17871,7 +17590,13 @@
                               "name": "searchToggle",
                               "x": 1032,
                               "y": 8.5,
+                              "width": "fit_content",
+                              "height": "fit_content",
                               "descendants": {
+                                "bG69M": {
+                                  "x": 18,
+                                  "y": 2
+                                },
                                 "2HTHe": {
                                   "enabled": false
                                 }
@@ -17936,7 +17661,13 @@
                               "descendants": {
                                 "KdCT8": {
                                   "content": "Gemini 3 Flash",
-                                  "fill": "$--foreground"
+                                  "fill": "$--foreground",
+                                  "x": 12,
+                                  "y": 11
+                                },
+                                "1aU9F": {
+                                  "x": 172,
+                                  "y": 12
                                 }
                               }
                             }
@@ -17957,13 +17688,18 @@
                   "height": "fit_content",
                   "descendants": {
                     "Qbpfz": {
-                      "width": "fill_container"
+                      "width": "fill_container",
+                      "height": "fit_content"
                     },
                     "S5jGK": {
-                      "content": "Account"
+                      "content": "Account",
+                      "x": 24,
+                      "y": 24
                     },
                     "Po9iC": {
-                      "content": "Manage your account settings and data"
+                      "content": "Manage your account settings and data",
+                      "x": 24,
+                      "y": 49
                     },
                     "1i4j6": {
                       "type": "frame",
@@ -18028,7 +17764,9 @@
                               "descendants": {
                                 "IbUI1": {
                                   "content": "Change password",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "x": 16,
+                                  "y": 9.5
                                 }
                               }
                             }
@@ -18092,7 +17830,9 @@
                               "descendants": {
                                 "IbUI1": {
                                   "content": "Export",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "x": 16,
+                                  "y": 9.5
                                 }
                               }
                             }
@@ -18156,7 +17896,9 @@
                                   "descendants": {
                                     "S01zi": {
                                       "content": "Delete account",
-                                      "fontSize": 13
+                                      "fontSize": 13,
+                                      "x": 16,
+                                      "y": 9.5
                                     }
                                   }
                                 }
@@ -18404,13 +18146,18 @@
                   "height": "fit_content",
                   "descendants": {
                     "Qbpfz": {
-                      "width": "fill_container"
+                      "width": "fill_container",
+                      "height": "fit_content"
                     },
                     "S5jGK": {
-                      "content": "Profile"
+                      "content": "Profile",
+                      "x": 24,
+                      "y": 24
                     },
                     "Po9iC": {
-                      "content": "Manage your personal information"
+                      "content": "Manage your personal information",
+                      "x": 24,
+                      "y": 49
                     },
                     "1i4j6": {
                       "type": "frame",
@@ -18494,7 +18241,8 @@
                                 "IbUI1": {
                                   "y": 7.5,
                                   "content": "Change avatar",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "x": 16
                                 }
                               }
                             }
@@ -18559,7 +18307,8 @@
                                 "55ADz": {
                                   "y": 7.5,
                                   "content": "Edit",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "x": 16
                                 }
                               }
                             }
@@ -18615,7 +18364,8 @@
                                 "55ADz": {
                                   "y": 7.5,
                                   "content": "Edit",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "x": 16
                                 }
                               }
                             }
@@ -18636,13 +18386,18 @@
                   "height": "fit_content",
                   "descendants": {
                     "Qbpfz": {
-                      "width": "fill_container"
+                      "width": "fill_container",
+                      "height": "fit_content"
                     },
                     "S5jGK": {
-                      "content": "Preferences"
+                      "content": "Preferences",
+                      "x": 24,
+                      "y": 24
                     },
                     "Po9iC": {
-                      "content": "Customize your experience"
+                      "content": "Customize your experience",
+                      "x": 24,
+                      "y": 49
                     },
                     "1i4j6": {
                       "type": "frame",
@@ -18848,7 +18603,13 @@
                               "name": "searchToggle",
                               "x": 1032,
                               "y": 8.5,
+                              "width": "fit_content",
+                              "height": "fit_content",
                               "descendants": {
+                                "bG69M": {
+                                  "x": 18,
+                                  "y": 2
+                                },
                                 "2HTHe": {
                                   "enabled": false
                                 }
@@ -18913,7 +18674,13 @@
                               "descendants": {
                                 "KdCT8": {
                                   "content": "Gemini 3 Flash",
-                                  "fill": "$--foreground"
+                                  "fill": "$--foreground",
+                                  "x": 12,
+                                  "y": 11
+                                },
+                                "1aU9F": {
+                                  "x": 172,
+                                  "y": 12
                                 }
                               }
                             }
@@ -18934,13 +18701,18 @@
                   "height": "fit_content",
                   "descendants": {
                     "Qbpfz": {
-                      "width": "fill_container"
+                      "width": "fill_container",
+                      "height": "fit_content"
                     },
                     "S5jGK": {
-                      "content": "Account"
+                      "content": "Account",
+                      "x": 24,
+                      "y": 24
                     },
                     "Po9iC": {
-                      "content": "Manage your account settings and data"
+                      "content": "Manage your account settings and data",
+                      "x": 24,
+                      "y": 49
                     },
                     "1i4j6": {
                       "type": "frame",
@@ -19005,7 +18777,9 @@
                               "descendants": {
                                 "IbUI1": {
                                   "content": "Change password",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "x": 16,
+                                  "y": 9.5
                                 }
                               }
                             }
@@ -19069,7 +18843,9 @@
                               "descendants": {
                                 "IbUI1": {
                                   "content": "Export",
-                                  "fontSize": 13
+                                  "fontSize": 13,
+                                  "x": 16,
+                                  "y": 9.5
                                 }
                               }
                             }
@@ -19133,7 +18909,9 @@
                                   "descendants": {
                                     "S01zi": {
                                       "content": "Delete account",
-                                      "fontSize": 13
+                                      "fontSize": 13,
+                                      "x": 16,
+                                      "y": 9.5
                                     }
                                   }
                                 }
@@ -19273,9 +19051,12 @@
                       "name": "homeBtn",
                       "x": 0,
                       "y": 8,
+                      "width": "fit_content",
                       "descendants": {
                         "nRyir": {
-                          "content": "Go home"
+                          "content": "Go home",
+                          "x": 16,
+                          "y": 9
                         }
                       }
                     },
@@ -19287,9 +19068,12 @@
                       "name": "backBtn",
                       "x": 103,
                       "y": 8,
+                      "width": "fit_content",
                       "descendants": {
                         "55ADz": {
-                          "content": "Go back"
+                          "content": "Go back",
+                          "x": 16,
+                          "y": 9
                         }
                       }
                     }
@@ -19423,9 +19207,12 @@
                       "name": "homeBtn",
                       "x": 0,
                       "y": 8,
+                      "width": "fit_content",
                       "descendants": {
                         "nRyir": {
-                          "content": "Go home"
+                          "content": "Go home",
+                          "x": 16,
+                          "y": 9
                         }
                       }
                     },
@@ -19437,9 +19224,12 @@
                       "name": "backBtn",
                       "x": 103,
                       "y": 8,
+                      "width": "fit_content",
                       "descendants": {
                         "55ADz": {
-                          "content": "Go back"
+                          "content": "Go back",
+                          "x": 16,
+                          "y": 9
                         }
                       }
                     }
@@ -19579,10 +19369,13 @@
                       "name": "signInBtn",
                       "x": 268,
                       "y": 4,
+                      "width": "fit_content",
                       "descendants": {
                         "55ADz": {
                           "content": "Sign in",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "x": 16,
+                          "y": 9.5
                         }
                       }
                     }
@@ -19941,10 +19734,13 @@
                       "name": "signInBtn",
                       "x": 268,
                       "y": 4,
+                      "width": "fit_content",
                       "descendants": {
                         "55ADz": {
                           "content": "Sign in",
-                          "fontSize": 13
+                          "fontSize": 13,
+                          "x": 16,
+                          "y": 9.5
                         }
                       }
                     }
@@ -20348,15 +20144,19 @@
                       "name": "lEmail",
                       "x": 0,
                       "y": 0,
+                      "height": "fit_content",
                       "descendants": {
                         "tbOpA": {
                           "content": "Email"
                         },
                         "Z5DKR": {
-                          "width": "fill_container"
+                          "width": "fill_container",
+                          "y": 24
                         },
                         "vOqQ9": {
-                          "content": "you@example.com"
+                          "content": "you@example.com",
+                          "x": 12,
+                          "y": 11
                         }
                       }
                     },
@@ -20368,15 +20168,19 @@
                       "name": "lPass",
                       "x": 0,
                       "y": 80,
+                      "height": "fit_content",
                       "descendants": {
                         "tbOpA": {
                           "content": "Password"
                         },
                         "Z5DKR": {
-                          "width": "fill_container"
+                          "width": "fill_container",
+                          "y": 24
                         },
                         "vOqQ9": {
-                          "content": "Enter your password"
+                          "content": "Enter your password",
+                          "x": 12,
+                          "y": 11
                         }
                       }
                     }
@@ -20747,15 +20551,19 @@
                       "name": "lEmail",
                       "x": 0,
                       "y": 0,
+                      "height": "fit_content",
                       "descendants": {
                         "tbOpA": {
                           "content": "Email"
                         },
                         "Z5DKR": {
-                          "width": "fill_container"
+                          "width": "fill_container",
+                          "y": 24
                         },
                         "vOqQ9": {
-                          "content": "you@example.com"
+                          "content": "you@example.com",
+                          "x": 12,
+                          "y": 11
                         }
                       }
                     },
@@ -20767,15 +20575,19 @@
                       "name": "lPass",
                       "x": 0,
                       "y": 80,
+                      "height": "fit_content",
                       "descendants": {
                         "tbOpA": {
                           "content": "Password"
                         },
                         "Z5DKR": {
-                          "width": "fill_container"
+                          "width": "fill_container",
+                          "y": 24
                         },
                         "vOqQ9": {
-                          "content": "Enter your password"
+                          "content": "Enter your password",
+                          "x": 12,
+                          "y": 11
                         }
                       }
                     }
@@ -25031,6 +24843,3618 @@
               "fill": "$--foreground",
               "width": 134,
               "height": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "fyy9K",
+      "x": 0,
+      "y": 9100,
+      "name": "Active Chat — Voice Listening (Light)",
+      "theme": {
+        "mode": "light"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$--background",
+      "children": [
+        {
+          "type": "frame",
+          "id": "uvOYy",
+          "name": "Sidebar",
+          "width": 260,
+          "height": "fill_container",
+          "fill": "$--sidebar",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "right": 1
+            },
+            "fill": "$--sidebar-border"
+          },
+          "layout": "vertical",
+          "gap": 12,
+          "padding": [
+            0,
+            16
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "IhymV",
+              "name": "Sidebar Header",
+              "width": "fill_container",
+              "padding": [
+                16,
+                0
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "VWC3n",
+                  "name": "sLogo",
+                  "fill": "$--sidebar-foreground",
+                  "content": "pm",
+                  "fontFamily": "Geist",
+                  "fontSize": 20,
+                  "fontWeight": "700",
+                  "letterSpacing": -1
+                },
+                {
+                  "id": "7X49a",
+                  "type": "ref",
+                  "ref": "rjiuk",
+                  "height": 30,
+                  "name": "sNewBtn",
+                  "x": 170,
+                  "y": 16,
+                  "width": "fit_content",
+                  "descendants": {
+                    "IbUI1": {
+                      "y": 7,
+                      "content": "New",
+                      "fontSize": 12,
+                      "x": 16
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "njNzq",
+              "name": "Search",
+              "width": "fill_container",
+              "height": 36,
+              "fill": "$--sidebar-accent",
+              "cornerRadius": "$--radius-md",
+              "gap": 8,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "2gt69",
+                  "name": "sSearchIcon",
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "search",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "text",
+                  "id": "IeMRF",
+                  "name": "sSearchText",
+                  "fill": "$--muted-foreground",
+                  "content": "Search chats...",
+                  "fontFamily": "Geist",
+                  "fontSize": "$--font-size-xs",
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "UwOoE",
+              "name": "Chat List",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "bOTOS",
+                  "name": "sC1",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "$--sidebar-accent",
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "cFruI",
+                      "name": "sC1T",
+                      "fill": "$--sidebar-accent-foreground",
+                      "content": "Impact of AI on healthcare...",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "rkf2a",
+                  "name": "sC2",
+                  "width": "fill_container",
+                  "height": 34,
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "LKDXB",
+                      "name": "sC2T",
+                      "fill": "$--sidebar-foreground",
+                      "content": "Compare React frameworks",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "V3e9a",
+                  "name": "sC3",
+                  "width": "fill_container",
+                  "height": 34,
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "RBqvy",
+                      "name": "sC3T",
+                      "fill": "$--sidebar-foreground",
+                      "content": "Quantum computing overview",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bMphf",
+                  "name": "sC4",
+                  "width": "fill_container",
+                  "height": 34,
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "AkzZT",
+                      "name": "sC4T",
+                      "fill": "$--sidebar-foreground",
+                      "content": "Climate change solutions",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "p95Bs",
+          "name": "Main Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "MJ3uH",
+              "name": "Header",
+              "width": "fill_container",
+              "height": 56,
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "$--border"
+              },
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "fVVKR",
+                  "name": "headerTitle",
+                  "fill": "$--foreground",
+                  "content": "Impact of AI on healthcare",
+                  "fontFamily": "Geist",
+                  "fontSize": "$--font-size-sm",
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "ZZe7m",
+                  "name": "Header Right",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "nOMEL",
+                      "name": "shareBtn",
+                      "width": 32,
+                      "height": 32,
+                      "cornerRadius": "$--radius-md",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "gZvy3",
+                          "name": "shareIcon",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "share",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "h4cAT",
+                      "name": "moreBtn",
+                      "width": 32,
+                      "height": 32,
+                      "cornerRadius": "$--radius-md",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "p2cDh",
+                          "name": "moreIcon",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "ellipsis",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "JYWRU",
+              "name": "Messages Area",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "padding": [
+                20,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "iuVhK",
+                  "name": "Messages Inner",
+                  "width": 768,
+                  "layout": "vertical",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SqmTK",
+                      "name": "User Message",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "k2Fqj",
+                          "type": "ref",
+                          "ref": "Se9jH",
+                          "width": 28,
+                          "height": 28,
+                          "name": "uAv",
+                          "x": 0,
+                          "y": 0,
+                          "descendants": {
+                            "UOjf8": {
+                              "x": 9.5,
+                              "y": 6,
+                              "content": "N",
+                              "fontSize": 12
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "ZET2w",
+                          "name": "uText",
+                          "fill": "$--foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "What is the current impact of artificial intelligence on healthcare outcomes, and what are the most promising applications being developed?",
+                          "lineHeight": 1.5,
+                          "fontFamily": "Geist",
+                          "fontSize": "$--font-size-sm",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "nUjES",
+                      "name": "Search Indicator",
+                      "width": "fill_container",
+                      "fill": "$--muted",
+                      "cornerRadius": "$--radius-md",
+                      "gap": 8,
+                      "padding": [
+                        10,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "TKHIF",
+                          "name": "searchIcon",
+                          "width": 14,
+                          "height": 14,
+                          "iconFontName": "search",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "dmj72",
+                          "name": "searchText",
+                          "fill": "$--muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Searching 5 sources...",
+                          "fontFamily": "Geist",
+                          "fontSize": "$--font-size-xs",
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "JL7Tf",
+                          "name": "searchDots",
+                          "fill": "#16A34A",
+                          "content": "Done",
+                          "fontFamily": "Geist",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "icon_font",
+                          "id": "h3MVp",
+                          "name": "searchChev",
+                          "width": 14,
+                          "height": 14,
+                          "iconFontName": "chevron-down",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "nqdRP",
+                      "name": "AI Response",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "HdUhY",
+                          "type": "ref",
+                          "ref": "Se9jH",
+                          "width": 28,
+                          "height": 28,
+                          "name": "aiAv",
+                          "x": 0,
+                          "y": 0,
+                          "descendants": {
+                            "UOjf8": {
+                              "x": 6.5,
+                              "y": 7.5,
+                              "content": "pm",
+                              "fontSize": 10,
+                              "fontWeight": "700",
+                              "letterSpacing": -0.5
+                            }
+                          }
+                        },
+                        {
+                          "type": "frame",
+                          "id": "TDklh",
+                          "name": "AI Body",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 16,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "KNfVD",
+                              "name": "aiTitle",
+                              "fill": "$--foreground",
+                              "content": "AI in Healthcare: Current Impact and Future Promise",
+                              "fontFamily": "Geist",
+                              "fontSize": 16,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "text",
+                              "id": "qaHKV",
+                              "name": "aiP1",
+                              "fill": "$--foreground",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Artificial intelligence is rapidly transforming healthcare delivery and outcomes across multiple domains. In diagnostics, deep learning models now match or exceed radiologist accuracy in detecting conditions like diabetic retinopathy, lung cancer nodules, and breast cancer from medical imaging [1][2]. Google Health's AI system demonstrated 94.5% sensitivity in mammography screening, reducing false positives by 5.7% compared to human readers [3].",
+                              "lineHeight": 1.65,
+                              "fontFamily": "Geist",
+                              "fontSize": "$--font-size-sm",
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "6hxpD",
+                              "name": "aiP2",
+                              "fill": "$--foreground",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "In drug discovery, AI has compressed the traditional 10-15 year development timeline significantly. Insilico Medicine's AI-discovered drug reached Phase II clinical trials in just 30 months from target identification [4]. Meanwhile, AlphaFold's protein structure predictions have been used by over 2 million researchers, accelerating understanding of disease mechanisms [5][6].",
+                              "lineHeight": 1.65,
+                              "fontFamily": "Geist",
+                              "fontSize": "$--font-size-sm",
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Jlp3o",
+                      "name": "Action Buttons",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "I425H",
+                          "name": "actCopy",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "6lZCg",
+                              "name": "actCopyI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "copy",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ZunAH",
+                          "name": "actUp",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "HI7ER",
+                              "name": "actUpI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "thumbs-up",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "SRD45",
+                          "name": "actDown",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "V5tur",
+                              "name": "actDownI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "thumbs-down",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "WCAUP",
+                          "name": "actRetry",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "OSvPv",
+                              "name": "actRetryI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "refresh-cw",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "qvLF2",
+              "name": "Input Bar",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "$--border"
+              },
+              "gap": 12,
+              "padding": [
+                12,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "r0SBm",
+                  "name": "Input Field",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$--muted",
+                  "cornerRadius": "$--radius-lg",
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "erXbR",
+                      "name": "inputIcon",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "message-square",
+                      "iconFontFamily": "lucide",
+                      "fill": "$--muted-foreground"
+                    },
+                    {
+                      "type": "text",
+                      "id": "xyNBF",
+                      "name": "inputText",
+                      "fill": "$--muted-foreground",
+                      "content": "Ask a follow-up...",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-sm",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "DcKQq",
+                  "name": "stopBtn",
+                  "width": 40,
+                  "height": 40,
+                  "fill": "#FEE2E2",
+                  "cornerRadius": 9999,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "BS5c8",
+                      "name": "stopIcon",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "square",
+                      "iconFontFamily": "lucide",
+                      "fill": "#DC2626"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "IDPAw",
+                  "name": "Send Button",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "$--primary",
+                  "cornerRadius": "$--radius-md",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "WJoas",
+                      "name": "sendIcon",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "arrow-up",
+                      "iconFontFamily": "lucide",
+                      "fill": "$--primary-foreground"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "2B4MN",
+          "layoutPosition": "absolute",
+          "x": 260,
+          "y": 56,
+          "name": "overlay",
+          "width": 1180,
+          "height": 776,
+          "fill": "#FFFFFFCC",
+          "effect": {
+            "type": "background_blur",
+            "radius": 20
+          },
+          "layout": "vertical",
+          "gap": 24,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "rVFq7",
+              "name": "bars",
+              "gap": 3,
+              "alignItems": "end",
+              "children": [
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "Py8jH",
+                  "name": "b1",
+                  "fill": "$--muted-foreground",
+                  "width": 3,
+                  "height": 16
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "72pXp",
+                  "name": "b2",
+                  "fill": "$--muted-foreground",
+                  "width": 3,
+                  "height": 28
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "DrVif",
+                  "name": "b3",
+                  "fill": "$--muted-foreground",
+                  "width": 3,
+                  "height": 12
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "RkQ6c",
+                  "name": "b4",
+                  "fill": "$--muted-foreground",
+                  "width": 3,
+                  "height": 36
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "VWlUI",
+                  "name": "b5",
+                  "fill": "$--muted-foreground",
+                  "width": 3,
+                  "height": 24
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "eoEYu",
+                  "name": "b6",
+                  "fill": "$--muted-foreground",
+                  "width": 3,
+                  "height": 40
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "xj2B4",
+                  "name": "b7",
+                  "fill": "$--muted-foreground",
+                  "width": 3,
+                  "height": 40
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "hUFpE",
+                  "name": "b8",
+                  "fill": "$--muted-foreground",
+                  "width": 3,
+                  "height": 24
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "3841x",
+                  "name": "b9",
+                  "fill": "$--muted-foreground",
+                  "width": 3,
+                  "height": 36
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "brE3v",
+                  "name": "b10",
+                  "fill": "$--muted-foreground",
+                  "width": 3,
+                  "height": 12
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "mQksV",
+                  "name": "b11",
+                  "fill": "$--muted-foreground",
+                  "width": 3,
+                  "height": 28
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "d9afJ",
+                  "name": "b12",
+                  "fill": "$--muted-foreground",
+                  "width": 3,
+                  "height": 16
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "QdGTT",
+              "name": "transcript",
+              "fill": "$--foreground",
+              "content": "What is the latest news about artificial...",
+              "fontFamily": "Geist",
+              "fontSize": "$--font-size-base"
+            },
+            {
+              "type": "frame",
+              "id": "icf9B",
+              "name": "statusRow",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "2Bwqr",
+                  "name": "dot",
+                  "fill": "#22C55E",
+                  "width": 8,
+                  "height": 8
+                },
+                {
+                  "type": "text",
+                  "id": "Ugkpp",
+                  "name": "listeningLabel",
+                  "fill": "$--muted-foreground",
+                  "content": "Listening",
+                  "fontFamily": "Geist",
+                  "fontSize": "$--font-size-sm"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "wUihU",
+      "x": 0,
+      "y": 10200,
+      "name": "Active Chat — Voice Speaking (Light)",
+      "theme": {
+        "mode": "light"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$--background",
+      "children": [
+        {
+          "type": "frame",
+          "id": "2ZqA5",
+          "name": "Sidebar",
+          "width": 260,
+          "height": "fill_container",
+          "fill": "$--sidebar",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "right": 1
+            },
+            "fill": "$--sidebar-border"
+          },
+          "layout": "vertical",
+          "gap": 12,
+          "padding": [
+            0,
+            16
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "UbdvU",
+              "name": "Sidebar Header",
+              "width": "fill_container",
+              "padding": [
+                16,
+                0
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "6zwnx",
+                  "name": "sLogo",
+                  "fill": "$--sidebar-foreground",
+                  "content": "pm",
+                  "fontFamily": "Geist",
+                  "fontSize": 20,
+                  "fontWeight": "700",
+                  "letterSpacing": -1
+                },
+                {
+                  "id": "1269u",
+                  "type": "ref",
+                  "ref": "rjiuk",
+                  "height": 30,
+                  "name": "sNewBtn",
+                  "x": 170,
+                  "y": 16,
+                  "width": "fit_content",
+                  "descendants": {
+                    "IbUI1": {
+                      "y": 7,
+                      "content": "New",
+                      "fontSize": 12,
+                      "x": 16
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "eidGF",
+              "name": "Search",
+              "width": "fill_container",
+              "height": 36,
+              "fill": "$--sidebar-accent",
+              "cornerRadius": "$--radius-md",
+              "gap": 8,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "2YbEN",
+                  "name": "sSearchIcon",
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "search",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "text",
+                  "id": "hbc8N",
+                  "name": "sSearchText",
+                  "fill": "$--muted-foreground",
+                  "content": "Search chats...",
+                  "fontFamily": "Geist",
+                  "fontSize": "$--font-size-xs",
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nbfB2",
+              "name": "Chat List",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "9Xcck",
+                  "name": "sC1",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "$--sidebar-accent",
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "fSKcv",
+                      "name": "sC1T",
+                      "fill": "$--sidebar-accent-foreground",
+                      "content": "Impact of AI on healthcare...",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "34pvZ",
+                  "name": "sC2",
+                  "width": "fill_container",
+                  "height": 34,
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "flFgF",
+                      "name": "sC2T",
+                      "fill": "$--sidebar-foreground",
+                      "content": "Compare React frameworks",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "stDvg",
+                  "name": "sC3",
+                  "width": "fill_container",
+                  "height": 34,
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "EyQ92",
+                      "name": "sC3T",
+                      "fill": "$--sidebar-foreground",
+                      "content": "Quantum computing overview",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "NinOB",
+                  "name": "sC4",
+                  "width": "fill_container",
+                  "height": 34,
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "sGhKZ",
+                      "name": "sC4T",
+                      "fill": "$--sidebar-foreground",
+                      "content": "Climate change solutions",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "LCWpy",
+          "name": "Main Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "eYj4j",
+              "name": "Header",
+              "width": "fill_container",
+              "height": 56,
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "$--border"
+              },
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "9JWQO",
+                  "name": "headerTitle",
+                  "fill": "$--foreground",
+                  "content": "Impact of AI on healthcare",
+                  "fontFamily": "Geist",
+                  "fontSize": "$--font-size-sm",
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "uopUI",
+                  "name": "Header Right",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "aYIzO",
+                      "name": "shareBtn",
+                      "width": 32,
+                      "height": 32,
+                      "cornerRadius": "$--radius-md",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "dGtR3",
+                          "name": "shareIcon",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "share",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "DrXXl",
+                      "name": "moreBtn",
+                      "width": 32,
+                      "height": 32,
+                      "cornerRadius": "$--radius-md",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "UBovU",
+                          "name": "moreIcon",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "ellipsis",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "XY053",
+              "name": "Messages Area",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "padding": [
+                20,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "qXZKA",
+                  "name": "Messages Inner",
+                  "width": 768,
+                  "layout": "vertical",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "7YKMf",
+                      "name": "User Message",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "iY8xY",
+                          "type": "ref",
+                          "ref": "Se9jH",
+                          "width": 28,
+                          "height": 28,
+                          "name": "uAv",
+                          "x": 0,
+                          "y": 0,
+                          "descendants": {
+                            "UOjf8": {
+                              "x": 9.5,
+                              "y": 6,
+                              "content": "N",
+                              "fontSize": 12
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "mBE61",
+                          "name": "uText",
+                          "fill": "$--foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "What is the current impact of artificial intelligence on healthcare outcomes, and what are the most promising applications being developed?",
+                          "lineHeight": 1.5,
+                          "fontFamily": "Geist",
+                          "fontSize": "$--font-size-sm",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ZfFnP",
+                      "name": "Search Indicator",
+                      "width": "fill_container",
+                      "fill": "$--muted",
+                      "cornerRadius": "$--radius-md",
+                      "gap": 8,
+                      "padding": [
+                        10,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "MpfiI",
+                          "name": "searchIcon",
+                          "width": 14,
+                          "height": 14,
+                          "iconFontName": "search",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "o61uU",
+                          "name": "searchText",
+                          "fill": "$--muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Searching 5 sources...",
+                          "fontFamily": "Geist",
+                          "fontSize": "$--font-size-xs",
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Fs5Fc",
+                          "name": "searchDots",
+                          "fill": "#16A34A",
+                          "content": "Done",
+                          "fontFamily": "Geist",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "icon_font",
+                          "id": "xTkG0",
+                          "name": "searchChev",
+                          "width": 14,
+                          "height": 14,
+                          "iconFontName": "chevron-down",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "qmhaA",
+                      "name": "AI Response",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "xqDAU",
+                          "type": "ref",
+                          "ref": "Se9jH",
+                          "width": 28,
+                          "height": 28,
+                          "name": "aiAv",
+                          "x": 0,
+                          "y": 0,
+                          "descendants": {
+                            "UOjf8": {
+                              "x": 6.5,
+                              "y": 7.5,
+                              "content": "pm",
+                              "fontSize": 10,
+                              "fontWeight": "700",
+                              "letterSpacing": -0.5
+                            }
+                          }
+                        },
+                        {
+                          "type": "frame",
+                          "id": "qzrCl",
+                          "name": "AI Body",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 16,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Suz1z",
+                              "name": "aiTitle",
+                              "fill": "$--foreground",
+                              "content": "AI in Healthcare: Current Impact and Future Promise",
+                              "fontFamily": "Geist",
+                              "fontSize": 16,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "text",
+                              "id": "isTvu",
+                              "name": "aiP1",
+                              "fill": "$--foreground",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Artificial intelligence is rapidly transforming healthcare delivery and outcomes across multiple domains. In diagnostics, deep learning models now match or exceed radiologist accuracy in detecting conditions like diabetic retinopathy, lung cancer nodules, and breast cancer from medical imaging [1][2]. Google Health's AI system demonstrated 94.5% sensitivity in mammography screening, reducing false positives by 5.7% compared to human readers [3].",
+                              "lineHeight": 1.65,
+                              "fontFamily": "Geist",
+                              "fontSize": "$--font-size-sm",
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "70WFx",
+                              "name": "aiP2",
+                              "fill": "$--foreground",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "In drug discovery, AI has compressed the traditional 10-15 year development timeline significantly. Insilico Medicine's AI-discovered drug reached Phase II clinical trials in just 30 months from target identification [4]. Meanwhile, AlphaFold's protein structure predictions have been used by over 2 million researchers, accelerating understanding of disease mechanisms [5][6].",
+                              "lineHeight": 1.65,
+                              "fontFamily": "Geist",
+                              "fontSize": "$--font-size-sm",
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "9zfx9",
+                      "name": "Action Buttons",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "gTE0Y",
+                          "name": "actCopy",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "GQ6F6",
+                              "name": "actCopyI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "copy",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "6s247",
+                          "name": "actUp",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "XxaH0",
+                              "name": "actUpI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "thumbs-up",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "wBG09",
+                          "name": "actDown",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "CB9hc",
+                              "name": "actDownI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "thumbs-down",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "eTiSF",
+                          "name": "actRetry",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "7qCA0",
+                              "name": "actRetryI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "refresh-cw",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "y68x5",
+              "name": "Input Bar",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "$--border"
+              },
+              "gap": 12,
+              "padding": [
+                12,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "M1cK4",
+                  "name": "Input Field",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$--muted",
+                  "cornerRadius": "$--radius-lg",
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "7TRnc",
+                      "name": "inputIcon",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "message-square",
+                      "iconFontFamily": "lucide",
+                      "fill": "$--muted-foreground"
+                    },
+                    {
+                      "type": "text",
+                      "id": "86MwM",
+                      "name": "inputText",
+                      "fill": "$--muted-foreground",
+                      "content": "Ask a follow-up...",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-sm",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "q1ZLT",
+                  "name": "Stop Button",
+                  "width": 40,
+                  "height": 40,
+                  "fill": "#FEE2E2",
+                  "cornerRadius": 9999,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "5Ndi7",
+                      "name": "stopIcon",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "square",
+                      "iconFontFamily": "lucide",
+                      "fill": "#DC2626"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zpMgy",
+                  "name": "Send Button",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "$--primary",
+                  "cornerRadius": "$--radius-md",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "LBKeu",
+                      "name": "sendIcon",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "arrow-up",
+                      "iconFontFamily": "lucide",
+                      "fill": "$--primary-foreground"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "FSHDz",
+          "layoutPosition": "absolute",
+          "x": 260,
+          "y": 56,
+          "name": "Voice Speaking Overlay",
+          "width": 1180,
+          "height": 776,
+          "fill": "#FFFFFFCC",
+          "effect": {
+            "type": "background_blur",
+            "radius": 20
+          },
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "8RNRJ",
+              "name": "Voice Card",
+              "width": 400,
+              "height": 120,
+              "fill": "$--muted",
+              "cornerRadius": 24,
+              "stroke": {
+                "align": "inside",
+                "thickness": 1.5,
+                "fill": "#2563EB66"
+              },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "tXyv9",
+                  "name": "Frequency Bars",
+                  "gap": 5,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.5,
+                      "id": "wZHYJ",
+                      "name": "b1",
+                      "fill": "#93C5FD",
+                      "width": 3,
+                      "height": 12
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.5,
+                      "id": "erQua",
+                      "name": "b2",
+                      "fill": "#60A5FA",
+                      "width": 3,
+                      "height": 24
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.5,
+                      "id": "bvLEp",
+                      "name": "b3",
+                      "fill": "#3B82F6",
+                      "width": 3,
+                      "height": 36
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.5,
+                      "id": "xIetb",
+                      "name": "b4",
+                      "fill": "#2563EB",
+                      "width": 3,
+                      "height": 16
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.5,
+                      "id": "ix3jI",
+                      "name": "b5",
+                      "fill": "#93C5FD",
+                      "width": 3,
+                      "height": 40
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.5,
+                      "id": "PzdwG",
+                      "name": "b6",
+                      "fill": "#60A5FA",
+                      "width": 3,
+                      "height": 20
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.5,
+                      "id": "SbvX0",
+                      "name": "b7",
+                      "fill": "#3B82F6",
+                      "width": 3,
+                      "height": 34
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.5,
+                      "id": "CYdRE",
+                      "name": "b8",
+                      "fill": "#2563EB",
+                      "width": 3,
+                      "height": 14
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.5,
+                      "id": "I6zAU",
+                      "name": "b9",
+                      "fill": "#93C5FD",
+                      "width": 3,
+                      "height": 30
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.5,
+                      "id": "mL3pI",
+                      "name": "b10",
+                      "fill": "#60A5FA",
+                      "width": 3,
+                      "height": 38
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.5,
+                      "id": "xWGAX",
+                      "name": "b11",
+                      "fill": "#3B82F6",
+                      "width": 3,
+                      "height": 18
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 1.5,
+                      "id": "tt94m",
+                      "name": "b12",
+                      "fill": "#2563EB",
+                      "width": 3,
+                      "height": 10
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "wJJ6j",
+                  "layoutPosition": "absolute",
+                  "x": 0,
+                  "y": 92,
+                  "name": "Controls Bar",
+                  "width": 400,
+                  "gap": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "Wz4to",
+                      "name": "dot",
+                      "fill": "#2563EB",
+                      "width": 8,
+                      "height": 8
+                    },
+                    {
+                      "type": "text",
+                      "id": "QxlWu",
+                      "name": "label",
+                      "fill": "#2563EB",
+                      "content": "Speaking",
+                      "fontFamily": "Geist",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "iMlfk",
+      "x": 1644,
+      "y": 9100,
+      "name": "Active Chat — Voice Listening (Dark)",
+      "theme": {
+        "mode": "dark"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$--background",
+      "children": [
+        {
+          "type": "frame",
+          "id": "fjg2K",
+          "name": "darkSidebar",
+          "width": 260,
+          "height": "fill_container",
+          "fill": "$--sidebar",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "right": 1
+            },
+            "fill": "$--sidebar-border"
+          },
+          "layout": "vertical",
+          "gap": 12,
+          "padding": [
+            0,
+            16
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "6ysRo",
+              "name": "Sidebar Header",
+              "width": "fill_container",
+              "padding": [
+                16,
+                0
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "2ha24",
+                  "name": "sLogo",
+                  "fill": "$--sidebar-foreground",
+                  "content": "pm",
+                  "fontFamily": "Geist",
+                  "fontSize": 20,
+                  "fontWeight": "700",
+                  "letterSpacing": -1
+                },
+                {
+                  "id": "56XGv",
+                  "type": "ref",
+                  "ref": "rjiuk",
+                  "height": 30,
+                  "name": "sNewBtn",
+                  "x": 170,
+                  "y": 16,
+                  "width": "fit_content",
+                  "descendants": {
+                    "IbUI1": {
+                      "y": 7,
+                      "content": "New",
+                      "fontSize": 12,
+                      "x": 16
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "M1dYo",
+              "name": "Search",
+              "width": "fill_container",
+              "height": 36,
+              "fill": "$--sidebar-accent",
+              "cornerRadius": "$--radius-md",
+              "gap": 8,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "qcLrs",
+                  "name": "sSearchIcon",
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "search",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "text",
+                  "id": "jVfNP",
+                  "name": "sSearchText",
+                  "fill": "$--muted-foreground",
+                  "content": "Search chats...",
+                  "fontFamily": "Geist",
+                  "fontSize": "$--font-size-xs",
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pgBZm",
+              "name": "Chat List",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "8j0s7",
+                  "name": "sC1",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "$--sidebar-accent",
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "2RqFw",
+                      "name": "sC1T",
+                      "fill": "$--sidebar-accent-foreground",
+                      "content": "Impact of AI on healthcare...",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Ark5S",
+                  "name": "sC2",
+                  "width": "fill_container",
+                  "height": 34,
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "yvbhE",
+                      "name": "sC2T",
+                      "fill": "$--sidebar-foreground",
+                      "content": "Compare React frameworks",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Rd5Ny",
+                  "name": "sC3",
+                  "width": "fill_container",
+                  "height": 34,
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Utz2j",
+                      "name": "sC3T",
+                      "fill": "$--sidebar-foreground",
+                      "content": "Quantum computing overview",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "2hgin",
+                  "name": "sC4",
+                  "width": "fill_container",
+                  "height": 34,
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "hRopc",
+                      "name": "sC4T",
+                      "fill": "$--sidebar-foreground",
+                      "content": "Climate change solutions",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "fargo",
+          "name": "darkMain",
+          "width": 1181,
+          "height": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "mL3i0",
+              "name": "Header",
+              "width": "fill_container",
+              "height": 56,
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "$--border"
+              },
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "2qnYK",
+                  "name": "headerTitle",
+                  "fill": "$--foreground",
+                  "content": "Impact of AI on healthcare",
+                  "fontFamily": "Geist",
+                  "fontSize": "$--font-size-sm",
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "uZcJn",
+                  "name": "Header Right",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "9M99u",
+                      "name": "shareBtn",
+                      "width": 32,
+                      "height": 32,
+                      "cornerRadius": "$--radius-md",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "YN8JN",
+                          "name": "shareIcon",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "share",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "9bm3D",
+                      "name": "moreBtn",
+                      "width": 32,
+                      "height": 32,
+                      "cornerRadius": "$--radius-md",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "YVKeM",
+                          "name": "moreIcon",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "ellipsis",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "0NoeP",
+              "name": "Messages Area",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "padding": [
+                20,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vyVi1",
+                  "name": "Messages Inner",
+                  "width": 768,
+                  "layout": "vertical",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "He0n7",
+                      "name": "User Message",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "hverR",
+                          "type": "ref",
+                          "ref": "Se9jH",
+                          "width": 28,
+                          "height": 28,
+                          "name": "uAv",
+                          "x": 0,
+                          "y": 0,
+                          "descendants": {
+                            "UOjf8": {
+                              "x": 9.5,
+                              "y": 6,
+                              "content": "N",
+                              "fontSize": 12
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "iusr2",
+                          "name": "uText",
+                          "fill": "$--foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "What is the current impact of artificial intelligence on healthcare outcomes, and what are the most promising applications being developed?",
+                          "lineHeight": 1.5,
+                          "fontFamily": "Geist",
+                          "fontSize": "$--font-size-sm",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "PS0S1",
+                      "name": "Search Indicator",
+                      "width": "fill_container",
+                      "fill": "$--muted",
+                      "cornerRadius": "$--radius-md",
+                      "gap": 8,
+                      "padding": [
+                        10,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "Hiyt5",
+                          "name": "searchIcon",
+                          "width": 14,
+                          "height": 14,
+                          "iconFontName": "search",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "AjhMD",
+                          "name": "searchText",
+                          "fill": "$--muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Searching 5 sources...",
+                          "fontFamily": "Geist",
+                          "fontSize": "$--font-size-xs",
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "8i2CP",
+                          "name": "searchDots",
+                          "fill": "#16A34A",
+                          "content": "Done",
+                          "fontFamily": "Geist",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "icon_font",
+                          "id": "p2fkW",
+                          "name": "searchChev",
+                          "width": 14,
+                          "height": 14,
+                          "iconFontName": "chevron-down",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "uXDHn",
+                      "name": "AI Response",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "EKy5d",
+                          "type": "ref",
+                          "ref": "Se9jH",
+                          "width": 28,
+                          "height": 28,
+                          "name": "aiAv",
+                          "x": 0,
+                          "y": 0,
+                          "descendants": {
+                            "UOjf8": {
+                              "x": 6.5,
+                              "y": 7.5,
+                              "content": "pm",
+                              "fontSize": 10,
+                              "fontWeight": "700",
+                              "letterSpacing": -0.5
+                            }
+                          }
+                        },
+                        {
+                          "type": "frame",
+                          "id": "wMlAW",
+                          "name": "AI Body",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 16,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "wf5UA",
+                              "name": "aiTitle",
+                              "fill": "$--foreground",
+                              "content": "AI in Healthcare: Current Impact and Future Promise",
+                              "fontFamily": "Geist",
+                              "fontSize": 16,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "text",
+                              "id": "GRI78",
+                              "name": "aiP1",
+                              "fill": "$--foreground",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Artificial intelligence is rapidly transforming healthcare delivery and outcomes across multiple domains. In diagnostics, deep learning models now match or exceed radiologist accuracy in detecting conditions like diabetic retinopathy, lung cancer nodules, and breast cancer from medical imaging [1][2]. Google Health's AI system demonstrated 94.5% sensitivity in mammography screening, reducing false positives by 5.7% compared to human readers [3].",
+                              "lineHeight": 1.65,
+                              "fontFamily": "Geist",
+                              "fontSize": "$--font-size-sm",
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "keH1U",
+                              "name": "aiP2",
+                              "fill": "$--foreground",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "In drug discovery, AI has compressed the traditional 10-15 year development timeline significantly. Insilico Medicine's AI-discovered drug reached Phase II clinical trials in just 30 months from target identification [4]. Meanwhile, AlphaFold's protein structure predictions have been used by over 2 million researchers, accelerating understanding of disease mechanisms [5][6].",
+                              "lineHeight": 1.65,
+                              "fontFamily": "Geist",
+                              "fontSize": "$--font-size-sm",
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "S1N67",
+                      "name": "Action Buttons",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "wX6Vw",
+                          "name": "actCopy",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "mHzXb",
+                              "name": "actCopyI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "copy",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "kWUvL",
+                          "name": "actUp",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "JJJSD",
+                              "name": "actUpI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "thumbs-up",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "DuLms",
+                          "name": "actDown",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "syMLq",
+                              "name": "actDownI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "thumbs-down",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "viSCo",
+                          "name": "actRetry",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "nbaSU",
+                              "name": "actRetryI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "refresh-cw",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "t5q6i",
+              "name": "Input Bar",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "$--border"
+              },
+              "gap": 12,
+              "padding": [
+                12,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "BmCXb",
+                  "name": "Input Field",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$--muted",
+                  "cornerRadius": "$--radius-lg",
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "4meki",
+                      "name": "inputIcon",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "message-square",
+                      "iconFontFamily": "lucide",
+                      "fill": "$--muted-foreground"
+                    },
+                    {
+                      "type": "text",
+                      "id": "RVHkE",
+                      "name": "inputText",
+                      "fill": "$--muted-foreground",
+                      "content": "Ask a follow-up...",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-sm",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "r1fCs",
+                  "name": "Stop Button",
+                  "width": 40,
+                  "height": 40,
+                  "fill": "#FEE2E2",
+                  "cornerRadius": 9999,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "9ighi",
+                      "name": "stopIcon",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "square",
+                      "iconFontFamily": "lucide",
+                      "fill": "#DC2626"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "UGUIB",
+                  "name": "Send Button",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "$--primary",
+                  "cornerRadius": "$--radius-md",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "eDxCQ",
+                      "name": "sendIcon",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "arrow-up",
+                      "iconFontFamily": "lucide",
+                      "fill": "$--primary-foreground"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Hmc5E",
+          "layoutPosition": "absolute",
+          "x": 260,
+          "y": 56,
+          "name": "Voice Overlay",
+          "width": 1180,
+          "height": 776,
+          "fill": "#0A0A0AE6",
+          "effect": {
+            "type": "background_blur",
+            "radius": 20
+          },
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "K73Ph",
+              "name": "Voice Panel",
+              "layout": "vertical",
+              "gap": 24,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "yBdst",
+                  "name": "Frequency Bars",
+                  "gap": 5,
+                  "alignItems": "end",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "1Xg4k",
+                      "name": "b1",
+                      "fill": "$--muted-foreground",
+                      "width": 3,
+                      "height": 14
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "5SjMP",
+                      "name": "b2",
+                      "fill": "$--muted-foreground",
+                      "width": 3,
+                      "height": 24
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "aO2eP",
+                      "name": "b3",
+                      "fill": "$--muted-foreground",
+                      "width": 3,
+                      "height": 10
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "fzGYh",
+                      "name": "b4",
+                      "fill": "$--muted-foreground",
+                      "width": 3,
+                      "height": 32
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "GkwL1",
+                      "name": "b5",
+                      "fill": "$--muted-foreground",
+                      "width": 3,
+                      "height": 20
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "ut5Ad",
+                      "name": "b6",
+                      "fill": "$--muted-foreground",
+                      "width": 3,
+                      "height": 38
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "U1luY",
+                      "name": "b7",
+                      "fill": "$--muted-foreground",
+                      "width": 3,
+                      "height": 16
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "H3Ook",
+                      "name": "b8",
+                      "fill": "$--muted-foreground",
+                      "width": 3,
+                      "height": 34
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "2eSnQ",
+                      "name": "b9",
+                      "fill": "$--muted-foreground",
+                      "width": 3,
+                      "height": 12
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "MO2sm",
+                      "name": "b10",
+                      "fill": "$--muted-foreground",
+                      "width": 3,
+                      "height": 28
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "xyUB9",
+                      "name": "b11",
+                      "fill": "$--muted-foreground",
+                      "width": 3,
+                      "height": 22
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "b88k8",
+                      "name": "b12",
+                      "fill": "$--muted-foreground",
+                      "width": 3,
+                      "height": 18
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "GT2uI",
+                  "name": "Transcript",
+                  "fill": "$--foreground",
+                  "content": "What is the latest news about artificial...",
+                  "fontFamily": "Geist",
+                  "fontSize": "$--font-size-base"
+                },
+                {
+                  "type": "frame",
+                  "id": "3kSja",
+                  "name": "Status Row",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "t8Zjg",
+                      "name": "dot",
+                      "fill": "#22C55E",
+                      "width": 8,
+                      "height": 8
+                    },
+                    {
+                      "type": "text",
+                      "id": "nqiad",
+                      "name": "Status Label",
+                      "fill": "$--muted-foreground",
+                      "content": "Listening",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-sm"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "PDd39",
+      "x": 1644,
+      "y": 10200,
+      "name": "Active Chat — Voice Speaking (Dark)",
+      "theme": {
+        "mode": "dark"
+      },
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "$--background",
+      "children": [
+        {
+          "type": "frame",
+          "id": "6Aco0",
+          "name": "darkSidebar",
+          "width": 260,
+          "height": "fill_container",
+          "fill": "$--sidebar",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "right": 1
+            },
+            "fill": "$--sidebar-border"
+          },
+          "layout": "vertical",
+          "gap": 12,
+          "padding": [
+            0,
+            16
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "wUyp8",
+              "name": "Sidebar Header",
+              "width": "fill_container",
+              "padding": [
+                16,
+                0
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "hmW9h",
+                  "name": "sLogo",
+                  "fill": "$--sidebar-foreground",
+                  "content": "pm",
+                  "fontFamily": "Geist",
+                  "fontSize": 20,
+                  "fontWeight": "700",
+                  "letterSpacing": -1
+                },
+                {
+                  "id": "gocc3",
+                  "type": "ref",
+                  "ref": "rjiuk",
+                  "height": 30,
+                  "name": "sNewBtn",
+                  "x": 170,
+                  "y": 16,
+                  "width": "fit_content",
+                  "descendants": {
+                    "IbUI1": {
+                      "y": 7,
+                      "content": "New",
+                      "fontSize": 12,
+                      "x": 16
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "oiAna",
+              "name": "Search",
+              "width": "fill_container",
+              "height": 36,
+              "fill": "$--sidebar-accent",
+              "cornerRadius": "$--radius-md",
+              "gap": 8,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "9GK6q",
+                  "name": "sSearchIcon",
+                  "width": 14,
+                  "height": 14,
+                  "iconFontName": "search",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                },
+                {
+                  "type": "text",
+                  "id": "W38XZ",
+                  "name": "sSearchText",
+                  "fill": "$--muted-foreground",
+                  "content": "Search chats...",
+                  "fontFamily": "Geist",
+                  "fontSize": "$--font-size-xs",
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "sTE18",
+              "name": "Chat List",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "4FykD",
+                  "name": "sC1",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "$--sidebar-accent",
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "cKM9b",
+                      "name": "sC1T",
+                      "fill": "$--sidebar-accent-foreground",
+                      "content": "Impact of AI on healthcare...",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "GXZp8",
+                  "name": "sC2",
+                  "width": "fill_container",
+                  "height": 34,
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "KwYyd",
+                      "name": "sC2T",
+                      "fill": "$--sidebar-foreground",
+                      "content": "Compare React frameworks",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "q5TTn",
+                  "name": "sC3",
+                  "width": "fill_container",
+                  "height": 34,
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "JzVdA",
+                      "name": "sC3T",
+                      "fill": "$--sidebar-foreground",
+                      "content": "Quantum computing overview",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ZYWUL",
+                  "name": "sC4",
+                  "width": "fill_container",
+                  "height": 34,
+                  "cornerRadius": "$--radius-md",
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "FJOIH",
+                      "name": "sC4T",
+                      "fill": "$--sidebar-foreground",
+                      "content": "Climate change solutions",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-xs",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "LEfH1",
+          "name": "darkMain",
+          "width": 1181,
+          "height": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "5mleb",
+              "name": "Header",
+              "width": "fill_container",
+              "height": 56,
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "bottom": 1
+                },
+                "fill": "$--border"
+              },
+              "padding": [
+                0,
+                16
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "p76jI",
+                  "name": "headerTitle",
+                  "fill": "$--foreground",
+                  "content": "Impact of AI on healthcare",
+                  "fontFamily": "Geist",
+                  "fontSize": "$--font-size-sm",
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "NLFhq",
+                  "name": "Header Right",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ugDNb",
+                      "name": "shareBtn",
+                      "width": 32,
+                      "height": 32,
+                      "cornerRadius": "$--radius-md",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "LQBpl",
+                          "name": "shareIcon",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "share",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "QjGxz",
+                      "name": "moreBtn",
+                      "width": 32,
+                      "height": 32,
+                      "cornerRadius": "$--radius-md",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "8YCQ1",
+                          "name": "moreIcon",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "ellipsis",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "9PSUQ",
+              "name": "Messages Area",
+              "clip": true,
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "padding": [
+                20,
+                0
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "TdDgU",
+                  "name": "Messages Inner",
+                  "width": 768,
+                  "layout": "vertical",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ipkhE",
+                      "name": "User Message",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "Fhxad",
+                          "type": "ref",
+                          "ref": "Se9jH",
+                          "width": 28,
+                          "height": 28,
+                          "name": "uAv",
+                          "x": 0,
+                          "y": 0,
+                          "descendants": {
+                            "UOjf8": {
+                              "x": 9.5,
+                              "y": 6,
+                              "content": "N",
+                              "fontSize": 12
+                            }
+                          }
+                        },
+                        {
+                          "type": "text",
+                          "id": "zHUPg",
+                          "name": "uText",
+                          "fill": "$--foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "What is the current impact of artificial intelligence on healthcare outcomes, and what are the most promising applications being developed?",
+                          "lineHeight": 1.5,
+                          "fontFamily": "Geist",
+                          "fontSize": "$--font-size-sm",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "MGh4c",
+                      "name": "Search Indicator",
+                      "width": "fill_container",
+                      "fill": "$--muted",
+                      "cornerRadius": "$--radius-md",
+                      "gap": 8,
+                      "padding": [
+                        10,
+                        12
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "uJUiu",
+                          "name": "searchIcon",
+                          "width": 14,
+                          "height": 14,
+                          "iconFontName": "search",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "8Z1G1",
+                          "name": "searchText",
+                          "fill": "$--muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Searching 5 sources...",
+                          "fontFamily": "Geist",
+                          "fontSize": "$--font-size-xs",
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "pRELE",
+                          "name": "searchDots",
+                          "fill": "#16A34A",
+                          "content": "Done",
+                          "fontFamily": "Geist",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "icon_font",
+                          "id": "Xve7B",
+                          "name": "searchChev",
+                          "width": 14,
+                          "height": 14,
+                          "iconFontName": "chevron-down",
+                          "iconFontFamily": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "nttq7",
+                      "name": "AI Response",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "sYwmp",
+                          "type": "ref",
+                          "ref": "Se9jH",
+                          "width": 28,
+                          "height": 28,
+                          "name": "aiAv",
+                          "x": 0,
+                          "y": 0,
+                          "descendants": {
+                            "UOjf8": {
+                              "x": 6.5,
+                              "y": 7.5,
+                              "content": "pm",
+                              "fontSize": 10,
+                              "fontWeight": "700",
+                              "letterSpacing": -0.5
+                            }
+                          }
+                        },
+                        {
+                          "type": "frame",
+                          "id": "2iGXE",
+                          "name": "AI Body",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 16,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "P3V6M",
+                              "name": "aiTitle",
+                              "fill": "$--foreground",
+                              "content": "AI in Healthcare: Current Impact and Future Promise",
+                              "fontFamily": "Geist",
+                              "fontSize": 16,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "text",
+                              "id": "Dlfma",
+                              "name": "aiP1",
+                              "fill": "$--foreground",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Artificial intelligence is rapidly transforming healthcare delivery and outcomes across multiple domains. In diagnostics, deep learning models now match or exceed radiologist accuracy in detecting conditions like diabetic retinopathy, lung cancer nodules, and breast cancer from medical imaging [1][2]. Google Health's AI system demonstrated 94.5% sensitivity in mammography screening, reducing false positives by 5.7% compared to human readers [3].",
+                              "lineHeight": 1.65,
+                              "fontFamily": "Geist",
+                              "fontSize": "$--font-size-sm",
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "Sbppe",
+                              "name": "aiP2",
+                              "fill": "$--foreground",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "In drug discovery, AI has compressed the traditional 10-15 year development timeline significantly. Insilico Medicine's AI-discovered drug reached Phase II clinical trials in just 30 months from target identification [4]. Meanwhile, AlphaFold's protein structure predictions have been used by over 2 million researchers, accelerating understanding of disease mechanisms [5][6].",
+                              "lineHeight": 1.65,
+                              "fontFamily": "Geist",
+                              "fontSize": "$--font-size-sm",
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "6URwJ",
+                      "name": "Action Buttons",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "bnVxM",
+                          "name": "actCopy",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "9a4mX",
+                              "name": "actCopyI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "copy",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "pwGbB",
+                          "name": "actUp",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "OVWYn",
+                              "name": "actUpI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "thumbs-up",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "SIMjr",
+                          "name": "actDown",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "KyeOD",
+                              "name": "actDownI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "thumbs-down",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "VkLYZ",
+                          "name": "actRetry",
+                          "width": 32,
+                          "height": 32,
+                          "cornerRadius": "$--radius-md",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "cyzEr",
+                              "name": "actRetryI",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "refresh-cw",
+                              "iconFontFamily": "lucide",
+                              "fill": "$--muted-foreground"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ziDfi",
+              "name": "Input Bar",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1
+                },
+                "fill": "$--border"
+              },
+              "gap": 12,
+              "padding": [
+                12,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "tSeAT",
+                  "name": "Input Field",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$--muted",
+                  "cornerRadius": "$--radius-lg",
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "y4MhJ",
+                      "name": "inputIcon",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "message-square",
+                      "iconFontFamily": "lucide",
+                      "fill": "$--muted-foreground"
+                    },
+                    {
+                      "type": "text",
+                      "id": "RALrl",
+                      "name": "inputText",
+                      "fill": "$--muted-foreground",
+                      "content": "Ask a follow-up...",
+                      "fontFamily": "Geist",
+                      "fontSize": "$--font-size-sm",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "BFwPJ",
+                  "name": "Stop Button",
+                  "width": 40,
+                  "height": 40,
+                  "fill": "#FEE2E2",
+                  "cornerRadius": 9999,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "wapfl",
+                      "name": "stopIcon",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "square",
+                      "iconFontFamily": "lucide",
+                      "fill": "#DC2626"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "cDIoD",
+                  "name": "Send Button",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "$--primary",
+                  "cornerRadius": "$--radius-md",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "3UdOf",
+                      "name": "sendIcon",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "arrow-up",
+                      "iconFontFamily": "lucide",
+                      "fill": "$--primary-foreground"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "vuswl",
+          "layoutPosition": "absolute",
+          "x": 260,
+          "y": 56,
+          "name": "Voice Overlay",
+          "width": 1180,
+          "height": 776,
+          "fill": "#0A0A0AE6",
+          "effect": {
+            "type": "background_blur",
+            "radius": 20
+          },
+          "layout": "vertical",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Yr9dr",
+              "name": "Center Panel",
+              "layout": "vertical",
+              "gap": 28,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "4gLNB",
+                  "name": "Bars",
+                  "height": 80,
+                  "gap": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "HNmyy",
+                      "name": "b1",
+                      "fill": "#93C5FD",
+                      "width": 4,
+                      "height": 14
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "9RE4v",
+                      "name": "b2",
+                      "fill": "#60A5FA",
+                      "width": 4,
+                      "height": 28
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "ggrk8",
+                      "name": "b3",
+                      "fill": "#3B82F6",
+                      "width": 4,
+                      "height": 42
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "1W9y7",
+                      "name": "b4",
+                      "fill": "#2563EB",
+                      "width": 4,
+                      "height": 56
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "rVaOA",
+                      "name": "b5",
+                      "fill": "#60A5FA",
+                      "width": 4,
+                      "height": 22
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "x2p37",
+                      "name": "b6",
+                      "fill": "#2563EB",
+                      "width": 4,
+                      "height": 48
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "E2XKR",
+                      "name": "b7",
+                      "fill": "#3B82F6",
+                      "width": 4,
+                      "height": 34
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "qIcAJ",
+                      "name": "b8",
+                      "fill": "#93C5FD",
+                      "width": 4,
+                      "height": 18
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "TKft4",
+                      "name": "b9",
+                      "fill": "#2563EB",
+                      "width": 4,
+                      "height": 52
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "AgdrJ",
+                      "name": "b10",
+                      "fill": "#60A5FA",
+                      "width": 4,
+                      "height": 38
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "kucJL",
+                      "name": "b11",
+                      "fill": "#93C5FD",
+                      "width": 4,
+                      "height": 16
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": 2,
+                      "id": "vY0BJ",
+                      "name": "b12",
+                      "fill": "#3B82F6",
+                      "width": 4,
+                      "height": 44
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Q7xsd",
+                  "name": "Status",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "HqU8J",
+                      "name": "blueDot",
+                      "fill": "#2563EB",
+                      "width": 8,
+                      "height": 8
+                    },
+                    {
+                      "type": "text",
+                      "id": "6HCbT",
+                      "name": "speakLbl",
+                      "fill": "#2563EB",
+                      "content": "Speaking",
+                      "fontFamily": "Geist",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }

@@ -4,7 +4,7 @@ import { Suspense, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { Plus } from 'lucide-react'
+import { SquarePen } from 'lucide-react'
 
 import {
   Sidebar,
@@ -58,8 +58,8 @@ export default function AppSidebar({ hasUser = false }: { hasUser?: boolean }) {
                 onClick={navigateHome}
                 className="flex items-center gap-2"
               >
-                <Plus className="size-4" />
-                <span>New</span>
+                <SquarePen className="size-4" />
+                <span>New chat</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

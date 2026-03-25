@@ -102,7 +102,7 @@ export function useActivityFeed(
 
     let addedNew = false
     const knownIds = new Set(seenIds.current)
-    if (!didChatChange && seenIds.current.size === 0) {
+    if (!didChatChange) {
       for (const item of activityItemsRef.current) {
         knownIds.add(item.id)
       }

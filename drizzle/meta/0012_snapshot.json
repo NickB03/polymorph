@@ -137,7 +137,7 @@
           "type": "varchar(256)",
           "primaryKey": false,
           "notNull": true,
-          "default": "'e2b'"
+          "default": "'sandbox'"
         },
         "sandbox_id": {
           "name": "sandbox_id",

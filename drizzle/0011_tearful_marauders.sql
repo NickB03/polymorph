@@ -12,7 +12,7 @@ ALTER TABLE "artifact_revisions" ENABLE ROW LEVEL SECURITY;--> statement-breakpo
 CREATE TABLE "artifact_runtime_sessions" (
 	"id" varchar(191) PRIMARY KEY NOT NULL,
 	"artifact_id" varchar(191) NOT NULL,
-	"provider" varchar(256) DEFAULT 'e2b' NOT NULL,
+	"provider" varchar(256) DEFAULT 'sandbox' NOT NULL,
 	"sandbox_id" text NOT NULL,
 	"preview_url" text,
 	"status" varchar(256) DEFAULT 'building' NOT NULL,

@@ -362,10 +362,10 @@ export const artifactRuntimeSessions = pgTable(
       .references(() => artifacts.id, { onDelete: 'cascade' }),
     provider: varchar('provider', {
       length: VARCHAR_LENGTH,
-      enum: ['e2b']
+      enum: ['sandbox']
     })
       .notNull()
-      .default('e2b'),
+      .default('sandbox'),
     sandboxId: text('sandbox_id').notNull(),
     previewUrl: text('preview_url'),
     status: varchar('status', {
