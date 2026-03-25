@@ -237,6 +237,8 @@ export function useVoiceConversation({
       prevPlaybackStateRef.current === 'loading'
     prevPlaybackStateRef.current = playbackState
 
+    if (playerError) return // error recovery is handled by the playerError effect
+
     if (
       voiceActiveRef.current &&
       voiceState === 'speaking' &&
@@ -252,7 +254,13 @@ export function useVoiceConversation({
         setVoiceState('idle')
       }
     }
-  }, [config.autoListen, playbackState, voiceState, startListening])
+  }, [
+    config.autoListen,
+    playerError,
+    playbackState,
+    voiceState,
+    startListening
+  ])
 
   // Transition: when status becomes submitted/streaming, show waiting
   useEffect(() => {

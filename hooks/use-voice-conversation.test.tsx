@@ -312,6 +312,62 @@ describe('useVoiceConversation', () => {
     expect(result.current.isVoiceActive).toBe(false)
   })
 
+  it('only restarts listening once when playback errors (no duplicate restart)', async () => {
+    const sendMessage = vi.fn()
+    const { result, rerender } = renderHook(
+      props => useVoiceConversation(props),
+      {
+        initialProps: {
+          sendMessage,
+          status: 'ready' as string,
+          messages: [] as UIMessage[],
+          config: { ttsProvider: 'browser' as const, autoListen: true }
+        }
+      }
+    )
+
+    // 1. Start voice — startListening call #1
+    act(() => {
+      result.current.startVoice()
+    })
+
+    // 2. Transition to playing — voiceState becomes 'speaking'
+    voicePlayerState = {
+      ...voicePlayerState,
+      playbackState: 'playing',
+      lastError: null
+    }
+    rerender({
+      sendMessage,
+      status: 'ready',
+      messages: [],
+      config: { ttsProvider: 'browser' as const, autoListen: true }
+    })
+
+    await waitFor(() => {
+      expect(result.current.voiceState).toBe('speaking')
+    })
+
+    // 3. Playback errors: both playbackState→idle AND lastError set simultaneously
+    voicePlayerState = {
+      ...voicePlayerState,
+      playbackState: 'idle',
+      lastError: { code: 'tts-audio-error', message: 'Voice playback failed' }
+    }
+    rerender({
+      sendMessage,
+      status: 'ready',
+      messages: [],
+      config: { ttsProvider: 'browser' as const, autoListen: true }
+    })
+
+    // Should be exactly 2: one from startVoice(), one from error recovery
+    // (NOT 3 — the playback-finished effect must not duplicate the restart)
+    await waitFor(() => {
+      expect(mockStartListening).toHaveBeenCalledTimes(2)
+    })
+  })
+
   it('aggregates voice player notices and errors', async () => {
     const sendMessage = vi.fn()
     voicePlayerState = {
