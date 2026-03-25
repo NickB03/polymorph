@@ -176,4 +176,72 @@ describe('useVoicePlayer', () => {
     })
     expect(result.current.playbackState).toBe('idle')
   })
+
+  it('second play() supersedes the first without propagating the first request error', async () => {
+    // First fetch resolves successfully; second fetch also resolves successfully
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response('audio-bytes-1', {
+          headers: { 'Content-Type': 'audio/mpeg', 'x-tts-provider': 'openai' }
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response('audio-bytes-2', {
+          headers: { 'Content-Type': 'audio/mpeg', 'x-tts-provider': 'openai' }
+        })
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() => useVoicePlayer())
+
+    await act(async () => {
+      result.current.play('first', { provider: 'openai', voiceId: 'alloy' })
+      result.current.play('second', { provider: 'openai', voiceId: 'alloy' })
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    await waitFor(() => {
+      expect(result.current.playbackState).toBe('playing')
+    })
+
+    expect(result.current.lastError).toBeNull()
+    expect(mockPlay).toHaveBeenCalledTimes(1)
+    expect(mockPlay.mock.calls[0]?.[0]).toBeUndefined() // audio.play() takes no args
+  })
+
+  it('stop() during in-flight request leaves no error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_input: unknown, init?: RequestInit) =>
+          new Promise((_resolve, _reject) => {
+            // Never resolves on its own — waits for abort
+            const signal = init?.signal as AbortSignal
+            signal?.addEventListener('abort', () => {
+              // Let the test call stop() and check state
+            })
+          })
+      )
+    )
+
+    const { result } = renderHook(() => useVoicePlayer())
+
+    await act(async () => {
+      result.current.play('first', { provider: 'openai', voiceId: 'alloy' })
+    })
+
+    expect(result.current.playbackState).toBe('loading')
+
+    await act(async () => {
+      result.current.stop()
+      await Promise.resolve()
+    })
+
+    expect(result.current.playbackState).toBe('idle')
+    expect(result.current.lastError).toBeNull()
+  })
 })

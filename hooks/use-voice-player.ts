@@ -44,6 +44,7 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
   const objectUrlRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const requestIdRef = useRef(0)
 
   const cleanup = useCallback(() => {
     if (audioRef.current) {
@@ -71,6 +72,7 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel()
     }
+    requestIdRef.current += 1 // invalidate any in-flight request
     cleanup()
     setPlaybackState('idle')
   }, [cleanup])
@@ -116,6 +118,9 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
       setLastServedProvider(null)
       setPlaybackState('loading')
 
+      const requestId = ++requestIdRef.current
+      const isCurrentRequest = () => requestId === requestIdRef.current
+
       const controller = new AbortController()
       abortRef.current = controller
       let timedOut = false
@@ -131,6 +136,8 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
           body: JSON.stringify({ text, provider, voiceId }),
           signal: controller.signal
         })
+
+        if (!isCurrentRequest()) return
 
         if (!res.ok) {
           if (res.status === 504) {
@@ -158,6 +165,8 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
         }
 
         const blob = await res.blob()
+        if (!isCurrentRequest()) return
+
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current)
           timeoutRef.current = null
@@ -189,7 +198,13 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
         // useLayoutEffect cycle completes (wiring AudioContext) before
         // audio actually starts.
         await new Promise<void>(resolve => queueMicrotask(resolve))
+
+        if (!isCurrentRequest()) return
+
         await audio.play()
+
+        if (!isCurrentRequest()) return
+
         setPlaybackState('playing')
 
         // Track usage for ElevenLabs
@@ -197,6 +212,8 @@ export function useVoicePlayer(): UseVoicePlayerReturn {
           addUsage(text.length)
         }
       } catch (err) {
+        if (!isCurrentRequest()) return
+
         const error = err as Error
         if (error.name === 'AbortError') {
           if (timedOut) {
