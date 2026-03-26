@@ -4,7 +4,7 @@ import { useCallback, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
-import { MoreHorizontal, Trash2 } from 'lucide-react'
+import { EllipsisVertical, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { deleteChat } from '@/lib/actions/chat'
@@ -37,44 +37,6 @@ import { Spinner } from '../ui/spinner'
 
 interface ChatMenuItemProps {
   chat: DBChat
-}
-
-const formatDateWithTime = (date: Date | string) => {
-  const parsedDate = new Date(date)
-  const now = new Date()
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    })
-  }
-
-  if (
-    parsedDate.getDate() === now.getDate() &&
-    parsedDate.getMonth() === now.getMonth() &&
-    parsedDate.getFullYear() === now.getFullYear()
-  ) {
-    return `Today, ${formatTime(parsedDate)}`
-  } else if (
-    parsedDate.getDate() === yesterday.getDate() &&
-    parsedDate.getMonth() === yesterday.getMonth() &&
-    parsedDate.getFullYear() === yesterday.getFullYear()
-  ) {
-    return `Yesterday, ${formatTime(parsedDate)}`
-  } else {
-    return parsedDate.toLocaleString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    })
-  }
 }
 
 export function ChatMenuItem({ chat }: ChatMenuItemProps) {
@@ -128,25 +90,21 @@ export function ChatMenuItem({ chat }: ChatMenuItemProps) {
 
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton
-        asChild
-        isActive={isActive}
-        className="h-auto flex-col gap-0.5 items-start p-2 pr-8"
-      >
+      <SidebarMenuButton asChild isActive={isActive} className="pr-8">
         <Link href={path}>
-          <div className="text-xs font-medium truncate select-none w-full">
+          <span className="text-xs font-medium truncate select-none">
             {chat.title}
-          </div>
-          <div className="text-xs text-muted-foreground w-full">
-            {formatDateWithTime(chat.createdAt)}
-          </div>
+          </span>
         </Link>
       </SidebarMenuButton>
 
       <DropdownMenu open={isMenuOpen} onOpenChange={handleMenuOpenChange}>
         <DropdownMenuTrigger asChild>
-          <SidebarMenuAction className="size-7 p-1 mr-1">
-            <MoreHorizontal size={16} />
+          <SidebarMenuAction
+            showOnHover
+            className="size-6 p-1 mr-1 overflow-hidden"
+          >
+            <EllipsisVertical size={13} />
             <span className="sr-only">Chat Actions</span>
           </SidebarMenuAction>
         </DropdownMenuTrigger>

@@ -275,7 +275,6 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | `components/sidebar/chat-menu-item.tsx`        | Individual chat item in the sidebar history with rename and delete actions |
 | `components/sidebar/chat-history-client.tsx`   | Client component that fetches and renders paginated chat history           |
 | `components/sidebar/chat-history-skeleton.tsx` | Skeleton placeholder for chat history loading state                        |
-| `components/sidebar/clear-history-action.tsx`  | Action button to clear all chat history                                    |
 
 ### Activity Components
 

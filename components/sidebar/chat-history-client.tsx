@@ -6,15 +6,10 @@ import { toast } from 'sonner'
 
 import { Chat as DBChat } from '@/lib/db/schema'
 
-import {
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarMenu
-} from '@/components/ui/sidebar'
+import { SidebarMenu } from '@/components/ui/sidebar'
 
 import { ChatHistorySkeleton } from './chat-history-skeleton'
 import { ChatMenuItem } from './chat-menu-item'
-import { ClearHistoryAction } from './clear-history-action'
 
 interface ChatPageResponse {
   chats: DBChat[]
@@ -132,12 +127,6 @@ export function ChatHistoryClient() {
 
   return (
     <div className="flex flex-col flex-1 h-full">
-      <SidebarGroup>
-        <div className="flex items-center justify-between w-full">
-          <SidebarGroupLabel className="p-0">History</SidebarGroupLabel>
-          <ClearHistoryAction empty={isHistoryEmpty} />
-        </div>
-      </SidebarGroup>
       <div className="flex-1 overflow-y-auto mb-2 relative">
         {isHistoryEmpty && !isPending ? (
           <div className="px-2 text-foreground/30 text-sm text-center py-4">

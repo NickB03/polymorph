@@ -181,7 +181,7 @@ export function ChatCanvasShell({
         <div
           className={cn(
             'bg-background overflow-hidden',
-            activePanel ? 'opacity-100' : 'w-0 opacity-0',
+            activePanel ? 'opacity-100' : 'w-0 opacity-0 pointer-events-none',
             !isResizing && 'transition-all duration-300 ease-out'
           )}
           style={{

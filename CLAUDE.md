@@ -150,7 +150,7 @@ To keep quality consistent, Claude Code should automatically invoke the followin
 - **When preparing for review** → `requesting-code-review`
 - **When applying review feedback** → `receiving-code-review`
 - **UI behavior changes / interaction regressions** → `webapp-testing`
-- **Canvas artifact issues** (preview iframe, compile pipeline, diagnostics) → `e2b-sandbox`
+- **Canvas artifact issues** (preview iframe, compile pipeline, diagnostics) → `harden`
 - **Supabase/Postgres schema/query/perf changes** → `supabase-postgres-best-practices`
 - **Next.js App Router architecture decisions** → `nextjs-app-router-patterns`
 - **New page, major UI section, or complex layout** → Pencil wireframe workflow (see "Design Workflow" section above), then `frontend-design`
@@ -161,7 +161,7 @@ To keep quality consistent, Claude Code should automatically invoke the followin
 1. Prefer **process/quality skills first** (debugging/planning/verification/review).
 2. Then apply **domain skills** (Next.js, Supabase, testing) for implementation details.
 3. If multiple skills could apply, invoke all relevant ones in this order:
-   `systematic-debugging` → `writing-plans` → domain skill(s) (including `e2b-sandbox` when canvas artifacts are involved) → `verification-before-completion` → review skill(s).
+   `systematic-debugging` → `writing-plans` → domain skill(s) → `verification-before-completion` → review skill(s).
 
 #### Prompting hint for reliable auto-selection
 

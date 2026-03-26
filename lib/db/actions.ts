@@ -31,7 +31,7 @@ type AppendArtifactRevisionInput = {
 type UpsertArtifactRuntimeSessionInput = {
   id?: string
   artifactId: string
-  provider: 'e2b'
+  provider: 'sandbox'
   sandboxId: string
   previewUrl?: string | null
   status: ArtifactStatus

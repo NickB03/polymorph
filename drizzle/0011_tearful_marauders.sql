@@ -1,3 +1,8 @@
+-- Note: Snapshots 0011-0014 were retroactively updated to rename the provider
+-- enum value 'e2b' → 'sandbox'. The artifact_runtime_sessions table was introduced
+-- as part of the e2b sandbox system, which was replaced by canvas artifacts before
+-- production deployment. No production database contains 'e2b' provider data.
+
 CREATE TABLE "artifact_revisions" (
 	"id" varchar(191) PRIMARY KEY NOT NULL,
 	"artifact_id" varchar(191) NOT NULL,
@@ -12,7 +17,7 @@ ALTER TABLE "artifact_revisions" ENABLE ROW LEVEL SECURITY;--> statement-breakpo
 CREATE TABLE "artifact_runtime_sessions" (
 	"id" varchar(191) PRIMARY KEY NOT NULL,
 	"artifact_id" varchar(191) NOT NULL,
-	"provider" varchar(256) DEFAULT 'e2b' NOT NULL,
+	"provider" varchar(256) DEFAULT 'sandbox' NOT NULL,
 	"sandbox_id" text NOT NULL,
 	"preview_url" text,
 	"status" varchar(256) DEFAULT 'building' NOT NULL,

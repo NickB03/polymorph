@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 8 generative UI display tools: tables, charts, timelines, citations, callouts, plans, link previews, option lists
 - Streaming chat responses via SSE with incremental message parts
 - Generative UI components for answers, search results, reasoning, and artifacts
-- Artifact generation via E2B sandboxes (React SPA) with template validation, guest tokens, and observability
+- Canvas artifact generation with validated React source compilation, guest tokens, and observability
 - Model selection with Gemini 3 Flash (speed) and Grok 4.1 Fast Reasoning (quality) via Vercel AI Gateway
 - Provider registry supporting gateway, OpenAI, Anthropic, Google, openai-compatible, and Ollama
 - Drizzle ORM schema with seven tables (chats, messages, parts, artifacts, artifactRevisions, artifactRuntimeSessions, feedback) with Row-Level Security

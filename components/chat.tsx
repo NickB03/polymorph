@@ -290,7 +290,12 @@ export function Chat({
   })
 
   useEffect(() => {
-    if (!providedId || providedId === chatId) return
+    // When navigating to home (no chat ID), close the canvas workspace and bail out
+    if (!providedId) {
+      canvas.closeWorkspace()
+      return
+    }
+    if (providedId === chatId) return
 
     stop()
     stopVoiceRef.current?.()
