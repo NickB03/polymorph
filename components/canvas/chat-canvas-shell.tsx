@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
+import { useSidebar } from '@/components/ui/sidebar'
+
 import { useActivity } from '@/components/activity/activity-context'
 import { ActivityDrawer } from '@/components/activity/activity-drawer'
 import { ActivityPanel } from '@/components/activity/activity-panel'
@@ -49,6 +51,7 @@ export function ChatCanvasShell({
 }: ChatCanvasShellProps) {
   const activity = useActivity()
   const canvas = useCanvas()
+  const { open: sidebarOpen, setOpen: setSidebarOpen, isMobile } = useSidebar()
 
   const activePanel: 'workspace' | 'inspector' | 'activity' | null =
     canvas.isWorkspaceOpen
@@ -58,6 +61,20 @@ export function ChatCanvasShell({
         : activity.state.isOpen
           ? 'activity'
           : null
+
+  // Auto-collapse sidebar when the canvas workspace opens to maximize space
+  const prevWorkspaceOpen = useRef(canvas.isWorkspaceOpen)
+  useEffect(() => {
+    if (
+      canvas.isWorkspaceOpen &&
+      !prevWorkspaceOpen.current &&
+      sidebarOpen &&
+      !isMobile
+    ) {
+      setSidebarOpen(false)
+    }
+    prevWorkspaceOpen.current = canvas.isWorkspaceOpen
+  }, [canvas.isWorkspaceOpen, sidebarOpen, setSidebarOpen, isMobile])
 
   const containerRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(DEFAULT_WIDTH)

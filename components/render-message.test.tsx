@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { UIMessage } from '@/lib/types/ai'
@@ -46,7 +46,40 @@ vi.mock('./research-status-line', () => ({
 }))
 
 vi.mock('./tool-ui/canvas-artifact-card', () => ({
-  CanvasArtifactCard: () => <div data-testid="canvas-artifact-card" />
+  CanvasArtifactCard: ({
+    onClick,
+    data
+  }: {
+    data: { artifactId: string }
+    onClick?: () => void
+  }) => (
+    <div
+      data-testid="canvas-artifact-card"
+      data-artifact-id={data.artifactId}
+      onClick={onClick}
+    />
+  ),
+  tryParseCanvasArtifactCardData: (output: unknown) => {
+    if (!output || typeof output !== 'object') return null
+    const data = output as Record<string, unknown>
+    if (
+      typeof data.artifactId !== 'string' ||
+      typeof data.chatId !== 'string' ||
+      typeof data.status !== 'string'
+    ) {
+      return null
+    }
+    return {
+      artifactId: data.artifactId,
+      chatId: data.chatId,
+      title: typeof data.title === 'string' ? data.title : 'Canvas Artifact',
+      status: data.status,
+      draftRevision:
+        typeof data.draftRevision === 'number' ? data.draftRevision : 0,
+      currentVersionId:
+        typeof data.currentVersionId === 'string' ? data.currentVersionId : null
+    }
+  }
 }))
 
 vi.mock('./tool-ui/option-list/option-list', () => ({
@@ -227,5 +260,309 @@ describe('RenderMessage', () => {
     )
 
     expect(screen.getAllByTestId('canvas-artifact-card')).toHaveLength(1)
+  })
+
+  it('calls onCanvasArtifactClick when a data-canvasArtifact card is clicked', () => {
+    const handleClick = vi.fn()
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'data-canvasArtifact',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'My Artifact',
+            status: 'ready',
+            draftRevision: 1,
+            currentVersionId: null
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+        onCanvasArtifactClick={handleClick}
+      />
+    )
+
+    fireEvent.click(screen.getByTestId('canvas-artifact-card'))
+    expect(handleClick).toHaveBeenCalledWith('artifact-1')
+  })
+
+  it('renders a clickable artifact card from dynamic-tool when no data-canvasArtifact part exists', () => {
+    const handleClick = vi.fn()
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'dynamic-tool',
+          toolCallId: 'tool-1',
+          toolName: 'createCanvasArtifact',
+          state: 'output-available',
+          input: { title: 'My Artifact' },
+          output: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            status: 'ready',
+            draftRevision: 1,
+            currentVersionId: null
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+        onCanvasArtifactClick={handleClick}
+      />
+    )
+
+    const card = screen.getByTestId('canvas-artifact-card')
+    expect(card).toBeInTheDocument()
+    fireEvent.click(card)
+    expect(handleClick).toHaveBeenCalledWith('artifact-1')
+  })
+
+  it('suppresses tool-createCanvasArtifact when data-canvasArtifact exists for the same artifact', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-createCanvasArtifact',
+          state: 'output-available',
+          toolCallId: 'tool-1',
+          toolName: 'createCanvasArtifact',
+          output: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            status: 'ready',
+            draftRevision: 1,
+            currentVersionId: null
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifact',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'My Artifact',
+            status: 'ready',
+            draftRevision: 1,
+            currentVersionId: null
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getAllByTestId('canvas-artifact-card')).toHaveLength(1)
+  })
+
+  it('renders a clickable card from tool-createCanvasArtifact when no data part exists', () => {
+    const handleClick = vi.fn()
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-createCanvasArtifact',
+          state: 'output-available',
+          toolCallId: 'tool-1',
+          toolName: 'createCanvasArtifact',
+          output: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            status: 'ready',
+            draftRevision: 1,
+            currentVersionId: null
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+        onCanvasArtifactClick={handleClick}
+      />
+    )
+
+    const card = screen.getByTestId('canvas-artifact-card')
+    expect(card).toBeInTheDocument()
+    fireEvent.click(card)
+    expect(handleClick).toHaveBeenCalledWith('artifact-1')
+  })
+
+  it('suppresses tool-createCanvasArtifact cards with empty artifactId (failed compile before DB insert)', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-createCanvasArtifact',
+          state: 'output-available',
+          toolCallId: 'tool-1',
+          toolName: 'createCanvasArtifact',
+          output: {
+            artifactId: '',
+            chatId: 'chat-1',
+            status: 'compile_failed',
+            draftRevision: 0,
+            currentVersionId: null,
+            error: 'Compilation failed'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+  })
+
+  it('suppresses dynamic-tool canvas cards with empty artifactId', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'dynamic-tool',
+          toolCallId: 'tool-1',
+          toolName: 'createCanvasArtifact',
+          state: 'output-available',
+          input: { title: 'Test' },
+          output: {
+            artifactId: '',
+            chatId: 'chat-1',
+            status: 'compile_failed',
+            draftRevision: 0,
+            currentVersionId: null
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+  })
+
+  it('shows only the data-canvasArtifact card when failed creates with empty IDs precede a success', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-createCanvasArtifact',
+          state: 'output-available',
+          toolCallId: 'tool-1',
+          toolName: 'createCanvasArtifact',
+          output: {
+            artifactId: '',
+            chatId: 'chat-1',
+            status: 'compile_failed',
+            draftRevision: 0,
+            currentVersionId: null,
+            error: 'Compilation failed'
+          }
+        } as any,
+        {
+          type: 'tool-createCanvasArtifact',
+          state: 'output-available',
+          toolCallId: 'tool-2',
+          toolName: 'createCanvasArtifact',
+          output: {
+            artifactId: '',
+            chatId: 'chat-1',
+            status: 'compile_failed',
+            draftRevision: 0,
+            currentVersionId: null,
+            error: 'Compilation failed again'
+          }
+        } as any,
+        {
+          type: 'tool-createCanvasArtifact',
+          state: 'output-available',
+          toolCallId: 'tool-3',
+          toolName: 'createCanvasArtifact',
+          output: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            status: 'ready',
+            draftRevision: 1,
+            currentVersionId: null
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifact',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Retro Runner Arcade',
+            status: 'ready',
+            draftRevision: 1,
+            currentVersionId: null
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    const cards = screen.getAllByTestId('canvas-artifact-card')
+    expect(cards).toHaveLength(1)
+    expect(cards[0]).toHaveAttribute('data-artifact-id', 'artifact-1')
   })
 })

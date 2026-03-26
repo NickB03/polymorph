@@ -480,7 +480,7 @@ describe('Canvas workspace handoff from chat stream', () => {
     })
   })
 
-  it('focuses an already-opened canvas artifact instead of reopening it', async () => {
+  it('deduplicates auto-open when the same artifact appears in multiple messages', async () => {
     resetCanvasContext()
 
     mockUseChat.mockReturnValue(
@@ -528,8 +528,9 @@ describe('Canvas workspace handoff from chat stream', () => {
 
     await waitFor(() => {
       expect(mockCanvasContext.openCanvasArtifact).toHaveBeenCalledTimes(1)
-      expect(mockCanvasContext.focusCanvasArtifact).toHaveBeenCalledWith(
-        'art-1'
+      expect(mockCanvasContext.openCanvasArtifact).toHaveBeenCalledWith(
+        'art-1',
+        undefined
       )
     })
   })

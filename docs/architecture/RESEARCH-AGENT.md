@@ -193,14 +193,12 @@ const result = await researchAgent.stream({
   abortSignal,
   experimental_transform: smoothStream({ chunking: 'word' })
 })
-result.consumeStream()
 writer.merge(result.toUIMessageStream({ messageMetadata }))
 ```
 
 - `smoothStream({ chunking: 'word' })` buffers LLM output and re-emits at word boundaries for a natural typing effect.
-- `consumeStream()` starts consuming the stream (required for side effects).
 - `toUIMessageStream()` converts the agent's output into UI message stream events.
-- `writer.merge()` pipes these events into the SSE response.
+- `writer.merge()` is the sole consumer — it pipes these events into the SSE response. (`result.consumeStream()` must NOT be called; doing so creates competing consumers on the same ReadableStream, causing duplicated text chunks.)
 
 ---
 
@@ -612,8 +610,7 @@ const stream = createUIMessageStream({
       messages, abortSignal,
       experimental_transform: smoothStream({ chunking: 'word' })
     })
-    result.consumeStream()
-    // 3. Merge agent output into SSE stream
+    // 3. Merge agent output into SSE stream (sole consumer — do not also call consumeStream())
     writer.merge(result.toUIMessageStream({ messageMetadata }))
     // 4. Stream related questions
     await streamRelatedQuestions(writer, responseMessages, abortSignal)

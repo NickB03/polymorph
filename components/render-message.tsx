@@ -15,7 +15,10 @@ import type {
 import type { DynamicToolPart } from '@/lib/types/dynamic-tools'
 import { isChatLoading } from '@/lib/utils'
 
-import { CanvasArtifactCard } from './tool-ui/canvas-artifact-card'
+import {
+  CanvasArtifactCard,
+  tryParseCanvasArtifactCardData
+} from './tool-ui/canvas-artifact-card'
 import { OptionList } from './tool-ui/option-list/option-list'
 import type { OptionListSelection } from './tool-ui/option-list/schema'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
@@ -459,6 +462,8 @@ export function RenderMessage({
       const hasMoreVisibleContent = remainingParts.some(p => {
         if (p.type === 'text') return true
         if (p.type?.startsWith?.('tool-display')) return true
+        if (p.type === 'tool-createCanvasArtifact') return true
+        if (p.type === 'tool-updateCanvasArtifact') return true
         if (p.type === 'data-canvasArtifact') return true
         if (p.type === 'dynamic-tool') return true
         if ((p.type as string) === 'data-artifact') return true
@@ -546,6 +551,44 @@ export function RenderMessage({
           />
         )
       }
+    } else if (
+      part.type === 'tool-createCanvasArtifact' ||
+      part.type === 'tool-updateCanvasArtifact'
+    ) {
+      // Canvas artifact tool parts — render card with onClick or suppress
+      const toolPart = part as { state?: string; output?: unknown }
+      if (toolPart.state === 'output-available' && toolPart.output) {
+        const output = toolPart.output as { artifactId?: unknown }
+        // Skip failed creation attempts with no persisted artifact (artifactId
+        // is '' when compile fails before DB insert — these are transient
+        // failures the AI will retry, not something to surface in the chat).
+        if (typeof output.artifactId !== 'string' || !output.artifactId) {
+          return
+        }
+        if (persistedCanvasArtifactIds.has(output.artifactId)) {
+          return // Already rendered via data-canvasArtifact — skip
+        }
+        // No matching data part — render card with onClick
+        const cardData = tryParseCanvasArtifactCardData(toolPart.output)
+        if (cardData) {
+          flushBuffer(`seg-${index}`)
+          elements.push(
+            <div key={`${messageId}-canvas-tool-${index}`} className="my-2">
+              <CanvasArtifactCard
+                data={cardData}
+                onClick={
+                  onCanvasArtifactClick
+                    ? () => onCanvasArtifactClick(cardData.artifactId)
+                    : undefined
+                }
+              />
+            </div>
+          )
+          return
+        }
+      }
+      // Input-streaming/input-available or unparseable — push to buffer
+      buffer.push(part)
     } else if (part.type === 'data-canvasArtifact') {
       // Render a clickable canvas artifact card
       flushBuffer(`seg-${index}`)
@@ -607,10 +650,28 @@ export function RenderMessage({
         typeof dynamicToolPart.output === 'object'
       ) {
         const output = dynamicToolPart.output as { artifactId?: unknown }
-        if (
-          typeof output.artifactId === 'string' &&
-          persistedCanvasArtifactIds.has(output.artifactId)
-        ) {
+        // Skip failed creation attempts with no persisted artifact
+        if (typeof output.artifactId !== 'string' || !output.artifactId) {
+          return
+        }
+        if (persistedCanvasArtifactIds.has(output.artifactId)) {
+          return // Already rendered via data-canvasArtifact — skip
+        }
+        // Render card directly with onClick wired up
+        const cardData = tryParseCanvasArtifactCardData(dynamicToolPart.output)
+        if (cardData) {
+          elements.push(
+            <div key={`${messageId}-dynamic-tool-${index}`} className="my-2">
+              <CanvasArtifactCard
+                data={cardData}
+                onClick={
+                  onCanvasArtifactClick
+                    ? () => onCanvasArtifactClick(cardData.artifactId)
+                    : undefined
+                }
+              />
+            </div>
+          )
           return
         }
       }

@@ -77,7 +77,6 @@ describe('createEphemeralChatStreamResponse', () => {
     })
     mockResearcher.mockReturnValue({
       stream: vi.fn().mockResolvedValue({
-        consumeStream: vi.fn(),
         toUIMessageStream: vi.fn(() => ({})),
         response: Promise.resolve({ messages: [] })
       })

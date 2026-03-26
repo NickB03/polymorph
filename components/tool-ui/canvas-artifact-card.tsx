@@ -97,7 +97,38 @@ export function CanvasArtifactCard({
   )
 }
 
-// ── tryRender for registry ───────────────────────────────────────────
+// ── Parsing & tryRender for registry ─────────────────────────────────
+
+/**
+ * Parse tool output into CanvasArtifactCardData, or return null.
+ * More lenient than tryRenderCanvasArtifactCard — defaults title when
+ * absent (createCanvasArtifact output does not include title).
+ */
+export function tryParseCanvasArtifactCardData(
+  output: unknown
+): CanvasArtifactCardData | null {
+  if (!output || typeof output !== 'object') return null
+  const data = output as Record<string, unknown>
+
+  if (
+    typeof data.artifactId !== 'string' ||
+    typeof data.chatId !== 'string' ||
+    typeof data.status !== 'string'
+  ) {
+    return null
+  }
+
+  return {
+    artifactId: data.artifactId,
+    chatId: data.chatId,
+    title: typeof data.title === 'string' ? data.title : 'Canvas Artifact',
+    status: data.status as CanvasArtifactStatus,
+    draftRevision:
+      typeof data.draftRevision === 'number' ? data.draftRevision : 0,
+    currentVersionId:
+      typeof data.currentVersionId === 'string' ? data.currentVersionId : null
+  }
+}
 
 /**
  * Attempt to render a canvas artifact card from tool output data.
@@ -107,22 +138,8 @@ export function tryRenderCanvasArtifactCard(
   output: unknown,
   onClick?: () => void
 ): React.ReactNode | null {
-  if (!output || typeof output !== 'object') return null
-  const data = output as Record<string, unknown>
+  const data = tryParseCanvasArtifactCardData(output)
+  if (!data) return null
 
-  if (
-    typeof data.artifactId !== 'string' ||
-    typeof data.chatId !== 'string' ||
-    typeof data.title !== 'string' ||
-    typeof data.status !== 'string'
-  ) {
-    return null
-  }
-
-  return (
-    <CanvasArtifactCard
-      data={data as unknown as CanvasArtifactCardData}
-      onClick={onClick}
-    />
-  )
+  return <CanvasArtifactCard data={data} onClick={onClick} />
 }
