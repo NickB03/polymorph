@@ -25713,7 +25713,8 @@
               "fill": "$--foreground",
               "content": "What is the latest news about artificial...",
               "fontFamily": "Geist",
-              "fontSize": "$--font-size-base"
+              "fontSize": "$--font-size-base",
+              "fontWeight": "normal"
             },
             {
               "type": "frame",
@@ -25737,7 +25738,8 @@
                   "fill": "$--muted-foreground",
                   "content": "Listening",
                   "fontFamily": "Geist",
-                  "fontSize": "$--font-size-sm"
+                  "fontSize": "$--font-size-sm",
+                  "fontWeight": "normal"
                 }
               ]
             }
@@ -27526,7 +27528,8 @@
                   "fill": "$--foreground",
                   "content": "What is the latest news about artificial...",
                   "fontFamily": "Geist",
-                  "fontSize": "$--font-size-base"
+                  "fontSize": "$--font-size-base",
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "frame",
@@ -27550,7 +27553,8 @@
                       "fill": "$--muted-foreground",
                       "content": "Listening",
                       "fontFamily": "Geist",
-                      "fontSize": "$--font-size-sm"
+                      "fontSize": "$--font-size-sm",
+                      "fontWeight": "normal"
                     }
                   ]
                 }
@@ -29037,5 +29041,9 @@
       "type": "number",
       "value": 0
     }
+  },
+  "imports": {
+    "9": "pencil:lunaris.lib.pen",
+    "n": "pencil:halo.lib.pen"
   }
 }
