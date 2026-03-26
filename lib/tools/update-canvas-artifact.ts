@@ -61,6 +61,10 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
     execute: async ({ artifactId, baseRevision, files }) => {
       const draftSource = files as CanvasSourceFiles
 
+      console.log(
+        `[updateCanvasArtifact] Tool invoked: chatId=${ctx.chatId}, artifactId=${artifactId}, baseRevision=${baseRevision}, files=[${Object.keys(draftSource).join(', ')}]`
+      )
+
       // Emit generating status immediately
       ctx.emitter.emitCanvasArtifactStatus({
         artifactId,
@@ -129,6 +133,9 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
 
       // Handle other failures
       if (!result.ok || !result.artifact) {
+        console.error(
+          `[updateCanvasArtifact] Failed: chatId=${ctx.chatId}, artifactId=${artifactId}, error=${result.error}, errorCode=${result.errorCode}`
+        )
         return {
           artifactId,
           chatId: currentState.chatId,
@@ -142,6 +149,10 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
       }
 
       const artifact = result.artifact
+
+      console.log(
+        `[updateCanvasArtifact] Success: chatId=${ctx.chatId}, artifactId=${artifactId}, status=${artifact.status}`
+      )
 
       // Auto-create version on successful compile
       if (artifact.status === 'ready') {

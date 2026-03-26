@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState
 } from 'react'
 
@@ -95,12 +96,21 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   )
   const [guestCanvasToken, setGuestCanvasToken] = useState<string | null>(null)
 
+  // Tracks the artifact ID currently being fetched to prevent concurrent
+  // opens of the same artifact (the auto-open effect can fire repeatedly
+  // during streaming as canvas state changes trigger re-renders).
+  const openingRef = useRef<string | null>(null)
+
   const isWorkspaceOpen = !!(artifact || isLoading || legacyNotice)
 
   // ── Core actions ─────────────────────────────────────────────────
 
   const openCanvasArtifact = useCallback(
     async (id: string, guestToken?: string | null) => {
+      if (!id) return // Guard against empty artifactId (e.g. from failed creates)
+      if (openingRef.current === id) return // Already fetching this artifact
+
+      openingRef.current = id
       setLegacyNotice(null)
       setArtifactId(id)
       setIsLoading(true)
@@ -127,6 +137,9 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         console.error('Error loading canvas artifact:', err)
         setArtifact(null)
       } finally {
+        if (openingRef.current === id) {
+          openingRef.current = null
+        }
         setIsLoading(false)
       }
     },
@@ -135,11 +148,16 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
   const focusCanvasArtifact = useCallback(
     (id: string) => {
+      if (!id) return // Guard against empty artifactId
+
       if (artifact && artifact.artifactId === id) {
         // Already loaded, just ensure workspace is visible
         setLegacyNotice(null)
         return
       }
+      // Already fetching this artifact — don't re-trigger
+      if (openingRef.current === id) return
+
       // Not loaded yet, fall through to full open
       openCanvasArtifact(id)
     },

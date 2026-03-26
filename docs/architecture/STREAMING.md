@@ -159,7 +159,6 @@ const result = await researchAgent.stream({
 The `smoothStream` transform buffers output tokens and re-emits them word-by-word. The agent's output stream is then merged into the main writer:
 
 ```typescript
-result.consumeStream()
 writer.merge(
   result.toUIMessageStream({
     messageMetadata: ({ part }) => {
@@ -171,7 +170,7 @@ writer.merge(
 )
 ```
 
-The `messageMetadata` callback attaches trace context to the stream's `start` event so the client knows which model and search mode produced the response.
+`writer.merge()` is the sole consumer of the agent result stream. (`result.consumeStream()` must NOT be called — doing so creates competing consumers on the same ReadableStream, causing duplicated text chunks.) The `messageMetadata` callback attaches trace context to the stream's `start` event so the client knows which model and search mode produced the response.
 
 ### 10. Tool Loop Execution
 

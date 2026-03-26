@@ -54,6 +54,10 @@ export function createCanvasArtifactTool(ctx: CanvasToolContext) {
     execute: async ({ title, files }) => {
       const draftSource = files as CanvasSourceFiles
 
+      console.log(
+        `[createCanvasArtifact] Tool invoked: chatId=${ctx.chatId}, title=${title ?? '(none)'}, files=[${Object.keys(draftSource).join(', ')}]`
+      )
+
       // Emit generating status immediately so the UI can show a loading state
       ctx.emitter.emitCanvasArtifactStatus({
         artifactId: '',
@@ -97,6 +101,9 @@ export function createCanvasArtifactTool(ctx: CanvasToolContext) {
 
       // Handle other failures — include artifact info if it was partially created
       if (!result.ok) {
+        console.error(
+          `[createCanvasArtifact] Failed: chatId=${ctx.chatId}, error=${result.error}, errorCode=${result.errorCode}`
+        )
         return {
           artifactId: result.artifact?.artifactId ?? '',
           chatId: ctx.chatId,
@@ -121,6 +128,10 @@ export function createCanvasArtifactTool(ctx: CanvasToolContext) {
       }
 
       const artifact = result.artifact
+
+      console.log(
+        `[createCanvasArtifact] Success: chatId=${ctx.chatId}, artifactId=${artifact.artifactId}`
+      )
 
       // Emit the persisted artifact data
       ctx.emitter.emitCanvasArtifact({
