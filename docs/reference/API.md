@@ -432,6 +432,8 @@ Health check endpoint for monitoring and load balancers. Verifies database conne
 **Authentication:** None
 **Dynamic:** `force-dynamic`
 
+For Vercel monitoring, use the canonical production alias (`https://polymorph-nb.vercel.app/api/health`). Raw deployment URLs may be protected by Vercel Authentication even when the application route itself is public.
+
 #### Response
 
 **Content-Type:** `application/json`

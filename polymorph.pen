@@ -1972,6 +1972,518 @@
               "height": 16
             }
           ]
+        },
+        {
+          "type": "text",
+          "id": "IMTYP",
+          "x": 40,
+          "y": 1140,
+          "name": "lbl8",
+          "fill": "$--muted-foreground",
+          "content": "// artifact_card",
+          "fontFamily": "Geist",
+          "fontSize": 12,
+          "fontWeight": "500"
+        },
+        {
+          "type": "frame",
+          "id": "Lqnpi",
+          "x": 40,
+          "y": 1168,
+          "name": "Artifact/Ready",
+          "reusable": true,
+          "width": 380,
+          "fill": "$--card",
+          "cornerRadius": "$--radius-lg",
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "$--border"
+          },
+          "gap": 12,
+          "padding": 12,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Bz835",
+              "name": "iconBox",
+              "width": 36,
+              "height": 36,
+              "fill": "$--muted",
+              "cornerRadius": "$--radius-md",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "K8F7W",
+                  "name": "rdyIcn",
+                  "width": 16,
+                  "height": 16,
+                  "iconFontName": "code",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xUc9I",
+              "name": "content",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "YQwwf",
+                  "name": "title",
+                  "fill": "$--foreground",
+                  "content": "Canvas Artifact",
+                  "fontFamily": "Geist",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "oCDfU",
+                  "name": "subtitle",
+                  "fill": "$--muted-foreground",
+                  "content": "Click to open workspace",
+                  "fontFamily": "Geist",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "zzKMS",
+              "name": "badge",
+              "height": 22,
+              "fill": "$--primary",
+              "cornerRadius": 9999,
+              "padding": [
+                0,
+                10
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "FKR0r",
+                  "name": "badgeLabel",
+                  "fill": "$--primary-foreground",
+                  "content": "Ready",
+                  "fontFamily": "Geist",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "t6a6O",
+          "x": 40,
+          "y": 1384,
+          "name": "Artifact/Error",
+          "reusable": true,
+          "width": 380,
+          "fill": "$--card",
+          "cornerRadius": "$--radius-lg",
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "$--border"
+          },
+          "gap": 12,
+          "padding": 12,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "3A9BA",
+              "name": "iconBox",
+              "width": 36,
+              "height": 36,
+              "fill": "$--muted",
+              "cornerRadius": "$--radius-md",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "NmJW9",
+                  "name": "errIcn",
+                  "width": 16,
+                  "height": 16,
+                  "iconFontName": "code",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "tXKwu",
+              "name": "content",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "uvNGG",
+                  "name": "title",
+                  "fill": "$--foreground",
+                  "content": "Canvas Artifact",
+                  "fontFamily": "Geist",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "q9LTJ",
+                  "name": "subtitle",
+                  "fill": "$--muted-foreground",
+                  "content": "Click to open workspace",
+                  "fontFamily": "Geist",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rBqVB",
+              "name": "badge",
+              "height": 22,
+              "fill": "$--destructive",
+              "cornerRadius": 9999,
+              "padding": [
+                0,
+                10
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Vm6Ev",
+                  "name": "badgeLabel",
+                  "fill": "$--destructive-foreground",
+                  "content": "Error",
+                  "fontFamily": "Geist",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Gp3jW",
+          "x": 40,
+          "y": 1240,
+          "name": "Artifact/Generating",
+          "reusable": true,
+          "width": 380,
+          "fill": "$--card",
+          "cornerRadius": "$--radius-lg",
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "$--border"
+          },
+          "gap": 12,
+          "padding": 12,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "XhwnI",
+              "name": "iconContainer",
+              "width": 36,
+              "height": 36,
+              "fill": "$--muted",
+              "cornerRadius": "$--radius-md",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "qUYSH",
+                  "name": "loaderIcon",
+                  "width": 16,
+                  "height": 16,
+                  "iconFontName": "loader",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "3sTm2",
+              "name": "textSection",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "xScL5",
+                  "name": "title",
+                  "fill": "$--foreground",
+                  "content": "Canvas Artifact",
+                  "fontFamily": "Geist",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "IcbsB",
+                  "name": "subtitle",
+                  "fill": "$--muted-foreground",
+                  "content": "Click to open workspace",
+                  "fontFamily": "Geist",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "LSJXk",
+              "name": "statusBadge",
+              "height": 22,
+              "fill": "$--secondary",
+              "cornerRadius": 9999,
+              "padding": [
+                0,
+                10
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "UBpm2",
+                  "name": "badgeLabel",
+                  "fill": "$--secondary-foreground",
+                  "content": "Generating",
+                  "fontFamily": "Geist",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "FKDPW",
+          "x": 40,
+          "y": 1456,
+          "name": "Artifact/Restoring",
+          "reusable": true,
+          "width": 380,
+          "fill": "$--card",
+          "cornerRadius": "$--radius-lg",
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "$--border"
+          },
+          "gap": 12,
+          "padding": 12,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Vhjph",
+              "name": "iconContainer",
+              "width": 36,
+              "height": 36,
+              "fill": "$--muted",
+              "cornerRadius": "$--radius-md",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "OsOzb",
+                  "name": "loaderIcon",
+                  "width": 16,
+                  "height": 16,
+                  "iconFontName": "loader",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ITyXD",
+              "name": "textBody",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Werok",
+                  "name": "title",
+                  "fill": "$--foreground",
+                  "content": "Canvas Artifact",
+                  "fontFamily": "Geist",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "ik3vo",
+                  "name": "subtitle",
+                  "fill": "$--muted-foreground",
+                  "content": "Click to open workspace",
+                  "fontFamily": "Geist",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "zQPgY",
+              "name": "statusBadge",
+              "height": 22,
+              "fill": "$--secondary",
+              "cornerRadius": 9999,
+              "padding": [
+                0,
+                10
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "FD4w7",
+                  "name": "badgeLabel",
+                  "fill": "$--secondary-foreground",
+                  "content": "Restoring",
+                  "fontFamily": "Geist",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "LeenD",
+          "x": 40,
+          "y": 1312,
+          "name": "Artifact/Compiling",
+          "reusable": true,
+          "width": 380,
+          "fill": "$--card",
+          "cornerRadius": "$--radius-lg",
+          "stroke": {
+            "align": "inside",
+            "thickness": 1,
+            "fill": "$--border"
+          },
+          "gap": 12,
+          "padding": 12,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "z30EX",
+              "name": "iconContainer",
+              "width": 36,
+              "height": 36,
+              "fill": "$--muted",
+              "cornerRadius": "$--radius-md",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "vbqEB",
+                  "name": "loaderIcon",
+                  "width": 16,
+                  "height": 16,
+                  "iconFontName": "loader",
+                  "iconFontFamily": "lucide",
+                  "fill": "$--muted-foreground"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "WbEfr",
+              "name": "textBody",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "U2w7w",
+                  "name": "title",
+                  "fill": "$--foreground",
+                  "content": "Canvas Artifact",
+                  "fontFamily": "Geist",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "eSPdv",
+                  "name": "subtitle",
+                  "fill": "$--muted-foreground",
+                  "content": "Click to open workspace",
+                  "fontFamily": "Geist",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Mk5bd",
+              "name": "statusBadge",
+              "height": 22,
+              "fill": "$--secondary",
+              "cornerRadius": 9999,
+              "padding": [
+                0,
+                10
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "qEWHw",
+                  "name": "badgeLabel",
+                  "fill": "$--secondary-foreground",
+                  "content": "Compiling",
+                  "fontFamily": "Geist",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -29617,14 +30129,19 @@
                       "name": "mc1",
                       "x": 0,
                       "y": 0,
+                      "height": "fit_content",
                       "descendants": {
                         "lcY9N": {
                           "width": 80,
-                          "height": 12
+                          "height": 12,
+                          "x": 24,
+                          "y": 24
                         },
                         "M5ymG": {
                           "height": 28,
-                          "width": 140
+                          "width": 140,
+                          "x": 24,
+                          "y": 52
                         },
                         "mtsN4": {
                           "enabled": false
@@ -29639,14 +30156,19 @@
                       "name": "mc2",
                       "x": 340,
                       "y": 0,
+                      "height": "fit_content",
                       "descendants": {
                         "lcY9N": {
                           "width": 100,
-                          "height": 12
+                          "height": 12,
+                          "x": 24,
+                          "y": 24
                         },
                         "M5ymG": {
                           "height": 28,
-                          "width": 120
+                          "width": 120,
+                          "x": 24,
+                          "y": 52
                         },
                         "mtsN4": {
                           "enabled": false
@@ -29661,14 +30183,19 @@
                       "name": "mc3",
                       "x": 680,
                       "y": 0,
+                      "height": "fit_content",
                       "descendants": {
                         "lcY9N": {
                           "width": 60,
-                          "height": 12
+                          "height": 12,
+                          "x": 24,
+                          "y": 24
                         },
                         "M5ymG": {
                           "height": 28,
-                          "width": 160
+                          "width": 160,
+                          "x": 24,
+                          "y": 52
                         },
                         "mtsN4": {
                           "enabled": false

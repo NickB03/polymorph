@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/next'
 
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
+import { createAppMetadata } from '@/lib/utils/app-metadata'
 
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { Toaster } from '@/components/ui/sonner'
@@ -21,25 +22,7 @@ const fontSans = FontSans({
   variable: '--font-sans'
 })
 
-const title = 'polymorph'
-const description =
-  'An AI platform with a generative UI for research, creation, and exploration.'
-const metadataBase = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:43100'
-
-export const metadata: Metadata = {
-  metadataBase: new URL(metadataBase),
-  title,
-  description,
-  openGraph: {
-    title,
-    description
-  },
-  twitter: {
-    title,
-    description,
-    card: 'summary_large_image'
-  }
-}
+export const metadata: Metadata = createAppMetadata()
 
 export const viewport: Viewport = {
   width: 'device-width',

@@ -1,31 +1,46 @@
 import { z } from 'zod'
 
-const envSchema = z
-  .object({
-    // Database — at least one of DATABASE_URL or POSTGRES_URL must be set
-    DATABASE_URL: z.string().optional(),
-    POSTGRES_URL: z.string().optional(),
-    DATABASE_RESTRICTED_URL: z.string().optional(),
+const baseEnvSchema = z.object({
+  // Database — at least one of DATABASE_URL or POSTGRES_URL must be set
+  DATABASE_URL: z.string().optional(),
+  POSTGRES_URL: z.string().optional(),
+  DATABASE_RESTRICTED_URL: z.string().optional(),
 
-    // Auth (gracefully optional — app works without Supabase in limited mode)
-    NEXT_PUBLIC_SUPABASE_URL: z.string().optional(),
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
+  // Auth (gracefully optional — app works without Supabase in limited mode)
+  NEXT_PUBLIC_SUPABASE_URL: z.string().optional(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
+  NEXT_PUBLIC_APP_URL: z.string().optional(),
 
-    // Optional with defaults
-    DAILY_CHAT_LIMIT: z.coerce.number().default(100),
-    GUEST_CHAT_DAILY_LIMIT: z.coerce.number().default(10),
-    DATABASE_SSL_DISABLED: z.string().default('false'),
+  // Optional with defaults
+  DAILY_CHAT_LIMIT: z.coerce.number().default(100),
+  GUEST_CHAT_DAILY_LIMIT: z.coerce.number().default(10),
+  DATABASE_SSL_DISABLED: z.string().default('false'),
 
-    // Feature-gated (warn if missing)
-    AI_GATEWAY_API_KEY: z.string().optional(),
-    TAVILY_API_KEY: z.string().optional(),
-    BRAVE_SEARCH_API_KEY: z.string().optional(),
-    UPSTASH_REDIS_REST_URL: z.string().optional(),
-    UPSTASH_REDIS_REST_TOKEN: z.string().optional()
-  })
+  // Feature-gated (warn if missing)
+  AI_GATEWAY_API_KEY: z.string().optional(),
+  TAVILY_API_KEY: z.string().optional(),
+  BRAVE_SEARCH_API_KEY: z.string().optional(),
+  UPSTASH_REDIS_REST_URL: z.string().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional()
+})
+
+function isProductionTarget() {
+  return (
+    process.env.VERCEL_ENV === 'production' ||
+    process.env.VERCEL_TARGET_ENV === 'production' ||
+    (process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV)
+  )
+}
+
+const envSchema = baseEnvSchema
   .refine(data => data.DATABASE_URL || data.POSTGRES_URL, {
     message: 'At least one of DATABASE_URL or POSTGRES_URL must be set',
     path: ['DATABASE_URL']
+  })
+  .refine(data => !isProductionTarget() || Boolean(data.NEXT_PUBLIC_APP_URL), {
+    message:
+      'NEXT_PUBLIC_APP_URL must be set for production deployments so metadata URLs resolve correctly',
+    path: ['NEXT_PUBLIC_APP_URL']
   })
 
 type Env = z.infer<typeof envSchema>
@@ -60,6 +75,7 @@ export function validateEnv(): Env {
       DATABASE_RESTRICTED_URL: process.env.DATABASE_RESTRICTED_URL,
       NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
       DAILY_CHAT_LIMIT: process.env.DAILY_CHAT_LIMIT,
       GUEST_CHAT_DAILY_LIMIT: process.env.GUEST_CHAT_DAILY_LIMIT,
       DATABASE_SSL_DISABLED: process.env.DATABASE_SSL_DISABLED,

@@ -1,12 +1,12 @@
 import { tool, UIToolInvocation } from 'ai'
 
 import { getSearchSchemaForModel } from '@/lib/schema/search'
+import { runAdvancedSearch } from '@/lib/tools/search/advanced-search'
 import { SearchResultItem, SearchResults } from '@/lib/types'
 import {
   getGeneralSearchProviderType,
   getSearchToolDescription
 } from '@/lib/utils/search-config'
-import { getBaseUrlString } from '@/lib/utils/url'
 
 import {
   createSearchProvider,
@@ -142,25 +142,13 @@ export function createSearchTool(fullModel: string) {
           provider === 'searxng' &&
           effectiveSearchDepthForAPI === 'advanced'
         ) {
-          const baseUrl = await getBaseUrlString()
-          const response = await fetch(`${baseUrl}/api/advanced-search`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              query: filledQuery,
-              maxResults: effectiveMaxResults,
-              searchDepth: effectiveSearchDepthForAPI,
-              includeDomains: include_domains,
-              excludeDomains: exclude_domains
-            }),
-            signal: context?.abortSignal
+          return await runAdvancedSearch({
+            query: filledQuery,
+            maxResults: effectiveMaxResults,
+            searchDepth: effectiveSearchDepthForAPI,
+            includeDomains: include_domains,
+            excludeDomains: exclude_domains
           })
-          if (!response.ok) {
-            throw new Error(
-              `Advanced search API error ${response.status}: ${response.statusText}`
-            )
-          }
-          return (await response.json()) as SearchResults
         }
 
         const searchProvider = createSearchProvider(provider)
