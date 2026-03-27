@@ -687,7 +687,6 @@ export function Chat({
           toolCallId: string
           result: any
         }) => {
-          // Find the tool name from the message parts
           let toolName = 'unknown'
           const matchedPart = messages
             .flatMap(m => m.parts ?? [])
@@ -762,9 +761,9 @@ export function Chat({
                 // Using regenerate instead of sendMessage avoids re-adding
                 // the same message object (with its existing ID) as a duplicate.
                 if (messages.length > 0) {
-                  const lastUserMessage = messages
-                    .filter(m => m.role === 'user')
-                    .pop()
+                  const lastUserMessage = messages.findLast(
+                    m => m.role === 'user'
+                  )
                   if (lastUserMessage) {
                     regenerate({ messageId: lastUserMessage.id })
                   }

@@ -281,7 +281,7 @@ export function RenderMessage({
     message.parts
   )
 
-  // New rendering: interleave text parts with grouped non-text segments
+  // Interleave text parts with grouped non-text segments
   const elements: React.ReactNode[] = []
   // Buffer collects non-text parts for ResearchProcessSection.
   let buffer: NonNullable<UIMessage['parts']>[number][] = []
