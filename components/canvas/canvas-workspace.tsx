@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Code2,
   Download,
+  ExternalLink,
   Eye,
   History,
   MoreHorizontal,
@@ -332,6 +333,18 @@ export function CanvasWorkspace() {
         )}
       </div>
       <div className="flex items-center gap-0.5">
+        <TooltipButton
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={() => canvas.viewFullscreen()}
+          disabled={!artifact.draftCompiledHtml}
+          aria-label="Open in new tab"
+          tooltipContent="Open in new tab"
+          data-testid="canvas-view-fullscreen"
+        >
+          <ExternalLink className="h-4 w-4" />
+        </TooltipButton>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <TooltipButton

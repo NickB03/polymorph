@@ -1,3 +1,4 @@
+import { VIEWPORT_FIT_CSS } from '@/lib/canvas/inject-viewport-fit'
 import type { CanvasMetaJson } from '@/lib/types/canvas'
 
 // ── Locked CSP ──────────────────────────────────────────────────────
@@ -212,6 +213,7 @@ export function assembleCanvasHtml(opts: AssembleCanvasHtmlOptions): string {
 <meta name="viewport" content="${safeViewport}">
 <meta http-equiv="Content-Security-Policy" content="${CANVAS_CSP}">
 <title>${escapeHtml(title)}</title>
+<style>${VIEWPORT_FIT_CSS}</style>
 <style>${safeCss}</style>
 </head>
 <body>

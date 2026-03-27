@@ -293,9 +293,8 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | ---------------------------------------- | ----------------------------------------------------------- |
 | `components/voice/mic-button.tsx`        | Microphone toggle button for voice input                    |
 | `components/voice/speak-button.tsx`      | Text-to-speech playback toggle button                       |
-| `components/voice/voice-indicator.tsx`   | Visual indicator showing voice input/output state           |
 | `components/voice/voice-mode-toggle.tsx` | Toggle button to enter/exit voice conversation mode         |
-| `components/voice/voice-overlay.tsx`     | Full-screen overlay for active voice conversation mode      |
+| `components/voice/voice-orb.tsx`         | Animated voice orb for active voice conversation mode       |
 | `components/voice/voice-settings.tsx`    | Voice settings panel with provider and voice ID preferences |
 
 ### Tool UI Components

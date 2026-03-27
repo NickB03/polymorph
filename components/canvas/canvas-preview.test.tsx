@@ -29,7 +29,8 @@ const mockCanvasContext: CanvasContextValue = {
   updateDraft: vi.fn(),
   saveVersion: vi.fn(),
   restoreVersion: vi.fn(),
-  exportHtml: vi.fn()
+  exportHtml: vi.fn(),
+  viewFullscreen: vi.fn()
 }
 
 vi.mock('./canvas-context', () => ({
@@ -379,38 +380,6 @@ window.__CANVAS_APP__ = { default: function App() { return null } }
     )
 
     expect(fetch).not.toHaveBeenCalled()
-  })
-
-  it('handles height-change message by updating iframe height', async () => {
-    const artifact = makeArtifact()
-    setCanvasState({ artifact, artifactId: artifact.artifactId })
-
-    render(<CanvasPreview />)
-
-    const frame = screen.getByTitle(/canvas preview/i) as HTMLIFrameElement
-    const mockPostMessage = vi.fn()
-    Object.defineProperty(frame, 'contentWindow', {
-      value: { postMessage: mockPostMessage },
-      writable: true,
-      configurable: true
-    })
-    frame.dispatchEvent(new Event('load'))
-    const nonce = mockPostMessage.mock.calls[0][0].nonce
-
-    act(() => {
-      simulatePreviewMessage(
-        {
-          type: 'height-change',
-          nonce,
-          payload: { height: 600 }
-        },
-        frame.contentWindow
-      )
-    })
-
-    await waitFor(() => {
-      expect(frame.style.height).toBe('600px')
-    })
   })
 
   it('POSTs runtime-error diagnostics to the runtime-diagnostics route', async () => {

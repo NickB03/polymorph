@@ -66,6 +66,8 @@ export type CanvasContextValue = {
   restoreVersion: (versionId: string) => Promise<CanvasArtifactState | null>
   /** GET /api/canvas-artifacts/[artifactId]/export (triggers download) */
   exportHtml: () => Promise<void>
+  /** Open the artifact in a new browser tab (fullscreen view) */
+  viewFullscreen: () => void
 }
 
 const CanvasContext = createContext<CanvasContextValue | null>(null)
@@ -96,12 +98,30 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   )
   const [guestCanvasToken, setGuestCanvasToken] = useState<string | null>(null)
 
+  // Ref mirror of guestCanvasToken so callbacks can read the latest value
+  // without depending on it (avoids cascading callback recreation on every
+  // token rotation).
+  const guestTokenRef = useRef(guestCanvasToken)
+  guestTokenRef.current = guestCanvasToken
+
   // Tracks the artifact ID currently being fetched to prevent concurrent
   // opens of the same artifact (the auto-open effect can fire repeatedly
   // during streaming as canvas state changes trigger re-renders).
   const openingRef = useRef<string | null>(null)
 
   const isWorkspaceOpen = !!(artifact || isLoading || legacyNotice)
+
+  /** Apply an API response state and sync the rotated guest token if changed. */
+  const applyState = useCallback((state: CanvasArtifactState) => {
+    setArtifact(state)
+    if (
+      state.guestCanvasToken &&
+      state.guestCanvasToken !== guestTokenRef.current
+    ) {
+      guestTokenRef.current = state.guestCanvasToken
+      setGuestCanvasToken(state.guestCanvasToken)
+    }
+  }, [])
 
   // ── Core actions ─────────────────────────────────────────────────
 
@@ -116,8 +136,9 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true)
 
       try {
-        const effectiveGuestToken = guestToken ?? guestCanvasToken
+        const effectiveGuestToken = guestToken ?? guestTokenRef.current
         if (guestToken !== undefined) {
+          guestTokenRef.current = guestToken
           setGuestCanvasToken(guestToken)
         }
 
@@ -129,10 +150,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
           return
         }
         const state: CanvasArtifactState = await res.json()
-        setArtifact(state)
-        if (state.guestCanvasToken) {
-          setGuestCanvasToken(state.guestCanvasToken)
-        }
+        applyState(state)
       } catch (err) {
         console.error('Error loading canvas artifact:', err)
         setArtifact(null)
@@ -143,7 +161,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [guestCanvasToken]
+    [applyState]
   )
 
   const focusCanvasArtifact = useCallback(
@@ -198,23 +216,20 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true)
     try {
-      const url = buildUrl(artifactId, '', guestCanvasToken)
+      const url = buildUrl(artifactId, '', guestTokenRef.current)
       const res = await fetch(url)
       if (!res.ok) {
         console.error('Failed to reload canvas artifact:', res.status)
         return
       }
       const state: CanvasArtifactState = await res.json()
-      setArtifact(state)
-      if (state.guestCanvasToken) {
-        setGuestCanvasToken(state.guestCanvasToken)
-      }
+      applyState(state)
     } catch (err) {
       console.error('Error reloading canvas artifact:', err)
     } finally {
       setIsLoading(false)
     }
-  }, [artifactId, guestCanvasToken])
+  }, [artifactId, applyState])
 
   // ── Route-backed actions ─────────────────────────────────────────
 
@@ -230,8 +245,8 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         baseRevision,
         draftSource: source
       }
-      if (guestCanvasToken) {
-        body.guestCanvasToken = guestCanvasToken
+      if (guestTokenRef.current) {
+        body.guestCanvasToken = guestTokenRef.current
       }
 
       const res = await fetch(url, {
@@ -251,13 +266,10 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       }
 
       const state: CanvasArtifactState = await res.json()
-      setArtifact(state)
-      if (state.guestCanvasToken) {
-        setGuestCanvasToken(state.guestCanvasToken)
-      }
+      applyState(state)
       return state
     },
-    [artifactId, guestCanvasToken]
+    [artifactId, applyState]
   )
 
   const saveVersion =
@@ -266,8 +278,8 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
       const url = buildUrl(artifactId, '/versions', null)
       const body: Record<string, unknown> = {}
-      if (guestCanvasToken) {
-        body.guestCanvasToken = guestCanvasToken
+      if (guestTokenRef.current) {
+        body.guestCanvasToken = guestTokenRef.current
       }
 
       const res = await fetch(url, {
@@ -282,12 +294,9 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       }
 
       const state: CanvasArtifactState = await res.json()
-      setArtifact(state)
-      if (state.guestCanvasToken) {
-        setGuestCanvasToken(state.guestCanvasToken)
-      }
+      applyState(state)
       return state
-    }, [artifactId, guestCanvasToken])
+    }, [artifactId, applyState])
 
   const restoreVersion = useCallback(
     async (versionId: string): Promise<CanvasArtifactState | null> => {
@@ -298,8 +307,8 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         versionId,
         baseRevision: artifact.draftRevision
       }
-      if (guestCanvasToken) {
-        body.guestCanvasToken = guestCanvasToken
+      if (guestTokenRef.current) {
+        body.guestCanvasToken = guestTokenRef.current
       }
 
       const res = await fetch(url, {
@@ -314,19 +323,22 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       }
 
       const state: CanvasArtifactState = await res.json()
-      setArtifact(state)
-      if (state.guestCanvasToken) {
-        setGuestCanvasToken(state.guestCanvasToken)
-      }
+      applyState(state)
       return state
     },
-    [artifactId, artifact, guestCanvasToken]
+    [artifactId, artifact, applyState]
   )
+
+  const viewFullscreen = useCallback(() => {
+    if (!artifactId) return
+    const url = buildUrl(artifactId, '/view', guestTokenRef.current)
+    window.open(url, '_blank')
+  }, [artifactId])
 
   const exportHtml = useCallback(async () => {
     if (!artifactId) return
 
-    const url = buildUrl(artifactId, '/export', guestCanvasToken)
+    const url = buildUrl(artifactId, '/export', guestTokenRef.current)
 
     try {
       const res = await fetch(url)
@@ -350,7 +362,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Export error:', err)
     }
-  }, [artifactId, guestCanvasToken])
+  }, [artifactId])
 
   // ── Render ───────────────────────────────────────────────────────
 
@@ -373,7 +385,8 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       updateDraft,
       saveVersion,
       restoreVersion,
-      exportHtml
+      exportHtml,
+      viewFullscreen
     }),
     [
       artifactId,
@@ -393,7 +406,8 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       updateDraft,
       saveVersion,
       restoreVersion,
-      exportHtml
+      exportHtml,
+      viewFullscreen
     ]
   )
 
