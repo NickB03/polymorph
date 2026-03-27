@@ -212,6 +212,7 @@ export function assembleCanvasHtml(opts: AssembleCanvasHtmlOptions): string {
 <meta name="viewport" content="${safeViewport}">
 <meta http-equiv="Content-Security-Policy" content="${CANVAS_CSP}">
 <title>${escapeHtml(title)}</title>
+<style>html,body,#root{height:100%;margin:0}#root>*{max-height:100vh;box-sizing:border-box}</style>
 <style>${safeCss}</style>
 </head>
 <body>

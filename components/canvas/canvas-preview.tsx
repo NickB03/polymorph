@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
+import { injectViewportFitStyles } from '@/lib/canvas/inject-viewport-fit'
 import type { CanvasArtifactState } from '@/lib/canvas/service'
 import type { CanvasDiagnostic } from '@/lib/types/canvas'
 
@@ -75,7 +76,6 @@ export function CanvasPreview() {
   const { artifact, guestCanvasToken, setArtifact } = canvas
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const nonceRef = useRef(generateNonce())
-  const [iframeHeight, setIframeHeight] = useState<number | null>(null)
 
   // Rotate nonce when draftCompiledHtml changes
   const prevHtmlRef = useRef(artifact?.draftCompiledHtml)
@@ -173,14 +173,6 @@ export function CanvasPreview() {
         return
       }
 
-      if (type === 'height-change') {
-        const height = (payload as Record<string, unknown>)?.height
-        if (typeof height === 'number' && height > 0) {
-          setIframeHeight(height)
-        }
-        return
-      }
-
       if (RUNTIME_DIAGNOSTIC_TYPES.has(type as PreviewToHostType)) {
         const diagnostic = toDiagnostic(
           type as PreviewToHostType,
@@ -200,7 +192,7 @@ export function CanvasPreview() {
 
   if (!artifact) return null
 
-  const srcdoc = artifact.draftCompiledHtml ?? ''
+  const srcdoc = injectViewportFitStyles(artifact.draftCompiledHtml ?? '')
 
   return (
     <iframe
@@ -209,8 +201,7 @@ export function CanvasPreview() {
       srcDoc={srcdoc}
       sandbox="allow-scripts"
       onLoad={handleIframeLoad}
-      className="h-full w-full border-0"
-      style={iframeHeight ? { height: `${iframeHeight}px` } : undefined}
+      className="h-full w-full border-0 overflow-hidden"
       data-testid="canvas-preview-iframe"
     />
   )

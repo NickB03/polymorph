@@ -40,7 +40,8 @@ const mockCanvasContext: CanvasContextValue = {
   updateDraft: vi.fn(),
   saveVersion: vi.fn(),
   restoreVersion: vi.fn(),
-  exportHtml: vi.fn()
+  exportHtml: vi.fn(),
+  viewFullscreen: vi.fn()
 }
 
 vi.mock('./canvas-context', () => ({

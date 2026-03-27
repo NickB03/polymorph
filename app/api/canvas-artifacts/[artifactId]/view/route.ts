@@ -6,16 +6,6 @@ import { jsonError } from '@/lib/utils/json-error'
 
 export const dynamic = 'force-dynamic'
 
-function slugify(title: string): string {
-  return (
-    title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 50) || 'canvas-artifact'
-  )
-}
-
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ artifactId: string }> }
@@ -60,10 +50,8 @@ export async function GET(
       )
     }
 
-    const slug = slugify(result.title ?? 'canvas-artifact')
-
     const headers = new Headers()
-    headers.set('Content-Disposition', `attachment; filename="${slug}.html"`)
+    headers.set('Content-Disposition', 'inline')
     headers.set('Content-Type', 'text/html; charset=utf-8')
     headers.set('X-Canvas-Executes-JavaScript', 'true')
     headers.set(
@@ -76,7 +64,7 @@ export async function GET(
       headers
     })
   } catch (error) {
-    console.error('Canvas export error:', error)
-    return jsonError('INTERNAL_ERROR', 'Error exporting canvas artifact', 500)
+    console.error('Canvas view error:', error)
+    return jsonError('INTERNAL_ERROR', 'Error viewing canvas artifact', 500)
   }
 }

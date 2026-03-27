@@ -66,6 +66,8 @@ export type CanvasContextValue = {
   restoreVersion: (versionId: string) => Promise<CanvasArtifactState | null>
   /** GET /api/canvas-artifacts/[artifactId]/export (triggers download) */
   exportHtml: () => Promise<void>
+  /** Open the artifact in a new browser tab (fullscreen view) */
+  viewFullscreen: () => void
 }
 
 const CanvasContext = createContext<CanvasContextValue | null>(null)
@@ -325,6 +327,12 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
     [artifactId, artifact, applyState]
   )
 
+  const viewFullscreen = useCallback(() => {
+    if (!artifactId) return
+    const url = buildUrl(artifactId, '/view', guestTokenRef.current)
+    window.open(url, '_blank')
+  }, [artifactId])
+
   const exportHtml = useCallback(async () => {
     if (!artifactId) return
 
@@ -375,7 +383,8 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       updateDraft,
       saveVersion,
       restoreVersion,
-      exportHtml
+      exportHtml,
+      viewFullscreen
     }),
     [
       artifactId,
@@ -395,7 +404,8 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       updateDraft,
       saveVersion,
       restoreVersion,
-      exportHtml
+      exportHtml,
+      viewFullscreen
     ]
   )
 
