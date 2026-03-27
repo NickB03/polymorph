@@ -170,7 +170,7 @@ writer.merge(
 )
 ```
 
-`writer.merge()` is the sole consumer of the agent result stream. (`result.consumeStream()` must NOT be called — doing so creates competing consumers on the same ReadableStream, causing duplicated text chunks.) The `messageMetadata` callback attaches trace context to the stream's `start` event so the client knows which model and search mode produced the response.
+`writer.merge()` is the sole consumer of the agent result stream. (`result.consumeStream()` must NOT be called — `toUIMessageStream()` already consumes the stream internally, making an additional `consumeStream()` call redundant.) The `messageMetadata` callback attaches trace context to the stream's `start` event so the client knows which model and search mode produced the response.
 
 ### 10. Tool Loop Execution
 
