@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 import { injectViewportFitStyles } from '@/lib/canvas/inject-viewport-fit'
 import type { CanvasArtifactState } from '@/lib/canvas/service'
@@ -190,9 +190,12 @@ export function CanvasPreview() {
 
   // ── Render ─────────────────────────────────────────────────────
 
-  if (!artifact) return null
+  const srcdoc = useMemo(
+    () => injectViewportFitStyles(artifact?.draftCompiledHtml ?? ''),
+    [artifact?.draftCompiledHtml]
+  )
 
-  const srcdoc = injectViewportFitStyles(artifact.draftCompiledHtml ?? '')
+  if (!artifact) return null
 
   return (
     <iframe

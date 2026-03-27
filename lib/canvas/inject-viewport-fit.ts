@@ -8,8 +8,10 @@
  *   `min-h-screen` from exceeding the viewport.
  * - All rules are low-specificity — user/Tailwind CSS wins.
  */
-const VIEWPORT_FIT_STYLE =
-  '<style>html,body,#root{height:100%;margin:0}#root>*{max-height:100vh;box-sizing:border-box}</style>'
+export const VIEWPORT_FIT_CSS =
+  'html,body,#root{height:100%;margin:0}#root>*{max-height:100vh;box-sizing:border-box}'
+
+const VIEWPORT_FIT_STYLE = `<style>${VIEWPORT_FIT_CSS}</style>`
 
 /**
  * Inject viewport-fit base styles into compiled canvas HTML.

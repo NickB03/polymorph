@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useCallback, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useMemo, useState } from 'react'
 
 import { ArrowLeft, ArrowRight, Check, Send } from 'lucide-react'
 
@@ -141,9 +141,9 @@ export function QuestionWizard({
 }: QuestionWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [answers, setAnswers] = useState<WizardResult>({})
-  const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
-  const [isTransitioning, setIsTransitioning] = useState(false)
-  const contentRef = useRef<HTMLDivElement>(null)
+  const [transition, setTransition] = useState<'forward' | 'backward' | null>(
+    null
+  )
 
   const isReceipt = choice !== undefined && choice !== null
   const step = steps[currentStep]
@@ -157,17 +157,12 @@ export function QuestionWizard({
 
   const goToStep = useCallback(
     (nextIndex: number) => {
-      const dir = nextIndex > currentStep ? 'forward' : 'backward'
-      setDirection(dir)
-      setIsTransitioning(true)
-
-      // Brief transition out, then swap step, then transition in
-      const timer = setTimeout(() => {
+      setTransition(nextIndex > currentStep ? 'forward' : 'backward')
+      // Brief transition out, then swap step
+      setTimeout(() => {
         setCurrentStep(nextIndex)
-        setIsTransitioning(false)
+        setTransition(null)
       }, 200)
-
-      return () => clearTimeout(timer)
     },
     [currentStep]
   )
@@ -230,7 +225,6 @@ export function QuestionWizard({
       aria-label="Question wizard"
       aria-describedby={`${id}-step-title`}
     >
-      {/* Header: step title + counter */}
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="flex flex-col gap-0.5">
           <span
@@ -257,15 +251,14 @@ export function QuestionWizard({
         </div>
       </div>
 
-      {/* Content: stacked grid — all steps rendered, tallest sets the height */}
+      {/* All steps rendered in a stacked grid so the tallest sets container height */}
       <div
-        ref={contentRef}
         className="grid overflow-hidden"
         style={{ gridTemplate: '1fr / 1fr' }}
       >
         {stepsWithOptions.map((s, i) => {
           const isActive = i === currentStep
-          const isLeaving = isTransitioning && isActive
+          const isLeaving = transition !== null && isActive
           const isHidden = !isActive
 
           return (
@@ -277,13 +270,13 @@ export function QuestionWizard({
                 'motion-safe:transition-all',
                 isHidden && 'pointer-events-none invisible opacity-0',
                 isLeaving &&
-                  direction === 'forward' &&
+                  transition === 'forward' &&
                   'pointer-events-none motion-safe:-translate-x-2 motion-safe:opacity-0',
                 isLeaving &&
-                  direction === 'backward' &&
+                  transition === 'backward' &&
                   'pointer-events-none motion-safe:translate-x-2 motion-safe:opacity-0',
                 isActive &&
-                  !isTransitioning &&
+                  !transition &&
                   'motion-safe:translate-x-0 motion-safe:opacity-100'
               )}
               aria-hidden={isHidden}
@@ -304,7 +297,6 @@ export function QuestionWizard({
         })}
       </div>
 
-      {/* Footer: navigation buttons */}
       <div className="flex items-center justify-between gap-2">
         <div>
           {!isFirstStep && (
