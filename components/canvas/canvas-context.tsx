@@ -118,6 +118,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       state.guestCanvasToken &&
       state.guestCanvasToken !== guestTokenRef.current
     ) {
+      guestTokenRef.current = state.guestCanvasToken
       setGuestCanvasToken(state.guestCanvasToken)
     }
   }, [])
@@ -137,6 +138,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       try {
         const effectiveGuestToken = guestToken ?? guestTokenRef.current
         if (guestToken !== undefined) {
+          guestTokenRef.current = guestToken
           setGuestCanvasToken(guestToken)
         }
 

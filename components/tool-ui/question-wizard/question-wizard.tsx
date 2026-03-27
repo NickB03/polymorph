@@ -11,11 +11,11 @@ import { Button, cn, Separator } from './_adapter'
 import type { QuestionWizardProps, WizardResult, WizardStep } from './schema'
 
 function StepDots({
-  total,
+  steps,
   current,
   answers
 }: {
-  total: number
+  steps: WizardStep[]
   current: number
   answers: WizardResult
 }) {
@@ -25,9 +25,9 @@ function StepDots({
       aria-hidden="true"
       role="presentation"
     >
-      {Array.from({ length: total }, (_, i) => {
+      {steps.map((step, i) => {
         const isActive = i === current
-        const isCompleted = i < current || (i in answers && !isActive)
+        const isCompleted = i < current || (step.id in answers && !isActive)
         return (
           <div
             key={i}
@@ -243,11 +243,7 @@ export function QuestionWizard({
           <span className="text-muted-foreground text-xs tabular-nums">
             {currentStep + 1} / {totalSteps}
           </span>
-          <StepDots
-            total={totalSteps}
-            current={currentStep}
-            answers={answers}
-          />
+          <StepDots steps={steps} current={currentStep} answers={answers} />
         </div>
       </div>
 
