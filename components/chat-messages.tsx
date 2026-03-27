@@ -266,7 +266,7 @@ export function ChatMessages({
               return (
                 <div
                   key={assistantMessage.id}
-                  className="flex flex-col gap-4 animate-content-enter"
+                  className="flex flex-col gap-2 animate-content-enter"
                   style={
                     {
                       '--enter-delay': `${100 + messageIndex * 75}ms`
@@ -301,7 +301,7 @@ export function ChatMessages({
               sectionIndex === sections.length - 1 &&
               (section.assistantMessages.length === 0 ||
               !section.assistantMessages.some(m => m.parts?.length) ? (
-                <div className="flex flex-col gap-3 py-4">
+                <div className="flex flex-col gap-3 py-2">
                   <Skeleton className="h-5 w-3/4" />
                   <Skeleton
                     className="h-5 w-full"
@@ -313,7 +313,7 @@ export function ChatMessages({
                   />
                 </div>
               ) : (
-                <div className="flex justify-start py-4">
+                <div className="flex justify-start py-2">
                   <AnimatedLogo className="h-10 w-10" />
                 </div>
               ))}

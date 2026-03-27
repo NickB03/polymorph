@@ -361,10 +361,7 @@ export function RenderMessage({
           }
           // Non-depth option lists keep their receipt card
           return (
-            <div
-              key={`${messageId}-display-tool-${partIndex}`}
-              className="my-2"
-            >
+            <div key={`${messageId}-display-tool-${partIndex}`}>
               <OptionList
                 {...parsed}
                 choice={toolPart.output as OptionListSelection}
@@ -376,10 +373,7 @@ export function RenderMessage({
         const parsed = safeParseSerializableOptionList(toolPart.input)
         if (parsed) {
           return (
-            <div
-              key={`${messageId}-display-tool-${partIndex}`}
-              className="my-2"
-            >
+            <div key={`${messageId}-display-tool-${partIndex}`}>
               <OptionList
                 {...parsed}
                 onAction={(actionId, selection) => {
@@ -398,7 +392,7 @@ export function RenderMessage({
         return (
           <div
             key={`${messageId}-display-tool-${partIndex}`}
-            className="my-2 h-24 animate-pulse rounded-lg bg-muted"
+            className="h-24 animate-pulse rounded-lg bg-muted"
           />
         )
       }
@@ -406,7 +400,7 @@ export function RenderMessage({
       if (toolPart.state === 'output-available' && toolPart.output) {
         const rendered = tryRenderToolUIByName(toolName, toolPart.output)
         return (
-          <div key={`${messageId}-display-tool-${partIndex}`} className="my-2">
+          <div key={`${messageId}-display-tool-${partIndex}`}>
             {rendered ?? (
               <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
                 {toolName} output could not be rendered
@@ -418,7 +412,7 @@ export function RenderMessage({
         return (
           <div
             key={`${messageId}-display-tool-${partIndex}`}
-            className="my-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground"
+            className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground"
           >
             {toolName} output could not be rendered
           </div>
@@ -430,7 +424,7 @@ export function RenderMessage({
         return (
           <div
             key={`${messageId}-display-tool-${partIndex}`}
-            className="my-2 h-24 animate-pulse rounded-lg bg-muted"
+            className="h-24 animate-pulse rounded-lg bg-muted"
           />
         )
       }
@@ -480,10 +474,7 @@ export function RenderMessage({
         const segment = segments[si]
         if (segment.type === 'tool-ui') {
           elements.push(
-            <div
-              key={`${messageId}-extracted-tool-${index}-${segment.key}`}
-              className="my-2"
-            >
+            <div key={`${messageId}-extracted-tool-${index}-${segment.key}`}>
               {segment.component}
             </div>
           )
@@ -573,7 +564,7 @@ export function RenderMessage({
         if (cardData) {
           flushBuffer(`seg-${index}`)
           elements.push(
-            <div key={`${messageId}-canvas-tool-${index}`} className="my-2">
+            <div key={`${messageId}-canvas-tool-${index}`}>
               <CanvasArtifactCard
                 data={cardData}
                 onClick={
@@ -595,7 +586,7 @@ export function RenderMessage({
       const canvasData = (part as { data?: CanvasArtifactData }).data
       if (canvasData?.artifactId) {
         elements.push(
-          <div key={`${messageId}-canvas-artifact-${index}`} className="my-2">
+          <div key={`${messageId}-canvas-artifact-${index}`}>
             <CanvasArtifactCard
               data={canvasData}
               onClick={
@@ -616,7 +607,7 @@ export function RenderMessage({
       const legacyData = (part as { data?: { id?: string } }).data
       const legacyId = legacyData?.id ?? 'unknown'
       elements.push(
-        <div key={`${messageId}-legacy-artifact-${index}`} className="my-2">
+        <div key={`${messageId}-legacy-artifact-${index}`}>
           <button
             type="button"
             className="flex w-full items-center gap-3 rounded-lg border border-dashed border-border bg-card p-3 text-left text-sm text-muted-foreground"
@@ -661,7 +652,7 @@ export function RenderMessage({
         const cardData = tryParseCanvasArtifactCardData(dynamicToolPart.output)
         if (cardData) {
           elements.push(
-            <div key={`${messageId}-dynamic-tool-${index}`} className="my-2">
+            <div key={`${messageId}-dynamic-tool-${index}`}>
               <CanvasArtifactCard
                 data={cardData}
                 onClick={
