@@ -139,8 +139,8 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       } finally {
         if (openingRef.current === id) {
           openingRef.current = null
+          setIsLoading(false)
         }
-        setIsLoading(false)
       }
     },
     [guestCanvasToken]
@@ -182,6 +182,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   )
 
   const closeWorkspace = useCallback(() => {
+    openingRef.current = null
     setArtifact(null)
     setArtifactId(null)
     setIsLoading(false)

@@ -149,9 +149,8 @@ export async function createEphemeralChatStreamResponse(
           experimental_transform: smoothStream({ chunking: 'word' })
         })
         // NOTE: Do NOT call result.consumeStream() here — writer.merge()
-        // consumes the stream via toUIMessageStream(). Calling both creates
-        // competing consumers on the same underlying ReadableStream, which
-        // causes duplicated text chunks in the response.
+        // already consumes the stream via toUIMessageStream(), making an
+        // additional consumeStream() call redundant.
         writer.merge(
           result.toUIMessageStream({
             messageMetadata: ({ part }) => {

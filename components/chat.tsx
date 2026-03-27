@@ -305,9 +305,10 @@ export function Chat({
   })
 
   useEffect(() => {
+    const cv = canvasRef.current
     // When navigating to home (no chat ID), close the canvas workspace and bail out
     if (!providedId) {
-      canvas.closeWorkspace()
+      cv.closeWorkspace()
       return
     }
     if (providedId === chatId) return
@@ -325,9 +326,9 @@ export function Chat({
     })
     guestCanvasTokenRef.current = undefined
     canvasOpenedRef.current.clear()
-    canvas.setGuestCanvasToken(null)
-    canvas.closeWorkspace()
-  }, [canvas, chatId, providedId, stop])
+    cv.setGuestCanvasToken(null)
+    cv.closeWorkspace()
+  }, [chatId, providedId, stop]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track canvas data parts from streaming messages.
   // Uses canvasRef (stable ref) instead of canvas directly so that canvas

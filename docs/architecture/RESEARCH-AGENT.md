@@ -198,7 +198,7 @@ writer.merge(result.toUIMessageStream({ messageMetadata }))
 
 - `smoothStream({ chunking: 'word' })` buffers LLM output and re-emits at word boundaries for a natural typing effect.
 - `toUIMessageStream()` converts the agent's output into UI message stream events.
-- `writer.merge()` is the sole consumer — it pipes these events into the SSE response. (`result.consumeStream()` must NOT be called; doing so creates competing consumers on the same ReadableStream, causing duplicated text chunks.)
+- `writer.merge()` is the sole consumer — it pipes these events into the SSE response. (`result.consumeStream()` must NOT be called — `toUIMessageStream()` already consumes the stream internally, making an additional `consumeStream()` call redundant.)
 
 ---
 
