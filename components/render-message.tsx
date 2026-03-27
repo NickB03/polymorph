@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 
 import { UseChatHelpers } from '@ai-sdk/react'
 
@@ -361,64 +361,59 @@ export function RenderMessage({
           }
           // Non-depth option lists keep their receipt card
           return (
-            <div
+            <OptionList
               key={`${messageId}-display-tool-${partIndex}`}
-              className="my-2"
-            >
-              <OptionList
-                {...parsed}
-                choice={toolPart.output as OptionListSelection}
-              />
-            </div>
+              {...parsed}
+              choice={toolPart.output as OptionListSelection}
+            />
           )
         }
       } else if (toolPart.state === 'input-available') {
         const parsed = safeParseSerializableOptionList(toolPart.input)
         if (parsed) {
           return (
-            <div
+            <OptionList
               key={`${messageId}-display-tool-${partIndex}`}
-              className="my-2"
-            >
-              <OptionList
-                {...parsed}
-                onAction={(actionId, selection) => {
-                  if (toolPart.toolCallId) {
-                    addToolResult?.({
-                      toolCallId: toolPart.toolCallId,
-                      result: selection
-                    })
-                  }
-                }}
-              />
-            </div>
+              {...parsed}
+              onAction={(actionId, selection) => {
+                if (toolPart.toolCallId) {
+                  addToolResult?.({
+                    toolCallId: toolPart.toolCallId,
+                    result: selection
+                  })
+                }
+              }}
+            />
           )
         }
       } else {
         return (
           <div
             key={`${messageId}-display-tool-${partIndex}`}
-            className="my-2 h-24 animate-pulse rounded-lg bg-muted"
+            className="h-24 animate-pulse rounded-lg bg-muted"
           />
         )
       }
     } else {
       if (toolPart.state === 'output-available' && toolPart.output) {
         const rendered = tryRenderToolUIByName(toolName, toolPart.output)
-        return (
-          <div key={`${messageId}-display-tool-${partIndex}`} className="my-2">
-            {rendered ?? (
-              <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-                {toolName} output could not be rendered
-              </div>
-            )}
+        return rendered ? (
+          <Fragment key={`${messageId}-display-tool-${partIndex}`}>
+            {rendered}
+          </Fragment>
+        ) : (
+          <div
+            key={`${messageId}-display-tool-${partIndex}`}
+            className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground"
+          >
+            {toolName} output could not be rendered
           </div>
         )
       } else if (toolPart.state === 'output-error') {
         return (
           <div
             key={`${messageId}-display-tool-${partIndex}`}
-            className="my-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground"
+            className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground"
           >
             {toolName} output could not be rendered
           </div>
@@ -430,7 +425,7 @@ export function RenderMessage({
         return (
           <div
             key={`${messageId}-display-tool-${partIndex}`}
-            className="my-2 h-24 animate-pulse rounded-lg bg-muted"
+            className="h-24 animate-pulse rounded-lg bg-muted"
           />
         )
       }
@@ -480,12 +475,11 @@ export function RenderMessage({
         const segment = segments[si]
         if (segment.type === 'tool-ui') {
           elements.push(
-            <div
+            <Fragment
               key={`${messageId}-extracted-tool-${index}-${segment.key}`}
-              className="my-2"
             >
               {segment.component}
-            </div>
+            </Fragment>
           )
         } else if (segment.content.trim()) {
           // Only show actions on the very last text segment of the last text part
@@ -573,16 +567,15 @@ export function RenderMessage({
         if (cardData) {
           flushBuffer(`seg-${index}`)
           elements.push(
-            <div key={`${messageId}-canvas-tool-${index}`} className="my-2">
-              <CanvasArtifactCard
-                data={cardData}
-                onClick={
-                  onCanvasArtifactClick
-                    ? () => onCanvasArtifactClick(cardData.artifactId)
-                    : undefined
-                }
-              />
-            </div>
+            <CanvasArtifactCard
+              key={`${messageId}-canvas-tool-${index}`}
+              data={cardData}
+              onClick={
+                onCanvasArtifactClick
+                  ? () => onCanvasArtifactClick(cardData.artifactId)
+                  : undefined
+              }
+            />
           )
           return
         }
@@ -595,16 +588,15 @@ export function RenderMessage({
       const canvasData = (part as { data?: CanvasArtifactData }).data
       if (canvasData?.artifactId) {
         elements.push(
-          <div key={`${messageId}-canvas-artifact-${index}`} className="my-2">
-            <CanvasArtifactCard
-              data={canvasData}
-              onClick={
-                onCanvasArtifactClick
-                  ? () => onCanvasArtifactClick(canvasData.artifactId)
-                  : undefined
-              }
-            />
-          </div>
+          <CanvasArtifactCard
+            key={`${messageId}-canvas-artifact-${index}`}
+            data={canvasData}
+            onClick={
+              onCanvasArtifactClick
+                ? () => onCanvasArtifactClick(canvasData.artifactId)
+                : undefined
+            }
+          />
         )
       }
     } else if (part.type === 'data-canvasArtifactStatus') {
@@ -616,22 +608,21 @@ export function RenderMessage({
       const legacyData = (part as { data?: { id?: string } }).data
       const legacyId = legacyData?.id ?? 'unknown'
       elements.push(
-        <div key={`${messageId}-legacy-artifact-${index}`} className="my-2">
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 rounded-lg border border-dashed border-border bg-card p-3 text-left text-sm text-muted-foreground"
-            onClick={
-              onLegacyArtifactClick
-                ? () => onLegacyArtifactClick(legacyId)
-                : undefined
-            }
-            data-testid="legacy-artifact-notice"
-            data-artifact-id={legacyId}
-          >
-            This artifact was created with a previous system and is no longer
-            available.
-          </button>
-        </div>
+        <button
+          key={`${messageId}-legacy-artifact-${index}`}
+          type="button"
+          className="flex w-full items-center gap-3 rounded-lg border border-dashed border-border bg-card p-3 text-left text-sm text-muted-foreground"
+          onClick={
+            onLegacyArtifactClick
+              ? () => onLegacyArtifactClick(legacyId)
+              : undefined
+          }
+          data-testid="legacy-artifact-notice"
+          data-artifact-id={legacyId}
+        >
+          This artifact was created with a previous system and is no longer
+          available.
+        </button>
       )
     } else if (
       part.type === 'reasoning' ||
@@ -661,16 +652,15 @@ export function RenderMessage({
         const cardData = tryParseCanvasArtifactCardData(dynamicToolPart.output)
         if (cardData) {
           elements.push(
-            <div key={`${messageId}-dynamic-tool-${index}`} className="my-2">
-              <CanvasArtifactCard
-                data={cardData}
-                onClick={
-                  onCanvasArtifactClick
-                    ? () => onCanvasArtifactClick(cardData.artifactId)
-                    : undefined
-                }
-              />
-            </div>
+            <CanvasArtifactCard
+              key={`${messageId}-dynamic-tool-${index}`}
+              data={cardData}
+              onClick={
+                onCanvasArtifactClick
+                  ? () => onCanvasArtifactClick(cardData.artifactId)
+                  : undefined
+              }
+            />
           )
           return
         }

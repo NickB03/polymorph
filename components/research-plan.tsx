@@ -59,7 +59,7 @@ export function ResearchPlan({
   if (!output && isStreaming) {
     return (
       <div
-        className="my-2 h-24 skeleton-shimmer rounded-lg"
+        className="h-24 skeleton-shimmer rounded-lg"
         role="status"
         aria-label="Loading research plan"
       />
@@ -69,7 +69,7 @@ export function ResearchPlan({
   if (!output) {
     if (hasError) {
       return (
-        <div className="my-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+        <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
           Research plan could not be loaded
         </div>
       )
@@ -114,7 +114,7 @@ export function ResearchPlan({
     )
 
     return (
-      <div className="my-2 animate-content-enter">
+      <div className="animate-content-enter">
         <CollapsibleMessage
           role="assistant"
           isCollapsible
@@ -133,7 +133,7 @@ export function ResearchPlan({
   }
 
   return (
-    <div className="my-2 animate-content-enter">
+    <div className="animate-content-enter">
       <Plan {...validated} />
     </div>
   )
