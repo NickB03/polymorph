@@ -73,7 +73,7 @@ export function DynamicToolDisplay({ part }: DynamicToolDisplayProps) {
 
   // For registered tool UIs, render the rich component directly without wrapper
   if (isRegisteredToolUI(part.toolName)) {
-    if (renderedToolUI) return <div>{renderedToolUI}</div>
+    if (renderedToolUI) return <>{renderedToolUI}</>
     if (part.state === 'input-streaming' || part.state === 'input-available') {
       return <div className="h-24 animate-pulse rounded-lg bg-muted" />
     }
