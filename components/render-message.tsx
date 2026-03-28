@@ -203,6 +203,22 @@ function getPersistedCanvasArtifactIds(parts: UIMessage['parts']) {
   return ids
 }
 
+function getLatestPersistedCanvasArtifactPartIndexes(
+  parts: UIMessage['parts']
+) {
+  const latestIndexes = new Map<string, number>()
+
+  for (const [index, part] of (parts || []).entries()) {
+    if (part.type !== 'data-canvasArtifact') continue
+    const data = (part as { data?: CanvasArtifactData }).data
+    if (data?.artifactId) {
+      latestIndexes.set(data.artifactId, index)
+    }
+  }
+
+  return latestIndexes
+}
+
 interface RenderMessageProps {
   message: UIMessage
   messageId: string
@@ -283,6 +299,8 @@ export function RenderMessage({
   const persistedCanvasArtifactIds = getPersistedCanvasArtifactIds(
     message.parts
   )
+  const latestPersistedCanvasArtifactPartIndexes =
+    getLatestPersistedCanvasArtifactPartIndexes(message.parts)
 
   // Interleave text parts with grouped non-text segments
   const elements: React.ReactNode[] = []
@@ -627,7 +645,11 @@ export function RenderMessage({
       // Render a clickable canvas artifact card
       flushBuffer(`seg-${index}`)
       const canvasData = (part as { data?: CanvasArtifactData }).data
-      if (canvasData?.artifactId) {
+      if (
+        canvasData?.artifactId &&
+        latestPersistedCanvasArtifactPartIndexes.get(canvasData.artifactId) ===
+          index
+      ) {
         elements.push(
           <CanvasArtifactCard
             key={`${messageId}-canvas-artifact-${index}`}

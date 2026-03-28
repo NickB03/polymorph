@@ -480,6 +480,92 @@ describe('Canvas workspace handoff from chat stream', () => {
     })
   })
 
+  it('waits to auto-open a guest artifact until a guest token is available', async () => {
+    resetCanvasContext()
+
+    mockUseChat.mockReturnValue(
+      makeUseChatReturnValue([
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          parts: [
+            {
+              type: 'data-canvasArtifact',
+              data: {
+                artifactId: 'art-1',
+                chatId: 'chat-1',
+                title: 'Canvas',
+                status: 'ready',
+                draftRevision: 1,
+                currentVersionId: null
+              }
+            }
+          ]
+        }
+      ])
+    )
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat savedMessages={[]} isGuest />)
+
+    await waitFor(() => {
+      expect(mockCanvasContext.openCanvasArtifact).not.toHaveBeenCalled()
+    })
+  })
+
+  it('uses a guest token even when the status part arrives after the artifact part', async () => {
+    resetCanvasContext()
+
+    mockUseChat.mockReturnValue(
+      makeUseChatReturnValue([
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          parts: [
+            {
+              type: 'data-canvasArtifact',
+              data: {
+                artifactId: 'art-1',
+                chatId: 'chat-1',
+                title: 'Canvas',
+                status: 'ready',
+                draftRevision: 1,
+                currentVersionId: null
+              }
+            },
+            {
+              type: 'data-canvasArtifactStatus',
+              data: {
+                artifactId: 'art-1',
+                chatId: 'chat-1',
+                status: 'ready',
+                draftRevision: 1,
+                currentVersionId: null,
+                updatedAt: '2026-03-19T00:00:00Z',
+                guestCanvasToken: 'guest-token-late'
+              }
+            }
+          ]
+        }
+      ])
+    )
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat savedMessages={[]} isGuest />)
+
+    await waitFor(() => {
+      expect(mockCanvasContext.setGuestCanvasToken).toHaveBeenCalledWith(
+        'guest-token-late'
+      )
+      expect(mockCanvasContext.openCanvasArtifact).toHaveBeenCalledWith(
+        'art-1',
+        'guest-token-late'
+      )
+    })
+  })
+
   it('deduplicates auto-open when the same artifact appears in multiple messages', async () => {
     resetCanvasContext()
 

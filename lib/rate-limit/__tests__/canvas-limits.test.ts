@@ -81,6 +81,18 @@ describe('checkAndEnforceCanvasLimit', () => {
     expect(body.limit).toBe(60)
   })
 
+  it('returns 429 when image-proxy limit is exceeded', async () => {
+    mockRedisIncr.mockResolvedValue(61)
+    mockRedisExpire.mockResolvedValue(1)
+
+    const response = await checkAndEnforceCanvasLimit('user-1', 'image-proxy')
+    expect(response).not.toBeNull()
+    expect(response?.status).toBe(429)
+
+    const body = await response!.json()
+    expect(body.limit).toBe(60)
+  })
+
   it('allows unlimited when not in cloud deployment', async () => {
     delete process.env.POLYMORPH_CLOUD_DEPLOYMENT
 

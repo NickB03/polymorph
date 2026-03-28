@@ -60,6 +60,24 @@ export default function App() {
   `
 }
 
+const validMissingDefaultExportSource = {
+  'App.tsx': `
+function App() {
+  return <div>Recovered</div>
+}
+  `
+}
+
+const referencedUnsupportedImportSource = {
+  'App.tsx': `
+import { Badge } from '@acme/ui'
+
+export default function App() {
+  return <Badge />
+}
+  `
+}
+
 function makeArtifactRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 'art-1',
@@ -231,5 +249,74 @@ describe('canvas service compile integration', () => {
     })
 
     expectCompileFailureResult(result, 'restore', logSpy)
+  })
+
+  it('creates an artifact when the only issue was a missing App default export', async () => {
+    mockLoadCanvasArtifactByChatId.mockResolvedValue(null)
+    mockCreateCanvasArtifact.mockResolvedValue(
+      makeArtifactRow({ draftSource: validMissingDefaultExportSource })
+    )
+    mockCreateCanvasArtifactVersion.mockResolvedValue(makeVersionRow())
+    mockLoadCanvasArtifactById.mockResolvedValue(
+      makeArtifactRow({ draftSource: validMissingDefaultExportSource })
+    )
+
+    const result = await createCanvasArtifactFromSource({
+      chatId: 'chat-1',
+      userId: 'user-1',
+      draftSource: validMissingDefaultExportSource
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.artifact?.status).toBe('ready')
+    expect(mockCreateCanvasArtifact).toHaveBeenCalledTimes(1)
+  })
+
+  it('updates an artifact when the only issue was a missing App default export', async () => {
+    installStatefulDraftMocks(
+      makeArtifactRow({
+        draftRevision: 1,
+        draftSource: validMissingDefaultExportSource
+      })
+    )
+
+    const result = await updateCanvasArtifactDraftFromSource({
+      artifactId: 'art-1',
+      expectedRevision: 1,
+      draftSource: validMissingDefaultExportSource,
+      userId: 'user-1'
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.artifact?.status).toBe('ready')
+  })
+
+  it('returns actionable validation errors for create when an unsupported import is still referenced', async () => {
+    mockLoadCanvasArtifactByChatId.mockResolvedValue(null)
+
+    const result = await createCanvasArtifactFromSource({
+      chatId: 'chat-1',
+      userId: 'user-1',
+      draftSource: referencedUnsupportedImportSource
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.errorCode).toBe('compile-failed')
+    expect(result.error).toContain('arbitrary npm packages are not allowed')
+    expect(mockCreateCanvasArtifact).not.toHaveBeenCalled()
+  })
+
+  it('returns actionable validation errors for update when an unsupported import is still referenced', async () => {
+    const result = await updateCanvasArtifactDraftFromSource({
+      artifactId: 'art-1',
+      expectedRevision: 1,
+      draftSource: referencedUnsupportedImportSource,
+      userId: 'user-1'
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.errorCode).toBe('compile-failed')
+    expect(result.error).toContain('arbitrary npm packages are not allowed')
+    expect(mockUpdateCanvasArtifactDraft).not.toHaveBeenCalled()
   })
 })
