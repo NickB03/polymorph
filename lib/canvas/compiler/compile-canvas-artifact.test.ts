@@ -1,13 +1,7 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it, vi } from 'vitest'
-
-import * as preProcessorPipeline from '../pre-processors/run-pre-processors'
+import { describe, expect, it } from 'vitest'
 
 import { compileCanvasArtifact } from './compile-canvas-artifact'
-
-afterEach(() => {
-  vi.restoreAllMocks()
-})
 
 describe('compileCanvasArtifact', () => {
   // ── Successful compilation ──────────────────────────────────────────
@@ -117,10 +111,7 @@ export default function App() {
     expect(result.html).toContain('test-revision')
     expect(result.html).toContain('test-nonce-123')
     expect(result.html).toContain('parentOrigin')
-    expect(result.html).toContain('window.__CANVAS_IMAGE_BASE__')
-    expect(result.html).toContain(
-      "window.location.origin + '/api/canvas-assets/image-proxy'"
-    )
+    expect(result.html).toContain("window.__CANVAS_IMAGE_BASE__ = ''")
     expect(result.html).toContain(
       "(parentOrigin.endsWith('/') ? parentOrigin.slice(0, -1) : parentOrigin)"
     )
@@ -323,26 +314,11 @@ export default function App() { return <Missing /> }
     })
   })
 
-  it('compiles supported App declarations after repairing the missing default export', async () => {
+  it('compiles pre-processed source that already has a default export', async () => {
     const result = await compileCanvasArtifact({
       source: {
-        'App.tsx': 'const App = () => <div>Recovered</div>'
-      }
-    })
-
-    expect(result.ok).toBe(true)
-    expect(result.diagnostics).toEqual([])
-  })
-
-  it('compiles when an unsupported import is unused and removed by pre-processing', async () => {
-    const result = await compileCanvasArtifact({
-      source: {
-        'App.tsx': `
-import Badge from '@acme/ui'
-export default function App() {
-  return <div>Recovered</div>
-}
-        `
+        'App.tsx':
+          'const App = () => <div>Recovered</div>\n\nexport default App\n'
       }
     })
 
@@ -373,22 +349,5 @@ export default function App() {
         })
       ])
     )
-  })
-
-  it('runs pre-processors before validation and bundling', async () => {
-    vi.spyOn(preProcessorPipeline, 'runPreProcessors').mockReturnValue({
-      'App.tsx': 'export default function App() { return <div>Processed</div> }'
-    })
-
-    const result = await compileCanvasArtifact({
-      source: {
-        'App.tsx':
-          "import fs from 'fs'\nexport default function App() { return null }"
-      }
-    })
-
-    expect(result.ok).toBe(true)
-    expect(result.diagnostics).toEqual([])
-    expect(result.html).toContain('Processed')
   })
 })

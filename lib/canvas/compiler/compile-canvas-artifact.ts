@@ -8,7 +8,6 @@ import type {
   CanvasSourceFiles
 } from '@/lib/types/canvas'
 
-import { runPreProcessors } from '../pre-processors/run-pre-processors'
 import { validateCanvasSource } from '../validation/validate-canvas-source'
 
 import { assembleCanvasHtml } from './assemble-canvas-html'
@@ -221,7 +220,6 @@ export async function compileCanvasArtifact(
   const { source, artifactId, revisionId, nonce, maxCompiledHtmlSize } = input
   const sizeLimit = maxCompiledHtmlSize ?? CANVAS_MAX_COMPILED_HTML_SIZE
   const debugEnabled = process.env.DEBUG_CANVAS_COMPILER === '1'
-  const processedSource = runPreProcessors(source)
 
   if (debugEnabled) {
     logCanvasCompilerDebug('runtime', {
@@ -234,7 +232,7 @@ export async function compileCanvasArtifact(
   }
 
   // Step 1: Validate source
-  const validation = validateCanvasSource(processedSource)
+  const validation = validateCanvasSource(source)
   if (!validation.ok) {
     return {
       ok: false,
@@ -257,7 +255,7 @@ export async function compileCanvasArtifact(
       jsxImportSource: 'react',
       absWorkingDir: process.cwd(),
       plugins: [
-        createVirtualPlugin(processedSource, {
+        createVirtualPlugin(source, {
           artifactId,
           revisionId,
           debugEnabled
@@ -310,7 +308,7 @@ export async function compileCanvasArtifact(
   // Step 3: Compile Tailwind CSS
   let css: string
   try {
-    css = await buildTailwindCss(processedSource)
+    css = await buildTailwindCss(source)
   } catch (err) {
     const message =
       err instanceof Error ? err.message : 'Unknown Tailwind error'
@@ -324,7 +322,7 @@ export async function compileCanvasArtifact(
   }
 
   // Step 4: Parse meta.json for assets and metadata
-  const meta = parseMetaJson(processedSource)
+  const meta = parseMetaJson(source)
 
   // Step 5: Assemble final HTML
   const html = assembleCanvasHtml({

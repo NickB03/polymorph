@@ -234,7 +234,7 @@ export async function createCanvasArtifactFromSource(input: {
   // Use a temporary ID for the compile step (the real ID is assigned on insert).
   const tempArtifactId = generateId()
   const compileResult = await compileCanvasArtifact({
-    source: input.draftSource,
+    source: processedSource,
     artifactId: tempArtifactId,
     revisionId: '0'
   })
@@ -275,7 +275,7 @@ export async function createCanvasArtifactFromSource(input: {
       chatId: input.chatId,
       userId: input.userId,
       title: input.title ?? 'Untitled',
-      draftSource: input.draftSource,
+      draftSource: processedSource,
       status: 'ready'
     })
   } catch (err: unknown) {
@@ -354,7 +354,7 @@ export async function updateCanvasArtifactDraftFromSource(input: {
   const updated = await updateCanvasArtifactDraft({
     artifactId: input.artifactId,
     expectedRevision: input.expectedRevision,
-    draftSource: input.draftSource,
+    draftSource: processedSource,
     status: 'compiling',
     userId: input.userId
   })
@@ -369,7 +369,7 @@ export async function updateCanvasArtifactDraftFromSource(input: {
 
   // Compile
   const compileResult = await compileCanvasArtifact({
-    source: input.draftSource,
+    source: processedSource,
     artifactId: input.artifactId,
     revisionId: String(updated.draftRevision)
   })
@@ -525,8 +525,11 @@ export async function restoreCanvasArtifactVersion(input: {
   }
 
   // Recompile
+  const restoredSource = runPreProcessors(
+    version.sourceSnapshot as CanvasSourceFiles
+  )
   const compileResult = await compileCanvasArtifact({
-    source: version.sourceSnapshot as CanvasSourceFiles,
+    source: restoredSource,
     artifactId: input.artifactId,
     revisionId: String(updated.draftRevision)
   })

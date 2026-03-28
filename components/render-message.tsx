@@ -189,20 +189,6 @@ function normalizeRenderableParts(parts: UIMessage['parts']) {
   return normalizedParts
 }
 
-function getPersistedCanvasArtifactIds(parts: UIMessage['parts']) {
-  const ids = new Set<string>()
-
-  for (const part of parts || []) {
-    if (part.type !== 'data-canvasArtifact') continue
-    const data = (part as { data?: CanvasArtifactData }).data
-    if (data?.artifactId) {
-      ids.add(data.artifactId)
-    }
-  }
-
-  return ids
-}
-
 function getLatestPersistedCanvasArtifactPartIndexes(
   parts: UIMessage['parts']
 ) {
@@ -296,9 +282,6 @@ export function RenderMessage({
   // Single pass collects the first index, latest resolved output, and state flags.
   const todoScan = scanTodoWriteParts(message.parts)
   const renderParts = normalizeRenderableParts(message.parts)
-  const persistedCanvasArtifactIds = getPersistedCanvasArtifactIds(
-    message.parts
-  )
   const latestPersistedCanvasArtifactPartIndexes =
     getLatestPersistedCanvasArtifactPartIndexes(message.parts)
 
@@ -618,7 +601,7 @@ export function RenderMessage({
         if (typeof output.artifactId !== 'string' || !output.artifactId) {
           return
         }
-        if (persistedCanvasArtifactIds.has(output.artifactId)) {
+        if (latestPersistedCanvasArtifactPartIndexes.has(output.artifactId)) {
           return // Already rendered via data-canvasArtifact — skip
         }
         // No matching data part — render card with onClick
@@ -708,7 +691,7 @@ export function RenderMessage({
         if (typeof output.artifactId !== 'string' || !output.artifactId) {
           return
         }
-        if (persistedCanvasArtifactIds.has(output.artifactId)) {
+        if (latestPersistedCanvasArtifactPartIndexes.has(output.artifactId)) {
           return // Already rendered via data-canvasArtifact — skip
         }
         // Render card directly with onClick wired up

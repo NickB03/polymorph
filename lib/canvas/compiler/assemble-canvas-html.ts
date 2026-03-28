@@ -26,8 +26,7 @@ function buildBootstrapScript(opts: {
       return null;
     }
   })();
-  window.__CANVAS_IMAGE_BASE__ =
-    window.location.origin + '/api/canvas-assets/image-proxy';
+  window.__CANVAS_IMAGE_BASE__ = '';
 
   function getParentOrigin() {
     return parentOrigin;
