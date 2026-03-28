@@ -36,6 +36,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          build-args: |
+            NEXT_PUBLIC_APP_URL=https://polymorph-nb.vercel.app
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
