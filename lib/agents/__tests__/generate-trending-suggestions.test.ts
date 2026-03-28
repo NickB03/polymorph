@@ -44,6 +44,7 @@ import { generateTrendingSuggestions } from '@/lib/agents/generate-trending-sugg
 describe('generateTrendingSuggestions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.useRealTimers()
 
     mockGetRelatedQuestionsModel.mockReturnValue({
       providerId: 'gateway',
@@ -122,7 +123,81 @@ describe('generateTrendingSuggestions', () => {
     expect(mockExaSearch).toHaveBeenCalled()
   })
 
+  it('runs Tavily fallback searches concurrently', async () => {
+    mockBraveSearch.mockRejectedValue(new Error('Brave down'))
+
+    let activeCalls = 0
+    let maxConcurrentCalls = 0
+
+    mockTavilySearch.mockImplementation(async () => {
+      activeCalls += 1
+      maxConcurrentCalls = Math.max(maxConcurrentCalls, activeCalls)
+      await Promise.resolve()
+      await Promise.resolve()
+      activeCalls -= 1
+
+      return {
+        results: [
+          {
+            title: 'Fallback title',
+            content: 'Fallback context',
+            url: 'https://b.com'
+          }
+        ],
+        query: 'q',
+        images: []
+      }
+    })
+    mockGenerateObject.mockResolvedValue({
+      object: DEFAULT_SUGGESTIONS
+    })
+
+    const result = await generateTrendingSuggestions()
+
+    expect(result.source).toBe('tavily')
+    expect(mockTavilySearch).toHaveBeenCalledTimes(3)
+    expect(maxConcurrentCalls).toBeGreaterThan(1)
+  })
+
+  it('runs Exa fallback searches concurrently', async () => {
+    mockBraveSearch.mockRejectedValue(new Error('Brave down'))
+    mockTavilySearch.mockRejectedValue(new Error('Tavily down'))
+
+    let activeCalls = 0
+    let maxConcurrentCalls = 0
+
+    mockExaSearch.mockImplementation(async () => {
+      activeCalls += 1
+      maxConcurrentCalls = Math.max(maxConcurrentCalls, activeCalls)
+      await Promise.resolve()
+      await Promise.resolve()
+      activeCalls -= 1
+
+      return {
+        results: [
+          {
+            title: 'Exa title',
+            content: 'Exa context',
+            url: 'https://c.com'
+          }
+        ],
+        query: 'q',
+        images: []
+      }
+    })
+    mockGenerateObject.mockResolvedValue({
+      object: DEFAULT_SUGGESTIONS
+    })
+
+    const result = await generateTrendingSuggestions()
+
+    expect(result.source).toBe('exa')
+    expect(mockExaSearch).toHaveBeenCalledTimes(3)
+    expect(maxConcurrentCalls).toBeGreaterThan(1)
+  })
+
   it('paces Brave trending searches sequentially', async () => {
+    vi.useFakeTimers()
     let activeCalls = 0
     let maxConcurrentCalls = 0
 
@@ -148,14 +223,13 @@ describe('generateTrendingSuggestions', () => {
       object: DEFAULT_SUGGESTIONS
     })
 
-    const start = performance.now()
-    const result = await generateTrendingSuggestions()
-    const durationMs = performance.now() - start
+    const resultPromise = generateTrendingSuggestions()
+    await vi.advanceTimersByTimeAsync(2200)
+    const result = await resultPromise
 
     expect(result.source).toBe('brave')
     expect(mockBraveSearch).toHaveBeenCalledTimes(3)
     expect(maxConcurrentCalls).toBe(1)
-    expect(durationMs).toBeGreaterThanOrEqual(2000)
   })
 
   it('returns static defaults when all providers fail', async () => {

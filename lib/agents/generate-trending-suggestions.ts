@@ -85,28 +85,24 @@ function buildContext(
 
 async function getTrendingContextFromTavily(): Promise<string> {
   const tavily = new TavilySearchProvider()
-  const searchResults = []
-
-  for (const query of TRENDING_QUERIES) {
-    searchResults.push(
-      await tavily.search(`trending ${query} this week`, 5, 'basic', [], [], {
+  const searchResults = await Promise.all(
+    TRENDING_QUERIES.map(query =>
+      tavily.search(`trending ${query} this week`, 5, 'basic', [], [], {
         includeImages: false
       })
     )
-  }
+  )
 
   return buildContext(searchResults.map(result => result.results))
 }
 
 async function getTrendingContextFromExa(): Promise<string> {
   const exa = new ExaSearchProvider()
-  const searchResults = []
-
-  for (const query of TRENDING_QUERIES) {
-    searchResults.push(
-      await exa.search(`trending ${query} this week`, 5, 'basic', [], [])
+  const searchResults = await Promise.all(
+    TRENDING_QUERIES.map(query =>
+      exa.search(`trending ${query} this week`, 5, 'basic', [], [])
     )
-  }
+  )
 
   return buildContext(searchResults.map(result => result.results))
 }
@@ -131,8 +127,9 @@ async function getTrendingContextFromBrave(): Promise<string> {
 }
 
 /**
- * Fetches trending topics via Tavily and uses Gemini Flash to generate
- * categorized prompt suggestions. Falls back to static defaults on any error.
+ * Fetches trending topics via Brave, with Tavily and Exa as fallbacks, and uses
+ * Gemini Flash to generate categorized prompt suggestions. Falls back to static
+ * defaults on any error.
  */
 export async function generateTrendingSuggestions(): Promise<TrendingSuggestionsResult> {
   try {
