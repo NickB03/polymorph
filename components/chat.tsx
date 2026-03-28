@@ -337,6 +337,14 @@ export function Chat({
   // re-open it because the data-canvasArtifact parts are still in messages.
   useEffect(() => {
     const cv = canvasRef.current
+    const latestGuestCanvasToken =
+      getLatestGuestCanvasToken(messages) ?? guestCanvasTokenRef.current
+
+    if (latestGuestCanvasToken) {
+      guestCanvasTokenRef.current = latestGuestCanvasToken
+      cv.setGuestCanvasToken(latestGuestCanvasToken)
+    }
+
     // Track artifact IDs attempted in this effect run so that duplicate
     // data-canvasArtifact parts across messages don't trigger multiple opens.
     const attemptedThisRun = new Set<string>()
@@ -349,15 +357,6 @@ export function Chat({
           data?: CanvasArtifactData | CanvasArtifactStatusData
         }
 
-        // Extract guest canvas tokens from status parts
-        if (p.type === 'data-canvasArtifactStatus') {
-          const statusData = p.data as CanvasArtifactStatusData | undefined
-          if (statusData?.guestCanvasToken) {
-            guestCanvasTokenRef.current = statusData.guestCanvasToken
-            cv.setGuestCanvasToken(statusData.guestCanvasToken)
-          }
-        }
-
         // Auto-open the canvas workspace when a new artifact part arrives.
         // canvasOpenedRef tracks successfully opened artifacts — once an
         // artifact has been opened and the user closes it, we don't re-open.
@@ -367,6 +366,7 @@ export function Chat({
           const artifactData = p.data as CanvasArtifactData | undefined
           if (
             artifactData?.artifactId &&
+            (!isGuest || latestGuestCanvasToken) &&
             !canvasOpenedRef.current.has(artifactData.artifactId) &&
             !attemptedThisRun.has(artifactData.artifactId)
           ) {
@@ -374,13 +374,13 @@ export function Chat({
             closeArtifactSidebar()
             cv.openCanvasArtifact(
               artifactData.artifactId,
-              guestCanvasTokenRef.current
+              latestGuestCanvasToken
             )
           }
         }
       }
     }
-  }, [messages, closeArtifactSidebar]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [messages, closeArtifactSidebar, isGuest]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Canvas callbacks for RenderMessage → ChatMessages
   const handleCanvasArtifactClick = useCallback(

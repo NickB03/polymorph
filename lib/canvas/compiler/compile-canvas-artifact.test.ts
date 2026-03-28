@@ -111,6 +111,10 @@ export default function App() {
     expect(result.html).toContain('test-revision')
     expect(result.html).toContain('test-nonce-123')
     expect(result.html).toContain('parentOrigin')
+    expect(result.html).toContain("window.__CANVAS_IMAGE_BASE__ = ''")
+    expect(result.html).toContain(
+      "(parentOrigin.endsWith('/') ? parentOrigin.slice(0, -1) : parentOrigin)"
+    )
     expect(result.html).not.toContain("}, '*');")
   })
 
@@ -308,5 +312,42 @@ export default function App() { return <Missing /> }
       type: 'font',
       url: 'https://fonts.googleapis.com/css2?family=Inter'
     })
+  })
+
+  it('compiles pre-processed source that already has a default export', async () => {
+    const result = await compileCanvasArtifact({
+      source: {
+        'App.tsx':
+          'const App = () => <div>Recovered</div>\n\nexport default App\n'
+      }
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.diagnostics).toEqual([])
+  })
+
+  it('surfaces diagnostics when an unsupported import is still referenced', async () => {
+    const result = await compileCanvasArtifact({
+      source: {
+        'App.tsx': `
+import { Badge } from '@acme/ui'
+export default function App() {
+  return <Badge />
+}
+        `
+      }
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'error',
+          message: expect.stringContaining(
+            'arbitrary npm packages are not allowed'
+          )
+        })
+      ])
+    )
   })
 })

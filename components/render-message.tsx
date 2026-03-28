@@ -189,18 +189,20 @@ function normalizeRenderableParts(parts: UIMessage['parts']) {
   return normalizedParts
 }
 
-function getPersistedCanvasArtifactIds(parts: UIMessage['parts']) {
-  const ids = new Set<string>()
+function getLatestPersistedCanvasArtifactPartIndexes(
+  parts: UIMessage['parts']
+) {
+  const latestIndexes = new Map<string, number>()
 
-  for (const part of parts || []) {
+  for (const [index, part] of (parts || []).entries()) {
     if (part.type !== 'data-canvasArtifact') continue
     const data = (part as { data?: CanvasArtifactData }).data
     if (data?.artifactId) {
-      ids.add(data.artifactId)
+      latestIndexes.set(data.artifactId, index)
     }
   }
 
-  return ids
+  return latestIndexes
 }
 
 interface RenderMessageProps {
@@ -280,9 +282,8 @@ export function RenderMessage({
   // Single pass collects the first index, latest resolved output, and state flags.
   const todoScan = scanTodoWriteParts(message.parts)
   const renderParts = normalizeRenderableParts(message.parts)
-  const persistedCanvasArtifactIds = getPersistedCanvasArtifactIds(
-    message.parts
-  )
+  const latestPersistedCanvasArtifactPartIndexes =
+    getLatestPersistedCanvasArtifactPartIndexes(renderParts)
 
   // Interleave text parts with grouped non-text segments
   const elements: React.ReactNode[] = []
@@ -600,7 +601,7 @@ export function RenderMessage({
         if (typeof output.artifactId !== 'string' || !output.artifactId) {
           return
         }
-        if (persistedCanvasArtifactIds.has(output.artifactId)) {
+        if (latestPersistedCanvasArtifactPartIndexes.has(output.artifactId)) {
           return // Already rendered via data-canvasArtifact — skip
         }
         // No matching data part — render card with onClick
@@ -627,7 +628,11 @@ export function RenderMessage({
       // Render a clickable canvas artifact card
       flushBuffer(`seg-${index}`)
       const canvasData = (part as { data?: CanvasArtifactData }).data
-      if (canvasData?.artifactId) {
+      if (
+        canvasData?.artifactId &&
+        latestPersistedCanvasArtifactPartIndexes.get(canvasData.artifactId) ===
+          index
+      ) {
         elements.push(
           <CanvasArtifactCard
             key={`${messageId}-canvas-artifact-${index}`}
@@ -686,7 +691,7 @@ export function RenderMessage({
         if (typeof output.artifactId !== 'string' || !output.artifactId) {
           return
         }
-        if (persistedCanvasArtifactIds.has(output.artifactId)) {
+        if (latestPersistedCanvasArtifactPartIndexes.has(output.artifactId)) {
           return // Already rendered via data-canvasArtifact — skip
         }
         // Render card directly with onClick wired up

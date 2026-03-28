@@ -26,6 +26,7 @@ function buildBootstrapScript(opts: {
       return null;
     }
   })();
+  window.__CANVAS_IMAGE_BASE__ = '';
 
   function getParentOrigin() {
     return parentOrigin;
@@ -117,6 +118,9 @@ function buildBootstrapScript(opts: {
       if (data.nonce) nonce = data.nonce;
       if (typeof data.parentOrigin === 'string' && data.parentOrigin.length > 0) {
         parentOrigin = data.parentOrigin;
+        window.__CANVAS_IMAGE_BASE__ =
+          (parentOrigin.endsWith('/') ? parentOrigin.slice(0, -1) : parentOrigin) +
+          '/api/canvas-assets/image-proxy';
       }
     }
   });

@@ -54,6 +54,52 @@ Then STOP and wait for the user to complete all steps.
 After receiving selections: CALL the createCanvasArtifact tool incorporating the selected features and visual direction. Do NOT ask further questions — do NOT write code in your response text.
 `
 
+function getCanvasArtifactsPrompt(): string {
+  return `
+CANVAS ARTIFACTS (interactive web apps):
+You can create and update interactive frontend web artifacts using the tools below.
+**You MUST invoke these as tool calls — NEVER write artifact code as text or code blocks in your response.** Writing React/TSX code inline will NOT create an artifact; only a tool call will.
+
+**Shared canvas guidance:**
+- Plan before you write code.
+- Think through the user flow and state model before calling the tool.
+- Use the repo defaults: organic minimalism, Geist, OKLCH, blue accent family.
+- Do not use placeholder text like Lorem ipsum.
+- Use \`window.__CANVAS_IMAGE_BASE__\` when you need generated or thumbnail images.
+
+**createCanvasArtifact** — Create a new React + Tailwind web artifact for this chat:
+- Use when the user asks you to build, create, or make an interactive app, widget, tool, visualization, or demo
+- Provide the full file set with at least \`App.tsx\` (required)
+- Available files: \`App.tsx\` (required), \`styles.css\`, \`components.tsx\`, \`meta.json\`
+- Only one canvas artifact per chat — if one already exists, use \`updateCanvasArtifact\` instead
+
+**updateCanvasArtifact** — Update the existing canvas artifact:
+- Use when the user asks to change, fix, improve, or modify the current artifact
+- Provide the \`artifactId\`, \`baseRevision\` (from the current artifact state), and the full replacement file set
+- Always include the complete file contents, not partial diffs
+
+**Routing guidance:**
+- Normal build/create requests skip search entirely.
+- Modify/update requests skip search entirely.
+- Research-then-build requests search first, then build.
+- Factual or current-data artifact requests do a short search phase first, then build.
+
+**One artifact per chat rule:**
+- Each chat can have at most one active canvas artifact
+- If the user asks for something fundamentally different from the current artifact, ask whether they want to replace it or start a new chat
+- Do NOT silently replace the current artifact with something unrelated
+
+**Canvas artifact constraints (IMPORTANT):**
+- Frontend-only: React + Tailwind + browser APIs only
+- No backend code, databases, auth, API routes, or server-side execution
+- Compiles to a single-file HTML document
+- Allowed imports: \`react\`, \`react-dom/client\`, and relative imports within the file set
+- No arbitrary npm packages, no remote ESM, no Node.js APIs
+- Keep code concise and self-contained
+
+${ARTIFACT_INTAKE_PROTOCOL}`
+}
+
 export function getChatModePrompt(): string {
   const hasGeneralProvider = isGeneralSearchProviderAvailable()
 
@@ -67,6 +113,7 @@ Before starting any search or research, determine the user's primary intent:
 - **BUILD/CREATE request** — the user wants you to build, create, make, generate, or design an interactive app, widget, dashboard, tracker, tool, calculator, visualization, game, demo, timer, or chart → **Skip search entirely.** Go directly to the CANVAS ARTIFACTS section below. CALL the \`createCanvasArtifact\` tool immediately for specific requests, or run the Artifact Intake Protocol for broad/open requests. Do NOT search the web first — the user wants you to write code, not find information.
 - **MODIFY/UPDATE request** — the user wants to change, fix, improve, or add to an existing artifact → **Skip search.** CALL the \`updateCanvasArtifact\` tool with the current artifact state.
 - **RESEARCH-THEN-BUILD request** — the user wants to learn about a topic AND build something based on the findings (e.g., "research React dashboard best practices and then build me one") → Perform the research phase first (search, gather information), then proceed to canvas artifact tools to build the artifact.
+- **FACTUAL/CURRENT-DATA ARTIFACT request** — the user wants to build an artifact that depends on specific entities, freshness, dates, statistics, or other current facts → run a short search phase first, then build the artifact.
 - **Information request** — the user wants to know, learn, understand, compare, or research something → Continue with the search approach below.
 
 When in doubt: if the user's message contains action verbs like "build", "create", "make", "design", "generate" paired with a product noun like "app", "widget", "dashboard", "tracker", "tool", "calculator", "visualization", "game", "demo", "timer", or "chart" — treat it as a BUILD request. However, if the message is *asking about* how to build something rather than *requesting* you to produce an artifact (e.g., "What's the best way to build a dashboard?"), treat it as an Information request. If the user explicitly asks to research or learn about something AND then build based on those findings (e.g., "research the best chart libraries and build me a dashboard using one"), treat it as a RESEARCH-THEN-BUILD request.
@@ -269,34 +316,7 @@ Call the displayTable tool with the comparison data, then continue:
 
 End with a synthesizing conclusion that ties the main points together into a clear overall picture.
 
-CANVAS ARTIFACTS (interactive web apps):
-You can create and update interactive frontend web artifacts using the tools below.
-**You MUST invoke these as tool calls — NEVER write artifact code as text or code blocks in your response.** Writing React/TSX code inline will NOT create an artifact; only a tool call will.
-
-**createCanvasArtifact** — Create a new React + Tailwind web artifact for this chat:
-- Use when the user asks you to build, create, or make an interactive app, widget, tool, visualization, or demo
-- Provide the full file set with at least \`App.tsx\` (required)
-- Available files: \`App.tsx\` (required), \`styles.css\`, \`components.tsx\`, \`meta.json\`
-- Only one canvas artifact per chat — if one already exists, use \`updateCanvasArtifact\` instead
-
-**updateCanvasArtifact** — Update the existing canvas artifact:
-- Use when the user asks to change, fix, improve, or modify the current artifact
-- Provide the \`artifactId\`, \`baseRevision\` (from the current artifact state), and the full replacement file set
-- Always include the complete file contents, not partial diffs
-
-**One artifact per chat rule:**
-- Each chat can have at most one active canvas artifact
-- If the user asks for something fundamentally different from the current artifact, ask whether they want to replace it or start a new chat
-- Do NOT silently replace the current artifact with something unrelated
-
-**Canvas artifact constraints (IMPORTANT):**
-- Frontend-only: React + Tailwind + browser APIs only
-- No backend code, databases, auth, API routes, or server-side execution
-- Compiles to a single-file HTML document
-- Allowed imports: \`react\`, \`react-dom/client\`, and relative imports within the file set
-- No arbitrary npm packages, no remote ESM, no Node.js APIs
-- Keep code concise and self-contained
-${ARTIFACT_INTAKE_PROTOCOL}`
+${getCanvasArtifactsPrompt()}`
 }
 
 export function getResearchModePrompt(): string {
@@ -310,6 +330,7 @@ Before starting any search, research, or intake process, determine the user's pr
 - **BUILD/CREATE request** — the user wants you to build, create, make, generate, or design an interactive app, widget, dashboard, tracker, tool, calculator, visualization, game, demo, timer, or chart → **Skip search and depth selection entirely.** Go directly to the CANVAS ARTIFACTS section below. CALL the \`createCanvasArtifact\` tool immediately for specific requests, or run the Artifact Intake Protocol for broad/open requests. Do NOT search the web first — the user wants you to write code, not find information.
 - **MODIFY/UPDATE request** — the user wants to change, fix, improve, or add to an existing artifact → **Skip search.** CALL the \`updateCanvasArtifact\` tool with the current artifact state.
 - **RESEARCH-THEN-BUILD request** — the user wants to learn about a topic AND build something based on the findings (e.g., "research React dashboard best practices and then build me one") → Perform the research phase first (search, gather information), then proceed to canvas artifact tools to build the artifact.
+- **FACTUAL/CURRENT-DATA ARTIFACT request** — the user wants to build an artifact that depends on specific entities, freshness, dates, statistics, or other current facts → run a short search phase first, then build the artifact.
 - **Information/research request** — the user wants to know, learn, understand, compare, or research something → Continue with the research approach below.
 
 When in doubt: if the user's message contains action verbs like "build", "create", "make", "design", "generate" paired with a product noun like "app", "widget", "dashboard", "tracker", "tool", "calculator", "visualization", "game", "demo", "timer", or "chart" — treat it as a BUILD request. However, if the message is *asking about* how to build something rather than *requesting* you to produce an artifact (e.g., "What's the best way to build a dashboard?"), treat it as an Information/research request. If the user explicitly asks to research or learn about something AND then build based on those findings (e.g., "research the best chart libraries and build me a dashboard using one"), treat it as a RESEARCH-THEN-BUILD request.
@@ -625,34 +646,7 @@ Flexible example:
 
 Conclude with a brief synthesis that ties together the main insights into a clear overall understanding.
 
-CANVAS ARTIFACTS (interactive web apps):
-You can create and update interactive frontend web artifacts using the tools below.
-**You MUST invoke these as tool calls — NEVER write artifact code as text or code blocks in your response.** Writing React/TSX code inline will NOT create an artifact; only a tool call will.
-
-**createCanvasArtifact** — Create a new React + Tailwind web artifact for this chat:
-- Use when the user asks you to build, create, or make an interactive app, widget, tool, visualization, or demo
-- Provide the full file set with at least \`App.tsx\` (required)
-- Available files: \`App.tsx\` (required), \`styles.css\`, \`components.tsx\`, \`meta.json\`
-- Only one canvas artifact per chat — if one already exists, use \`updateCanvasArtifact\` instead
-
-**updateCanvasArtifact** — Update the existing canvas artifact:
-- Use when the user asks to change, fix, improve, or modify the current artifact
-- Provide the \`artifactId\`, \`baseRevision\` (from the current artifact state), and the full replacement file set
-- Always include the complete file contents, not partial diffs
-
-**One artifact per chat rule:**
-- Each chat can have at most one active canvas artifact
-- If the user asks for something fundamentally different from the current artifact, ask whether they want to replace it or start a new chat
-- Do NOT silently replace the current artifact with something unrelated
-
-**Canvas artifact constraints (IMPORTANT):**
-- Frontend-only: React + Tailwind + browser APIs only
-- No backend code, databases, auth, API routes, or server-side execution
-- Compiles to a single-file HTML document
-- Allowed imports: \`react\`, \`react-dom/client\`, and relative imports within the file set
-- No arbitrary npm packages, no remote ESM, no Node.js APIs
-- Keep code concise and self-contained
-${ARTIFACT_INTAKE_PROTOCOL}`
+${getCanvasArtifactsPrompt()}`
 }
 
 // Export static prompts for backward compatibility
