@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { createAdvancedSearchResult } from '@/lib/tools/search/advanced-search.test-helpers'
+
 // Mock redis before importing route
 vi.mock('redis', () => ({
   createClient: vi.fn(() => ({
@@ -15,6 +17,20 @@ vi.mock('@upstash/redis', () => ({
     set: vi.fn()
   }))
 }))
+
+const advancedSearchMocks = vi.hoisted(() => ({
+  runAdvancedSearch: vi.fn()
+}))
+
+vi.mock('@/lib/tools/search/advanced-search', async importOriginal => {
+  const actual =
+    await importOriginal<typeof import('@/lib/tools/search/advanced-search')>()
+
+  return {
+    ...actual,
+    runAdvancedSearch: advancedSearchMocks.runAdvancedSearch
+  }
+})
 
 import { POST } from '../route'
 
@@ -54,5 +70,32 @@ describe('POST /api/advanced-search validation', () => {
       makeRequest({ query: 'test', maxResults: 10, searchDepth: 'extreme' })
     )
     expect(res.status).toBe(400)
+  })
+
+  it('delegates valid requests to the shared advanced search runner', async () => {
+    advancedSearchMocks.runAdvancedSearch.mockResolvedValueOnce(
+      createAdvancedSearchResult('Route delegated result')
+    )
+
+    const res = await POST(
+      makeRequest({
+        query: 'test',
+        maxResults: 10,
+        searchDepth: 'advanced',
+        includeDomains: ['example.com'],
+        excludeDomains: ['ignore.com']
+      })
+    )
+
+    expect(advancedSearchMocks.runAdvancedSearch).toHaveBeenCalledWith({
+      query: 'test',
+      maxResults: 10,
+      searchDepth: 'advanced',
+      includeDomains: ['example.com'],
+      excludeDomains: ['ignore.com']
+    })
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.results[0].title).toBe('Route delegated result')
   })
 })

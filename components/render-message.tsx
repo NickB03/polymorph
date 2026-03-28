@@ -23,6 +23,9 @@ import { OptionList } from './tool-ui/option-list/option-list'
 import type { OptionListSelection } from './tool-ui/option-list/schema'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
 import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
+import { QuestionWizard } from './tool-ui/question-wizard/question-wizard'
+import type { WizardResult } from './tool-ui/question-wizard/schema'
+import { safeParseSerializableQuestionWizard } from './tool-ui/question-wizard/schema'
 import { tryRenderToolUI, tryRenderToolUIByName } from './tool-ui/registry'
 import { AnswerSection } from './answer-section'
 import { DynamicToolDisplay } from './dynamic-tool-display'
@@ -376,6 +379,44 @@ export function RenderMessage({
               key={`${messageId}-display-tool-${partIndex}`}
               {...parsed}
               onAction={(actionId, selection) => {
+                if (toolPart.toolCallId) {
+                  addToolResult?.({
+                    toolCallId: toolPart.toolCallId,
+                    result: selection
+                  })
+                }
+              }}
+            />
+          )
+        }
+      } else {
+        return (
+          <div
+            key={`${messageId}-display-tool-${partIndex}`}
+            className="h-24 animate-pulse rounded-lg bg-muted"
+          />
+        )
+      }
+    } else if (toolName === 'displayQuestionWizard') {
+      if (toolPart.state === 'output-available') {
+        const parsed = safeParseSerializableQuestionWizard(toolPart.input)
+        if (parsed) {
+          return (
+            <QuestionWizard
+              key={`${messageId}-display-tool-${partIndex}`}
+              {...parsed}
+              choice={toolPart.output as WizardResult}
+            />
+          )
+        }
+      } else if (toolPart.state === 'input-available') {
+        const parsed = safeParseSerializableQuestionWizard(toolPart.input)
+        if (parsed) {
+          return (
+            <QuestionWizard
+              key={`${messageId}-display-tool-${partIndex}`}
+              {...parsed}
+              onAction={(_actionId, selection) => {
                 if (toolPart.toolCallId) {
                   addToolResult?.({
                     toolCallId: toolPart.toolCallId,

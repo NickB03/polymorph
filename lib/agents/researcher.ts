@@ -17,6 +17,7 @@ import { displayCitationsTool } from '../tools/display-citations'
 import { displayLinkPreviewTool } from '../tools/display-link-preview'
 import { displayOptionListTool } from '../tools/display-option-list'
 import { displayPlanTool } from '../tools/display-plan'
+import { displayQuestionWizardTool } from '../tools/display-question-wizard'
 import { displayTableTool } from '../tools/display-table'
 import { displayTimelineTool } from '../tools/display-timeline'
 import { fetchTool } from '../tools/fetch'
@@ -125,6 +126,7 @@ export function createResearcher({
           'displayCitations',
           'displayLinkPreview',
           'displayOptionList',
+          'displayQuestionWizard',
           'displayCallout',
           'displayTimeline'
         ]
@@ -146,6 +148,7 @@ export function createResearcher({
           'displayCitations',
           'displayLinkPreview',
           'displayOptionList',
+          'displayQuestionWizard',
           'displayCallout',
           'displayTimeline'
         ]
@@ -192,6 +195,7 @@ export function createResearcher({
       displayCitations: displayCitationsTool,
       displayLinkPreview: displayLinkPreviewTool,
       displayOptionList: displayOptionListTool,
+      displayQuestionWizard: displayQuestionWizardTool,
       displayCallout: displayCalloutTool,
       displayTimeline: displayTimelineTool,
       ...todoTools,

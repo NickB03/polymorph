@@ -105,6 +105,7 @@ jobs:
         run: bun run build
         env:
           DATABASE_URL: postgresql://user:pass@localhost:5432/db
+          NEXT_PUBLIC_APP_URL: https://polymorph-nb.vercel.app
 
       # Optional: attach build artifacts to the release
       # - name: Archive Next.js build output

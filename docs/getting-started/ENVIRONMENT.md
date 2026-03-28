@@ -15,11 +15,11 @@ This document defines the environment-variable matrix for Polymorph.
 
 ## Core behavior controls
 
-| Variable              | Default                           | Purpose                                    |
-| --------------------- | --------------------------------- | ------------------------------------------ |
-| `ENABLE_AUTH`         | `true`                            | Toggle auth required mode                  |
-| `ANONYMOUS_USER_ID`   | `anonymous-user`                  | Shared local user id when auth is disabled |
-| `NEXT_PUBLIC_APP_URL` | `http://localhost:43100` fallback | Metadata base URL and canonical links      |
+| Variable              | Default                               | Purpose                                                        |
+| --------------------- | ------------------------------------- | -------------------------------------------------------------- |
+| `ENABLE_AUTH`         | `true`                                | Toggle auth required mode                                      |
+| `ANONYMOUS_USER_ID`   | `anonymous-user`                      | Shared local user id when auth is disabled                     |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:43100` in local dev | Metadata base URL and canonical links. Required in production. |
 
 ## Cloud deployment controls
 

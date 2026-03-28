@@ -16,6 +16,8 @@ import { OptionList } from './option-list/option-list'
 import { safeParseSerializableOptionList } from './option-list/schema'
 import { Plan } from './plan/plan'
 import { safeParseSerializablePlan } from './plan/schema'
+import { QuestionWizard } from './question-wizard/question-wizard'
+import { safeParseSerializableQuestionWizard } from './question-wizard/schema'
 import { safeParseSerializableTimeline } from './timeline/schema'
 import { Timeline } from './timeline/timeline'
 import { tryRenderCanvasArtifactCard } from './canvas-artifact-card'
@@ -110,6 +112,18 @@ const entries: ToolUIEntry[] = [
       return (
         <ToolErrorBoundary toolName="OptionList">
           <OptionList {...parsed} />
+        </ToolErrorBoundary>
+      )
+    }
+  },
+  {
+    name: 'displayQuestionWizard',
+    tryRender: output => {
+      const parsed = safeParseSerializableQuestionWizard(output)
+      if (!parsed) return null
+      return (
+        <ToolErrorBoundary toolName="QuestionWizard">
+          <QuestionWizard {...parsed} />
         </ToolErrorBoundary>
       )
     }

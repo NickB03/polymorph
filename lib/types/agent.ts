@@ -13,6 +13,7 @@ import type { displayCitationsTool } from '../tools/display-citations'
 import type { displayLinkPreviewTool } from '../tools/display-link-preview'
 import type { displayOptionListTool } from '../tools/display-option-list'
 import type { displayPlanTool } from '../tools/display-plan'
+import type { displayQuestionWizardTool } from '../tools/display-question-wizard'
 import type { displayTableTool } from '../tools/display-table'
 import type { displayTimelineTool } from '../tools/display-timeline'
 import type { fetchTool } from '../tools/fetch'
@@ -30,6 +31,7 @@ export type ResearcherTools = {
   displayCitations: typeof displayCitationsTool
   displayLinkPreview: typeof displayLinkPreviewTool
   displayOptionList: typeof displayOptionListTool
+  displayQuestionWizard: typeof displayQuestionWizardTool
   displayCallout: typeof displayCalloutTool
   displayTimeline: typeof displayTimelineTool
   createCanvasArtifact: ReturnType<typeof createCanvasArtifactTool>
@@ -70,6 +72,9 @@ export type DisplayLinkPreviewToolInvocation = UIToolInvocation<
 export type DisplayOptionListToolInvocation = UIToolInvocation<
   ResearcherTools['displayOptionList']
 >
+export type DisplayQuestionWizardToolInvocation = UIToolInvocation<
+  ResearcherTools['displayQuestionWizard']
+>
 export type DisplayCalloutToolInvocation = UIToolInvocation<
   ResearcherTools['displayCallout']
 >
@@ -94,6 +99,7 @@ export type ResearcherToolInvocation =
   | DisplayCitationsToolInvocation
   | DisplayLinkPreviewToolInvocation
   | DisplayOptionListToolInvocation
+  | DisplayQuestionWizardToolInvocation
   | DisplayCalloutToolInvocation
   | DisplayTimelineToolInvocation
   | CreateCanvasArtifactToolInvocation

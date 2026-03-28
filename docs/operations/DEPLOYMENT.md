@@ -25,6 +25,12 @@ TAVILY_API_KEY=[YOUR_TAVILY_API_KEY]
 NEXT_PUBLIC_APP_URL=[YOUR_PUBLIC_APP_URL]
 ```
 
+For the current Vercel production alias, set:
+
+```bash
+NEXT_PUBLIC_APP_URL=https://polymorph-nb.vercel.app
+```
+
 If cloud controls are enabled:
 
 ```bash
@@ -39,6 +45,7 @@ UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 - App should respond on `/` and complete one end-to-end chat request
 - Database migrations must be applied (`bun run migrate`) before accepting traffic
 - At least one configured model/provider must be enabled at runtime
+- Monitor `https://polymorph-nb.vercel.app/api/health` rather than raw deployment URLs. Deployment URLs may still be protected by Vercel Authentication.
 
 ## Rollback strategy
 

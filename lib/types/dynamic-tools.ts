@@ -75,7 +75,10 @@ export function isToolCallPart(
 }
 
 // Tool types that require user interaction (client-side confirmation)
-const INTERACTIVE_TOOL_TYPES = new Set(['tool-displayOptionList'])
+const INTERACTIVE_TOOL_TYPES = new Set([
+  'tool-displayOptionList',
+  'tool-displayQuestionWizard'
+])
 
 export function isInteractiveToolPart(
   part: unknown

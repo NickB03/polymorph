@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createAdvancedSearchResult } from '@/lib/tools/search/advanced-search.test-helpers'
 import type { SearchResults } from '@/lib/types'
 
 vi.mock('@/lib/schema/search', () => ({
@@ -20,11 +21,19 @@ const providerSearchMocks = vi.hoisted(() => ({
   firecrawl: vi.fn()
 }))
 
+const advancedSearchMocks = vi.hoisted(() => ({
+  runAdvancedSearch: vi.fn()
+}))
+
 vi.mock('../search/providers', () => ({
   DEFAULT_PROVIDER: 'brave',
   createSearchProvider: (provider: keyof typeof providerSearchMocks) => ({
     search: providerSearchMocks[provider]
   })
+}))
+
+vi.mock('@/lib/tools/search/advanced-search', () => ({
+  runAdvancedSearch: advancedSearchMocks.runAdvancedSearch
 }))
 
 function createSearchResults(title: string): SearchResults {
@@ -59,6 +68,38 @@ async function collectSearchChunks() {
       content_types: ['web'],
       max_results: 20,
       search_depth: 'basic',
+      include_domains: [],
+      exclude_domains: []
+    },
+    { toolCallId: 'search-test', messages: [] }
+  )
+
+  if (stream && Symbol.asyncIterator in (stream as AsyncIterable<any>)) {
+    for await (const chunk of stream as AsyncIterable<any>) {
+      chunks.push(chunk)
+    }
+  }
+
+  return chunks
+}
+
+async function collectAdvancedSearchChunks() {
+  const { createSearchTool } = await import('../search')
+  const tool = createSearchTool('gateway:google/gemini-3-flash')
+  const execute = tool.execute
+
+  if (!execute) {
+    throw new Error('No execute function')
+  }
+
+  const chunks: any[] = []
+  const stream = execute(
+    {
+      query: 'sleep deprivation memory',
+      type: 'optimized',
+      content_types: ['web'],
+      max_results: 20,
+      search_depth: 'advanced',
       include_domains: [],
       exclude_domains: []
     },
@@ -182,5 +223,22 @@ describe('search provider routing', () => {
 
     expect(providerSearchMocks.tavily).toHaveBeenCalledOnce()
     expect(chunks.at(-1)?.results?.[0]?.title).toBe('Tavily fallback result')
+  })
+
+  it('uses the shared advanced search runner for SearXNG advanced mode', async () => {
+    process.env.SEARCH_API = 'searxng'
+    process.env.SEARXNG_DEFAULT_DEPTH = 'advanced'
+    process.env.SEARXNG_API_URL = 'https://searx.example.com'
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    advancedSearchMocks.runAdvancedSearch.mockResolvedValueOnce(
+      createAdvancedSearchResult()
+    )
+
+    const chunks = await collectAdvancedSearchChunks()
+
+    expect(advancedSearchMocks.runAdvancedSearch).toHaveBeenCalledOnce()
+    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(chunks.at(-1)?.results?.[0]?.title).toBe('Advanced search result')
   })
 })

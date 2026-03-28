@@ -16,39 +16,42 @@ When the user asks you to build, create, or make an interactive app/widget/tool/
 - It's a follow-up to an existing artifact ("add a dark mode toggle")
 - The user explicitly says to just build it
 
-**Run two-step intake for broad/open requests** (e.g., "build me a dashboard", "create a project tracker"):
+**Run intake for broad/open requests** (e.g., "build me a dashboard", "create a project tracker"):
 
-Step 1 — Feature scope (multi-select):
-Write a brief friendly sentence, then call:
-displayOptionList({
-  id: "artifact-features",
-  selectionMode: "multi",
-  minSelections: 1,
-  maxSelections: 5,
-  options: [
-    { id: "feature-1", label: "...", description: "..." },
-    { id: "feature-2", label: "...", description: "..." },
-    ...3-5 relevant feature options based on the request
-  ]
+Write a brief friendly sentence, then call displayQuestionWizard with both steps in a single card:
+displayQuestionWizard({
+  id: "artifact-intake",
+  steps: [
+    {
+      id: "artifact-features",
+      title: "What features would you like?",
+      description: "Select the capabilities you want",
+      selectionMode: "multi",
+      minSelections: 1,
+      maxSelections: 5,
+      options: [
+        { id: "feature-1", label: "...", description: "..." },
+        { id: "feature-2", label: "...", description: "..." },
+        ...3-5 relevant feature options based on the request
+      ]
+    },
+    {
+      id: "artifact-style",
+      title: "Choose a visual direction",
+      description: "Pick the look and feel",
+      selectionMode: "single",
+      options: [
+        { id: "style-1", label: "...", description: "..." },
+        { id: "style-2", label: "...", description: "..." },
+        ...3-5 visual direction options (e.g., "Minimal & Clean", "Bold & Colorful", "Dashboard Pro")
+      ]
+    }
+  ],
+  submitLabel: "Build"
 })
-Then STOP and wait for the user's selection.
+Then STOP and wait for the user to complete all steps.
 
-Step 2 — Visual direction (single-select):
-After receiving feature selections, write a brief sentence, then call:
-displayOptionList({
-  id: "artifact-style",
-  selectionMode: "single",
-  options: [
-    { id: "style-1", label: "...", description: "..." },
-    { id: "style-2", label: "...", description: "..." },
-    ...3-5 visual direction options (e.g., "Minimal & Clean", "Bold & Colorful", "Dashboard Pro")
-  ]
-})
-Then STOP and wait for the user's selection.
-
-After both steps: CALL the createCanvasArtifact tool incorporating the selected features and visual direction. Do NOT ask further questions — do NOT write code in your response text.
-
-**Rule:** Only ONE displayOptionList call per turn. Do not combine both steps into a single turn.
+After receiving selections: CALL the createCanvasArtifact tool incorporating the selected features and visual direction. Do NOT ask further questions — do NOT write code in your response text.
 `
 
 export function getChatModePrompt(): string {
