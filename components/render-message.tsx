@@ -283,7 +283,7 @@ export function RenderMessage({
   const todoScan = scanTodoWriteParts(message.parts)
   const renderParts = normalizeRenderableParts(message.parts)
   const latestPersistedCanvasArtifactPartIndexes =
-    getLatestPersistedCanvasArtifactPartIndexes(message.parts)
+    getLatestPersistedCanvasArtifactPartIndexes(renderParts)
 
   // Interleave text parts with grouped non-text segments
   const elements: React.ReactNode[] = []

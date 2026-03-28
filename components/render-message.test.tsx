@@ -615,4 +615,64 @@ describe('RenderMessage', () => {
       'US Population 2026 Dashboard (Revised)'
     )
   })
+
+  it('renders the latest persisted artifact card when hidden status parts are interleaved', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'data-canvasArtifact',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'US Population 2026 Dashboard',
+            status: 'generating',
+            draftRevision: 1,
+            currentVersionId: null
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifactStatus',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            status: 'generating',
+            draftRevision: 1,
+            currentVersionId: null,
+            updatedAt: '2026-03-28T22:00:00.000Z'
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifact',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'US Population 2026 Dashboard (Revised)',
+            status: 'ready',
+            draftRevision: 2,
+            currentVersionId: null
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    const cards = screen.getAllByTestId('canvas-artifact-card')
+    expect(cards).toHaveLength(1)
+    expect(cards[0]).toHaveAttribute('data-artifact-id', 'artifact-1')
+    expect(cards[0]).toHaveAttribute(
+      'data-title',
+      'US Population 2026 Dashboard (Revised)'
+    )
+  })
 })
