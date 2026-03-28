@@ -1,7 +1,11 @@
 # Build stage - Use Node for Next.js 16 compatibility (Bun lacks worker_threads support on arm64)
+ARG NEXT_PUBLIC_APP_URL=https://polymorph-nb.vercel.app
+
 FROM node:22-slim AS builder
 
 WORKDIR /app
+
+ARG NEXT_PUBLIC_APP_URL
 
 # Install bun for dependency management
 RUN npm install -g bun
@@ -14,11 +18,15 @@ RUN bun install
 COPY . .
 RUN npx next telemetry disable
 ENV DATABASE_URL=postgresql://user:pass@localhost:5432/db
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 RUN npm run build
 
 # Runtime stage
 FROM oven/bun:1.2.12 AS runner
 WORKDIR /app
+
+ARG NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
 # Copy only necessary files from builder
 COPY --from=builder /app/.next ./.next
