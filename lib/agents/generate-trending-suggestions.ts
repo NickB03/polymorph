@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getRelatedQuestionsModel } from '@/lib/config/model-types'
 import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
 import { BraveSearchProvider } from '@/lib/tools/search/providers/brave'
+import { ExaSearchProvider } from '@/lib/tools/search/providers/exa'
 import { TavilySearchProvider } from '@/lib/tools/search/providers/tavily'
 import type { SuggestionCategory } from '@/lib/types'
 import { getModel } from '@/lib/utils/registry'
@@ -36,7 +37,7 @@ Rules:
 - For research, compare, summarize, and explain: prefer evergreen-feeling prompts inspired by trends over ephemeral headline references
 - For latest: do the OPPOSITE — use specific, timely references to actual events from the trending context. Never be vague or generic in this category.`
 
-export type TrendingSuggestionsSource = 'tavily' | 'brave' | 'default'
+export type TrendingSuggestionsSource = 'tavily' | 'brave' | 'exa' | 'default'
 
 export type TrendingSuggestionsResult = {
   suggestions: Record<SuggestionCategory, string[]>
@@ -48,6 +49,12 @@ const TRENDING_QUERIES = [
   'business economy culture sports',
   'health environment space discoveries'
 ] as const
+
+const BRAVE_REQUEST_INTERVAL_MS = 1100
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 function buildContext(
   results: Array<
@@ -78,26 +85,47 @@ function buildContext(
 
 async function getTrendingContextFromTavily(): Promise<string> {
   const tavily = new TavilySearchProvider()
-  const searchResults = await Promise.all(
-    TRENDING_QUERIES.map(query =>
-      tavily.search(`trending ${query} this week`, 5, 'basic', [], [], {
+  const searchResults = []
+
+  for (const query of TRENDING_QUERIES) {
+    searchResults.push(
+      await tavily.search(`trending ${query} this week`, 5, 'basic', [], [], {
         includeImages: false
       })
     )
-  )
+  }
+
+  return buildContext(searchResults.map(result => result.results))
+}
+
+async function getTrendingContextFromExa(): Promise<string> {
+  const exa = new ExaSearchProvider()
+  const searchResults = []
+
+  for (const query of TRENDING_QUERIES) {
+    searchResults.push(
+      await exa.search(`trending ${query} this week`, 5, 'basic', [], [])
+    )
+  }
 
   return buildContext(searchResults.map(result => result.results))
 }
 
 async function getTrendingContextFromBrave(): Promise<string> {
   const brave = new BraveSearchProvider()
-  const searchResults = await Promise.all(
-    TRENDING_QUERIES.map(query =>
-      brave.search(`trending ${query} this week`, 8, 'basic', [], [], {
+  const searchResults = []
+
+  for (const [index, query] of TRENDING_QUERIES.entries()) {
+    if (index > 0) {
+      await sleep(BRAVE_REQUEST_INTERVAL_MS)
+    }
+
+    searchResults.push(
+      await brave.search(`trending ${query} this week`, 8, 'basic', [], [], {
         content_types: ['web']
       })
     )
-  )
+  }
 
   return buildContext(searchResults.map(result => result.results))
 }
@@ -120,8 +148,18 @@ export async function generateTrendingSuggestions(): Promise<TrendingSuggestions
         braveError
       )
 
-      context = await getTrendingContextFromTavily()
-      source = 'tavily'
+      try {
+        context = await getTrendingContextFromTavily()
+        source = 'tavily'
+      } catch (tavilyError) {
+        console.warn(
+          '[Suggestions] Tavily trending fetch failed, falling back to Exa.',
+          tavilyError
+        )
+
+        context = await getTrendingContextFromExa()
+        source = 'exa'
+      }
     }
 
     if (!context.trim()) {

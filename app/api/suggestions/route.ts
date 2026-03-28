@@ -15,7 +15,12 @@ const LOCK_TTL = 60 // 60 seconds — prevents stale locks if generation crashes
 const LOCK_RETRY_DELAY_MS = 500
 const LOCK_MAX_RETRIES = 6
 
-type SuggestionsResponseSource = 'cache' | 'tavily' | 'brave' | 'default'
+type SuggestionsResponseSource =
+  | 'cache'
+  | 'tavily'
+  | 'brave'
+  | 'exa'
+  | 'default'
 
 type SuggestionsServeMode = 'primary-cache' | 'fresh-generated' | 'stale-cache'
 
