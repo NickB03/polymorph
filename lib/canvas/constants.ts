@@ -16,7 +16,7 @@ export const CANVAS_MAX_COMPILED_HTML_SIZE = 2 * 1024 * 1024 // 2 MB
 export const CANVAS_MAX_ASSET_PAYLOAD_SIZE = 5 * 1024 * 1024 // 5 MB
 export const CANVAS_MAX_VERSIONS = 50
 
-// Compilation timeout (ms) — prevents serverless hangs on cold starts
+// Compilation timeout (ms) — prevents serverless hangs during complex compilations
 export const CANVAS_COMPILE_TIMEOUT_MS = 30_000
 
 // Status values

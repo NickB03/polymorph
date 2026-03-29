@@ -249,7 +249,20 @@ export async function compileCanvasArtifact(
 
   // Run the compilation pipeline under a timeout so serverless functions
   // fail gracefully instead of hanging until the platform kills them.
-  return Promise.race([
+  return new Promise<CompileCanvasArtifactResult>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      resolve({
+        ok: false,
+        diagnostics: [
+          {
+            severity: 'error',
+            message: `Compilation timed out after ${timeoutMs / 1000}s. The artifact may be too complex — try reducing the number of components or splitting into smaller files.`
+          }
+        ],
+        externalDependencies: validation.externalDependencies
+      })
+    }, timeoutMs)
+
     compileCanvasArtifactCore({
       source,
       validation,
@@ -258,24 +271,10 @@ export async function compileCanvasArtifact(
       nonce,
       sizeLimit,
       debugEnabled
-    }),
-    new Promise<CompileCanvasArtifactResult>(resolve =>
-      setTimeout(
-        () =>
-          resolve({
-            ok: false,
-            diagnostics: [
-              {
-                severity: 'error',
-                message: `Compilation timed out after ${timeoutMs / 1000}s. The artifact may be too complex — try reducing the number of components or splitting into smaller files.`
-              }
-            ],
-            externalDependencies: validation.externalDependencies
-          }),
-        timeoutMs
-      )
-    )
-  ])
+    })
+      .then(resolve, reject)
+      .finally(() => clearTimeout(timer))
+  })
 }
 
 async function compileCanvasArtifactCore(ctx: {
