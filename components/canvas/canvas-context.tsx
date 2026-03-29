@@ -140,6 +140,13 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
     pendingWorkspace
   )
 
+  const clearWorkspaceState = useCallback(() => {
+    setArtifact(null)
+    setPendingWorkspaceState(null)
+    setCompileProgressState(null)
+    setLegacyNotice(null)
+  }, [])
+
   /** Apply an API response state and sync the rotated guest token if changed. */
   const applyState = useCallback(
     (state: CanvasArtifactState) => {
@@ -169,7 +176,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       if (openingRef.current === id) return // Already fetching this artifact
 
       openingRef.current = id
-      setLegacyNotice(null)
+      clearWorkspaceState()
       setArtifactId(id)
       setIsLoading(true)
 
@@ -199,7 +206,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [applyState]
+    [applyState, clearWorkspaceState]
   )
 
   const focusCanvasArtifact = useCallback(
@@ -258,13 +265,23 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
   const setPendingWorkspace = useCallback(
     (workspace: PendingCanvasWorkspace | null) => {
+      if (
+        workspace?.artifactId &&
+        workspace.artifactId !== artifactId &&
+        pendingWorkspace?.artifactId !== workspace.artifactId
+      ) {
+        setArtifact(null)
+        setCompileProgressState(null)
+        setLegacyNotice(null)
+      }
+
       setPendingWorkspaceState(workspace)
       if (workspace?.artifactId) {
         setArtifactId(workspace.artifactId)
         setLegacyNotice(null)
       }
     },
-    []
+    [artifactId, pendingWorkspace?.artifactId]
   )
 
   const clearPendingWorkspace = useCallback(() => {

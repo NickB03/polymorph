@@ -313,6 +313,40 @@ describe('Canvas Service', () => {
       )
     })
 
+    it('uses the supplied title for validation failure progress', async () => {
+      const onProgress = vi.fn()
+      const { validateCanvasSource } =
+        await import('@/lib/canvas/validation/validate-canvas-source')
+      vi.mocked(validateCanvasSource).mockReturnValueOnce({
+        ok: false,
+        diagnostics: [{ severity: 'error', message: 'Missing App export' }],
+        externalDependencies: []
+      } as any)
+
+      const result = await updateCanvasArtifactDraftFromSource({
+        artifactId: 'art-1',
+        expectedRevision: 0,
+        draftSource: validSource,
+        title: 'Real Update Title',
+        onProgress
+      })
+
+      expect(result.ok).toBe(false)
+      expect(onProgress).toHaveBeenCalledTimes(2)
+      expect(onProgress.mock.calls[0][0]).toEqual(
+        expect.objectContaining({
+          title: 'Real Update Title'
+        })
+      )
+      expect(onProgress.mock.calls[1][0]).toEqual(
+        expect.objectContaining({
+          title: 'Real Update Title',
+          outcome: 'failed'
+        })
+      )
+      expect(mockCompile).not.toHaveBeenCalled()
+    })
+
     it('updates draft and compiles successfully', async () => {
       mockUpdateCanvasArtifactDraft
         .mockResolvedValueOnce(makeArtifactRow({ draftRevision: 1 }))

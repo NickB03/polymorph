@@ -206,14 +206,20 @@ function getLatestPersistedCanvasArtifactPartIndexes(
 }
 
 function getLatestCanvasArtifactStatuses(parts: UIMessage['parts']) {
-  const latestStatuses = new Map<string, CanvasArtifactStatusData>()
+  const latestStatuses = new Map<
+    string,
+    CanvasArtifactStatusData & { sourceIndex: number }
+  >()
 
-  for (const part of parts || []) {
+  for (const [index, part] of (parts || []).entries()) {
     if (part.type !== 'data-canvasArtifactStatus') continue
 
     const data = (part as { data?: CanvasArtifactStatusData }).data
     if (data?.artifactId) {
-      latestStatuses.set(data.artifactId, data)
+      latestStatuses.set(data.artifactId, {
+        ...data,
+        sourceIndex: index
+      })
     }
   }
 
@@ -628,17 +634,21 @@ export function RenderMessage({
           const latestStatus = latestCanvasArtifactStatuses.get(
             cardData.artifactId
           )
+          const latestStatusOverride =
+            latestStatus && latestStatus.sourceIndex > index
+              ? latestStatus
+              : undefined
           flushBuffer(`seg-${index}`)
           elements.push(
             <CanvasArtifactCard
               key={`${messageId}-canvas-tool-${index}`}
               data={
-                latestStatus
+                latestStatusOverride
                   ? {
                       ...cardData,
-                      status: latestStatus.status,
-                      draftRevision: latestStatus.draftRevision,
-                      currentVersionId: latestStatus.currentVersionId
+                      status: latestStatusOverride.status,
+                      draftRevision: latestStatusOverride.draftRevision,
+                      currentVersionId: latestStatusOverride.currentVersionId
                     }
                   : cardData
               }
@@ -666,16 +676,20 @@ export function RenderMessage({
         const latestStatus = latestCanvasArtifactStatuses.get(
           canvasData.artifactId
         )
+        const latestStatusOverride =
+          latestStatus && latestStatus.sourceIndex > index
+            ? latestStatus
+            : undefined
         elements.push(
           <CanvasArtifactCard
             key={`${messageId}-canvas-artifact-${index}`}
             data={
-              latestStatus
+              latestStatusOverride
                 ? {
                     ...canvasData,
-                    status: latestStatus.status,
-                    draftRevision: latestStatus.draftRevision,
-                    currentVersionId: latestStatus.currentVersionId
+                    status: latestStatusOverride.status,
+                    draftRevision: latestStatusOverride.draftRevision,
+                    currentVersionId: latestStatusOverride.currentVersionId
                   }
                 : canvasData
             }
@@ -742,16 +756,20 @@ export function RenderMessage({
           const latestStatus = latestCanvasArtifactStatuses.get(
             cardData.artifactId
           )
+          const latestStatusOverride =
+            latestStatus && latestStatus.sourceIndex > index
+              ? latestStatus
+              : undefined
           elements.push(
             <CanvasArtifactCard
               key={`${messageId}-dynamic-tool-${index}`}
               data={
-                latestStatus
+                latestStatusOverride
                   ? {
                       ...cardData,
-                      status: latestStatus.status,
-                      draftRevision: latestStatus.draftRevision,
-                      currentVersionId: latestStatus.currentVersionId
+                      status: latestStatusOverride.status,
+                      draftRevision: latestStatusOverride.draftRevision,
+                      currentVersionId: latestStatusOverride.currentVersionId
                     }
                   : cardData
               }

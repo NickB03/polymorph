@@ -99,6 +99,7 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
         artifactId,
         expectedRevision: baseRevision,
         draftSource,
+        title: currentState.title,
         userId: ctx.userId,
         onProgress: payload =>
           ctx.emitter.emitCanvasArtifactEvent({
@@ -143,13 +144,22 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
           `[updateCanvasArtifact] Failed: chatId=${ctx.chatId}, artifactId=${artifactId}, error=${result.error}, errorCode=${result.errorCode}`
         )
         if (result.artifact?.status === 'compile_failed') {
+          let guestCanvasToken: string | undefined
+          if (ctx.isGuest) {
+            guestCanvasToken = await refreshGuestCanvasToken({
+              chatId: result.artifact.chatId,
+              artifactId: result.artifact.artifactId
+            })
+          }
+
           ctx.emitter.emitCanvasArtifactStatus({
             artifactId: result.artifact.artifactId,
             chatId: result.artifact.chatId,
             status: 'compile_failed',
             draftRevision: result.artifact.draftRevision,
             currentVersionId: result.artifact.currentVersionId,
-            updatedAt: result.artifact.updatedAt
+            updatedAt: result.artifact.updatedAt,
+            ...(guestCanvasToken ? { guestCanvasToken } : {})
           })
         }
         return {

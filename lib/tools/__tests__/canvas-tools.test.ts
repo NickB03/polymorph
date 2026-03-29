@@ -229,6 +229,61 @@ describe('createCanvasArtifactTool', () => {
     expect(ctx.emitter.emitCanvasArtifact).not.toHaveBeenCalled()
   })
 
+  it('returns an empty artifactId when create fails before persistence exists', async () => {
+    const ctx = createCtx()
+    mockCreateCanvasArtifactFromSource.mockImplementation(async input => {
+      input.onProgress?.({
+        artifactId: 'art-pending',
+        title: 'Canvas Artifact',
+        source: 'create',
+        startedAt: '2026-03-19T00:00:00Z',
+        steps: [
+          {
+            id: 'validate',
+            label: 'Validating source',
+            status: 'failed'
+          }
+        ],
+        outcome: 'failed',
+        errorMessage: 'Syntax error'
+      })
+
+      return {
+        ok: false,
+        error: 'Compilation failed: Syntax error',
+        errorCode: 'compile-failed'
+      }
+    })
+
+    const toolInstance = createCanvasArtifactTool(ctx)
+    const result = await toolInstance.execute!(
+      { files: SAMPLE_FILES },
+      { toolCallId: 'tc-1', messages: [] }
+    )
+
+    expect(result).toMatchObject({
+      artifactId: '',
+      chatId: 'chat-1',
+      status: 'compile_failed',
+      draftRevision: 0,
+      currentVersionId: null,
+      error: 'Compilation failed: Syntax error',
+      errorCode: 'compile-failed'
+    })
+    expect(ctx.emitter.emitCanvasArtifactEvent).toHaveBeenCalledTimes(1)
+    expect(ctx.emitter.emitCanvasArtifactEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        artifactId: 'art-pending',
+        event: 'compile-progress',
+        payload: expect.objectContaining({
+          artifactId: 'art-pending',
+          outcome: 'failed',
+          errorMessage: 'Syntax error'
+        })
+      })
+    )
+  })
+
   it('includes guestCanvasToken in status for guest flows', async () => {
     const ctx = createCtx({ isGuest: true })
     mockCreateCanvasArtifactFromSource.mockResolvedValue({

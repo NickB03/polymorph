@@ -677,6 +677,72 @@ describe('RenderMessage', () => {
     )
   })
 
+  it('does not apply an earlier hidden status to a newer artifact card', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'data-canvasArtifact',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'US Population 2026 Dashboard',
+            status: 'generating',
+            draftRevision: 1,
+            currentVersionId: null
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifactStatus',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            status: 'compile_failed',
+            draftRevision: 1,
+            currentVersionId: null,
+            updatedAt: '2026-03-28T22:00:00.000Z'
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifact',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'US Population 2026 Dashboard (Revised)',
+            status: 'ready',
+            draftRevision: 2,
+            currentVersionId: null
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getAllByTestId('canvas-artifact-card')).toHaveLength(1)
+    expect(screen.getByTestId('canvas-artifact-card')).toHaveAttribute(
+      'data-artifact-id',
+      'artifact-1'
+    )
+    expect(screen.getByTestId('canvas-artifact-card')).toHaveAttribute(
+      'data-title',
+      'US Population 2026 Dashboard (Revised)'
+    )
+    expect(screen.getByTestId('canvas-artifact-card')).toHaveAttribute(
+      'data-status',
+      'ready'
+    )
+  })
+
   it('reconciles the latest hidden artifact status onto the rendered card', () => {
     const message: UIMessage = {
       id: 'assistant-1',

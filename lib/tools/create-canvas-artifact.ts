@@ -104,7 +104,7 @@ export function createCanvasArtifactTool(ctx: CanvasToolContext) {
           `[createCanvasArtifact] Failed: chatId=${ctx.chatId}, error=${result.error}, errorCode=${result.errorCode}`
         )
         return {
-          artifactId: result.artifact?.artifactId ?? artifactId,
+          artifactId: result.artifact?.artifactId ?? '',
           chatId: ctx.chatId,
           status: result.artifact?.status ?? 'compile_failed',
           draftRevision: result.artifact?.draftRevision ?? 0,
@@ -116,7 +116,7 @@ export function createCanvasArtifactTool(ctx: CanvasToolContext) {
 
       if (!result.artifact) {
         return {
-          artifactId,
+          artifactId: '',
           chatId: ctx.chatId,
           status: 'compile_failed',
           draftRevision: 0,

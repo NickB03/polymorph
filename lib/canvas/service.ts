@@ -414,6 +414,7 @@ export async function updateCanvasArtifactDraftFromSource(input: {
   expectedRevision: number
   draftSource: CanvasSourceFiles
   userId?: string | null
+  title?: string
   onProgress?: (payload: CanvasCompileProgressPayload) => void
 }): Promise<CanvasServiceResult> {
   const processedSource = runPreProcessors(input.draftSource)
@@ -428,7 +429,7 @@ export async function updateCanvasArtifactDraftFromSource(input: {
       .join('; ')
     emitValidationFailureProgress({
       artifactId: input.artifactId,
-      title: CREATE_COMPILE_TITLE,
+      title: input.title ?? CREATE_COMPILE_TITLE,
       source: 'update',
       startedAt,
       errorMessage: errorDetails || 'Source validation failed',
