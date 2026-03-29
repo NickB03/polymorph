@@ -27,12 +27,15 @@ function makeArtifactState(
 }
 
 function Harness() {
-  const canvas = useCanvas()
+  const canvas = useCanvas() as any
 
   return (
     <div>
       <button onClick={() => void canvas.openCanvasArtifact('art-1')}>
         open-auth
+      </button>
+      <button onClick={() => void canvas.openCanvasArtifact('art-2')}>
+        open-next
       </button>
       <button
         onClick={() =>
@@ -42,9 +45,31 @@ function Harness() {
         open-guest
       </button>
       <button onClick={() => canvas.focusCanvasArtifact('art-1')}>focus</button>
+      <button
+        onClick={() =>
+          canvas.setPendingWorkspace({
+            artifactId: 'art-pending',
+            title: 'Pending Canvas'
+          })
+        }
+      >
+        pending
+      </button>
       <div data-testid="artifact-id">{canvas.artifact?.artifactId ?? ''}</div>
+      <div data-testid="pending-id">
+        {canvas.pendingWorkspace?.artifactId ?? ''}
+      </div>
+      <div data-testid="workspace-open">{String(canvas.isWorkspaceOpen)}</div>
     </div>
   )
+}
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>(r => {
+    resolve = r
+  })
+  return { promise, resolve }
 }
 
 describe('CanvasProvider', () => {
@@ -120,5 +145,79 @@ describe('CanvasProvider', () => {
     fireEvent.click(screen.getByText('focus'))
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('clears stale artifact state when opening a different artifact', async () => {
+    const firstFetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => makeArtifactState({ artifactId: 'art-1' })
+    })
+    const deferred = createDeferred<Response>()
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(firstFetch)
+      .mockImplementationOnce(() => deferred.promise)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <CanvasProvider>
+        <Harness />
+      </CanvasProvider>
+    )
+
+    fireEvent.click(screen.getByText('open-auth'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('artifact-id')).toHaveTextContent('art-1')
+    })
+
+    fireEvent.click(screen.getByText('open-next'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('artifact-id')).toHaveTextContent('')
+    })
+  })
+
+  it('treats a pending workspace as open before artifact persistence', async () => {
+    render(
+      <CanvasProvider>
+        <Harness />
+      </CanvasProvider>
+    )
+
+    expect(screen.getByTestId('workspace-open')).toHaveTextContent('false')
+
+    fireEvent.click(screen.getByText('pending'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('workspace-open')).toHaveTextContent('true')
+    })
+  })
+
+  it('replaces stale artifact state when a pending workspace is opened', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => makeArtifactState()
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <CanvasProvider>
+        <Harness />
+      </CanvasProvider>
+    )
+
+    fireEvent.click(screen.getByText('open-auth'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('artifact-id')).toHaveTextContent('art-1')
+    })
+
+    fireEvent.click(screen.getByText('pending'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('artifact-id')).toHaveTextContent('')
+      expect(screen.getByTestId('pending-id')).toHaveTextContent('art-pending')
+    })
   })
 })

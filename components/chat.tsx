@@ -190,6 +190,27 @@ export function Chat({
         })
     }),
     messages: savedMessages,
+    onData: dataPart => {
+      if (
+        dataPart.type !== 'data-canvasArtifactEvent' ||
+        dataPart.data?.event !== 'compile-progress'
+      ) {
+        return
+      }
+
+      const progress = dataPart.data.payload
+      const cv = canvasRef.current
+
+      if (progress.source === 'create') {
+        closeArtifactSidebar()
+        cv.setPendingWorkspace({
+          artifactId: progress.artifactId,
+          title: progress.title
+        })
+      }
+
+      cv.setCompileProgress(progress)
+    },
     onFinish: () => {
       window.dispatchEvent(new CustomEvent('chat-history-updated'))
     },
@@ -330,6 +351,31 @@ export function Chat({
     cv.closeWorkspace()
   }, [chatId, providedId, stop]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const handleCanvasAiUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<{ context?: string }>).detail
+      const context = detail?.context?.trim()
+      if (!context) return
+
+      sendMessage({
+        role: 'user',
+        parts: [{ type: 'text', text: context }]
+      })
+    }
+
+    window.addEventListener(
+      'canvas-ai-update-requested',
+      handleCanvasAiUpdate as EventListener
+    )
+
+    return () => {
+      window.removeEventListener(
+        'canvas-ai-update-requested',
+        handleCanvasAiUpdate as EventListener
+      )
+    }
+  }, [sendMessage])
+
   // Track canvas data parts from streaming messages.
   // Uses canvasRef (stable ref) instead of canvas directly so that canvas
   // state changes (isLoading, artifact, etc.) don't re-trigger this effect —
@@ -339,6 +385,7 @@ export function Chat({
     const cv = canvasRef.current
     const latestGuestCanvasToken =
       getLatestGuestCanvasToken(messages) ?? guestCanvasTokenRef.current
+    const latestStatusByArtifactId = new Map<string, CanvasArtifactStatusData>()
 
     if (latestGuestCanvasToken) {
       guestCanvasTokenRef.current = latestGuestCanvasToken
@@ -355,6 +402,13 @@ export function Chat({
         const p = part as {
           type?: string
           data?: CanvasArtifactData | CanvasArtifactStatusData
+        }
+
+        if (p.type === 'data-canvasArtifactStatus') {
+          const statusData = p.data as CanvasArtifactStatusData | undefined
+          if (statusData?.artifactId) {
+            latestStatusByArtifactId.set(statusData.artifactId, statusData)
+          }
         }
 
         // Auto-open the canvas workspace when a new artifact part arrives.
@@ -378,6 +432,28 @@ export function Chat({
             )
           }
         }
+      }
+    }
+
+    if (cv.artifact) {
+      const latestStatus = latestStatusByArtifactId.get(cv.artifact.artifactId)
+
+      if (
+        latestStatus &&
+        (latestStatus.status !== cv.artifact.status ||
+          latestStatus.draftRevision !== cv.artifact.draftRevision ||
+          latestStatus.currentVersionId !== cv.artifact.currentVersionId ||
+          latestStatus.updatedAt !== cv.artifact.updatedAt)
+      ) {
+        cv.setArtifact({
+          ...cv.artifact,
+          status: latestStatus.status,
+          draftRevision: latestStatus.draftRevision,
+          currentVersionId: latestStatus.currentVersionId,
+          updatedAt: latestStatus.updatedAt,
+          guestCanvasToken:
+            latestStatus.guestCanvasToken ?? cv.artifact.guestCanvasToken
+        })
       }
     }
   }, [messages, closeArtifactSidebar, isGuest]) // eslint-disable-line react-hooks/exhaustive-deps

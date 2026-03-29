@@ -5,6 +5,8 @@ import {
   CANVAS_MAX_COMPILED_HTML_SIZE
 } from '@/lib/canvas/constants'
 import type {
+  CanvasCompileProgressPayload,
+  CanvasCompileStep,
   CanvasDiagnostic,
   CanvasExternalDependency,
   CanvasMetaJson,
@@ -23,6 +25,10 @@ export type CompileCanvasArtifactInput = {
   artifactId?: string
   revisionId?: string
   nonce?: string
+  title?: string
+  sourceType?: 'create' | 'update'
+  startedAt?: string
+  onProgress?: (payload: CanvasCompileProgressPayload) => void
   /** Override for testing — defaults to CANVAS_MAX_COMPILED_HTML_SIZE */
   maxCompiledHtmlSize?: number
   /** Override for testing — defaults to CANVAS_COMPILE_TIMEOUT_MS */
@@ -41,6 +47,53 @@ const ALLOWED_BARE_SPECIFIERS = new Set([
   'react-dom/client',
   'react/jsx-runtime'
 ])
+
+const COMPILE_STEP_DEFINITIONS: Array<Omit<CanvasCompileStep, 'status'>> = [
+  { id: 'validate', label: 'Validating source' },
+  { id: 'bundle', label: 'Building React components' },
+  { id: 'tailwind', label: 'Compiling Tailwind styles' },
+  { id: 'assemble', label: 'Bundling output' }
+]
+
+function buildCompileSteps(
+  statuses: Partial<
+    Record<CanvasCompileStep['id'], CanvasCompileStep['status']>
+  >
+): CanvasCompileStep[] {
+  return COMPILE_STEP_DEFINITIONS.map(step => ({
+    ...step,
+    status: statuses[step.id] ?? 'pending'
+  }))
+}
+
+function getFirstErrorMessage(
+  diagnostics: CanvasDiagnostic[]
+): string | undefined {
+  return diagnostics.find(d => d.severity === 'error')?.message
+}
+
+function emitProgress(input: {
+  artifactId?: string
+  title?: string
+  sourceType?: 'create' | 'update'
+  startedAt: string
+  onProgress?: (payload: CanvasCompileProgressPayload) => void
+  steps: CanvasCompileStep[]
+  outcome?: 'success' | 'failed'
+  errorMessage?: string
+}) {
+  if (!input.onProgress || !input.artifactId) return
+
+  input.onProgress({
+    artifactId: input.artifactId,
+    title: input.title ?? 'Canvas Artifact',
+    source: input.sourceType ?? 'update',
+    startedAt: input.startedAt,
+    steps: input.steps,
+    ...(input.outcome ? { outcome: input.outcome } : {}),
+    ...(input.errorMessage ? { errorMessage: input.errorMessage } : {})
+  })
+}
 
 // ── Virtual file esbuild plugin ─────────────────────────────────────
 
@@ -222,10 +275,20 @@ function isEsbuildFailure(
 export async function compileCanvasArtifact(
   input: CompileCanvasArtifactInput
 ): Promise<CompileCanvasArtifactResult> {
-  const { source, artifactId, revisionId, nonce, maxCompiledHtmlSize } = input
+  const {
+    source,
+    artifactId,
+    revisionId,
+    nonce,
+    maxCompiledHtmlSize,
+    onProgress,
+    title,
+    sourceType
+  } = input
   const sizeLimit = maxCompiledHtmlSize ?? CANVAS_MAX_COMPILED_HTML_SIZE
   const timeoutMs = input.timeoutMs ?? CANVAS_COMPILE_TIMEOUT_MS
   const debugEnabled = process.env.DEBUG_CANVAS_COMPILER === '1'
+  const startedAt = input.startedAt ?? new Date().toISOString()
 
   if (debugEnabled) {
     logCanvasCompilerDebug('runtime', {
@@ -238,8 +301,30 @@ export async function compileCanvasArtifact(
   }
 
   // Step 1: Validate source
+  emitProgress({
+    artifactId,
+    title,
+    sourceType,
+    startedAt,
+    onProgress,
+    steps: buildCompileSteps({
+      validate: 'in-progress'
+    })
+  })
   const validation = validateCanvasSource(source)
   if (!validation.ok) {
+    emitProgress({
+      artifactId,
+      title,
+      sourceType,
+      startedAt,
+      onProgress,
+      steps: buildCompileSteps({
+        validate: 'failed'
+      }),
+      outcome: 'failed',
+      errorMessage: getFirstErrorMessage(validation.diagnostics)
+    })
     return {
       ok: false,
       diagnostics: validation.diagnostics,
@@ -251,6 +336,21 @@ export async function compileCanvasArtifact(
   // fail gracefully instead of hanging until the platform kills them.
   return new Promise<CompileCanvasArtifactResult>((resolve, reject) => {
     const timer = setTimeout(() => {
+      emitProgress({
+        artifactId,
+        title,
+        sourceType,
+        startedAt,
+        onProgress,
+        steps: buildCompileSteps({
+          validate: 'completed',
+          bundle: 'completed',
+          tailwind: 'completed',
+          assemble: 'failed'
+        }),
+        outcome: 'failed',
+        errorMessage: `Compilation timed out after ${timeoutMs / 1000}s. The artifact may be too complex — try reducing the number of components or splitting into smaller files.`
+      })
       resolve({
         ok: false,
         diagnostics: [
@@ -270,7 +370,11 @@ export async function compileCanvasArtifact(
       revisionId,
       nonce,
       sizeLimit,
-      debugEnabled
+      debugEnabled,
+      onProgress,
+      title,
+      sourceType,
+      startedAt
     })
       .then(resolve, reject)
       .finally(() => clearTimeout(timer))
@@ -285,6 +389,10 @@ async function compileCanvasArtifactCore(ctx: {
   nonce?: string
   sizeLimit: number
   debugEnabled: boolean
+  onProgress?: (payload: CanvasCompileProgressPayload) => void
+  title?: string
+  sourceType?: 'create' | 'update'
+  startedAt: string
 }): Promise<CompileCanvasArtifactResult> {
   const {
     source,
@@ -293,8 +401,24 @@ async function compileCanvasArtifactCore(ctx: {
     revisionId,
     nonce,
     sizeLimit,
-    debugEnabled
+    debugEnabled,
+    onProgress,
+    title,
+    sourceType,
+    startedAt
   } = ctx
+
+  emitProgress({
+    artifactId,
+    title,
+    sourceType,
+    startedAt,
+    onProgress,
+    steps: buildCompileSteps({
+      validate: 'completed',
+      bundle: 'in-progress'
+    })
+  })
 
   // Step 2: Bundle with esbuild
   let bundledJs: string
@@ -321,6 +445,21 @@ async function compileCanvasArtifactCore(ctx: {
     })
 
     if (result.errors.length > 0) {
+      emitProgress({
+        artifactId,
+        title,
+        sourceType,
+        startedAt,
+        onProgress,
+        steps: buildCompileSteps({
+          validate: 'completed',
+          bundle: 'failed'
+        }),
+        outcome: 'failed',
+        errorMessage: getFirstErrorMessage(
+          result.errors.map(toCanvasDiagnostic)
+        )
+      })
       return {
         ok: false,
         diagnostics: result.errors.map(toCanvasDiagnostic),
@@ -330,6 +469,19 @@ async function compileCanvasArtifactCore(ctx: {
 
     const jsOutput = result.outputFiles?.[0]
     if (!jsOutput) {
+      emitProgress({
+        artifactId,
+        title,
+        sourceType,
+        startedAt,
+        onProgress,
+        steps: buildCompileSteps({
+          validate: 'completed',
+          bundle: 'failed'
+        }),
+        outcome: 'failed',
+        errorMessage: 'esbuild produced no JavaScript output'
+      })
       return {
         ok: false,
         diagnostics: [
@@ -345,6 +497,19 @@ async function compileCanvasArtifactCore(ctx: {
     bundledJs = jsOutput.text
   } catch (err) {
     if (isEsbuildFailure(err)) {
+      emitProgress({
+        artifactId,
+        title,
+        sourceType,
+        startedAt,
+        onProgress,
+        steps: buildCompileSteps({
+          validate: 'completed',
+          bundle: 'failed'
+        }),
+        outcome: 'failed',
+        errorMessage: getFirstErrorMessage(err.errors.map(toCanvasDiagnostic))
+      })
       return {
         ok: false,
         diagnostics: err.errors.map(toCanvasDiagnostic),
@@ -353,6 +518,19 @@ async function compileCanvasArtifactCore(ctx: {
     }
 
     const message = err instanceof Error ? err.message : 'Unknown esbuild error'
+    emitProgress({
+      artifactId,
+      title,
+      sourceType,
+      startedAt,
+      onProgress,
+      steps: buildCompileSteps({
+        validate: 'completed',
+        bundle: 'failed'
+      }),
+      outcome: 'failed',
+      errorMessage: `Bundle error: ${message}`
+    })
     return {
       ok: false,
       diagnostics: [{ severity: 'error', message: `Bundle error: ${message}` }],
@@ -361,12 +539,38 @@ async function compileCanvasArtifactCore(ctx: {
   }
 
   // Step 3: Compile Tailwind CSS
+  emitProgress({
+    artifactId,
+    title,
+    sourceType,
+    startedAt,
+    onProgress,
+    steps: buildCompileSteps({
+      validate: 'completed',
+      bundle: 'completed',
+      tailwind: 'in-progress'
+    })
+  })
   let css: string
   try {
     css = await buildTailwindCss(source)
   } catch (err) {
     const message =
       err instanceof Error ? err.message : 'Unknown Tailwind error'
+    emitProgress({
+      artifactId,
+      title,
+      sourceType,
+      startedAt,
+      onProgress,
+      steps: buildCompileSteps({
+        validate: 'completed',
+        bundle: 'completed',
+        tailwind: 'failed'
+      }),
+      outcome: 'failed',
+      errorMessage: `Tailwind CSS error: ${message}`
+    })
     return {
       ok: false,
       diagnostics: [
@@ -377,6 +581,19 @@ async function compileCanvasArtifactCore(ctx: {
   }
 
   // Step 4: Parse meta.json for assets and metadata
+  emitProgress({
+    artifactId,
+    title,
+    sourceType,
+    startedAt,
+    onProgress,
+    steps: buildCompileSteps({
+      validate: 'completed',
+      bundle: 'completed',
+      tailwind: 'completed',
+      assemble: 'in-progress'
+    })
+  })
   const meta = parseMetaJson(source)
 
   // Step 5: Assemble final HTML
@@ -392,6 +609,21 @@ async function compileCanvasArtifactCore(ctx: {
   // Step 6: Check compiled size
   const htmlSize = new TextEncoder().encode(html).length
   if (htmlSize > sizeLimit) {
+    emitProgress({
+      artifactId,
+      title,
+      sourceType,
+      startedAt,
+      onProgress,
+      steps: buildCompileSteps({
+        validate: 'completed',
+        bundle: 'completed',
+        tailwind: 'completed',
+        assemble: 'failed'
+      }),
+      outcome: 'failed',
+      errorMessage: `Compiled HTML size (${Math.ceil(htmlSize / (1024 * 1024))} MB) exceeds the 2 MB limit`
+    })
     return {
       ok: false,
       diagnostics: [
@@ -403,6 +635,21 @@ async function compileCanvasArtifactCore(ctx: {
       externalDependencies: validation.externalDependencies
     }
   }
+
+  emitProgress({
+    artifactId,
+    title,
+    sourceType,
+    startedAt,
+    onProgress,
+    steps: buildCompileSteps({
+      validate: 'completed',
+      bundle: 'completed',
+      tailwind: 'completed',
+      assemble: 'completed'
+    }),
+    outcome: 'success'
+  })
 
   return {
     ok: true,

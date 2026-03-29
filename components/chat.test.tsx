@@ -1,9 +1,10 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { buildLegacyCanvasNotice } from '@/lib/canvas/legacy'
 import type { UIMessage } from '@/lib/types/ai'
 
+import type { CanvasContextValue } from './canvas/canvas-context'
 import { CanvasRoot } from './canvas/canvas-root'
 import { buildChatRequestBody, getLatestGuestCanvasToken } from './chat-request'
 
@@ -18,13 +19,15 @@ const mockSidebar = {
   open: false,
   isMobile: false
 }
-const mockCanvasContext = {
+const mockCanvasContext: CanvasContextValue = {
   artifactId: null,
   artifact: null,
   isLoading: false,
   isWorkspaceOpen: false,
   legacyNotice: null,
   guestCanvasToken: null,
+  pendingWorkspace: null,
+  compileProgress: null,
   openCanvasArtifact: vi.fn(),
   focusCanvasArtifact: vi.fn(),
   openLegacyCanvasNotice: vi.fn(),
@@ -32,11 +35,16 @@ const mockCanvasContext = {
   requestCanvasAiUpdate: vi.fn(),
   reloadArtifact: vi.fn(),
   setGuestCanvasToken: vi.fn(),
+  setPendingWorkspace: vi.fn(),
+  clearPendingWorkspace: vi.fn(),
+  setCompileProgress: vi.fn(),
+  clearCompileProgress: vi.fn(),
   setArtifact: vi.fn(),
   updateDraft: vi.fn(),
   saveVersion: vi.fn(),
   restoreVersion: vi.fn(),
-  exportHtml: vi.fn()
+  exportHtml: vi.fn(),
+  viewFullscreen: vi.fn()
 }
 
 function resetCanvasContext() {
@@ -46,6 +54,8 @@ function resetCanvasContext() {
   mockCanvasContext.isWorkspaceOpen = false
   mockCanvasContext.legacyNotice = null
   mockCanvasContext.guestCanvasToken = null
+  mockCanvasContext.pendingWorkspace = null
+  mockCanvasContext.compileProgress = null
   mockCanvasContext.openCanvasArtifact = vi.fn()
   mockCanvasContext.focusCanvasArtifact = vi.fn()
   mockCanvasContext.openLegacyCanvasNotice = vi.fn()
@@ -53,11 +63,16 @@ function resetCanvasContext() {
   mockCanvasContext.requestCanvasAiUpdate = vi.fn()
   mockCanvasContext.reloadArtifact = vi.fn()
   mockCanvasContext.setGuestCanvasToken = vi.fn()
+  mockCanvasContext.setPendingWorkspace = vi.fn()
+  mockCanvasContext.clearPendingWorkspace = vi.fn()
+  mockCanvasContext.setCompileProgress = vi.fn()
+  mockCanvasContext.clearCompileProgress = vi.fn()
   mockCanvasContext.setArtifact = vi.fn()
   mockCanvasContext.updateDraft = vi.fn()
   mockCanvasContext.saveVersion = vi.fn()
   mockCanvasContext.restoreVersion = vi.fn()
   mockCanvasContext.exportHtml = vi.fn()
+  mockCanvasContext.viewFullscreen = vi.fn()
 }
 
 function resetSidebarContext() {
@@ -617,6 +632,119 @@ describe('Canvas workspace handoff from chat stream', () => {
       expect(mockCanvasContext.openCanvasArtifact).toHaveBeenCalledWith(
         'art-1',
         undefined
+      )
+    })
+  })
+
+  it('routes transient compile-progress events through useChat onData', async () => {
+    let capturedOptions: Record<string, any> | undefined
+    mockUseChat.mockImplementation((options: Record<string, any>) => {
+      capturedOptions = options
+      return makeUseChatReturnValue()
+    })
+
+    const { Chat } = await import('./chat')
+    render(<Chat savedMessages={[]} />)
+
+    await act(async () => {
+      capturedOptions?.onData?.({
+        type: 'data-canvasArtifactEvent',
+        transient: true,
+        data: {
+          artifactId: 'art-pending',
+          event: 'compile-progress',
+          payload: {
+            artifactId: 'art-pending',
+            title: 'Canvas Artifact',
+            source: 'create',
+            startedAt: '2026-03-28T23:00:00.000Z',
+            steps: [
+              {
+                id: 'validate',
+                label: 'Validating source',
+                status: 'in-progress'
+              },
+              {
+                id: 'bundle',
+                label: 'Building React components',
+                status: 'pending'
+              },
+              {
+                id: 'tailwind',
+                label: 'Compiling Tailwind styles',
+                status: 'pending'
+              },
+              {
+                id: 'assemble',
+                label: 'Bundling output',
+                status: 'pending'
+              }
+            ]
+          }
+        }
+      })
+    })
+
+    expect(mockCanvasContext.setPendingWorkspace).toHaveBeenCalledWith({
+      artifactId: 'art-pending',
+      title: 'Canvas Artifact'
+    })
+    expect(mockCanvasContext.setCompileProgress).toHaveBeenCalledWith(
+      expect.objectContaining({
+        artifactId: 'art-pending',
+        source: 'create'
+      })
+    )
+  })
+
+  it('reconciles persisted artifact status updates into the open canvas artifact state', async () => {
+    resetCanvasContext()
+    mockCanvasContext.artifactId = 'art-1'
+    mockCanvasContext.artifact = {
+      artifactId: 'art-1',
+      chatId: 'chat-1',
+      title: 'Canvas',
+      status: 'generating',
+      draftRevision: 1,
+      draftSource: { 'App.tsx': 'export default () => <div>Hello</div>' },
+      draftCompiledHtml: '<html></html>',
+      draftDiagnostics: null,
+      currentVersionId: null,
+      versions: [],
+      updatedAt: '2026-03-28T22:00:00.000Z'
+    }
+    mockUseChat.mockReturnValue(
+      makeUseChatReturnValue([
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          parts: [
+            {
+              type: 'data-canvasArtifactStatus',
+              data: {
+                artifactId: 'art-1',
+                chatId: 'chat-1',
+                status: 'compile_failed',
+                draftRevision: 2,
+                currentVersionId: null,
+                updatedAt: '2026-03-28T22:05:00.000Z'
+              }
+            }
+          ]
+        }
+      ])
+    )
+
+    const { Chat } = await import('./chat')
+    render(<Chat savedMessages={[]} />)
+
+    await waitFor(() => {
+      expect(mockCanvasContext.setArtifact).toHaveBeenCalledWith(
+        expect.objectContaining({
+          artifactId: 'art-1',
+          status: 'compile_failed',
+          draftRevision: 2
+        })
       )
     })
   })

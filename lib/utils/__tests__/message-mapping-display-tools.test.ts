@@ -359,8 +359,20 @@ describe('canvas data part persistence', () => {
             type: 'data-canvasArtifactEvent',
             data: {
               artifactId: 'art-1',
-              event: 'compile-started',
-              payload: {}
+              event: 'compile-progress',
+              payload: {
+                artifactId: 'art-1',
+                title: 'Canvas Artifact',
+                source: 'create',
+                startedAt: '2026-03-19T00:00:00Z',
+                steps: [
+                  {
+                    id: 'validate',
+                    label: 'Validating source',
+                    status: 'in-progress'
+                  }
+                ]
+              }
             }
           }
         ],
@@ -411,7 +423,27 @@ describe('canvas data part persistence', () => {
             type: 'data-canvasArtifactEvent',
             data: {
               artifactId: 'art-1',
-              event: 'compile-started'
+              event: 'compile-progress',
+              payload: {
+                artifactId: 'art-1',
+                title: 'Canvas Artifact',
+                source: 'update',
+                startedAt: '2026-03-19T00:00:00Z',
+                steps: [
+                  {
+                    id: 'validate',
+                    label: 'Validating source',
+                    status: 'completed'
+                  },
+                  {
+                    id: 'bundle',
+                    label: 'Building React components',
+                    status: 'in-progress'
+                  }
+                ],
+                outcome: 'failed',
+                errorMessage: 'Type error in App.tsx'
+              }
             }
           },
           {

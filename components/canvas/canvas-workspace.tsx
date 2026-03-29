@@ -251,13 +251,15 @@ export function CanvasWorkspace() {
     return <CanvasLegacyNotice notice={canvas.legacyNotice} />
   }
 
-  // No artifact loaded — should not render, but handle gracefully
-  if (!canvas.artifact) {
+  const artifact = canvas.artifact
+  const pendingWorkspace = canvas.pendingWorkspace
+
+  // No artifact or pending workspace loaded — should not render, but handle gracefully
+  if (!artifact && !pendingWorkspace) {
     return null
   }
 
-  const artifact = canvas.artifact
-  const readOnly = isReadOnly(artifact.status)
+  const readOnly = artifact ? isReadOnly(artifact.status) : true
 
   // ── Pill tab switcher ──────────────────────────────────────────
 
@@ -322,8 +324,10 @@ export function CanvasWorkspace() {
     <div className="flex items-center justify-between pl-4 pr-2 py-2">
       <div className="flex items-center gap-2 min-w-0">
         {!isMobile && pillSwitcher}
-        <h2 className="text-sm font-medium truncate">{artifact.title}</h2>
-        {artifact.status !== 'ready' && (
+        <h2 className="text-sm font-medium truncate">
+          {artifact?.title ?? pendingWorkspace?.title ?? 'Canvas Artifact'}
+        </h2>
+        {artifact && artifact.status !== 'ready' && (
           <Badge
             variant={STATUS_VARIANTS[artifact.status]}
             data-testid="canvas-status-badge"
@@ -338,7 +342,7 @@ export function CanvasWorkspace() {
           size="icon"
           className="h-7 w-7"
           onClick={() => canvas.viewFullscreen()}
-          disabled={!artifact.draftCompiledHtml}
+          disabled={!artifact?.draftCompiledHtml}
           aria-label="Open in new tab"
           tooltipContent="Open in new tab"
           data-testid="canvas-view-fullscreen"
@@ -361,7 +365,7 @@ export function CanvasWorkspace() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               onClick={() => canvas.exportHtml()}
-              disabled={!artifact.draftCompiledHtml}
+              disabled={!artifact?.draftCompiledHtml}
               data-testid="canvas-export"
             >
               <Download className="h-4 w-4" />
@@ -383,6 +387,27 @@ export function CanvasWorkspace() {
       </div>
     </div>
   )
+
+  if (!artifact && pendingWorkspace) {
+    return (
+      <TooltipProvider>
+        <WorkspaceErrorBoundary onClose={() => canvas.closeWorkspace()}>
+          <div
+            className="h-full flex flex-col overflow-hidden bg-muted md:px-4 md:pt-14 md:pb-4"
+            data-testid="canvas-workspace"
+          >
+            <div className="flex h-full flex-col overflow-hidden rounded-xl bg-background md:border">
+              {header}
+              <Separator className="bg-border/50" />
+              <div className="flex-1 min-h-0" data-testid="canvas-preview-slot">
+                <CanvasPreview />
+              </div>
+            </div>
+          </div>
+        </WorkspaceErrorBoundary>
+      </TooltipProvider>
+    )
+  }
 
   // ── Code sub-tab bar ──────────────────────────────────────────
 

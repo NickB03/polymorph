@@ -9,7 +9,11 @@ import type {
 import { fetchTool } from '@/lib/tools/fetch'
 import { searchTool } from '@/lib/tools/search'
 import { createTodoTools, type TodoItem } from '@/lib/tools/todo'
-import type { CanvasArtifactStatus, CanvasDiagnostic } from '@/lib/types/canvas'
+import type {
+  CanvasArtifactStatus,
+  CanvasCompileProgressPayload,
+  CanvasDiagnostic
+} from '@/lib/types/canvas'
 import type { ModelType } from '@/lib/types/model-type'
 import type { SearchMode } from '@/lib/types/search'
 
@@ -66,8 +70,8 @@ export type CanvasArtifactStatusData = {
 
 export type CanvasArtifactEventData = {
   artifactId: string
-  event: string
-  payload?: Record<string, unknown>
+  event: 'compile-progress'
+  payload: CanvasCompileProgressPayload
 }
 
 export type CanvasDiagnosticsData = {

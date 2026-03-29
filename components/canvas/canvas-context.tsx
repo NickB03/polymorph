@@ -10,7 +10,15 @@ import {
 } from 'react'
 
 import type { CanvasArtifactState } from '@/lib/canvas/service'
-import type { LegacyCanvasNotice } from '@/lib/types/canvas'
+import type {
+  CanvasCompileProgressPayload,
+  LegacyCanvasNotice
+} from '@/lib/types/canvas'
+
+export type PendingCanvasWorkspace = {
+  artifactId: string
+  title: string
+}
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -27,6 +35,10 @@ export type CanvasContextValue = {
   legacyNotice: LegacyCanvasNotice | null
   /** Guest token for unauthenticated artifact access */
   guestCanvasToken: string | null
+  /** Workspace shell state before the artifact row exists */
+  pendingWorkspace: PendingCanvasWorkspace | null
+  /** Live compile progress for the current artifact */
+  compileProgress: CanvasCompileProgressPayload | null
 
   // ── Actions ──────────────────────────────────────────────────────
 
@@ -50,6 +62,14 @@ export type CanvasContextValue = {
   reloadArtifact: () => Promise<void>
   /** Set the guest canvas token */
   setGuestCanvasToken: (token: string | null) => void
+  /** Open the workspace before the artifact has been persisted */
+  setPendingWorkspace: (workspace: PendingCanvasWorkspace | null) => void
+  /** Clear the pending workspace shell */
+  clearPendingWorkspace: () => void
+  /** Update compile progress */
+  setCompileProgress: (progress: CanvasCompileProgressPayload | null) => void
+  /** Clear compile progress */
+  clearCompileProgress: () => void
   /** Replace artifact state directly (used by streaming updates) */
   setArtifact: (state: CanvasArtifactState | null) => void
 
@@ -97,6 +117,10 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
     null
   )
   const [guestCanvasToken, setGuestCanvasToken] = useState<string | null>(null)
+  const [pendingWorkspace, setPendingWorkspaceState] =
+    useState<PendingCanvasWorkspace | null>(null)
+  const [compileProgress, setCompileProgressState] =
+    useState<CanvasCompileProgressPayload | null>(null)
 
   // Ref mirror of guestCanvasToken so callbacks can read the latest value
   // without depending on it (avoids cascading callback recreation on every
@@ -109,19 +133,40 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   // during streaming as canvas state changes trigger re-renders).
   const openingRef = useRef<string | null>(null)
 
-  const isWorkspaceOpen = !!(artifact || isLoading || legacyNotice)
+  const isWorkspaceOpen = !!(
+    artifact ||
+    isLoading ||
+    legacyNotice ||
+    pendingWorkspace
+  )
+
+  const clearWorkspaceState = useCallback(() => {
+    setArtifact(null)
+    setPendingWorkspaceState(null)
+    setCompileProgressState(null)
+    setLegacyNotice(null)
+  }, [])
 
   /** Apply an API response state and sync the rotated guest token if changed. */
-  const applyState = useCallback((state: CanvasArtifactState) => {
-    setArtifact(state)
-    if (
-      state.guestCanvasToken &&
-      state.guestCanvasToken !== guestTokenRef.current
-    ) {
-      guestTokenRef.current = state.guestCanvasToken
-      setGuestCanvasToken(state.guestCanvasToken)
-    }
-  }, [])
+  const applyState = useCallback(
+    (state: CanvasArtifactState) => {
+      setArtifact(state)
+      setArtifactId(state.artifactId)
+
+      if (pendingWorkspace?.artifactId === state.artifactId) {
+        setPendingWorkspaceState(null)
+      }
+
+      if (
+        state.guestCanvasToken &&
+        state.guestCanvasToken !== guestTokenRef.current
+      ) {
+        guestTokenRef.current = state.guestCanvasToken
+        setGuestCanvasToken(state.guestCanvasToken)
+      }
+    },
+    [pendingWorkspace?.artifactId]
+  )
 
   // ── Core actions ─────────────────────────────────────────────────
 
@@ -131,7 +176,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       if (openingRef.current === id) return // Already fetching this artifact
 
       openingRef.current = id
-      setLegacyNotice(null)
+      clearWorkspaceState()
       setArtifactId(id)
       setIsLoading(true)
 
@@ -161,7 +206,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [applyState]
+    [applyState, clearWorkspaceState]
   )
 
   const focusCanvasArtifact = useCallback(
@@ -190,6 +235,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       setArtifact(null)
       setArtifactId(input.artifactId)
       setIsLoading(false)
+      setPendingWorkspaceState(null)
       setLegacyNotice({
         kind: 'legacy-unavailable',
         artifactId: input.artifactId,
@@ -205,10 +251,56 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
     setArtifactId(null)
     setIsLoading(false)
     setLegacyNotice(null)
+    setPendingWorkspaceState(null)
+    setCompileProgressState(null)
   }, [])
 
-  const requestCanvasAiUpdate = useCallback((_context: string) => {
-    // Placeholder for Task 11 — will wire to the chat input
+  const requestCanvasAiUpdate = useCallback((context: string) => {
+    window.dispatchEvent(
+      new CustomEvent('canvas-ai-update-requested', {
+        detail: { context }
+      })
+    )
+  }, [])
+
+  const setPendingWorkspace = useCallback(
+    (workspace: PendingCanvasWorkspace | null) => {
+      if (
+        workspace?.artifactId &&
+        workspace.artifactId !== artifactId &&
+        pendingWorkspace?.artifactId !== workspace.artifactId
+      ) {
+        setArtifact(null)
+        setCompileProgressState(null)
+        setLegacyNotice(null)
+      }
+
+      setPendingWorkspaceState(workspace)
+      if (workspace?.artifactId) {
+        setArtifactId(workspace.artifactId)
+        setLegacyNotice(null)
+      }
+    },
+    [artifactId, pendingWorkspace?.artifactId]
+  )
+
+  const clearPendingWorkspace = useCallback(() => {
+    setPendingWorkspaceState(null)
+  }, [])
+
+  const setCompileProgress = useCallback(
+    (progress: CanvasCompileProgressPayload | null) => {
+      setCompileProgressState(progress)
+
+      if (progress?.artifactId) {
+        setArtifactId(progress.artifactId)
+      }
+    },
+    []
+  )
+
+  const clearCompileProgress = useCallback(() => {
+    setCompileProgressState(null)
   }, [])
 
   const reloadArtifact = useCallback(async () => {
@@ -374,6 +466,8 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       isWorkspaceOpen,
       legacyNotice,
       guestCanvasToken,
+      pendingWorkspace,
+      compileProgress,
       openCanvasArtifact,
       focusCanvasArtifact,
       openLegacyCanvasNotice,
@@ -381,6 +475,10 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       requestCanvasAiUpdate,
       reloadArtifact,
       setGuestCanvasToken,
+      setPendingWorkspace,
+      clearPendingWorkspace,
+      setCompileProgress,
+      clearCompileProgress,
       setArtifact,
       updateDraft,
       saveVersion,
@@ -395,6 +493,8 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       isWorkspaceOpen,
       legacyNotice,
       guestCanvasToken,
+      pendingWorkspace,
+      compileProgress,
       openCanvasArtifact,
       focusCanvasArtifact,
       openLegacyCanvasNotice,
@@ -402,6 +502,10 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       requestCanvasAiUpdate,
       reloadArtifact,
       setGuestCanvasToken,
+      setPendingWorkspace,
+      clearPendingWorkspace,
+      setCompileProgress,
+      clearCompileProgress,
       setArtifact,
       updateDraft,
       saveVersion,

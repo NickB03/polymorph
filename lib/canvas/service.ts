@@ -21,6 +21,8 @@ import { canvasArtifactVersions, generateId } from '@/lib/db/schema'
 import { withOptionalRLS } from '@/lib/db/with-rls'
 import type {
   CanvasArtifactStatus,
+  CanvasCompileProgressPayload,
+  CanvasCompileStep,
   CanvasDiagnostic,
   CanvasDiagnostics,
   CanvasSourceFiles,
@@ -193,15 +195,84 @@ async function enforceVersionCap(
   }
 }
 
+const CREATE_COMPILE_TITLE = 'Canvas Artifact'
+
+function buildServiceCompileSteps(
+  statuses: Partial<
+    Record<CanvasCompileStep['id'], CanvasCompileStep['status']>
+  >
+): CanvasCompileStep[] {
+  return [
+    {
+      id: 'validate',
+      label: 'Validating source',
+      status: statuses.validate ?? 'pending'
+    },
+    {
+      id: 'bundle',
+      label: 'Building React components',
+      status: statuses.bundle ?? 'pending'
+    },
+    {
+      id: 'tailwind',
+      label: 'Compiling Tailwind styles',
+      status: statuses.tailwind ?? 'pending'
+    },
+    {
+      id: 'assemble',
+      label: 'Bundling output',
+      status: statuses.assemble ?? 'pending'
+    }
+  ]
+}
+
+function emitValidationFailureProgress(input: {
+  artifactId: string
+  title: string
+  source: 'create' | 'update'
+  startedAt: string
+  errorMessage: string
+  onProgress?: (payload: CanvasCompileProgressPayload) => void
+}) {
+  if (!input.onProgress) return
+
+  input.onProgress({
+    artifactId: input.artifactId,
+    title: input.title,
+    source: input.source,
+    startedAt: input.startedAt,
+    steps: buildServiceCompileSteps({
+      validate: 'in-progress'
+    })
+  })
+
+  input.onProgress({
+    artifactId: input.artifactId,
+    title: input.title,
+    source: input.source,
+    startedAt: input.startedAt,
+    steps: buildServiceCompileSteps({
+      validate: 'failed'
+    }),
+    outcome: 'failed',
+    errorMessage: input.errorMessage
+  })
+}
+
 // ── Service methods ──────────────────────────────────────────────────
 
 export async function createCanvasArtifactFromSource(input: {
+  artifactId?: string
   chatId: string
   userId: string
   title?: string
   draftSource: CanvasSourceFiles
+  onProgress?: (payload: CanvasCompileProgressPayload) => void
 }): Promise<CanvasServiceResult> {
   const processedSource = runPreProcessors(input.draftSource)
+  const artifactId = input.artifactId ?? generateId()
+  const compileTitle = input.title ?? CREATE_COMPILE_TITLE
+  const startedAt = new Date().toISOString()
 
   // Check for duplicate
   const existing = await loadCanvasArtifactByChatId(input.chatId, input.userId)
@@ -222,6 +293,14 @@ export async function createCanvasArtifactFromSource(input: {
       .filter(d => d.severity === 'error')
       .map(d => (d.file ? `${d.file}: ${d.message}` : d.message))
       .join('; ')
+    emitValidationFailureProgress({
+      artifactId,
+      title: compileTitle,
+      source: 'create',
+      startedAt,
+      errorMessage: errorDetails || 'Source validation failed',
+      onProgress: input.onProgress
+    })
     return {
       ok: false,
       error: `Source validation failed: ${errorDetails}`,
@@ -231,12 +310,14 @@ export async function createCanvasArtifactFromSource(input: {
 
   // Compile BEFORE inserting to DB. This ensures failed compilations don't
   // leave a DB row that blocks retries with "artifact-already-exists".
-  // Use a temporary ID for the compile step (the real ID is assigned on insert).
-  const tempArtifactId = generateId()
   const compileResult = await compileCanvasArtifact({
     source: processedSource,
-    artifactId: tempArtifactId,
-    revisionId: '0'
+    artifactId,
+    revisionId: '0',
+    title: compileTitle,
+    sourceType: 'create',
+    startedAt,
+    onProgress: input.onProgress
   })
 
   if (!compileResult.ok) {
@@ -247,7 +328,7 @@ export async function createCanvasArtifactFromSource(input: {
 
     logCompileFailure({
       operation: 'create',
-      artifactId: tempArtifactId,
+      artifactId,
       draftRevision: 0,
       compileResult
     })
@@ -271,10 +352,10 @@ export async function createCanvasArtifactFromSource(input: {
   let artifact
   try {
     artifact = await dbCreateCanvasArtifact({
-      id: tempArtifactId,
+      id: artifactId,
       chatId: input.chatId,
       userId: input.userId,
-      title: input.title ?? 'Untitled',
+      title: compileTitle,
       draftSource: processedSource,
       status: 'ready'
     })
@@ -333,8 +414,11 @@ export async function updateCanvasArtifactDraftFromSource(input: {
   expectedRevision: number
   draftSource: CanvasSourceFiles
   userId?: string | null
+  title?: string
+  onProgress?: (payload: CanvasCompileProgressPayload) => void
 }): Promise<CanvasServiceResult> {
   const processedSource = runPreProcessors(input.draftSource)
+  const startedAt = new Date().toISOString()
 
   // Validate source — include diagnostics so the model can self-correct
   const validation = validateCanvasSource(processedSource)
@@ -343,6 +427,14 @@ export async function updateCanvasArtifactDraftFromSource(input: {
       .filter(d => d.severity === 'error')
       .map(d => (d.file ? `${d.file}: ${d.message}` : d.message))
       .join('; ')
+    emitValidationFailureProgress({
+      artifactId: input.artifactId,
+      title: input.title ?? CREATE_COMPILE_TITLE,
+      source: 'update',
+      startedAt,
+      errorMessage: errorDetails || 'Source validation failed',
+      onProgress: input.onProgress
+    })
     return {
       ok: false,
       error: `Source validation failed: ${errorDetails}`,
@@ -371,7 +463,11 @@ export async function updateCanvasArtifactDraftFromSource(input: {
   const compileResult = await compileCanvasArtifact({
     source: processedSource,
     artifactId: input.artifactId,
-    revisionId: String(updated.draftRevision)
+    revisionId: String(updated.draftRevision),
+    title: updated.title,
+    sourceType: 'update',
+    startedAt,
+    onProgress: input.onProgress
   })
 
   const status: CanvasArtifactStatus = compileResult.ok
