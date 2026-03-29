@@ -70,23 +70,22 @@ function extractLocalBindings(importClause: string): string[] | null {
   return null
 }
 
-function isBindingUsed(binding: string, sourceWithoutImport: string): boolean {
-  const sourceSansCommentsAndStrings = sourceWithoutImport
+function stripUnusedUnsupportedImports(fileSource: string): string {
+  const lines = fileSource.split('\n')
+
+  // Build the non-import body once and strip comments/strings once for all
+  // binding checks. This avoids O(n²) string reconstruction per import line.
+  const nonImportBody = lines
+    .filter(line => !SINGLE_LINE_IMPORT_PATTERN.test(line))
+    .join('\n')
+  const sanitizedBody = nonImportBody
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/\/\/[^\n]*/g, '')
     .replace(/'(?:\\.|[^'\\])*'/g, "''")
     .replace(/"(?:\\.|[^"\\])*"/g, '""')
 
-  const pattern = new RegExp(`\\b${escapeRegExp(binding)}\\b`)
-
-  return pattern.test(sourceSansCommentsAndStrings)
-}
-
-function stripUnusedUnsupportedImports(fileSource: string): string {
-  const lines = fileSource.split('\n')
-
   return lines
-    .map((line, index) => {
+    .map(line => {
       const match = line.match(SINGLE_LINE_IMPORT_PATTERN)
       if (!match) {
         return line
@@ -102,12 +101,11 @@ function stripUnusedUnsupportedImports(fileSource: string): string {
         return line
       }
 
-      const sourceWithoutImport = lines
-        .filter((_, candidateIndex) => candidateIndex !== index)
-        .join('\n')
-
       if (
-        bindings.some(binding => isBindingUsed(binding, sourceWithoutImport))
+        bindings.some(binding => {
+          const pattern = new RegExp(`\\b${escapeRegExp(binding)}\\b`)
+          return pattern.test(sanitizedBody)
+        })
       ) {
         return line
       }
