@@ -133,6 +133,21 @@ export default function App() {
     expect(result).toEqual(source)
   })
 
+  it('preserves disallowed imports when a referenced binding contains $', () => {
+    const source: CanvasSourceFiles = {
+      'App.tsx': `
+import { Badge as $Badge } from '@acme/ui'
+export default function App() {
+  return <$Badge />
+}
+      `
+    }
+
+    const result = fixHallucinatedImports(source)
+
+    expect(result).toEqual(source)
+  })
+
   it('does not count comments as binding usage', () => {
     const source: CanvasSourceFiles = {
       'App.tsx': `

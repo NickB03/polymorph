@@ -103,7 +103,9 @@ function stripUnusedUnsupportedImports(fileSource: string): string {
 
       if (
         bindings.some(binding => {
-          const pattern = new RegExp(`\\b${escapeRegExp(binding)}\\b`)
+          const pattern = new RegExp(
+            `(?<![A-Za-z0-9_$])${escapeRegExp(binding)}(?![A-Za-z0-9_$])`
+          )
           return pattern.test(sanitizedBody)
         })
       ) {
