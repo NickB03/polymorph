@@ -133,6 +133,21 @@ export default function App() {
     expect(result).toEqual(source)
   })
 
+  it('preserves disallowed imports when a referenced binding contains $', () => {
+    const source: CanvasSourceFiles = {
+      'App.tsx': `
+import { Badge as $Badge } from '@acme/ui'
+export default function App() {
+  return <$Badge />
+}
+      `
+    }
+
+    const result = fixHallucinatedImports(source)
+
+    expect(result).toEqual(source)
+  })
+
   it('does not count comments as binding usage', () => {
     const source: CanvasSourceFiles = {
       'App.tsx': `
@@ -162,6 +177,21 @@ export default function App() {
     const result = fixHallucinatedImports(source)
 
     expect(result['App.tsx']).not.toContain("import { Badge } from '@acme/ui'")
+  })
+
+  it('preserves unsupported imports when a URL literal and binding share a line', () => {
+    const source: CanvasSourceFiles = {
+      'App.tsx': `
+import { Badge } from '@acme/ui'
+export default function App() {
+  return <div>{fn("https://example.com", Badge)}</div>
+}
+      `
+    }
+
+    const result = fixHallucinatedImports(source)
+
+    expect(result).toEqual(source)
   })
 
   it('ignores CSS and non-TSX files', () => {

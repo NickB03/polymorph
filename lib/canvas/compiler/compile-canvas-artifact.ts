@@ -1,6 +1,9 @@
 import * as esbuild from 'esbuild'
 
-import { CANVAS_MAX_COMPILED_HTML_SIZE } from '@/lib/canvas/constants'
+import {
+  CANVAS_COMPILE_TIMEOUT_MS,
+  CANVAS_MAX_COMPILED_HTML_SIZE
+} from '@/lib/canvas/constants'
 import type {
   CanvasDiagnostic,
   CanvasExternalDependency,
@@ -22,6 +25,8 @@ export type CompileCanvasArtifactInput = {
   nonce?: string
   /** Override for testing — defaults to CANVAS_MAX_COMPILED_HTML_SIZE */
   maxCompiledHtmlSize?: number
+  /** Override for testing — defaults to CANVAS_COMPILE_TIMEOUT_MS */
+  timeoutMs?: number
 }
 
 export type CompileCanvasArtifactResult = {
@@ -219,6 +224,7 @@ export async function compileCanvasArtifact(
 ): Promise<CompileCanvasArtifactResult> {
   const { source, artifactId, revisionId, nonce, maxCompiledHtmlSize } = input
   const sizeLimit = maxCompiledHtmlSize ?? CANVAS_MAX_COMPILED_HTML_SIZE
+  const timeoutMs = input.timeoutMs ?? CANVAS_COMPILE_TIMEOUT_MS
   const debugEnabled = process.env.DEBUG_CANVAS_COMPILER === '1'
 
   if (debugEnabled) {
@@ -240,6 +246,55 @@ export async function compileCanvasArtifact(
       externalDependencies: validation.externalDependencies
     }
   }
+
+  // Run the compilation pipeline under a timeout so serverless functions
+  // fail gracefully instead of hanging until the platform kills them.
+  return new Promise<CompileCanvasArtifactResult>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      resolve({
+        ok: false,
+        diagnostics: [
+          {
+            severity: 'error',
+            message: `Compilation timed out after ${timeoutMs / 1000}s. The artifact may be too complex — try reducing the number of components or splitting into smaller files.`
+          }
+        ],
+        externalDependencies: validation.externalDependencies
+      })
+    }, timeoutMs)
+
+    compileCanvasArtifactCore({
+      source,
+      validation,
+      artifactId,
+      revisionId,
+      nonce,
+      sizeLimit,
+      debugEnabled
+    })
+      .then(resolve, reject)
+      .finally(() => clearTimeout(timer))
+  })
+}
+
+async function compileCanvasArtifactCore(ctx: {
+  source: CanvasSourceFiles
+  validation: { externalDependencies: CanvasExternalDependency[] }
+  artifactId?: string
+  revisionId?: string
+  nonce?: string
+  sizeLimit: number
+  debugEnabled: boolean
+}): Promise<CompileCanvasArtifactResult> {
+  const {
+    source,
+    validation,
+    artifactId,
+    revisionId,
+    nonce,
+    sizeLimit,
+    debugEnabled
+  } = ctx
 
   // Step 2: Bundle with esbuild
   let bundledJs: string

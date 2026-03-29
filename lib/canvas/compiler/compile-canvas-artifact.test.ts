@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { compileCanvasArtifact } from './compile-canvas-artifact'
 
@@ -134,6 +134,53 @@ export default function App() {
     expect(result.html).toContain('asset-error')
     // Should include external request error listener
     expect(result.html).toContain('external-request-error')
+  })
+
+  it('clears the timeout handle after a successful compile', async () => {
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
+
+    try {
+      const result = await compileCanvasArtifact({
+        source: {
+          'App.tsx': 'export default function App() { return <div>Hi</div> }'
+        },
+        timeoutMs: 1_000
+      })
+
+      expect(result.ok).toBe(true)
+      expect(clearTimeoutSpy).toHaveBeenCalled()
+    } finally {
+      clearTimeoutSpy.mockRestore()
+    }
+  })
+
+  it('returns a timeout diagnostic when compilation exceeds timeoutMs', async () => {
+    vi.useFakeTimers()
+
+    try {
+      const compilePromise = compileCanvasArtifact({
+        source: {
+          'App.tsx': 'export default function App() { return <div>Hi</div> }'
+        },
+        timeoutMs: 1
+      })
+
+      await vi.advanceTimersByTimeAsync(1)
+
+      const result = await compilePromise
+
+      expect(result.ok).toBe(false)
+      expect(result.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            severity: 'error',
+            message: expect.stringContaining('timed out')
+          })
+        ])
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   // ── Output size limit ───────────────────────────────────────────────

@@ -10,6 +10,7 @@ import { checkAndEnforceCanvasLimit } from '@/lib/rate-limit/canvas-limits'
 import { jsonError } from '@/lib/utils/json-error'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 const canvasSourceSchema = z.record(z.string().min(1), z.string())
 
