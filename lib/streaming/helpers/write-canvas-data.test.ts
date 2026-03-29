@@ -55,15 +55,42 @@ describe('createCanvasEmitter', () => {
 
     emitter.emitCanvasArtifactEvent({
       artifactId: 'art-1',
-      event: 'preview-loaded',
-      payload: { url: 'http://localhost' }
+      event: 'compile-progress',
+      payload: {
+        artifactId: 'art-1',
+        title: 'Test',
+        source: 'create',
+        startedAt: '2026-03-28T22:00:00.000Z',
+        steps: [
+          {
+            id: 'validate',
+            label: 'Validating source',
+            status: 'in-progress'
+          },
+          {
+            id: 'bundle',
+            label: 'Building React components',
+            status: 'pending'
+          },
+          {
+            id: 'tailwind',
+            label: 'Compiling Tailwind styles',
+            status: 'pending'
+          },
+          {
+            id: 'assemble',
+            label: 'Bundling output',
+            status: 'pending'
+          }
+        ]
+      }
     })
 
     expect(writer.write).toHaveBeenCalledTimes(1)
     const call = writer.write.mock.calls[0][0]
     expect(call.type).toBe('data-canvasArtifactEvent')
     expect(call.transient).toBe(true)
-    expect(call.data.event).toBe('preview-loaded')
+    expect(call.data.event).toBe('compile-progress')
   })
 
   it('emitCanvasDiagnostics writes a transient data-canvasDiagnostics part', () => {

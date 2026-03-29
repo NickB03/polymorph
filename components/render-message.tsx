@@ -205,6 +205,21 @@ function getLatestPersistedCanvasArtifactPartIndexes(
   return latestIndexes
 }
 
+function getLatestCanvasArtifactStatuses(parts: UIMessage['parts']) {
+  const latestStatuses = new Map<string, CanvasArtifactStatusData>()
+
+  for (const part of parts || []) {
+    if (part.type !== 'data-canvasArtifactStatus') continue
+
+    const data = (part as { data?: CanvasArtifactStatusData }).data
+    if (data?.artifactId) {
+      latestStatuses.set(data.artifactId, data)
+    }
+  }
+
+  return latestStatuses
+}
+
 interface RenderMessageProps {
   message: UIMessage
   messageId: string
@@ -284,6 +299,9 @@ export function RenderMessage({
   const renderParts = normalizeRenderableParts(message.parts)
   const latestPersistedCanvasArtifactPartIndexes =
     getLatestPersistedCanvasArtifactPartIndexes(renderParts)
+  const latestCanvasArtifactStatuses = getLatestCanvasArtifactStatuses(
+    message.parts
+  )
 
   // Interleave text parts with grouped non-text segments
   const elements: React.ReactNode[] = []
@@ -607,11 +625,23 @@ export function RenderMessage({
         // No matching data part — render card with onClick
         const cardData = tryParseCanvasArtifactCardData(toolPart.output)
         if (cardData) {
+          const latestStatus = latestCanvasArtifactStatuses.get(
+            cardData.artifactId
+          )
           flushBuffer(`seg-${index}`)
           elements.push(
             <CanvasArtifactCard
               key={`${messageId}-canvas-tool-${index}`}
-              data={cardData}
+              data={
+                latestStatus
+                  ? {
+                      ...cardData,
+                      status: latestStatus.status,
+                      draftRevision: latestStatus.draftRevision,
+                      currentVersionId: latestStatus.currentVersionId
+                    }
+                  : cardData
+              }
               onClick={
                 onCanvasArtifactClick
                   ? () => onCanvasArtifactClick(cardData.artifactId)
@@ -633,10 +663,22 @@ export function RenderMessage({
         latestPersistedCanvasArtifactPartIndexes.get(canvasData.artifactId) ===
           index
       ) {
+        const latestStatus = latestCanvasArtifactStatuses.get(
+          canvasData.artifactId
+        )
         elements.push(
           <CanvasArtifactCard
             key={`${messageId}-canvas-artifact-${index}`}
-            data={canvasData}
+            data={
+              latestStatus
+                ? {
+                    ...canvasData,
+                    status: latestStatus.status,
+                    draftRevision: latestStatus.draftRevision,
+                    currentVersionId: latestStatus.currentVersionId
+                  }
+                : canvasData
+            }
             onClick={
               onCanvasArtifactClick
                 ? () => onCanvasArtifactClick(canvasData.artifactId)
@@ -697,10 +739,22 @@ export function RenderMessage({
         // Render card directly with onClick wired up
         const cardData = tryParseCanvasArtifactCardData(dynamicToolPart.output)
         if (cardData) {
+          const latestStatus = latestCanvasArtifactStatuses.get(
+            cardData.artifactId
+          )
           elements.push(
             <CanvasArtifactCard
               key={`${messageId}-dynamic-tool-${index}`}
-              data={cardData}
+              data={
+                latestStatus
+                  ? {
+                      ...cardData,
+                      status: latestStatus.status,
+                      draftRevision: latestStatus.draftRevision,
+                      currentVersionId: latestStatus.currentVersionId
+                    }
+                  : cardData
+              }
               onClick={
                 onCanvasArtifactClick
                   ? () => onCanvasArtifactClick(cardData.artifactId)

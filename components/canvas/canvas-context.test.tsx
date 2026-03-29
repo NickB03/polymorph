@@ -27,7 +27,7 @@ function makeArtifactState(
 }
 
 function Harness() {
-  const canvas = useCanvas()
+  const canvas = useCanvas() as any
 
   return (
     <div>
@@ -42,7 +42,18 @@ function Harness() {
         open-guest
       </button>
       <button onClick={() => canvas.focusCanvasArtifact('art-1')}>focus</button>
+      <button
+        onClick={() =>
+          canvas.setPendingWorkspace({
+            artifactId: 'art-pending',
+            title: 'Pending Canvas'
+          })
+        }
+      >
+        pending
+      </button>
       <div data-testid="artifact-id">{canvas.artifact?.artifactId ?? ''}</div>
+      <div data-testid="workspace-open">{String(canvas.isWorkspaceOpen)}</div>
     </div>
   )
 }
@@ -120,5 +131,21 @@ describe('CanvasProvider', () => {
     fireEvent.click(screen.getByText('focus'))
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('treats a pending workspace as open before artifact persistence', async () => {
+    render(
+      <CanvasProvider>
+        <Harness />
+      </CanvasProvider>
+    )
+
+    expect(screen.getByTestId('workspace-open')).toHaveTextContent('false')
+
+    fireEvent.click(screen.getByText('pending'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('workspace-open')).toHaveTextContent('true')
+    })
   })
 })

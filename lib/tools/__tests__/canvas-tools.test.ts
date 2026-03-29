@@ -32,6 +32,15 @@ vi.mock('@/lib/canvas/constants', async () => {
   return actual
 })
 
+vi.mock('@/lib/db/schema', async () => {
+  const actual =
+    await vi.importActual<typeof import('@/lib/db/schema')>('@/lib/db/schema')
+  return {
+    ...actual,
+    generateId: () => 'art-pending'
+  }
+})
+
 import type {
   CanvasEmitter,
   CanvasToolContext
@@ -148,12 +157,12 @@ describe('createCanvasArtifactTool', () => {
       { toolCallId: 'tc-1', messages: [] }
     )
 
-    // First emit should be generating status
-    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenCalled()
-    const firstStatusCall = (
-      ctx.emitter.emitCanvasArtifactStatus as ReturnType<typeof vi.fn>
-    ).mock.calls[0][0]
-    expect(firstStatusCall.status).toBe('generating')
+    expect(mockCreateCanvasArtifactFromSource).toHaveBeenCalledWith(
+      expect.objectContaining({
+        artifactId: 'art-pending'
+      })
+    )
+    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenCalledTimes(1)
   })
 
   it('returns conflict when chat has existing artifact', async () => {
@@ -197,9 +206,27 @@ describe('createCanvasArtifactTool', () => {
       draftRevision: 2
     })
 
-    // Should emit: generating status, artifact, final status
-    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenCalledTimes(2)
+    // Should emit: artifact, final status
+    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenCalledTimes(1)
     expect(ctx.emitter.emitCanvasArtifact).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not emit a persisted generating status before create persistence exists', async () => {
+    const ctx = createCtx()
+    mockCreateCanvasArtifactFromSource.mockResolvedValue({
+      ok: false,
+      error: 'Compilation failed: Syntax error',
+      errorCode: 'compile-failed'
+    })
+
+    const toolInstance = createCanvasArtifactTool(ctx)
+    await toolInstance.execute!(
+      { files: SAMPLE_FILES },
+      { toolCallId: 'tc-1', messages: [] }
+    )
+
+    expect(ctx.emitter.emitCanvasArtifactStatus).not.toHaveBeenCalled()
+    expect(ctx.emitter.emitCanvasArtifact).not.toHaveBeenCalled()
   })
 
   it('includes guestCanvasToken in status for guest flows', async () => {
@@ -494,5 +521,41 @@ describe('updateCanvasArtifactTool', () => {
       error: 'Artifact not found',
       errorCode: 'not-found'
     })
+  })
+
+  it('emits compile_failed status when update compilation fails', async () => {
+    const ctx = createCtx()
+    mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
+    mockUpdateCanvasArtifactDraftFromSource.mockResolvedValue({
+      ok: false,
+      artifact: {
+        ...READY_ARTIFACT,
+        status: 'compile_failed',
+        draftRevision: 3
+      },
+      error: 'Compilation failed: Tailwind CSS error',
+      errorCode: 'compile-failed'
+    })
+
+    const toolInstance = updateCanvasArtifactTool(ctx)
+    const result = await toolInstance.execute!(
+      {
+        artifactId: 'art-1',
+        baseRevision: 2,
+        files: SAMPLE_FILES
+      },
+      { toolCallId: 'tc-1', messages: [] }
+    )
+
+    expect(result).toMatchObject({
+      status: 'compile_failed',
+      errorCode: 'compile-failed'
+    })
+    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        artifactId: 'art-1',
+        status: 'compile_failed'
+      })
+    )
   })
 })

@@ -6,6 +6,7 @@ import { injectViewportFitStyles } from '@/lib/canvas/inject-viewport-fit'
 import type { CanvasArtifactState } from '@/lib/canvas/service'
 import type { CanvasDiagnostic } from '@/lib/types/canvas'
 
+import { CanvasCompileProgress } from './canvas-compile-progress'
 import { useCanvas } from './canvas-context'
 
 // ── Constants ─────────────────────────────────────────────────────────
@@ -73,9 +74,38 @@ function toDiagnostic(
 
 export function CanvasPreview() {
   const canvas = useCanvas()
-  const { artifact, guestCanvasToken, setArtifact } = canvas
+  const {
+    artifact,
+    guestCanvasToken,
+    pendingWorkspace,
+    compileProgress,
+    requestCanvasAiUpdate,
+    clearCompileProgress,
+    setArtifact
+  } = canvas
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const nonceRef = useRef(generateNonce())
+  const successClearTimeoutRef = useRef<number | null>(null)
+  const artifactId = artifact?.artifactId ?? null
+  const pendingArtifactId = pendingWorkspace?.artifactId ?? null
+
+  const activeCompileProgress = useMemo(() => {
+    if (!compileProgress) return null
+
+    if (artifactId === compileProgress.artifactId) {
+      return compileProgress
+    }
+
+    if (pendingArtifactId === compileProgress.artifactId) {
+      return compileProgress
+    }
+
+    if (!artifactId && !pendingArtifactId) {
+      return compileProgress
+    }
+
+    return null
+  }, [artifactId, compileProgress, pendingArtifactId])
 
   // Rotate nonce when draftCompiledHtml changes
   const prevHtmlRef = useRef(artifact?.draftCompiledHtml)
@@ -136,7 +166,21 @@ export function CanvasPreview() {
     }
 
     iframeRef.current.contentWindow.postMessage(initMessage, '*')
-  }, [artifact])
+
+    if (
+      activeCompileProgress?.outcome === 'success' &&
+      activeCompileProgress.artifactId === artifact.artifactId
+    ) {
+      if (successClearTimeoutRef.current) {
+        window.clearTimeout(successClearTimeoutRef.current)
+      }
+
+      successClearTimeoutRef.current = window.setTimeout(() => {
+        clearCompileProgress()
+        successClearTimeoutRef.current = null
+      }, 600)
+    }
+  }, [activeCompileProgress, artifact, clearCompileProgress])
 
   // ── Listen for messages from the iframe ────────────────────────
 
@@ -188,6 +232,28 @@ export function CanvasPreview() {
     return () => window.removeEventListener('message', handleMessage)
   }, [artifact, postRuntimeDiagnostics])
 
+  useEffect(() => {
+    if (activeCompileProgress?.outcome !== 'success' || !artifact) {
+      if (successClearTimeoutRef.current) {
+        window.clearTimeout(successClearTimeoutRef.current)
+        successClearTimeoutRef.current = null
+      }
+      return
+    }
+
+    successClearTimeoutRef.current = window.setTimeout(() => {
+      clearCompileProgress()
+      successClearTimeoutRef.current = null
+    }, 1500)
+
+    return () => {
+      if (successClearTimeoutRef.current) {
+        window.clearTimeout(successClearTimeoutRef.current)
+        successClearTimeoutRef.current = null
+      }
+    }
+  }, [activeCompileProgress?.outcome, artifact, clearCompileProgress])
+
   // ── Render ─────────────────────────────────────────────────────
 
   const srcdoc = useMemo(
@@ -195,17 +261,61 @@ export function CanvasPreview() {
     [artifact?.draftCompiledHtml]
   )
 
-  if (!artifact) return null
+  const handleAskAiToFix = useCallback(() => {
+    if (!activeCompileProgress) return
+
+    const diagnostics =
+      artifact?.draftDiagnostics?.compile
+        ?.map(diagnostic => diagnostic.message)
+        .filter(Boolean)
+        .join('\n') ?? ''
+    const failureDetails =
+      activeCompileProgress.errorMessage ||
+      diagnostics ||
+      'No additional diagnostics were provided.'
+
+    requestCanvasAiUpdate(
+      [
+        `The latest canvas ${activeCompileProgress.source} failed to compile.`,
+        `Artifact ID: ${activeCompileProgress.artifactId}`,
+        `Title: ${activeCompileProgress.title}`,
+        `Error: ${failureDetails}`,
+        'Please fix the source and try again.'
+      ].join('\n')
+    )
+  }, [
+    activeCompileProgress,
+    artifact?.draftDiagnostics?.compile,
+    requestCanvasAiUpdate
+  ])
+
+  if (!artifact && !activeCompileProgress) return null
 
   return (
-    <iframe
-      ref={iframeRef}
-      title="Canvas preview"
-      srcDoc={srcdoc}
-      sandbox="allow-scripts"
-      onLoad={handleIframeLoad}
-      className="h-full w-full border-0 overflow-hidden"
-      data-testid="canvas-preview-iframe"
-    />
+    <div className="relative h-full w-full">
+      {artifact ? (
+        <iframe
+          ref={iframeRef}
+          title="Canvas preview"
+          srcDoc={srcdoc}
+          sandbox="allow-scripts"
+          onLoad={handleIframeLoad}
+          className="h-full w-full border-0 overflow-hidden"
+          data-testid="canvas-preview-iframe"
+        />
+      ) : null}
+
+      {activeCompileProgress ? (
+        <CanvasCompileProgress
+          progress={activeCompileProgress}
+          hasPreview={!!artifact}
+          onAskAiToFix={
+            activeCompileProgress.outcome === 'failed'
+              ? handleAskAiToFix
+              : undefined
+          }
+        />
+      ) : null}
+    </div>
   )
 }

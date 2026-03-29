@@ -119,6 +119,50 @@ describe('Canvas Service', () => {
   })
 
   describe('createCanvasArtifactFromSource', () => {
+    it('uses the provided artifactId for compile and persistence', async () => {
+      mockLoadCanvasArtifactByChatId.mockResolvedValue(null)
+      mockCreateCanvasArtifact.mockResolvedValue(
+        makeArtifactRow({ id: 'art-pre' })
+      )
+      mockCompile.mockResolvedValue({
+        ok: true,
+        html: '<html>compiled</html>',
+        diagnostics: [],
+        externalDependencies: []
+      })
+      mockUpdateCanvasArtifactDraft.mockResolvedValue(
+        makeArtifactRow({ id: 'art-pre', draftRevision: 1 })
+      )
+      mockCreateCanvasArtifactVersion.mockResolvedValue(makeVersionRow())
+      mockLoadCanvasArtifactById.mockResolvedValue(
+        makeArtifactRow({
+          id: 'art-pre',
+          draftRevision: 2,
+          currentVersionId: 'ver-1'
+        })
+      )
+
+      const result = await createCanvasArtifactFromSource({
+        artifactId: 'art-pre',
+        chatId: 'chat-1',
+        userId: 'user-1',
+        title: 'My App',
+        draftSource: validSource
+      })
+
+      expect(result.ok).toBe(true)
+      expect(mockCompile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          artifactId: 'art-pre'
+        })
+      )
+      expect(mockCreateCanvasArtifact).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'art-pre'
+        })
+      )
+    })
+
     it('creates artifact and compiles successfully', async () => {
       mockLoadCanvasArtifactByChatId.mockResolvedValue(null)
       mockCreateCanvasArtifact.mockResolvedValue(makeArtifactRow())
@@ -204,9 +248,71 @@ describe('Canvas Service', () => {
       // Should not create a version on compile failure
       expect(mockCreateCanvasArtifactVersion).not.toHaveBeenCalled()
     })
+
+    it('emits failed validate progress when service-level validation fails', async () => {
+      const onProgress = vi.fn()
+      const { validateCanvasSource } =
+        await import('@/lib/canvas/validation/validate-canvas-source')
+      vi.mocked(validateCanvasSource).mockReturnValueOnce({
+        ok: false,
+        diagnostics: [{ severity: 'error', message: 'Missing App export' }],
+        externalDependencies: []
+      } as any)
+
+      const result = await createCanvasArtifactFromSource({
+        artifactId: 'art-validate',
+        chatId: 'chat-1',
+        userId: 'user-1',
+        draftSource: validSource,
+        onProgress
+      })
+
+      expect(result.ok).toBe(false)
+      expect(mockCompile).not.toHaveBeenCalled()
+      expect(onProgress).toHaveBeenCalledTimes(2)
+      expect(onProgress.mock.calls[1][0]).toEqual(
+        expect.objectContaining({
+          artifactId: 'art-validate',
+          outcome: 'failed',
+          steps: expect.arrayContaining([
+            expect.objectContaining({ id: 'validate', status: 'failed' })
+          ])
+        })
+      )
+    })
   })
 
   describe('updateCanvasArtifactDraftFromSource', () => {
+    it('passes onProgress through to compile', async () => {
+      const onProgress = vi.fn()
+      mockUpdateCanvasArtifactDraft
+        .mockResolvedValueOnce(makeArtifactRow({ draftRevision: 1 }))
+        .mockResolvedValueOnce(makeArtifactRow({ draftRevision: 2 }))
+      mockCompile.mockResolvedValue({
+        ok: true,
+        html: '<html>updated</html>',
+        diagnostics: [],
+        externalDependencies: []
+      })
+      mockLoadCanvasArtifactById.mockResolvedValue(
+        makeArtifactRow({ draftRevision: 2 })
+      )
+
+      await updateCanvasArtifactDraftFromSource({
+        artifactId: 'art-1',
+        expectedRevision: 0,
+        draftSource: validSource,
+        onProgress
+      })
+
+      expect(mockCompile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          artifactId: 'art-1',
+          onProgress
+        })
+      )
+    })
+
     it('updates draft and compiles successfully', async () => {
       mockUpdateCanvasArtifactDraft
         .mockResolvedValueOnce(makeArtifactRow({ draftRevision: 1 }))

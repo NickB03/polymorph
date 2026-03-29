@@ -99,7 +99,13 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
         artifactId,
         expectedRevision: baseRevision,
         draftSource,
-        userId: ctx.userId
+        userId: ctx.userId,
+        onProgress: payload =>
+          ctx.emitter.emitCanvasArtifactEvent({
+            artifactId: payload.artifactId,
+            event: 'compile-progress',
+            payload
+          })
       })
 
       // Handle stale revision conflict
@@ -136,6 +142,16 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
         console.error(
           `[updateCanvasArtifact] Failed: chatId=${ctx.chatId}, artifactId=${artifactId}, error=${result.error}, errorCode=${result.errorCode}`
         )
+        if (result.artifact?.status === 'compile_failed') {
+          ctx.emitter.emitCanvasArtifactStatus({
+            artifactId: result.artifact.artifactId,
+            chatId: result.artifact.chatId,
+            status: 'compile_failed',
+            draftRevision: result.artifact.draftRevision,
+            currentVersionId: result.artifact.currentVersionId,
+            updatedAt: result.artifact.updatedAt
+          })
+        }
         return {
           artifactId,
           chatId: currentState.chatId,

@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { assembleCanvasHtml } from '@/lib/canvas/compiler/assemble-canvas-html'
@@ -18,6 +18,8 @@ const mockCanvasContext: CanvasContextValue = {
   isWorkspaceOpen: false,
   legacyNotice: null,
   guestCanvasToken: null,
+  pendingWorkspace: null as any,
+  compileProgress: null as any,
   openCanvasArtifact: vi.fn(),
   focusCanvasArtifact: vi.fn(),
   openLegacyCanvasNotice: vi.fn(),
@@ -25,6 +27,10 @@ const mockCanvasContext: CanvasContextValue = {
   requestCanvasAiUpdate: vi.fn(),
   reloadArtifact: vi.fn(),
   setGuestCanvasToken: vi.fn(),
+  setPendingWorkspace: vi.fn() as any,
+  clearPendingWorkspace: vi.fn() as any,
+  setCompileProgress: vi.fn() as any,
+  clearCompileProgress: vi.fn() as any,
   setArtifact: vi.fn(),
   updateDraft: vi.fn(),
   saveVersion: vi.fn(),
@@ -70,8 +76,15 @@ function resetCanvasState() {
     isWorkspaceOpen: false,
     legacyNotice: null,
     guestCanvasToken: null,
+    pendingWorkspace: null,
+    compileProgress: null,
+    requestCanvasAiUpdate: vi.fn(),
     setArtifact: vi.fn(),
-    reloadArtifact: vi.fn()
+    reloadArtifact: vi.fn(),
+    setPendingWorkspace: vi.fn(),
+    clearPendingWorkspace: vi.fn(),
+    setCompileProgress: vi.fn(),
+    clearCompileProgress: vi.fn()
   })
   vi.clearAllMocks()
 }
@@ -157,6 +170,48 @@ describe('CanvasPreview', () => {
     expect(container.innerHTML).toBe('')
   })
 
+  it('renders compile progress for a pending create before artifact persistence', () => {
+    setCanvasState({
+      pendingWorkspace: {
+        artifactId: 'art-pending',
+        title: 'Canvas Artifact'
+      } as any,
+      compileProgress: {
+        artifactId: 'art-pending',
+        title: 'Canvas Artifact',
+        source: 'create',
+        startedAt: '2026-03-28T23:00:00.000Z',
+        steps: [
+          {
+            id: 'validate',
+            label: 'Validating source',
+            status: 'in-progress'
+          },
+          {
+            id: 'bundle',
+            label: 'Building React components',
+            status: 'pending'
+          },
+          {
+            id: 'tailwind',
+            label: 'Compiling Tailwind styles',
+            status: 'pending'
+          },
+          {
+            id: 'assemble',
+            label: 'Bundling output',
+            status: 'pending'
+          }
+        ]
+      } as any
+    })
+
+    render(<CanvasPreview />)
+
+    expect(screen.getByText('Validating source')).toBeInTheDocument()
+    expect(screen.queryByTitle(/canvas preview/i)).not.toBeInTheDocument()
+  })
+
   it('uses empty string for srcdoc when draftCompiledHtml is null', () => {
     const artifact = makeArtifact({ draftCompiledHtml: null })
     setCanvasState({ artifact, artifactId: artifact.artifactId })
@@ -235,6 +290,93 @@ window.__CANVAS_APP__ = { default: function App() { return null } }
     expect(frame).toHaveAttribute(
       'srcdoc',
       '<html><body>Last good build</body></html>'
+    )
+  })
+
+  it('renders compile progress as an overlay over the existing preview during update', () => {
+    const artifact = makeArtifact({ status: 'compiling' })
+    setCanvasState({
+      artifact,
+      artifactId: artifact.artifactId,
+      compileProgress: {
+        artifactId: 'art-1',
+        title: artifact.title,
+        source: 'update',
+        startedAt: '2026-03-28T23:00:00.000Z',
+        steps: [
+          {
+            id: 'validate',
+            label: 'Validating source',
+            status: 'completed'
+          },
+          {
+            id: 'bundle',
+            label: 'Building React components',
+            status: 'in-progress'
+          },
+          {
+            id: 'tailwind',
+            label: 'Compiling Tailwind styles',
+            status: 'pending'
+          },
+          {
+            id: 'assemble',
+            label: 'Bundling output',
+            status: 'pending'
+          }
+        ]
+      } as any
+    })
+
+    render(<CanvasPreview />)
+
+    expect(screen.getByTitle(/canvas preview/i)).toBeInTheDocument()
+    expect(screen.getByText('Building React components')).toBeInTheDocument()
+  })
+
+  it('shows an Ask AI to fix action for failed compile progress', () => {
+    const artifact = makeArtifact({ status: 'compile_failed' })
+    setCanvasState({
+      artifact,
+      artifactId: artifact.artifactId,
+      compileProgress: {
+        artifactId: 'art-1',
+        title: artifact.title,
+        source: 'update',
+        startedAt: '2026-03-28T23:00:00.000Z',
+        outcome: 'failed',
+        errorMessage: 'Tailwind CSS error',
+        steps: [
+          {
+            id: 'validate',
+            label: 'Validating source',
+            status: 'completed'
+          },
+          {
+            id: 'bundle',
+            label: 'Building React components',
+            status: 'completed'
+          },
+          {
+            id: 'tailwind',
+            label: 'Compiling Tailwind styles',
+            status: 'failed'
+          },
+          {
+            id: 'assemble',
+            label: 'Bundling output',
+            status: 'pending'
+          }
+        ]
+      } as any
+    })
+
+    render(<CanvasPreview />)
+
+    fireEvent.click(screen.getByRole('button', { name: /ask ai to fix/i }))
+
+    expect(mockCanvasContext.requestCanvasAiUpdate).toHaveBeenCalledWith(
+      expect.stringContaining('Tailwind CSS error')
     )
   })
 

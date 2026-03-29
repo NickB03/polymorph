@@ -8,6 +8,7 @@ import {
   createCanvasArtifactFromSource
 } from '@/lib/canvas/service'
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
+import { generateId } from '@/lib/db/schema'
 import { canvasFilesSchema } from '@/lib/tools/canvas-file-schema'
 import type { CanvasSourceFiles } from '@/lib/types/canvas'
 
@@ -53,26 +54,24 @@ export function createCanvasArtifactTool(ctx: CanvasToolContext) {
     inputSchema: CreateCanvasArtifactSchema,
     execute: async ({ title, files }) => {
       const draftSource = files as CanvasSourceFiles
+      const artifactId = generateId()
 
       console.log(
         `[createCanvasArtifact] Tool invoked: chatId=${ctx.chatId}, title=${title ?? '(none)'}, files=[${Object.keys(draftSource).join(', ')}]`
       )
 
-      // Emit generating status immediately so the UI can show a loading state
-      ctx.emitter.emitCanvasArtifactStatus({
-        artifactId: '',
-        chatId: ctx.chatId,
-        status: 'generating',
-        draftRevision: 0,
-        currentVersionId: null,
-        updatedAt: new Date().toISOString()
-      })
-
       const result: CanvasServiceResult = await createCanvasArtifactFromSource({
+        artifactId,
         chatId: ctx.chatId,
         userId: ctx.userId,
         title,
-        draftSource
+        draftSource,
+        onProgress: payload =>
+          ctx.emitter.emitCanvasArtifactEvent({
+            artifactId: payload.artifactId,
+            event: 'compile-progress',
+            payload
+          })
       })
 
       // Handle conflict: chat already has an artifact
@@ -105,7 +104,7 @@ export function createCanvasArtifactTool(ctx: CanvasToolContext) {
           `[createCanvasArtifact] Failed: chatId=${ctx.chatId}, error=${result.error}, errorCode=${result.errorCode}`
         )
         return {
-          artifactId: result.artifact?.artifactId ?? '',
+          artifactId: result.artifact?.artifactId ?? artifactId,
           chatId: ctx.chatId,
           status: result.artifact?.status ?? 'compile_failed',
           draftRevision: result.artifact?.draftRevision ?? 0,
@@ -117,7 +116,7 @@ export function createCanvasArtifactTool(ctx: CanvasToolContext) {
 
       if (!result.artifact) {
         return {
-          artifactId: '',
+          artifactId,
           chatId: ctx.chatId,
           status: 'compile_failed',
           draftRevision: 0,

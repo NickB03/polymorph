@@ -29,6 +29,8 @@ const mockCanvasContext: CanvasContextValue = {
   isWorkspaceOpen: false,
   legacyNotice: null,
   guestCanvasToken: null,
+  pendingWorkspace: null,
+  compileProgress: null,
   openCanvasArtifact: vi.fn(),
   focusCanvasArtifact: vi.fn(),
   openLegacyCanvasNotice: vi.fn(),
@@ -36,6 +38,10 @@ const mockCanvasContext: CanvasContextValue = {
   requestCanvasAiUpdate: vi.fn(),
   reloadArtifact: vi.fn(),
   setGuestCanvasToken: vi.fn(),
+  setPendingWorkspace: vi.fn(),
+  clearPendingWorkspace: vi.fn(),
+  setCompileProgress: vi.fn(),
+  clearCompileProgress: vi.fn(),
   setArtifact: vi.fn(),
   updateDraft: vi.fn(),
   saveVersion: vi.fn(),
@@ -228,7 +234,9 @@ function resetCanvasState() {
     isLoading: false,
     isWorkspaceOpen: false,
     legacyNotice: null,
-    guestCanvasToken: null
+    guestCanvasToken: null,
+    pendingWorkspace: null,
+    compileProgress: null
   })
   Object.assign(mockActivityState, {
     isOpen: false,

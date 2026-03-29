@@ -50,13 +50,14 @@ vi.mock('./tool-ui/canvas-artifact-card', () => ({
     onClick,
     data
   }: {
-    data: { artifactId: string; title?: string }
+    data: { artifactId: string; title?: string; status?: string }
     onClick?: () => void
   }) => (
     <div
       data-testid="canvas-artifact-card"
       data-artifact-id={data.artifactId}
       data-title={data.title}
+      data-status={data.status}
       onClick={onClick}
     />
   ),
@@ -673,6 +674,52 @@ describe('RenderMessage', () => {
     expect(cards[0]).toHaveAttribute(
       'data-title',
       'US Population 2026 Dashboard (Revised)'
+    )
+  })
+
+  it('reconciles the latest hidden artifact status onto the rendered card', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'data-canvasArtifact',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'US Population 2026 Dashboard',
+            status: 'generating',
+            draftRevision: 1,
+            currentVersionId: null
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifactStatus',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            status: 'compile_failed',
+            draftRevision: 2,
+            currentVersionId: null,
+            updatedAt: '2026-03-28T22:00:00.000Z'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('canvas-artifact-card')).toHaveAttribute(
+      'data-status',
+      'compile_failed'
     )
   })
 })

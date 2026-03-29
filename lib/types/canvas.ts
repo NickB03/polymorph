@@ -5,6 +5,35 @@ export type CanvasArtifactStatus =
   | 'compile_failed'
   | 'restoring'
 
+export type CanvasCompileStepId =
+  | 'validate'
+  | 'bundle'
+  | 'tailwind'
+  | 'assemble'
+
+export type CanvasCompileStepStatus =
+  | 'pending'
+  | 'in-progress'
+  | 'completed'
+  | 'failed'
+
+export type CanvasCompileStep = {
+  id: CanvasCompileStepId
+  label: string
+  description?: string
+  status: CanvasCompileStepStatus
+}
+
+export type CanvasCompileProgressPayload = {
+  artifactId: string
+  title: string
+  source: 'create' | 'update'
+  startedAt: string
+  steps: CanvasCompileStep[]
+  outcome?: 'success' | 'failed'
+  errorMessage?: string
+}
+
 export type CanvasVersionCreatedBy = 'ai' | 'user' | 'restore'
 
 export type CanvasDiagnosticSeverity = 'error' | 'warning' | 'info'
