@@ -179,6 +179,21 @@ export default function App() {
     expect(result['App.tsx']).not.toContain("import { Badge } from '@acme/ui'")
   })
 
+  it('preserves unsupported imports when a URL literal and binding share a line', () => {
+    const source: CanvasSourceFiles = {
+      'App.tsx': `
+import { Badge } from '@acme/ui'
+export default function App() {
+  return <div>{fn("https://example.com", Badge)}</div>
+}
+      `
+    }
+
+    const result = fixHallucinatedImports(source)
+
+    expect(result).toEqual(source)
+  })
+
   it('ignores CSS and non-TSX files', () => {
     const source: CanvasSourceFiles = {
       'App.tsx': 'export default function App() { return <div>Hello</div> }',

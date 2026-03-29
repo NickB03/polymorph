@@ -79,10 +79,10 @@ function stripUnusedUnsupportedImports(fileSource: string): string {
     .filter(line => !SINGLE_LINE_IMPORT_PATTERN.test(line))
     .join('\n')
   const sanitizedBody = nonImportBody
+    .replace(/'(?:\\.|[^'\\\r\n])*'/g, "''")
+    .replace(/"(?:\\.|[^"\\\r\n])*"/g, '""')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/\/\/[^\n]*/g, '')
-    .replace(/'(?:\\.|[^'\\])*'/g, "''")
-    .replace(/"(?:\\.|[^"\\])*"/g, '""')
 
   return lines
     .map(line => {
