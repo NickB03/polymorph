@@ -43,10 +43,7 @@ export const CANVAS_DATA_PART_NAMES = {
 } as const
 
 // Allowed imports
-export const CANVAS_ALLOWED_PACKAGE_IMPORTS = [
-  'react',
-  'react-dom/client'
-] as const
+export { CANVAS_ALLOWED_PACKAGE_IMPORTS_LIST as CANVAS_ALLOWED_PACKAGE_IMPORTS } from './allowed-packages'
 
 // Version created by
 export const CANVAS_VERSION_CREATED_BY = ['ai', 'user', 'restore'] as const

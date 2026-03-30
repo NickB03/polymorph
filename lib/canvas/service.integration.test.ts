@@ -78,6 +78,16 @@ export default function App() {
   `
 }
 
+const supportedSubpathImportSource = {
+  'App.tsx': `
+import { enUS } from 'date-fns/locale/en-US'
+
+export default function App() {
+  return <div>{enUS.code}</div>
+}
+  `
+}
+
 function makeArtifactRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 'art-1',
@@ -291,6 +301,31 @@ describe('canvas service compile integration', () => {
     expect(result.artifact?.status).toBe('ready')
   })
 
+  it('preserves supported subpath imports through preprocessing and compilation', async () => {
+    mockLoadCanvasArtifactByChatId.mockResolvedValue(null)
+    mockCreateCanvasArtifact.mockResolvedValue(
+      makeArtifactRow({ draftSource: supportedSubpathImportSource })
+    )
+    mockCreateCanvasArtifactVersion.mockResolvedValue(makeVersionRow())
+    mockLoadCanvasArtifactById.mockResolvedValue(
+      makeArtifactRow({ draftSource: supportedSubpathImportSource })
+    )
+
+    const result = await createCanvasArtifactFromSource({
+      chatId: 'chat-1',
+      userId: 'user-1',
+      draftSource: supportedSubpathImportSource
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.artifact?.status).toBe('ready')
+    expect(mockCreateCanvasArtifact).toHaveBeenCalledWith(
+      expect.objectContaining({
+        draftSource: supportedSubpathImportSource
+      })
+    )
+  })
+
   it('returns actionable validation errors for create when an unsupported import is still referenced', async () => {
     mockLoadCanvasArtifactByChatId.mockResolvedValue(null)
 
@@ -302,7 +337,7 @@ describe('canvas service compile integration', () => {
 
     expect(result.ok).toBe(false)
     expect(result.errorCode).toBe('compile-failed')
-    expect(result.error).toContain('arbitrary npm packages are not allowed')
+    expect(result.error).toContain('is not allowed')
     expect(mockCreateCanvasArtifact).not.toHaveBeenCalled()
   })
 
@@ -316,7 +351,7 @@ describe('canvas service compile integration', () => {
 
     expect(result.ok).toBe(false)
     expect(result.errorCode).toBe('compile-failed')
-    expect(result.error).toContain('arbitrary npm packages are not allowed')
+    expect(result.error).toContain('is not allowed')
     expect(mockUpdateCanvasArtifactDraft).not.toHaveBeenCalled()
   })
 })

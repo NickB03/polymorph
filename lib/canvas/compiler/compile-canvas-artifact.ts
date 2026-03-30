@@ -1,5 +1,6 @@
 import * as esbuild from 'esbuild'
 
+import { isAllowedCanvasImport } from '@/lib/canvas/allowed-packages'
 import {
   CANVAS_COMPILE_TIMEOUT_MS,
   CANVAS_MAX_COMPILED_HTML_SIZE
@@ -41,12 +42,6 @@ export type CompileCanvasArtifactResult = {
   diagnostics: CanvasDiagnostic[]
   externalDependencies: CanvasExternalDependency[]
 }
-
-const ALLOWED_BARE_SPECIFIERS = new Set([
-  'react',
-  'react-dom/client',
-  'react/jsx-runtime'
-])
 
 const COMPILE_STEP_DEFINITIONS: Array<Omit<CanvasCompileStep, 'status'>> = [
   { id: 'validate', label: 'Validating source' },
@@ -148,14 +143,14 @@ function createVirtualPlugin(
 
         // Bare specifiers: allowed ones fall through to esbuild's native
         // resolver (which uses resolveDir from onLoad); block everything else
-        if (ALLOWED_BARE_SPECIFIERS.has(args.path)) {
+        if (isAllowedCanvasImport(args.path)) {
           return undefined
         }
 
         return {
           errors: [
             {
-              text: `Canvas compiler does not allow bare specifier "${args.path}". Only react, react-dom/client, and react/jsx-runtime are permitted.`
+              text: `Canvas compiler does not allow bare specifier "${args.path}". Allowed packages: react, react-dom/client, lucide-react, recharts, motion/react, date-fns.`
             }
           ]
         }

@@ -98,6 +98,61 @@ export default function App() { return <div>Hi</div> }
     expect(result.ok).toBe(true)
   })
 
+  it('allows lucide-react imports', () => {
+    const result = validateCanvasSource({
+      'App.tsx':
+        "import { Search, Home } from 'lucide-react'\nexport default function App() { return <div><Search /><Home /></div> }"
+    })
+
+    expect(result.ok).toBe(true)
+  })
+
+  it('allows recharts imports', () => {
+    const result = validateCanvasSource({
+      'App.tsx':
+        "import { LineChart, Line } from 'recharts'\nexport default function App() { return <LineChart><Line /></LineChart> }"
+    })
+
+    expect(result.ok).toBe(true)
+  })
+
+  it('allows motion/react imports', () => {
+    const result = validateCanvasSource({
+      'App.tsx':
+        "import { motion } from 'motion/react'\nexport default function App() { return <motion.div>Hi</motion.div> }"
+    })
+
+    expect(result.ok).toBe(true)
+  })
+
+  it('rejects motion root imports', () => {
+    const result = validateCanvasSource({
+      'App.tsx':
+        "import { motion } from 'motion'\nexport default function App() { return <motion.div>Hi</motion.div> }"
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.diagnostics[0]?.message).toContain('is not allowed')
+  })
+
+  it('allows date-fns imports', () => {
+    const result = validateCanvasSource({
+      'App.tsx':
+        "import { format } from 'date-fns'\nexport default function App() { return <div>{format(new Date(), 'PPP')}</div> }"
+    })
+
+    expect(result.ok).toBe(true)
+  })
+
+  it('allows date-fns subpath imports', () => {
+    const result = validateCanvasSource({
+      'App.tsx':
+        "import { enUS } from 'date-fns/locale/en-US'\nexport default function App() { return <div>{enUS.code}</div> }"
+    })
+
+    expect(result.ok).toBe(true)
+  })
+
   it('rejects remote ESM imports', () => {
     const result = validateCanvasSource({
       'App.tsx':
@@ -177,9 +232,7 @@ export default function App() { return <div>Hi</div> }
     })
 
     expect(result.ok).toBe(false)
-    expect(result.diagnostics[0]?.message).toContain(
-      'arbitrary npm packages are not allowed'
-    )
+    expect(result.diagnostics[0]?.message).toContain('is not allowed')
   })
 
   it('rejects axios import', () => {
@@ -189,9 +242,7 @@ export default function App() { return <div>Hi</div> }
     })
 
     expect(result.ok).toBe(false)
-    expect(result.diagnostics[0]?.message).toContain(
-      'arbitrary npm packages are not allowed'
-    )
+    expect(result.diagnostics[0]?.message).toContain('is not allowed')
   })
 
   it('rejects dynamic require calls', () => {
@@ -496,9 +547,7 @@ export default function App() {
         expect.objectContaining({
           severity: 'error',
           file: 'components.tsx',
-          message: expect.stringContaining(
-            'arbitrary npm packages are not allowed'
-          )
+          message: expect.stringContaining('is not allowed')
         })
       ])
     )
