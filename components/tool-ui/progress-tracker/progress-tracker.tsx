@@ -94,7 +94,8 @@ function StepIndicator({ status }: StepIndicatorProps) {
     return (
       <span
         className="bg-card border-border flex size-6 shrink-0 items-center justify-center rounded-full border motion-safe:transition-all motion-safe:duration-200"
-        aria-hidden="true"
+        role="img"
+        aria-label="Pending"
       />
     )
   }
@@ -103,7 +104,8 @@ function StepIndicator({ status }: StepIndicatorProps) {
     return (
       <span
         className="bg-card border-border flex size-6 shrink-0 items-center justify-center rounded-full border shadow-[0_0_0_4px_hsl(var(--primary)/0.1)] motion-safe:transition-all motion-safe:duration-300"
-        aria-hidden="true"
+        role="img"
+        aria-label="In progress"
       >
         <Loader2 className="text-primary size-5 motion-safe:animate-spin" />
       </span>
@@ -114,7 +116,8 @@ function StepIndicator({ status }: StepIndicatorProps) {
     return (
       <span
         className="bg-primary text-primary-foreground border-primary flex size-6 shrink-0 items-center justify-center rounded-full border shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-75 motion-safe:duration-300 motion-safe:ease-out"
-        aria-hidden="true"
+        role="img"
+        aria-label="Completed"
       >
         <Check
           className="size-4 motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-75 motion-safe:delay-75 motion-safe:duration-200 motion-safe:fill-mode-both"
@@ -128,7 +131,8 @@ function StepIndicator({ status }: StepIndicatorProps) {
     return (
       <span
         className="bg-destructive border-destructive flex size-6 shrink-0 items-center justify-center rounded-full border text-white shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-75 motion-safe:duration-300 motion-safe:ease-out dark:border-red-600 dark:bg-red-600"
-        aria-hidden="true"
+        role="img"
+        aria-label="Failed"
       >
         <X
           className="size-4 motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-75 motion-safe:delay-75 motion-safe:duration-200 motion-safe:fill-mode-both"
@@ -188,10 +192,11 @@ function ProgressTrackerReceipt({
       aria-label={choice.summary}
     >
       <div className="bg-card/60 flex w-full flex-col gap-4 rounded-2xl border p-5 shadow-xs">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
           <ElapsedTimeBadge elapsedTime={elapsedTime} />
           <span
             className={cn(
+              'ml-auto',
               'flex items-center gap-1.5 text-xs font-medium',
               receiptState.toneClassName
             )}
@@ -307,7 +312,7 @@ function ProgressTrackerLive({
                         'text-sm leading-6 font-medium',
                         step.status === 'pending' && 'text-muted-foreground',
                         step.status === 'in-progress' &&
-                          'motion-safe:shimmer shimmer-invert text-foreground'
+                          'motion-safe:shimmer motion-safe:shimmer-invert text-foreground'
                       )}
                     >
                       {step.label}
