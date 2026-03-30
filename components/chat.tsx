@@ -66,6 +66,13 @@ export function Chat({
   // session. Used to prevent re-opening after user closes the workspace.
   // Populated reactively when canvas.artifact loads (not eagerly on attempt).
   const canvasOpenedRef = useRef<Set<string>>(new Set())
+  // Tracks canvas tool call IDs that have already triggered synthetic
+  // compile progress (avoids re-setting on every messages change).
+  const canvasProgressInitRef = useRef<Set<string>>(new Set())
+  // The startedAt timestamp from client-side "generating" detection,
+  // carried over to real server-side compile-progress events so the
+  // elapsed timer reflects the full duration including AI generation.
+  const syntheticCompileStartRef = useRef<string | null>(null)
   // Stable ref for canvas actions so the auto-open effect doesn't depend
   // on the canvas context object (which changes on every state update).
   const canvasRef = useRef(canvas)
@@ -104,6 +111,8 @@ export function Chat({
     syncModelType('speed')
     guestCanvasTokenRef.current = undefined
     canvasOpenedRef.current.clear()
+    canvasProgressInitRef.current.clear()
+    syntheticCompileStartRef.current = null
     canvas.setGuestCanvasToken(null)
     canvas.closeWorkspace()
   }
@@ -198,8 +207,15 @@ export function Chat({
         return
       }
 
-      const progress = dataPart.data.payload
+      // Spread to avoid mutating the original payload
+      const progress = { ...dataPart.data.payload }
       const cv = canvasRef.current
+
+      // Carry over the startedAt from client-side "generating" detection
+      // so the elapsed timer reflects the full duration including AI generation
+      if (syntheticCompileStartRef.current) {
+        progress.startedAt = syntheticCompileStartRef.current
+      }
 
       if (progress.source === 'create') {
         closeArtifactSidebar()
@@ -347,6 +363,8 @@ export function Chat({
     })
     guestCanvasTokenRef.current = undefined
     canvasOpenedRef.current.clear()
+    canvasProgressInitRef.current.clear()
+    syntheticCompileStartRef.current = null
     cv.setGuestCanvasToken(null)
     cv.closeWorkspace()
   }, [chatId, providedId, stop]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -454,9 +472,121 @@ export function Chat({
           guestCanvasToken:
             latestStatus.guestCanvasToken ?? cv.artifact.guestCanvasToken
         })
+
+        // Fetch full state (including compiled HTML) once compilation finishes.
+        // Status events intentionally omit draftCompiledHtml (too large for SSE),
+        // so we reload the full artifact to update the iframe preview.
+        if (
+          latestStatus.status === 'ready' ||
+          latestStatus.status === 'compile_failed'
+        ) {
+          cv.reloadArtifact()
+        }
       }
     }
   }, [messages, closeArtifactSidebar, isGuest]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Detect streaming canvas tool calls and show the progress tracker early.
+  // Without this, the tracker only appears during sub-second server-side
+  // compilation. This makes it visible from the moment the AI starts
+  // generating artifact code (the slow part the user actually waits for).
+  useEffect(() => {
+    const cv = canvasRef.current
+
+    // Only during active streaming
+    if (status !== 'streaming' && status !== 'submitted') {
+      canvasProgressInitRef.current.clear()
+      syntheticCompileStartRef.current = null
+      return
+    }
+
+    const latestMsg = messages[messages.length - 1]
+    if (!latestMsg || latestMsg.role !== 'assistant') return
+
+    for (const part of latestMsg.parts ?? []) {
+      let isCreate = false
+      let isUpdate = false
+      let partState: string | undefined
+      let partInput: Record<string, unknown> = {}
+      let toolCallId: string | undefined
+
+      const pAny = part as {
+        type?: string
+        state?: string
+        input?: Record<string, unknown>
+        toolCallId?: string
+        toolName?: string
+      }
+
+      if (pAny.type === 'tool-createCanvasArtifact') {
+        isCreate = true
+        partState = pAny.state
+        partInput = pAny.input ?? {}
+        toolCallId = pAny.toolCallId
+      } else if (pAny.type === 'tool-updateCanvasArtifact') {
+        isUpdate = true
+        partState = pAny.state
+        partInput = pAny.input ?? {}
+        toolCallId = pAny.toolCallId
+      } else if (pAny.type === 'dynamic-tool') {
+        if (pAny.toolName === 'createCanvasArtifact') {
+          isCreate = true
+        } else if (pAny.toolName === 'updateCanvasArtifact') {
+          isUpdate = true
+        }
+        if (isCreate || isUpdate) {
+          partState = pAny.state
+          partInput = pAny.input ?? {}
+          toolCallId = pAny.toolCallId
+        }
+      }
+
+      if (!isCreate && !isUpdate) continue
+      if (partState !== 'input-streaming' && partState !== 'input-available')
+        continue
+      if (!toolCallId || canvasProgressInitRef.current.has(toolCallId)) continue
+
+      canvasProgressInitRef.current.add(toolCallId)
+
+      const source = isCreate ? ('create' as const) : ('update' as const)
+      const artifactId = isUpdate
+        ? (partInput.artifactId as string) || cv.artifactId || 'pending'
+        : 'pending-create'
+      const title =
+        (partInput.title as string) || cv.artifact?.title || 'Canvas Artifact'
+      const startedAt = new Date().toISOString()
+      syntheticCompileStartRef.current = startedAt
+
+      if (isCreate) {
+        closeArtifactSidebar()
+        cv.setPendingWorkspace({ artifactId, title })
+      }
+
+      cv.setCompileProgress({
+        artifactId,
+        title,
+        source,
+        startedAt,
+        steps: [
+          { id: 'generate', label: 'Generating code', status: 'in-progress' },
+          { id: 'validate', label: 'Validating source', status: 'pending' },
+          {
+            id: 'bundle',
+            label: 'Building React components',
+            status: 'pending'
+          },
+          {
+            id: 'tailwind',
+            label: 'Compiling Tailwind styles',
+            status: 'pending'
+          },
+          { id: 'assemble', label: 'Bundling output', status: 'pending' }
+        ]
+      })
+
+      break // Only handle the first streaming canvas tool
+    }
+  }, [messages, status, closeArtifactSidebar])
 
   // Canvas callbacks for RenderMessage → ChatMessages
   const handleCanvasArtifactClick = useCallback(

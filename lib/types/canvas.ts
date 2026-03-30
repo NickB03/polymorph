@@ -6,6 +6,7 @@ export type CanvasArtifactStatus =
   | 'restoring'
 
 export type CanvasCompileStepId =
+  | 'generate'
   | 'validate'
   | 'bundle'
   | 'tailwind'

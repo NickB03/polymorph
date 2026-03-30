@@ -204,6 +204,11 @@ function buildServiceCompileSteps(
 ): CanvasCompileStep[] {
   return [
     {
+      id: 'generate',
+      label: 'Generating code',
+      status: 'completed'
+    },
+    {
       id: 'validate',
       label: 'Validating source',
       status: statuses.validate ?? 'pending'

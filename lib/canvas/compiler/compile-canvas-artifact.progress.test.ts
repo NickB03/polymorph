@@ -55,9 +55,12 @@ describe('compileCanvasArtifact progress reporting', () => {
     expect(result.ok).toBe(true)
     expect(onProgress).toHaveBeenCalledTimes(5)
 
+    // Every server-side progress snapshot includes generate=completed
+    // (the AI finished writing code before the compiler runs)
     expect(onProgress.mock.calls[0][0]).toMatchObject({
       artifactId: 'art-1',
       steps: [
+        { id: 'generate', status: 'completed' },
         { id: 'validate', status: 'in-progress' },
         { id: 'bundle', status: 'pending' },
         { id: 'tailwind', status: 'pending' },
@@ -67,6 +70,7 @@ describe('compileCanvasArtifact progress reporting', () => {
 
     expect(onProgress.mock.calls[1][0].steps).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({ id: 'generate', status: 'completed' }),
         expect.objectContaining({ id: 'validate', status: 'completed' }),
         expect.objectContaining({ id: 'bundle', status: 'in-progress' })
       ])
@@ -74,6 +78,7 @@ describe('compileCanvasArtifact progress reporting', () => {
 
     expect(onProgress.mock.calls[2][0].steps).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({ id: 'generate', status: 'completed' }),
         expect.objectContaining({ id: 'bundle', status: 'completed' }),
         expect.objectContaining({ id: 'tailwind', status: 'in-progress' })
       ])
@@ -81,6 +86,7 @@ describe('compileCanvasArtifact progress reporting', () => {
 
     expect(onProgress.mock.calls[3][0].steps).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({ id: 'generate', status: 'completed' }),
         expect.objectContaining({ id: 'tailwind', status: 'completed' }),
         expect.objectContaining({ id: 'assemble', status: 'in-progress' })
       ])
@@ -90,6 +96,7 @@ describe('compileCanvasArtifact progress reporting', () => {
       artifactId: 'art-1',
       outcome: 'success',
       steps: [
+        { id: 'generate', status: 'completed' },
         { id: 'validate', status: 'completed' },
         { id: 'bundle', status: 'completed' },
         { id: 'tailwind', status: 'completed' },
@@ -122,6 +129,7 @@ describe('compileCanvasArtifact progress reporting', () => {
       outcome: 'failed',
       errorMessage: 'Bad source',
       steps: [
+        { id: 'generate', status: 'completed' },
         { id: 'validate', status: 'failed' },
         { id: 'bundle', status: 'pending' },
         { id: 'tailwind', status: 'pending' },
