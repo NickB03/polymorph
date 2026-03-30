@@ -17,6 +17,7 @@ import type { displayQuestionWizardTool } from '../tools/display-question-wizard
 import type { displayTableTool } from '../tools/display-table'
 import type { displayTimelineTool } from '../tools/display-timeline'
 import type { fetchTool } from '../tools/fetch'
+import type { readCanvasArtifactTool } from '../tools/read-canvas-artifact'
 import type { createSearchTool } from '../tools/search'
 import type { createTodoTools } from '../tools/todo'
 import type { updateCanvasArtifactTool } from '../tools/update-canvas-artifact'
@@ -36,6 +37,7 @@ export type ResearcherTools = {
   displayTimeline: typeof displayTimelineTool
   createCanvasArtifact: ReturnType<typeof createCanvasArtifactTool>
   updateCanvasArtifact: ReturnType<typeof updateCanvasArtifactTool>
+  readCanvasArtifact: ReturnType<typeof readCanvasArtifactTool>
 } & ReturnType<typeof createTodoTools>
 
 // Type alias for the researcher agent using ToolLoopAgent
@@ -87,6 +89,9 @@ export type CreateCanvasArtifactToolInvocation = UIToolInvocation<
 export type UpdateCanvasArtifactToolInvocation = UIToolInvocation<
   ResearcherTools['updateCanvasArtifact']
 >
+export type ReadCanvasArtifactToolInvocation = UIToolInvocation<
+  ResearcherTools['readCanvasArtifact']
+>
 
 // Union type for all tool invocations
 export type ResearcherToolInvocation =
@@ -104,6 +109,7 @@ export type ResearcherToolInvocation =
   | DisplayTimelineToolInvocation
   | CreateCanvasArtifactToolInvocation
   | UpdateCanvasArtifactToolInvocation
+  | ReadCanvasArtifactToolInvocation
 
 // Helper type to extract tool names
 export type ResearcherToolName = keyof ResearcherTools

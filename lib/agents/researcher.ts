@@ -21,6 +21,7 @@ import { displayQuestionWizardTool } from '../tools/display-question-wizard'
 import { displayTableTool } from '../tools/display-table'
 import { displayTimelineTool } from '../tools/display-timeline'
 import { fetchTool } from '../tools/fetch'
+import { readCanvasArtifactTool } from '../tools/read-canvas-artifact'
 import { createSearchTool } from '../tools/search'
 import { createTodoTools } from '../tools/todo'
 import { updateCanvasArtifactTool } from '../tools/update-canvas-artifact'
@@ -167,21 +168,23 @@ export function createResearcher({
     instructions = `${systemPrompt}\nCurrent date and time: ${currentDate}`
 
     if (canvasToolContext?.currentArtifact) {
-      instructions += `\n\nCurrent canvas artifact state:\n- artifactId: ${canvasToolContext.currentArtifact.artifactId}\n- baseRevision: ${canvasToolContext.currentArtifact.draftRevision}`
+      instructions += `\n\nCurrent canvas artifact state:\n- artifactId: ${canvasToolContext.currentArtifact.artifactId}\n- baseRevision: ${canvasToolContext.currentArtifact.draftRevision}\nIf the artifact source code is not in the conversation above, call readCanvasArtifact to fetch the latest source before updating.`
     }
 
     // Build canvas tools when context is available
     const canvasTools = canvasToolContext
       ? {
           createCanvasArtifact: createCanvasArtifactTool(canvasToolContext),
-          updateCanvasArtifact: updateCanvasArtifactTool(canvasToolContext)
+          updateCanvasArtifact: updateCanvasArtifactTool(canvasToolContext),
+          readCanvasArtifact: readCanvasArtifactTool(canvasToolContext)
         }
       : {}
 
     if (canvasToolContext) {
       activeToolsList.push(
         'createCanvasArtifact' as keyof ResearcherTools,
-        'updateCanvasArtifact' as keyof ResearcherTools
+        'updateCanvasArtifact' as keyof ResearcherTools,
+        'readCanvasArtifact' as keyof ResearcherTools
       )
     }
 

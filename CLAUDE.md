@@ -31,9 +31,9 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → tools → streaming response.
 
 - **Researcher agent** (`lib/agents/researcher.ts`): Uses Vercel AI SDK's `ToolLoopAgent` with two modes:
-  - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline]` + canvas artifact tools
-  - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline, todoWrite]` + canvas artifact tools
-- **Tools** (`lib/tools/`): `search` (Tavily primary, Brave multimedia, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todo` (task management), `dynamic` (MCP/runtime-defined tools)
+  - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline]` + canvas artifact tools
+  - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline, todoWrite]` + canvas artifact tools
+- **Tools** (`lib/tools/`): `search` (Brave primary, Tavily fallback, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todo` (task management), `dynamic` (MCP/runtime-defined tools)
 - **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Gemini 3 Flash (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway
 - **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
 
@@ -44,6 +44,7 @@ Schema in `lib/db/schema.ts` with core tables:
 - **chats** → **messages** → **parts** (cascade delete)
 - **canvasArtifacts** → **canvasArtifactVersions** (cascade delete)
 - **feedback** — user feedback storage
+- **artifacts** → **artifactRevisions**, **artifactRuntimeSessions** — SPA artifact system (still active, separate from canvas)
 - `parts` is a wide table storing all message part types (text, reasoning, files, sources, tool calls) with check constraints per type
 - All tables use Row-Level Security (RLS) via `current_setting('app.current_user_id')` — users see only their own data, public chats are readable by all
 - Server actions in `lib/actions/chat.ts` use `unstable_cache` with revalidation tags
@@ -52,7 +53,12 @@ Schema in `lib/db/schema.ts` with core tables:
 
 - `lib/streaming/create-chat-stream-response.ts` — authenticated chat streaming
 - `lib/streaming/create-ephemeral-chat-stream-response.ts` — anonymous/guest streaming
+- `lib/streaming/helpers/` — message preparation, persistence, related questions, canvas data writing
 - Responses are SSE with message parts streamed incrementally
+
+### Rate Limiting
+
+`lib/rate-limit/` — per-chat, per-canvas, and guest IP-based rate limits. Uses Upstash Redis with in-memory fallback.
 
 ### Auth
 
@@ -79,6 +85,8 @@ Canvas is the active artifact model. It is always-on (no feature flag gating).
   - `POST /restore` — Restore a previous version
   - `GET /export` — Download compiled HTML as a file
   - `POST /runtime-diagnostics` — Persist iframe runtime errors
+  - `GET /view` — Serve compiled HTML for embedding
+- **Pre-processors** (`lib/canvas/pre-processors/`): AST transforms that fix AI-generated code before compilation
 - **Source validation** (`lib/canvas/validation/`): Validates and normalizes canvas source before compilation
 - **Canvas workspace UI** (`components/canvas/`): Split-view workspace with live preview, CodeMirror editor, diagnostics panel, and version history
 
@@ -95,7 +103,9 @@ Components render different message part types: `answer-section.tsx`, `search-se
 
 ### Hooks
 
-Custom React hooks in `hooks/`: `use-activity-feed`, `use-auth-check`, `use-content-entrance`, `use-current-user`, `use-file-dropzone`, `use-mobile`, `use-trending-suggestions`. Additional hooks in `lib/hooks/`: `use-copy-to-clipboard`, `use-media-query`.
+Custom React hooks in `hooks/`: `use-activity-feed`, `use-auth-check`, `use-content-entrance`, `use-current-user`, `use-file-dropzone`, `use-mobile`, `use-trending-suggestions`, plus voice hooks (`use-audio-stream`, `use-voice-conversation`, `use-voice-input`, `use-voice-player`). Additional hooks in `lib/hooks/`: `use-copy-to-clipboard`, `use-media-query`.
+
+Supporting modules: `lib/analytics/` (event tracking), `lib/config/` (env validation, model loading), `lib/schema/` (tool input schemas), `lib/auth/` (current user resolution).
 
 ## Design Workflow (Pencil Wireframes)
 
@@ -230,5 +240,6 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 - `lib/canvas/` — canvas artifact compile pipeline, validation, service, guest tokens, legacy notice path
 - `lib/tools/create-canvas-artifact.ts` — AI tool: create a new canvas artifact in the current chat
 - `lib/tools/update-canvas-artifact.ts` — AI tool: update the existing canvas artifact source
+- `lib/tools/read-canvas-artifact.ts` — AI tool: read current canvas artifact source (no side effects)
 - `components/canvas/` — canvas workspace shell, live preview, CodeMirror editor, diagnostics, version history
 - `app/api/canvas-artifacts/` — REST routes for canvas artifact state, drafts, versions, restore, export, diagnostics
