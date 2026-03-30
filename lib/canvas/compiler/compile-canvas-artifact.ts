@@ -44,12 +44,20 @@ export type CompileCanvasArtifactResult = {
 }
 
 const COMPILE_STEP_DEFINITIONS: Array<Omit<CanvasCompileStep, 'status'>> = [
+  { id: 'generate', label: 'Generating code' },
   { id: 'validate', label: 'Validating source' },
   { id: 'bundle', label: 'Building React components' },
   { id: 'tailwind', label: 'Compiling Tailwind styles' },
   { id: 'assemble', label: 'Bundling output' }
 ]
 
+/**
+ * Build compile steps with statuses. The 'generate' step is always
+ * 'completed' at this stage — by the time the compiler runs, the AI
+ * has finished writing code. The client-side progress tracker shows
+ * 'generate' as 'in-progress' during AI streaming, before these
+ * server-side events arrive.
+ */
 function buildCompileSteps(
   statuses: Partial<
     Record<CanvasCompileStep['id'], CanvasCompileStep['status']>
@@ -57,7 +65,8 @@ function buildCompileSteps(
 ): CanvasCompileStep[] {
   return COMPILE_STEP_DEFINITIONS.map(step => ({
     ...step,
-    status: statuses[step.id] ?? 'pending'
+    status:
+      step.id === 'generate' ? 'completed' : (statuses[step.id] ?? 'pending')
   }))
 }
 
