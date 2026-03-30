@@ -333,6 +333,30 @@ export default function App() {
     expect(result.html).toContain('<!DOCTYPE html>')
   })
 
+  it('rejects source that imports motion from the root package', async () => {
+    const result = await compileCanvasArtifact({
+      source: {
+        'App.tsx': `
+import { motion } from 'motion'
+
+export default function App() {
+  return <motion.div>Hi</motion.div>
+}
+        `
+      }
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'error',
+          message: expect.stringContaining('is not allowed')
+        })
+      ])
+    )
+  })
+
   it('compiles source that imports date-fns', async () => {
     const result = await compileCanvasArtifact({
       source: {

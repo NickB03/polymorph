@@ -125,6 +125,16 @@ export default function App() { return <div>Hi</div> }
     expect(result.ok).toBe(true)
   })
 
+  it('rejects motion root imports', () => {
+    const result = validateCanvasSource({
+      'App.tsx':
+        "import { motion } from 'motion'\nexport default function App() { return <motion.div>Hi</motion.div> }"
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.diagnostics[0]?.message).toContain('is not allowed')
+  })
+
   it('allows date-fns imports', () => {
     const result = validateCanvasSource({
       'App.tsx':
