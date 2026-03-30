@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
+import { isAllowedCanvasImport } from '@/lib/canvas/allowed-packages'
 import {
   CANVAS_ALLOWED_FILES,
-  CANVAS_ALLOWED_PACKAGE_IMPORTS,
   CANVAS_MAX_ASSET_PAYLOAD_SIZE,
   CANVAS_MAX_FILE_SIZE,
   CANVAS_MAX_TOTAL_SOURCE_SIZE,
@@ -95,8 +95,7 @@ function classifyImport(
   }
 
   // Allow explicitly allowed packages
-  const allowedPackages = CANVAS_ALLOWED_PACKAGE_IMPORTS as readonly string[]
-  if (allowedPackages.includes(specifier)) {
+  if (isAllowedCanvasImport(specifier)) {
     return null
   }
 
@@ -146,7 +145,7 @@ function classifyImport(
   // Everything else is an arbitrary npm package
   return {
     severity: 'error',
-    message: `Import '${specifier}' — arbitrary npm packages are not allowed`,
+    message: `Import '${specifier}' is not allowed. Allowed packages: react, react-dom/client, lucide-react, recharts, motion/react, date-fns`,
     file,
     line
   }

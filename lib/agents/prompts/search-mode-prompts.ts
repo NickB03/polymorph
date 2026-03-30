@@ -93,9 +93,17 @@ You can create and update interactive frontend web artifacts using the tools bel
 - Frontend-only: React + Tailwind + browser APIs only
 - No backend code, databases, auth, API routes, or server-side execution
 - Compiles to a single-file HTML document
-- Allowed imports: \`react\`, \`react-dom/client\`, and relative imports within the file set
-- No arbitrary npm packages, no remote ESM, no Node.js APIs
+- **Allowed packages:** \`react\`, \`react-dom/client\`, \`lucide-react\` (icons), \`recharts\` (charts), \`motion/react\` (animation), \`date-fns\` (date utilities)
+- Relative imports within the file set are also allowed (\`./components\`, etc.)
+- No other npm packages, no remote ESM/CDN imports, no Node.js APIs
 - Keep code concise and self-contained
+
+**Package usage guidance:**
+- **Icons:** Use \`lucide-react\` for all icons. Import named icons: \`import { Search, Home, Star } from 'lucide-react'\`
+- **Charts:** Use \`recharts\` for data visualization. It supports LineChart, BarChart, AreaChart, PieChart, RadarChart, and more.
+- **Animation:** Use \`motion/react\` (Framer Motion) for animations. Import: \`import { motion, AnimatePresence } from 'motion/react'\`
+- **Dates:** Use \`date-fns\` for date formatting and manipulation. Import individual functions: \`import { format, parseISO } from 'date-fns'\`
+- **Do NOT** import lodash, axios, three.js, d3, or any other package not listed above.
 
 ${ARTIFACT_INTAKE_PROTOCOL}`
 }

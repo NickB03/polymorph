@@ -103,6 +103,113 @@ export default function App() {
     expect(result).toEqual(source)
   })
 
+  it('preserves lucide-react imports when bindings are used', () => {
+    const source: CanvasSourceFiles = {
+      'App.tsx': `
+import { Search } from 'lucide-react'
+export default function App() {
+  return <Search />
+}
+      `
+    }
+
+    const result = fixHallucinatedImports(source)
+
+    expect(result).toEqual(source)
+  })
+
+  it('preserves recharts imports when bindings are used', () => {
+    const source: CanvasSourceFiles = {
+      'App.tsx': `
+import { Line, LineChart } from 'recharts'
+export default function App() {
+  return <LineChart><Line /></LineChart>
+}
+      `
+    }
+
+    const result = fixHallucinatedImports(source)
+
+    expect(result).toEqual(source)
+  })
+
+  it('preserves motion/react imports when bindings are used', () => {
+    const source: CanvasSourceFiles = {
+      'App.tsx': `
+import { motion } from 'motion/react'
+export default function App() {
+  return <motion.div>Hi</motion.div>
+}
+      `
+    }
+
+    const result = fixHallucinatedImports(source)
+
+    expect(result).toEqual(source)
+  })
+
+  it('preserves date-fns imports when bindings are used', () => {
+    const source: CanvasSourceFiles = {
+      'App.tsx': `
+import { format } from 'date-fns'
+export default function App() {
+  return <div>{format(new Date(), 'PPP')}</div>
+}
+      `
+    }
+
+    const result = fixHallucinatedImports(source)
+
+    expect(result).toEqual(source)
+  })
+
+  it('preserves date-fns subpath imports when bindings are used', () => {
+    const source: CanvasSourceFiles = {
+      'App.tsx': `
+import { enUS } from 'date-fns/locale/enUS'
+export default function App() {
+  return <div>{enUS.code}</div>
+}
+      `
+    }
+
+    const result = fixHallucinatedImports(source)
+
+    expect(result).toEqual(source)
+  })
+
+  it('preserves unused date-fns subpath imports because they are supported', () => {
+    const source: CanvasSourceFiles = {
+      'App.tsx': `
+import { enUS } from 'date-fns/locale/enUS'
+export default function App() {
+  return <div>Hello</div>
+}
+      `
+    }
+
+    const result = fixHallucinatedImports(source)
+
+    expect(result).toEqual(source)
+  })
+
+  it('still strips unsupported lookalike imports when unused', () => {
+    const source: CanvasSourceFiles = {
+      'App.tsx': `
+import { Search } from 'lucide-react/dist/esm/icons/search'
+export default function App() {
+  return <div>Hello</div>
+}
+      `
+    }
+
+    const result = fixHallucinatedImports(source)
+
+    expect(result['App.tsx']).not.toContain(
+      'lucide-react/dist/esm/icons/search'
+    )
+  })
+
   it('preserves relative imports', () => {
     const source: CanvasSourceFiles = {
       'App.tsx': `

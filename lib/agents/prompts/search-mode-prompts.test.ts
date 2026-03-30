@@ -11,7 +11,8 @@ describe('search mode prompts', () => {
     'Do not use placeholder text like Lorem ipsum',
     'Use `window.__CANVAS_IMAGE_BASE__` when you need generated or thumbnail images',
     'Only one canvas artifact per chat',
-    'Allowed imports: `react`, `react-dom/client`, and relative imports within the file set',
+    '**Allowed packages:** `react`, `react-dom/client`, `lucide-react` (icons), `recharts` (charts), `motion/react` (animation), `date-fns` (date utilities)',
+    '**Icons:** Use `lucide-react` for all icons',
     'Normal build/create requests skip search entirely',
     'Modify/update requests skip search entirely',
     'Research-then-build requests search first, then build',
@@ -57,10 +58,10 @@ describe('search mode prompts', () => {
 
   it('keeps the allowed file and import constraints intact', () => {
     expect(getChatModePrompt()).toContain(
-      'Allowed imports: `react`, `react-dom/client`, and relative imports within the file set'
+      '**Allowed packages:** `react`, `react-dom/client`, `lucide-react` (icons), `recharts` (charts), `motion/react` (animation), `date-fns` (date utilities)'
     )
     expect(getResearchModePrompt()).toContain(
-      'Allowed imports: `react`, `react-dom/client`, and relative imports within the file set'
+      '**Allowed packages:** `react`, `react-dom/client`, `lucide-react` (icons), `recharts` (charts), `motion/react` (animation), `date-fns` (date utilities)'
     )
   })
 })

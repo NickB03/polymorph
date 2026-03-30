@@ -246,6 +246,133 @@ export default function App() {
     )
   })
 
+  it('compiles source that imports lucide-react icons', async () => {
+    const result = await compileCanvasArtifact({
+      source: {
+        'App.tsx': `
+import { Search, Home, Star } from 'lucide-react'
+export default function App() {
+  return (
+    <div className="flex gap-2 p-4">
+      <Search className="w-5 h-5" />
+      <Home className="w-5 h-5" />
+      <Star className="w-5 h-5" />
+    </div>
+  )
+}
+        `
+      }
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.html).toContain('<!DOCTYPE html>')
+  })
+
+  it('compiles source that imports recharts', async () => {
+    const result = await compileCanvasArtifact({
+      source: {
+        'App.tsx': `
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts'
+
+const data = [
+  { name: 'A', value: 10 },
+  { name: 'B', value: 20 }
+]
+
+export default function App() {
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip />
+        <Line type="monotone" dataKey="value" stroke="#8884d8" />
+      </LineChart>
+    </ResponsiveContainer>
+  )
+}
+        `
+      }
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.html).toContain('<!DOCTYPE html>')
+  })
+
+  it('compiles source that imports motion/react', async () => {
+    const result = await compileCanvasArtifact({
+      source: {
+        'App.tsx': `
+import { motion } from 'motion/react'
+
+export default function App() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="p-4"
+    >
+      Hello animated world
+    </motion.div>
+  )
+}
+        `
+      }
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.html).toContain('<!DOCTYPE html>')
+  })
+
+  it('compiles source that imports date-fns', async () => {
+    const result = await compileCanvasArtifact({
+      source: {
+        'App.tsx': `
+import { format } from 'date-fns'
+
+export default function App() {
+  return <div className="p-4">{format(new Date(2026, 0, 1), 'PPP')}</div>
+}
+        `
+      }
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.html).toContain('<!DOCTYPE html>')
+  })
+
+  it('still rejects disallowed bare specifiers', async () => {
+    const result = await compileCanvasArtifact({
+      source: {
+        'App.tsx': `
+import _ from 'lodash'
+export default function App() {
+  return <div>{_.chunk([1, 2, 3], 2)}</div>
+}
+        `
+      }
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'error',
+          message: expect.stringContaining('is not allowed')
+        })
+      ])
+    )
+  })
+
   // ── Multi-file compilation ──────────────────────────────────────────
 
   it('compiles multi-file source with components.tsx', async () => {
@@ -390,9 +517,7 @@ export default function App() {
       expect.arrayContaining([
         expect.objectContaining({
           severity: 'error',
-          message: expect.stringContaining(
-            'arbitrary npm packages are not allowed'
-          )
+          message: expect.stringContaining('is not allowed')
         })
       ])
     )

@@ -1,4 +1,4 @@
-import { CANVAS_ALLOWED_PACKAGE_IMPORTS } from '@/lib/canvas/constants'
+import { isAllowedCanvasImport } from '@/lib/canvas/allowed-packages'
 import type { CanvasSourceFiles } from '@/lib/types/canvas'
 
 const SINGLE_LINE_IMPORT_PATTERN =
@@ -12,7 +12,7 @@ function isSupportedSpecifier(specifier: string): boolean {
   return (
     specifier.startsWith('./') ||
     specifier.startsWith('../') ||
-    (CANVAS_ALLOWED_PACKAGE_IMPORTS as readonly string[]).includes(specifier)
+    isAllowedCanvasImport(specifier)
   )
 }
 
