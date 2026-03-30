@@ -63,9 +63,9 @@ Required when `ENABLE_AUTH=true`:
 
 ## Canvas artifacts
 
-| Variable              | Default | Purpose                                                                              |
-| --------------------- | ------- | ------------------------------------------------------------------------------------ |
-| `GUEST_CANVAS_SECRET` | —       | HMAC-SHA256 secret for signing guest canvas tokens (required for guest artifact use) |
+| Variable              | Default | Purpose                                                                                                                                                                           |
+| --------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GUEST_CANVAS_SECRET` | —       | HMAC-SHA256 secret for signing guest canvas tokens (required for guest artifact use). `GUEST_ARTIFACT_SECRET` is also accepted as a backward-compatible fallback in local setups. |
 
 ## Optional platform features
 

@@ -12,11 +12,13 @@ describe('guest canvas tokens', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-03-21T12:00:00.000Z'))
     process.env.GUEST_CANVAS_SECRET = 'test-secret'
+    delete process.env.GUEST_ARTIFACT_SECRET
   })
 
   afterEach(() => {
     vi.useRealTimers()
     delete process.env.GUEST_CANVAS_SECRET
+    delete process.env.GUEST_ARTIFACT_SECRET
   })
 
   it('signs and verifies a valid token', async () => {
@@ -79,6 +81,24 @@ describe('guest canvas tokens', () => {
       chatId: 'chat-1',
       artifactId: 'art-1',
       exp: new Date('2026-03-21T12:35:00.000Z').getTime()
+    })
+  })
+
+  it('falls back to GUEST_ARTIFACT_SECRET when GUEST_CANVAS_SECRET is unset', async () => {
+    delete process.env.GUEST_CANVAS_SECRET
+    process.env.GUEST_ARTIFACT_SECRET = 'legacy-secret'
+
+    const token = await signGuestCanvasToken({
+      chatId: 'chat-1',
+      artifactId: 'art-1'
+    })
+
+    const payload = await verifyGuestCanvasToken(token)
+
+    expect(payload).toEqual({
+      chatId: 'chat-1',
+      artifactId: 'art-1',
+      exp: new Date('2026-03-21T12:30:00.000Z').getTime()
     })
   })
 })
