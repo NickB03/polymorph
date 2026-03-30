@@ -758,6 +758,7 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 | `docs/getting-started/CONFIGURATION.md`        | Configuration guide for models, search providers, and feature flags                                                                       |
 | `docs/architecture/OVERVIEW.md`                | System architecture with diagrams for agent pipeline, streaming, DB schema, and UI component tree                                         |
 | `docs/architecture/RESEARCH-AGENT.md`          | Research agent deep technical reference; ToolLoopAgent pattern, search modes, tool system, model selection, and context window management |
+| `docs/architecture/SKILLS-ROUTING.md`          | Skills-routing architecture spec; deterministic skill selection, prompt enrichment, validation strategy, and non-prod rollout             |
 | `docs/architecture/GENERATIVE-UI.md`           | Generative UI system architecture; display tools, Tool UI registry, adapter pattern, schema validation, and adding new tools              |
 | `docs/architecture/STREAMING.md`               | Streaming architecture and SSE protocol documentation                                                                                     |
 | `docs/architecture/MODEL-CONFIGURATION.md`     | Guide for configuring AI model profiles (default, cloud, Ollama)                                                                          |

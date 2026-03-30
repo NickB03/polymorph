@@ -256,6 +256,61 @@ describe('useActivityFeed', () => {
     expect(mockActivity.updateItem).not.toHaveBeenCalled()
   })
 
+  it('updates an activity item when its state changes', async () => {
+    const activeMessage = [
+      {
+        id: 'chat-1-assistant',
+        role: 'assistant',
+        metadata: { searchMode: 'research' },
+        parts: [
+          {
+            type: 'tool-search',
+            toolCallId: 'search-1',
+            input: { query: 'test' },
+            state: 'input-available',
+            output: undefined
+          }
+        ]
+      } as UIMessage
+    ]
+
+    const { rerender } = renderHook(
+      ({ msgs }) => useActivityFeed(msgs, undefined, 'chat-1'),
+      { initialProps: { msgs: activeMessage } }
+    )
+
+    await waitFor(() => {
+      expect(mockActivity.addItem).toHaveBeenCalledTimes(1)
+      expect(mockActivityState.items[0].state).toBe('active')
+    })
+
+    const completedMessage = [
+      {
+        id: 'chat-1-assistant',
+        role: 'assistant',
+        metadata: { searchMode: 'research' },
+        parts: [
+          {
+            type: 'tool-search',
+            toolCallId: 'search-1',
+            input: { query: 'test' },
+            state: 'output-available',
+            output: { state: 'complete', results: [] }
+          }
+        ]
+      } as UIMessage
+    ]
+
+    rerender({ msgs: completedMessage })
+
+    await waitFor(() => {
+      expect(mockActivity.updateItem).toHaveBeenCalledWith('search:search-1', {
+        state: 'complete',
+        data: expect.objectContaining({ state: 'output-available' })
+      })
+    })
+  })
+
   it('keeps different activity item types distinct when they share the same raw id', async () => {
     mockLinkPreviewResult = {
       id: 'call_shared',

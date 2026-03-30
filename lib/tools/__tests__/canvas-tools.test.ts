@@ -51,6 +51,10 @@ import {
   createCanvasArtifactTool
 } from '../create-canvas-artifact'
 import {
+  ReadCanvasArtifactSchema,
+  readCanvasArtifactTool
+} from '../read-canvas-artifact'
+import {
   UpdateCanvasArtifactSchema,
   updateCanvasArtifactTool
 } from '../update-canvas-artifact'
@@ -612,5 +616,116 @@ describe('updateCanvasArtifactTool', () => {
         status: 'compile_failed'
       })
     )
+  })
+})
+
+// ── readCanvasArtifact ──────────────────────────────────────────────
+
+describe('readCanvasArtifactTool', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('accepts a valid artifactId', () => {
+    const result = ReadCanvasArtifactSchema.safeParse({
+      artifactId: 'art-1'
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects empty artifactId', () => {
+    const result = ReadCanvasArtifactSchema.safeParse({
+      artifactId: ''
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('returns source files and metadata on success', async () => {
+    const ctx = createCtx()
+    mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
+
+    const toolInstance = readCanvasArtifactTool(ctx)
+    const result = await toolInstance.execute!(
+      { artifactId: 'art-1' },
+      { toolCallId: 'tc-1', messages: [] }
+    )
+
+    expect(result).toMatchObject({
+      artifactId: 'art-1',
+      chatId: 'chat-1',
+      title: 'Test App',
+      status: 'ready',
+      draftRevision: 2,
+      files: { 'App.tsx': 'export default () => <div/>' }
+    })
+    expect((result as Record<string, unknown>).error).toBeUndefined()
+  })
+
+  it('returns not-found when artifact does not exist', async () => {
+    const ctx = createCtx()
+    mockLoadCanvasArtifactState.mockResolvedValue(null)
+
+    const toolInstance = readCanvasArtifactTool(ctx)
+    const result = await toolInstance.execute!(
+      { artifactId: 'art-missing' },
+      { toolCallId: 'tc-1', messages: [] }
+    )
+
+    expect(result).toMatchObject({
+      error: 'Artifact not found',
+      errorCode: 'not-found',
+      files: {}
+    })
+  })
+
+  it('does not emit any events (read-only)', async () => {
+    const ctx = createCtx()
+    mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
+
+    const toolInstance = readCanvasArtifactTool(ctx)
+    await toolInstance.execute!(
+      { artifactId: 'art-1' },
+      { toolCallId: 'tc-1', messages: [] }
+    )
+
+    expect(ctx.emitter.emitCanvasArtifact).not.toHaveBeenCalled()
+    expect(ctx.emitter.emitCanvasArtifactStatus).not.toHaveBeenCalled()
+    expect(ctx.emitter.emitCanvasArtifactEvent).not.toHaveBeenCalled()
+    expect(ctx.emitter.emitCanvasDiagnostics).not.toHaveBeenCalled()
+  })
+
+  it('passes userId from context to service', async () => {
+    const ctx = createCtx({ userId: 'user-42' })
+    mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
+
+    const toolInstance = readCanvasArtifactTool(ctx)
+    await toolInstance.execute!(
+      { artifactId: 'art-1' },
+      { toolCallId: 'tc-1', messages: [] }
+    )
+
+    expect(mockLoadCanvasArtifactState).toHaveBeenCalledWith({
+      artifactId: 'art-1',
+      userId: 'user-42'
+    })
+  })
+
+  it('works for guest flow', async () => {
+    const ctx = createCtx({ isGuest: true, userId: 'guest' })
+    mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
+
+    const toolInstance = readCanvasArtifactTool(ctx)
+    const result = await toolInstance.execute!(
+      { artifactId: 'art-1' },
+      { toolCallId: 'tc-1', messages: [] }
+    )
+
+    expect(result).toMatchObject({
+      artifactId: 'art-1',
+      status: 'ready',
+      files: { 'App.tsx': 'export default () => <div/>' }
+    })
+    // No guest token rotation for reads
+    expect(mockRefreshGuestCanvasToken).not.toHaveBeenCalled()
   })
 })

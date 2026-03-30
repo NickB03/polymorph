@@ -31,10 +31,9 @@ function getActivityItemId(
 
 function shouldUpdateItem(
   item: ActivityItem | undefined,
-  nextState: ActivityItem['state'],
-  nextData: ActivityItem['data']
+  nextState: ActivityItem['state']
 ) {
-  return !item || item.state !== nextState || item.data !== nextData
+  return !item || item.state !== nextState
 }
 
 export function useActivityFeed(
@@ -81,9 +80,7 @@ export function useActivityFeed(
 
   // Scan latest assistant message
   useEffect(() => {
-    const lastAssistant = [...messages]
-      .reverse()
-      .find(m => m.role === 'assistant')
+    const lastAssistant = messages.findLast(m => m.role === 'assistant')
     if (!lastAssistant) return
 
     // Detect research mode from metadata or todoWrite parts
@@ -119,7 +116,7 @@ export function useActivityFeed(
 
         if (knownIds.has(id)) {
           seenIds.current.add(id)
-          if (shouldUpdateItem(existingItems.get(id), itemState, toolPart)) {
+          if (shouldUpdateItem(existingItems.get(id), itemState)) {
             updateItem(id, { state: itemState, data: toolPart })
           }
         } else {
@@ -140,7 +137,7 @@ export function useActivityFeed(
 
         if (knownIds.has(id)) {
           seenIds.current.add(id)
-          if (shouldUpdateItem(existingItems.get(id), itemState, toolPart)) {
+          if (shouldUpdateItem(existingItems.get(id), itemState)) {
             updateItem(id, { state: itemState, data: toolPart })
           }
         } else {
@@ -164,7 +161,7 @@ export function useActivityFeed(
           const id = getActivityItemId('link-preview', parsed.id)
           if (knownIds.has(id)) {
             seenIds.current.add(id)
-            if (shouldUpdateItem(existingItems.get(id), 'complete', parsed)) {
+            if (shouldUpdateItem(existingItems.get(id), 'complete')) {
               updateItem(id, { state: 'complete', data: parsed })
             }
           } else {
@@ -192,9 +189,7 @@ export function useActivityFeed(
               const id = getActivityItemId('citation', parsed.id)
               if (knownIds.has(id)) {
                 seenIds.current.add(id)
-                if (
-                  shouldUpdateItem(existingItems.get(id), 'complete', parsed)
-                ) {
+                if (shouldUpdateItem(existingItems.get(id), 'complete')) {
                   updateItem(id, { state: 'complete', data: parsed })
                 }
               } else {

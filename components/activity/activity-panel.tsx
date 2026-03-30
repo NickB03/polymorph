@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 import { Activity, Minimize2 } from 'lucide-react'
 
@@ -51,15 +51,29 @@ export function ActivityPanel() {
 }
 
 export function ActivityFeedContent({ items }: { items: ActivityItem[] }) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const isNearBottom = useRef(true)
 
-  // Auto-scroll to bottom when new items arrive
+  const handleScroll = useCallback(() => {
+    const el = containerRef.current
+    if (!el) return
+    isNearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  }, [])
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' })
+    if (isNearBottom.current) {
+      bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' })
+    }
   }, [items.length])
 
   return (
-    <div data-vaul-no-drag className="flex-1 overflow-y-auto px-2 py-2">
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      data-vaul-no-drag
+      className="flex-1 overflow-y-auto px-2 py-2"
+    >
       {items.length === 0 ? (
         <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
           Activity will appear here during research

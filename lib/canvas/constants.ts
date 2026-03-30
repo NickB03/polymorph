@@ -31,7 +31,8 @@ export const CANVAS_STATUSES = [
 // Tool names
 export const CANVAS_TOOL_NAMES = [
   'createCanvasArtifact',
-  'updateCanvasArtifact'
+  'updateCanvasArtifact',
+  'readCanvasArtifact'
 ] as const
 
 // Data part names

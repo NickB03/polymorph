@@ -12,6 +12,11 @@ vi.mock('@/lib/tools/update-canvas-artifact', () => ({
     .fn()
     .mockReturnValue({ name: 'updateCanvasArtifact' })
 }))
+vi.mock('@/lib/tools/read-canvas-artifact', () => ({
+  readCanvasArtifactTool: vi
+    .fn()
+    .mockReturnValue({ name: 'readCanvasArtifact' })
+}))
 vi.mock('@/lib/tools/display-callout', () => ({
   displayCalloutTool: { name: 'displayCallout' }
 }))
@@ -224,6 +229,9 @@ describe('createResearcher', () => {
     expect(config.instructions).toContain('Current canvas artifact state:')
     expect(config.instructions).toContain('- artifactId: art-123')
     expect(config.instructions).toContain('- baseRevision: 7')
+    expect(config.instructions).toContain(
+      'call readCanvasArtifact to fetch the latest source before updating'
+    )
   })
 
   it('throws when model creation fails', async () => {
@@ -249,8 +257,10 @@ describe('createResearcher', () => {
     const config = MockToolLoopAgent.mock.calls[0][0] as any
     expect(Object.keys(config.tools)).toContain('createCanvasArtifact')
     expect(Object.keys(config.tools)).toContain('updateCanvasArtifact')
+    expect(Object.keys(config.tools)).toContain('readCanvasArtifact')
     expect(config.activeTools).toContain('createCanvasArtifact')
     expect(config.activeTools).toContain('updateCanvasArtifact')
+    expect(config.activeTools).toContain('readCanvasArtifact')
   })
 
   it('does not register canvas tools when canvasToolContext is absent', () => {
@@ -264,8 +274,10 @@ describe('createResearcher', () => {
     const config = MockToolLoopAgent.mock.calls[0][0] as any
     expect(Object.keys(config.tools)).not.toContain('createCanvasArtifact')
     expect(Object.keys(config.tools)).not.toContain('updateCanvasArtifact')
+    expect(Object.keys(config.tools)).not.toContain('readCanvasArtifact')
     expect(config.activeTools).not.toContain('createCanvasArtifact')
     expect(config.activeTools).not.toContain('updateCanvasArtifact')
+    expect(config.activeTools).not.toContain('readCanvasArtifact')
   })
 
   it('registers canvas tools in both chat and research modes', () => {
@@ -281,6 +293,7 @@ describe('createResearcher', () => {
       const config = MockToolLoopAgent.mock.calls[0][0] as any
       expect(config.activeTools).toContain('createCanvasArtifact')
       expect(config.activeTools).toContain('updateCanvasArtifact')
+      expect(config.activeTools).toContain('readCanvasArtifact')
     }
   })
 

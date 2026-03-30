@@ -5,8 +5,8 @@
 ```
 supabase-postgres-best-practices/
   SKILL.md       # Main skill file - read this first
-  AGENTS.md      # This navigation guide
-  CLAUDE.md      # Symlink to AGENTS.md
+  CLAUDE.md      # This navigation guide (source of truth)
+  AGENTS.md      # Symlink → CLAUDE.md
   references/    # Detailed reference files
 ```
 

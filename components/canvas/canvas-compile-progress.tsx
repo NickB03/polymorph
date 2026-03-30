@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
 
@@ -45,24 +45,26 @@ export function CanvasCompileProgress({
     return () => window.clearInterval(interval)
   }, [progress.outcome, progress.startedAt])
 
-  const choice = useMemo(() => {
+  const [choice, setChoice] = useState<
+    { outcome: 'success' | 'failed'; summary: string; at: string } | undefined
+  >()
+
+  useEffect(() => {
     if (progress.outcome === 'success') {
-      return {
-        outcome: 'success' as const,
+      setChoice({
+        outcome: 'success',
         summary: 'Compiled successfully',
         at: new Date().toISOString()
-      }
-    }
-
-    if (progress.outcome === 'failed') {
-      return {
-        outcome: 'failed' as const,
+      })
+    } else if (progress.outcome === 'failed') {
+      setChoice({
+        outcome: 'failed',
         summary: 'Compilation failed',
         at: new Date().toISOString()
-      }
+      })
+    } else {
+      setChoice(undefined)
     }
-
-    return undefined
   }, [progress.outcome])
 
   return (
