@@ -41,8 +41,8 @@ describe('isAllowedCanvasImport', () => {
     expect(isAllowedCanvasImport('motion/react')).toBe(true)
   })
 
-  it('allows "motion"', () => {
-    expect(isAllowedCanvasImport('motion')).toBe(true)
+  it('rejects "motion"', () => {
+    expect(isAllowedCanvasImport('motion')).toBe(false)
   })
 
   it('allows "date-fns"', () => {
@@ -53,8 +53,8 @@ describe('isAllowedCanvasImport', () => {
     expect(isAllowedCanvasImport('date-fns/format')).toBe(true)
   })
 
-  it('allows "date-fns/locale/enUS" (deep subpath)', () => {
-    expect(isAllowedCanvasImport('date-fns/locale/enUS')).toBe(true)
+  it('allows "date-fns/locale/en-US" (deep subpath)', () => {
+    expect(isAllowedCanvasImport('date-fns/locale/en-US')).toBe(true)
   })
 
   it('rejects "lodash"', () => {

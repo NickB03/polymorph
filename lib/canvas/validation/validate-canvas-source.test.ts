@@ -137,7 +137,7 @@ export default function App() { return <div>Hi</div> }
   it('allows date-fns subpath imports', () => {
     const result = validateCanvasSource({
       'App.tsx':
-        "import { enUS } from 'date-fns/locale/enUS'\nexport default function App() { return <div>{enUS.code}</div> }"
+        "import { enUS } from 'date-fns/locale/en-US'\nexport default function App() { return <div>{enUS.code}</div> }"
     })
 
     expect(result.ok).toBe(true)

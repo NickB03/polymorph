@@ -80,10 +80,10 @@ export default function App() {
 
 const supportedSubpathImportSource = {
   'App.tsx': `
-import { enUS } from 'date-fns/locale/enUS'
+import { enUS } from 'date-fns/locale/en-US'
 
 export default function App() {
-  return <div>Hello</div>
+  return <div>{enUS.code}</div>
 }
   `
 }

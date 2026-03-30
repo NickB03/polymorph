@@ -166,7 +166,7 @@ export default function App() {
   it('preserves date-fns subpath imports when bindings are used', () => {
     const source: CanvasSourceFiles = {
       'App.tsx': `
-import { enUS } from 'date-fns/locale/enUS'
+import { enUS } from 'date-fns/locale/en-US'
 export default function App() {
   return <div>{enUS.code}</div>
 }
@@ -181,7 +181,7 @@ export default function App() {
   it('preserves unused date-fns subpath imports because they are supported', () => {
     const source: CanvasSourceFiles = {
       'App.tsx': `
-import { enUS } from 'date-fns/locale/enUS'
+import { enUS } from 'date-fns/locale/en-US'
 export default function App() {
   return <div>Hello</div>
 }

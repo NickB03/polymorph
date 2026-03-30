@@ -9,7 +9,6 @@ export const CANVAS_ALLOWED_PACKAGES: AllowedPackage[] = [
   { specifier: 'react/jsx-runtime' },
   { specifier: 'lucide-react' },
   { specifier: 'recharts' },
-  { specifier: 'motion' },
   { specifier: 'motion/react' },
   { specifier: 'date-fns', subpaths: true }
 ]

@@ -350,6 +350,23 @@ export default function App() {
     expect(result.html).toContain('<!DOCTYPE html>')
   })
 
+  it('compiles source that imports date-fns locale subpaths', async () => {
+    const result = await compileCanvasArtifact({
+      source: {
+        'App.tsx': `
+import { enUS } from 'date-fns/locale/en-US'
+
+export default function App() {
+  return <div className="p-4">{enUS.code}</div>
+}
+        `
+      }
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.html).toContain('<!DOCTYPE html>')
+  })
+
   it('still rejects disallowed bare specifiers', async () => {
     const result = await compileCanvasArtifact({
       source: {
