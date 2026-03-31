@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { UseChatHelpers } from '@ai-sdk/react'
 
-import { useMediaQuery } from '@/lib/hooks/use-media-query'
 import type {
   ChatSection,
   UIDataTypes,
@@ -15,6 +14,7 @@ import { cn, isChatLoading } from '@/lib/utils'
 import { extractCitationMapsFromMessages } from '@/lib/utils/citation'
 
 import { useActivityFeed } from '@/hooks/use-activity-feed'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 import { AnimatedLogo } from './ui/animated-logo'
 import { useSidebar } from './ui/sidebar'
@@ -75,7 +75,7 @@ export function ChatMessages({
     toolCountCacheRef.current.clear()
   }
   const isLoading = isChatLoading(status)
-  const isMobile = useMediaQuery('(max-width: 767px)')
+  const isMobile = useIsMobile()
   const { open: sidebarOpen } = useSidebar()
 
   // Flatten sections into messages for the activity feed hook

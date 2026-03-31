@@ -18,7 +18,7 @@ export const UploadedFileList = React.memo(function UploadedFileList({
 }: UploadedFileListProps) {
   return (
     <div className="w-full flex p-4 max-w-4xl mx-auto">
-      <div className="flex gap-6 overflow-x-auto">
+      <div className="flex gap-3 sm:gap-6 overflow-x-auto scrollbar-none">
         {files.map((it, index) => (
           <div
             key={index}

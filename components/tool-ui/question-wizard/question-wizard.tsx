@@ -58,7 +58,7 @@ function WizardReceipt({
   return (
     <div
       className={cn(
-        'flex w-full max-w-md min-w-80 flex-col',
+        'flex w-full max-w-md flex-col',
         'text-foreground',
         'motion-safe:animate-in motion-safe:fade-in motion-safe:blur-in-sm motion-safe:zoom-in-95 motion-safe:duration-300 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)] motion-safe:fill-mode-both',
         className
@@ -215,7 +215,7 @@ export function QuestionWizard({
   return (
     <div
       className={cn(
-        'flex w-full max-w-md min-w-80 flex-col gap-3',
+        'flex w-full max-w-md flex-col gap-3',
         'text-foreground',
         className
       )}
