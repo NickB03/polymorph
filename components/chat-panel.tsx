@@ -153,7 +153,9 @@ export function ChatPanel({
     <div
       className={cn(
         'w-full bg-background group/form-container shrink-0',
-        messages.length > 0 ? 'sticky bottom-0 px-2 pb-4' : 'px-6'
+        messages.length > 0
+          ? 'sticky bottom-0 px-2 pb-[max(1rem,env(safe-area-inset-bottom,0px))]'
+          : 'px-6'
       )}
     >
       {/* Wordmark - always rendered, fades out when messages appear */}

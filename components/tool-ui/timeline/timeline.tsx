@@ -119,7 +119,7 @@ export const Timeline = memo(function Timeline({
       data-tool-ui-id={id}
       data-slot="timeline"
       className={cn(
-        'max-w-xl min-w-80 rounded-xl border px-5 py-4',
+        'max-w-xl rounded-xl border px-5 py-4',
         'bg-card',
         className
       )}

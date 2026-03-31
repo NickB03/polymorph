@@ -349,7 +349,7 @@ function PlanRoot({
 
   return (
     <Card
-      className={cn('isolate w-full max-w-3xl min-w-80 gap-4 py-4', className)}
+      className={cn('isolate w-full max-w-3xl gap-4 py-4', className)}
       data-tool-ui-id={id}
       data-slot="plan"
     >

@@ -85,7 +85,7 @@ export const Callout = memo(function Callout({
       data-tool-ui-id={id}
       data-slot="callout"
       className={cn(
-        'max-w-xl min-w-80 rounded-xl border px-4 py-3',
+        'max-w-xl rounded-xl border px-4 py-3',
         config.border,
         config.bg,
         className

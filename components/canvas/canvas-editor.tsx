@@ -23,6 +23,12 @@ import type {
 import { cn } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 
 import { useCanvas } from './canvas-context'
 
@@ -263,14 +269,14 @@ export function CanvasEditor() {
     <div className="flex h-full flex-col" data-testid="canvas-editor">
       {/* File tabs */}
       <div
-        className="flex items-center border-b px-2"
+        className="flex items-center border-b px-2 overflow-x-auto scrollbar-none"
         data-testid="canvas-file-tabs"
       >
         {existingFiles.map(file => (
           <button
             key={file}
             className={cn(
-              'px-3 py-2 text-xs font-medium transition-colors',
+              'shrink-0 px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap',
               activeFile === file
                 ? 'border-b-2 border-primary text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
@@ -282,27 +288,29 @@ export function CanvasEditor() {
           </button>
         ))}
         {addableFiles.length > 0 && (
-          <div className="relative group">
-            <button
-              className="px-2 py-2 text-muted-foreground hover:text-foreground"
-              data-testid="canvas-add-file"
-              aria-label="Add file"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-            <div className="absolute left-0 top-full z-10 hidden min-w-[140px] rounded-md border bg-popover p-1 shadow-md group-hover:block">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="px-2 py-2 text-muted-foreground hover:text-foreground shrink-0"
+                data-testid="canvas-add-file"
+                aria-label="Add file"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[140px]">
               {addableFiles.map(file => (
-                <button
+                <DropdownMenuItem
                   key={file}
-                  className="block w-full rounded-sm px-2 py-1 text-left text-xs hover:bg-accent"
+                  className="text-xs"
                   onClick={() => handleAddFile(file)}
                   data-testid={`canvas-add-file-${file}`}
                 >
                   {file}
-                </button>
+                </DropdownMenuItem>
               ))}
-            </div>
-          </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 

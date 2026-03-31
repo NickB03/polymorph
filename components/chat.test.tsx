@@ -176,9 +176,8 @@ vi.mock('./ui/sidebar', () => ({
   useSidebar: () => mockSidebar
 }))
 
-// Mock useMediaQuery to avoid window.matchMedia issues in jsdom
-vi.mock('@/lib/hooks/use-media-query', () => ({
-  useMediaQuery: () => false
+vi.mock('@/hooks/use-mobile', () => ({
+  useIsMobile: () => false
 }))
 
 // Mock InspectorPanel / InspectorDrawer to avoid pulling in heavy component

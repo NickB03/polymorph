@@ -164,7 +164,7 @@ export const Chart = memo(function Chart({
 
   return (
     <Card
-      className={cn('w-full min-w-80', className)}
+      className={cn('w-full', className)}
       data-tool-ui-id={id}
       data-slot="chart"
     >
