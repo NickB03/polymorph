@@ -221,17 +221,24 @@ export function ChatCanvasShell({
         />
       )}
 
-      {/* Mobile: full-width chat + drawer */}
-      <div className="md:hidden flex-1 h-full min-w-0">
-        {children}
-        {canvas.isWorkspaceOpen ? (
-          <CanvasWorkspace />
-        ) : (
-          <>
-            <InspectorDrawer />
-            <ActivityDrawer />
-          </>
-        )}
+      {/* Mobile: full-screen takeover — workspace overlays chat */}
+      <div
+        className="md:hidden flex-1 h-full min-w-0 flex flex-col relative"
+        data-testid="mobile-shell"
+      >
+        {/* Chat always stays mounted so its refs (canvasOpenedRef etc.) survive
+            workspace open/close cycles. Hidden via CSS when workspace is active. */}
+        <div
+          className={cn(
+            'flex-1 min-h-0 flex flex-col',
+            canvas.isWorkspaceOpen && 'invisible h-0 overflow-hidden'
+          )}
+        >
+          {children}
+          <InspectorDrawer />
+          <ActivityDrawer />
+        </div>
+        {canvas.isWorkspaceOpen && <CanvasWorkspace />}
       </div>
     </div>
   )

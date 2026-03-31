@@ -90,7 +90,11 @@ export function ChatHistoryClient() {
       const { chats: dbChats, nextOffset: newNextOffset } =
         (await response.json()) as ChatPageResponse
 
-      setChats(prevChats => [...prevChats, ...dbChats])
+      setChats(prevChats => {
+        const existingIds = new Set(prevChats.map(c => c.id))
+        const newChats = dbChats.filter(c => !existingIds.has(c.id))
+        return [...prevChats, ...newChats]
+      })
       setNextOffset(newNextOffset)
     } catch (error) {
       console.error('Failed to load more chats:', error)

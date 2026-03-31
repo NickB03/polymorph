@@ -584,15 +584,17 @@ describe('CanvasWorkspace', () => {
 
   // ── Mobile tab switching ───────────────────────────────────────
 
-  it('renders tab bar on mobile with Preview active by default', () => {
+  it('renders mobile header toggles with Preview active by default', () => {
     mockIsMobile = true
     const artifact = makeArtifact()
     setCanvasState({ artifact, artifactId: artifact.artifactId })
 
     render(<CanvasWorkspace />)
 
-    expect(screen.getByTestId('canvas-tab-preview')).toBeInTheDocument()
-    expect(screen.getByTestId('canvas-tab-code')).toBeInTheDocument()
+    expect(
+      screen.getByTestId('canvas-mobile-preview-toggle')
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('canvas-mobile-code-toggle')).toBeInTheDocument()
     // Preview slot visible by default
     expect(screen.getByTestId('canvas-preview-slot')).toBeInTheDocument()
     expect(screen.queryByTestId('canvas-pill-switcher')).not.toBeInTheDocument()
@@ -605,12 +607,12 @@ describe('CanvasWorkspace', () => {
 
     render(<CanvasWorkspace />)
 
-    fireEvent.click(screen.getByTestId('canvas-tab-code'))
+    fireEvent.click(screen.getByTestId('canvas-mobile-code-toggle'))
 
     expect(screen.getByTestId('canvas-code-slot')).toBeInTheDocument()
   })
 
-  it('shows activity tab on mobile when activity items exist', () => {
+  it('shows activity toggle on mobile when activity items exist', () => {
     mockIsMobile = true
     const artifact = makeArtifact()
     mockActivityState.items = [
@@ -631,7 +633,9 @@ describe('CanvasWorkspace', () => {
 
     render(<CanvasWorkspace />)
 
-    expect(screen.getByTestId('canvas-tab-activity')).toBeInTheDocument()
+    expect(
+      screen.getByTestId('canvas-mobile-activity-toggle')
+    ).toBeInTheDocument()
   })
 
   it('shows and clears the unseen activity indicator on mobile', async () => {
@@ -643,7 +647,7 @@ describe('CanvasWorkspace', () => {
     rerender(<CanvasWorkspace />)
 
     expect(
-      screen.queryByTestId('canvas-tab-activity-unseen')
+      screen.queryByTestId('canvas-mobile-activity-unseen')
     ).not.toBeInTheDocument()
 
     mockActivityState.items = [
@@ -662,13 +666,15 @@ describe('CanvasWorkspace', () => {
     ]
     rerender(<CanvasWorkspace />)
 
-    expect(screen.getByTestId('canvas-tab-activity-unseen')).toBeInTheDocument()
+    expect(
+      screen.getByTestId('canvas-mobile-activity-unseen')
+    ).toBeInTheDocument()
 
-    fireEvent.click(screen.getByTestId('canvas-tab-activity'))
+    fireEvent.click(screen.getByTestId('canvas-mobile-activity-toggle'))
 
     await waitFor(() => {
       expect(
-        screen.queryByTestId('canvas-tab-activity-unseen')
+        screen.queryByTestId('canvas-mobile-activity-unseen')
       ).not.toBeInTheDocument()
     })
   })
@@ -744,39 +750,67 @@ describe('CanvasWorkspace', () => {
 
   // ── Mobile tabs include diagnostics and history ────────────────
 
-  it('renders diagnostics and history tabs on mobile', () => {
+  it('renders diagnostics and history as code sub-tabs on mobile', () => {
     mockIsMobile = true
     const artifact = makeArtifact()
     setCanvasState({ artifact, artifactId: artifact.artifactId })
 
     render(<CanvasWorkspace />)
 
-    expect(screen.getByTestId('canvas-tab-diagnostics')).toBeInTheDocument()
-    expect(screen.getByTestId('canvas-tab-history')).toBeInTheDocument()
+    // Switch to code tab first to reveal sub-tabs
+    fireEvent.click(screen.getByTestId('canvas-mobile-code-toggle'))
+
+    expect(
+      screen.getByTestId('canvas-code-sub-tab-diagnostics')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByTestId('canvas-code-sub-tab-history')
+    ).toBeInTheDocument()
   })
 
-  it('switches to diagnostics tab on mobile', () => {
+  it('switches to diagnostics sub-tab on mobile', () => {
     mockIsMobile = true
     const artifact = makeArtifact()
     setCanvasState({ artifact, artifactId: artifact.artifactId })
 
     render(<CanvasWorkspace />)
 
-    fireEvent.click(screen.getByTestId('canvas-tab-diagnostics'))
+    fireEvent.click(screen.getByTestId('canvas-mobile-code-toggle'))
+    fireEvent.click(screen.getByTestId('canvas-code-sub-tab-diagnostics'))
 
     expect(screen.getByTestId('canvas-diagnostics-slot')).toBeInTheDocument()
   })
 
-  it('switches to history tab on mobile', () => {
+  it('switches to history sub-tab on mobile', () => {
     mockIsMobile = true
     const artifact = makeArtifact()
     setCanvasState({ artifact, artifactId: artifact.artifactId })
 
     render(<CanvasWorkspace />)
 
-    fireEvent.click(screen.getByTestId('canvas-tab-history'))
+    fireEvent.click(screen.getByTestId('canvas-mobile-code-toggle'))
+    fireEvent.click(screen.getByTestId('canvas-code-sub-tab-history'))
 
     expect(screen.getByTestId('canvas-history-slot')).toBeInTheDocument()
+  })
+
+  it('renders mobile header toggles with minimum 44px touch targets', () => {
+    mockIsMobile = true
+    const artifact = makeArtifact()
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    const toggleButtons = screen
+      .getAllByRole('button')
+      .filter(btn =>
+        btn.getAttribute('data-testid')?.startsWith('canvas-mobile-')
+      )
+
+    expect(toggleButtons.length).toBeGreaterThan(0)
+    for (const btn of toggleButtons) {
+      expect(btn.className).toContain('min-h-[44px]')
+    }
   })
 })
 
