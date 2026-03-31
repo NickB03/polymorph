@@ -197,10 +197,13 @@ export function useVoiceConversation({
 
         lastSpokenMessageIdRef.current = lastAssistant!.id
         const provider = resolvedProvider()
+        // Read from ref instead of closure to avoid stale text if the
+        // timer fires in the micro-window before React's effect cleanup.
+        const text = lastTextRef.current ?? assistantText
         console.debug(
-          `[voice] Synthesizing ${assistantText.length} chars via ${provider} (debounced)`
+          `[voice] Synthesizing ${text.length} chars via ${provider} (debounced)`
         )
-        play(assistantText, { provider, voiceId: config.voiceId })
+        play(text, { provider, voiceId: config.voiceId })
       }, TTS_TEXT_DEBOUNCE_MS)
     }
 
@@ -313,6 +316,9 @@ export function useVoiceConversation({
 
   useEffect(() => {
     if (!voiceActiveRef.current || !playerError) return
+    // If inputError already shut down voice mode, don't restart listening.
+    // React doesn't guarantee effect ordering across concurrent updates.
+    if (inputError) return
 
     if (config.autoListen) {
       setVoiceState('listening')
@@ -323,7 +329,7 @@ export function useVoiceConversation({
     voiceActiveRef.current = false
     setIsVoiceActive(false)
     setVoiceState('idle')
-  }, [config.autoListen, playerError, startListening])
+  }, [config.autoListen, inputError, playerError, startListening])
 
   const voiceError = conversationError ?? inputError ?? playerError
   const voiceNotice = playerNotice

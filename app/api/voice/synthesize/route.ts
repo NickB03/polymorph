@@ -1,4 +1,5 @@
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
+import { checkAndEnforceVoiceLimit } from '@/lib/rate-limit/voice-limits'
 import { jsonError } from '@/lib/utils/json-error'
 import {
   isVoiceEnabled,
@@ -39,6 +40,13 @@ export async function POST(req: Request) {
   if (!userId && !guestChatEnabled) {
     return jsonError('AUTH_REQUIRED', 'Authentication required', 401)
   }
+
+  const rateLimitId =
+    userId ||
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    'anonymous'
+  const limitResponse = await checkAndEnforceVoiceLimit(rateLimitId)
+  if (limitResponse) return limitResponse
 
   try {
     const { text, provider: preferredProvider, voiceId } = await req.json()
