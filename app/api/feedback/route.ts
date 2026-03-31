@@ -2,31 +2,16 @@ export const dynamic = 'force-dynamic'
 
 import { updateMessageFeedback } from '@/lib/actions/feedback'
 import { createClient } from '@/lib/supabase/server'
-import { isTracingEnabled } from '@/lib/utils/telemetry'
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { traceId, score, comment, messageId } = body
-
-    if (!traceId) {
-      return new Response('traceId is required', {
-        status: 400,
-        statusText: 'Bad Request'
-      })
-    }
+    const { score, messageId } = body
 
     if (score === undefined || (score !== 1 && score !== -1)) {
       return new Response('score must be 1 (good) or -1 (bad)', {
         status: 400,
         statusText: 'Bad Request'
-      })
-    }
-
-    // Check if tracing is enabled
-    if (!isTracingEnabled()) {
-      return new Response('Feedback tracking is not enabled', {
-        status: 200
       })
     }
 

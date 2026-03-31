@@ -2,11 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock the modules before any imports
 vi.mock('@/lib/db')
-vi.mock('@/lib/utils/telemetry')
 
 // Import after mocking
 import { db } from '@/lib/db'
-import { isTracingEnabled } from '@/lib/utils/telemetry'
 
 import { getMessageFeedback, updateMessageFeedback } from '../feedback'
 
@@ -36,9 +34,6 @@ describe('Feedback Actions', () => {
       const mockUpdateWhere = vi.fn().mockResolvedValue(undefined)
       const mockSet = vi.fn().mockReturnValue({ where: mockUpdateWhere })
       vi.mocked(db).update = vi.fn().mockReturnValue({ set: mockSet })
-
-      // Mock tracing disabled
-      vi.mocked(isTracingEnabled).mockReturnValue(false)
 
       const result = await updateMessageFeedback(messageId, score)
 
@@ -79,37 +74,6 @@ describe('Feedback Actions', () => {
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('Database error')
-    })
-
-    it('should update feedback in database when tracing is enabled', async () => {
-      const messageId = 'test-message-id'
-      const chatId = 'test-chat-id'
-      const score = 1
-
-      // Enable tracing
-      vi.mocked(isTracingEnabled).mockReturnValue(true)
-
-      // Mock db.select
-      const mockLimit = vi.fn().mockResolvedValue([
-        {
-          metadata: { traceId: 'test-trace-id' },
-          chatId
-        }
-      ])
-      const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit })
-      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
-      vi.mocked(db).select = vi.fn().mockReturnValue({ from: mockFrom })
-
-      // Mock db.update
-      const mockUpdateWhere = vi.fn().mockResolvedValue(undefined)
-      const mockSet = vi.fn().mockReturnValue({ where: mockUpdateWhere })
-      vi.mocked(db).update = vi.fn().mockReturnValue({ set: mockSet })
-
-      const result = await updateMessageFeedback(messageId, score)
-
-      expect(result).toEqual({ success: true })
-      expect(db.select).toHaveBeenCalled()
-      expect(db.update).toHaveBeenCalled()
     })
   })
 

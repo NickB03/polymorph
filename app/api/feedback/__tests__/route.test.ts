@@ -26,13 +26,8 @@ vi.mock('@/lib/actions/feedback', () => ({
   updateMessageFeedback: vi.fn()
 }))
 
-vi.mock('@/lib/utils/telemetry', () => ({
-  isTracingEnabled: vi.fn(() => false)
-}))
-
 // Import after mocking
 import { updateMessageFeedback } from '@/lib/actions/feedback'
-import { isTracingEnabled } from '@/lib/utils/telemetry'
 
 import { POST } from '../route'
 
@@ -43,7 +38,6 @@ describe('Feedback API Route', () => {
 
   describe('POST /api/feedback', () => {
     it('should record feedback successfully', async () => {
-      vi.mocked(isTracingEnabled).mockReturnValue(true)
       vi.mocked(updateMessageFeedback).mockResolvedValue({
         success: true
       })
@@ -54,7 +48,6 @@ describe('Feedback API Route', () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          traceId: 'test-trace-id',
           score: 1,
           comment: 'Great!',
           messageId: 'test-message-id'
@@ -74,7 +67,6 @@ describe('Feedback API Route', () => {
     })
 
     it('should handle negative feedback', async () => {
-      vi.mocked(isTracingEnabled).mockReturnValue(true)
       vi.mocked(updateMessageFeedback).mockResolvedValue({
         success: true
       })
@@ -85,7 +77,6 @@ describe('Feedback API Route', () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          traceId: 'test-trace-id',
           score: -1,
           messageId: 'test-message-id'
         })
@@ -101,25 +92,6 @@ describe('Feedback API Route', () => {
       )
     })
 
-    it('should return 400 for missing traceId', async () => {
-      const request = new Request('http://localhost:3000/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          score: 1,
-          messageId: 'test-message-id'
-        })
-      })
-
-      const response = await POST(request)
-      const text = await response.text()
-
-      expect(response.status).toBe(400)
-      expect(text).toBe('traceId is required')
-    })
-
     it('should return 400 for invalid score', async () => {
       const request = new Request('http://localhost:3000/api/feedback', {
         method: 'POST',
@@ -127,7 +99,6 @@ describe('Feedback API Route', () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          traceId: 'test-trace-id',
           score: 0,
           messageId: 'test-message-id'
         })
@@ -140,8 +111,10 @@ describe('Feedback API Route', () => {
       expect(text).toBe('score must be 1 (good) or -1 (bad)')
     })
 
-    it('should return 200 when tracing is disabled', async () => {
-      vi.mocked(isTracingEnabled).mockReturnValue(false)
+    it('should work without traceId', async () => {
+      vi.mocked(updateMessageFeedback).mockResolvedValue({
+        success: true
+      })
 
       const request = new Request('http://localhost:3000/api/feedback', {
         method: 'POST',
@@ -149,7 +122,6 @@ describe('Feedback API Route', () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          traceId: 'test-trace-id',
           score: 1,
           messageId: 'test-message-id'
         })
@@ -159,12 +131,15 @@ describe('Feedback API Route', () => {
       const text = await response.text()
 
       expect(response.status).toBe(200)
-      expect(text).toBe('Feedback tracking is not enabled')
-      expect(updateMessageFeedback).not.toHaveBeenCalled()
+      expect(text).toBe('Feedback recorded successfully')
+      expect(updateMessageFeedback).toHaveBeenCalledWith(
+        'test-message-id',
+        1,
+        null
+      )
     })
 
     it('should continue even if database update fails', async () => {
-      vi.mocked(isTracingEnabled).mockReturnValue(true)
       vi.mocked(updateMessageFeedback).mockResolvedValue({
         success: false,
         error: 'Database error'
@@ -180,7 +155,6 @@ describe('Feedback API Route', () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          traceId: 'test-trace-id',
           score: 1,
           messageId: 'test-message-id'
         })
@@ -198,15 +172,12 @@ describe('Feedback API Route', () => {
     })
 
     it('should work without messageId', async () => {
-      vi.mocked(isTracingEnabled).mockReturnValue(true)
-
       const request = new Request('http://localhost:3000/api/feedback', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          traceId: 'test-trace-id',
           score: 1
         })
       })
