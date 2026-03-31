@@ -778,6 +778,23 @@ describe('CanvasWorkspace', () => {
 
     expect(screen.getByTestId('canvas-history-slot')).toBeInTheDocument()
   })
+
+  it('renders mobile tab buttons with minimum 44px touch targets', () => {
+    mockIsMobile = true
+    const artifact = makeArtifact()
+    setCanvasState({ artifact, artifactId: artifact.artifactId })
+
+    render(<CanvasWorkspace />)
+
+    const tabButtons = screen
+      .getAllByRole('button')
+      .filter(btn => btn.getAttribute('data-testid')?.startsWith('canvas-tab-'))
+
+    expect(tabButtons.length).toBeGreaterThan(0)
+    for (const btn of tabButtons) {
+      expect(btn.className).toContain('min-h-[44px]')
+    }
+  })
 })
 
 // ── CanvasEditor tests ──────────────────────────────────────────────

@@ -457,14 +457,17 @@ export function CanvasWorkspace() {
     return (
       <TooltipProvider>
         <WorkspaceErrorBoundary onClose={() => canvas.closeWorkspace()}>
-          <div className="flex h-full flex-col" data-testid="canvas-workspace">
+          <div
+            className="flex h-full flex-col pb-safe"
+            data-testid="canvas-workspace"
+          >
             {header}
             <div className="flex border-b">
               {mobileTabs.map(tab => (
                 <button
                   key={tab.id}
                   className={cn(
-                    'relative flex-1 px-2 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-1',
+                    'relative flex-1 px-2 min-h-[44px] text-sm font-medium transition-colors flex items-center justify-center gap-1',
                     mobileTab === tab.id
                       ? 'border-b-2 border-primary text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
