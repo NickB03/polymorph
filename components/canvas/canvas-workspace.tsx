@@ -78,6 +78,11 @@ function isReadOnly(status: CanvasArtifactStatus): boolean {
 
 type ActiveTab = 'preview' | 'code' | 'activity'
 type CodeSubTab = 'code' | 'diagnostics' | 'history'
+type MobileToggleDefinition = {
+  id: ActiveTab
+  icon: typeof Code2
+  label: string
+}
 type CodeSubTabDefinition = {
   id: CodeSubTab
   icon: typeof Code2
@@ -314,55 +319,49 @@ export function CanvasWorkspace() {
     <div className="flex items-center justify-between pl-4 pr-2 py-2">
       <div className="flex items-center gap-2 min-w-0">
         {isMobile ? (
-          <>
-            <button
-              className={cn(
-                'min-h-[44px] min-w-[44px] rounded-md flex items-center justify-center transition-colors',
-                activeTab === 'preview'
-                  ? 'text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-              onClick={() => setActiveTab('preview')}
-              aria-label="Preview"
-              data-testid="canvas-mobile-preview-toggle"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-            <button
-              className={cn(
-                'min-h-[44px] min-w-[44px] rounded-md flex items-center justify-center transition-colors',
-                activeTab === 'code'
-                  ? 'text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-              onClick={() => setActiveTab('code')}
-              aria-label="Code"
-              data-testid="canvas-mobile-code-toggle"
-            >
-              <Code2 className="h-4 w-4" />
-            </button>
-            {hasActivity && (
+          <div
+            className="flex rounded-full bg-muted p-0.5"
+            data-testid="canvas-mobile-pill-switcher"
+          >
+            {(
+              [
+                { id: 'preview' as const, icon: Eye, label: 'Preview' },
+                { id: 'code' as const, icon: Code2, label: 'Code' },
+                ...(hasActivity
+                  ? [
+                      {
+                        id: 'activity' as const,
+                        icon: Activity,
+                        label: 'Activity'
+                      }
+                    ]
+                  : [])
+              ] satisfies MobileToggleDefinition[]
+            ).map(tab => (
               <button
+                key={tab.id}
                 className={cn(
-                  'relative min-h-[44px] min-w-[44px] rounded-md flex items-center justify-center transition-colors',
-                  activeTab === 'activity'
-                    ? 'text-foreground'
+                  'relative min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center transition-colors',
+                  activeTab === tab.id
+                    ? 'bg-background shadow-sm text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab('activity')}
-                aria-label="Activity"
-                data-testid="canvas-mobile-activity-toggle"
+                onClick={() => setActiveTab(tab.id)}
+                aria-label={tab.label}
+                data-testid={`canvas-mobile-${tab.id}-toggle`}
               >
-                <Activity className="h-4 w-4" />
-                {hasUnseenActivity && activeTab !== 'activity' && (
-                  <span
-                    className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary"
-                    data-testid="canvas-mobile-activity-unseen"
-                  />
-                )}
+                <tab.icon className="h-4 w-4" />
+                {tab.id === 'activity' &&
+                  hasUnseenActivity &&
+                  activeTab !== 'activity' && (
+                    <span
+                      className="absolute top-2.5 right-2.5 h-1.5 w-1.5 rounded-full bg-primary"
+                      data-testid="canvas-mobile-activity-unseen"
+                    />
+                  )}
               </button>
-            )}
-          </>
+            ))}
+          </div>
         ) : (
           pillSwitcher
         )}
@@ -379,18 +378,20 @@ export function CanvasWorkspace() {
         )}
       </div>
       <div className="flex items-center gap-0.5">
-        <TooltipButton
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => canvas.viewFullscreen()}
-          disabled={!artifact?.draftCompiledHtml}
-          aria-label="Open in new tab"
-          tooltipContent="Open in new tab"
-          data-testid="canvas-view-fullscreen"
-        >
-          <ExternalLink className="h-4 w-4" />
-        </TooltipButton>
+        {!isMobile && (
+          <TooltipButton
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => canvas.viewFullscreen()}
+            disabled={!artifact?.draftCompiledHtml}
+            aria-label="Open in new tab"
+            tooltipContent="Open in new tab"
+            data-testid="canvas-view-fullscreen"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </TooltipButton>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <TooltipButton
@@ -405,6 +406,16 @@ export function CanvasWorkspace() {
             </TooltipButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {isMobile && (
+              <DropdownMenuItem
+                onClick={() => canvas.viewFullscreen()}
+                disabled={!artifact?.draftCompiledHtml}
+                data-testid="canvas-view-fullscreen"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Open in new tab
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               onClick={() => canvas.exportHtml()}
               disabled={!artifact?.draftCompiledHtml}
@@ -435,7 +446,7 @@ export function CanvasWorkspace() {
       <TooltipProvider>
         <WorkspaceErrorBoundary onClose={() => canvas.closeWorkspace()}>
           <div
-            className="h-full flex flex-col overflow-hidden bg-muted md:px-4 md:pt-14 md:pb-4"
+            className="h-full flex flex-col overflow-hidden bg-muted pt-14 md:px-4 md:pb-4"
             data-testid="canvas-workspace"
           >
             <div className="flex h-full flex-col overflow-hidden rounded-xl bg-background md:border">
@@ -481,7 +492,7 @@ export function CanvasWorkspace() {
       <TooltipProvider>
         <WorkspaceErrorBoundary onClose={() => canvas.closeWorkspace()}>
           <div
-            className="flex h-full flex-col pb-safe"
+            className="flex h-full flex-col pt-14 pb-safe"
             data-testid="canvas-workspace"
           >
             {header}
