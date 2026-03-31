@@ -221,13 +221,16 @@ export function ChatCanvasShell({
         />
       )}
 
-      {/* Mobile: full-width chat + drawer */}
-      <div className="md:hidden flex-1 h-full min-w-0">
-        {children}
+      {/* Mobile: full-screen takeover — show either chat or workspace */}
+      <div
+        className="md:hidden flex-1 h-full min-w-0 flex flex-col"
+        data-testid="mobile-shell"
+      >
         {canvas.isWorkspaceOpen ? (
           <CanvasWorkspace />
         ) : (
           <>
+            {children}
             <InspectorDrawer />
             <ActivityDrawer />
           </>
