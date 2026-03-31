@@ -105,7 +105,7 @@ describe('ChatCanvasShell', () => {
       expect(mobile.queryByTestId('canvas-workspace')).not.toBeInTheDocument()
     })
 
-    it('shows workspace and hides chat when workspace is open', () => {
+    it('shows workspace and keeps chat mounted but hidden when workspace is open', () => {
       mockCanvasContext.isWorkspaceOpen = true
       mockCanvasContext.artifact = { artifactId: '1' } as never
 
@@ -117,7 +117,11 @@ describe('ChatCanvasShell', () => {
 
       const mobile = within(screen.getByTestId('mobile-shell'))
       expect(mobile.getByTestId('canvas-workspace')).toBeInTheDocument()
-      expect(mobile.queryByTestId('chat-content')).not.toBeInTheDocument()
+      // Chat stays mounted (preserves refs like canvasOpenedRef) but is visually hidden
+      expect(mobile.getByTestId('chat-content')).toBeInTheDocument()
+      expect(
+        mobile.getByTestId('chat-content').closest('[class*="invisible"]')
+      ).toBeTruthy()
     })
 
     it('shows drawers when workspace is closed', () => {
@@ -132,7 +136,7 @@ describe('ChatCanvasShell', () => {
       expect(mobile.getByTestId('activity-drawer')).toBeInTheDocument()
     })
 
-    it('hides drawers when workspace is open', () => {
+    it('keeps drawers mounted but hidden when workspace is open', () => {
       mockCanvasContext.isWorkspaceOpen = true
       mockCanvasContext.artifact = { artifactId: '1' } as never
 
@@ -143,8 +147,12 @@ describe('ChatCanvasShell', () => {
       )
 
       const mobile = within(screen.getByTestId('mobile-shell'))
-      expect(mobile.queryByTestId('inspector-drawer')).not.toBeInTheDocument()
-      expect(mobile.queryByTestId('activity-drawer')).not.toBeInTheDocument()
+      // Drawers stay mounted (inside the hidden chat container) to preserve state
+      expect(mobile.getByTestId('inspector-drawer')).toBeInTheDocument()
+      expect(mobile.getByTestId('activity-drawer')).toBeInTheDocument()
+      expect(
+        mobile.getByTestId('inspector-drawer').closest('[class*="invisible"]')
+      ).toBeTruthy()
     })
   })
 })
