@@ -88,7 +88,11 @@ export function SearchModeSelector() {
           />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64" sideOffset={5}>
+      <DropdownMenuContent
+        align="start"
+        className="w-64 max-w-[calc(100vw-2rem)]"
+        sideOffset={5}
+      >
         {SEARCH_MODE_CONFIGS.map(config => {
           const ModeIcon = config.icon
           const isSelected = value === config.value

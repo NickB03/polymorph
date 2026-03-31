@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 
-import { useMediaQuery } from '@/lib/hooks/use-media-query'
 import { cn } from '@/lib/utils'
 import type { VoiceState } from '@/lib/voice/config'
 
@@ -36,6 +35,30 @@ const stateLabels: Record<Exclude<VoiceState, 'idle'>, string> = {
   speaking: 'Speaking'
 }
 
+function useVoiceBreakpoint() {
+  const [matches, setMatches] = useState(false)
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 639px)')
+    const onChange = () => setMatches(mql.matches)
+    onChange()
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }, [])
+  return matches
+}
+
+function usePrefersReducedMotion() {
+  const [matches, setMatches] = useState(false)
+  useEffect(() => {
+    const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const onChange = () => setMatches(mql.matches)
+    onChange()
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }, [])
+  return matches
+}
+
 export function VoiceOrb({
   state,
   onStop,
@@ -43,8 +66,8 @@ export function VoiceOrb({
   mediaStream,
   audioElement
 }: VoiceOrbProps) {
-  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
-  const isMobileViewport = useMediaQuery('(max-width: 639px)')
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const isMobileViewport = useVoiceBreakpoint()
 
   // Convert TTS HTMLAudioElement to MediaStream for the visualizer
   const ttsStream = useAudioStream(state === 'speaking' ? audioElement : null)
@@ -78,7 +101,7 @@ export function VoiceOrb({
             ? { duration: 0 }
             : { type: 'spring', stiffness: 300, damping: 25 }
         }
-        className="fixed bottom-24 right-6 z-40 flex flex-col items-center gap-2 max-md:inset-x-4 max-md:right-auto max-md:bottom-32"
+        className="fixed bottom-24 right-6 z-40 flex flex-col items-center gap-2 max-md:inset-x-4 max-md:right-auto max-md:bottom-32 max-md:pb-safe"
         role="status"
         aria-label={`Voice mode: ${stateLabels[state]}`}
         aria-live="polite"

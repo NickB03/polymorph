@@ -102,7 +102,7 @@ export function ChatMenuItem({ chat }: ChatMenuItemProps) {
         <DropdownMenuTrigger asChild>
           <SidebarMenuAction
             showOnHover
-            className="size-6 p-1 mr-1 overflow-hidden"
+            className="size-8 p-1.5 mr-1 overflow-hidden"
           >
             <EllipsisVertical size={13} />
             <span className="sr-only">Chat Actions</span>

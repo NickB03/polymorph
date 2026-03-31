@@ -205,7 +205,7 @@ function DataTableLayout({
 
   return (
     <div
-      className={cn('@container w-full min-w-80', className)}
+      className={cn('@container w-full', className)}
       data-tool-ui-id={id}
       data-slot="data-table"
       data-layout={layout}
