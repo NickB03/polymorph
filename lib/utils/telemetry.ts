@@ -1,7 +1,7 @@
 /**
- * Check if Langfuse tracing is enabled
+ * Check if tracing is enabled
  * Default: false
  */
 export function isTracingEnabled(): boolean {
-  return process.env.ENABLE_LANGFUSE_TRACING === 'true'
+  return process.env.ENABLE_TRACING === 'true'
 }

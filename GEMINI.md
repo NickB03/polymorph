@@ -19,7 +19,7 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 - **AI Providers:** Google (Gemini 3 Flash), xAI (Grok 4.1 Fast Reasoning) via Vercel AI Gateway
 - **Styling:** Tailwind CSS v4 + shadcn/ui
 - **Testing:** Vitest
-- **Tracing:** Langfuse
+- **Tracing:** Arize Phoenix
 
 ## Architecture
 

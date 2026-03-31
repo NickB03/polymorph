@@ -249,7 +249,7 @@ curl -X POST http://localhost:43100/api/upload \
 
 ### POST `/api/feedback`
 
-Records user feedback (thumbs up/down) on an AI response. Sends the score to Langfuse for tracing analytics and optionally updates the message metadata in the database.
+Records user feedback (thumbs up/down) on an AI response. Updates the message metadata in the database when tracing is enabled.
 
 **Authentication:** Optional (feedback is recorded even without auth, but database update requires a user context for RLS)
 **Dynamic:** `force-dynamic`
@@ -258,7 +258,7 @@ Records user feedback (thumbs up/down) on an AI response. Sends the score to Lan
 
 ```typescript
 {
-  traceId: string          // Langfuse trace ID for the AI response
+  traceId: string          // Trace ID for the AI response
   score: 1 | -1            // 1 = positive (thumbs up), -1 = negative (thumbs down)
   comment?: string         // Optional text comment
   messageId?: string       // Database message ID to update metadata
@@ -267,7 +267,7 @@ Records user feedback (thumbs up/down) on an AI response. Sends the score to Lan
 
 | Field       | Type      | Required | Description                                                                  |
 | ----------- | --------- | -------- | ---------------------------------------------------------------------------- |
-| `traceId`   | `string`  | Yes      | The Langfuse trace ID associated with the response.                          |
+| `traceId`   | `string`  | Yes      | The trace ID associated with the response.                                   |
 | `score`     | `1 \| -1` | Yes      | Feedback score. Must be exactly `1` or `-1`.                                 |
 | `comment`   | `string`  | No       | Optional comment explaining the feedback.                                    |
 | `messageId` | `string`  | No       | If provided, updates the message's `metadata.feedbackScore` in the database. |
@@ -276,13 +276,13 @@ Records user feedback (thumbs up/down) on an AI response. Sends the score to Lan
 
 **Content-Type:** `text/plain`
 
-| Status | Body                                   | Condition                                               |
-| ------ | -------------------------------------- | ------------------------------------------------------- |
-| `200`  | `"Feedback tracking is not enabled"`   | Langfuse tracing is not configured (graceful no-op).    |
-| `200`  | `"Feedback recorded successfully"`     | Feedback sent to Langfuse (and optionally saved to DB). |
-| `400`  | `"traceId is required"`                | Missing `traceId` field.                                |
-| `400`  | `"score must be 1 (good) or -1 (bad)"` | Invalid score value.                                    |
-| `500`  | `"Error recording feedback"`           | Unexpected error during processing.                     |
+| Status | Body                                   | Condition                                   |
+| ------ | -------------------------------------- | ------------------------------------------- |
+| `200`  | `"Feedback tracking is not enabled"`   | Tracing is not configured (graceful no-op). |
+| `200`  | `"Feedback recorded successfully"`     | Feedback recorded and saved to DB.          |
+| `400`  | `"traceId is required"`                | Missing `traceId` field.                    |
+| `400`  | `"score must be 1 (good) or -1 (bad)"` | Invalid score value.                        |
+| `500`  | `"Error recording feedback"`           | Unexpected error during processing.         |
 
 #### Example
 

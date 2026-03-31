@@ -30,16 +30,7 @@ vi.mock('@/lib/utils/telemetry', () => ({
   isTracingEnabled: vi.fn(() => false)
 }))
 
-vi.mock('langfuse', () => ({
-  Langfuse: vi.fn(() => ({
-    score: vi.fn(),
-    flushAsync: vi.fn(() => Promise.resolve())
-  }))
-}))
-
 // Import after mocking
-import { Langfuse } from 'langfuse'
-
 import { updateMessageFeedback } from '@/lib/actions/feedback'
 import { isTracingEnabled } from '@/lib/utils/telemetry'
 
@@ -56,16 +47,6 @@ describe('Feedback API Route', () => {
       vi.mocked(updateMessageFeedback).mockResolvedValue({
         success: true
       })
-
-      const mockScore = vi.fn()
-      const mockFlush = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(Langfuse).mockImplementation(
-        () =>
-          ({
-            score: mockScore,
-            flushAsync: mockFlush
-          }) as any
-      )
 
       const request = new Request('http://localhost:3000/api/feedback', {
         method: 'POST',
@@ -85,13 +66,6 @@ describe('Feedback API Route', () => {
 
       expect(response.status).toBe(200)
       expect(text).toBe('Feedback recorded successfully')
-      expect(mockScore).toHaveBeenCalledWith({
-        traceId: 'test-trace-id',
-        name: 'user_feedback',
-        value: 1,
-        comment: 'Great!'
-      })
-      expect(mockFlush).toHaveBeenCalled()
       expect(updateMessageFeedback).toHaveBeenCalledWith(
         'test-message-id',
         1,
@@ -104,16 +78,6 @@ describe('Feedback API Route', () => {
       vi.mocked(updateMessageFeedback).mockResolvedValue({
         success: true
       })
-
-      const mockScore = vi.fn()
-      const mockFlush = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(Langfuse).mockImplementation(
-        () =>
-          ({
-            score: mockScore,
-            flushAsync: mockFlush
-          }) as any
-      )
 
       const request = new Request('http://localhost:3000/api/feedback', {
         method: 'POST',
@@ -130,12 +94,11 @@ describe('Feedback API Route', () => {
       const response = await POST(request)
 
       expect(response.status).toBe(200)
-      expect(mockScore).toHaveBeenCalledWith({
-        traceId: 'test-trace-id',
-        name: 'user_feedback',
-        value: -1,
-        comment: undefined
-      })
+      expect(updateMessageFeedback).toHaveBeenCalledWith(
+        'test-message-id',
+        -1,
+        null
+      )
     })
 
     it('should return 400 for missing traceId', async () => {
@@ -207,16 +170,6 @@ describe('Feedback API Route', () => {
         error: 'Database error'
       })
 
-      const mockScore = vi.fn()
-      const mockFlush = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(Langfuse).mockImplementation(
-        () =>
-          ({
-            score: mockScore,
-            flushAsync: mockFlush
-          }) as any
-      )
-
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
@@ -246,16 +199,6 @@ describe('Feedback API Route', () => {
 
     it('should work without messageId', async () => {
       vi.mocked(isTracingEnabled).mockReturnValue(true)
-
-      const mockScore = vi.fn()
-      const mockFlush = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(Langfuse).mockImplementation(
-        () =>
-          ({
-            score: mockScore,
-            flushAsync: mockFlush
-          }) as any
-      )
 
       const request = new Request('http://localhost:3000/api/feedback', {
         method: 'POST',

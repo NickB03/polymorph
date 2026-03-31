@@ -2,12 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock the modules before any imports
 vi.mock('@/lib/db')
-vi.mock('langfuse')
 vi.mock('@/lib/utils/telemetry')
 
 // Import after mocking
-import { Langfuse } from 'langfuse'
-
 import { db } from '@/lib/db'
 import { isTracingEnabled } from '@/lib/utils/telemetry'
 
@@ -84,24 +81,13 @@ describe('Feedback Actions', () => {
       expect(result.error).toBe('Database error')
     })
 
-    it('should send feedback to Langfuse when tracing is enabled', async () => {
+    it('should update feedback in database when tracing is enabled', async () => {
       const messageId = 'test-message-id'
       const chatId = 'test-chat-id'
       const score = 1
 
       // Enable tracing
       vi.mocked(isTracingEnabled).mockReturnValue(true)
-
-      // Mock Langfuse
-      const mockScore = vi.fn()
-      const mockFlush = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(Langfuse).mockImplementation(
-        () =>
-          ({
-            score: mockScore,
-            flushAsync: mockFlush
-          }) as any
-      )
 
       // Mock db.select
       const mockLimit = vi.fn().mockResolvedValue([
@@ -122,14 +108,8 @@ describe('Feedback Actions', () => {
       const result = await updateMessageFeedback(messageId, score)
 
       expect(result).toEqual({ success: true })
-      expect(Langfuse).toHaveBeenCalled()
-      expect(mockScore).toHaveBeenCalledWith({
-        traceId: 'test-trace-id',
-        name: 'user-feedback',
-        value: score,
-        comment: 'Thumbs up'
-      })
-      expect(mockFlush).toHaveBeenCalled()
+      expect(db.select).toHaveBeenCalled()
+      expect(db.update).toHaveBeenCalled()
     })
   })
 

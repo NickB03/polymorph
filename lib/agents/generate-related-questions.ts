@@ -39,11 +39,7 @@ export function createRelatedQuestionsStream(
       metadata: {
         modelId,
         agentType: 'related-questions-generator',
-        messageCount: messages.length,
-        ...(parentTraceId && {
-          langfuseTraceId: parentTraceId,
-          langfuseUpdateParent: false
-        })
+        messageCount: messages.length
       }
     }
   })

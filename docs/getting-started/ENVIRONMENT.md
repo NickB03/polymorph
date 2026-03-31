@@ -70,7 +70,7 @@ Required when `ENABLE_AUTH=true`:
 ## Optional platform features
 
 - Guest mode: `ENABLE_GUEST_CHAT` (recommended), `GUEST_CHAT_DAILY_LIMIT`
-- Tracing/observability: `ENABLE_LANGFUSE_TRACING`, `LANGFUSE_*`
+- Tracing/observability: `ENABLE_TRACING`, `PHOENIX_COLLECTOR_ENDPOINT`, `PHOENIX_PROJECT_NAME`, `PHOENIX_API_KEY`
 - Performance diagnostics: `ENABLE_PERF_LOGGING`
 
 ### Troubleshooting research fetches

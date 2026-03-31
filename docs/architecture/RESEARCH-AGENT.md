@@ -172,7 +172,7 @@ const agent = new ToolLoopAgent({
   activeTools: activeToolsList, // Subset enabled for this mode
   stopWhen: stepCountIs(maxSteps), // 20 (chat) or 50 (research)
   providerOptions, // Model-specific options (if any)
-  experimental_telemetry // Langfuse tracing config
+  experimental_telemetry // Phoenix/OTel tracing config
 })
 ```
 

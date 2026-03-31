@@ -1,13 +1,11 @@
 'use server'
 
 import { eq } from 'drizzle-orm'
-import { Langfuse } from 'langfuse'
 
 import { db } from '@/lib/db'
 import { messages } from '@/lib/db/schema'
 import { withOptionalRLS } from '@/lib/db/with-rls'
 import type { UIMessageMetadata } from '@/lib/types/ai'
-import { isTracingEnabled } from '@/lib/utils/telemetry'
 
 export async function updateMessageFeedback(
   messageId: string,
@@ -48,19 +46,6 @@ export async function updateMessageFeedback(
 
     if (!result.success) {
       return result
-    }
-
-    // Send feedback to Langfuse if trace ID exists and tracing is enabled
-    const traceId = (result.metadata as UIMessageMetadata)?.traceId
-    if (traceId && isTracingEnabled()) {
-      const langfuse = new Langfuse()
-      langfuse.score({
-        traceId,
-        name: 'user-feedback',
-        value: score,
-        comment: score === 1 ? 'Thumbs up' : 'Thumbs down'
-      })
-      await langfuse.flushAsync()
     }
 
     return { success: true }

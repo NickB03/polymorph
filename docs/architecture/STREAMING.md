@@ -50,7 +50,7 @@ Key characteristics:
 - Loads existing chat for authorization (skipped for new chats via `isNewChat` optimization)
 - Persists user messages and AI responses to the database via `persistStreamResults`
 - Generates chat titles in parallel for new conversations
-- Creates Langfuse traces for observability when tracing is enabled
+- Creates Phoenix traces for observability when tracing is enabled
 - Handles `submit-message`, `regenerate-message`, and `tool-result` triggers
 
 ### Ephemeral Streams (`create-ephemeral-chat-stream-response.ts`)
@@ -77,7 +77,7 @@ Key characteristics:
 | Title generation          | Yes (parallel, new chats only)    | No                             |
 | Related questions         | Yes                               | Yes                            |
 | Smooth streaming          | Yes (`word` chunking)             | Yes (`word` chunking)          |
-| Langfuse tracing          | Yes (when enabled)                | Yes (when enabled)             |
+| Phoenix tracing           | Yes (when enabled)                | Yes (when enabled)             |
 | Message source            | Server-side history + new message | Full message array from client |
 | `onFinish` callback       | `persistStreamResults`            | None                           |
 | Rate limiting             | Overall chat limit per user       | IP-based guest limit           |
@@ -144,7 +144,7 @@ The `researcher()` factory (`lib/agents/researcher.ts`) creates a `ToolLoopAgent
 - A system prompt based on search mode (chat or research)
 - Active tools (search, fetch, display tools, and optionally todoWrite)
 - A step limit (20 for chat mode, 50 for research mode)
-- Telemetry configuration for Langfuse
+- Telemetry configuration for Phoenix
 
 The agent is invoked with:
 

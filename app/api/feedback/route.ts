@@ -1,5 +1,3 @@
-import { Langfuse } from 'langfuse'
-
 export const dynamic = 'force-dynamic'
 
 import { updateMessageFeedback } from '@/lib/actions/feedback'
@@ -31,20 +29,6 @@ export async function POST(req: Request) {
         status: 200
       })
     }
-
-    // Initialize Langfuse client
-    const langfuse = new Langfuse()
-
-    // Send score to Langfuse
-    langfuse.score({
-      traceId,
-      name: 'user_feedback',
-      value: score,
-      comment
-    })
-
-    // Flush to ensure the score is sent
-    await langfuse.flushAsync()
 
     // Get current user for RLS context
     let userId: string | null = null

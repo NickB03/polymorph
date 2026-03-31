@@ -36,7 +36,7 @@ graph TD
     DB["Supabase PostgreSQL<br/>(Drizzle ORM)"]
     Redis["Upstash Redis<br/>(Rate Limiting)"]
     Auth["Supabase Auth"]
-    Langfuse["Langfuse<br/>(Tracing)"]
+    Phoenix["Arize Phoenix<br/>(Tracing)"]
 
     Browser -->|"HTTP POST + SSE"| NextApp
     NextApp --> API
@@ -46,7 +46,7 @@ graph TD
     Agent -->|"LLM Calls"| AI
     Agent -->|"Tool Calls"| Search
     Agent -->|"Persist Results"| DB
-    Agent -.->|"Telemetry"| Langfuse
+    Agent -.->|"Telemetry"| Phoenix
     Auth -->|"Session Cookies"| Browser
 ```
 
