@@ -78,7 +78,6 @@ function isReadOnly(status: CanvasArtifactStatus): boolean {
 
 type ActiveTab = 'preview' | 'code' | 'activity'
 type CodeSubTab = 'code' | 'diagnostics' | 'history'
-type MobileTab = 'preview' | 'code' | 'diagnostics' | 'history' | 'activity'
 type CodeSubTabDefinition = {
   id: CodeSubTab
   icon: typeof Code2
@@ -192,7 +191,6 @@ export function CanvasWorkspace() {
   const isMobile = useIsMobile()
   const [activeTab, setActiveTab] = useState<ActiveTab>('preview')
   const [codeSubTab, setCodeSubTab] = useState<CodeSubTab>('code')
-  const [mobileTab, setMobileTab] = useState<MobileTab>('preview')
   const [hasUnseenActivity, setHasUnseenActivity] = useState(false)
   const previousItemCountRef = useRef(activityState.items.length)
   const hasActivity = activityState.items.length > 0
@@ -201,17 +199,13 @@ export function CanvasWorkspace() {
     const previousItemCount = previousItemCountRef.current
 
     if (activityState.items.length > previousItemCount) {
-      const isViewingActivity =
-        (isMobile && mobileTab === 'activity') ||
-        (!isMobile && activeTab === 'activity')
-
-      if (!isViewingActivity) {
+      if (activeTab !== 'activity') {
         setHasUnseenActivity(true)
       }
     }
 
     previousItemCountRef.current = activityState.items.length
-  }, [activityState.items.length, activeTab, isMobile, mobileTab])
+  }, [activityState.items.length, activeTab])
 
   useEffect(() => {
     if (!hasActivity) {
@@ -221,18 +215,14 @@ export function CanvasWorkspace() {
       if (activeTab === 'activity') {
         setActiveTab('preview')
       }
-
-      if (mobileTab === 'activity') {
-        setMobileTab('preview')
-      }
     }
-  }, [activeTab, hasActivity, mobileTab])
+  }, [activeTab, hasActivity])
 
   useEffect(() => {
-    if (activeTab === 'activity' || mobileTab === 'activity') {
+    if (activeTab === 'activity') {
       setHasUnseenActivity(false)
     }
-  }, [activeTab, mobileTab])
+  }, [activeTab])
 
   // Loading state
   if (canvas.isLoading) {
@@ -323,7 +313,59 @@ export function CanvasWorkspace() {
   const header = (
     <div className="flex items-center justify-between pl-4 pr-2 py-2">
       <div className="flex items-center gap-2 min-w-0">
-        {!isMobile && pillSwitcher}
+        {isMobile ? (
+          <>
+            <button
+              className={cn(
+                'min-h-[44px] min-w-[44px] rounded-md flex items-center justify-center transition-colors',
+                activeTab === 'preview'
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+              onClick={() => setActiveTab('preview')}
+              aria-label="Preview"
+              data-testid="canvas-mobile-preview-toggle"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
+            <button
+              className={cn(
+                'min-h-[44px] min-w-[44px] rounded-md flex items-center justify-center transition-colors',
+                activeTab === 'code'
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+              onClick={() => setActiveTab('code')}
+              aria-label="Code"
+              data-testid="canvas-mobile-code-toggle"
+            >
+              <Code2 className="h-4 w-4" />
+            </button>
+            {hasActivity && (
+              <button
+                className={cn(
+                  'relative min-h-[44px] min-w-[44px] rounded-md flex items-center justify-center transition-colors',
+                  activeTab === 'activity'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+                onClick={() => setActiveTab('activity')}
+                aria-label="Activity"
+                data-testid="canvas-mobile-activity-toggle"
+              >
+                <Activity className="h-4 w-4" />
+                {hasUnseenActivity && activeTab !== 'activity' && (
+                  <span
+                    className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary"
+                    data-testid="canvas-mobile-activity-unseen"
+                  />
+                )}
+              </button>
+            )}
+          </>
+        ) : (
+          pillSwitcher
+        )}
         <h2 className="text-sm font-medium truncate">
           {artifact?.title ?? pendingWorkspace?.title ?? 'Canvas Artifact'}
         </h2>
@@ -417,7 +459,7 @@ export function CanvasWorkspace() {
         <button
           key={tab.id}
           className={cn(
-            'flex-1 px-3 py-2 text-sm font-medium transition-colors',
+            'flex-1 px-3 min-h-[44px] text-sm font-medium transition-colors',
             codeSubTab === tab.id
               ? 'border-b-2 border-primary text-foreground'
               : 'text-muted-foreground hover:text-foreground'
@@ -435,25 +477,6 @@ export function CanvasWorkspace() {
   // ── Mobile: tabbed view ────────────────────────────────────────
 
   if (isMobile) {
-    const mobileTabs = [
-      { id: 'preview' as MobileTab, icon: Eye, label: 'Preview' },
-      { id: 'code' as MobileTab, icon: Code2, label: 'Code' },
-      {
-        id: 'diagnostics' as MobileTab,
-        icon: AlertCircle,
-        label: 'Diagnostics'
-      },
-      { id: 'history' as MobileTab, icon: History, label: 'History' }
-    ]
-
-    if (hasActivity) {
-      mobileTabs.push({
-        id: 'activity',
-        icon: Activity,
-        label: 'Activity'
-      })
-    }
-
     return (
       <TooltipProvider>
         <WorkspaceErrorBoundary onClose={() => canvas.closeWorkspace()}>
@@ -462,57 +485,22 @@ export function CanvasWorkspace() {
             data-testid="canvas-workspace"
           >
             {header}
-            <div className="flex border-b">
-              {mobileTabs.map(tab => (
-                <button
-                  key={tab.id}
-                  className={cn(
-                    'relative flex-1 px-2 min-h-[44px] text-sm font-medium transition-colors flex items-center justify-center gap-1',
-                    mobileTab === tab.id
-                      ? 'border-b-2 border-primary text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                  onClick={() => setMobileTab(tab.id)}
-                  aria-label={tab.label}
-                  data-testid={`canvas-tab-${tab.id}`}
-                >
-                  <tab.icon className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline text-xs truncate">
-                    {tab.label}
-                  </span>
-                  {tab.id === 'activity' &&
-                    hasUnseenActivity &&
-                    mobileTab !== 'activity' && (
-                      <span
-                        className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary"
-                        data-testid="canvas-tab-activity-unseen"
-                      />
-                    )}
-                </button>
-              ))}
-            </div>
-            <div className="flex-1 min-h-0 overflow-auto">
-              {mobileTab === 'preview' && (
+            <Separator className="bg-border/50" />
+            <div className="flex-1 min-h-0">
+              {activeTab === 'preview' && (
                 <div className="h-full" data-testid="canvas-preview-slot">
                   <CanvasPreview />
                 </div>
               )}
-              {mobileTab === 'code' && (
-                <div className="h-full" data-testid="canvas-code-slot">
-                  <CanvasEditor />
+              {activeTab === 'code' && (
+                <div className="flex flex-col h-full">
+                  {codeSubTabBar}
+                  <div className="flex-1 min-h-0">
+                    <CodeSubTabContent tab={codeSubTab} />
+                  </div>
                 </div>
               )}
-              {mobileTab === 'diagnostics' && (
-                <div className="h-full" data-testid="canvas-diagnostics-slot">
-                  <CanvasDiagnosticsPanel />
-                </div>
-              )}
-              {mobileTab === 'history' && (
-                <div className="h-full" data-testid="canvas-history-slot">
-                  <CanvasVersionHistory />
-                </div>
-              )}
-              {mobileTab === 'activity' && (
+              {activeTab === 'activity' && (
                 <div className="h-full" data-testid="canvas-activity-slot">
                   <ActivityFeedContent items={activityState.items} />
                 </div>

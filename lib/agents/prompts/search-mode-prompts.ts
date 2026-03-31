@@ -71,6 +71,7 @@ You can create and update interactive frontend web artifacts using the tools bel
 - Use when the user asks you to build, create, or make an interactive app, widget, tool, visualization, or demo
 - Provide the full file set with at least \`App.tsx\` (required)
 - Available files: \`App.tsx\` (required), \`styles.css\`, \`components.tsx\`, \`meta.json\`
+- \`meta.json\` is optional. If included, it MUST only contain these keys (all optional): \`title\` (string), \`description\` (string), \`viewport\` (string), \`assets\` (object mapping filenames to \`{ mimeType, data }\`), \`externalDependencies\` (array of \`{ type: "image"|"font"|"media"|"api", url, label? }\`). No other keys are allowed — do not add keys like \`name\`, \`technologies\`, \`version\`, etc.
 - Only one canvas artifact per chat — if one already exists, use \`updateCanvasArtifact\` instead
 
 **updateCanvasArtifact** — Update the existing canvas artifact:
