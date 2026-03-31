@@ -1,20 +1,29 @@
 import type { TTSProvider } from './config'
 
+function validateAudioContentType(response: Response, provider: string): void {
+  const contentType = response.headers.get('content-type') ?? ''
+  if (!contentType.includes('audio') && !contentType.includes('octet-stream')) {
+    throw new Error(
+      `${provider} returned unexpected Content-Type: ${contentType}`
+    )
+  }
+}
+
 /**
  * Resolve the best available TTS provider based on configured API keys.
  * Falls through: ElevenLabs → OpenAI → browser (client-only, returns null).
  */
 export function resolveProvider(preferred?: TTSProvider): TTSProvider | null {
   if (preferred === 'browser') return null // handled client-side
-  if (preferred === 'elevenlabs' && process.env.ELEVENLABS_API_KEY) {
+  if (preferred === 'elevenlabs' && process.env.ELEVENLABS_API_KEY?.trim()) {
     return 'elevenlabs'
   }
-  if (preferred === 'openai' && process.env.OPENAI_API_KEY) {
+  if (preferred === 'openai' && process.env.OPENAI_API_KEY?.trim()) {
     return 'openai'
   }
   // Auto-resolve: try ElevenLabs first, then OpenAI
-  if (process.env.ELEVENLABS_API_KEY) return 'elevenlabs'
-  if (process.env.OPENAI_API_KEY) return 'openai'
+  if (process.env.ELEVENLABS_API_KEY?.trim()) return 'elevenlabs'
+  if (process.env.OPENAI_API_KEY?.trim()) return 'openai'
   return null // caller should fall back to browser TTS
 }
 
@@ -27,7 +36,7 @@ export async function synthesizeElevenLabs(
   voiceId: string,
   signal?: AbortSignal
 ): Promise<ReadableStream<Uint8Array>> {
-  const apiKey = process.env.ELEVENLABS_API_KEY
+  const apiKey = process.env.ELEVENLABS_API_KEY?.trim()
   if (!apiKey) throw new Error('ELEVENLABS_API_KEY not configured')
 
   const response = await fetch(
@@ -55,6 +64,8 @@ export async function synthesizeElevenLabs(
     throw new Error(`ElevenLabs API error ${response.status}: ${errorText}`)
   }
 
+  validateAudioContentType(response, 'ElevenLabs')
+
   if (!response.body) {
     throw new Error('ElevenLabs returned no audio stream')
   }
@@ -71,7 +82,7 @@ export async function synthesizeOpenAI(
   voice = 'alloy',
   signal?: AbortSignal
 ): Promise<ReadableStream<Uint8Array>> {
-  const apiKey = process.env.OPENAI_API_KEY
+  const apiKey = process.env.OPENAI_API_KEY?.trim()
   if (!apiKey) throw new Error('OPENAI_API_KEY not configured')
 
   const response = await fetch('https://api.openai.com/v1/audio/speech', {
@@ -93,6 +104,8 @@ export async function synthesizeOpenAI(
     const errorText = await response.text().catch(() => 'Unknown error')
     throw new Error(`OpenAI TTS error ${response.status}: ${errorText}`)
   }
+
+  validateAudioContentType(response, 'OpenAI')
 
   if (!response.body) {
     throw new Error('OpenAI returned no audio stream')

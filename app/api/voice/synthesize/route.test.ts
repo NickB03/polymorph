@@ -6,7 +6,8 @@ const {
   isVoiceEnabled,
   resolveProvider,
   synthesizeElevenLabs,
-  synthesizeOpenAI
+  synthesizeOpenAI,
+  checkAndEnforceVoiceLimit
 } = vi.hoisted(() => ({
   getCurrentUserId: vi.fn(),
   jsonError: vi.fn(
@@ -16,7 +17,8 @@ const {
   isVoiceEnabled: vi.fn(),
   resolveProvider: vi.fn(),
   synthesizeElevenLabs: vi.fn(),
-  synthesizeOpenAI: vi.fn()
+  synthesizeOpenAI: vi.fn(),
+  checkAndEnforceVoiceLimit: vi.fn()
 }))
 
 vi.mock('@/lib/auth/get-current-user', () => ({
@@ -37,6 +39,10 @@ vi.mock('@/lib/voice/tts-provider', () => ({
   resolveProvider,
   synthesizeElevenLabs,
   synthesizeOpenAI
+}))
+
+vi.mock('@/lib/rate-limit/voice-limits', () => ({
+  checkAndEnforceVoiceLimit
 }))
 
 import { POST } from './route'
@@ -71,6 +77,7 @@ describe('POST /api/voice/synthesize', () => {
     getCurrentUserId.mockResolvedValue('user-123')
     isVoiceEnabled.mockReturnValue(true)
     resolveProvider.mockReturnValue('elevenlabs')
+    checkAndEnforceVoiceLimit.mockResolvedValue(null)
     process.env.OPENAI_API_KEY = 'test-openai-key'
     process.env.ENABLE_GUEST_CHAT = 'true'
   })
@@ -292,6 +299,28 @@ describe('POST /api/voice/synthesize', () => {
       message: 'Speech synthesis timed out'
     })
     vi.useRealTimers()
+  })
+
+  it('returns 429 when voice rate limit is exceeded', async () => {
+    checkAndEnforceVoiceLimit.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          code: 'RATE_LIMIT',
+          error:
+            'Voice synthesis rate limit exceeded. Please try again shortly.',
+          remaining: 0,
+          resetAt: Date.now() + 60_000,
+          limit: 30
+        }),
+        { status: 429 }
+      )
+    )
+
+    const response = await POST(createRequest({ text: 'hello' }))
+
+    expect(response.status).toBe(429)
+    const body = (await response.json()) as { code: string }
+    expect(body.code).toBe('RATE_LIMIT')
   })
 
   it('returns 504 when ElevenLabs fails and OpenAI fallback times out', async () => {

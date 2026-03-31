@@ -368,6 +368,54 @@ describe('useVoiceConversation', () => {
     })
   })
 
+  it('does not restart listening on playerError when inputError already shut down voice', async () => {
+    const sendMessage = vi.fn()
+    const { result, rerender } = renderHook(
+      props => useVoiceConversation(props),
+      {
+        initialProps: {
+          sendMessage,
+          status: 'ready' as string,
+          messages: [] as UIMessage[],
+          config: { ttsProvider: 'browser' as const, autoListen: true }
+        }
+      }
+    )
+
+    act(() => {
+      result.current.startVoice()
+    })
+
+    // Simulate both errors arriving simultaneously
+    voiceInputState = {
+      ...voiceInputState,
+      lastError: {
+        code: 'speech-recognition-error',
+        message: 'Speech recognition failed'
+      }
+    }
+    voicePlayerState = {
+      ...voicePlayerState,
+      lastError: {
+        code: 'tts-playback-failed',
+        message: 'Playback failed'
+      }
+    }
+
+    rerender({
+      sendMessage,
+      status: 'ready',
+      messages: [],
+      config: { ttsProvider: 'browser' as const, autoListen: true }
+    })
+
+    // inputError should shut down voice — playerError should NOT restart listening
+    expect(result.current.voiceState).toBe('idle')
+    expect(result.current.isVoiceActive).toBe(false)
+    // startListening called only once (from startVoice), not again from playerError
+    expect(mockStartListening).toHaveBeenCalledTimes(1)
+  })
+
   it('aggregates voice player notices and errors', async () => {
     const sendMessage = vi.fn()
     voicePlayerState = {
