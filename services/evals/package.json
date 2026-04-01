@@ -1,0 +1,23 @@
+{
+  "name": "polymorph-evals",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@arizeai/phoenix-client": "^1.0.0",
+    "@ai-sdk/openai": "^3.0.23",
+    "ai": "^6.0.64",
+    "drizzle-orm": "^0.43.1",
+    "postgres": "^3.4.7"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.1"
+  }
+}
