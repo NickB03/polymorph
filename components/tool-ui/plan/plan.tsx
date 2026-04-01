@@ -272,7 +272,8 @@ const ProgressBar = memo(function ProgressBar({
         <div
           className="pointer-events-none absolute inset-0 rounded-full motion-safe:animate-pulse"
           style={{
-            boxShadow: '0 0 20px rgba(16, 185, 129, 0.6)'
+            boxShadow:
+              '0 0 20px color-mix(in oklch, var(--success) 60%, transparent)'
           }}
         />
       )}
