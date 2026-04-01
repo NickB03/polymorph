@@ -1,22 +1,12 @@
-import { Langfuse } from 'langfuse'
-
 export const dynamic = 'force-dynamic'
 
 import { updateMessageFeedback } from '@/lib/actions/feedback'
 import { createClient } from '@/lib/supabase/server'
-import { isTracingEnabled } from '@/lib/utils/telemetry'
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { traceId, score, comment, messageId } = body
-
-    if (!traceId) {
-      return new Response('traceId is required', {
-        status: 400,
-        statusText: 'Bad Request'
-      })
-    }
+    const { score, messageId } = body
 
     if (score === undefined || (score !== 1 && score !== -1)) {
       return new Response('score must be 1 (good) or -1 (bad)', {
@@ -24,27 +14,6 @@ export async function POST(req: Request) {
         statusText: 'Bad Request'
       })
     }
-
-    // Check if tracing is enabled
-    if (!isTracingEnabled()) {
-      return new Response('Feedback tracking is not enabled', {
-        status: 200
-      })
-    }
-
-    // Initialize Langfuse client
-    const langfuse = new Langfuse()
-
-    // Send score to Langfuse
-    langfuse.score({
-      traceId,
-      name: 'user_feedback',
-      value: score,
-      comment
-    })
-
-    // Flush to ensure the score is sent
-    await langfuse.flushAsync()
 
     // Get current user for RLS context
     let userId: string | null = null

@@ -8,7 +8,6 @@ import {
   UIMessageStreamWriter
 } from 'ai'
 import { randomUUID } from 'crypto'
-import { Langfuse } from 'langfuse'
 
 import { researcher } from '@/lib/agents/researcher'
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
@@ -92,25 +91,9 @@ export async function createChatStreamResponse(
   }
 
   // Create parent trace ID for grouping all operations
-  let parentTraceId: string | undefined
-  let langfuse: Langfuse | undefined
-
-  if (isTracingEnabled()) {
-    parentTraceId = randomUUID()
-    langfuse = new Langfuse()
-
-    // Create parent trace with name "research"
-    langfuse.trace({
-      id: parentTraceId,
-      name: 'research',
-      metadata: {
-        chatId,
-        userId,
-        modelId: createModelId(model),
-        trigger
-      }
-    })
-  }
+  const parentTraceId: string | undefined = isTracingEnabled()
+    ? randomUUID()
+    : undefined
 
   // Create stream context with trace ID
   const context: StreamContext = {
@@ -325,11 +308,6 @@ export async function createChatStreamResponse(
       } catch (error) {
         console.error('Stream execution error:', error)
         throw error // This error will be handled by the onError callback
-      } finally {
-        // Flush Langfuse traces if enabled
-        if (langfuse) {
-          await langfuse.flushAsync()
-        }
       }
     },
     onError: (error: unknown) => {

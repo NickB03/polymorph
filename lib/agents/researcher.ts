@@ -224,11 +224,7 @@ export function createResearcher({
         metadata: {
           modelId: model,
           agentType: 'researcher',
-          searchMode,
-          ...(parentTraceId && {
-            langfuseTraceId: parentTraceId,
-            langfuseUpdateParent: false
-          })
+          searchMode
         }
       }
     })

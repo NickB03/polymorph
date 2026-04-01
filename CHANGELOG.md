@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Migrated observability from Langfuse to Arize Phoenix with OpenInference tracing
+- Renamed `ENABLE_LANGFUSE_TRACING` to `ENABLE_TRACING`
+- Replaced Langfuse environment variables with Phoenix equivalents (`PHOENIX_COLLECTOR_ENDPOINT`, `PHOENIX_PROJECT_NAME`, `PHOENIX_API_KEY`)
+- Updated start script to respect Railway `PORT` environment variable
 - Canvas artifact system now provides validated React source compilation to persisted single-file HTML with live preview, version history, guest token continuity, and export support
 
 ## [0.1.0] - 2026-02-28

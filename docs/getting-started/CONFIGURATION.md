@@ -76,7 +76,7 @@ UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 
 - Guest chat: `ENABLE_GUEST_CHAT=true`
 - Guest daily limit: `GUEST_CHAT_DAILY_LIMIT=10`
-- Langfuse tracing: `ENABLE_LANGFUSE_TRACING=true`
+- Phoenix tracing: `ENABLE_TRACING=true`
 - File uploads: `SUPABASE_STORAGE_BUCKET=user-uploads`
 - Perf logging: `ENABLE_PERF_LOGGING=true`
 

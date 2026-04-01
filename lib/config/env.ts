@@ -16,6 +16,12 @@ const baseEnvSchema = z.object({
   GUEST_CHAT_DAILY_LIMIT: z.coerce.number().default(10),
   DATABASE_SSL_DISABLED: z.string().default('false'),
 
+  // Tracing / observability (optional)
+  ENABLE_TRACING: z.enum(['true', 'false']).optional().default('false'),
+  PHOENIX_COLLECTOR_ENDPOINT: z.string().optional(),
+  PHOENIX_PROJECT_NAME: z.string().optional(),
+  PHOENIX_API_KEY: z.string().optional(),
+
   // Feature-gated (warn if missing)
   AI_GATEWAY_API_KEY: z.string().optional(),
   TAVILY_API_KEY: z.string().optional(),
@@ -79,6 +85,10 @@ export function validateEnv(): Env {
       DAILY_CHAT_LIMIT: process.env.DAILY_CHAT_LIMIT,
       GUEST_CHAT_DAILY_LIMIT: process.env.GUEST_CHAT_DAILY_LIMIT,
       DATABASE_SSL_DISABLED: process.env.DATABASE_SSL_DISABLED,
+      ENABLE_TRACING: process.env.ENABLE_TRACING,
+      PHOENIX_COLLECTOR_ENDPOINT: process.env.PHOENIX_COLLECTOR_ENDPOINT,
+      PHOENIX_PROJECT_NAME: process.env.PHOENIX_PROJECT_NAME,
+      PHOENIX_API_KEY: process.env.PHOENIX_API_KEY,
       AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
       TAVILY_API_KEY: process.env.TAVILY_API_KEY,
       BRAVE_SEARCH_API_KEY: process.env.BRAVE_SEARCH_API_KEY,

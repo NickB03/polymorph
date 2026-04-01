@@ -8,7 +8,6 @@ import {
   UIMessageStreamWriter
 } from 'ai'
 import { randomUUID } from 'crypto'
-import { Langfuse } from 'langfuse'
 
 import { researcher } from '@/lib/agents/researcher'
 import { verifyGuestCanvasToken } from '@/lib/canvas/guest-token'
@@ -56,25 +55,9 @@ export async function createEphemeralChatStreamResponse(
   }
 
   // Create parent trace ID for grouping all operations
-  let parentTraceId: string | undefined
-  let langfuse: Langfuse | undefined
-
-  if (isTracingEnabled()) {
-    parentTraceId = randomUUID()
-    langfuse = new Langfuse()
-
-    langfuse.trace({
-      id: parentTraceId,
-      name: 'research',
-      metadata: {
-        chatId,
-        userId: 'guest',
-        modelId,
-        trigger: trigger ?? 'submit-message',
-        modelType
-      }
-    })
-  }
+  const parentTraceId: string | undefined = isTracingEnabled()
+    ? randomUUID()
+    : undefined
 
   const stream = createUIMessageStream<UIMessage>({
     // Pass originalMessages so handleUIMessageStreamFinish reuses the
@@ -82,114 +65,107 @@ export async function createEphemeralChatStreamResponse(
     // messages on the client when the last message is already assistant).
     originalMessages: messages,
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
-      try {
-        const isOpenAI = modelId.startsWith('openai:')
-        const messagesToConvert = isOpenAI
-          ? stripReasoningParts(messages)
-          : messages
+      const isOpenAI = modelId.startsWith('openai:')
+      const messagesToConvert = isOpenAI
+        ? stripReasoningParts(messages)
+        : messages
 
-        let modelMessages = await convertToModelMessages(messagesToConvert)
+      let modelMessages = await convertToModelMessages(messagesToConvert)
 
-        modelMessages = pruneMessages({
-          messages: modelMessages,
-          reasoning: 'before-last-message',
-          toolCalls: 'before-last-2-messages',
-          emptyMessages: 'remove'
-        })
+      modelMessages = pruneMessages({
+        messages: modelMessages,
+        reasoning: 'before-last-message',
+        toolCalls: 'before-last-2-messages',
+        emptyMessages: 'remove'
+      })
 
-        modelMessages = maybeTruncateMessages(modelMessages, model)
+      modelMessages = maybeTruncateMessages(modelMessages, model)
 
-        // Build canvas tool context for guest users
-        let canvasToolContext: CanvasToolContext | undefined
-        if (chatId) {
-          // Verify guest canvas token if provided
-          let verifiedToken: Awaited<
-            ReturnType<typeof verifyGuestCanvasToken>
-          > = null
-          if (guestCanvasToken) {
-            verifiedToken = await verifyGuestCanvasToken(guestCanvasToken)
-          }
-          const currentArtifact = verifiedToken
-            ? await loadCanvasArtifactState({
-                artifactId: verifiedToken.artifactId
-              })
-            : null
-
-          const emitter = createCanvasEmitter(writer)
-          canvasToolContext = {
-            chatId,
-            userId: 'guest',
-            isGuest: true,
-            emitter,
-            ...(verifiedToken ? { guestCanvasToken } : {}),
-            ...(currentArtifact
-              ? {
-                  currentArtifact: {
-                    artifactId: currentArtifact.artifactId,
-                    draftRevision: currentArtifact.draftRevision
-                  }
-                }
-              : {})
-          }
+      // Build canvas tool context for guest users
+      let canvasToolContext: CanvasToolContext | undefined
+      if (chatId) {
+        // Verify guest canvas token if provided
+        let verifiedToken: Awaited<ReturnType<typeof verifyGuestCanvasToken>> =
+          null
+        if (guestCanvasToken) {
+          verifiedToken = await verifyGuestCanvasToken(guestCanvasToken)
         }
+        const currentArtifact = verifiedToken
+          ? await loadCanvasArtifactState({
+              artifactId: verifiedToken.artifactId
+            })
+          : null
 
-        const researchAgent = researcher({
-          model: modelId,
-          modelConfig: model,
-          writer,
-          parentTraceId,
-          searchMode,
-          modelType,
-          canvasToolContext
-        })
-
-        const result = await researchAgent.stream({
-          messages: modelMessages,
-          abortSignal,
-          experimental_transform: smoothStream({ chunking: 'word' })
-        })
-        // NOTE: Do NOT call result.consumeStream() here — writer.merge()
-        // already consumes the stream via toUIMessageStream(), making an
-        // additional consumeStream() call redundant.
-        writer.merge(
-          result.toUIMessageStream({
-            messageMetadata: ({ part }) => {
-              if (part.type === 'start') {
-                return {
-                  traceId: parentTraceId,
-                  searchMode,
-                  modelType,
-                  modelId
+        const emitter = createCanvasEmitter(writer)
+        canvasToolContext = {
+          chatId,
+          userId: 'guest',
+          isGuest: true,
+          emitter,
+          ...(verifiedToken ? { guestCanvasToken } : {}),
+          ...(currentArtifact
+            ? {
+                currentArtifact: {
+                  artifactId: currentArtifact.artifactId,
+                  draftRevision: currentArtifact.draftRevision
                 }
               }
-            }
-          })
-        )
+            : {})
+        }
+      }
 
-        const responseMessages = (await result.response).messages
-        if (
-          trigger !== 'tool-result' &&
-          responseMessages &&
-          responseMessages.length > 0 &&
-          !hasPendingInteractiveTool(responseMessages)
-        ) {
-          const lastUserMessage = [...modelMessages]
-            .reverse()
-            .find(msg => msg.role === 'user')
-          const messagesForQuestions = lastUserMessage
-            ? [lastUserMessage, ...responseMessages]
-            : responseMessages
-          await streamRelatedQuestions(
-            writer,
-            messagesForQuestions,
-            abortSignal,
-            parentTraceId
-          )
-        }
-      } finally {
-        if (langfuse) {
-          await langfuse.flushAsync()
-        }
+      const researchAgent = researcher({
+        model: modelId,
+        modelConfig: model,
+        writer,
+        parentTraceId,
+        searchMode,
+        modelType,
+        canvasToolContext
+      })
+
+      const result = await researchAgent.stream({
+        messages: modelMessages,
+        abortSignal,
+        experimental_transform: smoothStream({ chunking: 'word' })
+      })
+      // NOTE: Do NOT call result.consumeStream() here — writer.merge()
+      // already consumes the stream via toUIMessageStream(), making an
+      // additional consumeStream() call redundant.
+      writer.merge(
+        result.toUIMessageStream({
+          messageMetadata: ({ part }) => {
+            if (part.type === 'start') {
+              return {
+                traceId: parentTraceId,
+                searchMode,
+                modelType,
+                modelId
+              }
+            }
+          }
+        })
+      )
+
+      const responseMessages = (await result.response).messages
+      if (
+        trigger !== 'tool-result' &&
+        responseMessages &&
+        responseMessages.length > 0 &&
+        !hasPendingInteractiveTool(responseMessages)
+      ) {
+        const lastUserMessage = [...modelMessages]
+          .reverse()
+          .find(msg => msg.role === 'user')
+        const messagesForQuestions = lastUserMessage
+          ? [lastUserMessage, ...responseMessages]
+          : responseMessages
+        await streamRelatedQuestions(
+          writer,
+          messagesForQuestions,
+          abortSignal,
+          parentTraceId
+        )
       }
     },
     onError: (error: unknown) => {

@@ -192,9 +192,6 @@ describe('createResearcher', () => {
     expect(config.experimental_telemetry).toBeDefined()
     expect(config.experimental_telemetry.functionId).toBe('research-agent')
     expect(config.experimental_telemetry.metadata.searchMode).toBe('research')
-    expect(config.experimental_telemetry.metadata.langfuseTraceId).toBe(
-      'trace-123'
-    )
   })
 
   it('sets instructions with current date', () => {

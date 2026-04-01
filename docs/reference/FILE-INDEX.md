@@ -58,7 +58,7 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | File                  | Purpose                                                                                                 |
 | --------------------- | ------------------------------------------------------------------------------------------------------- |
 | `proxy.ts`            | Next.js middleware entry point; propagates Supabase session and base URL headers to downstream requests |
-| `instrumentation.ts`  | Registers OpenTelemetry with Langfuse exporter and initializes Ollama validation on server startup      |
+| `instrumentation.ts`  | Registers OpenTelemetry with Phoenix exporter and initializes Ollama validation on server startup       |
 | `next.config.mjs`     | Next.js configuration; sets allowed remote image patterns for YouTube, Google, and Brave                |
 | `drizzle.config.ts`   | Drizzle Kit configuration; points schema at `@/lib/db/schema.ts` and outputs migrations to `drizzle/`   |
 | `vitest.config.mts`   | Vitest configuration; sets jsdom environment, path aliases, and setup file                              |
@@ -128,7 +128,7 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app/api/chat/route.ts`             | Main chat endpoint (POST, 300s timeout); handles auth, rate limiting, model selection, and delegates to authenticated or ephemeral stream responses |
 | `app/api/chats/route.ts`            | Chat history endpoint (GET); returns paginated list of user chats                                                                                   |
-| `app/api/feedback/route.ts`         | Feedback endpoint (POST); records thumbs up/down scores to Langfuse and updates message metadata                                                    |
+| `app/api/feedback/route.ts`         | Feedback endpoint (POST); records thumbs up/down scores and updates message metadata                                                                |
 | `app/api/upload/route.ts`           | File upload endpoint (POST); validates file type/size and uploads to Supabase Storage                                                               |
 | `app/api/advanced-search/route.ts`  | SearXNG advanced search endpoint (POST); performs cached deep-crawl searches with relevance scoring                                                 |
 | `app/api/suggestions/route.ts`      | Trending suggestions endpoint; returns generated topic suggestions for the homepage                                                                 |
@@ -537,7 +537,7 @@ shadcn/ui-based primitives and custom UI components.
 | File                           | Purpose                                                                        |
 | ------------------------------ | ------------------------------------------------------------------------------ |
 | `lib/actions/chat.ts`          | Server actions for chat operations with `unstable_cache` and revalidation tags |
-| `lib/actions/feedback.ts`      | Server action to update message feedback score in the database and Langfuse    |
+| `lib/actions/feedback.ts`      | Server action to update message feedback score in the database                 |
 | `lib/actions/site-feedback.ts` | Server action to submit site-wide user feedback (sentiment + message)          |
 
 ### Schema (Zod)
@@ -633,7 +633,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/utils/retry.ts`           | Exponential backoff retry utility for database operations                               |
 | `lib/utils/perf-logging.ts`    | Conditional performance logging (enabled via `ENABLE_PERF_LOGGING`)                     |
 | `lib/utils/perf-tracking.ts`   | Development-only counters for auth calls and DB operations                              |
-| `lib/utils/telemetry.ts`       | Checks if Langfuse tracing is enabled via environment variable                          |
+| `lib/utils/telemetry.ts`       | Checks if tracing is enabled via environment variable                                   |
 
 ### External Clients
 

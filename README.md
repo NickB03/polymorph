@@ -33,7 +33,7 @@ Polymorph is an AI platform with a generative UI. It combines multi-step researc
 - Voice mode with speech input and TTS playback
 - PostgreSQL + Drizzle for persisted chat history (via Supabase)
 - Supabase Auth, Supabase Storage, and Redis-backed rate limiting
-- Langfuse tracing integration
+- Arize Phoenix tracing integration
 
 ## Tech Stack
 
@@ -49,7 +49,7 @@ Polymorph is an AI platform with a generative UI. It combines multi-step researc
 | Artifacts | Canvas artifact compiler + workspace (single-file HTML preview/export)                               |
 | Styling   | Tailwind CSS v4 + shadcn/ui                                                                          |
 | Testing   | Vitest                                                                                               |
-| Tracing   | Langfuse                                                                                             |
+| Tracing   | Arize Phoenix                                                                                        |
 | Gen UI    | 8 display tools (tables, charts, timelines, citations, callouts, plans, link previews, option lists) |
 
 ## Architecture
@@ -66,7 +66,7 @@ graph TD
     DB["Supabase PostgreSQL (Drizzle ORM)"]
     Redis["Upstash Redis (Rate Limiting)"]
     Auth["Supabase Auth"]
-    Langfuse["Langfuse (Tracing)"]
+    Phoenix["Arize Phoenix (Tracing)"]
 
     Browser -->|"SSE Stream"| NextJS
     NextJS --> API
@@ -77,7 +77,7 @@ graph TD
     Agent -->|"Tool Calls"| Search
     Agent -->|"Canvas Tools"| Canvas
     Agent -->|"Persist Results"| DB
-    Agent -.->|"Telemetry"| Langfuse
+    Agent -.->|"Telemetry"| Phoenix
     Auth -->|"Session Cookies"| Browser
 ```
 

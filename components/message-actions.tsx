@@ -66,7 +66,7 @@ export function MessageActions({
   }
 
   async function handleFeedback(score: number) {
-    if (isSubmittingFeedback || !traceId) return
+    if (isSubmittingFeedback) return
 
     setIsSubmittingFeedback(true)
     try {
@@ -74,7 +74,6 @@ export function MessageActions({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          traceId,
           score,
           messageId
         })
@@ -119,39 +118,35 @@ export function MessageActions({
         <Copy size={14} />
       </Button>
       {isVoiceEnabled() && <SpeakButton text={mappedMessage} />}
-      {traceId && (
-        <>
-          {(feedbackScore === null || feedbackScore === 1) && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleFeedback(1)}
-              disabled={isSubmittingFeedback || feedbackScore === 1}
-              className="rounded-full"
-              aria-label="Helpful"
-            >
-              <ThumbsUp
-                size={14}
-                className={feedbackScore === 1 ? 'fill-current' : ''}
-              />
-            </Button>
-          )}
-          {(feedbackScore === null || feedbackScore === -1) && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleFeedback(-1)}
-              disabled={isSubmittingFeedback || feedbackScore === -1}
-              className="rounded-full"
-              aria-label="Not helpful"
-            >
-              <ThumbsDown
-                size={14}
-                className={feedbackScore === -1 ? 'fill-current' : ''}
-              />
-            </Button>
-          )}
-        </>
+      {(feedbackScore === null || feedbackScore === 1) && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleFeedback(1)}
+          disabled={isSubmittingFeedback || feedbackScore === 1}
+          className="rounded-full"
+          aria-label="Helpful"
+        >
+          <ThumbsUp
+            size={14}
+            className={feedbackScore === 1 ? 'fill-current' : ''}
+          />
+        </Button>
+      )}
+      {(feedbackScore === null || feedbackScore === -1) && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleFeedback(-1)}
+          disabled={isSubmittingFeedback || feedbackScore === -1}
+          className="rounded-full"
+          aria-label="Not helpful"
+        >
+          <ThumbsDown
+            size={14}
+            className={feedbackScore === -1 ? 'fill-current' : ''}
+          />
+        </Button>
       )}
       {enableShare && chatId && <ChatShare chatId={chatId} />}
     </div>

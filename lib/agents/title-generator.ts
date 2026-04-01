@@ -39,11 +39,7 @@ export async function generateChatTitle({
         metadata: {
           modelId: modelId,
           agentType: 'title-generator',
-          promptLength: userMessageContent.length,
-          ...(parentTraceId && {
-            langfuseTraceId: parentTraceId,
-            langfuseUpdateParent: false
-          })
+          promptLength: userMessageContent.length
         }
       }
     })
