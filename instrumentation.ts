@@ -17,7 +17,7 @@ export async function register() {
         process.env.PHOENIX_COLLECTOR_ENDPOINT ?? 'http://localhost:6006'
 
       // Enforce HTTPS in production to protect Bearer token in transit.
-      // Mirrors the production detection logic in lib/config/env.ts.
+      // Extends the production detection logic in lib/config/env.ts.
       const isProduction =
         process.env.VERCEL_ENV === 'production' ||
         process.env.VERCEL_TARGET_ENV === 'production' ||

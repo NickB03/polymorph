@@ -47,7 +47,7 @@ export function useActivityFeed(
   const seenIds = useRef<Set<string>>(new Set())
   const hasAutoOpened = useRef(false)
   const pendingAutoOpen = useRef(false)
-  const prevChatId = useRef<string | undefined>(chatId)
+  const prevChatId = useRef<string | undefined>(undefined)
   const activityItemsRef = useRef<ActivityItem[]>(state.items)
   const didChatChange = prevChatId.current !== chatId
 
