@@ -73,6 +73,8 @@ Required when `ENABLE_AUTH=true`:
 - Tracing/observability: `ENABLE_TRACING`, `PHOENIX_COLLECTOR_ENDPOINT`, `PHOENIX_PROJECT_NAME`, `PHOENIX_API_KEY`
 - Performance diagnostics: `ENABLE_PERF_LOGGING`
 
+> **Production HTTPS enforcement:** When the app detects a production environment (`VERCEL_ENV`, `VERCEL_TARGET_ENV`, `RAILWAY_ENVIRONMENT`, or `NODE_ENV` set to `production`), the collector endpoint must use `https://`. Plain HTTP endpoints cause tracing to be silently disabled to protect the API key in transit.
+
 ### Troubleshooting research fetches
 
 - If an extractor is rate-limited or over quota, the UI now surfaces the provider message instead of a generic failure.
