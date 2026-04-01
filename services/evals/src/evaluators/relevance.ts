@@ -4,6 +4,8 @@ import { generateText } from 'ai'
 
 import { config } from '../config'
 
+import { asString, extractVerdict } from './extract-verdict'
+
 /**
  * Search relevance evaluator — checks whether the search results
  * retrieved for a query are actually relevant to answering it.
@@ -15,8 +17,8 @@ export const relevanceEvaluator = asEvaluator({
   name: 'search_relevance',
   kind: 'LLM',
   evaluate: async ({ input }) => {
-    const query = input.query as string
-    const context = input.context as string
+    const query = asString(input.query)
+    const context = asString(input.context)
 
     if (!context) {
       return {
@@ -69,15 +71,3 @@ Then give your verdict as exactly one of: highly_relevant, partially_relevant, n
     }
   }
 })
-
-function extractVerdict(text: string, options: string[]): string {
-  const lower = text.toLowerCase()
-  const afterThinking = lower.split('</thinking>').pop() ?? lower
-  for (const option of options) {
-    if (afterThinking.includes(option)) return option
-  }
-  for (const option of options) {
-    if (lower.includes(option)) return option
-  }
-  return 'unknown'
-}

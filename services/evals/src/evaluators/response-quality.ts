@@ -4,6 +4,8 @@ import { generateText } from 'ai'
 
 import { config } from '../config'
 
+import { asString, extractVerdict } from './extract-verdict'
+
 /**
  * Response quality evaluator — overall assessment of whether
  * the assistant's answer is helpful, complete, and well-structured.
@@ -16,9 +18,9 @@ export const responseQualityEvaluator = asEvaluator({
   name: 'response_quality',
   kind: 'LLM',
   evaluate: async ({ input, output }) => {
-    const query = input.query as string
-    const context = input.context as string
-    const answer = output as string
+    const query = asString(input.query)
+    const context = asString(input.context)
+    const answer = asString(output)
 
     if (!answer) {
       return {
@@ -67,15 +69,3 @@ Then give your verdict as exactly one of: excellent, good, poor
     }
   }
 })
-
-function extractVerdict(text: string, options: string[]): string {
-  const lower = text.toLowerCase()
-  const afterThinking = lower.split('</thinking>').pop() ?? lower
-  for (const option of options) {
-    if (afterThinking.includes(option)) return option
-  }
-  for (const option of options) {
-    if (lower.includes(option)) return option
-  }
-  return 'unknown'
-}

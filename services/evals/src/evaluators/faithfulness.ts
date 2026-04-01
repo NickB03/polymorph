@@ -4,6 +4,8 @@ import { generateText } from 'ai'
 
 import { config } from '../config'
 
+import { asString, extractVerdict } from './extract-verdict'
+
 /**
  * Faithfulness evaluator — checks whether the model's answer
  * is grounded in the search results (retrieved context).
@@ -16,9 +18,9 @@ export const faithfulnessEvaluator = asEvaluator({
   name: 'faithfulness',
   kind: 'LLM',
   evaluate: async ({ input, output }) => {
-    const query = input.query as string
-    const context = input.context as string
-    const answer = output as string
+    const query = asString(input.query)
+    const context = asString(input.context)
+    const answer = asString(output)
 
     if (!context || !answer) {
       return {
@@ -65,15 +67,3 @@ Then give your verdict as exactly one of: faithful, partial, unfaithful
     }
   }
 })
-
-function extractVerdict(text: string, options: string[]): string {
-  const lower = text.toLowerCase()
-  const afterThinking = lower.split('</thinking>').pop() ?? lower
-  for (const option of options) {
-    if (afterThinking.includes(option)) return option
-  }
-  for (const option of options) {
-    if (lower.includes(option)) return option
-  }
-  return 'unknown'
-}
