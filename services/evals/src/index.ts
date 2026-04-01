@@ -33,7 +33,7 @@ async function main() {
   if (samples.length === 0) {
     console.log('[evals] No chats found in lookback window. Exiting.')
     await closeDb()
-    process.exit(0)
+    return
   }
 
   console.log(`[evals] Sampled ${samples.length} chats`)
@@ -89,7 +89,6 @@ async function main() {
   // Step 5: Clean exit
   await closeDb()
   console.log('[evals] Done.')
-  process.exit(0)
 }
 
 /**
@@ -116,7 +115,8 @@ function formatContext(sample: ChatSample): string {
   return parts.join('\n')
 }
 
-main().catch(err => {
+main().catch(async err => {
   console.error('[evals] Fatal error:', err)
+  await closeDb().catch(() => {})
   process.exit(1)
 })
