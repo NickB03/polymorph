@@ -16,7 +16,7 @@ import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
 import { jsonError } from '@/lib/utils/json-error'
-import { isTracingEnabled } from '@/lib/utils/telemetry'
+import { flushTraces, isTracingEnabled } from '@/lib/utils/telemetry'
 
 import { maybeTruncateMessages } from '../utils/context-window'
 
@@ -170,6 +170,9 @@ export async function createEphemeralChatStreamResponse(
     },
     onError: (error: unknown) => {
       return error instanceof Error ? error.message : String(error)
+    },
+    onFinish: async () => {
+      await flushTraces()
     }
   })
 

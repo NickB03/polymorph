@@ -16,7 +16,7 @@ import { loadCanvasArtifactByChatId } from '@/lib/db/actions'
 import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
 import { jsonError } from '@/lib/utils/json-error'
-import { isTracingEnabled } from '@/lib/utils/telemetry'
+import { flushTraces, isTracingEnabled } from '@/lib/utils/telemetry'
 
 import { loadChat } from '../actions/chat'
 import { generateChatTitle } from '../agents/title-generator'
@@ -336,6 +336,11 @@ export async function createChatStreamResponse(
           error
         )
       }
+
+      // Flush OTel spans before the serverless function terminates.
+      // Runs after persistence so spans include DB write latency.
+      // The 5s timeout (default) is small relative to the 300s maxDuration.
+      await flushTraces()
     }
   })
 
