@@ -117,8 +117,22 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
     userQuery: row.user_query,
     searchResults: parseSearchResults(row.search_results),
     modelAnswer: row.model_answer,
-    citations: row.citations ? JSON.parse(row.citations) : []
+    citations: parseCitations(row.citations)
   }))
+}
+
+function parseCitations(raw: string | null): ChatSample['citations'] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(Boolean).map((c: any) => ({
+      url: c?.url ?? '',
+      title: c?.title ?? ''
+    }))
+  } catch {
+    return []
+  }
 }
 
 function parseSearchResults(raw: string | null): ChatSample['searchResults'] {
