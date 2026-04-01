@@ -6,12 +6,16 @@ export function extractVerdict(text: string, options: string[]): string {
   const lower = text.toLowerCase()
   const afterThinking = lower.split('</thinking>').pop() ?? lower
   for (const option of options) {
-    if (afterThinking.includes(option)) return option
+    if (matchesWord(afterThinking, option)) return option
   }
   for (const option of options) {
-    if (lower.includes(option)) return option
+    if (matchesWord(lower, option)) return option
   }
   return 'unknown'
+}
+
+function matchesWord(text: string, word: string): boolean {
+  return new RegExp(`\\b${word}\\b`).test(text)
 }
 
 /**
