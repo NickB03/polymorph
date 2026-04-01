@@ -95,7 +95,7 @@ export function FetchSection({
       meta={
         displayStatus === 'success' && contentLength ? (
           <>
-            <Check size={16} className="text-green-500" />
+            <Check size={16} className="text-success" />
             <span>
               {contentLength > 1000
                 ? `${Math.round(contentLength / 1000)}k chars`

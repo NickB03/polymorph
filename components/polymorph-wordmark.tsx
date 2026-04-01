@@ -110,7 +110,7 @@ function PolySuffixFluid({ staggerMs = 70 }: { staggerMs?: number }) {
             return (
               <span
                 key={`${wordKey}-${i}`}
-                className="inline-block text-blue-600 dark:text-blue-400"
+                className="inline-block text-accent-blue"
                 style={{
                   animation: reducedMotion
                     ? undefined

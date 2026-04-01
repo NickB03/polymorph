@@ -41,12 +41,12 @@ export function ErrorModal({
   const getErrorIcon = () => {
     switch (error.type) {
       case 'rate-limit':
-        return <Clock className="size-6 text-yellow-500" />
+        return <Clock className="size-6 text-warning" />
       case 'auth':
       case 'forbidden':
-        return <AlertCircle className="size-6 text-red-500" />
+        return <AlertCircle className="size-6 text-error" />
       default:
-        return <AlertCircle className="size-6 text-orange-500" />
+        return <AlertCircle className="size-6 text-warning" />
     }
   }
 

@@ -155,7 +155,7 @@ export function Citation(props: CitationProps) {
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             className={cn(
-              'inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1',
+              'inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1',
               'bg-muted/60 text-sm outline-none',
               'transition-colors duration-150',
               'hover:bg-muted',

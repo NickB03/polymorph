@@ -81,7 +81,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
               onClick={() => setSentiment('positive')}
               className={cn(
                 'h-12 w-12',
-                sentiment === 'positive' && 'bg-green-500 hover:bg-green-600'
+                sentiment === 'positive' && 'bg-success hover:bg-success/90'
               )}
               aria-label="Positive"
             >
@@ -94,7 +94,7 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
               onClick={() => setSentiment('neutral')}
               className={cn(
                 'h-12 w-12',
-                sentiment === 'neutral' && 'bg-yellow-500 hover:bg-yellow-600'
+                sentiment === 'neutral' && 'bg-warning hover:bg-warning/90'
               )}
               aria-label="Neutral"
             >
@@ -107,7 +107,8 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
               onClick={() => setSentiment('negative')}
               className={cn(
                 'h-12 w-12',
-                sentiment === 'negative' && 'bg-red-500 hover:bg-red-600'
+                sentiment === 'negative' &&
+                  'bg-destructive hover:bg-destructive/90'
               )}
               aria-label="Negative"
             >

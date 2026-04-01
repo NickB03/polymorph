@@ -31,9 +31,9 @@ const SEVERITY_ICON: Record<
 }
 
 const SEVERITY_COLOR: Record<CanvasDiagnosticSeverity, string> = {
-  error: 'text-red-500',
-  warning: 'text-yellow-500',
-  info: 'text-blue-500'
+  error: 'text-error',
+  warning: 'text-warning',
+  info: 'text-info'
 }
 
 // ── Diagnostic item ──────────────────────────────────────────────────
@@ -97,10 +97,10 @@ function DiagnosticSection({
           className={cn(
             'ml-auto rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
             hasErrors
-              ? 'bg-red-500/10 text-red-500'
+              ? 'bg-error-bg text-error'
               : hasWarnings
-                ? 'bg-yellow-500/10 text-yellow-500'
-                : 'bg-blue-500/10 text-blue-500'
+                ? 'bg-warning-bg text-warning'
+                : 'bg-info-bg text-info'
           )}
         >
           {diagnostics.length}

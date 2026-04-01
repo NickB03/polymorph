@@ -59,9 +59,9 @@ export function DeltaValue({ value, options, locale }: DeltaValueProps) {
   const isBad = upIsPositive ? isNegative : isPositive
 
   const colorClass = isGood
-    ? 'text-green-700 dark:text-green-500'
+    ? 'text-success'
     : isBad
-      ? 'text-destructive'
+      ? 'text-error'
       : 'text-muted-foreground'
 
   const absValue = Math.abs(value)
@@ -113,13 +113,11 @@ export function StatusBadge({ value, options }: StatusBadgeProps) {
       className={cn(
         'border',
         config.tone === 'warning' &&
-          'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-100',
+          'border-warning-border bg-warning-bg text-warning',
         config.tone === 'success' &&
-          'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-100',
-        config.tone === 'info' &&
-          'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-100',
-        config.tone === 'danger' &&
-          'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-100'
+          'border-success-border bg-success-bg text-success',
+        config.tone === 'info' && 'border-info-border bg-info-bg text-info',
+        config.tone === 'danger' && 'border-error-border bg-error-bg text-error'
       )}
     >
       {label}
@@ -346,13 +344,11 @@ export function BadgeValue({ value, options }: BadgeValueProps) {
       className={cn(
         'border',
         tone === 'warning' &&
-          'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-100',
+          'border-warning-border bg-warning-bg text-warning',
         tone === 'success' &&
-          'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-100',
-        tone === 'info' &&
-          'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-100',
-        tone === 'danger' &&
-          'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-100'
+          'border-success-border bg-success-bg text-success',
+        tone === 'info' && 'border-info-border bg-info-bg text-info',
+        tone === 'danger' && 'border-error-border bg-error-bg text-error'
       )}
     >
       {value}

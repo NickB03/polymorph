@@ -77,7 +77,7 @@ export function SearchSection({
       meta={
         searchResults && totalResults > 0 ? (
           <div className="flex items-center gap-2">
-            <StatusIndicator icon={Check} iconClassName="text-green-500">
+            <StatusIndicator icon={Check} iconClassName="text-success">
               {totalResults} results
             </StatusIndicator>
             {searchResults.results && searchResults.results.length > 0 && (

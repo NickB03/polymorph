@@ -129,14 +129,14 @@ export function DynamicToolDisplay({ part }: DynamicToolDisplayProps) {
         <div
           className={`h-2 w-2 rounded-full ${
             part.state === 'input-streaming'
-              ? 'bg-blue-500 animate-pulse'
+              ? 'bg-info animate-pulse'
               : part.state === 'input-available'
-                ? 'bg-blue-500'
+                ? 'bg-info'
                 : part.state === 'output-available'
-                  ? 'bg-green-500'
+                  ? 'bg-success'
                   : part.state === 'output-error'
-                    ? 'bg-red-500'
-                    : 'bg-gray-300'
+                    ? 'bg-error'
+                    : 'bg-muted-foreground/40'
           }`}
         />
         <span className="text-xs text-muted-foreground">

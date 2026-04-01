@@ -37,7 +37,7 @@ export const AttachmentPreview: React.FC<AttachmentPreviewProps> = ({
                 href={att.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 underline"
+                className="text-accent-blue underline"
               >
                 📄 {att.name}
               </a>
@@ -46,7 +46,7 @@ export const AttachmentPreview: React.FC<AttachmentPreviewProps> = ({
                 href={att.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 underline"
+                className="text-accent-blue underline"
               >
                 📎 {att.name}
               </a>

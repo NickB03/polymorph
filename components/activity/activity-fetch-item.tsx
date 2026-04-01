@@ -56,7 +56,7 @@ export function ActivityFetchItem({ tool }: ActivityFetchItemProps) {
         </>
       ) : fetchResults ? (
         <div className="flex items-center gap-1 shrink-0">
-          <Check className="h-3 w-3 text-green-500" />
+          <Check className="h-3 w-3 text-success" />
           {contentLength != null && (
             <span className="text-[10px] tabular-nums">
               {contentLength > 1000

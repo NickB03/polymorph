@@ -56,7 +56,7 @@ function CanvasArtifactCardInner({
   return (
     <button
       type="button"
-      className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-accent/50"
+      className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left shadow-xs transition-colors hover:bg-accent/50"
       onClick={onClick}
       data-testid="canvas-artifact-card"
       data-artifact-id={data.artifactId}

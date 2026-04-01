@@ -103,7 +103,7 @@ export function ResearchPlan({
       <ProcessHeader
         label={
           <span className="flex items-center gap-2">
-            <Check className="size-3.5 shrink-0 text-emerald-500" />
+            <Check className="size-3.5 shrink-0 text-success" />
             <span className="truncate">
               {validated.title} &mdash; {completedCount}/
               {validated.todos.length} complete

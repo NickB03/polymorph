@@ -69,7 +69,7 @@ function WizardReceipt({
       role="status"
       aria-label="Confirmed selections"
     >
-      <div className="bg-card/60 flex w-full flex-col overflow-hidden rounded-2xl border shadow-xs">
+      <div className="bg-card/60 flex w-full flex-col overflow-hidden rounded-xl border shadow-xs">
         {steps.map((step, stepIndex) => {
           const selection = answers[step.id]
           const selectedIds = new Set(

@@ -128,7 +128,7 @@ export function VoiceOrb({
               <div
                 className={cn(
                   'size-3 rounded-full transition-colors',
-                  state === 'speaking' && 'bg-blue-500',
+                  state === 'speaking' && 'bg-accent-blue',
                   state === 'listening' && 'bg-white/60',
                   state === 'waiting' && 'bg-white/30'
                 )}
