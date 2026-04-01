@@ -7,7 +7,7 @@
     "dev": "next dev -p 43100",
     "build": "next build",
     "vercel-build": "bun run migrate && next build",
-    "start": "next start --hostname 0.0.0.0 --port 43100",
+    "start": "next start --hostname 0.0.0.0 --port ${PORT:-43100}",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
