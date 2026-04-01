@@ -9,6 +9,12 @@ function required(name: string): string {
   return value
 }
 
+function validInt(raw: string | undefined, fallback: number): number {
+  if (!raw) return fallback
+  const n = parseInt(raw, 10)
+  return Number.isNaN(n) ? fallback : n
+}
+
 export const config = {
   // Supabase Postgres — read-only access to chat data
   databaseUrl: required('DATABASE_URL'),
@@ -20,8 +26,8 @@ export const config = {
   judgeModel: process.env.JUDGE_MODEL ?? 'gpt-4o-mini',
 
   // Sampling config
-  sampleSize: parseInt(process.env.SAMPLE_SIZE ?? '50', 10),
-  lookbackHours: parseInt(process.env.LOOKBACK_HOURS ?? '6', 10),
+  sampleSize: validInt(process.env.SAMPLE_SIZE, 50),
+  lookbackHours: validInt(process.env.LOOKBACK_HOURS, 6),
 
   // SSL — disable for local Supabase CLI
   databaseSslDisabled: process.env.DATABASE_SSL_DISABLED === 'true'

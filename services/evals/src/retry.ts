@@ -11,6 +11,9 @@ export async function withRetry<T>(
   fn: () => Promise<T>,
   opts: RetryOptions
 ): Promise<T> {
+  if (opts.maxAttempts < 1) {
+    throw new Error('withRetry requires maxAttempts >= 1')
+  }
   let lastError: unknown
   for (let attempt = 1; attempt <= opts.maxAttempts; attempt++) {
     try {
