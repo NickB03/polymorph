@@ -28,7 +28,7 @@ export async function register() {
         serviceName: 'polymorph',
         attributes: {
           [SEMRESATTRS_PROJECT_NAME]:
-            process.env.PHOENIX_PROJECT_NAME ?? 'polymorph',
+            process.env.PHOENIX_PROJECT_NAME ?? 'polymorph-local',
           deployment_environment:
             process.env.VERCEL_ENV ??
             process.env.RAILWAY_ENVIRONMENT ??

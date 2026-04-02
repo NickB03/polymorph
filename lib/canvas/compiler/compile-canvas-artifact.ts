@@ -16,8 +16,10 @@ import type {
 
 import { validateCanvasSource } from '../validation/validate-canvas-source'
 
+import { vendorShimSource } from './vendor/chunk-defs'
 import { assembleCanvasHtml } from './assemble-canvas-html'
 import { buildTailwindCss } from './build-tailwind-css'
+import { getVendorChunkName, getVendorJs } from './vendor'
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -102,6 +104,7 @@ function emitProgress(input: {
 // ── Virtual file esbuild plugin ─────────────────────────────────────
 
 const VIRTUAL_NAMESPACE = 'canvas-virtual'
+const VENDOR_SHIM_NAMESPACE = 'canvas-vendor-shim'
 const ENTRY_POINT = 'canvas-entry.tsx'
 
 function createVirtualPlugin(
@@ -110,7 +113,8 @@ function createVirtualPlugin(
     artifactId?: string
     revisionId?: string
     debugEnabled?: boolean
-  } = {}
+    usedVendorChunks: Set<string>
+  }
 ): esbuild.Plugin {
   return {
     name: 'canvas-virtual-files',
@@ -150,9 +154,18 @@ function createVirtualPlugin(
           }
         }
 
-        // Bare specifiers: allowed ones fall through to esbuild's native
-        // resolver (which uses resolveDir from onLoad); block everything else
+        // Bare specifiers: resolve allowed ones to vendor shims
         if (isAllowedCanvasImport(args.path)) {
+          const chunkName = getVendorChunkName(args.path)
+          if (chunkName) {
+            options.usedVendorChunks.add(chunkName)
+            return {
+              path: args.path,
+              namespace: VENDOR_SHIM_NAMESPACE
+            }
+          }
+          // No vendor chunk (e.g., date-fns locale subpaths) — fall
+          // through to esbuild's native filesystem resolver
           return undefined
         }
 
@@ -194,6 +207,17 @@ function createVirtualPlugin(
         const loader = fileName.endsWith('.css') ? 'css' : 'tsx'
         return { contents: content, loader, resolveDir }
       })
+
+      // Load vendor shim modules — return CJS that reads from the
+      // global vendor registry. esbuild handles CJS→ESM interop for
+      // named imports like `import { useState } from 'react'`.
+      build.onLoad(
+        { filter: /.*/, namespace: VENDOR_SHIM_NAMESPACE },
+        args => ({
+          contents: vendorShimSource(args.path),
+          loader: 'js'
+        })
+      )
     }
   }
 }
@@ -203,22 +227,14 @@ function createVirtualPlugin(
  * assigns modules to well-known globals for the bootstrap script.
  */
 function buildEntrySource(source: CanvasSourceFiles): string {
-  const lines = [
-    "import * as React from 'react'",
-    "import * as ReactDOM from 'react-dom/client'",
-    "import * as __App from './App.tsx'"
-  ]
+  const lines = ["import * as __App from './App.tsx'"]
 
   // Import components.tsx if present (so it's included in the bundle)
   if ('components.tsx' in source) {
     lines.push("import './components.tsx'")
   }
 
-  lines.push(
-    'globalThis.__CANVAS_REACT__ = React;',
-    'globalThis.__CANVAS_REACT_DOM__ = ReactDOM;',
-    'globalThis.__CANVAS_APP__ = __App;'
-  )
+  lines.push('globalThis.__CANVAS_APP__ = __App;')
 
   return lines.join('\n')
 }
@@ -425,6 +441,7 @@ async function compileCanvasArtifactCore(ctx: {
   })
 
   // Step 2: Bundle with esbuild
+  const usedVendorChunks = new Set<string>()
   let bundledJs: string
   try {
     const result = await esbuild.build({
@@ -441,7 +458,8 @@ async function compileCanvasArtifactCore(ctx: {
         createVirtualPlugin(source, {
           artifactId,
           revisionId,
-          debugEnabled
+          debugEnabled,
+          usedVendorChunks
         })
       ],
       logLevel: 'silent',
@@ -601,13 +619,15 @@ async function compileCanvasArtifactCore(ctx: {
   const meta = parseMetaJson(source)
 
   // Step 5: Assemble final HTML
+  const vendorJs = getVendorJs(usedVendorChunks)
   const html = assembleCanvasHtml({
     js: bundledJs,
     css,
     meta,
     artifactId,
     revisionId,
-    nonce
+    nonce,
+    vendorJs
   })
 
   // Step 6: Check compiled size
