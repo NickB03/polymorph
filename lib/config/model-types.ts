@@ -18,3 +18,9 @@ export function getRelatedQuestionsModel(): Model {
   const cfg = getModelsConfig()
   return cfg.models.relatedQuestions
 }
+
+// Accessor for the trending suggestions model configuration.
+export function getTrendingSuggestionsModel(): Model {
+  const cfg = getModelsConfig()
+  return cfg.models.trendingSuggestions
+}

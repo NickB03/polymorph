@@ -36,6 +36,12 @@
       "name": "Gemini 3 Flash",
       "provider": "Google",
       "providerId": "gateway"
+    },
+    "trendingSuggestions": {
+      "id": "google/gemini-3-flash",
+      "name": "Gemini 3 Flash",
+      "provider": "Google",
+      "providerId": "gateway"
     }
   }
 }
