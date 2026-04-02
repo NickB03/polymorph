@@ -16,7 +16,7 @@ export async function streamRelatedQuestions(
   questionPartId?: string
   questions?: Array<{ question: string }>
 }> {
-  // Check if the last message has tool calls
+  // Only generate follow-ups if the last message is an assistant response
   const lastMessage = messages[messages.length - 1]
   if (!lastMessage || lastMessage.role !== 'assistant') {
     return {}
