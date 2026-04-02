@@ -1,10 +1,4 @@
-import { openai } from '@ai-sdk/openai'
-import { asEvaluator } from '@arizeai/phoenix-client/experiments'
-import { generateText } from 'ai'
-
-import { config } from '../config'
-
-import { asString, extractVerdict } from './extract-verdict'
+import { createLLMEvaluator } from './create-evaluator'
 
 /**
  * Response quality evaluator — overall assessment of whether
@@ -14,26 +8,16 @@ import { asString, extractVerdict } from './extract-verdict'
  * whether claims are grounded, but whether the response actually
  * answers the user's question in a useful way.
  */
-export const responseQualityEvaluator = asEvaluator({
+export const responseQualityEvaluator = createLLMEvaluator({
   name: 'response_quality',
-  kind: 'LLM',
-  evaluate: async ({ input, output }) => {
-    const query = asString(input.query)
-    const context = asString(input.context)
-    const answer = asString(output)
-
-    if (!answer) {
-      return {
-        score: 0.0,
-        label: 'no_answer',
-        metadata: {},
-        explanation: 'No answer generated'
-      }
-    }
-
-    const { text } = await generateText({
-      model: openai(config.judgeModel),
-      prompt: `You are an evaluator assessing the overall quality of an AI research assistant's response.
+  verdicts: ['excellent', 'good', 'poor'] as const,
+  scoreMap: { excellent: 1.0, good: 0.7, poor: 0.0 },
+  skipWhen: ({ answer }) =>
+    !answer
+      ? { label: 'no_answer', score: 0.0, explanation: 'No answer generated' }
+      : null,
+  prompt: ({ query, context, answer }) =>
+    `You are an evaluator assessing the overall quality of an AI research assistant's response.
 
 <question>${query}</question>
 
@@ -54,18 +38,5 @@ Give a rating:
 First, briefly explain your reasoning in <thinking> tags.
 Then give your verdict as exactly one of: excellent, good, poor
 
-<thinking>`,
-      maxOutputTokens: 400
-    })
-
-    const verdict = extractVerdict(text, ['excellent', 'good', 'poor'])
-    const score = verdict === 'excellent' ? 1.0 : verdict === 'good' ? 0.7 : 0.0
-
-    return {
-      score,
-      label: verdict,
-      metadata: {},
-      explanation: text.split('</thinking>')[0]?.trim() ?? null
-    }
-  }
+<thinking>`
 })

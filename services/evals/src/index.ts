@@ -26,7 +26,6 @@ async function main() {
     `[evals] Config: sample=${config.sampleSize}, lookback=${config.lookbackHours}h, judge=${config.judgeModel}`
   )
 
-  // Step 1: Sample recent chats
   console.log('[evals] Sampling recent chats...')
   const samples = await sampleRecentChats()
 
@@ -38,7 +37,6 @@ async function main() {
 
   console.log(`[evals] Sampled ${samples.length} chats`)
 
-  // Step 2: Transform into Phoenix dataset examples
   const examples = samples.map((sample, i) => ({
     id: `${sample.chatId}-${i}`,
     updatedAt: sample.createdAt,
@@ -55,9 +53,7 @@ async function main() {
     }
   }))
 
-  // Step 3: Run experiment with evaluators
-  // The task returns the model's actual answer — we're evaluating
-  // existing answers, not generating new ones.
+  // Task returns the model's actual answer — evaluating existing answers, not generating new ones
   const experimentName = `polymorph-eval-${new Date().toISOString().slice(0, 13).replace('T', '-')}h`
   console.log(`[evals] Running experiment: ${experimentName}`)
 
@@ -80,13 +76,11 @@ async function main() {
     { maxAttempts: 3, baseDelayMs: 5000 }
   )
 
-  // Step 4: Report results
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
   console.log(`[evals] Experiment complete in ${elapsed}s`)
   console.log(`[evals] Experiment ID: ${experiment.id}`)
   console.log(`[evals] Results available in Phoenix UI`)
 
-  // Step 5: Clean exit
   await closeDb()
   console.log('[evals] Done.')
 }

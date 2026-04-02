@@ -1,39 +1,27 @@
-import { openai } from '@ai-sdk/openai'
-import { asEvaluator } from '@arizeai/phoenix-client/experiments'
-import { generateText } from 'ai'
-
-import { config } from '../config'
-
-import { asString, extractVerdict } from './extract-verdict'
+import { createLLMEvaluator } from './create-evaluator'
 
 /**
  * Faithfulness evaluator — checks whether the model's answer
  * is grounded in the search results (retrieved context).
  *
- * Uses an LLM judge to classify each response as faithful or unfaithful.
  * A response is "faithful" if every factual claim is supported by
  * the provided search context.
  */
-export const faithfulnessEvaluator = asEvaluator({
+export const faithfulnessEvaluator = createLLMEvaluator({
   name: 'faithfulness',
-  kind: 'LLM',
-  evaluate: async ({ input, output }) => {
-    const query = asString(input.query)
-    const context = asString(input.context)
-    const answer = asString(output)
-
-    if (!context || !answer) {
-      return {
-        score: null,
-        label: 'skipped',
-        metadata: {},
-        explanation: 'Missing context or answer'
-      }
-    }
-
-    const { text } = await generateText({
-      model: openai(config.judgeModel),
-      prompt: `You are an evaluator assessing whether an AI assistant's answer is faithful to the provided search context.
+  verdicts: ['faithful', 'partial', 'unfaithful'] as const,
+  scoreMap: { faithful: 1.0, partial: 0.5, unfaithful: 0.0 },
+  maxOutputTokens: 500,
+  skipWhen: ({ context, answer }) =>
+    !context || !answer
+      ? {
+          label: 'skipped',
+          score: null,
+          explanation: 'Missing context or answer'
+        }
+      : null,
+  prompt: ({ query, context, answer }) =>
+    `You are an evaluator assessing whether an AI assistant's answer is faithful to the provided search context.
 
 <question>${query}</question>
 
@@ -51,19 +39,5 @@ Evaluate faithfulness:
 First, briefly explain your reasoning in <thinking> tags.
 Then give your verdict as exactly one of: faithful, partial, unfaithful
 
-<thinking>`,
-      maxOutputTokens: 500
-    })
-
-    const verdict = extractVerdict(text, ['faithful', 'partial', 'unfaithful'])
-    const score =
-      verdict === 'faithful' ? 1.0 : verdict === 'partial' ? 0.5 : 0.0
-
-    return {
-      score,
-      label: verdict,
-      metadata: {},
-      explanation: text.split('</thinking>')[0]?.trim() ?? null
-    }
-  }
+<thinking>`
 })

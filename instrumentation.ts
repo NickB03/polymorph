@@ -1,4 +1,4 @@
-import { validateEnv } from '@/lib/config/env'
+import { isProductionTarget, validateEnv } from '@/lib/config/env'
 
 export async function register() {
   validateEnv()
@@ -17,13 +17,7 @@ export async function register() {
         process.env.PHOENIX_COLLECTOR_ENDPOINT ?? 'http://localhost:6006'
 
       // Enforce HTTPS in production to protect Bearer token in transit.
-      // Extends the production detection logic in lib/config/env.ts.
-      const isProduction =
-        process.env.VERCEL_ENV === 'production' ||
-        process.env.VERCEL_TARGET_ENV === 'production' ||
-        process.env.RAILWAY_ENVIRONMENT === 'production' ||
-        (process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV)
-      if (isProduction && !collectorEndpoint.startsWith('https://')) {
+      if (isProductionTarget() && !collectorEndpoint.startsWith('https://')) {
         console.error(
           '[otel] PHOENIX_COLLECTOR_ENDPOINT must use HTTPS in production. Tracing disabled.'
         )

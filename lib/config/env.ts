@@ -30,10 +30,11 @@ const baseEnvSchema = z.object({
   UPSTASH_REDIS_REST_TOKEN: z.string().optional()
 })
 
-function isProductionTarget() {
+export function isProductionTarget() {
   return (
     process.env.VERCEL_ENV === 'production' ||
     process.env.VERCEL_TARGET_ENV === 'production' ||
+    process.env.RAILWAY_ENVIRONMENT === 'production' ||
     (process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV)
   )
 }

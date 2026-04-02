@@ -1,9 +1,5 @@
 import { trace } from '@opentelemetry/api'
 
-/**
- * Check if tracing is enabled
- * Default: false
- */
 export function isTracingEnabled(): boolean {
   return process.env.ENABLE_TRACING === 'true'
 }
@@ -42,10 +38,25 @@ export async function flushTraces(timeoutMs = 5000): Promise<void> {
       'forceFlush' in (provider as object) &&
       typeof (provider as Record<string, unknown>).forceFlush === 'function'
     ) {
+      let timedOut = false
       await Promise.race([
         (provider as { forceFlush: () => Promise<void> }).forceFlush(),
-        new Promise<void>(resolve => setTimeout(resolve, timeoutMs))
+        new Promise<void>(resolve =>
+          setTimeout(() => {
+            timedOut = true
+            resolve()
+          }, timeoutMs)
+        )
       ])
+      if (timedOut) {
+        console.warn(
+          `[telemetry] Span flush timed out after ${timeoutMs}ms — some spans may be lost`
+        )
+      }
+    } else {
+      console.warn(
+        '[telemetry] TracerProvider lacks forceFlush — spans may not export before shutdown'
+      )
     }
   } catch (err) {
     // Tracing flush failures must never affect the request
