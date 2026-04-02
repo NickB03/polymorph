@@ -27,6 +27,15 @@ const EXPORT_NAMES: Record<string, string> = {
   'date-fns': 'DATE_FNS_VENDOR_JS'
 }
 
+for (const def of VENDOR_CHUNK_DEFS) {
+  if (!EXPORT_NAMES[def.name]) {
+    throw new Error(
+      `EXPORT_NAMES is missing entry for chunk "${def.name}". ` +
+        `Add it to EXPORT_NAMES in scripts/build-canvas-vendor.ts.`
+    )
+  }
+}
+
 function buildVendorEntry(def: VendorChunkDef): string {
   const lines: string[] = [
     'globalThis.__CANVAS_VENDOR__ = globalThis.__CANVAS_VENDOR__ || {};'

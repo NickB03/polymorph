@@ -10,7 +10,9 @@ export type AllowedPackage = {
  * subpath rules that don't map to vendor chunks.
  */
 export const CANVAS_ALLOWED_PACKAGES: AllowedPackage[] = [
-  ...VENDOR_SPECIFIERS.map(specifier => ({ specifier })),
+  ...VENDOR_SPECIFIERS.filter(s => s !== 'date-fns').map(specifier => ({
+    specifier
+  })),
   // date-fns locale subpaths are allowed but resolved from the
   // filesystem (not vendored) — they need outputFileTracingIncludes
   // on Vercel until subpath vendoring is implemented.

@@ -20,6 +20,15 @@ const VENDOR_JS_MAP: Record<string, string> = {
   'date-fns': DATE_FNS_VENDOR_JS
 }
 
+for (const def of VENDOR_CHUNK_DEFS) {
+  if (!VENDOR_JS_MAP[def.name]) {
+    throw new Error(
+      `VENDOR_JS_MAP is missing entry for chunk "${def.name}". ` +
+        `Add it to VENDOR_JS_MAP in lib/canvas/compiler/vendor/index.ts.`
+    )
+  }
+}
+
 /**
  * Vendor chunks ordered by injection priority. react-core must come
  * first because add-on chunks reference its globals.
