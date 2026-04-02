@@ -10,6 +10,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 import {
+  assertChunkMapComplete,
   getAllBundleSpecifiers,
   VENDOR_CHUNK_DEFS,
   type VendorChunkDef,
@@ -26,6 +27,12 @@ const EXPORT_NAMES: Record<string, string> = {
   'motion-react': 'MOTION_REACT_VENDOR_JS',
   'date-fns': 'DATE_FNS_VENDOR_JS'
 }
+
+assertChunkMapComplete(
+  EXPORT_NAMES,
+  'EXPORT_NAMES',
+  'scripts/build-canvas-vendor.ts'
+)
 
 function buildVendorEntry(def: VendorChunkDef): string {
   const lines: string[] = [
