@@ -1,4 +1,4 @@
-import { VENDOR_CHUNK_DEFS } from './chunk-defs'
+import { assertChunkMapComplete, VENDOR_CHUNK_DEFS } from './chunk-defs'
 import { DATE_FNS_VENDOR_JS } from './date-fns.generated'
 import { LUCIDE_REACT_VENDOR_JS } from './lucide-react.generated'
 import { MOTION_REACT_VENDOR_JS } from './motion-react.generated'
@@ -20,14 +20,11 @@ const VENDOR_JS_MAP: Record<string, string> = {
   'date-fns': DATE_FNS_VENDOR_JS
 }
 
-for (const def of VENDOR_CHUNK_DEFS) {
-  if (!VENDOR_JS_MAP[def.name]) {
-    throw new Error(
-      `VENDOR_JS_MAP is missing entry for chunk "${def.name}". ` +
-        `Add it to VENDOR_JS_MAP in lib/canvas/compiler/vendor/index.ts.`
-    )
-  }
-}
+assertChunkMapComplete(
+  VENDOR_JS_MAP,
+  'VENDOR_JS_MAP',
+  'lib/canvas/compiler/vendor/index.ts'
+)
 
 /**
  * Vendor chunks ordered by injection priority. react-core must come

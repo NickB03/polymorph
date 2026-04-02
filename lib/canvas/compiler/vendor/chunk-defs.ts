@@ -24,6 +24,12 @@ export type VendorChunkDef = {
   shimExternals?: string[]
   /** Additional global assignments (e.g., __CANVAS_REACT__ = React) */
   globalAliases?: Record<string, string>
+  /**
+   * When true, subpath imports (e.g., date-fns/locale/en-US) are
+   * allowed but resolved from the filesystem rather than vendored.
+   * Requires outputFileTracingIncludes on Vercel.
+   */
+  subpaths?: boolean
 }
 
 export const VENDOR_CHUNK_DEFS: VendorChunkDef[] = [
@@ -59,7 +65,8 @@ export const VENDOR_CHUNK_DEFS: VendorChunkDef[] = [
   },
   {
     name: 'date-fns',
-    specifiers: ['date-fns']
+    specifiers: ['date-fns'],
+    subpaths: true
   }
 ]
 
@@ -80,4 +87,24 @@ export function getAllBundleSpecifiers(def: VendorChunkDef): string[] {
  */
 export function vendorShimSource(specifier: string): string {
   return `module.exports = globalThis.__CANVAS_VENDOR__[${JSON.stringify(specifier)}]`
+}
+
+/**
+ * Asserts that a name-keyed record has an entry for every vendor chunk.
+ * Used by both the runtime registry and build script to catch missing entries
+ * at module load / script start rather than at compile time.
+ */
+export function assertChunkMapComplete(
+  map: Record<string, unknown>,
+  mapName: string,
+  filePath: string
+): void {
+  for (const def of VENDOR_CHUNK_DEFS) {
+    if (!map[def.name]) {
+      throw new Error(
+        `${mapName} is missing entry for chunk "${def.name}". ` +
+          `Add it to ${mapName} in ${filePath}.`
+      )
+    }
+  }
 }
