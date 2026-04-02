@@ -9,9 +9,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@arizeai/phoenix-client": "^1.0.0",
+    "@arizeai/phoenix-client": "6.5.0",
+    "@arizeai/phoenix-evals": "1.0.2",
     "@ai-sdk/openai": "^3.0.23",
-    "ai": "^6.0.64",
+    "ai": "^6.0.90",
     "drizzle-orm": "^0.43.1",
     "postgres": "^3.4.7"
   },
