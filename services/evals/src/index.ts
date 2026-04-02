@@ -1,24 +1,16 @@
+import { openai } from '@ai-sdk/openai'
+import { createClient } from '@arizeai/phoenix-client'
+import { createOrGetDataset } from '@arizeai/phoenix-client/datasets'
 import { runExperiment } from '@arizeai/phoenix-client/experiments'
 
-import { faithfulnessEvaluator } from './evaluators/faithfulness'
-import { relevanceEvaluator } from './evaluators/relevance'
-import { responseQualityEvaluator } from './evaluators/response-quality'
+import { createFaithfulnessExperimentEvaluator } from './evaluators/faithfulness'
+import { createRelevanceExperimentEvaluator } from './evaluators/relevance'
+import { createResponseQualityExperimentEvaluator } from './evaluators/response-quality'
 import { config } from './config'
 import { closeDb } from './db'
 import { withRetry } from './retry'
 import { type ChatSample, sampleRecentChats } from './sampler'
 
-/**
- * Polymorph Evals — scheduled evaluation pipeline
- *
- * Flow:
- * 1. Sample recent chats from Supabase Postgres
- * 2. Run evaluators (faithfulness, search relevance, response quality)
- * 3. Push results to Phoenix as an experiment
- * 4. Exit cleanly (Railway cron requirement)
- *
- * Phoenix client reads PHOENIX_HOST and PHOENIX_API_KEY from env automatically.
- */
 async function main() {
   const startTime = Date.now()
   console.log(`[evals] Starting evaluation run at ${new Date().toISOString()}`)
@@ -37,9 +29,11 @@ async function main() {
 
   console.log(`[evals] Sampled ${samples.length} chats`)
 
-  const examples = samples.map((sample, i) => ({
-    id: `${sample.chatId}-${i}`,
-    updatedAt: sample.createdAt,
+  const timestamp = new Date().toISOString().slice(0, 13).replace('T', '-')
+  const datasetName = `polymorph-eval-${timestamp}h`
+  const experimentName = `polymorph-eval-${timestamp}h`
+
+  const examples = samples.map(sample => ({
     input: {
       query: sample.userQuery,
       context: formatContext(sample)
@@ -53,24 +47,46 @@ async function main() {
     }
   }))
 
-  // Task returns the model's actual answer — evaluating existing answers, not generating new ones
-  const experimentName = `polymorph-eval-${new Date().toISOString().slice(0, 13).replace('T', '-')}h`
-  console.log(`[evals] Running experiment: ${experimentName}`)
+  // Pass host explicitly — don't rely on library's internal env var naming
+  const phoenix = createClient({ host: config.phoenixHost })
+  const model = openai(config.judgeModel)
 
+  // Instantiate evaluators once, outside the retry loop
+  const evaluators = [
+    createFaithfulnessExperimentEvaluator(model),
+    createRelevanceExperimentEvaluator(model),
+    createResponseQualityExperimentEvaluator(model)
+  ]
+
+  // v6 behavior: createOrGetDataset is idempotent within the same name.
+  // If this cron fires twice in the same hour, examples append to the
+  // existing dataset. This is intentional — duplicate runs enrich rather
+  // than overwrite the evaluation corpus.
+  console.log(`[evals] Creating dataset: ${datasetName}`)
+  const { datasetId } = await withRetry(
+    () =>
+      createOrGetDataset({
+        client: phoenix,
+        name: datasetName,
+        description: `Automated eval of ${samples.length} chats from the last ${config.lookbackHours}h`,
+        examples
+      }),
+    { maxAttempts: 3, baseDelayMs: 2000 }
+  )
+
+  console.log(`[evals] Running experiment: ${experimentName}`)
   const experiment = await withRetry(
     () =>
       runExperiment({
+        client: phoenix,
         experimentName,
         experimentDescription: `Automated eval of ${samples.length} chats from the last ${config.lookbackHours}h`,
-        dataset: examples,
+        dataset: { datasetId },
         task: async example => {
+          // Extract answer string — evaluators receive this as `output`
           return (example.output as Record<string, unknown>)?.answer ?? ''
         },
-        evaluators: [
-          faithfulnessEvaluator,
-          relevanceEvaluator,
-          responseQualityEvaluator
-        ],
+        evaluators,
         concurrency: 3
       }),
     { maxAttempts: 3, baseDelayMs: 5000 }
@@ -85,11 +101,7 @@ async function main() {
   console.log('[evals] Done.')
 }
 
-/**
- * Format search results + citations into a text context block
- * for evaluators to judge against.
- */
-function formatContext(sample: ChatSample): string {
+export function formatContext(sample: ChatSample): string {
   const parts: string[] = []
 
   for (const search of sample.searchResults) {

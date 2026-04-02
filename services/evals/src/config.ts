@@ -19,8 +19,9 @@ export const config = {
   // Supabase Postgres — read-only access to chat data
   databaseUrl: required('DATABASE_URL'),
 
-  // Phoenix — validated here, read by @arizeai/phoenix-client automatically
+  // Phoenix — validated here for fail-fast behavior
   phoenixHost: required('PHOENIX_HOST'),
+  phoenixApiKey: required('PHOENIX_API_KEY'),
 
   // LLM judge model (for evaluators)
   judgeModel: process.env.JUDGE_MODEL ?? 'gpt-4o-mini',
