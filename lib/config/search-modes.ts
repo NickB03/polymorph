@@ -26,7 +26,7 @@ export const SEARCH_MODE_CONFIGS: SearchModeConfig[] = [
     label: 'Research Agent',
     description: 'Deep research with intelligent query understanding',
     icon: IconLogoOutline,
-    color: 'text-tip'
+    color: 'text-accent-violet'
   }
 ]
 

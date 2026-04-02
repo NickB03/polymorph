@@ -28,6 +28,8 @@
   --accent-blue-hover: oklch(0.488 0.243 264);
   --accent-blue-subtle: oklch(0.95 0.02 263);
   --accent-blue-foreground: oklch(1 0 0);
+  /* Violet accent — Research Agent brand color (hue ~293) */
+  --accent-violet: oklch(0.61 0.21 293);
   /* Semantic color tokens — text/icon color per variant */
   --info: oklch(0.546 0.245 263);
   --info-bg: oklch(0.97 0.01 263);
@@ -103,6 +105,8 @@
   --accent-blue-hover: oklch(0.64 0.17 256);
   --accent-blue-subtle: oklch(0.22 0.03 263);
   --accent-blue-foreground: oklch(1 0 0);
+  /* Violet accent — dark mode */
+  --accent-violet: oklch(0.71 0.19 293);
   /* Semantic color tokens — dark mode */
   --info: oklch(0.707 0.165 255);
   --info-bg: oklch(0.2 0.02 263);
@@ -180,6 +184,7 @@
   --color-accent-blue-hover: var(--accent-blue-hover);
   --color-accent-blue-subtle: var(--accent-blue-subtle);
   --color-accent-blue-foreground: var(--accent-blue-foreground);
+  --color-accent-violet: var(--accent-violet);
   --color-info: var(--info);
   --color-info-bg: var(--info-bg);
   --color-info-border: var(--info-border);

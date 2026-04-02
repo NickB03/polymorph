@@ -43,7 +43,7 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
     WITH recent_chats AS (
       SELECT id, created_at
       FROM chats
-      WHERE created_at > NOW() - INTERVAL '${sql.raw(String(lookbackHours))} hours'
+      WHERE created_at > NOW() - make_interval(hours => ${lookbackHours})
       ORDER BY RANDOM()
       LIMIT ${sampleSize}
     ),
