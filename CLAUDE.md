@@ -23,6 +23,9 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 - `bun run chat` — CLI chat interface (`scripts/chat-cli.ts`)
 - `bun run build:template` — rebuild canvas artifact React SPA template
 - `npx supabase start` — local Supabase (DB:44322, API:44321, Studio:44323)
+- `railway status` — show linked Railway project context
+- `railway logs -s <service>` — stream Railway service logs (phoenix, polymorph-evals)
+- `npx @arizeai/phoenix-cli trace list` — list recent Phoenix traces
 
 ## Architecture
 
@@ -89,6 +92,25 @@ Canvas is the active artifact model. It is always-on (no feature flag gating).
 - **Pre-processors** (`lib/canvas/pre-processors/`): AST transforms that fix AI-generated code before compilation
 - **Source validation** (`lib/canvas/validation/`): Validates and normalizes canvas source before compilation
 - **Canvas workspace UI** (`components/canvas/`): Split-view workspace with live preview, CodeMirror editor, diagnostics panel, and version history
+
+### Observability (Arize Phoenix on Railway)
+
+OpenTelemetry traces export to a self-hosted Phoenix instance on Railway, gated by `ENABLE_TRACING=true`.
+
+- **Instrumentation** (`instrumentation.ts`): Registers OTel with Phoenix OTLP exporter. Enforces HTTPS in production via `isProductionTarget()`.
+- **Production detection** (`lib/config/env.ts`): `isProductionTarget()` checks `VERCEL_ENV`, `VERCEL_TARGET_ENV`, `RAILWAY_ENVIRONMENT`, or `NODE_ENV=production`. Used by instrumentation and env validation.
+- **Trace flushing** (`lib/utils/telemetry.ts`): `flushTraces()` forces pending spans to export before serverless shutdown. Call in `onFinish` callbacks of streaming routes.
+- **Architecture:** `Vercel (app) --OTLP/HTTPS--> Railway (phoenix) <--API-- Railway (evals cron)`
+
+### Evals Service (`services/evals/`)
+
+Offline LLM-judge evaluation pipeline designed to run as a Railway cron service (every 6 hours). **Not yet deployed** — only `phoenix` is live on Railway. See `docs/operations/DEPLOYMENT.md` for deployment instructions.
+
+- Samples recent chats from Supabase Postgres (parameterized SQL)
+- Runs 3 evaluators (faithfulness, relevance, response quality) via shared factory pattern (`create-evaluator.ts`)
+- Shared `extractVerdict()` uses word-boundary matching; `asString()` replaces unsafe casts
+- Pushes results to Phoenix as experiments
+- Key files: `sampler.ts`, `evaluators/create-evaluator.ts`, `evaluators/extract-verdict.ts`, `config.ts`
 
 ### Voice
 
@@ -226,6 +248,31 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 - `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` — Redis for guest rate limiting (required when `ENABLE_GUEST_CHAT=true` in cloud mode)
 - `NEXT_PUBLIC_ENABLE_VOICE` — enables voice input/output UI
 
+## Railway & Phoenix Operations
+
+Railway CLI (`railway`, v4.35.2) and Phoenix CLI (`npx @arizeai/phoenix-cli`) manage production infrastructure. MCP servers for both are configured in `.mcp.json`.
+
+### Railway CLI (infrastructure, deploys, env vars)
+
+- `railway status` — show linked project/service/environment
+- `railway logs -s phoenix` — stream Phoenix service logs
+- `railway logs -s phoenix --since 1h --filter "@level:error"` — recent errors
+- `railway logs -s polymorph-evals -n 50` — last 50 evals cron log lines (not yet deployed)
+- `railway variable list -s phoenix` — list Phoenix env vars
+- `railway variable set KEY=VALUE -s <service>` — update env var (triggers redeploy)
+- `railway restart -s phoenix` — restart without rebuild
+- `railway redeploy -s polymorph-evals` — full rebuild + deploy (not yet deployed)
+- `railway open` — open Railway dashboard in browser
+
+### Phoenix CLI (traces, experiments, evals)
+
+All commands require `PHOENIX_API_KEY` set in the shell environment for authenticated access.
+
+- `npx @arizeai/phoenix-cli trace list --endpoint https://phoenix-production-c6b5.up.railway.app --limit 10` — recent traces
+- `npx @arizeai/phoenix-cli experiment list --dataset <name>` — list eval experiments
+- `npx @arizeai/phoenix-cli span list --span-kind LLM --status-code ERROR` — find LLM errors
+- `npx @arizeai/phoenix-cli trace get <trace-id>` — inspect a specific trace
+
 ## Key Files
 
 - `app/api/chat/route.ts` — main chat API endpoint (300s timeout)
@@ -243,3 +290,7 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 - `lib/tools/read-canvas-artifact.ts` — AI tool: read current canvas artifact source (no side effects)
 - `components/canvas/` — canvas workspace shell, live preview, CodeMirror editor, diagnostics, version history
 - `app/api/canvas-artifacts/` — REST routes for canvas artifact state, drafts, versions, restore, export, diagnostics
+- `instrumentation.ts` — OTel registration with Phoenix exporter, HTTPS enforcement via `isProductionTarget()`
+- `lib/config/env.ts` — env validation, `isProductionTarget()` for Vercel/Railway production detection
+- `lib/utils/telemetry.ts` — `flushTraces()` for serverless span export with timeout
+- `services/evals/` — offline LLM-judge evaluation pipeline (Railway cron, own Dockerfile)

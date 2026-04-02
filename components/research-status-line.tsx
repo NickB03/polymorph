@@ -22,7 +22,7 @@ export function ResearchStatusLine({
 
   return (
     <div className="flex items-center gap-2 py-1.5 text-sm text-muted-foreground">
-      <Check className="size-3.5 shrink-0 text-emerald-500" />
+      <Check className="size-3.5 shrink-0 text-success" />
       <span>{selectedLabel}</span>
     </div>
   )

@@ -64,12 +64,12 @@ function getReceiptState(outcome: ProgressTrackerChoice['outcome']): {
   switch (outcome) {
     case 'success':
       return {
-        toneClassName: 'text-emerald-600 dark:text-emerald-500',
+        toneClassName: 'text-success',
         icon: Check
       }
     case 'partial':
       return {
-        toneClassName: 'text-amber-600 dark:text-amber-500',
+        toneClassName: 'text-warning',
         icon: AlertCircle
       }
     case 'failed':
@@ -130,7 +130,7 @@ function StepIndicator({ status }: StepIndicatorProps) {
   if (status === 'failed') {
     return (
       <span
-        className="bg-destructive border-destructive flex size-6 shrink-0 items-center justify-center rounded-full border text-white shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-75 motion-safe:duration-300 motion-safe:ease-out dark:border-red-600 dark:bg-red-600"
+        className="bg-destructive border-destructive flex size-6 shrink-0 items-center justify-center rounded-full border text-white shadow-sm motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-75 motion-safe:duration-300 motion-safe:ease-out"
         role="img"
         aria-label="Failed"
       >
@@ -191,7 +191,7 @@ function ProgressTrackerReceipt({
       role="status"
       aria-label={choice.summary}
     >
-      <div className="bg-card/60 flex w-full flex-col gap-4 rounded-2xl border p-5 shadow-xs">
+      <div className="bg-card/60 flex w-full flex-col gap-4 rounded-xl border p-5 shadow-xs">
         <div className="flex items-center gap-2">
           <ElapsedTimeBadge elapsedTime={elapsedTime} />
           <span
@@ -264,7 +264,7 @@ function ProgressTrackerLive({
       aria-live="polite"
       aria-busy={hasInProgress}
     >
-      <div className="bg-card flex w-full flex-col gap-4 rounded-2xl border p-5 shadow-xs">
+      <div className="bg-card flex w-full flex-col gap-4 rounded-xl border p-5 shadow-xs">
         <ElapsedTimeBadge elapsedTime={elapsedTime} />
 
         <ol className="m-0 flex list-none flex-col gap-3 p-0">

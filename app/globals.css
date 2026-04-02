@@ -22,7 +22,30 @@
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.92 0 0);
   --input: oklch(0.94 0 0);
-  --ring: oklch(0 0 0);
+  --ring: oklch(0.546 0.245 263);
+  /* Blue accent scale — Polymorph wordmark blue (hue ~263) */
+  --accent-blue: oklch(0.546 0.245 263);
+  --accent-blue-hover: oklch(0.488 0.243 264);
+  --accent-blue-subtle: oklch(0.95 0.02 263);
+  --accent-blue-foreground: oklch(1 0 0);
+  /* Violet accent — Research Agent brand color (hue ~293) */
+  --accent-violet: oklch(0.61 0.21 293);
+  /* Semantic color tokens — text/icon color per variant */
+  --info: oklch(0.546 0.245 263);
+  --info-bg: oklch(0.97 0.01 263);
+  --info-border: oklch(0.88 0.05 263);
+  --success: oklch(0.52 0.14 155);
+  --success-bg: oklch(0.97 0.01 155);
+  --success-border: oklch(0.88 0.05 155);
+  --warning: oklch(0.55 0.14 70);
+  --warning-bg: oklch(0.97 0.015 70);
+  --warning-border: oklch(0.88 0.05 70);
+  --error: oklch(0.63 0.19 23.03);
+  --error-bg: oklch(0.97 0.01 23);
+  --error-border: oklch(0.88 0.05 23);
+  --tip: oklch(0.54 0.19 293);
+  --tip-bg: oklch(0.97 0.01 293);
+  --tip-border: oklch(0.88 0.05 293);
   --chart-1: oklch(0.81 0.17 75.35);
   --chart-2: oklch(0.55 0.22 264.53);
   --chart-3: oklch(0.72 0 0);
@@ -35,7 +58,7 @@
   --sidebar-accent: oklch(0.94 0 0);
   --sidebar-accent-foreground: oklch(0 0 0);
   --sidebar-border: oklch(0.94 0 0);
-  --sidebar-ring: oklch(0 0 0);
+  --sidebar-ring: oklch(0.546 0.245 263);
   --font-sans: Geist, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Geist Mono, monospace;
@@ -76,7 +99,30 @@
   --destructive-foreground: oklch(0 0 0);
   --border: oklch(0.26 0 0);
   --input: oklch(0.32 0 0);
-  --ring: oklch(0.72 0 0);
+  --ring: oklch(0.707 0.165 255);
+  /* Blue accent scale — dark mode (lighter, matches dark wordmark) */
+  --accent-blue: oklch(0.707 0.165 255);
+  --accent-blue-hover: oklch(0.64 0.17 256);
+  --accent-blue-subtle: oklch(0.22 0.03 263);
+  --accent-blue-foreground: oklch(1 0 0);
+  /* Violet accent — dark mode */
+  --accent-violet: oklch(0.71 0.19 293);
+  /* Semantic color tokens — dark mode */
+  --info: oklch(0.707 0.165 255);
+  --info-bg: oklch(0.2 0.02 263);
+  --info-border: oklch(0.35 0.05 263);
+  --success: oklch(0.7 0.14 155);
+  --success-bg: oklch(0.2 0.02 155);
+  --success-border: oklch(0.35 0.05 155);
+  --warning: oklch(0.75 0.14 70);
+  --warning-bg: oklch(0.2 0.02 70);
+  --warning-border: oklch(0.35 0.05 70);
+  --error: oklch(0.69 0.2 23.91);
+  --error-bg: oklch(0.2 0.02 23);
+  --error-border: oklch(0.35 0.05 23);
+  --tip: oklch(0.72 0.14 293);
+  --tip-bg: oklch(0.2 0.02 293);
+  --tip-border: oklch(0.35 0.05 293);
   --chart-1: oklch(0.81 0.17 75.35);
   --chart-2: oklch(0.58 0.21 260.84);
   --chart-3: oklch(0.56 0 0);
@@ -89,7 +135,7 @@
   --sidebar-accent: oklch(0.32 0 0);
   --sidebar-accent-foreground: oklch(1 0 0);
   --sidebar-border: oklch(0.32 0 0);
-  --sidebar-ring: oklch(0.72 0 0);
+  --sidebar-ring: oklch(0.707 0.165 255);
   --font-sans: Geist, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Geist Mono, monospace;
@@ -134,6 +180,26 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-blue-hover: var(--accent-blue-hover);
+  --color-accent-blue-subtle: var(--accent-blue-subtle);
+  --color-accent-blue-foreground: var(--accent-blue-foreground);
+  --color-accent-violet: var(--accent-violet);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-info-border: var(--info-border);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-border: var(--warning-border);
+  --color-error: var(--error);
+  --color-error-bg: var(--error-bg);
+  --color-error-border: var(--error-border);
+  --color-tip: var(--tip);
+  --color-tip-bg: var(--tip-bg);
+  --color-tip-border: var(--tip-border);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);

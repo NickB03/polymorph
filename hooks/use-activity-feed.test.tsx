@@ -174,7 +174,8 @@ describe('useActivityFeed', () => {
     rerender({ chatId: 'chat-2', messages: secondMessages })
 
     await waitFor(() => {
-      expect(mockActivity.reset).toHaveBeenCalledTimes(1)
+      // 2 resets: once on mount (prevChatId starts undefined), once on chatId change
+      expect(mockActivity.reset).toHaveBeenCalledTimes(2)
       expect(mockActivity.addItem).toHaveBeenCalledTimes(2)
       expect(mockActivity.open).toHaveBeenCalledTimes(2)
     })
@@ -200,7 +201,8 @@ describe('useActivityFeed', () => {
     rerender({ chatId: 'chat-2', messages: secondMessages })
 
     await waitFor(() => {
-      expect(mockActivity.reset).toHaveBeenCalledTimes(1)
+      // 2 resets: once on mount (prevChatId starts undefined), once on chatId change
+      expect(mockActivity.reset).toHaveBeenCalledTimes(2)
       expect(mockActivity.addItem).toHaveBeenCalledTimes(2)
       expect(mockActivity.open).not.toHaveBeenCalled()
     })

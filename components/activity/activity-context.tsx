@@ -79,6 +79,9 @@ function activityReducer(
         searchModeLabel: action.payload.label ?? null
       }
     case 'ADD_ITEM':
+      if (state.items.some(item => item.id === action.payload.id)) {
+        return state
+      }
       return {
         ...state,
         items: [...state.items, { ...action.payload, timestamp: Date.now() }]

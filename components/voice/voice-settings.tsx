@@ -162,7 +162,7 @@ export function VoiceSettings({ config, onUpdate }: VoiceSettingsProps) {
               <div className="h-1.5 w-full rounded-full bg-muted">
                 <div
                   className={`h-full rounded-full transition-all ${
-                    showWarning ? 'bg-amber-500' : 'bg-primary'
+                    showWarning ? 'bg-warning' : 'bg-primary'
                   }`}
                   style={{
                     width: `${Math.min(100, (usage.chars / usage.limit) * 100)}%`
@@ -170,7 +170,7 @@ export function VoiceSettings({ config, onUpdate }: VoiceSettingsProps) {
                 />
               </div>
               {showWarning && (
-                <div className="text-xs text-amber-600">
+                <div className="text-xs text-warning">
                   Approaching monthly limit. Will fall back to browser TTS.
                 </div>
               )}

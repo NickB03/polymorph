@@ -427,12 +427,18 @@ Returns a streaming audio response.
 
 ### GET `/api/health`
 
-Health check endpoint for monitoring and load balancers. Verifies database connectivity with a 5-second timeout.
+Health check endpoint for monitoring and load balancers. Verifies database connectivity with a 5-second timeout. Optionally checks Phoenix collector connectivity.
 
 **Authentication:** None
 **Dynamic:** `force-dynamic`
 
 For Vercel monitoring, use the canonical production alias (`https://polymorph-nb.vercel.app/api/health`). Raw deployment URLs may be protected by Vercel Authentication even when the application route itself is public.
+
+#### Query Parameters
+
+| Parameter | Values           | Description                                                        |
+| --------- | ---------------- | ------------------------------------------------------------------ |
+| `check`   | `phoenix`, `all` | Include optional Phoenix collector connectivity check (3s timeout) |
 
 #### Response
 
@@ -448,15 +454,29 @@ For Vercel monitoring, use the canonical production alias (`https://polymorph-nb
 }
 ```
 
+**Healthy with Phoenix check (200):**
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-01-15T10:30:00.000Z",
+  "db": "connected",
+  "phoenix": "ok"
+}
+```
+
 **Unhealthy (503):**
 
 ```json
 {
   "status": "error",
   "timestamp": "2025-01-15T10:30:00.000Z",
-  "db": "error"
+  "db": "error",
+  "dbError": "unreachable"
 }
 ```
+
+> **Note:** Phoenix status is advisory-only and does not affect the HTTP status code. The endpoint returns 503 only when the database is unreachable.
 
 ---
 

@@ -27,7 +27,7 @@ export function VoiceModeToggle({
       size="icon"
       className={cn(
         'rounded-full',
-        isActive && 'bg-red-500 hover:bg-red-600',
+        isActive && 'bg-destructive hover:bg-destructive/90',
         className
       )}
       type="button"

@@ -230,7 +230,7 @@ function OverflowIndicator({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             className={cn(
-              'inline-flex items-center gap-1 rounded-md px-2 py-1',
+              'inline-flex items-center gap-1 rounded-lg px-2 py-1',
               'bg-muted/60 text-sm tabular-nums',
               'transition-colors duration-150',
               'hover:bg-muted',

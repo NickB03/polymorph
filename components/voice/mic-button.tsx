@@ -29,7 +29,7 @@ export function MicButton({
       size="icon"
       className={cn(
         'rounded-full',
-        isListening && 'animate-pulse border-red-500 text-red-500'
+        isListening && 'animate-pulse border-destructive text-destructive'
       )}
       type="button"
       onClick={isListening ? onStop : onStart}

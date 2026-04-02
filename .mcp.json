@@ -5,6 +5,19 @@
       "command": "npx",
       "args": ["next-devtools-mcp@latest"],
       "env": {}
+    },
+    "railway": {
+      "type": "stdio",
+      "command": "railway",
+      "args": ["mcp"]
+    },
+    "phoenix": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@arizeai/phoenix-mcp@latest"],
+      "env": {
+        "PHOENIX_HOST": "https://phoenix-production-c6b5.up.railway.app"
+      }
     }
   }
 }

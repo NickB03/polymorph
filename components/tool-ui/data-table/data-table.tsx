@@ -272,7 +272,7 @@ function DataTableLayout({
             {emptyMessage}
           </div>
         ) : (
-          <div className="bg-card flex flex-col overflow-hidden rounded-2xl border shadow-xs">
+          <div className="bg-card flex flex-col overflow-hidden rounded-xl border shadow-xs">
             {data.map((row, i) => {
               const rowKey = rowKeys[i]
               return (

@@ -120,7 +120,7 @@ export function ToolArgsSection({
       </div>
       {number && number > 0 && (
         <div className="shrink-0">
-          <StatusIndicator icon={Check} iconClassName="text-green-500">
+          <StatusIndicator icon={Check} iconClassName="text-success">
             {number} results
           </StatusIndicator>
         </div>

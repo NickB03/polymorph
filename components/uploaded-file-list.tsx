@@ -34,7 +34,7 @@ export const UploadedFileList = React.memo(function UploadedFileList({
                   sizes="112px"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-sm font-semibold bg-gray-300 dark:bg-gray-700">
+                <div className="w-full h-full flex items-center justify-center text-sm font-semibold bg-muted text-muted-foreground">
                   {it.file.name.split('.').pop()?.toUpperCase()}
                 </div>
               )}
@@ -49,7 +49,7 @@ export const UploadedFileList = React.memo(function UploadedFileList({
               <button
                 type="button"
                 onClick={() => onRemove(index)}
-                className="absolute top-1 right-1 bg-black/40 hover:bg-red-600 text-white rounded-full p-1 z-20"
+                className="absolute top-1 right-1 bg-black/40 hover:bg-destructive text-white rounded-full p-1 z-20"
                 aria-label={`Remove file ${it.name || it.file.name}`}
               >
                 <X size={12} />

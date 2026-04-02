@@ -18,27 +18,27 @@ const categoryConfig: Record<
 > = {
   milestone: {
     icon: Star,
-    dot: 'border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-950',
-    dateBg: 'bg-amber-50 dark:bg-amber-950/50',
-    dateText: 'text-amber-700 dark:text-amber-400'
+    dot: 'border-warning-border bg-warning-bg',
+    dateBg: 'bg-warning-bg',
+    dateText: 'text-warning'
   },
   release: {
     icon: Package,
-    dot: 'border-emerald-400 bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-950',
-    dateBg: 'bg-emerald-50 dark:bg-emerald-950/50',
-    dateText: 'text-emerald-700 dark:text-emerald-400'
+    dot: 'border-success-border bg-success-bg',
+    dateBg: 'bg-success-bg',
+    dateText: 'text-success'
   },
   announcement: {
     icon: Megaphone,
-    dot: 'border-violet-400 bg-violet-100 dark:border-violet-500 dark:bg-violet-950',
-    dateBg: 'bg-violet-50 dark:bg-violet-950/50',
-    dateText: 'text-violet-700 dark:text-violet-400'
+    dot: 'border-tip-border bg-tip-bg',
+    dateBg: 'bg-tip-bg',
+    dateText: 'text-tip'
   },
   event: {
     icon: Calendar,
-    dot: 'border-blue-400 bg-blue-100 dark:border-blue-500 dark:bg-blue-950',
-    dateBg: 'bg-blue-50 dark:bg-blue-950/50',
-    dateText: 'text-blue-700 dark:text-blue-400'
+    dot: 'border-info-border bg-info-bg',
+    dateBg: 'bg-info-bg',
+    dateText: 'text-info'
   },
   default: {
     icon: Flag,
@@ -88,7 +88,7 @@ const TimelineEventItem = memo(function TimelineEventItem({
       <div className="min-w-0 flex-1 pb-6">
         <span
           className={cn(
-            'inline-block rounded-md px-2 py-0.5 text-xs font-medium',
+            'inline-block rounded-lg px-2 py-0.5 text-xs font-medium',
             config.dateBg,
             config.dateText
           )}

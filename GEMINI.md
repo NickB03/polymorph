@@ -72,6 +72,23 @@ Canvas is the active artifact model. It is always-on (no feature flag gating).
 - **Guest security** (`lib/canvas/guest-token.ts`): HMAC-SHA256 signed tokens for guest artifact continuity
 - **Workspace UI** (`components/canvas/`): Split-view workspace with live preview, CodeMirror editor, diagnostics panel, and version history
 
+### Observability (Arize Phoenix)
+
+OpenTelemetry tracing to a self-hosted Arize Phoenix instance, gated by `ENABLE_TRACING=true`.
+
+- **Instrumentation** (`instrumentation.ts`): Registers OTel with Phoenix OTLP exporter. Uses `isProductionTarget()` from `lib/config/env.ts` to enforce HTTPS on the collector endpoint in production environments (Vercel, Railway, or generic `NODE_ENV=production`). Sets `deployment_environment` attribute from `VERCEL_ENV`, `RAILWAY_ENVIRONMENT`, or `NODE_ENV`.
+- **Telemetry** (`lib/utils/telemetry.ts`): `flushTraces()` forces pending spans to export before serverless shutdown via `Promise.race` with configurable timeout. Warns on timeout or missing `forceFlush` provider.
+- **Production detection** (`lib/config/env.ts`): `isProductionTarget()` consolidates Vercel (`VERCEL_ENV`, `VERCEL_TARGET_ENV`), Railway (`RAILWAY_ENVIRONMENT`), and generic `NODE_ENV` checks into a single reusable function.
+
+### Evals Service
+
+Offline evaluation pipeline (`services/evals/`) running as a Railway cron service:
+
+- **Sampler** (`services/evals/src/sampler.ts`): Queries recent chats from Supabase Postgres using parameterized SQL with safe `parseCitations()` JSON parsing
+- **Evaluators** (`services/evals/src/evaluators/`): Three LLM-judge evaluators (faithfulness, search relevance, response quality) built with a shared factory pattern (`create-evaluator.ts`). Shared `extractVerdict()` uses word-boundary matching to prevent substring false positives
+- **Config** (`services/evals/src/config.ts`): NaN-safe `validInt()` parsing for `SAMPLE_SIZE` and `LOOKBACK_HOURS`
+- **Robustness**: `closeDb()` guaranteed on all exit paths; `withRetry()` validates `maxAttempts >= 1`
+
 ### Generative UI
 
 Components render different message part types: `answer-section.tsx`, `search-section.tsx`, `reasoning-section.tsx`, `canvas/` directory for canvas artifacts. These map to part types from the `parts` database table.
@@ -143,6 +160,11 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 - `lib/canvas/` — canvas artifact compile pipeline, validation, service, guest tokens
 - `lib/tools/create-canvas-artifact.ts` — AI tool: create a new canvas artifact
 - `lib/tools/update-canvas-artifact.ts` — AI tool: update existing canvas artifact source
+- `lib/tools/read-canvas-artifact.ts` — AI tool: read current canvas artifact source (no side effects)
 - `app/api/canvas-artifacts/` — REST routes for canvas artifact state, drafts, versions, export
 - `components/canvas/` — canvas workspace shell, live preview, CodeMirror editor, diagnostics
+- `instrumentation.ts` — OTel registration with Phoenix exporter and HTTPS enforcement
+- `lib/config/env.ts` — environment validation, `isProductionTarget()` for Vercel/Railway detection
+- `lib/utils/telemetry.ts` — `flushTraces()` for serverless span export with timeout
+- `services/evals/` — offline LLM-judge evaluation pipeline (Railway cron)
 - `docs/architecture/DECISIONS.md` — architectural decisions

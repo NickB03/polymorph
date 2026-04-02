@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 import { sql } from 'drizzle-orm'
 
@@ -6,11 +6,14 @@ import { db } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const timestamp = new Date().toISOString()
+  const checks = req.nextUrl.searchParams.get('check')
 
+  // Always check database
+  let dbStatus: 'connected' | 'error' = 'error'
+  let dbError: string | undefined
   try {
-    // 5-second timeout for DB check
     await Promise.race([
       db.execute(sql`SELECT 1`),
       new Promise((_, reject) =>
@@ -20,22 +23,46 @@ export async function GET() {
         )
       )
     ])
-
-    return NextResponse.json(
-      { status: 'ok', timestamp, db: 'connected' },
-      { status: 200 }
-    )
+    dbStatus = 'connected'
   } catch (error) {
-    const dbError =
+    dbError =
       process.env.NODE_ENV === 'development'
         ? error instanceof Error
           ? error.message
           : 'Unknown error'
         : 'unreachable'
-
-    return NextResponse.json(
-      { status: 'error', timestamp, db: 'error', dbError },
-      { status: 503 }
-    )
   }
+
+  // Optional Phoenix check (only when requested and tracing is configured).
+  // Phoenix status is advisory-only — it does NOT affect the HTTP status code.
+  // Load balancers hit /api/health without params and only care about DB status.
+  let phoenixStatus: 'ok' | 'error' | 'disabled' | undefined
+  if (checks === 'phoenix' || checks === 'all') {
+    const endpoint = process.env.PHOENIX_COLLECTOR_ENDPOINT
+    if (!endpoint || process.env.ENABLE_TRACING !== 'true') {
+      phoenixStatus = 'disabled'
+    } else {
+      try {
+        // Phoenix exposes a health endpoint at /healthz.
+        // If your Phoenix version uses a different path, update this.
+        const resp = await fetch(`${endpoint}/healthz`, {
+          signal: AbortSignal.timeout(3000)
+        })
+        phoenixStatus = resp.ok ? 'ok' : 'error'
+      } catch {
+        phoenixStatus = 'error'
+      }
+    }
+  }
+
+  const isHealthy = dbStatus === 'connected'
+  const body: Record<string, unknown> = {
+    status: isHealthy ? 'ok' : 'error',
+    timestamp,
+    db: dbStatus
+  }
+  if (dbError) body.dbError = dbError
+  if (phoenixStatus !== undefined) body.phoenix = phoenixStatus
+
+  return NextResponse.json(body, { status: isHealthy ? 200 : 503 })
 }
