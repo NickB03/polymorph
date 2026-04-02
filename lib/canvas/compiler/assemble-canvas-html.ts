@@ -189,6 +189,7 @@ export type AssembleCanvasHtmlOptions = {
   artifactId?: string
   revisionId?: string
   nonce?: string
+  vendorJs?: string
 }
 
 export function assembleCanvasHtml(opts: AssembleCanvasHtmlOptions): string {
@@ -222,7 +223,7 @@ export function assembleCanvasHtml(opts: AssembleCanvasHtmlOptions): string {
 </head>
 <body>
 <div id="root"></div>
-<script>${assetScript}${js}${bootstrap}</script>
+<script>${opts.vendorJs ?? ''}${assetScript}${js}${bootstrap}</script>
 </body>
 </html>`
 }
