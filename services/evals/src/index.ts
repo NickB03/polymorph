@@ -48,7 +48,9 @@ async function main() {
   }))
 
   // Pass host explicitly — don't rely on library's internal env var naming
-  const phoenix = createClient({ host: config.phoenixHost })
+  const phoenix = createClient({
+    options: { baseUrl: config.phoenixHost }
+  })
   const model = openai(config.judgeModel)
 
   // Instantiate evaluators once, outside the retry loop
