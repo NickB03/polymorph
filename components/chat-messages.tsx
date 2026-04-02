@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import { UseChatHelpers } from '@ai-sdk/react'
 
@@ -22,6 +22,8 @@ import { Skeleton } from './ui/skeleton'
 import { ChatError } from './chat-error'
 import { GuestSignupNudge } from './guest-signup-nudge'
 import { RenderMessage } from './render-message'
+
+const toolTypes = ['tool-search', 'tool-fetch', 'tool-relatedQuestions']
 
 interface ChatMessagesProps {
   sections: ChatSection[] // Changed from messages to sections
@@ -59,8 +61,6 @@ export function ChatMessages({
   const [userModifiedStates, setUserModifiedStates] = useState<
     Record<string, boolean>
   >({})
-  // Cache tool counts for performance optimization
-  const toolCountCacheRef = useRef<Map<string, number>>(new Map())
   // Cache citation maps per message to avoid recomputing from all messages during streaming
   const citationCacheRef = useRef<
     Record<
@@ -72,7 +72,6 @@ export function ChatMessages({
   if (prevChatIdRef.current !== chatId) {
     prevChatIdRef.current = chatId
     citationCacheRef.current = {}
-    toolCountCacheRef.current.clear()
   }
   const isLoading = isChatLoading(status)
   const isMobile = useIsMobile()
@@ -84,25 +83,6 @@ export function ChatMessages({
     [sections]
   )
   const { isResearchMode } = useActivityFeed(allMessages, status, chatId)
-
-  // Tool types definition - moved outside function for performance
-  const toolTypes = ['tool-search', 'tool-fetch', 'tool-relatedQuestions']
-
-  // Clear cache during streaming to ensure accurate tool counts
-  useEffect(() => {
-    if (!isLoading) return
-    // Only clear cache for the last section's messages (currently streaming)
-    const lastSection = sections[sections.length - 1]
-    if (!lastSection) return
-    const streamingIds = new Set(
-      [lastSection.userMessage, ...lastSection.assistantMessages].map(m => m.id)
-    )
-    for (const key of toolCountCacheRef.current.keys()) {
-      if (streamingIds.has(key)) {
-        toolCountCacheRef.current.delete(key)
-      }
-    }
-  }, [isLoading, sections])
 
   // Calculate the offset height based on device type
   // Note: pt-14 (56px) on scroll-container must be included in desktop offset
@@ -138,50 +118,15 @@ export function ChatMessages({
 
   if (!sections.length) return null
 
-  // Helper function to get tool count with caching
-  const getToolCount = (message?: UIMessage): number => {
-    if (!message || !message.id) return 0
-
-    // During streaming, always recalculate
-    if (isLoading) {
-      const count =
-        message.parts?.filter(part => toolTypes.includes(part.type)).length || 0
-      return count
-    }
-
-    // Check cache first when not streaming
-    const cached = toolCountCacheRef.current.get(message.id)
-    if (cached !== undefined) {
-      return cached
-    }
-
-    // Calculate and cache
-    const count =
-      message.parts?.filter(part => toolTypes.includes(part.type)).length || 0
-    toolCountCacheRef.current.set(message.id, count)
-    return count
-  }
-
-  const getIsOpen = (
-    id: string,
-    partType?: string,
-    hasNextPart?: boolean,
-    message?: UIMessage
-  ) => {
+  const getIsOpen = (id: string, partType?: string, hasNextPart?: boolean) => {
     // If user has explicitly modified this state, use that
-    if (userModifiedStates.hasOwnProperty(id)) {
+    if (Object.hasOwn(userModifiedStates, id)) {
       return userModifiedStates[id]
     }
 
-    // For tool types, check if there are multiple tools
+    // For tool types, default to collapsed
     if (partType && toolTypes.includes(partType)) {
-      const toolCount = getToolCount(message)
-      // If multiple tools exist, default to closed
-      if (toolCount > 1) {
-        return false
-      }
-      // Single tool results stay open even if more content follows
-      return true
+      return false
     }
 
     // For tool-invocations, default to open
@@ -238,9 +183,7 @@ export function ChatMessages({
               <RenderMessage
                 message={section.userMessage}
                 messageId={section.userMessage.id}
-                getIsOpen={(id, partType, hasNextPart) =>
-                  getIsOpen(id, partType, hasNextPart, section.userMessage)
-                }
+                getIsOpen={getIsOpen}
                 onOpenChange={handleOpenChange}
                 onQuerySelect={onQuerySelect}
                 chatId={chatId}
@@ -276,9 +219,7 @@ export function ChatMessages({
                   <RenderMessage
                     message={assistantMessage}
                     messageId={assistantMessage.id}
-                    getIsOpen={(id, partType, hasNextPart) =>
-                      getIsOpen(id, partType, hasNextPart, assistantMessage)
-                    }
+                    getIsOpen={getIsOpen}
                     onOpenChange={handleOpenChange}
                     onQuerySelect={onQuerySelect}
                     chatId={chatId}
