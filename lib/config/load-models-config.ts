@@ -11,6 +11,7 @@ export interface ModelsConfig {
   models: {
     byMode: Record<SearchMode, Record<ModelType, Model>>
     relatedQuestions: Model
+    trendingSuggestions: Model
   }
 }
 
@@ -32,7 +33,11 @@ function validateModelsConfigStructure(
   if (!parsed.models || typeof parsed.models !== 'object') {
     throw new Error('Invalid models config: missing models')
   }
-  if (!parsed.models.byMode || !parsed.models.relatedQuestions) {
+  if (
+    !parsed.models.byMode ||
+    !parsed.models.relatedQuestions ||
+    !parsed.models.trendingSuggestions
+  ) {
     throw new Error('Invalid models config: missing required sections')
   }
   if (typeof parsed.models.byMode !== 'object') {
@@ -40,6 +45,11 @@ function validateModelsConfigStructure(
   }
   if (typeof parsed.models.relatedQuestions !== 'object') {
     throw new Error('Invalid models config: relatedQuestions must be an object')
+  }
+  if (typeof parsed.models.trendingSuggestions !== 'object') {
+    throw new Error(
+      'Invalid models config: trendingSuggestions must be an object'
+    )
   }
 
   for (const searchMode of VALID_SEARCH_MODES) {

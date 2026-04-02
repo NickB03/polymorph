@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
 
 const mockGenerateObject = vi.fn()
-const mockGetRelatedQuestionsModel = vi.fn()
+const mockGetTrendingSuggestionsModel = vi.fn()
 const mockGetModel = vi.fn()
 const mockTavilySearch = vi.fn()
 const mockBraveSearch = vi.fn()
@@ -14,7 +14,7 @@ vi.mock('ai', () => ({
 }))
 
 vi.mock('@/lib/config/model-types', () => ({
-  getRelatedQuestionsModel: () => mockGetRelatedQuestionsModel()
+  getTrendingSuggestionsModel: () => mockGetTrendingSuggestionsModel()
 }))
 
 vi.mock('@/lib/utils/registry', () => ({
@@ -46,7 +46,7 @@ describe('generateTrendingSuggestions', () => {
     vi.clearAllMocks()
     vi.useRealTimers()
 
-    mockGetRelatedQuestionsModel.mockReturnValue({
+    mockGetTrendingSuggestionsModel.mockReturnValue({
       providerId: 'gateway',
       id: 'google/gemini-3-flash'
     })

@@ -1,12 +1,13 @@
 import { generateObject } from 'ai'
 import { z } from 'zod'
 
-import { getRelatedQuestionsModel } from '@/lib/config/model-types'
+import { getTrendingSuggestionsModel } from '@/lib/config/model-types'
 import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
 import { BraveSearchProvider } from '@/lib/tools/search/providers/brave'
 import { ExaSearchProvider } from '@/lib/tools/search/providers/exa'
 import { TavilySearchProvider } from '@/lib/tools/search/providers/tavily'
 import type { SuggestionCategory } from '@/lib/types'
+import { createModelId } from '@/lib/utils'
 import { getModel } from '@/lib/utils/registry'
 
 const trendingSuggestionsSchema = z.object({
@@ -166,8 +167,8 @@ export async function generateTrendingSuggestions(): Promise<TrendingSuggestions
       }
     }
 
-    const relatedModel = getRelatedQuestionsModel()
-    const modelId = `${relatedModel.providerId}:${relatedModel.id}`
+    const suggestionsModel = getTrendingSuggestionsModel()
+    const modelId = createModelId(suggestionsModel)
 
     const { object } = await generateObject({
       model: getModel(modelId),
