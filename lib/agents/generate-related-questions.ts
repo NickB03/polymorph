@@ -2,6 +2,7 @@ import { type ModelMessage, Output, streamText } from 'ai'
 
 import { getRelatedQuestionsModel } from '../config/model-types'
 import { relatedQuestionSchema } from '../schema/related'
+import { createModelId } from '../utils'
 import { getModel } from '../utils/registry'
 import { isTracingEnabled } from '../utils/telemetry'
 
@@ -12,9 +13,8 @@ export function createRelatedQuestionsStream(
   abortSignal?: AbortSignal,
   parentTraceId?: string
 ) {
-  // Use the related questions model configuration from JSON
   const relatedModel = getRelatedQuestionsModel()
-  const modelId = `${relatedModel.providerId}:${relatedModel.id}`
+  const modelId = createModelId(relatedModel)
 
   return streamText({
     model: getModel(modelId),
