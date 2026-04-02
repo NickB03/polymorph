@@ -1,6 +1,26 @@
+/**
+ * Packages the canvas compiler resolves at runtime via esbuild.
+ * These must exist on disk in serverless functions — esbuild can't
+ * read them if Next.js bundled them away. Matches the allowlist in
+ * lib/canvas/allowed-packages.ts.
+ */
+const canvasRuntimePackages = [
+  './node_modules/react/**/*',
+  './node_modules/react-dom/**/*',
+  './node_modules/lucide-react/**/*',
+  './node_modules/recharts/**/*',
+  './node_modules/motion/**/*',
+  './node_modules/date-fns/**/*'
+]
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   serverExternalPackages: ['esbuild', 'tailwindcss'],
+  outputFileTracingIncludes: {
+    '/api/chat': canvasRuntimePackages,
+    '/api/canvas-artifacts/[artifactId]/draft': canvasRuntimePackages,
+    '/api/canvas-artifacts/[artifactId]/restore': canvasRuntimePackages
+  },
   images: {
     remotePatterns: [
       {

@@ -49,39 +49,40 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 - [Documentation](#documentation)
 - [GitHub](#github)
 - [Public Assets](#public-assets)
+- [Evals Service](#evals-service)
 - [Tests](#tests)
 
 ---
 
 ## Root Files
 
-| File                  | Purpose                                                                                                 |
-| --------------------- | ------------------------------------------------------------------------------------------------------- |
-| `proxy.ts`            | Next.js middleware entry point; propagates Supabase session and base URL headers to downstream requests |
-| `instrumentation.ts`  | Registers OpenTelemetry with Phoenix exporter and initializes Ollama validation on server startup       |
-| `next.config.mjs`     | Next.js configuration; sets allowed remote image patterns for YouTube, Google, and Brave                |
-| `drizzle.config.ts`   | Drizzle Kit configuration; points schema at `@/lib/db/schema.ts` and outputs migrations to `drizzle/`   |
-| `vitest.config.mts`   | Vitest configuration; sets jsdom environment, path aliases, and setup file                              |
-| `vitest.setup.ts`     | Test setup file; mocks Next.js cache functions and sets dummy env vars                                  |
-| `package.json`        | Project manifest with scripts, dependencies, and metadata                                               |
-| `tsconfig.json`       | TypeScript configuration with strict mode and `@/` path alias                                           |
-| `postcss.config.mjs`  | PostCSS configuration for Tailwind CSS                                                                  |
-| `prettier.config.js`  | Prettier configuration (no semicolons, single quotes, no trailing commas)                               |
-| `.eslintrc.json`      | ESLint configuration with import sorting rules                                                          |
-| `components.json`     | shadcn/ui configuration for component generation                                                        |
-| `docker-compose.yaml` | Docker Compose stack defining Polymorph app and Redis services                                          |
-| `Dockerfile`          | Multi-stage Docker build for production deployment                                                      |
-| `.gitignore`          | Git ignore rules for node_modules, .next, env files, etc.                                               |
-| `.mcp.json`           | MCP (Model Context Protocol) configuration                                                              |
-| `AGENTS.md`           | Multi-agent AI assistant instructions                                                                   |
-| `CLAUDE.md`           | AI coding assistant instructions and project conventions                                                |
-| `GEMINI.md`           | Gemini-specific AI assistant instructions                                                               |
-| `README.md`           | Project overview, setup guide, and feature summary                                                      |
-| `CHANGELOG.md`        | Version history and release notes                                                                       |
-| `CONTRIBUTING.md`     | Contribution guidelines and development workflow                                                        |
-| `CODE_OF_CONDUCT.md`  | Community code of conduct                                                                               |
-| `SECURITY.md`         | Security policy and vulnerability reporting                                                             |
-| `LICENSE`             | Apache 2.0 license                                                                                      |
+| File                  | Purpose                                                                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `proxy.ts`            | Next.js middleware entry point; propagates Supabase session and base URL headers to downstream requests                                    |
+| `instrumentation.ts`  | Registers OpenTelemetry with Phoenix exporter (HTTPS enforced via `isProductionTarget()`); initializes Ollama validation on server startup |
+| `next.config.mjs`     | Next.js configuration; sets allowed remote image patterns for YouTube, Google, and Brave                                                   |
+| `drizzle.config.ts`   | Drizzle Kit configuration; points schema at `@/lib/db/schema.ts` and outputs migrations to `drizzle/`                                      |
+| `vitest.config.mts`   | Vitest configuration; sets jsdom environment, path aliases, and setup file                                                                 |
+| `vitest.setup.ts`     | Test setup file; mocks Next.js cache functions and sets dummy env vars                                                                     |
+| `package.json`        | Project manifest with scripts, dependencies, and metadata                                                                                  |
+| `tsconfig.json`       | TypeScript configuration with strict mode and `@/` path alias                                                                              |
+| `postcss.config.mjs`  | PostCSS configuration for Tailwind CSS                                                                                                     |
+| `prettier.config.js`  | Prettier configuration (no semicolons, single quotes, no trailing commas)                                                                  |
+| `.eslintrc.json`      | ESLint configuration with import sorting rules                                                                                             |
+| `components.json`     | shadcn/ui configuration for component generation                                                                                           |
+| `docker-compose.yaml` | Docker Compose stack defining Polymorph app and Redis services                                                                             |
+| `Dockerfile`          | Multi-stage Docker build for production deployment                                                                                         |
+| `.gitignore`          | Git ignore rules for node_modules, .next, env files, etc.                                                                                  |
+| `.mcp.json`           | MCP (Model Context Protocol) configuration                                                                                                 |
+| `AGENTS.md`           | Multi-agent AI assistant instructions                                                                                                      |
+| `CLAUDE.md`           | AI coding assistant instructions and project conventions                                                                                   |
+| `GEMINI.md`           | Gemini-specific AI assistant instructions                                                                                                  |
+| `README.md`           | Project overview, setup guide, and feature summary                                                                                         |
+| `CHANGELOG.md`        | Version history and release notes                                                                                                          |
+| `CONTRIBUTING.md`     | Contribution guidelines and development workflow                                                                                           |
+| `CODE_OF_CONDUCT.md`  | Community code of conduct                                                                                                                  |
+| `SECURITY.md`         | Security policy and vulnerability reporting                                                                                                |
+| `LICENSE`             | Apache 2.0 license                                                                                                                         |
 
 ---
 
@@ -491,6 +492,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/tools/display-timeline.ts`       | Display tool that renders a chronological event timeline with category styling                   |
 | `lib/tools/create-canvas-artifact.ts` | AI tool: creates a new canvas artifact in the current chat with initial React SPA source         |
 | `lib/tools/update-canvas-artifact.ts` | AI tool: updates the existing canvas artifact source with a full replacement                     |
+| `lib/tools/read-canvas-artifact.ts`   | AI tool: reads the current canvas artifact source for inspection (no side effects)               |
 | `lib/tools/dynamic.ts`                | Factory for creating runtime-defined tools (MCP tools, user-defined functions)                   |
 
 ### Search Providers
@@ -563,13 +565,13 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Config
 
-| File                               | Purpose                                                                              |
-| ---------------------------------- | ------------------------------------------------------------------------------------ |
-| `lib/config/model-types.ts`        | Retrieves model assignments by search mode and model type from JSON config           |
-| `lib/config/load-models-config.ts` | Loads and validates model configuration from JSON files (default.json, cloud.json)   |
-| `lib/config/search-modes.ts`       | Search mode UI configuration (Chat and Research labels, descriptions, icons, colors) |
-| `lib/config/env.ts`                | Environment variable utilities and type-safe access                                  |
-| `lib/config/ollama-validator.ts`   | Validates configured Ollama models are available and compatible on server startup    |
+| File                               | Purpose                                                                                                             |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `lib/config/model-types.ts`        | Retrieves model assignments by search mode and model type from JSON config                                          |
+| `lib/config/load-models-config.ts` | Loads and validates model configuration from JSON files (default.json, cloud.json)                                  |
+| `lib/config/search-modes.ts`       | Search mode UI configuration (Chat and Research labels, descriptions, icons, colors)                                |
+| `lib/config/env.ts`                | Environment variable validation, type-safe access, and exported `isProductionTarget()` for Vercel/Railway detection |
+| `lib/config/ollama-validator.ts`   | Validates configured Ollama models are available and compatible on server startup                                   |
 
 ### Auth
 
@@ -614,26 +616,26 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Utils
 
-| File                           | Purpose                                                                                 |
-| ------------------------------ | --------------------------------------------------------------------------------------- |
-| `lib/utils/index.ts`           | Core utilities: `generateUUID`, `cn` (classname merger), `sanitizeUrl`, `createModelId` |
-| `lib/utils/registry.ts`        | AI provider registry wrapping OpenAI, Anthropic, Google, Ollama, and Vercel AI Gateway  |
-| `lib/utils/model-selection.ts` | Resolves the appropriate model based on search mode and model type cookie preferences   |
-| `lib/utils/context-window.ts`  | Token counting, context window management, and message truncation using tiktoken        |
-| `lib/utils/citation.ts`        | Citation extraction, processing, and mapping from search results to inline references   |
-| `lib/utils/message-mapping.ts` | Bidirectional mapping between AI SDK UIMessage format and database message/part records |
-| `lib/utils/message-utils.ts`   | Helpers for extracting text content from message parts                                  |
-| `lib/utils/domain.ts`          | Extracts display-friendly domain name from URLs (e.g., "google" from "www.google.com")  |
-| `lib/utils/url.ts`             | Constructs base URL from Next.js request headers (x-forwarded-proto, x-host)            |
-| `lib/utils/cookies.ts`         | Client-side cookie get/set/remove utilities                                             |
-| `lib/utils/json-error.ts`      | Utility for creating structured JSON error responses with code and message              |
-| `lib/utils/search-config.ts`   | Environment-aware search provider configuration and tool description generation         |
-| `lib/utils/search-mode.ts`     | Atomic searchMode cookie sync with CustomEvent dispatch                                 |
-| `lib/utils/model-type.ts`      | Atomic modelType cookie sync with CustomEvent dispatch                                  |
-| `lib/utils/retry.ts`           | Exponential backoff retry utility for database operations                               |
-| `lib/utils/perf-logging.ts`    | Conditional performance logging (enabled via `ENABLE_PERF_LOGGING`)                     |
-| `lib/utils/perf-tracking.ts`   | Development-only counters for auth calls and DB operations                              |
-| `lib/utils/telemetry.ts`       | Checks if tracing is enabled via environment variable                                   |
+| File                           | Purpose                                                                                                     |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `lib/utils/index.ts`           | Core utilities: `generateUUID`, `cn` (classname merger), `sanitizeUrl`, `createModelId`                     |
+| `lib/utils/registry.ts`        | AI provider registry wrapping OpenAI, Anthropic, Google, Ollama, and Vercel AI Gateway                      |
+| `lib/utils/model-selection.ts` | Resolves the appropriate model based on search mode and model type cookie preferences                       |
+| `lib/utils/context-window.ts`  | Token counting, context window management, and message truncation using tiktoken                            |
+| `lib/utils/citation.ts`        | Citation extraction, processing, and mapping from search results to inline references                       |
+| `lib/utils/message-mapping.ts` | Bidirectional mapping between AI SDK UIMessage format and database message/part records                     |
+| `lib/utils/message-utils.ts`   | Helpers for extracting text content from message parts                                                      |
+| `lib/utils/domain.ts`          | Extracts display-friendly domain name from URLs (e.g., "google" from "www.google.com")                      |
+| `lib/utils/url.ts`             | Constructs base URL from Next.js request headers (x-forwarded-proto, x-host)                                |
+| `lib/utils/cookies.ts`         | Client-side cookie get/set/remove utilities                                                                 |
+| `lib/utils/json-error.ts`      | Utility for creating structured JSON error responses with code and message                                  |
+| `lib/utils/search-config.ts`   | Environment-aware search provider configuration and tool description generation                             |
+| `lib/utils/search-mode.ts`     | Atomic searchMode cookie sync with CustomEvent dispatch                                                     |
+| `lib/utils/model-type.ts`      | Atomic modelType cookie sync with CustomEvent dispatch                                                      |
+| `lib/utils/retry.ts`           | Exponential backoff retry utility for database operations                                                   |
+| `lib/utils/perf-logging.ts`    | Conditional performance logging (enabled via `ENABLE_PERF_LOGGING`)                                         |
+| `lib/utils/perf-tracking.ts`   | Development-only counters for auth calls and DB operations                                                  |
+| `lib/utils/telemetry.ts`       | Tracing utilities: checks if tracing is enabled, `flushTraces()` with timeout and missing-provider warnings |
 
 ### External Clients
 
@@ -805,6 +807,26 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 | `public/images/placeholder-image.png`                   | Placeholder image for missing thumbnails                           |
 | `public/images/build-templates/`                        | SVG thumbnails for build template cards (website, game, dashboard) |
 | `public/screenshot-2026-02-07.png`                      | Application screenshot for README and social sharing               |
+
+---
+
+## Evals Service
+
+Offline evaluation pipeline (`services/evals/`) for measuring search quality via LLM-as-judge evaluators. Runs against sampled chat data in Phoenix experiments.
+
+| File                                                | Purpose                                                                                                    |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `services/evals/src/index.ts`                       | Evals entrypoint: samples chats, runs evaluators, guarantees `closeDb()` on all exit paths                 |
+| `services/evals/src/config.ts`                      | Configuration with `validInt()` NaN-safe parsing for `SAMPLE_SIZE`, `LOOKBACK_HOURS`, judge model settings |
+| `services/evals/src/db.ts`                          | Database client for the evals service                                                                      |
+| `services/evals/src/sampler.ts`                     | Samples recent chats with parameterized SQL queries and safe `parseCitations()` JSON parsing               |
+| `services/evals/src/retry.ts`                       | Exponential backoff retry with `maxAttempts >= 1` validation                                               |
+| `services/evals/src/retry.test.ts`                  | Tests for retry utility including zero-attempts edge case                                                  |
+| `services/evals/src/evaluators/create-evaluator.ts` | LLM evaluator factory eliminating boilerplate across evaluator definitions                                 |
+| `services/evals/src/evaluators/extract-verdict.ts`  | Shared `extractVerdict` (word-boundary matching) + `asString` (safe coercion) utilities                    |
+| `services/evals/src/evaluators/faithfulness.ts`     | Faithfulness evaluator — checks if answers are grounded in search results                                  |
+| `services/evals/src/evaluators/relevance.ts`        | Search relevance evaluator — checks if retrieved results are relevant to the query                         |
+| `services/evals/src/evaluators/response-quality.ts` | Response quality evaluator — overall assessment of answer helpfulness and structure                        |
 
 ---
 

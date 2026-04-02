@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `--accent-violet` design token (OKLCH hue ~293) for the Research Agent brand color, with light and dark mode definitions
+- Evaluator factory (`services/evals/src/evaluators/create-evaluator.ts`) eliminating ~60% boilerplate across LLM evaluators
+- Shared `extractVerdict` + `asString` utilities (`services/evals/src/evaluators/extract-verdict.ts`) with word-boundary matching to prevent substring false positives
+
 ### Changed
 
 - Migrated observability from Langfuse to Arize Phoenix with OpenInference tracing
@@ -14,6 +20,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced Langfuse environment variables with Phoenix equivalents (`PHOENIX_COLLECTOR_ENDPOINT`, `PHOENIX_PROJECT_NAME`, `PHOENIX_API_KEY`)
 - Updated start script to respect Railway `PORT` environment variable
 - Canvas artifact system now provides validated React source compilation to persisted single-file HTML with live preview, version history, guest token continuity, and export support
+- Research Agent brand color now uses `text-accent-violet` token instead of `text-tip`
+- Progress tracker celebration glow uses `var(--success)` token via `color-mix()` instead of hardcoded emerald RGBA
+- Consolidated production detection into exported `isProductionTarget()` in `lib/config/env.ts`
+- Enhanced `flushTraces()` in `lib/utils/telemetry.ts` with timeout and missing-provider warnings
+- Evaluators (faithfulness, relevance, response-quality) refactored to use shared utilities and factory pattern
+
+### Fixed
+
+- SQL injection risk in evals sampler: replaced `sql.raw()` interpolation with parameterized `make_interval(hours => $1)` query
+- `extractVerdict` substring false positive where "faithful" matched inside "unfaithful", inflating faithfulness scores
+- Evals entrypoint now guarantees `closeDb()` runs on fatal error paths (previously leaked Postgres connections)
+- `parseInt` NaN guard (`validInt()`) in evals config prevents silent corruption from non-numeric env vars
+- `maxAttempts` validation in retry utility prevents undefined throw when value is 0 or negative
+- Safe `JSON.parse` wrapper for citations in evals sampler, matching the existing `parseSearchResults` pattern
 
 ## [0.1.0] - 2026-02-28
 
