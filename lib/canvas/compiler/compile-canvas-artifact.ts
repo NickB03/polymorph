@@ -16,6 +16,7 @@ import type {
 
 import { validateCanvasSource } from '../validation/validate-canvas-source'
 
+import { vendorShimSource } from './vendor/chunk-defs'
 import { assembleCanvasHtml } from './assemble-canvas-html'
 import { buildTailwindCss } from './build-tailwind-css'
 import { getVendorChunkName, getVendorJs } from './vendor'
@@ -213,7 +214,7 @@ function createVirtualPlugin(
       build.onLoad(
         { filter: /.*/, namespace: VENDOR_SHIM_NAMESPACE },
         args => ({
-          contents: `module.exports = globalThis.__CANVAS_VENDOR__[${JSON.stringify(args.path)}]`,
+          contents: vendorShimSource(args.path),
           loader: 'js'
         })
       )

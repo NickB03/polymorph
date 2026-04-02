@@ -5,9 +5,12 @@ import { getVendorChunkName, getVendorJs } from './index'
 describe('vendor registry', () => {
   it('maps react specifiers to react-core chunk', () => {
     expect(getVendorChunkName('react')).toBe('react-core')
-    expect(getVendorChunkName('react-dom')).toBe('react-core')
     expect(getVendorChunkName('react-dom/client')).toBe('react-core')
     expect(getVendorChunkName('react/jsx-runtime')).toBe('react-core')
+  })
+
+  it('bare react-dom is not vendored (only react-dom/client is allowed)', () => {
+    expect(getVendorChunkName('react-dom')).toBeUndefined()
   })
 
   it('maps each optional package to its own chunk', () => {
