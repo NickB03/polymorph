@@ -1,6 +1,7 @@
 interface RetryOptions {
   maxAttempts: number
   baseDelayMs: number
+  shouldRetry?: (err: unknown) => boolean
 }
 
 /**
@@ -20,6 +21,7 @@ export async function withRetry<T>(
       return await fn()
     } catch (err) {
       lastError = err
+      if (opts.shouldRetry && !opts.shouldRetry(err)) throw err
       if (attempt < opts.maxAttempts) {
         const delay = opts.baseDelayMs * 2 ** (attempt - 1)
         console.warn(

@@ -7,6 +7,7 @@ import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulnes
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
+import type { EvalCase, EvalRunResult } from '../types'
 
 import {
   buildDatasetExamples,
@@ -20,20 +21,40 @@ export async function runCapabilitySuite() {
 
   console.log(`[evals] Running capability suite with ${cases.length} cases`)
 
-  const results = []
+  const succeeded: Array<{ caseSpec: EvalCase; result: EvalRunResult }> = []
+  let failCount = 0
+
   for (const caseSpec of cases) {
-    const result = await runEvalCase(caseSpec, {
-      evalRunnerUrl: config.evalRunnerUrl!,
-      evalRunnerSecret: config.evalRunnerSecret!
-    })
-    results.push({
-      ...result,
-      citations: result.citations,
-      searchResults: result.searchResults
-    })
+    try {
+      const result = await runEvalCase(caseSpec, {
+        evalRunnerUrl: config.evalRunnerUrl!,
+        evalRunnerSecret: config.evalRunnerSecret!
+      })
+      succeeded.push({ caseSpec, result })
+    } catch (error) {
+      failCount++
+      console.error(
+        `[evals] Case ${caseSpec.id} failed:`,
+        error instanceof Error ? error.message : error
+      )
+    }
   }
 
-  const examples = buildDatasetExamples(cases, results)
+  if (succeeded.length === 0) {
+    throw new Error(
+      `[evals] All ${cases.length} capability cases failed, aborting experiment`
+    )
+  }
+
+  if (failCount > 0) {
+    console.warn(
+      `[evals] ${failCount}/${cases.length} capability cases failed, recording partial results`
+    )
+  }
+
+  const successCases = succeeded.map(s => s.caseSpec)
+  const successResults = succeeded.map(s => s.result)
+  const examples = buildDatasetExamples(successCases, successResults)
   const model = openai(config.judgeModel)
   const evaluators = buildExperimentEvaluators(
     createDeterministicPrecheckEvaluator,
@@ -43,7 +64,7 @@ export async function runCapabilitySuite() {
     model,
     {
       requiresTextAnswer: true,
-      requiresCitations: cases.some(caseSpec => caseSpec.requiresCitations),
+      requiresCitations: successCases.some(c => c.requiresCitations),
       allowsInteractiveOnly: false
     }
   )

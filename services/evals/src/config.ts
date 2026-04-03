@@ -141,6 +141,8 @@ export function createConfig(
   }
 }
 
+const isTestEnv = !!process.env.VITEST || process.env.NODE_ENV === 'test'
+
 export const config = createConfig(process.env, {
-  validateRunnerSettings: false
+  validateRunnerSettings: !isTestEnv
 })

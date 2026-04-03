@@ -35,4 +35,36 @@ describe('withRetry', () => {
     ).rejects.toThrow('maxAttempts >= 1')
     expect(fn).not.toHaveBeenCalled()
   })
+
+  it('bails immediately when shouldRetry returns false', async () => {
+    class NonRetryable extends Error {
+      retryable = false
+    }
+    const fn = vi.fn().mockRejectedValue(new NonRetryable('auth error'))
+    await expect(
+      withRetry(fn, {
+        maxAttempts: 3,
+        baseDelayMs: 10,
+        shouldRetry: err => err instanceof NonRetryable && err.retryable
+      })
+    ).rejects.toThrow('auth error')
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries when shouldRetry returns true', async () => {
+    class Retryable extends Error {
+      retryable = true
+    }
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(new Retryable('server error'))
+      .mockResolvedValue('ok')
+    const result = await withRetry(fn, {
+      maxAttempts: 3,
+      baseDelayMs: 10,
+      shouldRetry: err => err instanceof Retryable && err.retryable
+    })
+    expect(result).toBe('ok')
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
 })
