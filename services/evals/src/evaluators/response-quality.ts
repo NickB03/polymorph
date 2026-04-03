@@ -2,6 +2,8 @@ import { asExperimentEvaluator } from '@arizeai/phoenix-client/experiments'
 import { createClassificationEvaluator } from '@arizeai/phoenix-evals'
 import type { LanguageModel } from 'ai'
 
+import { normalizeEvalRunResult } from '../eval-output'
+
 // Safe fallback template using simple {{var}} interpolation.
 // An empty <search_context></search_context> block is benign for the LLM judge.
 const PROMPT_TEMPLATE = `You are an evaluator assessing the overall quality of an AI research assistant's response.
@@ -41,7 +43,7 @@ export function createResponseQualityExperimentEvaluator(model: LanguageModel) {
     name: 'response_quality',
     kind: 'LLM',
     evaluate: async ({ input, output }) => {
-      const answer = String(output ?? '')
+      const answer = normalizeEvalRunResult(output).answerText
 
       if (!answer) {
         return {

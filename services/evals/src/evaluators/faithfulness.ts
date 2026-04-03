@@ -2,6 +2,8 @@ import { asExperimentEvaluator } from '@arizeai/phoenix-client/experiments'
 import { createFaithfulnessEvaluator } from '@arizeai/phoenix-evals'
 import type { LanguageModel } from 'ai'
 
+import { normalizeEvalRunResult } from '../eval-output'
+
 export function createFaithfulnessExperimentEvaluator(model: LanguageModel) {
   const evaluator = createFaithfulnessEvaluator({ model })
 
@@ -10,7 +12,7 @@ export function createFaithfulnessExperimentEvaluator(model: LanguageModel) {
     kind: 'LLM',
     evaluate: async ({ input, output }) => {
       const context = String((input as Record<string, unknown>).context ?? '')
-      const answer = String(output ?? '')
+      const answer = normalizeEvalRunResult(output).answerText
 
       if (!context || !answer) {
         return {

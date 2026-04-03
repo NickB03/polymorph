@@ -89,6 +89,7 @@ export function createResearcher({
   parentTraceId,
   searchMode = 'research',
   modelType,
+  telemetryEnabled,
   experimentalContext,
   canvasToolContext
 }: {
@@ -98,6 +99,7 @@ export function createResearcher({
   parentTraceId?: string
   searchMode?: SearchMode
   modelType?: ModelType
+  telemetryEnabled?: boolean
   experimentalContext?: unknown
   canvasToolContext?: CanvasToolContext
 }) {
@@ -219,7 +221,7 @@ export function createResearcher({
         experimental_context: experimentalContext
       }),
       experimental_telemetry: {
-        isEnabled: isTracingEnabled(),
+        isEnabled: telemetryEnabled ?? isTracingEnabled(),
         functionId: 'research-agent',
         metadata: {
           modelId: model,

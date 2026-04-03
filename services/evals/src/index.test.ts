@@ -1,13 +1,9 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ChatSample } from './sampler'
 
-// --- Top-level mocks (vi.mock is hoisted, so variable refs must be at module scope) ---
-
-const mockCreateClient = vi.fn(() => ({ GET: vi.fn(), POST: vi.fn() }))
-const mockCreateOrGetDataset = vi.fn(async () => ({ datasetId: 'ds-test' }))
-const mockRunExperiment = vi.fn(async () => ({ id: 'exp-test' }))
 const mockCloseDb = vi.fn(async () => {})
+const mockRunConfiguredModes = vi.fn(async () => {})
 
 const fixtureSample: ChatSample = {
   chatId: 'chat-wiring',
@@ -25,7 +21,10 @@ const fixtureSample: ChatSample = {
   citations: [{ title: 'Source', url: 'https://source.com' }]
 }
 
-const mockSampleRecentChats = vi.fn(async () => [fixtureSample])
+vi.mock('./db', () => ({
+  db: {},
+  closeDb: mockCloseDb
+}))
 
 vi.mock('./config', () => ({
   config: {
@@ -35,43 +34,19 @@ vi.mock('./config', () => ({
     judgeModel: 'gpt-4o-mini',
     sampleSize: 50,
     lookbackHours: 6,
-    databaseSslDisabled: true
+    databaseSslDisabled: true,
+    evalRunMode: 'traffic-monitor',
+    evalRunnerUrl: 'https://example.com',
+    evalRunnerSecret: 'secret',
+    corpusVersion: 'v1',
+    smokeEnabled: true,
+    smokeCaseCount: 1
   }
 }))
 
-vi.mock('./db', () => ({
-  db: {},
-  closeDb: mockCloseDb
+vi.mock('./orchestrator', () => ({
+  runConfiguredModes: mockRunConfiguredModes
 }))
-
-vi.mock('./sampler', () => ({
-  sampleRecentChats: mockSampleRecentChats
-}))
-
-vi.mock('@arizeai/phoenix-client', () => ({
-  createClient: mockCreateClient
-}))
-
-vi.mock('@arizeai/phoenix-client/datasets', () => ({
-  createOrGetDataset: mockCreateOrGetDataset
-}))
-
-vi.mock('@arizeai/phoenix-client/experiments', () => ({
-  runExperiment: mockRunExperiment,
-  asExperimentEvaluator: vi.fn(e => e)
-}))
-
-vi.mock('@arizeai/phoenix-evals', () => ({
-  createFaithfulnessEvaluator: () => ({ evaluate: vi.fn() }),
-  createDocumentRelevanceEvaluator: () => ({ evaluate: vi.fn() }),
-  createClassificationEvaluator: () => ({ evaluate: vi.fn() })
-}))
-
-vi.mock('@ai-sdk/openai', () => ({
-  openai: vi.fn(() => ({}))
-}))
-
-// --- Tests ---
 
 describe('formatContext', () => {
   it('formats search results with query headers', async () => {
@@ -193,53 +168,19 @@ describe('formatContext', () => {
   })
 })
 
-describe('experiment runner wiring', () => {
-  beforeAll(async () => {
+describe('main lifecycle', () => {
+  it('runs configured modes and closes the db afterward', async () => {
     const { main } = await import('./index')
+
     await main()
+
+    expect(mockRunConfiguredModes).toHaveBeenCalledTimes(1)
+    expect(mockCloseDb).toHaveBeenCalledTimes(1)
   })
 
-  afterAll(() => {
-    vi.restoreAllMocks()
-  })
+  it('keeps the traffic-monitor formatter exported from index', async () => {
+    const { formatContext } = await import('./index')
 
-  it('calls createClient with explicit baseUrl', () => {
-    expect(mockCreateClient).toHaveBeenCalledWith({
-      options: { baseUrl: 'http://localhost:6006' }
-    })
-  })
-
-  it('calls createOrGetDataset with expected shape', () => {
-    expect(mockCreateOrGetDataset).toHaveBeenCalledTimes(1)
-    const calls = mockCreateOrGetDataset.mock.calls as unknown as Record<
-      string,
-      unknown
-    >[][]
-    const call = calls[0]![0]!
-    expect(call).toHaveProperty('client')
-    expect(call).toHaveProperty('name')
-    expect(call.name).toMatch(/^polymorph-eval-/)
-    expect(call).toHaveProperty('examples')
-    const examples = call.examples as Record<string, unknown>[]
-    expect(examples).toHaveLength(1)
-    expect(examples[0]!.input).toHaveProperty('query', 'test query')
-    expect(examples[0]!.output).toHaveProperty('answer', 'Test answer')
-  })
-
-  it('calls runExperiment with 3 evaluators and concurrency 3', () => {
-    expect(mockRunExperiment).toHaveBeenCalledTimes(1)
-    const calls = mockRunExperiment.mock.calls as unknown as Record<
-      string,
-      unknown
-    >[][]
-    const call = calls[0]![0]!
-    expect(call).toHaveProperty('evaluators')
-    expect(call.evaluators).toHaveLength(3)
-    expect(call.concurrency).toBe(3)
-    expect(call.dataset).toEqual({ datasetId: 'ds-test' })
-  })
-
-  it('calls closeDb on completion', () => {
-    expect(mockCloseDb).toHaveBeenCalled()
+    expect(formatContext(fixtureSample)).toContain('[Search: "test"]')
   })
 })
