@@ -13,6 +13,7 @@
     "@arizeai/phoenix-evals": "1.0.2",
     "@ai-sdk/openai": "^3.0.23",
     "ai": "^6.0.90",
+    "@supabase/ssr": "^0.6.1",
     "drizzle-orm": "^0.43.1",
     "postgres": "^3.4.7"
   },
