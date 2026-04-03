@@ -104,7 +104,7 @@ OpenTelemetry traces export to a self-hosted Phoenix instance on Railway, gated 
 
 ### Evals Service (`services/evals/`)
 
-Offline LLM-judge evaluation pipeline designed to run as a Railway cron service (every 6 hours). **Not yet deployed** — only `phoenix` is live on Railway. See `docs/operations/DEPLOYMENT.md` for deployment instructions.
+Offline LLM-judge evaluation pipeline running as a Railway cron service (every 6 hours). Deployed alongside `phoenix` on Railway. See `docs/operations/DEPLOYMENT.md` for configuration details.
 
 - Samples recent chats from Supabase Postgres (parameterized SQL)
 - Runs 3 evaluators (faithfulness, relevance, response quality) via pre-built `@arizeai/phoenix-evals` factories wrapped in `asExperimentEvaluator` shells
@@ -257,11 +257,11 @@ Railway CLI (`railway`, v4.35.2) and Phoenix CLI (`npx @arizeai/phoenix-cli`) ma
 - `railway status` — show linked project/service/environment
 - `railway logs -s phoenix` — stream Phoenix service logs
 - `railway logs -s phoenix --since 1h --filter "@level:error"` — recent errors
-- `railway logs -s polymorph-evals -n 50` — last 50 evals cron log lines (not yet deployed)
+- `railway logs -s polymorph-evals -n 50` — last 50 evals cron log lines
 - `railway variable list -s phoenix` — list Phoenix env vars
 - `railway variable set KEY=VALUE -s <service>` — update env var (triggers redeploy)
 - `railway restart -s phoenix` — restart without rebuild
-- `railway redeploy -s polymorph-evals` — full rebuild + deploy (not yet deployed)
+- `railway redeploy -s polymorph-evals` — full rebuild + deploy
 - `railway open` — open Railway dashboard in browser
 
 ### Phoenix CLI (traces, experiments, evals)
