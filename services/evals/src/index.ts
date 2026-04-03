@@ -47,7 +47,7 @@ export async function main() {
     }
   }))
 
-  // Pass host explicitly — don't rely on library's internal env var naming
+  // Pass host explicitly; auth (PHOENIX_API_KEY) flows via env var automatically
   const phoenix = createClient({
     options: { baseUrl: config.phoenixHost }
   })
