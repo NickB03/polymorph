@@ -279,6 +279,20 @@ export async function createCanvasArtifactFromSource(input: {
   const compileTitle = input.title ?? CREATE_COMPILE_TITLE
   const startedAt = new Date().toISOString()
 
+  // Emit an early progress event so the client transitions out of the
+  // synthetic "Generating code" phase immediately. Without this, any
+  // latency in the DB duplicate check below leaves the UI stuck at
+  // "Generating code" indefinitely.
+  if (input.onProgress) {
+    input.onProgress({
+      artifactId,
+      title: compileTitle,
+      source: 'create',
+      startedAt,
+      steps: buildServiceCompileSteps({ validate: 'in-progress' })
+    })
+  }
+
   // Check for duplicate
   const existing = await loadCanvasArtifactByChatId(input.chatId, input.userId)
   if (existing) {
