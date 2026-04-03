@@ -11,7 +11,7 @@ import { closeDb } from './db'
 import { withRetry } from './retry'
 import { type ChatSample, sampleRecentChats } from './sampler'
 
-async function main() {
+export async function main() {
   const startTime = Date.now()
   console.log(`[evals] Starting evaluation run at ${new Date().toISOString()}`)
   console.log(

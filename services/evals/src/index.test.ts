@@ -195,10 +195,8 @@ describe('formatContext', () => {
 
 describe('experiment runner wiring', () => {
   beforeAll(async () => {
-    // Import triggers main() which runs asynchronously
-    await import('./index')
-    // Give main() time to complete all async operations
-    await new Promise(resolve => setTimeout(resolve, 100))
+    const { main } = await import('./index')
+    await main()
   })
 
   afterAll(() => {
