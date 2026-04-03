@@ -21,6 +21,11 @@ interface ModelSelectionParams {
   searchMode?: SearchMode
 }
 
+interface ModelSelectionByModeAndTypeParams {
+  searchMode?: SearchMode
+  modelType?: ModelType
+}
+
 function resolveModelForModeAndType(
   mode: SearchMode,
   type: ModelType
@@ -48,15 +53,6 @@ function resolveModelForModeAndType(
   }
 }
 
-/**
- * Determines which model to use based on the model type preference.
- *
- * Priority order:
- * 1. If model type is in cookie -> use corresponding model from config (when enabled)
- * 2. Otherwise -> use default ordering (speed → quality) for the active mode
- * 3. If the active mode has no enabled models, try remaining modes
- * 4. If config loading fails or providers are unavailable -> use DEFAULT_MODEL as fallback
- */
 export function selectModel({
   cookieStore,
   searchMode
@@ -65,16 +61,25 @@ export function selectModel({
     | ModelType
     | undefined
 
+  return selectModelForModeAndType({
+    searchMode,
+    modelType:
+      modelTypeCookie && VALID_MODEL_TYPES.includes(modelTypeCookie)
+        ? modelTypeCookie
+        : undefined
+  })
+}
+
+export function selectModelForModeAndType({
+  searchMode,
+  modelType
+}: ModelSelectionByModeAndTypeParams): Model {
   const requestedMode =
     searchMode && MODE_FALLBACK_ORDER.includes(searchMode) ? searchMode : 'chat'
 
   const typePreferenceOrder: ModelType[] = []
-  if (
-    modelTypeCookie &&
-    VALID_MODEL_TYPES.includes(modelTypeCookie) &&
-    !typePreferenceOrder.includes(modelTypeCookie)
-  ) {
-    typePreferenceOrder.push(modelTypeCookie)
+  if (modelType && VALID_MODEL_TYPES.includes(modelType)) {
+    typePreferenceOrder.push(modelType)
   }
 
   for (const knownType of VALID_MODEL_TYPES) {

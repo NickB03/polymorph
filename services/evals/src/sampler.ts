@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 
 import { config } from './config'
 import { db } from './db'
+import { withRetry } from './retry'
 
 export interface ChatSample {
   chatId: string
@@ -32,14 +33,16 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
 
   // Raw SQL query — more efficient than Drizzle ORM for this complex join.
   // We need to aggregate parts across messages within each chat.
-  const rows = await db.execute<{
-    chat_id: string
-    created_at: Date
-    user_query: string
-    search_results: string | null
-    model_answer: string
-    citations: string | null
-  }>(sql`
+  const rows = await withRetry(
+    () =>
+      db.execute<{
+        chat_id: string
+        created_at: Date
+        user_query: string
+        search_results: string | null
+        model_answer: string
+        citations: string | null
+      }>(sql`
     WITH recent_chats AS (
       SELECT id, created_at
       FROM chats
@@ -109,7 +112,9 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
     LEFT JOIN citation_data cd ON cd.chat_id = rc.id
     WHERE uq.user_query IS NOT NULL
       AND aa.model_answer IS NOT NULL
-  `)
+  `),
+    { maxAttempts: 3, baseDelayMs: 2000 }
+  )
 
   return rows.map(row => ({
     chatId: row.chat_id,
@@ -130,7 +135,8 @@ function parseCitations(raw: string | null): ChatSample['citations'] {
       url: c?.url ?? '',
       title: c?.title ?? ''
     }))
-  } catch {
+  } catch (err) {
+    console.warn('[evals] Failed to parse citations JSON:', err)
     return []
   }
 }
@@ -150,7 +156,8 @@ function parseSearchResults(raw: string | null): ChatSample['searchResults'] {
           }))
         : []
     }))
-  } catch {
+  } catch (err) {
+    console.warn('[evals] Failed to parse search results JSON:', err)
     return []
   }
 }

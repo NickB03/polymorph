@@ -89,10 +89,29 @@ jobs:
           DATABASE_URL: postgresql://user:pass@localhost:5432/db
           NODE_ENV: test
 
+  test-evals:
+    runs-on: ubuntu-latest
+    name: Test (evals)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.12
+
+      - name: Install dependencies
+        run: cd services/evals && bun install
+
+      - name: Run tests
+        run: cd services/evals && bun run test
+
   build:
     runs-on: ubuntu-latest
     name: Build
-    needs: [lint, typecheck, format, test]
+    needs: [lint, typecheck, format, test, test-evals]
 
     steps:
       - name: Checkout repository
