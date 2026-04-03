@@ -4,7 +4,7 @@
 
 **Goal:** Add a Grafana dashboard layer alongside the existing Phoenix instance to provide quick-reference visuals for managing the LLM environment.
 
-**Architecture:** Phoenix already collects all OpenTelemetry traces. Phase 1 enables Phoenix's built-in Prometheus metrics endpoint and deploys Grafana + Prometheus on Railway to visualize them. Phase 2 adds Tempo + an OTel Collector to fan traces into Grafana for trace-level inspection. All services deploy into the existing `polymorph` Railway project for private networking access.
+**Architecture:** Phoenix already collects all OpenTelemetry traces. Phase 1 enables Phoenix's built-in Prometheus metrics endpoint and deploys Grafana + Prometheus on Railway to visualize them. Phase 2 adds Tempo + a secured OTel Collector ingress to fan traces into Grafana for trace search and span-level inspection. All services deploy into the existing `polymorph` Railway project for private networking access.
 
 **Tech Stack:** Grafana, Prometheus, Tempo, OpenTelemetry Collector, Railway, Docker
 
@@ -188,7 +188,7 @@ providers:
     folder: 'Phoenix'
     type: file
     disableDeletion: false
-    editable: true
+    allowUiUpdates: true
     options:
       path: /var/lib/grafana/dashboards
       foldersFromFilesStructure: false
@@ -589,15 +589,9 @@ git commit -m "feat(monitoring): add Grafana service with Phoenix dashboard and 
 In the Railway dashboard (`railway open`):
 
 1. Click **"+ New"** → **"Service"** → **"From Repo"**
-2. Select the `vana-v2` repository
+2. Select the `polymorph` repository (the repo containing this branch/PR)
 3. Set **Root Directory** to `services/prometheus`
 4. Name the service `prometheus`
-
-Alternatively via Railway MCP (if available):
-
-```
-railway service create --name prometheus
-```
 
 - [ ] **Step 2: Configure Prometheus service settings**
 
@@ -605,7 +599,7 @@ In the Railway dashboard, configure the `prometheus` service:
 
 - **Root directory:** `services/prometheus`
 - **Build command:** (Docker auto-detected from Dockerfile)
-- **Port:** `9090`
+- **Port routing:** Set `PORT=9090` on the service, or explicitly set the service/domain target port to `9090` in Railway
 - **Volume:** Create a Railway volume, mount at `/prometheus` (Prometheus default data dir)
 - **No public domain needed** — Prometheus is only accessed by Grafana internally
 
@@ -615,11 +609,7 @@ In the Railway dashboard, configure the `prometheus` service:
 railway logs -s prometheus --since 5m
 ```
 
-Expected: Prometheus starts and logs show it scraping `phoenix.railway.internal:9090` successfully. Look for:
-
-```
-msg="Scrape discovered" target=phoenix.railway.internal:9090
-```
+Expected: Prometheus starts normally with no repeated scrape or config errors.
 
 If the Phoenix target shows as DOWN, verify:
 
@@ -628,13 +618,11 @@ If the Phoenix target shows as DOWN, verify:
 
 - [ ] **Step 4: Verify Phoenix metrics are being collected**
 
-The Prometheus service is reachable internally at `prometheus.railway.internal:9090`. To verify from Railway logs:
+Use a behavior-based check instead of relying on a specific log string:
 
-```bash
-railway logs -s prometheus --since 2m --filter "phoenix"
-```
-
-Look for successful scrape logs (no errors).
+1. Open the Prometheus UI from the service in Railway, or temporarily access it from within the project network
+2. Verify the Phoenix target is **UP** in `/targets`
+3. Query `up{job="phoenix"}` and confirm it returns `1`
 
 ---
 
@@ -651,7 +639,7 @@ Look for successful scrape logs (no errors).
 In the Railway dashboard:
 
 1. Click **"+ New"** → **"Service"** → **"From Repo"**
-2. Select the `vana-v2` repository
+2. Select the `polymorph` repository (the repo containing this branch/PR)
 3. Set **Root Directory** to `services/grafana`
 4. Name the service `grafana`
 
@@ -667,7 +655,7 @@ railway variable set GF_SECURITY_ADMIN_PASSWORD=<choose-a-strong-password> -s gr
 
 Additional Railway config:
 
-- **Port:** `3000`
+- **Port routing:** Set `PORT=3000` on the service, or explicitly set the public domain target port to `3000`
 - **Volume:** Create a Railway volume, mount at `/var/lib/grafana` (Grafana data dir — retains dashboards, users, and settings across deploys)
 - **Public domain:** **Yes** — generate a Railway public domain (e.g., `grafana-production-xxxx.up.railway.app`). This is how you access Grafana in a browser.
 
@@ -677,12 +665,7 @@ Additional Railway config:
 railway logs -s grafana --since 5m
 ```
 
-Expected: Grafana starts on port 3000, logs show datasource provisioning:
-
-```
-msg="Datasource provisioned" name=Prometheus
-msg="Dashboard provisioned" name="Phoenix LLM Observability"
-```
+Expected: Grafana starts on port 3000 with no provisioning errors. Confirm in the UI that the Prometheus datasource exists and the `Phoenix LLM Observability` dashboard is present.
 
 - [ ] **Step 4: Access Grafana and verify the dashboard**
 
@@ -735,9 +718,11 @@ Phase 1 is complete. You now have Grafana dashboards showing Phoenix operational
 
 ---
 
-## Phase 2: OTel Collector + Tempo (Trace Data in Grafana)
+## Phase 2: Secured OTel Collector + Tempo (Trace Data in Grafana)
 
-Phase 2 adds raw trace data to Grafana via Tempo. An OpenTelemetry Collector sits between the Vercel app and the backends, fanning traces to both Phoenix (existing) and Tempo (new). This enables trace search, service maps, and span-level drill-down in Grafana — not just aggregated metrics.
+Phase 2 adds raw trace data to Grafana via Tempo. A secured OpenTelemetry Collector sits between the Vercel app and the backends, fanning traces to both Phoenix (existing) and Tempo (new). This enables trace search and span-level drill-down in Grafana — not just aggregated metrics.
+
+> **Security gate:** Do not expose `otel-collector` on a Railway public domain without receiver-side authentication or a trusted proxy in front of it. An unauthenticated public OTLP ingest endpoint can be abused to inject arbitrary spans into Phoenix and Tempo.
 
 ```
 Vercel --OTLP/HTTPS--> OTel Collector (public Railway domain)
@@ -784,8 +769,11 @@ compactor:
   compaction:
     block_retention: 336h
 
-# metrics_generator is intentionally disabled (remote_write is empty).
-# Uncomment and configure remote_write to push Tempo-generated RED metrics to Prometheus.
+# metrics_generator is intentionally disabled in this plan.
+# This phase delivers trace search + waterfall inspection only.
+# Service maps / RED metrics require a follow-up phase that enables
+# metrics_generator, configures remote_write to Prometheus, and wires
+# serviceMap.datasourceUid in Grafana.
 # metrics_generator:
 #   registry:
 #     external_labels:
@@ -801,7 +789,7 @@ Key details:
 - `http_listen_port: 3200` — Grafana queries Tempo here
 - OTLP HTTP receiver on `4318`, gRPC on `4317` — the OTel Collector sends traces here
 - `block_retention: 336h` = 14 days of trace retention
-- Local storage uses Railway volume for persistence
+- Local storage uses Railway volume for persistence. This is acceptable for a single-instance, low-cost deployment; move to object storage if the trace volume or durability requirements increase.
 
 - [ ] **Step 2: Create Tempo Dockerfile**
 
@@ -874,6 +862,7 @@ Key details:
 - Phoenix export includes the Bearer token from `PHOENIX_API_KEY` env var (resolved at runtime via `${env:PHOENIX_API_KEY}`).
 - `tls.insecure: true` is correct for Railway private networking (no TLS between internal services).
 - The Collector does NOT need `PHOENIX_API_KEY` for the Tempo export — Tempo has no auth by default on Railway.
+- This config does **not** authenticate inbound OTLP traffic. Secure ingress before exposing it publicly.
 
 - [ ] **Step 2: Create OTel Collector Dockerfile**
 
@@ -919,15 +908,19 @@ In the Railway dashboard:
 
 1. **"+ New"** → **"Service"** → **"From Repo"** → root dir `services/otel-collector`
 2. Name: `otel-collector`
-3. Set env var:
+3. Secure ingress **before** generating a public domain. Choose one:
+   - Configure an OTel Collector authenticator/extension that validates inbound credentials
+   - Place a trusted reverse proxy or gateway in front of the Collector and restrict direct public access
+
+4. Set env var:
 
 ```bash
 railway variable set PHOENIX_API_KEY=<same-key-as-vercel> -s otel-collector
 ```
 
-4. **Port:** `4318`
-5. **Public domain:** **Yes** — generate a Railway public domain. The Vercel app will send traces here over HTTPS.
-6. **No volume needed** — the Collector is stateless.
+5. **Port routing:** Set `PORT=4318` on the service, or explicitly set the public domain target port to `4318`
+6. **Public domain:** **Yes, but only after Step 3 is complete** — generate a Railway public domain for the secured ingress endpoint. The Vercel app will send traces here over HTTPS.
+7. **No volume needed** — the Collector is stateless.
 
 - [ ] **Step 3: Verify both services are healthy**
 
@@ -939,7 +932,7 @@ railway logs -s otel-collector --since 5m
 Expected:
 
 - Tempo: starts normally, listening on 3200 + 4318 + 4317
-- OTel Collector: starts normally, shows pipeline configuration with 2 exporters
+- OTel Collector: starts normally, receives authenticated traffic, and shows no exporter errors
 
 ---
 
@@ -965,9 +958,9 @@ The public domain will be something like `otel-collector-production-xxxx.up.rail
 
 In the Vercel dashboard (Settings → Environment Variables → Production):
 
-| Variable                     | Old Value                                        | New Value                                               |
-| ---------------------------- | ------------------------------------------------ | ------------------------------------------------------- |
-| `PHOENIX_COLLECTOR_ENDPOINT` | `https://phoenix-production-c6b5.up.railway.app` | `https://otel-collector-production-xxxx.up.railway.app` |
+| Variable                     | Old Value                                        | New Value                                 |
+| ---------------------------- | ------------------------------------------------ | ----------------------------------------- |
+| `PHOENIX_COLLECTOR_ENDPOINT` | `https://phoenix-production-c6b5.up.railway.app` | `https://<secured-otel-collector-domain>` |
 
 All other variables (`ENABLE_TRACING`, `PHOENIX_PROJECT_NAME`, `PHOENIX_API_KEY`) remain unchanged.
 
@@ -975,7 +968,9 @@ All other variables (`ENABLE_TRACING`, `PHOENIX_PROJECT_NAME`, `PHOENIX_API_KEY`
 
 **Important:** The HTTPS enforcement check in `instrumentation.ts` (line 19) will pass because Railway public domains are always HTTPS.
 
-**Note — auth header passthrough:** The app unconditionally sends `Authorization: Bearer ${PHOENIX_API_KEY}` to whatever `PHOENIX_COLLECTOR_ENDPOINT` points to (line 42–44). After this change, that Bearer token goes to the OTel Collector instead of Phoenix. The Collector ignores this header (it doesn't validate auth), so this is functionally harmless — but it means a Phoenix-scoped secret transits a different service. If this is a concern, either (a) strip the header in a future Collector auth extension, or (b) add a conditional in `instrumentation.ts` to skip the header when the endpoint is not Phoenix.
+**Important:** Point `PHOENIX_COLLECTOR_ENDPOINT` at the **secured** Collector ingress URL created in Task 9, not at an unauthenticated raw Collector port.
+
+**Note — auth header passthrough:** The app unconditionally sends `Authorization: Bearer ${PHOENIX_API_KEY}` to whatever `PHOENIX_COLLECTOR_ENDPOINT` points to (line 42–44). After this change, that Bearer token goes to the OTel Collector ingress instead of Phoenix. Make sure the ingress layer either validates or strips it intentionally; do not assume an unauthenticated Collector should be internet-reachable just because the header is present.
 
 - [ ] **Step 3: Trigger a redeploy on Vercel**
 
@@ -1043,8 +1038,10 @@ datasources:
 The `jsonData` enables:
 
 - **Trace-to-metrics correlation** — click a trace to see related Prometheus metrics
-- **Node graph** — visual service dependency map
+- **Node graph rendering** — enables Grafana's node graph view for supported trace explorations
 - **Search** — trace search in the Grafana Explore view
+
+This does **not** enable Grafana service maps. Service maps require a separate follow-up phase that turns on Tempo `metrics_generator`, remote write into Prometheus, and `serviceMap.datasourceUid` in the Tempo datasource config.
 
 - [ ] **Step 2: Set the Tempo internal URL on the Grafana Railway service**
 
@@ -1097,7 +1094,7 @@ The Grafana stack provides visual dashboards for Phoenix operational health and 
 Vercel (polymorph) --OTLP/HTTPS--> Railway (otel-collector:4318)
 |
 ├──> Phoenix (:6006) [trace storage + UI]
-└──> Tempo (:4318) [trace storage for Grafana]
+└──> Tempo (:4318) [trace storage for Grafana Explore]
 
 Railway (prometheus) --scrape :9090--> Phoenix (Prometheus metrics)
 Railway (grafana) --query--> Prometheus + Tempo
@@ -1121,12 +1118,15 @@ Railway (grafana) --query--> Prometheus + Tempo
 #### Key dashboards
 
 - **Phoenix LLM Observability** — span ingestion rate, queue depth, latency, errors, memory, CPU, DB disk usage
+- **Tempo Explore** — trace search and waterfall drill-down
 
 #### OTel Collector env vars
 
 | Variable | Value | Service |
 |----------|-------|---------|
 | `PHOENIX_API_KEY` | Same Phoenix API key as Vercel | `otel-collector` |
+
+> **Security note:** The `otel-collector` public endpoint must be protected by receiver auth or a trusted proxy before Vercel is repointed to it.
 ```
 
 - [ ] **Step 2: Add Grafana env vars to ENVIRONMENT.md**
@@ -1147,7 +1147,7 @@ The Grafana monitoring services are Railway-only (no app-side env vars needed). 
 | `GF_SECURITY_ADMIN_PASSWORD` | `grafana`        | Grafana admin password                 |
 | `PHOENIX_API_KEY`            | `otel-collector` | Bearer token for Phoenix OTLP export   |
 
-> **Note:** When the OTel Collector is deployed (Phase 2), the Vercel `PHOENIX_COLLECTOR_ENDPOINT` changes from the Phoenix public URL to the OTel Collector public URL. No other app-side env vars change.
+> **Note:** When the secured OTel Collector ingress is deployed (Phase 2), the Vercel `PHOENIX_COLLECTOR_ENDPOINT` changes from the Phoenix public URL to the secured Collector URL. No other app-side env vars change.
 ```
 
 - [ ] **Step 3: Commit**

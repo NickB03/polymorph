@@ -77,13 +77,13 @@ Required when `ENABLE_AUTH=true`:
 
 Polymorph exports OpenTelemetry traces to a self-hosted Arize Phoenix instance. Tracing is gated behind `ENABLE_TRACING` and configured in `instrumentation.ts`.
 
-| Variable                     | Required          | Default                 | Purpose                                                                                            |
-| ---------------------------- | ----------------- | ----------------------- | -------------------------------------------------------------------------------------------------- |
-| `ENABLE_TRACING`             | No                | `false`                 | Gate all OTel trace export                                                                         |
-| `PHOENIX_COLLECTOR_ENDPOINT` | When tracing on   | `http://localhost:6006` | Phoenix OTLP HTTP endpoint (base URL, no `/v1/traces`)                                             |
-| `PHOENIX_PROJECT_NAME`       | No                | `polymorph`             | Project name shown in Phoenix UI                                                                   |
-| `PHOENIX_API_KEY`            | When auth enabled | —                       | API key created in Phoenix; sets `Authorization: Bearer` header on the OTLP exporter               |
-| `OTEL_EXPORTER_OTLP_HEADERS` | No                | —                       | Standard OTel env var for exporter headers (redundant if `PHOENIX_API_KEY` is set; see note below) |
+| Variable                     | Required          | Default                 | Purpose                                                                                                   |
+| ---------------------------- | ----------------- | ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| `ENABLE_TRACING`             | No                | `false`                 | Gate all OTel trace export                                                                                |
+| `PHOENIX_COLLECTOR_ENDPOINT` | When tracing on   | `http://localhost:6006` | OTLP HTTP endpoint base URL (Phase 1: Phoenix directly, Phase 2: secured OTel Collector; no `/v1/traces`) |
+| `PHOENIX_PROJECT_NAME`       | No                | `polymorph`             | Project name shown in Phoenix UI                                                                          |
+| `PHOENIX_API_KEY`            | When auth enabled | —                       | API key created in Phoenix; sets `Authorization: Bearer` header on the OTLP exporter                      |
+| `OTEL_EXPORTER_OTLP_HEADERS` | No                | —                       | Standard OTel env var for exporter headers (redundant if `PHOENIX_API_KEY` is set; see note below)        |
 
 > **Production HTTPS enforcement:** When the app detects a production environment (`VERCEL_ENV`, `VERCEL_TARGET_ENV`, `RAILWAY_ENVIRONMENT`, or `NODE_ENV` set to `production`), the collector endpoint must use `https://`. Plain HTTP endpoints cause tracing to be silently disabled to protect the API key in transit.
 
@@ -96,9 +96,9 @@ PHOENIX_PROJECT_NAME=polymorph-prod
 PHOENIX_API_KEY=<API key created in Phoenix>
 ```
 
-Set these in the Vercel dashboard under **Settings → Environment Variables** for the Production environment. Since Vercel serverless functions run outside of any private network, the Phoenix endpoint must be publicly reachable (with auth via `PHOENIX_API_KEY`).
+Phase 1/default production setup points `PHOENIX_COLLECTOR_ENDPOINT` directly at Phoenix. If Phase 2 of the Grafana monitoring plan is enabled, set it to the public URL of a secured OTel Collector instead. Since Vercel serverless functions run outside of any private network, the configured endpoint must be publicly reachable over HTTPS.
 
-**`PHOENIX_API_KEY` vs `OTEL_EXPORTER_OTLP_HEADERS`:** `instrumentation.ts` (lines 29-31) reads `PHOENIX_API_KEY` and explicitly sets the `Authorization: Bearer` header on the `OTLPTraceExporter`. The standard OTel env var `OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer <key>` accomplishes the same thing at the SDK level. Setting `PHOENIX_API_KEY` alone is sufficient. Adding `OTEL_EXPORTER_OTLP_HEADERS` is harmless as a belt-and-suspenders approach but not required.
+**`PHOENIX_API_KEY` vs `OTEL_EXPORTER_OTLP_HEADERS`:** `instrumentation.ts` uses `PHOENIX_COLLECTOR_ENDPOINT` at lines 16-17, appends `/v1/traces` at line 41, and sets the `Authorization: Bearer` header from `PHOENIX_API_KEY` at lines 42-44. The standard OTel env var `OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer <key>` accomplishes the same thing at the SDK level. Setting `PHOENIX_API_KEY` alone is sufficient. Adding `OTEL_EXPORTER_OTLP_HEADERS` is harmless as a belt-and-suspenders approach but not required.
 
 **Local development:** Set `ENABLE_TRACING=true` and leave `PHOENIX_COLLECTOR_ENDPOINT` at the default (`http://localhost:6006`) if running Phoenix locally via Docker.
 

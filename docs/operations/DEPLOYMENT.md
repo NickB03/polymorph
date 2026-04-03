@@ -56,15 +56,22 @@ UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 
 ## Observability (Phoenix on Railway)
 
-Polymorph exports OpenTelemetry traces to a self-hosted Arize Phoenix instance on Railway.
+Polymorph exports OpenTelemetry traces to a self-hosted Arize Phoenix instance on Railway. Grafana/Tempo integration is optional and does not replace Phoenix as the primary tracing system.
 
 ### Architecture
 
 ```
+Phase 1 / default:
 Vercel (polymorph) --OTLP/HTTPS--> Railway (phoenix)
                                        ^
 Railway (polymorph-evals cron) --API--/
       \--SQL read--> Supabase Postgres
+
+Phase 2 / optional:
+Vercel (polymorph) --OTLP/HTTPS--> Railway (secured otel-collector ingress)
+                                       |                ^
+                                       ├--> Phoenix ----/
+                                       └--> Tempo --> Grafana
 ```
 
 ### Phoenix service
@@ -89,6 +96,13 @@ Set these env vars in the Vercel dashboard (Settings → Environment Variables, 
 | `PHOENIX_COLLECTOR_ENDPOINT` | `https://phoenix-production-c6b5.up.railway.app` |
 | `PHOENIX_PROJECT_NAME`       | `polymorph`                                      |
 | `PHOENIX_API_KEY`            | System API key created in Phoenix UI             |
+
+Production routing modes:
+
+- **Phase 1 / default:** Point `PHOENIX_COLLECTOR_ENDPOINT` at the Phoenix public URL.
+- **Phase 2 / optional Grafana trace fan-out:** Point `PHOENIX_COLLECTOR_ENDPOINT` at a **secured** OTel Collector ingress URL instead of Phoenix directly.
+
+If Phase 2 is enabled, do not expose a raw unauthenticated Collector receiver on a Railway public domain. Protect it with receiver auth or a trusted proxy, and make sure Railway public networking is routed to the intended service port (`PORT` or domain target-port configuration).
 
 See [Environment Reference](../getting-started/ENVIRONMENT.md#tracing-arize-phoenix) for details.
 
