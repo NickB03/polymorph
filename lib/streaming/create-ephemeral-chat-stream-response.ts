@@ -16,7 +16,11 @@ import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
 import { jsonError } from '@/lib/utils/json-error'
-import { flushTraces, isTracingEnabled } from '@/lib/utils/telemetry'
+import {
+  flushTraces,
+  isTracingEnabled,
+  withOtelSession
+} from '@/lib/utils/telemetry'
 
 import { maybeTruncateMessages } from '../utils/context-window'
 
@@ -65,107 +69,116 @@ export async function createEphemeralChatStreamResponse(
     // messages on the client when the last message is already assistant).
     originalMessages: messages,
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
-      const isOpenAI = modelId.startsWith('openai:')
-      const messagesToConvert = isOpenAI
-        ? stripReasoningParts(messages)
-        : messages
+      const executeBody = async () => {
+        const isOpenAI = modelId.startsWith('openai:')
+        const messagesToConvert = isOpenAI
+          ? stripReasoningParts(messages)
+          : messages
 
-      let modelMessages = await convertToModelMessages(messagesToConvert)
+        let modelMessages = await convertToModelMessages(messagesToConvert)
 
-      modelMessages = pruneMessages({
-        messages: modelMessages,
-        reasoning: 'before-last-message',
-        toolCalls: 'before-last-2-messages',
-        emptyMessages: 'remove'
-      })
+        modelMessages = pruneMessages({
+          messages: modelMessages,
+          reasoning: 'before-last-message',
+          toolCalls: 'before-last-2-messages',
+          emptyMessages: 'remove'
+        })
 
-      modelMessages = maybeTruncateMessages(modelMessages, model)
+        modelMessages = maybeTruncateMessages(modelMessages, model)
 
-      // Build canvas tool context for guest users
-      let canvasToolContext: CanvasToolContext | undefined
-      if (chatId) {
-        // Verify guest canvas token if provided
-        let verifiedToken: Awaited<ReturnType<typeof verifyGuestCanvasToken>> =
-          null
-        if (guestCanvasToken) {
-          verifiedToken = await verifyGuestCanvasToken(guestCanvasToken)
+        // Build canvas tool context for guest users
+        let canvasToolContext: CanvasToolContext | undefined
+        if (chatId) {
+          // Verify guest canvas token if provided
+          let verifiedToken: Awaited<
+            ReturnType<typeof verifyGuestCanvasToken>
+          > = null
+          if (guestCanvasToken) {
+            verifiedToken = await verifyGuestCanvasToken(guestCanvasToken)
+          }
+          const currentArtifact = verifiedToken
+            ? await loadCanvasArtifactState({
+                artifactId: verifiedToken.artifactId
+              })
+            : null
+
+          const emitter = createCanvasEmitter(writer)
+          canvasToolContext = {
+            chatId,
+            userId: 'guest',
+            isGuest: true,
+            emitter,
+            ...(verifiedToken ? { guestCanvasToken } : {}),
+            ...(currentArtifact
+              ? {
+                  currentArtifact: {
+                    artifactId: currentArtifact.artifactId,
+                    draftRevision: currentArtifact.draftRevision
+                  }
+                }
+              : {})
+          }
         }
-        const currentArtifact = verifiedToken
-          ? await loadCanvasArtifactState({
-              artifactId: verifiedToken.artifactId
-            })
-          : null
 
-        const emitter = createCanvasEmitter(writer)
-        canvasToolContext = {
-          chatId,
-          userId: 'guest',
-          isGuest: true,
-          emitter,
-          ...(verifiedToken ? { guestCanvasToken } : {}),
-          ...(currentArtifact
-            ? {
-                currentArtifact: {
-                  artifactId: currentArtifact.artifactId,
-                  draftRevision: currentArtifact.draftRevision
+        const researchAgent = researcher({
+          model: modelId,
+          modelConfig: model,
+          writer,
+          parentTraceId,
+          searchMode,
+          modelType,
+          canvasToolContext
+        })
+
+        const result = await researchAgent.stream({
+          messages: modelMessages,
+          abortSignal,
+          experimental_transform: smoothStream({ chunking: 'word' })
+        })
+        // NOTE: Do NOT call result.consumeStream() here — writer.merge()
+        // already consumes the stream via toUIMessageStream(), making an
+        // additional consumeStream() call redundant.
+        writer.merge(
+          result.toUIMessageStream({
+            messageMetadata: ({ part }) => {
+              if (part.type === 'start') {
+                return {
+                  traceId: parentTraceId,
+                  searchMode,
+                  modelType,
+                  modelId
                 }
               }
-            : {})
-        }
-      }
-
-      const researchAgent = researcher({
-        model: modelId,
-        modelConfig: model,
-        writer,
-        parentTraceId,
-        searchMode,
-        modelType,
-        canvasToolContext
-      })
-
-      const result = await researchAgent.stream({
-        messages: modelMessages,
-        abortSignal,
-        experimental_transform: smoothStream({ chunking: 'word' })
-      })
-      // NOTE: Do NOT call result.consumeStream() here — writer.merge()
-      // already consumes the stream via toUIMessageStream(), making an
-      // additional consumeStream() call redundant.
-      writer.merge(
-        result.toUIMessageStream({
-          messageMetadata: ({ part }) => {
-            if (part.type === 'start') {
-              return {
-                traceId: parentTraceId,
-                searchMode,
-                modelType,
-                modelId
-              }
             }
-          }
-        })
-      )
-
-      const responseMessages = (await result.response).messages
-      if (
-        trigger !== 'tool-result' &&
-        responseMessages &&
-        responseMessages.length > 0 &&
-        !hasPendingInteractiveTool(responseMessages)
-      ) {
-        const lastUserMessage = [...modelMessages]
-          .reverse()
-          .find(msg => msg.role === 'user')
-        const messagesForQuestions = lastUserMessage
-          ? [lastUserMessage, ...responseMessages]
-          : responseMessages
-        await streamRelatedQuestions(
-          writer,
-          messagesForQuestions,
-          abortSignal,
-          parentTraceId
+          })
         )
+
+        const responseMessages = (await result.response).messages
+        if (
+          trigger !== 'tool-result' &&
+          responseMessages &&
+          responseMessages.length > 0 &&
+          !hasPendingInteractiveTool(responseMessages)
+        ) {
+          const lastUserMessage = [...modelMessages]
+            .reverse()
+            .find(msg => msg.role === 'user')
+          const messagesForQuestions = lastUserMessage
+            ? [lastUserMessage, ...responseMessages]
+            : responseMessages
+          await streamRelatedQuestions(
+            writer,
+            messagesForQuestions,
+            abortSignal,
+            parentTraceId
+          )
+        }
+      } // end executeBody
+
+      if (chatId) {
+        await withOtelSession({ sessionId: chatId }, executeBody)
+      } else {
+        await executeBody()
       }
     },
     onError: (error: unknown) => {

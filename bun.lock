@@ -10,6 +10,7 @@
         "@ai-sdk/google": "^3.0.18",
         "@ai-sdk/openai": "^3.0.23",
         "@ai-sdk/react": "^3.0.66",
+        "@arizeai/openinference-core": "^2.0.5",
         "@arizeai/openinference-semantic-conventions": "^1.0.0",
         "@arizeai/openinference-vercel": "^1.0.0",
         "@codemirror/lang-css": "^6.3.1",
@@ -126,7 +127,7 @@
 
     "@antfu/install-pkg": ["@antfu/install-pkg@1.1.0", "", { "dependencies": { "package-manager-detector": "^1.3.0", "tinyexec": "^1.0.1" } }, "sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ=="],
 
-    "@arizeai/openinference-core": ["@arizeai/openinference-core@0.3.3", "", { "dependencies": { "@arizeai/openinference-semantic-conventions": "0.14.0", "@opentelemetry/api": "^1.9.0", "@opentelemetry/core": "^1.25.1" } }, "sha512-QJYCr9kGJ83iRgcEM/elQMiw0g3uoBQDt6QnKKYT9nFcW17pi7dx8+sjE09b1T+yyNK9fSppPZq78OkwBuWYZw=="],
+    "@arizeai/openinference-core": ["@arizeai/openinference-core@2.0.5", "", { "dependencies": { "@arizeai/openinference-semantic-conventions": "2.1.7", "@opentelemetry/api": "^1.9.0", "@opentelemetry/core": "^1.25.1" } }, "sha512-BnufYaFqmG9twkz/9DHX9WTcOs7YvVAYaufau5tdjOT1c0Y8niJwmNWzV36phNPg3c7SmdD5OYLuzeAUN0T3pQ=="],
 
     "@arizeai/openinference-semantic-conventions": ["@arizeai/openinference-semantic-conventions@1.1.0", "", {}, "sha512-rxRYnUWjt28DlVXnWukcQAyGhPYQ3ckmKrjEdUjmUNnvvv4k8Dabbp5h6AEjNy7YzN9jL2smNRJnbLIVtkrLEg=="],
 
@@ -2252,7 +2253,9 @@
 
     "zwitch": ["zwitch@2.0.4", "", {}, "sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A=="],
 
-    "@arizeai/openinference-core/@arizeai/openinference-semantic-conventions": ["@arizeai/openinference-semantic-conventions@0.14.0", "", {}, "sha512-lczLdSuI+vVwoUgR3iDstVsaUtWkY6kwPWb4uuAuzQNLV8Lm04lNW6QFbhWjHbVDeQ6i6I8+/iAa9JeJ0j745g=="],
+    "@arizeai/openinference-core/@arizeai/openinference-semantic-conventions": ["@arizeai/openinference-semantic-conventions@2.1.7", "", {}, "sha512-KyBfwxkSusPvxHBaW/TJ0japEbXCNziW9o6/IRKiPu+gp5TMKIagV2NKvt47rWYa4Jc0Nl+SvAPm+yxkdJqVbg=="],
+
+    "@arizeai/openinference-vercel/@arizeai/openinference-core": ["@arizeai/openinference-core@0.3.3", "", { "dependencies": { "@arizeai/openinference-semantic-conventions": "0.14.0", "@opentelemetry/api": "^1.9.0", "@opentelemetry/core": "^1.25.1" } }, "sha512-QJYCr9kGJ83iRgcEM/elQMiw0g3uoBQDt6QnKKYT9nFcW17pi7dx8+sjE09b1T+yyNK9fSppPZq78OkwBuWYZw=="],
 
     "@arizeai/openinference-vercel/@arizeai/openinference-semantic-conventions": ["@arizeai/openinference-semantic-conventions@0.14.0", "", {}, "sha512-lczLdSuI+vVwoUgR3iDstVsaUtWkY6kwPWb4uuAuzQNLV8Lm04lNW6QFbhWjHbVDeQ6i6I8+/iAa9JeJ0j745g=="],
 

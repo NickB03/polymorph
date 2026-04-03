@@ -12,6 +12,8 @@ export async function register() {
       const { OTLPTraceExporter } =
         await import('@opentelemetry/exporter-trace-otlp-proto')
       const { registerOTel } = await import('@vercel/otel')
+      const { OpenInferenceContextPropagator } =
+        await import('@/lib/utils/otel-context-processor')
 
       const collectorEndpoint =
         process.env.PHOENIX_COLLECTOR_ENDPOINT ?? 'http://localhost:6006'
@@ -23,6 +25,11 @@ export async function register() {
         )
         return
       }
+
+      // Propagates OpenInference context attributes (session.id, user.id)
+      // set via setSession()/setUser() onto every child span.
+      const contextPropagator = new OpenInferenceContextPropagator()
+      await contextPropagator.init()
 
       registerOTel({
         serviceName: 'polymorph',
@@ -36,6 +43,7 @@ export async function register() {
             'unknown'
         },
         spanProcessors: [
+          contextPropagator,
           new OpenInferenceBatchSpanProcessor({
             exporter: new OTLPTraceExporter({
               url: `${collectorEndpoint}/v1/traces`,

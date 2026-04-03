@@ -1,7 +1,42 @@
-import { trace } from '@opentelemetry/api'
+import { context as otelContext, trace } from '@opentelemetry/api'
 
 export function isTracingEnabled(): boolean {
   return process.env.ENABLE_TRACING === 'true'
+}
+
+/**
+ * Run a callback with OpenInference session + user context propagation.
+ *
+ * All spans created inside `fn` will carry `session.id` (and optionally
+ * `user.id`) attributes, which Phoenix uses to group traces into sessions.
+ *
+ * Safe to call when tracing is disabled — executes `fn` immediately.
+ */
+export async function withOtelSession<T>(
+  {
+    sessionId,
+    userId
+  }: {
+    sessionId: string
+    userId?: string
+  },
+  fn: () => Promise<T>
+): Promise<T> {
+  if (!isTracingEnabled()) return fn()
+
+  try {
+    const { setSession, setUser } = await import('@arizeai/openinference-core')
+
+    let ctx = setSession(otelContext.active(), { sessionId })
+    if (userId) {
+      ctx = setUser(ctx, { userId })
+    }
+
+    return otelContext.with(ctx, fn)
+  } catch {
+    // If openinference-core fails to load, run without context
+    return fn()
+  }
 }
 
 /**
