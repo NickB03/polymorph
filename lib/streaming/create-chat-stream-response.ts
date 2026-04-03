@@ -16,7 +16,11 @@ import { loadCanvasArtifactByChatId } from '@/lib/db/actions'
 import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
 import { jsonError } from '@/lib/utils/json-error'
-import { flushTraces, isTracingEnabled } from '@/lib/utils/telemetry'
+import {
+  flushTraces,
+  isTracingEnabled,
+  withOtelSession
+} from '@/lib/utils/telemetry'
 
 import { loadChat } from '../actions/chat'
 import { generateChatTitle } from '../agents/title-generator'
@@ -142,173 +146,177 @@ export async function createChatStreamResponse(
   const stream = createUIMessageStream<UIMessage>({
     ...(prefetchedMessages ? { originalMessages: prefetchedMessages } : {}),
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
-      try {
-        // Prepare messages for the model
-        const prepareStart = performance.now()
-        let messagesToModel: UIMessage[]
-        if (prefetchedMessages) {
-          messagesToModel = prefetchedMessages
-          perfLog('prepareMessages - Using prefetched messages for tool-result')
-        } else {
-          perfLog(
-            `prepareMessages - Invoked: trigger=${trigger}, isNewChat=${isNewChat}`
-          )
-          messagesToModel = await prepareMessages(context, message)
-        }
-        perfTime('prepareMessages completed (stream)', prepareStart)
-
-        // Build canvas tool context: load current artifact if one exists.
-        // Wrap in try/catch so a DB failure (e.g. missing table, permission
-        // denied) degrades gracefully instead of crashing the entire stream.
-        // On failure, leave canvasToolContext undefined so canvas tools are
-        // not registered — avoids misleading the model into the wrong tool flow.
-        let canvasToolContext: CanvasToolContext | undefined
+      await withOtelSession({ sessionId: chatId, userId }, async () => {
         try {
-          const canvasArtifact = await loadCanvasArtifactByChatId(
-            chatId,
-            userId
+          // Prepare messages for the model
+          const prepareStart = performance.now()
+          let messagesToModel: UIMessage[]
+          if (prefetchedMessages) {
+            messagesToModel = prefetchedMessages
+            perfLog(
+              'prepareMessages - Using prefetched messages for tool-result'
+            )
+          } else {
+            perfLog(
+              `prepareMessages - Invoked: trigger=${trigger}, isNewChat=${isNewChat}`
+            )
+            messagesToModel = await prepareMessages(context, message)
+          }
+          perfTime('prepareMessages completed (stream)', prepareStart)
+
+          // Build canvas tool context: load current artifact if one exists.
+          // Wrap in try/catch so a DB failure (e.g. missing table, permission
+          // denied) degrades gracefully instead of crashing the entire stream.
+          // On failure, leave canvasToolContext undefined so canvas tools are
+          // not registered — avoids misleading the model into the wrong tool flow.
+          let canvasToolContext: CanvasToolContext | undefined
+          try {
+            const canvasArtifact = await loadCanvasArtifactByChatId(
+              chatId,
+              userId
+            )
+            const emitter = createCanvasEmitter(writer)
+            canvasToolContext = {
+              chatId,
+              userId,
+              isGuest: false,
+              emitter,
+              ...(canvasArtifact
+                ? {
+                    currentArtifact: {
+                      artifactId: canvasArtifact.id,
+                      draftRevision: canvasArtifact.draftRevision
+                    }
+                  }
+                : {})
+            }
+          } catch (err) {
+            console.error(
+              '[createChatStreamResponse] Failed to load canvas artifact context; canvas tools will not be registered:',
+              err
+            )
+          }
+
+          // Get the researcher agent with parent trace ID, search mode, and model type
+          const researchAgent = researcher({
+            model: context.modelId,
+            modelConfig: model,
+            writer,
+            parentTraceId,
+            searchMode,
+            modelType,
+            canvasToolContext
+          })
+
+          // For OpenAI models, strip reasoning parts from UIMessages before conversion
+          // OpenAI's Responses API requires reasoning items and their following items to be kept together
+          // See: https://github.com/vercel/ai/issues/11036
+          const isOpenAI = context.modelId.startsWith('openai:')
+          const messagesToConvert = isOpenAI
+            ? stripReasoningParts(messagesToModel)
+            : messagesToModel
+
+          // Convert to model messages and apply context window management
+          let modelMessages = await convertToModelMessages(messagesToConvert)
+
+          // Prune messages to reduce token usage while keeping recent context
+          modelMessages = pruneMessages({
+            messages: modelMessages,
+            reasoning: 'before-last-message',
+            toolCalls: 'before-last-2-messages',
+            emptyMessages: 'remove'
+          })
+
+          const preTruncationCount = modelMessages.length
+          modelMessages = maybeTruncateMessages(modelMessages, model)
+
+          if (
+            process.env.NODE_ENV === 'development' &&
+            modelMessages.length < preTruncationCount
+          ) {
+            console.log(
+              `Context window limit reached. Truncating from ${preTruncationCount} to ${modelMessages.length} messages`
+            )
+          }
+
+          // Start title generation in parallel if it's a new chat
+          if (!initialChat && message) {
+            const userContent = getTextFromParts(message.parts)
+            titlePromise = generateChatTitle({
+              userMessageContent: userContent,
+              modelId: context.modelId,
+              abortSignal,
+              parentTraceId
+            }).catch(error => {
+              console.error('Error generating title:', error)
+              return DEFAULT_CHAT_TITLE
+            })
+          }
+
+          const llmStart = performance.now()
+          if (toolResult) {
+            console.log(
+              `[tool-result] researchAgent.stream: chatId=${chatId}, model=${context.modelId}, ${modelMessages.length} model messages`
+            )
+          }
+          perfLog(
+            `researchAgent.stream - Start: model=${context.modelId}, searchMode=${searchMode}`
           )
-          const emitter = createCanvasEmitter(writer)
-          canvasToolContext = {
-            chatId,
-            userId,
-            isGuest: false,
-            emitter,
-            ...(canvasArtifact
-              ? {
-                  currentArtifact: {
-                    artifactId: canvasArtifact.id,
-                    draftRevision: canvasArtifact.draftRevision
+          const result = await researchAgent.stream({
+            messages: modelMessages,
+            abortSignal,
+            experimental_transform: smoothStream({ chunking: 'word' })
+          })
+          // Stream with the research agent, including metadata.
+          // NOTE: Do NOT call result.consumeStream() here — writer.merge()
+          // already consumes the stream via toUIMessageStream(), making an
+          // additional consumeStream() call redundant.
+          writer.merge(
+            result.toUIMessageStream({
+              messageMetadata: ({ part }) => {
+                // Send metadata when streaming starts
+                if (part.type === 'start') {
+                  return {
+                    traceId: parentTraceId,
+                    searchMode,
+                    modelType,
+                    modelId: context.modelId
                   }
                 }
-              : {})
-          }
-        } catch (err) {
-          console.error(
-            '[createChatStreamResponse] Failed to load canvas artifact context; canvas tools will not be registered:',
-            err
-          )
-        }
-
-        // Get the researcher agent with parent trace ID, search mode, and model type
-        const researchAgent = researcher({
-          model: context.modelId,
-          modelConfig: model,
-          writer,
-          parentTraceId,
-          searchMode,
-          modelType,
-          canvasToolContext
-        })
-
-        // For OpenAI models, strip reasoning parts from UIMessages before conversion
-        // OpenAI's Responses API requires reasoning items and their following items to be kept together
-        // See: https://github.com/vercel/ai/issues/11036
-        const isOpenAI = context.modelId.startsWith('openai:')
-        const messagesToConvert = isOpenAI
-          ? stripReasoningParts(messagesToModel)
-          : messagesToModel
-
-        // Convert to model messages and apply context window management
-        let modelMessages = await convertToModelMessages(messagesToConvert)
-
-        // Prune messages to reduce token usage while keeping recent context
-        modelMessages = pruneMessages({
-          messages: modelMessages,
-          reasoning: 'before-last-message',
-          toolCalls: 'before-last-2-messages',
-          emptyMessages: 'remove'
-        })
-
-        const preTruncationCount = modelMessages.length
-        modelMessages = maybeTruncateMessages(modelMessages, model)
-
-        if (
-          process.env.NODE_ENV === 'development' &&
-          modelMessages.length < preTruncationCount
-        ) {
-          console.log(
-            `Context window limit reached. Truncating from ${preTruncationCount} to ${modelMessages.length} messages`
-          )
-        }
-
-        // Start title generation in parallel if it's a new chat
-        if (!initialChat && message) {
-          const userContent = getTextFromParts(message.parts)
-          titlePromise = generateChatTitle({
-            userMessageContent: userContent,
-            modelId: context.modelId,
-            abortSignal,
-            parentTraceId
-          }).catch(error => {
-            console.error('Error generating title:', error)
-            return DEFAULT_CHAT_TITLE
-          })
-        }
-
-        const llmStart = performance.now()
-        if (toolResult) {
-          console.log(
-            `[tool-result] researchAgent.stream: chatId=${chatId}, model=${context.modelId}, ${modelMessages.length} model messages`
-          )
-        }
-        perfLog(
-          `researchAgent.stream - Start: model=${context.modelId}, searchMode=${searchMode}`
-        )
-        const result = await researchAgent.stream({
-          messages: modelMessages,
-          abortSignal,
-          experimental_transform: smoothStream({ chunking: 'word' })
-        })
-        // Stream with the research agent, including metadata.
-        // NOTE: Do NOT call result.consumeStream() here — writer.merge()
-        // already consumes the stream via toUIMessageStream(), making an
-        // additional consumeStream() call redundant.
-        writer.merge(
-          result.toUIMessageStream({
-            messageMetadata: ({ part }) => {
-              // Send metadata when streaming starts
-              if (part.type === 'start') {
-                return {
-                  traceId: parentTraceId,
-                  searchMode,
-                  modelType,
-                  modelId: context.modelId
-                }
               }
-            }
-          })
-        )
-
-        const responseMessages = (await result.response).messages
-        perfTime('researchAgent.stream completed', llmStart)
-
-        // Generate related questions (skip for tool-result continuations and pending interactive tools)
-        if (
-          trigger !== 'tool-result' &&
-          !hasPendingInteractiveTool(responseMessages) &&
-          responseMessages &&
-          responseMessages.length > 0
-        ) {
-          // Find the last user message
-          const lastUserMessage = [...modelMessages]
-            .reverse()
-            .find(msg => msg.role === 'user')
-          const messagesForQuestions = lastUserMessage
-            ? [lastUserMessage, ...responseMessages]
-            : responseMessages
-
-          await streamRelatedQuestions(
-            writer,
-            messagesForQuestions,
-            abortSignal,
-            parentTraceId
+            })
           )
+
+          const responseMessages = (await result.response).messages
+          perfTime('researchAgent.stream completed', llmStart)
+
+          // Generate related questions (skip for tool-result continuations and pending interactive tools)
+          if (
+            trigger !== 'tool-result' &&
+            !hasPendingInteractiveTool(responseMessages) &&
+            responseMessages &&
+            responseMessages.length > 0
+          ) {
+            // Find the last user message
+            const lastUserMessage = [...modelMessages]
+              .reverse()
+              .find(msg => msg.role === 'user')
+            const messagesForQuestions = lastUserMessage
+              ? [lastUserMessage, ...responseMessages]
+              : responseMessages
+
+            await streamRelatedQuestions(
+              writer,
+              messagesForQuestions,
+              abortSignal,
+              parentTraceId
+            )
+          }
+        } catch (error) {
+          console.error('Stream execution error:', error)
+          throw error // This error will be handled by the onError callback
         }
-      } catch (error) {
-        console.error('Stream execution error:', error)
-        throw error // This error will be handled by the onError callback
-      }
+      }) // end withOtelSession
     },
     onError: (error: unknown) => {
       // console.error('Stream error:', error)

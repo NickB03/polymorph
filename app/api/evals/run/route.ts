@@ -23,8 +23,8 @@ const evalRequestSchema = z.object({
 })
 
 export async function POST(req: Request) {
-  const configuredSecret = process.env.EVAL_RUNNER_SECRET
-  const providedSecret = req.headers.get('x-eval-runner-secret')
+  const configuredSecret = process.env.EVAL_RUNNER_SECRET?.trim()
+  const providedSecret = req.headers.get('x-eval-runner-secret')?.trim()
 
   if (!providedSecret) {
     return jsonError('AUTH_REQUIRED', 'Missing eval runner secret', 401)
