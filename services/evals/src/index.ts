@@ -123,8 +123,10 @@ export function formatContext(sample: ChatSample): string {
   return parts.join('\n')
 }
 
-main().catch(async err => {
-  console.error('[evals] Fatal error:', err)
-  await closeDb().catch(() => {})
-  process.exit(1)
-})
+if (!process.env.VITEST) {
+  main().catch(async err => {
+    console.error('[evals] Fatal error:', err)
+    await closeDb().catch(() => {})
+    process.exit(1)
+  })
+}
