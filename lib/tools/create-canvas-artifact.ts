@@ -60,6 +60,17 @@ export function createCanvasArtifactTool(ctx: CanvasToolContext) {
         `[createCanvasArtifact] Tool invoked: chatId=${ctx.chatId}, title=${title ?? '(none)'}, files=[${Object.keys(draftSource).join(', ')}]`
       )
 
+      // Emit generating status immediately so the client knows
+      // the AI has finished writing code and the tool is executing.
+      ctx.emitter.emitCanvasArtifactStatus({
+        artifactId,
+        chatId: ctx.chatId,
+        status: 'generating',
+        draftRevision: 0,
+        currentVersionId: null,
+        updatedAt: new Date().toISOString()
+      })
+
       const result: CanvasServiceResult = await createCanvasArtifactFromSource({
         artifactId,
         chatId: ctx.chatId,

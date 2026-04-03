@@ -269,8 +269,18 @@ describe('Canvas Service', () => {
 
       expect(result.ok).toBe(false)
       expect(mockCompile).not.toHaveBeenCalled()
-      expect(onProgress).toHaveBeenCalledTimes(2)
-      expect(onProgress.mock.calls[1][0]).toEqual(
+      // 3 calls: early progress (validate in-progress), validation failure
+      // in-progress, validation failure (failed outcome)
+      expect(onProgress).toHaveBeenCalledTimes(3)
+      expect(onProgress.mock.calls[0][0]).toEqual(
+        expect.objectContaining({
+          artifactId: 'art-validate',
+          steps: expect.arrayContaining([
+            expect.objectContaining({ id: 'validate', status: 'in-progress' })
+          ])
+        })
+      )
+      expect(onProgress.mock.calls[2][0]).toEqual(
         expect.objectContaining({
           artifactId: 'art-validate',
           outcome: 'failed',

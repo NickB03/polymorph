@@ -166,7 +166,12 @@ describe('createCanvasArtifactTool', () => {
         artifactId: 'art-pending'
       })
     )
-    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenCalledTimes(1)
+    // 2 calls: initial generating status + final status
+    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenCalledTimes(2)
+    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ status: 'generating' })
+    )
   })
 
   it('returns conflict when chat has existing artifact', async () => {
@@ -210,12 +215,16 @@ describe('createCanvasArtifactTool', () => {
       draftRevision: 2
     })
 
-    // Should emit: artifact, final status
-    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenCalledTimes(1)
+    // Should emit: generating status, final status, artifact
+    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenCalledTimes(2)
+    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ status: 'generating' })
+    )
     expect(ctx.emitter.emitCanvasArtifact).toHaveBeenCalledTimes(1)
   })
 
-  it('does not emit a persisted generating status before create persistence exists', async () => {
+  it('emits generating status even when create fails before persistence', async () => {
     const ctx = createCtx()
     mockCreateCanvasArtifactFromSource.mockResolvedValue({
       ok: false,
@@ -229,7 +238,11 @@ describe('createCanvasArtifactTool', () => {
       { toolCallId: 'tc-1', messages: [] }
     )
 
-    expect(ctx.emitter.emitCanvasArtifactStatus).not.toHaveBeenCalled()
+    // Generating status is always emitted at the start, even on failure
+    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenCalledTimes(1)
+    expect(ctx.emitter.emitCanvasArtifactStatus).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'generating' })
+    )
     expect(ctx.emitter.emitCanvasArtifact).not.toHaveBeenCalled()
   })
 
