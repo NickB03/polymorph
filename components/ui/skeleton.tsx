@@ -1,6 +1,8 @@
+import { Skeleton } from 'boneyard-js/react'
+
 import { cn } from '@/lib/utils/index'
 
-function Skeleton({
+function SkeletonBlock({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
@@ -9,4 +11,4 @@ function Skeleton({
   )
 }
 
-export { Skeleton }
+export { Skeleton, SkeletonBlock }

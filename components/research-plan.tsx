@@ -9,6 +9,7 @@ import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
 import { mapTodoWriteToPlan } from './tool-ui/plan/from-todo-write'
 import type { PlanTodo } from './tool-ui/plan/schema'
 import { safeParseSerializablePlan } from './tool-ui/plan/schema'
+import { Skeleton, SkeletonBlock } from './ui/skeleton'
 import { CollapsibleMessage } from './collapsible-message'
 import { ProcessHeader } from './process-header'
 
@@ -58,11 +59,19 @@ export function ResearchPlan({
 
   if (!output && isStreaming) {
     return (
-      <div
-        className="h-24 skeleton-shimmer rounded-lg"
-        role="status"
-        aria-label="Loading research plan"
-      />
+      <Skeleton
+        name="research-plan-loading"
+        loading
+        fallback={
+          <SkeletonBlock
+            className="h-24 rounded-lg"
+            role="status"
+            aria-label="Loading research plan"
+          />
+        }
+      >
+        <div className="h-24 rounded-lg" />
+      </Skeleton>
     )
   }
 

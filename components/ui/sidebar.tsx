@@ -20,7 +20,7 @@ import {
   SheetHeader,
   SheetTitle
 } from '@/components/ui/sheet'
-import { Skeleton } from '@/components/ui/skeleton'
+import { SkeletonBlock } from '@/components/ui/skeleton'
 import {
   Tooltip,
   TooltipContent,
@@ -699,12 +699,12 @@ const SidebarMenuSkeleton = React.forwardRef<
       {...props}
     >
       {showIcon && (
-        <Skeleton
+        <SkeletonBlock
           className="size-4 rounded-md"
           data-sidebar="menu-skeleton-icon"
         />
       )}
-      <Skeleton
+      <SkeletonBlock
         className="h-4 max-w-(--skeleton-width) flex-1"
         data-sidebar="menu-skeleton-text"
         style={

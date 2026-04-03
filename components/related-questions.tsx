@@ -7,7 +7,7 @@ import { ArrowRight } from 'lucide-react'
 import type { RelatedQuestionsData } from '@/lib/types/ai'
 
 import { Button } from './ui/button'
-import { Skeleton } from './ui/skeleton'
+import { SkeletonBlock } from './ui/skeleton'
 import { CollapsibleMessage } from './collapsible-message'
 import { Section } from './section'
 
@@ -60,7 +60,7 @@ export const RelatedQuestions: React.FC<RelatedQuestionsProps> = ({
                   key={`placeholder-${index}`}
                 >
                   <ArrowRight className="h-4 w-4 mr-2 mt-0.5 shrink-0 text-accent-foreground/50" />
-                  <Skeleton className="h-6 w-full" />
+                  <SkeletonBlock className="h-6 w-full" />
                 </div>
               ))}
             </>
@@ -71,7 +71,7 @@ export const RelatedQuestions: React.FC<RelatedQuestionsProps> = ({
               {[1, 2, 3].map((_, index) => (
                 <div className="flex items-start w-full" key={index}>
                   <ArrowRight className="h-4 w-4 mr-2 mt-0.5 shrink-0 text-accent-foreground/50" />
-                  <Skeleton className="h-6 w-full" />
+                  <SkeletonBlock className="h-6 w-full" />
                 </div>
               ))}
             </>

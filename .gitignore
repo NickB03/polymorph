@@ -36,6 +36,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Boneyard generated bones
+public/bones/
+
 # temporary files
 .tmp/
 

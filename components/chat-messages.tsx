@@ -18,7 +18,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 
 import { AnimatedLogo } from './ui/animated-logo'
 import { useSidebar } from './ui/sidebar'
-import { Skeleton } from './ui/skeleton'
+import { Skeleton, SkeletonBlock } from './ui/skeleton'
 import { ChatError } from './chat-error'
 import { GuestSignupNudge } from './guest-signup-nudge'
 import { RenderMessage } from './render-message'
@@ -242,17 +242,29 @@ export function ChatMessages({
               sectionIndex === sections.length - 1 &&
               (section.assistantMessages.length === 0 ||
               !section.assistantMessages.some(m => m.parts?.length) ? (
-                <div className="flex flex-col gap-3 py-2">
-                  <Skeleton className="h-5 w-3/4" />
-                  <Skeleton
-                    className="h-5 w-full"
-                    style={{ animationDelay: '75ms' }}
-                  />
-                  <Skeleton
-                    className="h-5 w-5/6"
-                    style={{ animationDelay: '150ms' }}
-                  />
-                </div>
+                <Skeleton
+                  name="chat-loading"
+                  loading
+                  fallback={
+                    <div className="flex flex-col gap-3 py-2">
+                      <SkeletonBlock className="h-5 w-3/4" />
+                      <SkeletonBlock
+                        className="h-5 w-full"
+                        style={{ animationDelay: '75ms' }}
+                      />
+                      <SkeletonBlock
+                        className="h-5 w-5/6"
+                        style={{ animationDelay: '150ms' }}
+                      />
+                    </div>
+                  }
+                >
+                  <div className="flex flex-col gap-3 py-2">
+                    <div className="h-5 w-3/4" />
+                    <div className="h-5 w-full" />
+                    <div className="h-5 w-5/6" />
+                  </div>
+                </Skeleton>
               ) : (
                 <div className="flex justify-start py-2">
                   <AnimatedLogo className="h-10 w-10" />
