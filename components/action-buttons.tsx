@@ -157,9 +157,8 @@ export function ActionButtons({
   const isBuildActive = activeView === 'build'
   const isSuggestionActive = activeView !== null && activeView !== 'build'
 
-  // Build view needs more height for the thumbnail cards
   const containerHeight = isBuildActive
-    ? 'min-h-[220px] h-auto sm:h-[220px]'
+    ? 'min-h-[180px] h-auto sm:h-[220px]'
     : 'min-h-[180px] h-auto sm:h-[180px]'
 
   // Total number of pills for stagger animation
@@ -266,7 +265,7 @@ export function ActionButtons({
           )}
         >
           {isBuildActive && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 h-full">
+            <div className="grid grid-cols-3 gap-3">
               {BUILD_TEMPLATES.map(template => (
                 <button
                   key={template.key}
