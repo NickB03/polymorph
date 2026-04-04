@@ -70,6 +70,8 @@ export interface EvalDatasetInput {
   searchMode: EvalSearchMode
   modelType: EvalModelType
   prompt: string
+  query: string
+  context: string
   tags: string[]
 }
 

@@ -109,15 +109,15 @@ The `services/evals/` directory contains a scheduled evaluation pipeline:
 
 **Required env vars:**
 
-| Variable          | Value                                  |
-| ----------------- | -------------------------------------- |
-| `DATABASE_URL`    | Supabase Postgres connection string    |
-| `PHOENIX_HOST`    | `http://phoenix.railway.internal:6006` |
-| `PHOENIX_API_KEY` | Phoenix System API key                 |
-| `OPENAI_API_KEY`  | For the LLM judge model                |
-| `JUDGE_MODEL`     | `gpt-4o-mini` (default)                |
-| `SAMPLE_SIZE`     | `50` (default)                         |
-| `LOOKBACK_HOURS`  | `6` (default)                          |
+| Variable             | Value                                  |
+| -------------------- | -------------------------------------- |
+| `DATABASE_URL`       | Supabase Postgres connection string    |
+| `PHOENIX_HOST`       | `http://phoenix.railway.internal:6006` |
+| `PHOENIX_API_KEY`    | Phoenix System API key                 |
+| `AI_GATEWAY_API_KEY` | AI Gateway API key for the judge model |
+| `JUDGE_MODEL`        | `openai/gpt-4o-mini` (default)         |
+| `SAMPLE_SIZE`        | `50` (default)                         |
+| `LOOKBACK_HOURS`     | `6` (default)                          |
 
 ### Rotating Phoenix API keys
 

@@ -1,4 +1,5 @@
 import { config } from '../config'
+import { formatEvalContext } from '../eval-output'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
@@ -14,23 +15,7 @@ import {
 } from './shared'
 
 export function formatContext(sample: ChatSample): string {
-  const parts: string[] = []
-
-  for (const search of sample.searchResults) {
-    if (search.query) parts.push(`[Search: "${search.query}"]`)
-    for (const result of search.results) {
-      parts.push(`- ${result.title}: ${result.snippet}`)
-    }
-  }
-
-  if (sample.citations.length > 0) {
-    parts.push('\n[Citations]')
-    for (const citation of sample.citations) {
-      parts.push(`- ${citation.title} (${citation.url})`)
-    }
-  }
-
-  return parts.join('\n')
+  return formatEvalContext(sample)
 }
 
 export async function runTrafficMonitorSuite() {

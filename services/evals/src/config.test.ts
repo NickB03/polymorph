@@ -19,6 +19,19 @@ describe('createConfig', () => {
     expect(config.evalRunMode).toBe('capability')
   })
 
+  it('defaults judgeModel to the provider-qualified gateway model', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+
+    const { createConfig } = await import('./config')
+    const config = createConfig()
+
+    expect(config.judgeModel).toBe('openai/gpt-4o-mini')
+  })
+
   it('parses eval runner settings and defaults', async () => {
     vi.stubEnv('DATABASE_URL', 'postgresql://db')
     vi.stubEnv('PHOENIX_HOST', 'http://phoenix')

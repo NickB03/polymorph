@@ -6,7 +6,7 @@ import type {
   EvalSuite
 } from '../types'
 
-const CORPUS_VERSION = 'v1'
+const CORPUS_VERSION = 'v2'
 
 function user(text: string): EvalConversationMessage {
   return {
