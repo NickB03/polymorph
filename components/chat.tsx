@@ -168,11 +168,18 @@ export function Chat({
     message: ''
   })
 
+  // Use a ref for isMobile so the callback identity stays stable across the
+  // false→true hydration transition on mobile. Without this, both canvas
+  // auto-open effects re-run on mount (only on mobile), creating a race
+  // where the early 'generating' status can overwrite the loaded artifact.
+  const isMobileRef = useRef(isMobile)
+  isMobileRef.current = isMobile
+
   const closeArtifactSidebar = useCallback(() => {
-    if (isMobile) {
+    if (isMobileRef.current) {
       setOpenMobile(false)
     }
-  }, [isMobile, setOpenMobile])
+  }, [setOpenMobile])
 
   const {
     messages,
@@ -456,8 +463,21 @@ export function Chat({
     if (cv.artifact) {
       const latestStatus = latestStatusByArtifactId.get(cv.artifact.artifactId)
 
+      // Guard: never let an earlier 'generating' / 'compiling' status event
+      // overwrite a terminal artifact state that was loaded from the API.
+      // This prevents the early emitCanvasArtifactStatus('generating') from
+      // the create tool from clobbering the real artifact on mobile, where an
+      // extra effect re-run is triggered by the isMobile hydration transition.
+      const isStatusDowngrade =
+        latestStatus &&
+        (latestStatus.status === 'generating' ||
+          latestStatus.status === 'compiling') &&
+        (cv.artifact.status === 'ready' ||
+          cv.artifact.status === 'compile_failed')
+
       if (
         latestStatus &&
+        !isStatusDowngrade &&
         (latestStatus.status !== cv.artifact.status ||
           latestStatus.draftRevision !== cv.artifact.draftRevision ||
           latestStatus.currentVersionId !== cv.artifact.currentVersionId ||
