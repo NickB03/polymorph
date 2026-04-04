@@ -9,7 +9,7 @@ vi.mock('@ai-sdk/openai', () => ({
 
 vi.mock('../config', () => ({
   config: {
-    judgeModel: 'qwen/qwen3.6-plus:free',
+    judgeModel: 'google/gemini-3.1-flash-lite-preview',
     judgeBaseUrl: 'https://openrouter.ai/api/v1'
   }
 }))
@@ -147,9 +147,12 @@ describe('createJudgeModel', () => {
     expect(mockCreateOpenAI).toHaveBeenCalledWith({
       baseURL: 'https://openrouter.ai/api/v1'
     })
-    expect(mockProvider).toHaveBeenCalledWith('qwen/qwen3.6-plus:free', {
-      structuredOutputs: true
-    })
+    expect(mockProvider).toHaveBeenCalledWith(
+      'google/gemini-3.1-flash-lite-preview',
+      {
+        structuredOutputs: true
+      }
+    )
     expect(model).toEqual({ id: 'judge-model' })
   })
 })

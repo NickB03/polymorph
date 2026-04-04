@@ -5,6 +5,8 @@ import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
 import { getRedis } from '@/lib/rate-limit/redis'
 import type { SuggestionCategory } from '@/lib/types'
 
+export const maxDuration = 60
+
 const CACHE_KEY = 'trending:suggestions'
 const CACHE_TTL = 14400 // 4 hours in seconds
 const FALLBACK_CACHE_TTL = 900 // 15 minutes for static fallback output
@@ -14,6 +16,12 @@ const LOCK_KEY = 'trending:suggestions:lock'
 const LOCK_TTL = 60 // 60 seconds — prevents stale locks if generation crashes
 const LOCK_RETRY_DELAY_MS = 500
 const LOCK_MAX_RETRIES = 6
+
+// CDN cache TTLs — Vercel edge caches the response globally so all users
+// after the first get an instant response without hitting the origin function.
+const CDN_CACHE_TTL = 14400 // 4 hours for dynamic suggestions
+const CDN_FALLBACK_CACHE_TTL = 900 // 15 minutes for static fallback
+const CDN_SWR_WINDOW = 3600 // 1 hour stale-while-revalidate grace period
 
 type SuggestionsResponseSource =
   | 'cache'
@@ -30,9 +38,13 @@ function toSuggestionsResponse(
   serveMode: SuggestionsServeMode,
   ttlSeconds?: number
 ) {
+  const cdnTtl = source === 'default' ? CDN_FALLBACK_CACHE_TTL : CDN_CACHE_TTL
+
   const headers = new Headers({
     'x-suggestions-source': source,
-    'x-suggestions-serve-mode': serveMode
+    'x-suggestions-serve-mode': serveMode,
+    'CDN-Cache-Control': `public, s-maxage=${cdnTtl}, stale-while-revalidate=${CDN_SWR_WINDOW}`,
+    'Cache-Control': `public, max-age=0, s-maxage=${cdnTtl}, stale-while-revalidate=${CDN_SWR_WINDOW}`
   })
 
   if (typeof ttlSeconds === 'number') {
