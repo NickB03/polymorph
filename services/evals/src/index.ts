@@ -1,4 +1,3 @@
-import { formatContext } from './runners/traffic-monitor'
 import { closeDb } from './db'
 import { runConfiguredModes } from './orchestrator'
 
@@ -15,8 +14,6 @@ export async function main() {
     await closeDb().catch(() => {})
   }
 }
-
-export { formatContext }
 
 if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
   main().catch(async err => {

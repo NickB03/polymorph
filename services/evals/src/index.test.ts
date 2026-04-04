@@ -49,7 +49,7 @@ vi.mock('./orchestrator', () => ({
 
 describe('formatContext', () => {
   it('formats search results with query headers', async () => {
-    const { formatContext } = await import('./index')
+    const { formatContext } = await import('./runners/traffic-monitor')
 
     const sample: ChatSample = {
       chatId: 'chat-1',
@@ -80,7 +80,7 @@ describe('formatContext', () => {
   })
 
   it('formats citations when present', async () => {
-    const { formatContext } = await import('./index')
+    const { formatContext } = await import('./runners/traffic-monitor')
 
     const sample: ChatSample = {
       chatId: 'chat-2',
@@ -97,7 +97,7 @@ describe('formatContext', () => {
   })
 
   it('returns empty string when no search results or citations', async () => {
-    const { formatContext } = await import('./index')
+    const { formatContext } = await import('./runners/traffic-monitor')
 
     const sample: ChatSample = {
       chatId: 'chat-3',
@@ -113,7 +113,7 @@ describe('formatContext', () => {
   })
 
   it('formats multiple search results and citations together', async () => {
-    const { formatContext } = await import('./index')
+    const { formatContext } = await import('./runners/traffic-monitor')
 
     const sample: ChatSample = {
       chatId: 'chat-4',
@@ -177,8 +177,8 @@ describe('main lifecycle', () => {
     expect(mockCloseDb).toHaveBeenCalledTimes(1)
   })
 
-  it('keeps the traffic-monitor formatter exported from index', async () => {
-    const { formatContext } = await import('./index')
+  it('formatContext is importable from the source module', async () => {
+    const { formatContext } = await import('./runners/traffic-monitor')
 
     expect(formatContext(fixtureSample)).toContain('[Search: "test"]')
   })

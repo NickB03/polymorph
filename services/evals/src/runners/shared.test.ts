@@ -1,3 +1,4 @@
+import type { LanguageModel } from 'ai'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockProvider = vi.hoisted(() => vi.fn())
@@ -10,12 +11,98 @@ vi.mock('@ai-sdk/openai', () => ({
 vi.mock('../config', () => ({
   config: {
     judgeModel: 'google/gemini-3.1-flash-lite-preview',
-    judgeBaseUrl: 'https://openrouter.ai/api/v1'
+    judgeBaseUrl: 'https://openrouter.ai/api/v1',
+    evalRunnerUrl: 'http://localhost:3000',
+    evalRunnerSecret: 'test-secret',
+    scoreThreshold: 0.8
   }
 }))
 
+const mockGetCasesForEvaluation = vi.hoisted(() => vi.fn())
+
 vi.mock('../corpus', () => ({
-  getCorpusVersion: vi.fn(() => 'v2')
+  getCorpusVersion: vi.fn(() => 'v2'),
+  getCasesForEvaluation: mockGetCasesForEvaluation
+}))
+
+const mockRunEvalCase = vi.hoisted(() => vi.fn())
+
+vi.mock('../eval-runner-client', () => ({
+  runEvalCase: mockRunEvalCase
+}))
+
+const mockCreateClient = vi.hoisted(() => vi.fn(() => ({})))
+const mockCreateOrGetDataset = vi.hoisted(() =>
+  vi.fn(async () => ({ datasetId: 'ds-1' }))
+)
+const mockRunExperiment = vi.hoisted(() =>
+  vi.fn(async () => ({
+    id: 'exp-1',
+    evaluationRuns: [
+      { name: 'precheck', error: null, result: { score: 1, label: 'pass' } },
+      {
+        name: 'faithfulness',
+        error: null,
+        result: { score: 0.9, label: 'faithful' }
+      },
+      {
+        name: 'relevance',
+        error: null,
+        result: { score: 0.85, label: 'relevant' }
+      },
+      {
+        name: 'response_quality',
+        error: null,
+        result: { score: 0.8, label: 'good' }
+      }
+    ]
+  }))
+)
+
+vi.mock('@arizeai/phoenix-client', () => ({
+  createClient: mockCreateClient
+}))
+
+vi.mock('@arizeai/phoenix-client/datasets', () => ({
+  createDataset: vi.fn(),
+  createOrGetDataset: mockCreateOrGetDataset
+}))
+
+vi.mock('@arizeai/phoenix-client/experiments', () => ({
+  runExperiment: mockRunExperiment,
+  asExperimentEvaluator: vi.fn((e: unknown) => e)
+}))
+
+vi.mock('../evaluators/faithfulness', () => ({
+  createFaithfulnessExperimentEvaluator: vi.fn(() => ({
+    name: 'faithfulness',
+    kind: 'LLM',
+    evaluate: async () => ({ label: 'faithful', score: 0.9 })
+  }))
+}))
+
+vi.mock('../evaluators/relevance', () => ({
+  createRelevanceExperimentEvaluator: vi.fn(() => ({
+    name: 'relevance',
+    kind: 'LLM',
+    evaluate: async () => ({ label: 'relevant', score: 0.85 })
+  }))
+}))
+
+vi.mock('../evaluators/response-quality', () => ({
+  createResponseQualityExperimentEvaluator: vi.fn(() => ({
+    name: 'response_quality',
+    kind: 'LLM',
+    evaluate: async () => ({ label: 'good', score: 0.8 })
+  }))
+}))
+
+vi.mock('../prechecks', () => ({
+  createDeterministicPrecheckEvaluator: vi.fn(() => ({
+    name: 'precheck',
+    kind: 'CODE',
+    evaluate: async () => ({ label: 'pass', score: 1 })
+  }))
 }))
 
 describe('buildDatasetExamples', () => {
@@ -286,7 +373,7 @@ describe('buildExperimentEvaluators', () => {
         kind: 'LLM',
         evaluate: () => ({ label: 'ok', score: 1 })
       }),
-      {}
+      {} as LanguageModel
     )
 
     expect(evaluators).toHaveLength(4)
@@ -302,5 +389,304 @@ describe('buildExperimentEvaluators', () => {
     expect(callCount).toBe(3) // 2 failures + 1 success
 
     vi.useRealTimers()
+  })
+})
+
+describe('runJudgedSuite', () => {
+  const makeCaseSpec = (id: string, suite: 'capability' | 'regression') => ({
+    id,
+    suite,
+    conversation: [
+      {
+        role: 'user' as const,
+        parts: [{ type: 'text' as const, text: `question for ${id}` }]
+      }
+    ],
+    searchMode: 'chat' as const,
+    modelType: 'speed' as const,
+    tags: [],
+    requiresTextAnswer: true,
+    requiresCitations: false,
+    allowsInteractiveOnly: false
+  })
+
+  const makeRunResult = (id: string) => ({
+    answerText: `answer for ${id}`,
+    citations: [],
+    searchResults: [],
+    toolNames: [],
+    usedInteractiveOnlyOutput: false,
+    modelId: 'test-model',
+    durationMs: 100
+  })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockCreateOpenAI.mockReturnValue(mockProvider)
+    mockProvider.mockReturnValue({ id: 'judge-model' })
+  })
+
+  it('runs all cases, creates experiment, and passes when thresholds are met', async () => {
+    const cases = [
+      makeCaseSpec('c1', 'capability'),
+      makeCaseSpec('c2', 'capability')
+    ]
+    mockGetCasesForEvaluation.mockReturnValue(cases)
+    mockRunEvalCase
+      .mockResolvedValueOnce(makeRunResult('c1'))
+      .mockResolvedValueOnce(makeRunResult('c2'))
+
+    const { runJudgedSuite } = await import('./shared')
+    await expect(runJudgedSuite('capability')).resolves.toBeUndefined()
+
+    expect(mockGetCasesForEvaluation).toHaveBeenCalledWith('capability')
+    expect(mockRunEvalCase).toHaveBeenCalledTimes(2)
+    expect(mockCreateOrGetDataset).toHaveBeenCalledTimes(1)
+    expect(mockRunExperiment).toHaveBeenCalledTimes(1)
+  })
+
+  it('throws when all cases fail', async () => {
+    const cases = [
+      makeCaseSpec('c1', 'capability'),
+      makeCaseSpec('c2', 'capability')
+    ]
+    mockGetCasesForEvaluation.mockReturnValue(cases)
+    mockRunEvalCase.mockRejectedValue(new Error('network timeout'))
+
+    const { runJudgedSuite } = await import('./shared')
+    await expect(runJudgedSuite('capability')).rejects.toThrow(
+      'All 2 capability cases failed'
+    )
+
+    expect(mockCreateOrGetDataset).not.toHaveBeenCalled()
+    expect(mockRunExperiment).not.toHaveBeenCalled()
+  })
+
+  it('continues with partial results when some cases fail', async () => {
+    const cases = [
+      makeCaseSpec('c1', 'regression'),
+      makeCaseSpec('c2', 'regression'),
+      makeCaseSpec('c3', 'regression')
+    ]
+    mockGetCasesForEvaluation.mockReturnValue(cases)
+    mockRunEvalCase
+      .mockResolvedValueOnce(makeRunResult('c1'))
+      .mockRejectedValueOnce(new Error('case c2 failed'))
+      .mockResolvedValueOnce(makeRunResult('c3'))
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const { runJudgedSuite } = await import('./shared')
+    await expect(runJudgedSuite('regression')).resolves.toBeUndefined()
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('1/3 regression cases failed')
+    )
+    expect(mockCreateOrGetDataset).toHaveBeenCalledTimes(1)
+    expect(mockRunExperiment).toHaveBeenCalledTimes(1)
+
+    warnSpy.mockRestore()
+  })
+
+  it('throws when experiment thresholds are not met', async () => {
+    const cases = [makeCaseSpec('c1', 'capability')]
+    mockGetCasesForEvaluation.mockReturnValue(cases)
+    mockRunEvalCase.mockResolvedValueOnce(makeRunResult('c1'))
+
+    mockRunExperiment.mockResolvedValueOnce({
+      id: 'exp-fail',
+      evaluationRuns: [
+        {
+          name: 'faithfulness',
+          error: null,
+          result: { score: 0.2, label: 'bad' }
+        },
+        {
+          name: 'relevance',
+          error: null,
+          result: { score: 0.1, label: 'bad' }
+        },
+        { name: 'quality', error: null, result: { score: 0.9, label: 'good' } }
+      ]
+    })
+
+    const { runJudgedSuite } = await import('./shared')
+    await expect(runJudgedSuite('capability')).rejects.toThrow(
+      'capability scores below threshold'
+    )
+  })
+
+  it('works with the regression suite value', async () => {
+    const cases = [makeCaseSpec('r1', 'regression')]
+    mockGetCasesForEvaluation.mockReturnValue(cases)
+    mockRunEvalCase.mockResolvedValueOnce(makeRunResult('r1'))
+
+    const { runJudgedSuite } = await import('./shared')
+    await expect(runJudgedSuite('regression')).resolves.toBeUndefined()
+
+    expect(mockGetCasesForEvaluation).toHaveBeenCalledWith('regression')
+  })
+})
+
+describe('runCasesConcurrently', () => {
+  const makeConcurrencyCase = (id: string): import('../types').EvalCase => ({
+    id,
+    suite: 'capability',
+    conversation: [
+      {
+        role: 'user',
+        parts: [{ type: 'text', text: `question ${id}` }]
+      }
+    ],
+    searchMode: 'chat',
+    modelType: 'speed',
+    tags: [],
+    requiresTextAnswer: true,
+    requiresCitations: false,
+    allowsInteractiveOnly: false
+  })
+
+  const makeConcurrencyResult = (
+    id: string
+  ): import('../types').EvalRunResult => ({
+    answerText: `answer for ${id}`,
+    citations: [],
+    searchResults: [],
+    toolNames: [],
+    usedInteractiveOnlyOutput: false,
+    modelId: 'test-model',
+    durationMs: 100
+  })
+
+  beforeEach(() => {
+    mockRunEvalCase.mockReset()
+  })
+
+  it('runs all cases and returns succeeded results with correct structure', async () => {
+    const { runCasesConcurrently } = await import('./shared')
+
+    const cases = [makeConcurrencyCase('a'), makeConcurrencyCase('b')]
+    mockRunEvalCase.mockImplementation(
+      (caseSpec: import('../types').EvalCase) =>
+        Promise.resolve(makeConcurrencyResult(caseSpec.id))
+    )
+
+    const { succeeded, failCount } = await runCasesConcurrently(cases)
+
+    expect(failCount).toBe(0)
+    expect(succeeded).toHaveLength(2)
+    expect(succeeded[0].caseSpec.id).toBe('a')
+    expect(succeeded[0].result.answerText).toBe('answer for a')
+    expect(succeeded[1].caseSpec.id).toBe('b')
+    expect(succeeded[1].result.answerText).toBe('answer for b')
+    expect(mockRunEvalCase).toHaveBeenCalledTimes(2)
+  })
+
+  it('respects concurrency limit of 3', async () => {
+    const { runCasesConcurrently } = await import('./shared')
+
+    let currentInFlight = 0
+    let peakInFlight = 0
+
+    mockRunEvalCase.mockImplementation(() => {
+      currentInFlight++
+      peakInFlight = Math.max(peakInFlight, currentInFlight)
+      return new Promise<import('../types').EvalRunResult>(resolve => {
+        setTimeout(() => {
+          currentInFlight--
+          resolve(makeConcurrencyResult('x'))
+        }, 10)
+      })
+    })
+
+    const cases = Array.from({ length: 7 }, (_, i) =>
+      makeConcurrencyCase(`case-${i}`)
+    )
+    const { succeeded, failCount } = await runCasesConcurrently(cases)
+
+    expect(succeeded).toHaveLength(7)
+    expect(failCount).toBe(0)
+    expect(peakInFlight).toBeLessThanOrEqual(3)
+    expect(peakInFlight).toBeGreaterThanOrEqual(2)
+  })
+
+  it('individual case failure increments failCount without aborting remaining cases', async () => {
+    const { runCasesConcurrently } = await import('./shared')
+
+    mockRunEvalCase.mockImplementation(
+      (caseSpec: import('../types').EvalCase) => {
+        if (caseSpec.id === 'fail-me') {
+          return Promise.reject(new Error('boom'))
+        }
+        return Promise.resolve(makeConcurrencyResult(caseSpec.id))
+      }
+    )
+
+    const cases = [
+      makeConcurrencyCase('ok-1'),
+      makeConcurrencyCase('fail-me'),
+      makeConcurrencyCase('ok-2')
+    ]
+    const { succeeded, failCount } = await runCasesConcurrently(cases)
+
+    expect(failCount).toBe(1)
+    expect(succeeded).toHaveLength(2)
+    expect(succeeded.map(s => s.caseSpec.id)).toEqual(['ok-1', 'ok-2'])
+    expect(mockRunEvalCase).toHaveBeenCalledTimes(3)
+  })
+
+  it('all cases failing returns empty succeeded with full failCount', async () => {
+    const { runCasesConcurrently } = await import('./shared')
+
+    mockRunEvalCase.mockRejectedValue(new Error('all broken'))
+
+    const cases = [
+      makeConcurrencyCase('f1'),
+      makeConcurrencyCase('f2'),
+      makeConcurrencyCase('f3')
+    ]
+    const { succeeded, failCount } = await runCasesConcurrently(cases)
+
+    expect(succeeded).toHaveLength(0)
+    expect(failCount).toBe(3)
+  })
+
+  it('empty input array returns zero results and zero failures', async () => {
+    const { runCasesConcurrently } = await import('./shared')
+
+    const { succeeded, failCount } = await runCasesConcurrently([])
+
+    expect(succeeded).toHaveLength(0)
+    expect(failCount).toBe(0)
+    expect(mockRunEvalCase).not.toHaveBeenCalled()
+  })
+
+  it('mixed success and failure collects all results', async () => {
+    const { runCasesConcurrently } = await import('./shared')
+
+    mockRunEvalCase.mockImplementation(
+      (caseSpec: import('../types').EvalCase) => {
+        if (caseSpec.id === 'fail-1' || caseSpec.id === 'fail-2') {
+          return Promise.reject(new Error(`${caseSpec.id} broke`))
+        }
+        return Promise.resolve(makeConcurrencyResult(caseSpec.id))
+      }
+    )
+
+    const cases = [
+      makeConcurrencyCase('ok-1'),
+      makeConcurrencyCase('fail-1'),
+      makeConcurrencyCase('ok-2'),
+      makeConcurrencyCase('fail-2'),
+      makeConcurrencyCase('ok-3')
+    ]
+    const { succeeded, failCount } = await runCasesConcurrently(cases)
+
+    expect(failCount).toBe(2)
+    expect(succeeded).toHaveLength(3)
+    const ids = succeeded.map(s => s.caseSpec.id)
+    expect(ids).toContain('ok-1')
+    expect(ids).toContain('ok-2')
+    expect(ids).toContain('ok-3')
   })
 })
