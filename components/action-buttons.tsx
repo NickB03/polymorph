@@ -158,7 +158,9 @@ export function ActionButtons({
   const isSuggestionActive = activeView !== null && activeView !== 'build'
 
   // Build view needs more height for the thumbnail cards
-  const containerHeight = isBuildActive ? 'h-[220px]' : 'h-[180px]'
+  const containerHeight = isBuildActive
+    ? 'min-h-[220px] h-auto sm:h-[220px]'
+    : 'min-h-[180px] h-auto sm:h-[180px]'
 
   // Total number of pills for stagger animation
   const buildPillIndex = actionCategories.length
@@ -188,10 +190,10 @@ export function ActionButtons({
                   key={category.key}
                   type="button"
                   variant="outline"
-                  size="sm"
+                  size="default"
                   className={cn(
                     'flex items-center gap-2 whitespace-nowrap rounded-full animate-content-enter',
-                    'text-xs sm:text-sm px-3 sm:px-4'
+                    'min-h-11 text-xs sm:text-sm px-3 sm:px-4'
                   )}
                   style={
                     {
@@ -209,10 +211,10 @@ export function ActionButtons({
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
+                size="default"
                 className={cn(
                   'flex items-center gap-2 whitespace-nowrap rounded-full animate-content-enter',
-                  'text-xs sm:text-sm px-3 sm:px-4'
+                  'min-h-11 text-xs sm:text-sm px-3 sm:px-4'
                 )}
                 style={
                   {
@@ -245,6 +247,7 @@ export function ActionButtons({
                 className={cn(
                   'w-full text-left px-3 py-2 rounded-md text-sm',
                   'hover:bg-muted transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                   'flex items-center gap-2 group'
                 )}
                 onClick={() => handlePromptClick(prompt)}
@@ -263,12 +266,12 @@ export function ActionButtons({
           )}
         >
           {isBuildActive && (
-            <div className="grid grid-cols-3 gap-3 h-full">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 h-full">
               {BUILD_TEMPLATES.map(template => (
                 <button
                   key={template.key}
                   type="button"
-                  className="group flex flex-col gap-2 text-left"
+                  className="group flex flex-col gap-2 text-left min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
                   onClick={() => handleBuildTemplateClick(template)}
                 >
                   <div className="relative aspect-[3/2] w-full rounded-xl overflow-hidden bg-muted/50 ring-1 ring-border/50 transition-all group-hover:ring-border group-hover:shadow-md">

@@ -5,7 +5,13 @@ import { ChatPanel } from './chat-panel'
 
 vi.mock('@/hooks/use-trending-suggestions', () => ({
   useTrendingSuggestions: () => ({
-    suggestions: []
+    suggestions: {
+      research: ['Research prompt'],
+      compare: ['Compare prompt'],
+      latest: ['Latest prompt'],
+      summarize: ['Summarize prompt'],
+      explain: ['Explain prompt']
+    }
   })
 }))
 
@@ -21,8 +27,11 @@ vi.mock('@/lib/voice/config', async () => {
   }
 })
 
-vi.mock('./action-buttons', () => ({
-  ActionButtons: () => null
+vi.mock('next/image', () => ({
+  default: (props: Record<string, unknown>) => {
+    const { fill, ...rest } = props
+    return <img data-fill={fill ? 'true' : undefined} {...rest} />
+  }
 }))
 
 vi.mock('./file-upload-button', () => ({
@@ -77,5 +86,30 @@ describe('ChatPanel', () => {
 
     expect(screen.queryByText('Speed')).not.toBeInTheDocument()
     expect(screen.queryByText('Quality')).not.toBeInTheDocument()
+  })
+
+  it('renders research and build action buttons in the empty-state composer', () => {
+    render(
+      <ChatPanel
+        chatId="chat-1"
+        input=""
+        handleInputChange={vi.fn()}
+        handleSubmit={e => e.preventDefault()}
+        status="ready"
+        messages={[]}
+        stop={vi.fn()}
+        append={vi.fn()}
+        showScrollToBottomButton={false}
+        scrollContainerRef={{ current: null }}
+        uploadedFiles={[]}
+        setUploadedFiles={vi.fn()}
+        isGuest
+      />
+    )
+
+    expect(
+      screen.getByRole('button', { name: /research/i })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /build/i })).toBeInTheDocument()
   })
 })
