@@ -28,20 +28,20 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
 
   return (
     <>
-      <header
-        className={cn(
-          'absolute top-0 right-0 p-3 flex justify-between items-center z-10 backdrop-blur-sm lg:backdrop-blur-none bg-background/80 lg:bg-transparent transition-[width] duration-200 ease-linear',
-          open ? 'md:w-[calc(100%-var(--sidebar-width))]' : 'md:w-full',
-          'w-full'
-        )}
-      >
-        <div>
-          {(!open || isMobile) && (
-            <SidebarTrigger className="animate-fade-in" />
+      {!isAuthPage && (
+        <header
+          className={cn(
+            'absolute top-0 right-0 p-3 flex justify-between items-center z-10 backdrop-blur-sm lg:backdrop-blur-none bg-background/80 lg:bg-transparent transition-[width] duration-200 ease-linear',
+            open ? 'md:w-[calc(100%-var(--sidebar-width))]' : 'md:w-full',
+            'w-full'
           )}
-        </div>
+        >
+          <div>
+            {(!open || isMobile) && (
+              <SidebarTrigger className="animate-fade-in" />
+            )}
+          </div>
 
-        {!isAuthPage && (
           <div className="flex items-center gap-2">
             {user ? (
               <UserMenu
@@ -58,8 +58,8 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
               />
             )}
           </div>
-        )}
-      </header>
+        </header>
+      )}
 
       {isRootPage && (
         <FeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />
