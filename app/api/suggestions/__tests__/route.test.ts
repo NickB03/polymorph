@@ -18,6 +18,10 @@ vi.mock('@/lib/rate-limit/redis', () => ({
   getRedis: (...args: unknown[]) => mockGetRedis(...args)
 }))
 
+vi.mock('@/lib/utils/telemetry', () => ({
+  flushTraces: vi.fn()
+}))
+
 import { GET } from '../route'
 
 describe('GET /api/suggestions', () => {

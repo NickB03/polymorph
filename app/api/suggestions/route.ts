@@ -4,6 +4,7 @@ import { generateTrendingSuggestions } from '@/lib/agents/generate-trending-sugg
 import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
 import { getRedis } from '@/lib/rate-limit/redis'
 import type { SuggestionCategory } from '@/lib/types'
+import { flushTraces } from '@/lib/utils/telemetry'
 
 export const maxDuration = 60
 
@@ -144,5 +145,7 @@ export async function GET() {
       'default',
       'fresh-generated'
     )
+  } finally {
+    await flushTraces()
   }
 }
