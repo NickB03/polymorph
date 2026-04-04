@@ -41,6 +41,14 @@ const runMigrations = async () => {
     await migrate(db, { migrationsFolder: 'drizzle' })
     console.log('Migrations completed successfully')
   } catch (error) {
+    // In Vercel preview builds, migration failures are non-fatal — the
+    // production deploy handles migrations, and preview env vars may
+    // have stale credentials after a password rotation.
+    if (process.env.VERCEL_ENV === 'preview') {
+      console.warn('Migration failed in preview build (non-fatal):', error)
+      await sql.end()
+      process.exit(0)
+    }
     console.error('Migration failed:', error)
     process.exit(1)
   }
