@@ -8,6 +8,8 @@ export interface EvalsConfig {
   phoenixHost: string
   phoenixApiKey: string
   judgeModel: string
+  judgeBaseUrl?: string
+  judgeApiKey?: string
   sampleSize: number
   lookbackHours: number
   databaseSslDisabled: boolean
@@ -123,6 +125,8 @@ export function createConfig(
     phoenixHost: required(env, 'PHOENIX_HOST'),
     phoenixApiKey: required(env, 'PHOENIX_API_KEY'),
     judgeModel: env.JUDGE_MODEL ?? 'gpt-4o-mini',
+    judgeBaseUrl: env.JUDGE_BASE_URL?.trim(),
+    judgeApiKey: env.JUDGE_API_KEY?.trim(),
     sampleSize: validInt(env.SAMPLE_SIZE, 50),
     lookbackHours: validInt(env.LOOKBACK_HOURS, 6),
     databaseSslDisabled: env.DATABASE_SSL_DISABLED === 'true',

@@ -1,5 +1,3 @@
-import { openai } from '@ai-sdk/openai'
-
 import { config } from '../config'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
@@ -11,7 +9,8 @@ import {
   buildDatasetExamples,
   buildExperimentEvaluators,
   buildExperimentTask,
-  createDatasetAndExperiment
+  createDatasetAndExperiment,
+  createJudgeModel
 } from './shared'
 
 export function formatContext(sample: ChatSample): string {
@@ -73,7 +72,7 @@ export async function runTrafficMonitorSuite() {
   }))
 
   const examples = buildDatasetExamples(cases, results)
-  const model = openai(config.judgeModel)
+  const model = createJudgeModel()
   const evaluators = buildExperimentEvaluators(
     createDeterministicPrecheckEvaluator,
     createFaithfulnessExperimentEvaluator,
