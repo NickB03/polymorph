@@ -4,6 +4,9 @@ import { generateTrendingSuggestions } from '@/lib/agents/generate-trending-sugg
 import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
 import { getRedis } from '@/lib/rate-limit/redis'
 import type { SuggestionCategory } from '@/lib/types'
+import { flushTraces } from '@/lib/utils/telemetry'
+
+export const maxDuration = 60
 
 const CACHE_KEY = 'trending:suggestions'
 const CACHE_TTL = 14400 // 4 hours in seconds
@@ -14,6 +17,9 @@ const LOCK_KEY = 'trending:suggestions:lock'
 const LOCK_TTL = 60 // 60 seconds — prevents stale locks if generation crashes
 const LOCK_RETRY_DELAY_MS = 500
 const LOCK_MAX_RETRIES = 6
+
+// Stale-while-revalidate window for CDN edge caching (Vercel)
+const CDN_SWR_WINDOW = 3600 // 1 hour
 
 type SuggestionsResponseSource =
   | 'cache'
@@ -30,9 +36,13 @@ function toSuggestionsResponse(
   serveMode: SuggestionsServeMode,
   ttlSeconds?: number
 ) {
+  const cdnTtl = source === 'default' ? FALLBACK_CACHE_TTL : CACHE_TTL
+
   const headers = new Headers({
     'x-suggestions-source': source,
-    'x-suggestions-serve-mode': serveMode
+    'x-suggestions-serve-mode': serveMode,
+    'CDN-Cache-Control': `public, s-maxage=${cdnTtl}, stale-while-revalidate=${CDN_SWR_WINDOW}`,
+    'Cache-Control': `public, max-age=0, s-maxage=${cdnTtl}, stale-while-revalidate=${CDN_SWR_WINDOW}`
   })
 
   if (typeof ttlSeconds === 'number') {
@@ -135,5 +145,7 @@ export async function GET() {
       'default',
       'fresh-generated'
     )
+  } finally {
+    await flushTraces()
   }
 }

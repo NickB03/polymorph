@@ -34,7 +34,7 @@ export default function GuestMenu({ onFeedbackClick }: GuestMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-6 w-6">
+        <Button variant="ghost" size="icon" className="rounded-full">
           <Settings2 className="h-4 w-4" />
           <span className="sr-only">Open menu</span>
         </Button>

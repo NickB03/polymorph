@@ -19,7 +19,7 @@ describe('createConfig', () => {
     expect(config.evalRunMode).toBe('capability')
   })
 
-  it('defaults judgeModel to gpt-4o-mini', async () => {
+  it('defaults judgeModel to google/gemini-3.1-flash-lite-preview', async () => {
     vi.stubEnv('DATABASE_URL', 'postgresql://db')
     vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
     vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
@@ -29,7 +29,7 @@ describe('createConfig', () => {
     const { createConfig } = await import('./config')
     const config = createConfig()
 
-    expect(config.judgeModel).toBe('qwen/qwen3.6-plus:free')
+    expect(config.judgeModel).toBe('google/gemini-3.1-flash-lite-preview')
   })
 
   it('parses eval runner settings and defaults', async () => {
@@ -63,6 +63,18 @@ describe('createConfig', () => {
     const { createConfig } = await import('./config')
 
     expect(() => createConfig()).toThrow('EVAL_RUNNER_URL')
+  })
+
+  it('requires EVAL_RUNNER_SECRET for capability mode', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUN_MODE', 'capability')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+
+    const { createConfig } = await import('./config')
+
+    expect(() => createConfig()).toThrow('EVAL_RUNNER_SECRET')
   })
 
   it('requires app auth settings for smoke mode', async () => {

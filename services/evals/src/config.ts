@@ -124,7 +124,7 @@ export function createConfig(
     databaseUrl: required(env, 'DATABASE_URL'),
     phoenixHost: required(env, 'PHOENIX_HOST'),
     phoenixApiKey: required(env, 'PHOENIX_API_KEY'),
-    judgeModel: env.JUDGE_MODEL ?? 'qwen/qwen3.6-plus:free',
+    judgeModel: env.JUDGE_MODEL ?? 'google/gemini-3.1-flash-lite-preview',
     judgeBaseUrl: env.JUDGE_BASE_URL?.trim() || 'https://openrouter.ai/api/v1',
     judgeApiKey: env.JUDGE_API_KEY?.trim(),
     sampleSize: validInt(env.SAMPLE_SIZE, 50),

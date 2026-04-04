@@ -131,7 +131,7 @@ export const UserTextSection: React.FC<UserTextSectionProps> = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full h-7 w-7"
+                className="rounded-full"
                 onClick={handleEditClick}
                 aria-label="Edit message"
               >

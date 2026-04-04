@@ -174,9 +174,7 @@ const SidebarProvider = React.forwardRef<
             }
             className={cn(
               'group/sidebar-wrapper flex h-[100dvh] w-full has-data-[variant=inset]:bg-sidebar',
-              // Prevent flash during hydration
-              !isHydrated && 'opacity-0',
-              isHydrated && 'opacity-100 transition-opacity duration-150',
+              isHydrated && 'transition-opacity duration-150',
               className
             )}
             ref={ref}
@@ -234,7 +232,7 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+            className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground"
             style={
               {
                 '--sidebar-width': SIDEBAR_WIDTH_MOBILE
@@ -311,7 +309,7 @@ const SidebarTrigger = React.forwardRef<
       data-sidebar="trigger"
       variant="ghost"
       size="icon"
-      className={cn('size-6', className)}
+      className={cn('rounded-full', className)}
       onClick={event => {
         onClick?.(event)
         toggleSidebar()

@@ -18,6 +18,10 @@ vi.mock('@/lib/rate-limit/redis', () => ({
   getRedis: (...args: unknown[]) => mockGetRedis(...args)
 }))
 
+vi.mock('@/lib/utils/telemetry', () => ({
+  flushTraces: vi.fn()
+}))
+
 import { GET } from '../route'
 
 describe('GET /api/suggestions', () => {
@@ -45,6 +49,7 @@ describe('GET /api/suggestions', () => {
     expect(response.headers.get('x-suggestions-serve-mode')).toBe(
       'primary-cache'
     )
+    expect(response.headers.get('cache-control')).toContain('s-maxage=14400')
     expect(mockGenerateTrendingSuggestions).not.toHaveBeenCalled()
   })
 
@@ -64,6 +69,10 @@ describe('GET /api/suggestions', () => {
       'fresh-generated'
     )
     expect(response.headers.get('x-suggestions-cache-ttl')).toBe('14400')
+    expect(response.headers.get('cache-control')).toContain('s-maxage=14400')
+    expect(response.headers.get('cache-control')).toContain(
+      'stale-while-revalidate=3600'
+    )
     expect(mockRedisSet).toHaveBeenCalledWith(
       'trending:suggestions',
       DEFAULT_SUGGESTIONS,
@@ -105,6 +114,7 @@ describe('GET /api/suggestions', () => {
     expect(response.headers.get('x-suggestions-source')).toBe('default')
     expect(response.headers.get('x-suggestions-serve-mode')).toBe('stale-cache')
     expect(response.headers.get('x-suggestions-cache-ttl')).toBe('900')
+    expect(response.headers.get('cache-control')).toContain('s-maxage=900')
     expect(mockRedisSet).toHaveBeenCalledWith('trending:suggestions', stale, {
       ex: 900
     })
@@ -113,5 +123,20 @@ describe('GET /api/suggestions', () => {
       expect.anything(),
       expect.anything()
     )
+  })
+
+  it('sets short CDN TTL when all providers fail without Redis', async () => {
+    mockGetRedis.mockReturnValue(null)
+    mockGenerateTrendingSuggestions.mockResolvedValue({
+      suggestions: DEFAULT_SUGGESTIONS,
+      source: 'default'
+    })
+
+    const response = await GET()
+    const json = await response.json()
+
+    expect(json).toEqual(DEFAULT_SUGGESTIONS)
+    expect(response.headers.get('x-suggestions-source')).toBe('default')
+    expect(response.headers.get('cache-control')).toContain('s-maxage=900')
   })
 })
