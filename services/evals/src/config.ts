@@ -24,6 +24,7 @@ export interface EvalsConfig {
   smokeEnabled: boolean
   smokeCaseCount: number
   smokeTimeoutMs: number
+  scoreThreshold: number
 }
 
 export interface CreateConfigOptions {
@@ -39,6 +40,12 @@ function required(env: NodeJS.ProcessEnv, name: string): string {
 function validInt(raw: string | undefined, fallback: number): number {
   if (!raw) return fallback
   const n = parseInt(raw, 10)
+  return Number.isNaN(n) ? fallback : n
+}
+
+function validFloat(raw: string | undefined, fallback: number): number {
+  if (!raw) return fallback
+  const n = parseFloat(raw)
   return Number.isNaN(n) ? fallback : n
 }
 
@@ -139,7 +146,8 @@ export function createConfig(
     seedUserPassword,
     smokeEnabled,
     smokeCaseCount: validInt(env.SMOKE_CASE_COUNT, 1),
-    smokeTimeoutMs: validInt(env.SMOKE_TIMEOUT_MS, 300_000)
+    smokeTimeoutMs: validInt(env.SMOKE_TIMEOUT_MS, 300_000),
+    scoreThreshold: validFloat(env.SCORE_THRESHOLD, 0.8)
   }
 }
 

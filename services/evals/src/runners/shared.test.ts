@@ -167,6 +167,95 @@ describe('createJudgeModel', () => {
   })
 })
 
+describe('checkExperimentThresholds', () => {
+  it('passes when all evaluations score above 0.5', async () => {
+    const { checkExperimentThresholds } = await import('./shared')
+    const result = checkExperimentThresholds(
+      {
+        evaluationRuns: [
+          { name: 'quality', error: null, result: { score: 1, label: 'pass' } },
+          {
+            name: 'faithfulness',
+            error: null,
+            result: { score: 0.8, label: 'faithful' }
+          }
+        ]
+      },
+      0.8
+    )
+    expect(result.passed).toBe(true)
+    expect(result.passRate).toBe(1)
+  })
+
+  it('fails when pass rate drops below threshold', async () => {
+    const { checkExperimentThresholds } = await import('./shared')
+    const result = checkExperimentThresholds(
+      {
+        evaluationRuns: [
+          { name: 'quality', error: null, result: { score: 1, label: 'pass' } },
+          { name: 'quality', error: null, result: { score: 0, label: 'fail' } },
+          {
+            name: 'faithfulness',
+            error: null,
+            result: { score: 0, label: 'not_faithful' }
+          }
+        ]
+      },
+      0.8
+    )
+    expect(result.passed).toBe(false)
+    expect(result.passRate).toBeCloseTo(0.333, 2)
+    expect(result.failedEvaluators).toContain('quality')
+    expect(result.failedEvaluators).toContain('faithfulness')
+  })
+
+  it('treats errored evaluations as failures', async () => {
+    const { checkExperimentThresholds } = await import('./shared')
+    const result = checkExperimentThresholds(
+      {
+        evaluationRuns: [
+          { name: 'quality', error: 'timeout', result: null },
+          {
+            name: 'faithfulness',
+            error: null,
+            result: { score: 1, label: 'faithful' }
+          }
+        ]
+      },
+      0.8
+    )
+    expect(result.passed).toBe(false)
+    expect(result.passRate).toBe(0.5)
+    expect(result.failedEvaluators).toEqual(['quality'])
+  })
+
+  it('treats null scores as failures', async () => {
+    const { checkExperimentThresholds } = await import('./shared')
+    const result = checkExperimentThresholds(
+      {
+        evaluationRuns: [
+          {
+            name: 'faithfulness',
+            error: null,
+            result: { score: null, label: 'skipped' }
+          },
+          { name: 'quality', error: null, result: { score: 1, label: 'pass' } }
+        ]
+      },
+      0.8
+    )
+    expect(result.passed).toBe(false)
+    expect(result.passRate).toBe(0.5)
+  })
+
+  it('passes when there are no evaluation runs', async () => {
+    const { checkExperimentThresholds } = await import('./shared')
+    const result = checkExperimentThresholds({}, 0.8)
+    expect(result.passed).toBe(true)
+    expect(result.totalEvaluations).toBe(0)
+  })
+})
+
 describe('buildExperimentEvaluators', () => {
   it('wraps LLM evaluators with retry while leaving deterministic evaluator unwrapped', async () => {
     vi.useFakeTimers()

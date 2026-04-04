@@ -160,3 +160,60 @@ export async function createDatasetAndExperiment({
 export function formatCaseContext(result: EvalRunResult): string {
   return formatEvalContext(result)
 }
+
+export interface ThresholdResult {
+  passed: boolean
+  passRate: number
+  totalEvaluations: number
+  passedEvaluations: number
+  failedEvaluators: string[]
+}
+
+export function checkExperimentThresholds(
+  experiment: {
+    evaluationRuns?: Array<{
+      name: string
+      error: string | null
+      result: { score?: number | null; label?: string | null } | null
+    }>
+  },
+  threshold: number
+): ThresholdResult {
+  const runs = experiment.evaluationRuns ?? []
+  if (runs.length === 0) {
+    return {
+      passed: true,
+      passRate: 1,
+      totalEvaluations: 0,
+      passedEvaluations: 0,
+      failedEvaluators: []
+    }
+  }
+
+  let passed = 0
+  const failedByName = new Map<string, number>()
+
+  for (const run of runs) {
+    if (
+      run.error ||
+      !run.result ||
+      run.result.score == null ||
+      run.result.score < 0.5
+    ) {
+      const count = failedByName.get(run.name) ?? 0
+      failedByName.set(run.name, count + 1)
+    } else {
+      passed++
+    }
+  }
+
+  const passRate = passed / runs.length
+
+  return {
+    passed: passRate >= threshold,
+    passRate,
+    totalEvaluations: runs.length,
+    passedEvaluations: passed,
+    failedEvaluators: [...failedByName.keys()]
+  }
+}
