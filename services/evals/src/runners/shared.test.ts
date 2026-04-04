@@ -130,6 +130,16 @@ describe('buildDatasetExamples', () => {
   })
 })
 
+describe('buildTimestampedDatasetName', () => {
+  it('includes suite name and minute-precision timestamp', async () => {
+    const { buildTimestampedDatasetName } = await import('./shared')
+    const name = buildTimestampedDatasetName('traffic-monitor')
+    expect(name).toMatch(
+      /^polymorph-traffic-monitor-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/
+    )
+  })
+})
+
 describe('createJudgeModel', () => {
   beforeEach(() => {
     mockCreateOpenAI.mockClear()

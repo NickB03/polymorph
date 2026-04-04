@@ -1,6 +1,9 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { createClient } from '@arizeai/phoenix-client'
-import { createOrGetDataset } from '@arizeai/phoenix-client/datasets'
+import {
+  createDataset,
+  createOrGetDataset
+} from '@arizeai/phoenix-client/datasets'
 import { runExperiment } from '@arizeai/phoenix-client/experiments'
 
 import { config } from '../config'
@@ -27,6 +30,15 @@ export function buildTimestampedExperimentName(suite: string): string {
 
 export function buildStableDatasetName(suite: string): string {
   return `polymorph-${suite}-${getCorpusVersion()}`
+}
+
+export function buildTimestampedDatasetName(suite: string): string {
+  const timestamp = new Date()
+    .toISOString()
+    .slice(0, 16)
+    .replace('T', '-')
+    .replace(':', '-')
+  return `polymorph-${suite}-${timestamp}`
 }
 
 export function buildDatasetExamples(
@@ -111,18 +123,21 @@ export async function createDatasetAndExperiment({
   suite,
   examples,
   evaluators,
-  task
+  task,
+  datasetName: datasetNameOverride
 }: {
   suite: string
   examples: EvalDatasetExample[]
   evaluators: unknown[]
   task: (example: { output: EvalRunResult }) => Promise<EvalRunResult>
+  datasetName?: string
 }) {
   const phoenix = createPhoenixClient()
-  const datasetName = buildStableDatasetName(suite)
+  const datasetName = datasetNameOverride ?? buildStableDatasetName(suite)
   const experimentName = buildTimestampedExperimentName(suite)
+  const createFn = datasetNameOverride ? createDataset : createOrGetDataset
 
-  const { datasetId } = await createOrGetDataset({
+  const { datasetId } = await createFn({
     client: phoenix,
     name: datasetName,
     description: `Automated eval of ${examples.length} ${suite} cases from corpus ${getCorpusVersion()}`,
