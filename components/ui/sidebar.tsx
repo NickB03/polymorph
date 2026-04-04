@@ -309,7 +309,7 @@ const SidebarTrigger = React.forwardRef<
       data-sidebar="trigger"
       variant="ghost"
       size="icon"
-      className={cn('h-11 w-11 rounded-full', className)}
+      className={cn('rounded-full', className)}
       onClick={event => {
         onClick?.(event)
         toggleSidebar()

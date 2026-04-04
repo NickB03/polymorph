@@ -17,11 +17,8 @@ const LOCK_TTL = 60 // 60 seconds — prevents stale locks if generation crashes
 const LOCK_RETRY_DELAY_MS = 500
 const LOCK_MAX_RETRIES = 6
 
-// CDN cache TTLs — Vercel edge caches the response globally so all users
-// after the first get an instant response without hitting the origin function.
-const CDN_CACHE_TTL = 14400 // 4 hours for dynamic suggestions
-const CDN_FALLBACK_CACHE_TTL = 900 // 15 minutes for static fallback
-const CDN_SWR_WINDOW = 3600 // 1 hour stale-while-revalidate grace period
+// Stale-while-revalidate window for CDN edge caching (Vercel)
+const CDN_SWR_WINDOW = 3600 // 1 hour
 
 type SuggestionsResponseSource =
   | 'cache'
@@ -38,7 +35,7 @@ function toSuggestionsResponse(
   serveMode: SuggestionsServeMode,
   ttlSeconds?: number
 ) {
-  const cdnTtl = source === 'default' ? CDN_FALLBACK_CACHE_TTL : CDN_CACHE_TTL
+  const cdnTtl = source === 'default' ? FALLBACK_CACHE_TTL : CACHE_TTL
 
   const headers = new Headers({
     'x-suggestions-source': source,

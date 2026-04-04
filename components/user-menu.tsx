@@ -98,7 +98,7 @@ export default function UserMenu({ user, onFeedbackClick }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-11 w-11 rounded-full">
+        <Button variant="ghost" size="icon" className="relative rounded-full">
           <Avatar className="h-6 w-6">
             <AvatarImage src={avatarUrl} alt={userName} />
             <AvatarFallback>{getInitials(userName, user.email)}</AvatarFallback>
