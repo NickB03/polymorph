@@ -39,7 +39,6 @@ describe('createConfig', () => {
     vi.stubEnv('EVAL_RUN_MODE', 'capability')
     vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
     vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
-    vi.stubEnv('CORPUS_VERSION', 'v2')
 
     const { createConfig } = await import('./config')
     const config = createConfig()
@@ -47,7 +46,6 @@ describe('createConfig', () => {
     expect(config.evalRunMode).toBe('capability')
     expect(config.evalRunnerUrl).toBe('https://app.example.com')
     expect(config.evalRunnerSecret).toBe('secret')
-    expect(config.corpusVersion).toBe('v2')
     expect(config.appUrl).toBe('https://app.example.com')
     expect(config.smokeEnabled).toBe(true)
     expect(config.smokeCaseCount).toBe(1)

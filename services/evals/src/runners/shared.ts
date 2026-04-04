@@ -87,23 +87,14 @@ function wrapEvaluatorWithRetry(evaluator: {
 }
 
 export function buildExperimentEvaluators(
-  createDeterministicPrecheckEvaluator: (requirements: {
-    requiresTextAnswer: boolean
-    requiresCitations: boolean
-    allowsInteractiveOnly: boolean
-  }) => any,
+  createDeterministicPrecheckEvaluator: () => any,
   createFaithfulnessExperimentEvaluator: (model: any) => any,
   createRelevanceExperimentEvaluator: (model: any) => any,
   createResponseQualityExperimentEvaluator: (model: any) => any,
-  model: any,
-  requirements: {
-    requiresTextAnswer: boolean
-    requiresCitations: boolean
-    allowsInteractiveOnly: boolean
-  }
+  model: any
 ) {
   return [
-    createDeterministicPrecheckEvaluator(requirements),
+    createDeterministicPrecheckEvaluator(),
     wrapEvaluatorWithRetry(createFaithfulnessExperimentEvaluator(model)),
     wrapEvaluatorWithRetry(createRelevanceExperimentEvaluator(model)),
     wrapEvaluatorWithRetry(createResponseQualityExperimentEvaluator(model))

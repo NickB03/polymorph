@@ -3,25 +3,24 @@ import { asExperimentEvaluator } from '@arizeai/phoenix-client/experiments'
 import { normalizeEvalRunResult } from './eval-output'
 import type { EvalRunResult } from './types'
 
-export function createDeterministicPrecheckEvaluator({
-  requiresTextAnswer,
-  requiresCitations,
-  allowsInteractiveOnly
-}: {
-  requiresTextAnswer: boolean
-  requiresCitations: boolean
-  allowsInteractiveOnly: boolean
-}) {
+export function createDeterministicPrecheckEvaluator() {
   return asExperimentEvaluator({
     name: 'deterministic_prechecks',
     kind: 'CODE',
-    evaluate: async ({ output }) => {
+    evaluate: async ({
+      output,
+      metadata
+    }: {
+      output: unknown
+      metadata?: Record<string, unknown> | null
+    }) => {
       const result = normalizeEvalRunResult(output)
-      return evaluatePrechecks(result, {
-        requiresTextAnswer,
-        requiresCitations,
-        allowsInteractiveOnly
-      })
+      const requirements = {
+        requiresTextAnswer: metadata?.requiresTextAnswer !== false,
+        requiresCitations: metadata?.requiresCitations === true,
+        allowsInteractiveOnly: metadata?.allowsInteractiveOnly !== false
+      }
+      return evaluatePrechecks(result, requirements)
     }
   })
 }

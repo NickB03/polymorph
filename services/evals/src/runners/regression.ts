@@ -60,12 +60,7 @@ export async function runRegressionSuite() {
     createFaithfulnessExperimentEvaluator,
     createRelevanceExperimentEvaluator,
     createResponseQualityExperimentEvaluator,
-    model,
-    {
-      requiresTextAnswer: true,
-      requiresCitations: successCases.some(c => c.requiresCitations),
-      allowsInteractiveOnly: false
-    }
+    model
   )
 
   const { datasetName, experimentName, experiment } =
