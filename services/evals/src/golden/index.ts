@@ -1,3 +1,5 @@
+import type { EvalRunResult } from '../types'
+
 export interface GoldenExample {
   id: string
   query: string
@@ -13,6 +15,18 @@ export interface GoldenExample {
     faithfulness: { label: string; score: number } | null // null = expect skip
     relevance: { label: string; score: number } | null // null = expect skip
     response_quality: { label: string; score: number }
+  }
+}
+
+export function buildEvalOutput(example: GoldenExample): EvalRunResult {
+  return {
+    answerText: example.answer,
+    citations: example.citations,
+    searchResults: [],
+    toolNames: [],
+    usedInteractiveOnlyOutput: example.usedInteractiveOnlyOutput,
+    modelId: '',
+    durationMs: 0
   }
 }
 

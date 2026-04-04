@@ -4,7 +4,7 @@ import { createResponseQualityExperimentEvaluator } from '../evaluators/response
 import { evaluatePrechecks } from '../prechecks'
 import { createJudgeModel } from '../runners/shared'
 
-import { getGoldenExamples, type GoldenExample } from './index'
+import { buildEvalOutput, getGoldenExamples, type GoldenExample } from './index'
 
 interface ValidationResult {
   evaluator: string
@@ -37,44 +37,44 @@ function classifyOutcome(
   return 'fn'
 }
 
+function tally(
+  evaluator: string,
+  total: number,
+  counts: { correct: number; tp: number; tn: number; fp: number; fn: number }
+): ValidationResult {
+  return {
+    evaluator,
+    total,
+    correct: counts.correct,
+    accuracy: total > 0 ? counts.correct / total : 0,
+    truePositives: counts.tp,
+    falseNegatives: counts.fn,
+    trueNegatives: counts.tn,
+    falsePositives: counts.fp,
+    tpr: counts.tp + counts.fn > 0 ? counts.tp / (counts.tp + counts.fn) : 0,
+    tnr: counts.tn + counts.fp > 0 ? counts.tn / (counts.tn + counts.fp) : 0
+  }
+}
+
 async function validatePrechecks(
   examples: GoldenExample[]
 ): Promise<ValidationResult> {
-  let correct = 0
-  let tp = 0
-  let tn = 0
-  let fp = 0
-  let fn = 0
+  const counts = { correct: 0, tp: 0, tn: 0, fp: 0, fn: 0 }
 
   for (const example of examples) {
-    const result = evaluatePrechecks(
-      {
-        answerText: example.answer,
-        citations: example.citations,
-        searchResults: [],
-        toolNames: [],
-        usedInteractiveOnlyOutput: example.usedInteractiveOnlyOutput,
-        modelId: '',
-        durationMs: 0
-      },
-      {
-        requiresTextAnswer: example.requiresTextAnswer,
-        requiresCitations: example.requiresCitations,
-        allowsInteractiveOnly: example.allowsInteractiveOnly
-      }
-    )
+    const result = evaluatePrechecks(buildEvalOutput(example), {
+      requiresTextAnswer: example.requiresTextAnswer,
+      requiresCitations: example.requiresCitations,
+      allowsInteractiveOnly: example.allowsInteractiveOnly
+    })
 
-    const labelMatch = result.label === example.expected.prechecks.label
-    const scoreMatch = result.score === example.expected.prechecks.score
-    const isCorrect = labelMatch && scoreMatch
-
-    if (isCorrect) correct++
+    const isCorrect =
+      result.label === example.expected.prechecks.label &&
+      result.score === example.expected.prechecks.score
+    if (isCorrect) counts.correct++
 
     const outcome = classifyOutcome(example.expected.prechecks, result)
-    if (outcome === 'tp') tp++
-    else if (outcome === 'tn') tn++
-    else if (outcome === 'fp') fp++
-    else fn++
+    counts[outcome]++
 
     const status = isCorrect ? 'PASS' : 'FAIL'
     console.log(
@@ -82,19 +82,7 @@ async function validatePrechecks(
     )
   }
 
-  const total = examples.length
-  return {
-    evaluator: 'prechecks',
-    total,
-    correct,
-    accuracy: total > 0 ? correct / total : 0,
-    truePositives: tp,
-    falseNegatives: fn,
-    trueNegatives: tn,
-    falsePositives: fp,
-    tpr: tp + fn > 0 ? tp / (tp + fn) : 0,
-    tnr: tn + fp > 0 ? tn / (tn + fp) : 0
-  }
+  return tally('prechecks', examples.length, counts)
 }
 
 async function validateLLMEvaluator(
@@ -102,11 +90,7 @@ async function validateLLMEvaluator(
   examples: GoldenExample[],
   runEvaluator: (example: GoldenExample) => Promise<EvaluatorResult>
 ): Promise<ValidationResult> {
-  let correct = 0
-  let tp = 0
-  let tn = 0
-  let fp = 0
-  let fn = 0
+  const counts = { correct: 0, tp: 0, tn: 0, fp: 0, fn: 0 }
   let total = 0
 
   for (const example of examples) {
@@ -116,7 +100,6 @@ async function validateLLMEvaluator(
       score: number
     } | null
 
-    // Skip examples where we expect a skip/null
     if (expected === null) {
       console.log(`  [SKIP] ${example.id}: expected skip`)
       continue
@@ -127,42 +110,25 @@ async function validateLLMEvaluator(
     try {
       const result = await runEvaluator(example)
 
-      const labelMatch = result.label === expected.label
-      const scoreMatch = result.score === expected.score
-      const isCorrect = labelMatch && scoreMatch
+      const isCorrect =
+        result.label === expected.label && result.score === expected.score
+      if (isCorrect) counts.correct++
 
-      if (isCorrect) correct++
-
-      const outcome = classifyOutcome(expected, result)
-      if (outcome === 'tp') tp++
-      else if (outcome === 'tn') tn++
-      else if (outcome === 'fp') fp++
-      else fn++
+      counts[classifyOutcome(expected, result)]++
 
       const status = isCorrect ? 'PASS' : 'FAIL'
       console.log(
         `  [${status}] ${example.id}: expected=${expected.label}/${expected.score} actual=${result.label}/${result.score}`
       )
     } catch (error) {
-      fn++
+      counts.fn++
       console.log(
         `  [ERROR] ${example.id}: ${error instanceof Error ? error.message : String(error)}`
       )
     }
   }
 
-  return {
-    evaluator: evaluatorName,
-    total,
-    correct,
-    accuracy: total > 0 ? correct / total : 0,
-    truePositives: tp,
-    falseNegatives: fn,
-    trueNegatives: tn,
-    falsePositives: fp,
-    tpr: tp + fn > 0 ? tp / (tp + fn) : 0,
-    tnr: tn + fp > 0 ? tn / (tn + fp) : 0
-  }
+  return tally(evaluatorName, total, counts)
 }
 
 export async function validateEvaluators(): Promise<ValidationResult[]> {
@@ -189,66 +155,28 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
   const relevanceEval = createRelevanceExperimentEvaluator(model)
   const qualityEval = createResponseQualityExperimentEvaluator(model)
 
-  // 2. Validate faithfulness
-  console.log('\n=== Faithfulness (LLM) ===')
-  results.push(
-    await validateLLMEvaluator('faithfulness', examples, async example => {
-      const evalResult = await faithfulnessEval.evaluate({
+  function runEval(evaluator: {
+    evaluate: (args: any) => any
+  }): (example: GoldenExample) => Promise<EvaluatorResult> {
+    return async example => {
+      const evalResult = await evaluator.evaluate({
         input: { query: example.query, context: example.context },
-        output: {
-          answerText: example.answer,
-          citations: example.citations,
-          searchResults: [],
-          toolNames: [],
-          usedInteractiveOnlyOutput: example.usedInteractiveOnlyOutput,
-          modelId: '',
-          durationMs: 0
-        }
+        output: buildEvalOutput(example)
       })
       return evalResult as EvaluatorResult
-    })
-  )
+    }
+  }
 
-  // 3. Validate relevance
-  console.log('\n=== Relevance (LLM) ===')
-  results.push(
-    await validateLLMEvaluator('relevance', examples, async example => {
-      const evalResult = await relevanceEval.evaluate({
-        input: { query: example.query, context: example.context },
-        output: {
-          answerText: example.answer,
-          citations: example.citations,
-          searchResults: [],
-          toolNames: [],
-          usedInteractiveOnlyOutput: example.usedInteractiveOnlyOutput,
-          modelId: '',
-          durationMs: 0
-        }
-      })
-      return evalResult as EvaluatorResult
-    })
-  )
+  const [faithfulness, relevance, responseQuality] = await Promise.all([
+    (console.log('\n=== Faithfulness (LLM) ==='),
+    validateLLMEvaluator('faithfulness', examples, runEval(faithfulnessEval))),
+    (console.log('\n=== Relevance (LLM) ==='),
+    validateLLMEvaluator('relevance', examples, runEval(relevanceEval))),
+    (console.log('\n=== Response Quality (LLM) ==='),
+    validateLLMEvaluator('response_quality', examples, runEval(qualityEval)))
+  ])
 
-  // 4. Validate response quality
-  console.log('\n=== Response Quality (LLM) ===')
-  results.push(
-    await validateLLMEvaluator('response_quality', examples, async example => {
-      const evalResult = await qualityEval.evaluate({
-        input: { query: example.query, context: example.context },
-        output: {
-          answerText: example.answer,
-          citations: example.citations,
-          searchResults: [],
-          toolNames: [],
-          usedInteractiveOnlyOutput: example.usedInteractiveOnlyOutput,
-          modelId: '',
-          durationMs: 0
-        }
-      })
-      return evalResult as EvaluatorResult
-    })
-  )
-
+  results.push(faithfulness, relevance, responseQuality)
   return results
 }
 
