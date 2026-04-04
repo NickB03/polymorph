@@ -63,14 +63,40 @@ async function authenticateSmokeUser(): Promise<CookieStore> {
   return cookieStore
 }
 
-async function consumeSse(response: Response): Promise<void> {
+async function consumeSse(response: Response): Promise<string> {
   const reader = response.body?.getReader()
-  if (!reader) return
+  if (!reader) return ''
+
+  const decoder = new TextDecoder()
+  let text = ''
+  let buffer = ''
 
   while (true) {
-    const { done } = await reader.read()
+    const { done, value } = await reader.read()
     if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const messages = buffer.split('\n\n')
+    buffer = messages.pop() ?? ''
+
+    for (const message of messages) {
+      const line = message.trim()
+      if (!line.startsWith('data: ')) continue
+      const payload = line.slice(6)
+      if (payload === '[DONE]') continue
+
+      try {
+        const chunk = JSON.parse(payload)
+        if (chunk.type === 'text-delta' && chunk.delta) {
+          text += chunk.delta
+        }
+      } catch {
+        // skip malformed chunks
+      }
+    }
   }
+
+  return text
 }
 
 export async function runSmokeSuite() {
@@ -136,7 +162,12 @@ export async function runSmokeSuite() {
         )
       }
 
-      await consumeSse(response)
+      const responseText = await consumeSse(response)
+      if (!responseText.trim()) {
+        throw new Error(
+          `Smoke case ${caseSpec.id} returned 200 but streamed no text content`
+        )
+      }
       succeeded += 1
       console.log(`[evals] Smoke case succeeded: ${caseSpec.id}`)
     } catch (error) {

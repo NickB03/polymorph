@@ -63,8 +63,17 @@ describe('runSmokeSuite', () => {
       }
     }))
 
+    const sseStream = [
+      'data: {"type":"start","messageId":"test-msg"}\n\n',
+      'data: {"type":"text-start","id":"text-1"}\n\n',
+      'data: {"type":"text-delta","id":"text-1","delta":"Hello "}\n\n',
+      'data: {"type":"text-delta","id":"text-1","delta":"world"}\n\n',
+      'data: {"type":"text-end","id":"text-1"}\n\n',
+      'data: [DONE]\n\n'
+    ].join('')
+
     mockFetch.mockResolvedValueOnce(
-      new Response('data: ok\n\n', {
+      new Response(sseStream, {
         status: 200,
         headers: { 'content-type': 'text/event-stream' }
       })
@@ -88,6 +97,40 @@ describe('runSmokeSuite', () => {
     )
     expect((init.headers as Record<string, string>).cookie).toContain(
       'modelType=speed'
+    )
+  })
+
+  it('fails when response streams no text content', async () => {
+    mockCreateBrowserClient.mockImplementation((_url, _key, options) => ({
+      auth: {
+        signInWithPassword: vi.fn(async () => {
+          options.cookies.setAll([
+            {
+              name: 'sb-project-auth-token',
+              value: 'session-cookie',
+              options: {}
+            }
+          ])
+
+          return { error: null }
+        })
+      }
+    }))
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        'data: {"type":"start","messageId":"test-msg"}\n\ndata: [DONE]\n\n',
+        { status: 200, headers: { 'content-type': 'text/event-stream' } }
+      )
+    )
+
+    const { runSmokeSuite } = await import('./smoke')
+    const consoleSpy = vi.spyOn(console, 'warn')
+    await runSmokeSuite()
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Smoke case failed'),
+      expect.stringContaining('no text content')
     )
   })
 

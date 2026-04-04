@@ -11,6 +11,7 @@ import {
   buildDatasetExamples,
   buildExperimentEvaluators,
   buildExperimentTask,
+  checkExperimentThresholds,
   createDatasetAndExperiment,
   createJudgeModel
 } from './shared'
@@ -74,4 +75,17 @@ export async function runRegressionSuite() {
   console.log(`[evals] Regression dataset: ${datasetName}`)
   console.log(`[evals] Regression experiment: ${experimentName}`)
   console.log(`[evals] Regression experiment ID: ${experiment.id}`)
+
+  const thresholds = checkExperimentThresholds(
+    experiment,
+    config.scoreThreshold
+  )
+  console.log(
+    `[evals] Regression pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
+  )
+  if (!thresholds.passed) {
+    throw new Error(
+      `[evals] Regression scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(config.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
+    )
+  }
 }

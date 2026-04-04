@@ -11,6 +11,7 @@ import {
   buildExperimentEvaluators,
   buildExperimentTask,
   buildTimestampedDatasetName,
+  checkExperimentThresholds,
   createDatasetAndExperiment,
   createJudgeModel
 } from './shared'
@@ -79,4 +80,17 @@ export async function runTrafficMonitorSuite() {
   console.log(`[evals] Traffic monitor dataset: ${datasetName}`)
   console.log(`[evals] Traffic monitor experiment: ${experimentName}`)
   console.log(`[evals] Traffic monitor experiment ID: ${experiment.id}`)
+
+  const thresholds = checkExperimentThresholds(
+    experiment,
+    config.scoreThreshold
+  )
+  console.log(
+    `[evals] Traffic monitor pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
+  )
+  if (!thresholds.passed) {
+    console.warn(
+      `[evals] Traffic monitor scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(config.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
+    )
+  }
 }
