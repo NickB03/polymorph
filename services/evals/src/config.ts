@@ -21,7 +21,6 @@ export interface EvalsConfig {
   supabaseAnonKey?: string
   seedUserEmail?: string
   seedUserPassword?: string
-  corpusVersion: string
   smokeEnabled: boolean
   smokeCaseCount: number
   smokeTimeoutMs: number
@@ -138,7 +137,6 @@ export function createConfig(
     supabaseAnonKey,
     seedUserEmail,
     seedUserPassword,
-    corpusVersion: env.CORPUS_VERSION?.trim() || 'v1',
     smokeEnabled,
     smokeCaseCount: validInt(env.SMOKE_CASE_COUNT, 1),
     smokeTimeoutMs: validInt(env.SMOKE_TIMEOUT_MS, 300_000)

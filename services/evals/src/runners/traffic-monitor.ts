@@ -63,12 +63,7 @@ export async function runTrafficMonitorSuite() {
     createFaithfulnessExperimentEvaluator,
     createRelevanceExperimentEvaluator,
     createResponseQualityExperimentEvaluator,
-    model,
-    {
-      requiresTextAnswer: true,
-      requiresCitations: samples.some(sample => sample.citations.length > 0),
-      allowsInteractiveOnly: false
-    }
+    model
   )
 
   const { datasetName, experimentName, experiment } =

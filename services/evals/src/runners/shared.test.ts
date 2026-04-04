@@ -187,12 +187,7 @@ describe('buildExperimentEvaluators', () => {
         kind: 'LLM',
         evaluate: () => ({ label: 'ok', score: 1 })
       }),
-      {},
-      {
-        requiresTextAnswer: true,
-        requiresCitations: false,
-        allowsInteractiveOnly: false
-      }
+      {}
     )
 
     expect(evaluators).toHaveLength(4)

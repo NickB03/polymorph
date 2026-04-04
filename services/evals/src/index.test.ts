@@ -38,7 +38,6 @@ vi.mock('./config', () => ({
     evalRunMode: 'traffic-monitor',
     evalRunnerUrl: 'https://example.com',
     evalRunnerSecret: 'secret',
-    corpusVersion: 'v1',
     smokeEnabled: true,
     smokeCaseCount: 1
   }
