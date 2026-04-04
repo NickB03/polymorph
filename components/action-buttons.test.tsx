@@ -6,6 +6,7 @@ import { ActionButtons } from './action-buttons'
 vi.mock('next/image', () => ({
   default: (props: Record<string, unknown>) => {
     const { fill, ...rest } = props
+    // eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element
     return <img data-fill={fill ? 'true' : undefined} {...rest} />
   }
 }))
