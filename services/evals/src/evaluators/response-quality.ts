@@ -16,16 +16,15 @@ const PROMPT_TEMPLATE = `You are an evaluator assessing the overall quality of a
 
 <answer>{{answer}}</answer>
 
-Rate the response quality on these criteria:
+Evaluate the response on these criteria:
 1. Does it directly answer the user's question?
 2. Is it well-organized and easy to read?
 3. Does it provide sufficient depth without unnecessary padding?
 4. Does it use the available context effectively?
 
-Ratings:
-- "excellent": Comprehensive, well-structured, directly answers the question
-- "good": Adequately answers the question with minor issues
-- "poor": Fails to answer the question, is confusing, or has significant issues`
+Classifications:
+- "pass": The response satisfactorily addresses all criteria — it answers the question, is readable, has appropriate depth, and uses context well
+- "fail": The response fails one or more criteria significantly — it misses the question, is confusing, lacks substance, or ignores available context`
 
 export function createResponseQualityExperimentEvaluator(model: LanguageModel) {
   const evaluator = createClassificationEvaluator<{
@@ -36,7 +35,7 @@ export function createResponseQualityExperimentEvaluator(model: LanguageModel) {
     name: 'response_quality',
     model,
     promptTemplate: PROMPT_TEMPLATE,
-    choices: { excellent: 1, good: 0.7, poor: 0 }
+    choices: { pass: 1, fail: 0 }
   })
 
   return asExperimentEvaluator({

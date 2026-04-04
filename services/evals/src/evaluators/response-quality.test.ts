@@ -55,7 +55,7 @@ describe('response quality experiment evaluator', () => {
   it('maps fields to inner evaluator', async () => {
     mockEvaluate.mockResolvedValue({
       score: 1,
-      label: 'excellent',
+      label: 'pass',
       explanation: 'comprehensive and well-structured'
     })
     const evaluator = createResponseQualityExperimentEvaluator(mockModel)
@@ -73,16 +73,16 @@ describe('response quality experiment evaluator', () => {
     })
     expect(result).toEqual({
       score: 1,
-      label: 'excellent',
+      label: 'pass',
       explanation: 'comprehensive and well-structured'
     })
   })
 
   it('passes empty context when context is missing', async () => {
     mockEvaluate.mockResolvedValue({
-      score: 0.7,
-      label: 'good',
-      explanation: 'adequate without context'
+      score: 0,
+      label: 'fail',
+      explanation: 'lacks substance without context'
     })
     const evaluator = createResponseQualityExperimentEvaluator(mockModel)
     await evaluator.evaluate({

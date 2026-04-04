@@ -10,6 +10,7 @@ import {
   buildDatasetExamples,
   buildExperimentEvaluators,
   buildExperimentTask,
+  buildTimestampedDatasetName,
   createDatasetAndExperiment,
   createJudgeModel
 } from './shared'
@@ -71,7 +72,8 @@ export async function runTrafficMonitorSuite() {
       suite: 'traffic-monitor',
       examples,
       evaluators,
-      task: buildExperimentTask()
+      task: buildExperimentTask(),
+      datasetName: buildTimestampedDatasetName('traffic-monitor')
     })
 
   console.log(`[evals] Traffic monitor dataset: ${datasetName}`)
