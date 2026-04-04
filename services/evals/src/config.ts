@@ -124,7 +124,7 @@ export function createConfig(
     databaseUrl: required(env, 'DATABASE_URL'),
     phoenixHost: required(env, 'PHOENIX_HOST'),
     phoenixApiKey: required(env, 'PHOENIX_API_KEY'),
-    judgeModel: env.JUDGE_MODEL ?? 'gpt-4o-mini',
+    judgeModel: env.JUDGE_MODEL ?? 'openai/gpt-4o-mini',
     judgeBaseUrl: env.JUDGE_BASE_URL?.trim(),
     judgeApiKey: env.JUDGE_API_KEY?.trim(),
     sampleSize: validInt(env.SAMPLE_SIZE, 50),

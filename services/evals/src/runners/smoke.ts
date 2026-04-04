@@ -9,6 +9,12 @@ type CookieValue = {
   value: string
 }
 
+type CookieToSet = {
+  name: string
+  value: string
+  options?: Record<string, unknown>
+}
+
 type CookieStore = Map<string, string>
 
 function createCookieStore(): CookieStore {
@@ -24,7 +30,7 @@ function createCookieClient(cookieStore: CookieStore) {
           value
         }))
       },
-      setAll(cookies) {
+      setAll(cookies: CookieToSet[]) {
         for (const cookie of cookies) {
           if (!cookie.value) {
             cookieStore.delete(cookie.name)

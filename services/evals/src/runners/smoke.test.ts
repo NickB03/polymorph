@@ -38,7 +38,7 @@ vi.mock('../corpus', () => ({
   ])
 }))
 
-globalThis.fetch = mockFetch as typeof fetch
+globalThis.fetch = mockFetch as unknown as typeof fetch
 
 describe('runSmokeSuite', () => {
   beforeEach(() => {

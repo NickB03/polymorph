@@ -1,4 +1,4 @@
-import { createOpenAI } from '@ai-sdk/openai'
+import { gateway } from '@ai-sdk/gateway'
 import { createClient } from '@arizeai/phoenix-client'
 import { createOrGetDataset } from '@arizeai/phoenix-client/datasets'
 import { runExperiment } from '@arizeai/phoenix-client/experiments'
@@ -12,11 +12,7 @@ import {
 import type { EvalCase, EvalDatasetExample, EvalRunResult } from '../types'
 
 export function createJudgeModel() {
-  const provider = createOpenAI({
-    ...(config.judgeBaseUrl && { baseURL: config.judgeBaseUrl }),
-    ...(config.judgeApiKey && { apiKey: config.judgeApiKey })
-  })
-  return provider(config.judgeModel)
+  return gateway(config.judgeModel)
 }
 
 export function buildTimestampedExperimentName(suite: string): string {
@@ -37,6 +33,8 @@ export function buildDatasetExamples(
     if (!output) {
       throw new Error(`Missing eval result for case ${caseSpec.id}`)
     }
+    const prompt = extractPromptFromConversation(caseSpec.conversation)
+    const context = formatEvalContext(output)
 
     return {
       input: {
@@ -45,7 +43,9 @@ export function buildDatasetExamples(
         conversation: caseSpec.conversation,
         searchMode: caseSpec.searchMode,
         modelType: caseSpec.modelType,
-        prompt: extractPromptFromConversation(caseSpec.conversation),
+        prompt,
+        query: prompt,
+        context,
         tags: caseSpec.tags
       },
       output,
