@@ -24,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
   const pathname = usePathname()
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const isRootPage = pathname === '/'
+  const isAuthPage = pathname.startsWith('/auth/')
 
   return (
     <>
@@ -40,22 +41,24 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {user ? (
-            <UserMenu
-              user={user}
-              onFeedbackClick={
-                isRootPage ? () => setFeedbackOpen(true) : undefined
-              }
-            />
-          ) : (
-            <GuestMenu
-              onFeedbackClick={
-                isRootPage ? () => setFeedbackOpen(true) : undefined
-              }
-            />
-          )}
-        </div>
+        {!isAuthPage && (
+          <div className="flex items-center gap-2">
+            {user ? (
+              <UserMenu
+                user={user}
+                onFeedbackClick={
+                  isRootPage ? () => setFeedbackOpen(true) : undefined
+                }
+              />
+            ) : (
+              <GuestMenu
+                onFeedbackClick={
+                  isRootPage ? () => setFeedbackOpen(true) : undefined
+                }
+              />
+            )}
+          </div>
+        )}
       </header>
 
       {isRootPage && (
