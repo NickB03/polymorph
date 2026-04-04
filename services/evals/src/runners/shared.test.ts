@@ -147,7 +147,63 @@ describe('createJudgeModel', () => {
     expect(mockCreateOpenAI).toHaveBeenCalledWith({
       baseURL: 'https://openrouter.ai/api/v1'
     })
-    expect(mockProvider).toHaveBeenCalledWith('qwen/qwen3.6-plus:free')
+    expect(mockProvider).toHaveBeenCalledWith('qwen/qwen3.6-plus:free', {
+      structuredOutputs: true
+    })
     expect(model).toEqual({ id: 'judge-model' })
+  })
+})
+
+describe('buildExperimentEvaluators', () => {
+  it('wraps LLM evaluators with retry while leaving deterministic evaluator unwrapped', async () => {
+    vi.useFakeTimers()
+
+    const { buildExperimentEvaluators } = await import('./shared')
+
+    let callCount = 0
+    const flakyEvaluate = async () => {
+      callCount++
+      if (callCount <= 2) throw new Error('transient failure')
+      return { label: 'ok', score: 1 }
+    }
+
+    const evaluators = buildExperimentEvaluators(
+      () => ({
+        name: 'precheck',
+        kind: 'CODE',
+        evaluate: () => ({ label: 'pass', score: 1 })
+      }),
+      () => ({ name: 'faithfulness', kind: 'LLM', evaluate: flakyEvaluate }),
+      () => ({
+        name: 'relevance',
+        kind: 'LLM',
+        evaluate: () => ({ label: 'ok', score: 1 })
+      }),
+      () => ({
+        name: 'quality',
+        kind: 'LLM',
+        evaluate: () => ({ label: 'ok', score: 1 })
+      }),
+      {},
+      {
+        requiresTextAnswer: true,
+        requiresCitations: false,
+        allowsInteractiveOnly: false
+      }
+    )
+
+    expect(evaluators).toHaveLength(4)
+    expect(evaluators[0].name).toBe('precheck')
+    expect(evaluators[1].name).toBe('faithfulness')
+
+    // The faithfulness evaluator should retry and eventually succeed
+    const resultPromise = evaluators[1].evaluate({} as any)
+    await vi.advanceTimersByTimeAsync(2000) // first retry delay
+    await vi.advanceTimersByTimeAsync(4000) // second retry delay
+    const result = await resultPromise
+    expect(result).toEqual({ label: 'ok', score: 1 })
+    expect(callCount).toBe(3) // 2 failures + 1 success
+
+    vi.useRealTimers()
   })
 })
