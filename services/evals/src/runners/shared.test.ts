@@ -2,20 +2,30 @@ import type { LanguageModel } from 'ai'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockProvider = vi.hoisted(() => vi.fn())
-const mockCreateOpenAI = vi.hoisted(() => vi.fn(() => mockProvider))
+const mockCreateOpenRouter = vi.hoisted(() => vi.fn(() => mockProvider))
+const mockConfig = vi.hoisted(() => ({
+  phoenixHost: 'http://phoenix',
+  judgeModel: 'google/gemini-3.1-flash-lite-preview',
+  judgeBaseUrl: 'https://openrouter.ai/api/v1',
+  judgeApiKey: 'openrouter-key',
+  judgeReasoningEnabled: false,
+  judgeReasoningMaxTokens: 1024,
+  evalRunnerUrl: 'http://localhost:3000',
+  evalRunnerSecret: 'test-secret',
+  scoreThreshold: 0.8
+}))
 
-vi.mock('@ai-sdk/openai', () => ({
-  createOpenAI: mockCreateOpenAI
+vi.mock('@openrouter/ai-sdk-provider', () => ({
+  createOpenRouter: mockCreateOpenRouter
+}))
+
+vi.mock('../judge-config', () => ({
+  createJudgeConfig: vi.fn(() => mockConfig)
 }))
 
 vi.mock('../config', () => ({
-  config: {
-    judgeModel: 'google/gemini-3.1-flash-lite-preview',
-    judgeBaseUrl: 'https://openrouter.ai/api/v1',
-    evalRunnerUrl: 'http://localhost:3000',
-    evalRunnerSecret: 'test-secret',
-    scoreThreshold: 0.8
-  }
+  config: mockConfig,
+  createConfig: vi.fn(() => mockConfig)
 }))
 
 const mockGetCasesForEvaluation = vi.hoisted(() => vi.fn())
@@ -107,7 +117,7 @@ vi.mock('../prechecks', () => ({
 
 describe('buildDatasetExamples', () => {
   beforeEach(() => {
-    mockCreateOpenAI.mockClear()
+    mockCreateOpenRouter.mockClear()
     mockProvider.mockReset()
   })
 
@@ -229,26 +239,61 @@ describe('buildTimestampedDatasetName', () => {
 
 describe('createJudgeModel', () => {
   beforeEach(() => {
-    mockCreateOpenAI.mockClear()
+    mockCreateOpenRouter.mockClear()
     mockProvider.mockReset()
-    mockCreateOpenAI.mockReturnValue(mockProvider)
+    mockCreateOpenRouter.mockReturnValue(mockProvider)
     mockProvider.mockReturnValue({ id: 'judge-model' })
+    mockConfig.judgeBaseUrl = 'https://openrouter.ai/api/v1'
+    mockConfig.judgeApiKey = 'openrouter-key'
+    mockConfig.judgeReasoningEnabled = false
+    mockConfig.judgeReasoningMaxTokens = 1024
   })
 
-  it('constructs the judge model through the OpenAI-compatible provider', async () => {
+  it('constructs the judge model through the OpenRouter provider', async () => {
     const { createJudgeModel } = await import('./shared')
 
     const model = createJudgeModel()
 
-    expect(mockCreateOpenAI).toHaveBeenCalledTimes(1)
-    expect(mockCreateOpenAI).toHaveBeenCalledWith({
+    expect(mockCreateOpenRouter).toHaveBeenCalledTimes(1)
+    expect(mockCreateOpenRouter).toHaveBeenCalledWith({
+      apiKey: 'openrouter-key',
       baseURL: 'https://openrouter.ai/api/v1'
     })
     expect(mockProvider).toHaveBeenCalledWith(
+      'google/gemini-3.1-flash-lite-preview'
+    )
+    expect(model).toEqual({ id: 'judge-model' })
+  })
+
+  it('adds reasoning settings when reasoning is enabled', async () => {
+    mockConfig.judgeReasoningEnabled = true
+    mockConfig.judgeReasoningMaxTokens = 2048
+
+    const { createJudgeModel } = await import('./shared')
+
+    const model = createJudgeModel()
+
+    expect(mockProvider).toHaveBeenCalledWith(
       'google/gemini-3.1-flash-lite-preview',
       {
-        structuredOutputs: true
+        reasoning: {
+          enabled: true,
+          max_tokens: 2048
+        }
       }
+    )
+    expect(model).toEqual({ id: 'judge-model' })
+  })
+
+  it('omits reasoning settings when reasoning is disabled', async () => {
+    mockConfig.judgeReasoningEnabled = false
+
+    const { createJudgeModel } = await import('./shared')
+
+    const model = createJudgeModel()
+
+    expect(mockProvider).toHaveBeenCalledWith(
+      'google/gemini-3.1-flash-lite-preview'
     )
     expect(model).toEqual({ id: 'judge-model' })
   })
@@ -422,8 +467,9 @@ describe('runJudgedSuite', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCreateOpenAI.mockReturnValue(mockProvider)
+    mockCreateOpenRouter.mockReturnValue(mockProvider)
     mockProvider.mockReturnValue({ id: 'judge-model' })
+    mockConfig.judgeReasoningEnabled = false
   })
 
   it('runs all cases, creates experiment, and passes when thresholds are met', async () => {

@@ -7,14 +7,14 @@
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
     "test": "vitest run",
-    "validate": "bun run src/golden/validate.ts"
+    "validate": "EVAL_RUN_MODE=traffic-monitor bun run src/golden/validate.ts"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^1.3.22",
+    "@openrouter/ai-sdk-provider": "^2.3.3",
     "@arizeai/phoenix-client": "6.5.0",
     "@arizeai/phoenix-evals": "1.0.2",
-    "ai": "^6.0.90",
     "@supabase/ssr": "^0.6.1",
+    "ai": "^6.0.90",
     "drizzle-orm": "^0.43.1",
     "postgres": "^3.4.7"
   },

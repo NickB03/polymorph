@@ -50,6 +50,64 @@ describe('createConfig', () => {
     expect(config.smokeEnabled).toBe(true)
     expect(config.smokeCaseCount).toBe(1)
     expect(config.smokeTimeoutMs).toBe(300000)
+    expect(config.judgeReasoningEnabled).toBe(false)
+    expect(config.judgeReasoningMaxTokens).toBe(1024)
+  })
+
+  it('defaults reasoning to disabled with a 1024 token budget', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+
+    const { createConfig } = await import('./config')
+    const config = createConfig()
+
+    expect(config.judgeReasoningEnabled).toBe(false)
+    expect(config.judgeReasoningMaxTokens).toBe(1024)
+  })
+
+  it('parses JUDGE_REASONING_ENABLED from env', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+    vi.stubEnv('JUDGE_REASONING_ENABLED', 'true')
+
+    const { createConfig } = await import('./config')
+    const config = createConfig()
+
+    expect(config.judgeReasoningEnabled).toBe(true)
+  })
+
+  it('parses JUDGE_REASONING_MAX_TOKENS from env', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+    vi.stubEnv('JUDGE_REASONING_MAX_TOKENS', '2048')
+
+    const { createConfig } = await import('./config')
+    const config = createConfig()
+
+    expect(config.judgeReasoningMaxTokens).toBe(2048)
+  })
+
+  it('falls back to 1024 when JUDGE_REASONING_MAX_TOKENS is invalid', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+    vi.stubEnv('JUDGE_REASONING_MAX_TOKENS', '0')
+
+    const { createConfig } = await import('./config')
+    const config = createConfig()
+
+    expect(config.judgeReasoningMaxTokens).toBe(1024)
   })
 
   it('requires eval runner settings for capability mode', async () => {
