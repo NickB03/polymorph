@@ -1,5 +1,3 @@
-import { openai } from '@ai-sdk/openai'
-
 import { config } from '../config'
 import { getCasesForEvaluation } from '../corpus'
 import { runEvalCase } from '../eval-runner-client'
@@ -13,7 +11,8 @@ import {
   buildDatasetExamples,
   buildExperimentEvaluators,
   buildExperimentTask,
-  createDatasetAndExperiment
+  createDatasetAndExperiment,
+  createJudgeModel
 } from './shared'
 
 export async function runRegressionSuite() {
@@ -55,7 +54,7 @@ export async function runRegressionSuite() {
   const successCases = succeeded.map(s => s.caseSpec)
   const successResults = succeeded.map(s => s.result)
   const examples = buildDatasetExamples(successCases, successResults)
-  const model = openai(config.judgeModel)
+  const model = createJudgeModel()
   const evaluators = buildExperimentEvaluators(
     createDeterministicPrecheckEvaluator,
     createFaithfulnessExperimentEvaluator,
