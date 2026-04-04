@@ -14,12 +14,16 @@ import type {
 import type { LanguageModel } from 'ai'
 
 import { config } from '../config'
-import { getCorpusVersion } from '../corpus'
+import { getCasesForEvaluation, getCorpusVersion } from '../corpus'
 import {
   extractPromptFromConversation,
   formatEvalContext
 } from '../eval-output'
 import { runEvalCase } from '../eval-runner-client'
+import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
+import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
+import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
+import { createDeterministicPrecheckEvaluator } from '../prechecks'
 import { withRetry } from '../retry'
 import type { EvalCase, EvalDatasetExample, EvalRunResult } from '../types'
 
@@ -78,6 +82,63 @@ export async function runCasesConcurrently(
   await Promise.all(inFlight)
 
   return { succeeded, failCount }
+}
+
+export async function runJudgedSuite(suite: 'capability' | 'regression') {
+  const cases = getCasesForEvaluation(suite)
+
+  console.log(`[evals] Running ${suite} suite with ${cases.length} cases`)
+
+  const { succeeded, failCount } = await runCasesConcurrently(cases)
+
+  if (succeeded.length === 0) {
+    throw new Error(
+      `[evals] All ${cases.length} ${suite} cases failed, aborting experiment`
+    )
+  }
+
+  if (failCount > 0) {
+    console.warn(
+      `[evals] ${failCount}/${cases.length} ${suite} cases failed, recording partial results`
+    )
+  }
+
+  const successCases = succeeded.map(s => s.caseSpec)
+  const successResults = succeeded.map(s => s.result)
+  const examples = buildDatasetExamples(successCases, successResults)
+  const model = createJudgeModel()
+  const evaluators = buildExperimentEvaluators(
+    createDeterministicPrecheckEvaluator,
+    createFaithfulnessExperimentEvaluator,
+    createRelevanceExperimentEvaluator,
+    createResponseQualityExperimentEvaluator,
+    model
+  )
+
+  const { datasetName, experimentName, experiment } =
+    await createDatasetAndExperiment({
+      suite,
+      examples,
+      evaluators,
+      task: buildExperimentTask()
+    })
+
+  console.log(`[evals] ${suite} dataset: ${datasetName}`)
+  console.log(`[evals] ${suite} experiment: ${experimentName}`)
+  console.log(`[evals] ${suite} experiment ID: ${experiment.id}`)
+
+  const thresholds = checkExperimentThresholds(
+    experiment,
+    config.scoreThreshold
+  )
+  console.log(
+    `[evals] ${suite} pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
+  )
+  if (!thresholds.passed) {
+    throw new Error(
+      `[evals] ${suite} scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(config.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
+    )
+  }
 }
 
 export function buildTimestampedExperimentName(suite: string): string {
@@ -204,7 +265,7 @@ export async function createDatasetAndExperiment({
     dataset: { datasetId },
     task,
     evaluators,
-    concurrency: 3
+    concurrency: CASE_CONCURRENCY
   })
 
   return { datasetId, experiment, experimentName, datasetName }
