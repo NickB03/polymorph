@@ -58,6 +58,6 @@ describe('ActionButtons', () => {
 
     const grid = container.querySelector('.grid')
     expect(grid).not.toBeNull()
-    expect(grid!.className).toMatch(/\bgrid-cols-2\b/)
+    expect(grid!.className).toMatch(/\bgrid-cols-3\b/)
   })
 })
