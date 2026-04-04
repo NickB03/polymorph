@@ -1,11 +1,9 @@
 import { config } from '../config'
 import { getCasesForEvaluation } from '../corpus'
-import { runEvalCase } from '../eval-runner-client'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
-import type { EvalCase, EvalRunResult } from '../types'
 
 import {
   buildDatasetExamples,
@@ -13,7 +11,8 @@ import {
   buildExperimentTask,
   checkExperimentThresholds,
   createDatasetAndExperiment,
-  createJudgeModel
+  createJudgeModel,
+  runCasesConcurrently
 } from './shared'
 
 export async function runCapabilitySuite() {
@@ -21,24 +20,7 @@ export async function runCapabilitySuite() {
 
   console.log(`[evals] Running capability suite with ${cases.length} cases`)
 
-  const succeeded: Array<{ caseSpec: EvalCase; result: EvalRunResult }> = []
-  let failCount = 0
-
-  for (const caseSpec of cases) {
-    try {
-      const result = await runEvalCase(caseSpec, {
-        evalRunnerUrl: config.evalRunnerUrl!,
-        evalRunnerSecret: config.evalRunnerSecret!
-      })
-      succeeded.push({ caseSpec, result })
-    } catch (error) {
-      failCount++
-      console.error(
-        `[evals] Case ${caseSpec.id} failed:`,
-        error instanceof Error ? error.message : error
-      )
-    }
-  }
+  const { succeeded, failCount } = await runCasesConcurrently(cases)
 
   if (succeeded.length === 0) {
     throw new Error(

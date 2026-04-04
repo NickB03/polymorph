@@ -5,6 +5,13 @@ import {
   createOrGetDataset
 } from '@arizeai/phoenix-client/datasets'
 import { runExperiment } from '@arizeai/phoenix-client/experiments'
+import type { Example } from '@arizeai/phoenix-client/types/datasets'
+import type {
+  Evaluator,
+  ExperimentEvaluatorLike,
+  ExperimentTask
+} from '@arizeai/phoenix-client/types/experiments'
+import type { LanguageModel } from 'ai'
 
 import { config } from '../config'
 import { getCorpusVersion } from '../corpus'
@@ -12,15 +19,65 @@ import {
   extractPromptFromConversation,
   formatEvalContext
 } from '../eval-output'
+import { runEvalCase } from '../eval-runner-client'
 import { withRetry } from '../retry'
 import type { EvalCase, EvalDatasetExample, EvalRunResult } from '../types'
 
-export function createJudgeModel() {
+export function createJudgeModel(): LanguageModel {
   const provider = createOpenAI({
     ...(config.judgeBaseUrl && { baseURL: config.judgeBaseUrl }),
     ...(config.judgeApiKey && { apiKey: config.judgeApiKey })
   })
-  return provider(config.judgeModel, { structuredOutputs: true })
+  return provider(config.judgeModel, {
+    structuredOutputs: true
+  }) as unknown as LanguageModel
+}
+
+const CASE_CONCURRENCY = 3
+
+export interface CaseRunResults {
+  succeeded: Array<{ caseSpec: EvalCase; result: EvalRunResult }>
+  failCount: number
+}
+
+export async function runCasesConcurrently(
+  cases: EvalCase[]
+): Promise<CaseRunResults> {
+  const succeeded: CaseRunResults['succeeded'] = []
+  let failCount = 0
+
+  const clientConfig = {
+    evalRunnerUrl: config.evalRunnerUrl!,
+    evalRunnerSecret: config.evalRunnerSecret!
+  }
+
+  const inFlight = new Set<Promise<void>>()
+
+  for (const caseSpec of cases) {
+    const task = (async () => {
+      try {
+        const result = await runEvalCase(caseSpec, clientConfig)
+        succeeded.push({ caseSpec, result })
+      } catch (error) {
+        failCount++
+        console.error(
+          `[evals] Case ${caseSpec.id} failed:`,
+          error instanceof Error ? error.message : error
+        )
+      }
+    })()
+
+    inFlight.add(task)
+    task.finally(() => inFlight.delete(task))
+
+    if (inFlight.size >= CASE_CONCURRENCY) {
+      await Promise.race(inFlight)
+    }
+  }
+
+  await Promise.all(inFlight)
+
+  return { succeeded, failCount }
 }
 
 export function buildTimestampedExperimentName(suite: string): string {
@@ -79,18 +136,14 @@ export function buildDatasetExamples(
   })
 }
 
-export function buildExperimentTask() {
-  return async (example: { output: EvalRunResult }) => example.output
+export function buildExperimentTask(): ExperimentTask {
+  return async (example: Example) => example.output as unknown as EvalRunResult
 }
 
-function wrapEvaluatorWithRetry(evaluator: {
-  name: string
-  kind: string
-  evaluate: (args: any) => Promise<any> | any
-}) {
+function wrapEvaluatorWithRetry(evaluator: Evaluator): Evaluator {
   return {
     ...evaluator,
-    evaluate: (args: any) =>
+    evaluate: (args: Parameters<Evaluator['evaluate']>[0]) =>
       withRetry(() => Promise.resolve(evaluator.evaluate(args)), {
         maxAttempts: 3,
         baseDelayMs: 2000
@@ -99,12 +152,12 @@ function wrapEvaluatorWithRetry(evaluator: {
 }
 
 export function buildExperimentEvaluators(
-  createDeterministicPrecheckEvaluator: () => any,
-  createFaithfulnessExperimentEvaluator: (model: any) => any,
-  createRelevanceExperimentEvaluator: (model: any) => any,
-  createResponseQualityExperimentEvaluator: (model: any) => any,
-  model: any
-) {
+  createDeterministicPrecheckEvaluator: () => Evaluator,
+  createFaithfulnessExperimentEvaluator: (model: LanguageModel) => Evaluator,
+  createRelevanceExperimentEvaluator: (model: LanguageModel) => Evaluator,
+  createResponseQualityExperimentEvaluator: (model: LanguageModel) => Evaluator,
+  model: LanguageModel
+): Evaluator[] {
   return [
     createDeterministicPrecheckEvaluator(),
     wrapEvaluatorWithRetry(createFaithfulnessExperimentEvaluator(model)),
@@ -128,8 +181,8 @@ export async function createDatasetAndExperiment({
 }: {
   suite: string
   examples: EvalDatasetExample[]
-  evaluators: unknown[]
-  task: (example: { output: EvalRunResult }) => Promise<EvalRunResult>
+  evaluators: ExperimentEvaluatorLike[]
+  task: ExperimentTask
   datasetName?: string
 }) {
   const phoenix = createPhoenixClient()
@@ -141,7 +194,7 @@ export async function createDatasetAndExperiment({
     client: phoenix,
     name: datasetName,
     description: `Automated eval of ${examples.length} ${suite} cases from corpus ${getCorpusVersion()}`,
-    examples: examples as any
+    examples: examples as unknown as Example[]
   })
 
   const experiment = await runExperiment({
@@ -149,8 +202,8 @@ export async function createDatasetAndExperiment({
     experimentName,
     experimentDescription: `Automated eval of ${examples.length} ${suite} cases from corpus ${getCorpusVersion()}`,
     dataset: { datasetId },
-    task: task as any,
-    evaluators: evaluators as any[],
+    task,
+    evaluators,
     concurrency: 3
   })
 

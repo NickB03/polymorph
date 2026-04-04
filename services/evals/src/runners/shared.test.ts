@@ -1,3 +1,4 @@
+import type { LanguageModel } from 'ai'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockProvider = vi.hoisted(() => vi.fn())
@@ -286,7 +287,7 @@ describe('buildExperimentEvaluators', () => {
         kind: 'LLM',
         evaluate: () => ({ label: 'ok', score: 1 })
       }),
-      {}
+      {} as LanguageModel
     )
 
     expect(evaluators).toHaveLength(4)
