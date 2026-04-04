@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockGateway = vi.hoisted(() => vi.fn())
+const mockProvider = vi.hoisted(() => vi.fn())
+const mockCreateOpenAI = vi.hoisted(() => vi.fn(() => mockProvider))
 
-vi.mock('@ai-sdk/gateway', () => ({
-  gateway: mockGateway
+vi.mock('@ai-sdk/openai', () => ({
+  createOpenAI: mockCreateOpenAI
 }))
 
 vi.mock('../config', () => ({
   config: {
-    judgeModel: 'openai/gpt-4o-mini'
+    judgeModel: 'qwen/qwen3.6-plus:free',
+    judgeBaseUrl: 'https://openrouter.ai/api/v1'
   }
 }))
 
@@ -18,7 +20,8 @@ vi.mock('../corpus', () => ({
 
 describe('buildDatasetExamples', () => {
   beforeEach(() => {
-    mockGateway.mockReset()
+    mockCreateOpenAI.mockClear()
+    mockProvider.mockReset()
   })
 
   it('maps prompt, query, and context from the latest user turn', async () => {
@@ -129,17 +132,22 @@ describe('buildDatasetExamples', () => {
 
 describe('createJudgeModel', () => {
   beforeEach(() => {
-    mockGateway.mockReset()
-    mockGateway.mockReturnValue({ id: 'gateway-model' })
+    mockCreateOpenAI.mockClear()
+    mockProvider.mockReset()
+    mockCreateOpenAI.mockReturnValue(mockProvider)
+    mockProvider.mockReturnValue({ id: 'judge-model' })
   })
 
-  it('constructs the judge model through the gateway provider', async () => {
+  it('constructs the judge model through the OpenAI-compatible provider', async () => {
     const { createJudgeModel } = await import('./shared')
 
     const model = createJudgeModel()
 
-    expect(mockGateway).toHaveBeenCalledTimes(1)
-    expect(mockGateway).toHaveBeenCalledWith('openai/gpt-4o-mini')
-    expect(model).toEqual({ id: 'gateway-model' })
+    expect(mockCreateOpenAI).toHaveBeenCalledTimes(1)
+    expect(mockCreateOpenAI).toHaveBeenCalledWith({
+      baseURL: 'https://openrouter.ai/api/v1'
+    })
+    expect(mockProvider).toHaveBeenCalledWith('qwen/qwen3.6-plus:free')
+    expect(model).toEqual({ id: 'judge-model' })
   })
 })

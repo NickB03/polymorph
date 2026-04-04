@@ -1,4 +1,4 @@
-import { gateway } from '@ai-sdk/gateway'
+import { createOpenAI } from '@ai-sdk/openai'
 import { createClient } from '@arizeai/phoenix-client'
 import { createOrGetDataset } from '@arizeai/phoenix-client/datasets'
 import { runExperiment } from '@arizeai/phoenix-client/experiments'
@@ -12,7 +12,11 @@ import {
 import type { EvalCase, EvalDatasetExample, EvalRunResult } from '../types'
 
 export function createJudgeModel() {
-  return gateway(config.judgeModel)
+  const provider = createOpenAI({
+    ...(config.judgeBaseUrl && { baseURL: config.judgeBaseUrl }),
+    ...(config.judgeApiKey && { apiKey: config.judgeApiKey })
+  })
+  return provider(config.judgeModel)
 }
 
 export function buildTimestampedExperimentName(suite: string): string {
