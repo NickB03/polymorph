@@ -9,6 +9,7 @@ import {
   extractPromptFromConversation,
   formatEvalContext
 } from '../eval-output'
+import { withRetry } from '../retry'
 import type { EvalCase, EvalDatasetExample, EvalRunResult } from '../types'
 
 export function createJudgeModel() {
@@ -16,7 +17,7 @@ export function createJudgeModel() {
     ...(config.judgeBaseUrl && { baseURL: config.judgeBaseUrl }),
     ...(config.judgeApiKey && { apiKey: config.judgeApiKey })
   })
-  return provider(config.judgeModel)
+  return provider(config.judgeModel, { structuredOutputs: true })
 }
 
 export function buildTimestampedExperimentName(suite: string): string {
@@ -70,6 +71,21 @@ export function buildExperimentTask() {
   return async (example: { output: EvalRunResult }) => example.output
 }
 
+function wrapEvaluatorWithRetry(evaluator: {
+  name: string
+  kind: string
+  evaluate: (args: any) => Promise<any> | any
+}) {
+  return {
+    ...evaluator,
+    evaluate: (args: any) =>
+      withRetry(() => Promise.resolve(evaluator.evaluate(args)), {
+        maxAttempts: 3,
+        baseDelayMs: 2000
+      })
+  }
+}
+
 export function buildExperimentEvaluators(
   createDeterministicPrecheckEvaluator: (requirements: {
     requiresTextAnswer: boolean
@@ -88,9 +104,9 @@ export function buildExperimentEvaluators(
 ) {
   return [
     createDeterministicPrecheckEvaluator(requirements),
-    createFaithfulnessExperimentEvaluator(model),
-    createRelevanceExperimentEvaluator(model),
-    createResponseQualityExperimentEvaluator(model)
+    wrapEvaluatorWithRetry(createFaithfulnessExperimentEvaluator(model)),
+    wrapEvaluatorWithRetry(createRelevanceExperimentEvaluator(model)),
+    wrapEvaluatorWithRetry(createResponseQualityExperimentEvaluator(model))
   ]
 }
 
