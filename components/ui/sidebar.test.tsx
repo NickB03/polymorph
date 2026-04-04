@@ -14,8 +14,10 @@ describe('SidebarProvider', () => {
         <div>content</div>
       </SidebarProvider>
     )
-    const wrapper = container.firstElementChild!
-      .firstElementChild as HTMLElement
+    const wrapper = container.querySelector(
+      '[class*="sidebar-wrapper"]'
+    ) as HTMLElement
+    expect(wrapper).toBeTruthy()
     expect(wrapper.className).not.toContain('opacity-0')
   })
 })

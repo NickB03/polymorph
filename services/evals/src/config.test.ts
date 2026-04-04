@@ -65,6 +65,18 @@ describe('createConfig', () => {
     expect(() => createConfig()).toThrow('EVAL_RUNNER_URL')
   })
 
+  it('requires EVAL_RUNNER_SECRET for capability mode', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUN_MODE', 'capability')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+
+    const { createConfig } = await import('./config')
+
+    expect(() => createConfig()).toThrow('EVAL_RUNNER_SECRET')
+  })
+
   it('requires app auth settings for smoke mode', async () => {
     vi.stubEnv('DATABASE_URL', 'postgresql://db')
     vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
