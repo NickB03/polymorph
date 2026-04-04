@@ -1,4 +1,3 @@
-import { createOpenAI } from '@ai-sdk/openai'
 import { createClient } from '@arizeai/phoenix-client'
 import {
   createDataset,
@@ -13,7 +12,7 @@ import type {
 } from '@arizeai/phoenix-client/types/experiments'
 import type { LanguageModel } from 'ai'
 
-import { config } from '../config'
+import { createConfig } from '../config'
 import { getCasesForEvaluation, getCorpusVersion } from '../corpus'
 import {
   extractPromptFromConversation,
@@ -23,19 +22,12 @@ import { runEvalCase } from '../eval-runner-client'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
+import { createJudgeModel } from '../judge-model'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
 import { withRetry } from '../retry'
 import type { EvalCase, EvalDatasetExample, EvalRunResult } from '../types'
 
-export function createJudgeModel(): LanguageModel {
-  const provider = createOpenAI({
-    ...(config.judgeBaseUrl && { baseURL: config.judgeBaseUrl }),
-    ...(config.judgeApiKey && { apiKey: config.judgeApiKey })
-  })
-  return provider(config.judgeModel, {
-    structuredOutputs: true
-  }) as unknown as LanguageModel
-}
+export { createJudgeModel } from '../judge-model'
 
 const CASE_CONCURRENCY = 3
 
@@ -50,9 +42,10 @@ export async function runCasesConcurrently(
   const succeeded: CaseRunResults['succeeded'] = []
   let failCount = 0
 
+  const runtimeConfig = createConfig()
   const clientConfig = {
-    evalRunnerUrl: config.evalRunnerUrl!,
-    evalRunnerSecret: config.evalRunnerSecret!
+    evalRunnerUrl: runtimeConfig.evalRunnerUrl!,
+    evalRunnerSecret: runtimeConfig.evalRunnerSecret!
   }
 
   const inFlight = new Set<Promise<void>>()
@@ -85,6 +78,7 @@ export async function runCasesConcurrently(
 }
 
 export async function runJudgedSuite(suite: 'capability' | 'regression') {
+  const runtimeConfig = createConfig()
   const cases = getCasesForEvaluation(suite)
 
   console.log(`[evals] Running ${suite} suite with ${cases.length} cases`)
@@ -129,14 +123,14 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
 
   const thresholds = checkExperimentThresholds(
     experiment,
-    config.scoreThreshold
+    runtimeConfig.scoreThreshold
   )
   console.log(
     `[evals] ${suite} pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
   )
   if (!thresholds.passed) {
     throw new Error(
-      `[evals] ${suite} scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(config.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
+      `[evals] ${suite} scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(runtimeConfig.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
     )
   }
 }
@@ -228,8 +222,9 @@ export function buildExperimentEvaluators(
 }
 
 export function createPhoenixClient() {
+  const runtimeConfig = createConfig()
   return createClient({
-    options: { baseUrl: config.phoenixHost }
+    options: { baseUrl: runtimeConfig.phoenixHost }
   })
 }
 

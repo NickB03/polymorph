@@ -1,3 +1,4 @@
+import { createJudgeConfig } from './judge-config'
 import type { EvalRunMode } from './types'
 
 // Environment configuration for the evals service.
@@ -10,6 +11,8 @@ export interface EvalsConfig {
   judgeModel: string
   judgeBaseUrl?: string
   judgeApiKey?: string
+  judgeReasoningEnabled: boolean
+  judgeReasoningMaxTokens: number
   sampleSize: number
   lookbackHours: number
   databaseSslDisabled: boolean
@@ -49,11 +52,6 @@ function validFloat(raw: string | undefined, fallback: number): number {
   return Number.isNaN(n) ? fallback : n
 }
 
-function validBool(raw: string | undefined, fallback: boolean): boolean {
-  if (raw == null) return fallback
-  return raw === 'true'
-}
-
 function parseRunMode(raw: string | undefined): EvalRunMode {
   switch (raw) {
     case 'capability':
@@ -83,7 +81,8 @@ export function createConfig(
   options: CreateConfigOptions = { validateRunnerSettings: true }
 ): EvalsConfig {
   const evalRunMode = parseRunMode(env.EVAL_RUN_MODE)
-  const smokeEnabled = validBool(env.SMOKE_ENABLED, true)
+  const smokeEnabled =
+    env.SMOKE_ENABLED == null ? true : env.SMOKE_ENABLED === 'true'
   const needsEvalRunner =
     options.validateRunnerSettings !== false &&
     requiredEvalRunnerSettings(evalRunMode)
@@ -130,9 +129,7 @@ export function createConfig(
     databaseUrl: required(env, 'DATABASE_URL'),
     phoenixHost: required(env, 'PHOENIX_HOST'),
     phoenixApiKey: required(env, 'PHOENIX_API_KEY'),
-    judgeModel: env.JUDGE_MODEL ?? 'google/gemini-3.1-flash-lite-preview',
-    judgeBaseUrl: env.JUDGE_BASE_URL?.trim() || 'https://openrouter.ai/api/v1',
-    judgeApiKey: env.JUDGE_API_KEY?.trim(),
+    ...createJudgeConfig(env),
     sampleSize: validInt(env.SAMPLE_SIZE, 50),
     lookbackHours: validInt(env.LOOKBACK_HOURS, 6),
     databaseSslDisabled: env.DATABASE_SSL_DISABLED === 'true',

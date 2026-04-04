@@ -1,8 +1,9 @@
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
+import { createJudgeConfig } from '../judge-config'
+import { createJudgeModel } from '../judge-model'
 import { evaluatePrechecks } from '../prechecks'
-import { createJudgeModel } from '../runners/shared'
 
 import { buildEvalOutput, getGoldenExamples, type GoldenExample } from './index'
 
@@ -140,6 +141,12 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
   results.push(await validatePrechecks(examples))
 
   // 2-4. Validate LLM evaluators (require API credentials)
+  const judgeConfig = createJudgeConfig()
+  if (!judgeConfig.judgeApiKey && !process.env.OPENROUTER_API_KEY) {
+    console.log('\n[WARN] Missing judge API key — skipping LLM evaluators.')
+    return results
+  }
+
   let model: any
   try {
     model = createJudgeModel()
