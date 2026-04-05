@@ -29,7 +29,7 @@ describe('createConfig', () => {
     const { createConfig } = await import('./config')
     const config = createConfig()
 
-    expect(config.judgeModel).toBe('google/gemini-3.1-flash-lite-preview')
+    expect(config.judgeModel).toBe('google/gemini-2.5-flash')
   })
 
   it('parses eval runner settings and defaults', async () => {
@@ -50,11 +50,11 @@ describe('createConfig', () => {
     expect(config.smokeEnabled).toBe(true)
     expect(config.smokeCaseCount).toBe(1)
     expect(config.smokeTimeoutMs).toBe(300000)
-    expect(config.judgeReasoningEnabled).toBe(false)
+    expect(config.judgeReasoningEnabled).toBe(true)
     expect(config.judgeReasoningMaxTokens).toBe(1024)
   })
 
-  it('defaults reasoning to disabled with a 1024 token budget', async () => {
+  it('defaults reasoning to enabled with a 1024 token budget', async () => {
     vi.stubEnv('DATABASE_URL', 'postgresql://db')
     vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
     vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
@@ -64,7 +64,7 @@ describe('createConfig', () => {
     const { createConfig } = await import('./config')
     const config = createConfig()
 
-    expect(config.judgeReasoningEnabled).toBe(false)
+    expect(config.judgeReasoningEnabled).toBe(true)
     expect(config.judgeReasoningMaxTokens).toBe(1024)
   })
 

@@ -3,6 +3,8 @@ import { formatEvalContext } from '../eval-output'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
+import { createSafetyExperimentEvaluator } from '../evaluators/safety'
+import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
 import { type ChatSample, sampleRecentChats } from '../sampler'
 
@@ -62,9 +64,11 @@ export async function runTrafficMonitorSuite() {
   const model = createJudgeModel()
   const evaluators = buildExperimentEvaluators(
     createDeterministicPrecheckEvaluator,
+    createToolUsageExperimentEvaluator,
     createFaithfulnessExperimentEvaluator,
     createRelevanceExperimentEvaluator,
     createResponseQualityExperimentEvaluator,
+    createSafetyExperimentEvaluator,
     model
   )
 
@@ -83,7 +87,8 @@ export async function runTrafficMonitorSuite() {
 
   const thresholds = checkExperimentThresholds(
     experiment,
-    config.scoreThreshold
+    config.scoreThreshold,
+    ['safety']
   )
   console.log(
     `[evals] Traffic monitor pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`

@@ -22,9 +22,17 @@ Evaluate the response on these criteria:
 3. Does it provide sufficient depth without unnecessary padding?
 4. Does it use the available context effectively?
 
-Classifications:
-- "pass": The response satisfactorily addresses all criteria — it answers the question, is readable, has appropriate depth, and uses context well
-- "fail": The response fails one or more criteria significantly — it misses the question, is confusing, lacks substance, or ignores available context`
+If this appears to be a research query (one requiring evidence, sources, or in-depth analysis), also consider:
+5. Does it synthesize information from multiple sources when available?
+6. Does it distinguish established facts from uncertain or debated claims?
+If the query is not a research query, criteria 5 and 6 are N/A — ignore them.
+
+Classifications (choose exactly one):
+- "excellent": Excels on all applicable criteria — comprehensive, well-sourced, insightful
+- "good": Satisfies all applicable criteria solidly — answers the question, readable, appropriate depth
+- "adequate": Meets minimum requirements but has notable weaknesses — shallow depth, poor organization, or partial answer
+- "poor": Fails multiple criteria — misses key aspects of the question, disorganized, or largely ignores context
+- "fail": Fundamentally broken — wrong topic, contradicts sources, garbled text, or empty of substance`
 
 export function createResponseQualityExperimentEvaluator(model: LanguageModel) {
   const evaluator = createClassificationEvaluator<{
@@ -35,7 +43,7 @@ export function createResponseQualityExperimentEvaluator(model: LanguageModel) {
     name: 'response_quality',
     model,
     promptTemplate: PROMPT_TEMPLATE,
-    choices: { pass: 1, fail: 0 }
+    choices: { excellent: 1, good: 0.75, adequate: 0.5, poor: 0.25, fail: 0 }
   })
 
   return asExperimentEvaluator({

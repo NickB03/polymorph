@@ -10,8 +10,10 @@ export interface GoldenExample {
   requiresTextAnswer: boolean
   requiresCitations: boolean
   allowsInteractiveOnly: boolean
+  toolNames: string[]
   expected: {
     prechecks: { label: string; score: number }
+    tool_usage: { label: string; score: number } | null // null = expect skip
     faithfulness: { label: string; score: number } | null // null = expect skip
     relevance: { label: string; score: number } | null // null = expect skip
     response_quality: { label: string; score: number }
@@ -23,7 +25,7 @@ export function buildEvalOutput(example: GoldenExample): EvalRunResult {
     answerText: example.answer,
     citations: example.citations,
     searchResults: [],
-    toolNames: [],
+    toolNames: example.toolNames,
     usedInteractiveOnlyOutput: example.usedInteractiveOnlyOutput,
     modelId: '',
     durationMs: 0
@@ -52,11 +54,13 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: ['search'],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
-        response_quality: { label: 'pass', score: 1 }
+        response_quality: { label: 'good', score: 0.75 }
       }
     },
     {
@@ -76,11 +80,13 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: ['search'],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
-        response_quality: { label: 'pass', score: 1 }
+        response_quality: { label: 'good', score: 0.75 }
       }
     },
     {
@@ -100,11 +106,13 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: ['search'],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
-        response_quality: { label: 'pass', score: 1 }
+        response_quality: { label: 'good', score: 0.75 }
       }
     },
     {
@@ -124,11 +132,13 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: ['search'],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
-        response_quality: { label: 'pass', score: 1 }
+        response_quality: { label: 'good', score: 0.75 }
       }
     },
     {
@@ -142,11 +152,13 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: false,
       allowsInteractiveOnly: true,
+      toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: null,
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
-        response_quality: { label: 'pass', score: 1 }
+        response_quality: { label: 'good', score: 0.75 }
       }
     },
     {
@@ -166,11 +178,13 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: ['search'],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
-        response_quality: { label: 'pass', score: 1 }
+        response_quality: { label: 'good', score: 0.75 }
       }
     },
     {
@@ -190,11 +204,13 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: ['search'],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
-        response_quality: { label: 'pass', score: 1 }
+        response_quality: { label: 'good', score: 0.75 }
       }
     },
     {
@@ -209,17 +225,161 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: false,
       requiresCitations: false,
       allowsInteractiveOnly: true,
+      toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: null,
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
-        response_quality: { label: 'pass', score: 1 }
+        response_quality: { label: 'good', score: 0.75 }
+      }
+    },
+
+    // ──────────────────────────────────────────────────────────────
+    // TRUE POSITIVES — tool-usage examples
+    // ──────────────────────────────────────────────────────────────
+    {
+      id: 'tp-tool-search-fetch',
+      query: 'What is the current state of nuclear fusion research?',
+      context:
+        'In December 2022, scientists at the National Ignition Facility (NIF) at Lawrence Livermore National Laboratory achieved fusion ignition for the first time, producing more energy from fusion than the laser energy used to drive it. The experiment delivered 2.05 megajoules of energy to the target, resulting in 3.15 megajoules of fusion energy output. Multiple private companies including Commonwealth Fusion Systems, TAE Technologies, and Helion Energy are pursuing commercial fusion reactors, with some targeting demonstration plants by the early 2030s.',
+      answer:
+        'Nuclear fusion research has reached a significant milestone. In December 2022, the National Ignition Facility (NIF) at Lawrence Livermore National Laboratory achieved fusion ignition for the first time, producing 3.15 megajoules of fusion energy output from 2.05 megajoules of laser energy input.\n\nBeyond government labs, several private companies are racing toward commercial fusion:\n\n- **Commonwealth Fusion Systems** — developing compact tokamak reactors\n- **TAE Technologies** and **Helion Energy** — pursuing alternative fusion approaches\n\nSome of these companies are targeting demonstration plants by the early 2030s.',
+      citations: [
+        {
+          url: 'https://www.llnl.gov/news/national-ignition-facility-achieves-fusion-ignition',
+          title: 'NIF Achieves Fusion Ignition - LLNL'
+        },
+        {
+          url: 'https://www.energy.gov/science/doe-explainsnuclear-fusion-reactions',
+          title: 'DOE Explains Nuclear Fusion - Energy.gov'
+        }
+      ],
+      usedInteractiveOnlyOutput: false,
+      requiresTextAnswer: true,
+      requiresCitations: true,
+      allowsInteractiveOnly: false,
+      toolNames: ['search', 'fetch'],
+      expected: {
+        prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
+        faithfulness: { label: 'faithful', score: 1 },
+        relevance: { label: 'relevant', score: 1 },
+        response_quality: { label: 'good', score: 0.75 }
+      }
+    },
+    {
+      id: 'tp-tool-search-only',
+      query: 'What programming language is Rust inspired by?',
+      context:
+        'Rust is a systems programming language that was first released in 2010 by Mozilla Research. It draws inspiration from several languages: C++ for its systems-level capabilities, ML and Haskell for its type system and pattern matching, and Erlang for its approach to concurrency. Rust emphasizes memory safety without garbage collection through its ownership and borrowing system.',
+      answer:
+        'Rust draws inspiration from multiple programming languages. From C++, it takes systems-level capabilities. Its type system and pattern matching are influenced by ML and Haskell, while its concurrency model borrows ideas from Erlang. Rust was first released in 2010 by Mozilla Research and is distinguished by its ownership and borrowing system, which ensures memory safety without requiring garbage collection.',
+      citations: [
+        {
+          url: 'https://doc.rust-lang.org/reference/influences.html',
+          title: 'Influences - The Rust Reference'
+        }
+      ],
+      usedInteractiveOnlyOutput: false,
+      requiresTextAnswer: true,
+      requiresCitations: true,
+      allowsInteractiveOnly: false,
+      toolNames: ['search'],
+      expected: {
+        prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
+        faithfulness: { label: 'faithful', score: 1 },
+        relevance: { label: 'relevant', score: 1 },
+        response_quality: { label: 'good', score: 0.75 }
+      }
+    },
+
+    // ──────────────────────────────────────────────────────────────
+    // TRUE POSITIVES — domain diversity (mathematics, geography)
+    // ──────────────────────────────────────────────────────────────
+    {
+      id: 'tp-mathematics',
+      query: 'What is the Pythagorean theorem?',
+      context:
+        'The Pythagorean theorem is a fundamental relation in Euclidean geometry among the three sides of a right triangle. It states that the area of the square whose side is the hypotenuse (the side opposite the right angle) is equal to the sum of the areas of the squares on the other two sides. Algebraically, if the two shorter sides have lengths a and b, and the hypotenuse has length c, the theorem can be written as a² + b² = c². The theorem is named after the ancient Greek mathematician Pythagoras, though it was known to Babylonian mathematicians over a thousand years earlier.',
+      answer:
+        'The Pythagorean theorem describes the relationship between the sides of a right triangle. It states that the square of the hypotenuse (the side opposite the right angle) equals the sum of the squares of the other two sides:\n\n**a² + b² = c²**\n\nwhere a and b are the lengths of the two shorter sides and c is the length of the hypotenuse. Named after the Greek mathematician Pythagoras, the theorem was actually known to Babylonian mathematicians over a thousand years before his time.',
+      citations: [
+        {
+          url: 'https://www.britannica.com/science/Pythagorean-theorem',
+          title: 'Pythagorean theorem - Britannica'
+        }
+      ],
+      usedInteractiveOnlyOutput: false,
+      requiresTextAnswer: true,
+      requiresCitations: true,
+      allowsInteractiveOnly: false,
+      toolNames: ['search'],
+      expected: {
+        prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
+        faithfulness: { label: 'faithful', score: 1 },
+        relevance: { label: 'relevant', score: 1 },
+        response_quality: { label: 'good', score: 0.75 }
+      }
+    },
+    {
+      id: 'tp-geography',
+      query: 'What is the longest river in Africa?',
+      context:
+        'The Nile is the longest river in Africa and is generally regarded as the longest river in the world, stretching approximately 6,650 kilometers (4,130 miles) from its sources in the highlands of East Africa to the Mediterranean Sea. It flows through eleven countries including Uganda, Sudan, and Egypt. The Nile has two major tributaries: the White Nile, which originates from Lake Victoria, and the Blue Nile, which begins at Lake Tana in Ethiopia. The Blue Nile contributes approximately 80% of the water in the Nile during the flood season.',
+      answer:
+        "The longest river in Africa is the Nile, stretching approximately 6,650 kilometers (4,130 miles) from the East African highlands to the Mediterranean Sea. It flows through eleven countries, including Uganda, Sudan, and Egypt.\n\nThe Nile has two major tributaries:\n\n- **White Nile** — originates from Lake Victoria\n- **Blue Nile** — begins at Lake Tana in Ethiopia and contributes roughly 80% of the Nile's water during flood season",
+      citations: [
+        {
+          url: 'https://www.britannica.com/place/Nile-River',
+          title: 'Nile River - Britannica'
+        }
+      ],
+      usedInteractiveOnlyOutput: false,
+      requiresTextAnswer: true,
+      requiresCitations: true,
+      allowsInteractiveOnly: false,
+      toolNames: ['search'],
+      expected: {
+        prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
+        faithfulness: { label: 'faithful', score: 1 },
+        relevance: { label: 'relevant', score: 1 },
+        response_quality: { label: 'good', score: 0.75 }
       }
     },
 
     // ──────────────────────────────────────────────────────────────
     // TRUE NEGATIVES — bad answers that should fail
     // ──────────────────────────────────────────────────────────────
+    {
+      id: 'tn-tool-used-but-hallucinated',
+      query: 'How tall is Mount Kilimanjaro?',
+      context:
+        'Mount Kilimanjaro is a dormant volcano in Tanzania and the highest peak in Africa. Its summit, Uhuru Peak, stands at 5,895 meters (19,341 feet) above sea level. The mountain has three volcanic cones: Kibo, Mawenzi, and Shira. Kilimanjaro is part of Kilimanjaro National Park and is a major climbing destination, attracting around 35,000 trekkers per year.',
+      answer:
+        'Mount Kilimanjaro stands at 8,412 meters (27,598 feet) above sea level, making it nearly as tall as Mount Everest. It is an active volcano located in Kenya that last erupted in 2019. The mountain has five volcanic cones and receives over 500,000 climbers annually.',
+      citations: [
+        {
+          url: 'https://www.britannica.com/place/Kilimanjaro',
+          title: 'Kilimanjaro - Britannica'
+        }
+      ],
+      usedInteractiveOnlyOutput: false,
+      requiresTextAnswer: true,
+      requiresCitations: true,
+      allowsInteractiveOnly: false,
+      toolNames: ['search', 'fetch'],
+      expected: {
+        prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
+        faithfulness: { label: 'unfaithful', score: 0 },
+        relevance: { label: 'relevant', score: 1 },
+        response_quality: { label: 'fail', score: 0 }
+      }
+    },
     {
       id: 'tn-hallucinated-facts',
       query: 'What is the population of Tokyo?',
@@ -237,8 +397,10 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'missing_tools', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -261,8 +423,10 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'missing_tools', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -285,8 +449,10 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'missing_tools', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -309,8 +475,10 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'missing_tools', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -333,8 +501,10 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'missing_tools', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -357,8 +527,10 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'missing_tools', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -381,8 +553,10 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'missing_tools', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -405,8 +579,10 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'missing_tools', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -427,8 +603,10 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: false,
       allowsInteractiveOnly: true,
+      toolNames: [],
       expected: {
         prechecks: { label: 'missing_answer', score: 0 },
+        tool_usage: null,
         faithfulness: null,
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'no_answer', score: 0 }
@@ -446,11 +624,13 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: true,
       allowsInteractiveOnly: false,
+      toolNames: [],
       expected: {
         prechecks: { label: 'missing_citations', score: 0 },
+        tool_usage: { label: 'missing_tools', score: 0 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
-        response_quality: { label: 'pass', score: 1 }
+        response_quality: { label: 'good', score: 0.75 }
       }
     },
     {
@@ -464,8 +644,10 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: false,
       allowsInteractiveOnly: false,
+      toolNames: [],
       expected: {
         prechecks: { label: 'interactive_only_output', score: 0 },
+        tool_usage: null,
         faithfulness: null,
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'no_answer', score: 0 }
@@ -482,11 +664,13 @@ export function getGoldenExamples(): GoldenExample[] {
       requiresTextAnswer: true,
       requiresCitations: false,
       allowsInteractiveOnly: true,
+      toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
+        tool_usage: null,
         faithfulness: null,
         relevance: { label: 'no_results', score: 0 },
-        response_quality: { label: 'pass', score: 1 }
+        response_quality: { label: 'good', score: 0.75 }
       }
     }
   ]

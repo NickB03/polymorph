@@ -54,8 +54,8 @@ describe('response quality experiment evaluator', () => {
 
   it('maps fields to inner evaluator', async () => {
     mockEvaluate.mockResolvedValue({
-      score: 1,
-      label: 'pass',
+      score: 0.75,
+      label: 'good',
       explanation: 'comprehensive and well-structured'
     })
     const evaluator = createResponseQualityExperimentEvaluator(mockModel)
@@ -72,8 +72,8 @@ describe('response quality experiment evaluator', () => {
       answer: 'Quantum computing leverages qubits...'
     })
     expect(result).toEqual({
-      score: 1,
-      label: 'pass',
+      score: 0.75,
+      label: 'good',
       explanation: 'comprehensive and well-structured'
     })
   })

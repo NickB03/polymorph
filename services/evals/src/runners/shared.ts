@@ -22,6 +22,8 @@ import { runEvalCase } from '../eval-runner-client'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
+import { createSafetyExperimentEvaluator } from '../evaluators/safety'
+import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { createJudgeModel } from '../judge-model'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
 import { withRetry } from '../retry'
@@ -103,9 +105,11 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
   const model = createJudgeModel()
   const evaluators = buildExperimentEvaluators(
     createDeterministicPrecheckEvaluator,
+    createToolUsageExperimentEvaluator,
     createFaithfulnessExperimentEvaluator,
     createRelevanceExperimentEvaluator,
     createResponseQualityExperimentEvaluator,
+    createSafetyExperimentEvaluator,
     model
   )
 
@@ -123,7 +127,8 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
 
   const thresholds = checkExperimentThresholds(
     experiment,
-    runtimeConfig.scoreThreshold
+    runtimeConfig.scoreThreshold,
+    ['safety']
   )
   console.log(
     `[evals] ${suite} pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
@@ -208,16 +213,20 @@ function wrapEvaluatorWithRetry(evaluator: Evaluator): Evaluator {
 
 export function buildExperimentEvaluators(
   createDeterministicPrecheckEvaluator: () => Evaluator,
+  createToolUsageExperimentEvaluator: () => Evaluator,
   createFaithfulnessExperimentEvaluator: (model: LanguageModel) => Evaluator,
   createRelevanceExperimentEvaluator: (model: LanguageModel) => Evaluator,
   createResponseQualityExperimentEvaluator: (model: LanguageModel) => Evaluator,
+  createSafetyExperimentEvaluator: (model: LanguageModel) => Evaluator,
   model: LanguageModel
 ): Evaluator[] {
   return [
     createDeterministicPrecheckEvaluator(),
+    createToolUsageExperimentEvaluator(),
     wrapEvaluatorWithRetry(createFaithfulnessExperimentEvaluator(model)),
     wrapEvaluatorWithRetry(createRelevanceExperimentEvaluator(model)),
-    wrapEvaluatorWithRetry(createResponseQualityExperimentEvaluator(model))
+    wrapEvaluatorWithRetry(createResponseQualityExperimentEvaluator(model)),
+    wrapEvaluatorWithRetry(createSafetyExperimentEvaluator(model))
   ]
 }
 
@@ -286,9 +295,12 @@ export function checkExperimentThresholds(
       result: { score?: number | null; label?: string | null } | null
     }>
   },
-  threshold: number
+  threshold: number,
+  excludeFromThreshold: string[] = []
 ): ThresholdResult {
-  const runs = experiment.evaluationRuns ?? []
+  const allRuns = experiment.evaluationRuns ?? []
+  const runs = allRuns.filter(r => !excludeFromThreshold.includes(r.name))
+
   if (runs.length === 0) {
     return {
       passed: true,
@@ -299,16 +311,28 @@ export function checkExperimentThresholds(
     }
   }
 
+  // Null scores (e.g. faithfulness returning 'skipped' for empty context)
+  // are excluded from the denominator — they represent legitimately
+  // inapplicable evaluations, not failures.
+  const scoredRuns = runs.filter(
+    r => !(!r.error && r.result && r.result.score == null)
+  )
+
+  if (scoredRuns.length === 0) {
+    return {
+      passed: false,
+      passRate: 0,
+      totalEvaluations: 0,
+      passedEvaluations: 0,
+      failedEvaluators: []
+    }
+  }
+
   let passed = 0
   const failedByName = new Map<string, number>()
 
-  for (const run of runs) {
-    if (
-      run.error ||
-      !run.result ||
-      run.result.score == null ||
-      run.result.score < 0.5
-    ) {
+  for (const run of scoredRuns) {
+    if (run.error || !run.result || run.result.score! < 0.5) {
       const count = failedByName.get(run.name) ?? 0
       failedByName.set(run.name, count + 1)
     } else {
@@ -316,12 +340,12 @@ export function checkExperimentThresholds(
     }
   }
 
-  const passRate = passed / runs.length
+  const passRate = passed / scoredRuns.length
 
   return {
     passed: passRate >= threshold,
     passRate,
-    totalEvaluations: runs.length,
+    totalEvaluations: scoredRuns.length,
     passedEvaluations: passed,
     failedEvaluators: [...failedByName.keys()]
   }
