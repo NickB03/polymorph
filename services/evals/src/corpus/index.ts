@@ -6,7 +6,7 @@ import type {
   EvalSuite
 } from '../types'
 
-const CORPUS_VERSION = 'v3'
+const CORPUS_VERSION = 'v4'
 
 function user(text: string): EvalConversationMessage {
   return {
@@ -72,7 +72,7 @@ const CAPABILITY_CASES: EvalCase[] = [
     suite: 'capability',
     conversation: [
       user(
-        'Compare static site generation and server-side rendering for a documentation site.'
+        'Give me a thorough comparison of static site generation and server-side rendering for a documentation site.'
       )
     ],
     searchMode: 'research',
@@ -85,7 +85,7 @@ const CAPABILITY_CASES: EvalCase[] = [
     suite: 'capability',
     conversation: [
       user(
-        'Explain how DNS, TLS, and HTTPS work together when I open a website.'
+        'Give me a comprehensive explanation of how DNS, TLS, and HTTPS work together when I open a website.'
       )
     ],
     searchMode: 'research',
@@ -131,7 +131,7 @@ const CAPABILITY_CASES: EvalCase[] = [
     suite: 'capability',
     conversation: [
       user(
-        'Summarize the tradeoffs between keyword search and vector search for product discovery.'
+        'Write a thorough analysis of the tradeoffs between keyword search and vector search for product discovery.'
       )
     ],
     searchMode: 'research',

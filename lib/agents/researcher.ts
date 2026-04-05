@@ -105,10 +105,20 @@ export function createResearcher({
 }) {
   try {
     const currentDate = new Date().toLocaleString()
+    const isEvalMode =
+      typeof experimentalContext === 'object' &&
+      experimentalContext !== null &&
+      (experimentalContext as Record<string, unknown>).executionMode === 'eval'
 
     // Create model-specific tools with proper typing
     const originalSearchTool = createSearchTool(model)
     const todoTools = writer ? createTodoTools() : {}
+
+    // Interactive tools that require a human in the loop — excluded in eval mode
+    const INTERACTIVE_TOOLS: (keyof ResearcherTools)[] = [
+      'displayOptionList',
+      'displayQuestionWizard'
+    ]
 
     let instructions: string
     let systemPrompt: string
@@ -165,6 +175,16 @@ export function createResearcher({
         maxSteps = 50
         searchTool = originalSearchTool
         break
+    }
+
+    // Strip interactive tools in eval mode — no human to resolve them
+    if (isEvalMode) {
+      activeToolsList = activeToolsList.filter(
+        t => !INTERACTIVE_TOOLS.includes(t)
+      )
+      console.log(
+        `[Researcher] Eval mode: removed interactive tools, active=[${activeToolsList.join(', ')}]`
+      )
     }
 
     instructions = `${systemPrompt}\nCurrent date and time: ${currentDate}`
