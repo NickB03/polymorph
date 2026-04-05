@@ -7,20 +7,20 @@ This document describes the internal architecture of Polymorph — an AI platfor
 
 ## Tech Stack
 
-| Category  | Technology                                                                                           |
-| --------- | ---------------------------------------------------------------------------------------------------- |
-| Framework | Next.js 16 (App Router)                                                                              |
-| Runtime   | Bun                                                                                                  |
-| Language  | TypeScript (strict mode)                                                                             |
-| Database  | PostgreSQL via Supabase + Drizzle ORM                                                                |
-| Auth      | Supabase Auth                                                                                        |
-| AI        | Vercel AI SDK + AI Gateway                                                                           |
-| Search    | Tavily (primary), Brave (multimedia), Exa, SearXNG, Firecrawl                                        |
-| Artifacts | Canvas artifact compiler + workspace (single-file HTML preview/export)                               |
-| Styling   | Tailwind CSS v4 + shadcn/ui                                                                          |
-| Testing   | Vitest                                                                                               |
-| Tracing   | Arize Phoenix                                                                                        |
-| Gen UI    | 8 display tools (tables, charts, timelines, citations, callouts, plans, link previews, option lists) |
+| Category  | Technology                                                                                                             |
+| --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Framework | Next.js 16 (App Router)                                                                                                |
+| Runtime   | Bun                                                                                                                    |
+| Language  | TypeScript (strict mode)                                                                                               |
+| Database  | PostgreSQL via Supabase + Drizzle ORM                                                                                  |
+| Auth      | Supabase Auth                                                                                                          |
+| AI        | Vercel AI SDK + AI Gateway                                                                                             |
+| Search    | Brave (primary), Tavily (fallback), Exa, SearXNG, Firecrawl                                                            |
+| Artifacts | Canvas artifact compiler + workspace (single-file HTML preview/export)                                                 |
+| Styling   | Tailwind CSS v4 + shadcn/ui                                                                                            |
+| Testing   | Vitest                                                                                                                 |
+| Tracing   | Arize Phoenix                                                                                                          |
+| Gen UI    | 9 display tools (tables, charts, timelines, citations, callouts, plans, link previews, option lists, question wizards) |
 
 ## Table of Contents
 
@@ -102,8 +102,8 @@ flowchart TD
     AuthStream["createChatStreamResponse()"]
     PrepareMsg["prepareMessages()<br/>(load/create chat,<br/>handle regeneration)"]
     CreateAgent["createResearcher()<br/>(configure tools + mode)"]
-    ChatMode["Chat Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayCitations,<br/>displayLinkPreview,<br/>displayOptionList, displayCallout,<br/>displayTimeline"]
-    ResearchMode["Research Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayChart,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList, displayCallout,<br/>displayTimeline, todoWrite"]
+    ChatMode["Chat Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayCitations,<br/>displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline"]
+    ResearchMode["Research Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayChart,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline, todoWrite"]
     AgentStream["agent.stream()<br/>+ smoothStream(word)"]
     Parallel["Parallel operations:<br/>title + related questions<br/>+ persistence"]
     SSE["SSE Response to Client"]

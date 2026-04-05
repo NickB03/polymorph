@@ -122,16 +122,17 @@ Display tools do not perform any computation. They serve as a structured output 
 
 ### Tool definitions
 
-| Tool                 | File                                | Description                          | Has `execute`? |
-| -------------------- | ----------------------------------- | ------------------------------------ | :------------: |
-| `displayPlan`        | `lib/tools/display-plan.ts`         | Step-by-step guides with status      |      Yes       |
-| `displayTable`       | `lib/tools/display-table.ts`        | Sortable data tables with formatting |      Yes       |
-| `displayChart`       | `lib/tools/display-chart.ts`        | Bar and line chart visualizations    |      Yes       |
-| `displayCitations`   | `lib/tools/display-citations.ts`    | Rich source citation lists           |      Yes       |
-| `displayLinkPreview` | `lib/tools/display-link-preview.ts` | Link preview cards                   |      Yes       |
-| `displayOptionList`  | `lib/tools/display-option-list.ts`  | Interactive option lists             |       No       |
-| `displayCallout`     | `lib/tools/display-callout.ts`      | Styled callout boxes                 |      Yes       |
-| `displayTimeline`    | `lib/tools/display-timeline.ts`     | Chronological event timelines        |      Yes       |
+| Tool                    | File                                   | Description                          | Has `execute`? |
+| ----------------------- | -------------------------------------- | ------------------------------------ | :------------: |
+| `displayPlan`           | `lib/tools/display-plan.ts`            | Step-by-step guides with status      |      Yes       |
+| `displayTable`          | `lib/tools/display-table.ts`           | Sortable data tables with formatting |      Yes       |
+| `displayChart`          | `lib/tools/display-chart.ts`           | Bar and line chart visualizations    |      Yes       |
+| `displayCitations`      | `lib/tools/display-citations.ts`       | Rich source citation lists           |      Yes       |
+| `displayLinkPreview`    | `lib/tools/display-link-preview.ts`    | Link preview cards                   |      Yes       |
+| `displayOptionList`     | `lib/tools/display-option-list.ts`     | Interactive option lists             |       No       |
+| `displayQuestionWizard` | `lib/tools/display-question-wizard.ts` | Multi-step guided question flows     |      Yes       |
+| `displayCallout`        | `lib/tools/display-callout.ts`         | Styled callout boxes                 |      Yes       |
+| `displayTimeline`       | `lib/tools/display-timeline.ts`        | Chronological event timelines        |      Yes       |
 
 All tools with `execute` use the same passthrough pattern:
 
