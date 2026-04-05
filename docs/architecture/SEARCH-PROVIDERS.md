@@ -3,15 +3,15 @@
 > **Audience:** Contributor | Operator
 > **Prerequisites:** [Architecture Overview](OVERVIEW.md)
 
-Polymorph uses a factory pattern to support multiple search backends. Providers are interchangeable and selected via the `SEARCH_API` environment variable, with Tavily as the default.
+Polymorph uses a factory pattern to support multiple search backends. Providers are interchangeable and selected via the `SEARCH_API` environment variable, with Brave as the default.
 
 ## Table of Contents
 
 - [Provider Comparison](#provider-comparison)
 - [Provider Selection Logic](#provider-selection-logic)
 - [Configuring Providers](#configuring-providers)
-  - [Tavily (Default)](#tavily-default)
-  - [Brave](#brave)
+  - [Brave (Default)](#brave-default)
+  - [Tavily](#tavily)
   - [Exa](#exa)
   - [SearXNG](#searxng) (includes [Advanced Search Mode](#searxng-advanced-search-mode))
   - [Firecrawl](#firecrawl)
@@ -32,7 +32,7 @@ Polymorph uses a factory pattern to support multiple search backends. Providers 
 | **SearXNG**   | `SEARXNG_API_URL`      | Yes                                     | Yes                     | No                          | basic / advanced               | Include only (site:) | Yes         |
 | **Firecrawl** | `FIRECRAWL_API_KEY`    | Yes (markdown, truncated to 1000 chars) | Yes                     | No                          | basic (web) / advanced (+news) | No                   | No          |
 
-**Recommended setup:** Tavily as the primary (optimized) provider with Brave as the secondary (general) provider for multimedia support.
+**Recommended setup:** Brave as the primary (default) provider. Tavily, Exa, and other providers serve as automatic fallbacks or alternatives.
 
 ---
 
@@ -49,7 +49,7 @@ flowchart TD
     GeneralPath["type = general"]
 
     ReadEnv["SEARCH_API env var"]
-    DefaultProvider["Default: tavily"]
+    DefaultProvider["Default: brave"]
     ConfiguredProvider["Use configured provider"]
 
     BraveAvailable{"BRAVE_SEARCH_API_KEY\nset?"}
@@ -93,15 +93,15 @@ In Chat Mode, the search type is always forced to `optimized` regardless of what
 
 ## Configuring Providers
 
-### Tavily (Default)
+### Tavily
 
-The primary AI-focused search provider. Returns rich content snippets, image descriptions, and optional answer summaries.
+An AI-focused search provider. Returns rich content snippets, image descriptions, and optional answer summaries.
 
 **Environment variables:**
 
 ```
 TAVILY_API_KEY=tvly-...
-SEARCH_API=tavily          # Optional, tavily is the default
+SEARCH_API=tavily          # Required to use Tavily instead of Brave
 ```
 
 **Features:**
@@ -117,9 +117,9 @@ SEARCH_API=tavily          # Optional, tavily is the default
 
 ---
 
-### Brave
+### Brave (Default)
 
-The general-purpose search provider with multimedia support. Brave is the only provider that supports video and image content types as separate search endpoints.
+The default search provider with multimedia support. Brave is the only provider that supports video and image content types as separate search endpoints.
 
 **Environment variables:**
 
@@ -297,7 +297,7 @@ The search tool supports two types that map to different provider behaviors:
 
 ### Optimized (Default)
 
-Used by the configured `SEARCH_API` provider (Tavily by default). Returns rich content snippets alongside results, reducing the need for follow-up fetch calls.
+Used by the configured `SEARCH_API` provider (Brave by default). Returns rich content snippets alongside results, reducing the need for follow-up fetch calls.
 
 - Forced in Chat Mode (overridden by `wrapSearchToolForChatMode`)
 - Best for research queries where content extraction matters

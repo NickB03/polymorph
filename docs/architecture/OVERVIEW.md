@@ -175,8 +175,8 @@ graph LR
     end
 
     subgraph SearchProviders["Search Providers"]
-        tavily["Tavily (default)"]
-        brave["Brave (multimedia)"]
+        brave["Brave (default)"]
+        tavily["Tavily (fallback)"]
         exa["Exa"]
         searxng["SearXNG"]
         firecrawl["Firecrawl"]

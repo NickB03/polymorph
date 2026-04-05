@@ -384,8 +384,8 @@ graph TD
     Factory["createSearchProvider()"]
 
     subgraph Providers["Provider Implementations"]
-        Tavily["TavilySearchProvider<br/>(default)"]
-        Brave["BraveSearchProvider<br/>(multimedia)"]
+        Brave["BraveSearchProvider<br/>(default)"]
+        Tavily["TavilySearchProvider<br/>(fallback)"]
         Exa["ExaSearchProvider"]
         SearXNG["SearXNGSearchProvider<br/>(self-hosted)"]
         Firecrawl["FirecrawlSearchProvider"]
@@ -419,7 +419,7 @@ interface SearchProvider {
 }
 ```
 
-#### Tavily (Default)
+#### Tavily
 
 **Source:** [`lib/tools/search/providers/tavily.ts`](../lib/tools/search/providers/tavily.ts)
 
@@ -819,8 +819,8 @@ case 'my-provider':
 | `lib/tools/display-option-list.ts`                       | Interactive option list display tool                                        |
 | `lib/tools/search/providers/index.ts`                    | Search provider factory and type exports                                    |
 | `lib/tools/search/providers/base.ts`                     | `SearchProvider` interface and `BaseSearchProvider` abstract class          |
-| `lib/tools/search/providers/tavily.ts`                   | Tavily search provider (default)                                            |
-| `lib/tools/search/providers/brave.ts`                    | Brave search provider (multimedia support)                                  |
+| `lib/tools/search/providers/brave.ts`                    | Brave search provider (default)                                             |
+| `lib/tools/search/providers/tavily.ts`                   | Tavily search provider (fallback)                                           |
 | `lib/tools/search/providers/exa.ts`                      | Exa semantic search provider                                                |
 | `lib/tools/search/providers/searxng.ts`                  | SearXNG meta-search provider (self-hosted)                                  |
 | `lib/tools/search/providers/firecrawl.ts`                | Firecrawl search provider                                                   |

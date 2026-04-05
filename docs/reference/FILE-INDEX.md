@@ -503,8 +503,8 @@ shadcn/ui-based primitives and custom UI components.
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `lib/tools/search/providers/index.ts`     | Provider factory; creates search provider instances by type (Tavily, Brave, Exa, SearXNG, Firecrawl) |
 | `lib/tools/search/providers/base.ts`      | Abstract base class and interface for search providers                                               |
-| `lib/tools/search/providers/tavily.ts`    | Tavily search provider; primary provider for web search with image support                           |
-| `lib/tools/search/providers/brave.ts`     | Brave Search provider; used for multimedia (video, image, news) content                              |
+| `lib/tools/search/providers/brave.ts`     | Brave Search provider; default primary provider with multimedia support (video, image, news)         |
+| `lib/tools/search/providers/tavily.ts`    | Tavily search provider; fallback provider for web search with image support                          |
 | `lib/tools/search/providers/exa.ts`       | Exa search provider; neural search with content extraction                                           |
 | `lib/tools/search/providers/firecrawl.ts` | Firecrawl search provider; web, news, and image search via Firecrawl API                             |
 | `lib/tools/search/providers/searxng.ts`   | SearXNG search provider; self-hosted meta-search engine integration                                  |
