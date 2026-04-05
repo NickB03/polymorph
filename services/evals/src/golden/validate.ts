@@ -1,6 +1,7 @@
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
+import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { createJudgeConfig } from '../judge-config'
 import { createJudgeModel } from '../judge-model'
 import { evaluatePrechecks } from '../prechecks'
@@ -140,7 +141,23 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
   console.log('\n=== Prechecks (deterministic) ===')
   results.push(await validatePrechecks(examples))
 
-  // 2-4. Validate LLM evaluators (require API credentials)
+  // 2. Validate tool_usage (deterministic, always runs)
+  console.log('\n=== Tool Usage (deterministic) ===')
+  const toolUsageEval = createToolUsageExperimentEvaluator()
+  results.push(
+    await validateLLMEvaluator('tool_usage', examples, async example => {
+      const evalResult = await toolUsageEval.evaluate({
+        input: { query: example.query, context: example.context },
+        output: buildEvalOutput(example),
+        metadata: {
+          requiresCitations: example.requiresCitations
+        }
+      })
+      return evalResult as EvaluatorResult
+    })
+  )
+
+  // 3-5. Validate LLM evaluators (require API credentials)
   const judgeConfig = createJudgeConfig()
   if (!judgeConfig.judgeApiKey && !process.env.OPENROUTER_API_KEY) {
     console.log('\n[WARN] Missing judge API key — skipping LLM evaluators.')
@@ -184,6 +201,10 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
   ])
 
   results.push(faithfulness, relevance, responseQuality)
+
+  // Safety evaluator is intentionally excluded — it's in a non-blocking calibration
+  // phase (excludeFromThreshold) and golden examples will be added once scoring
+  // baselines stabilize.
   return results
 }
 
@@ -232,8 +253,8 @@ printSummary(results)
 
 // Exit with code 1 if any metric is below threshold
 const ACCURACY_THRESHOLD = 0.8
-const TPR_THRESHOLD = 0.7
-const TNR_THRESHOLD = 0.7
+const TPR_THRESHOLD = 0.8
+const TNR_THRESHOLD = 0.8
 
 let failed = false
 for (const r of results) {

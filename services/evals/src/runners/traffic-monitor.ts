@@ -3,6 +3,8 @@ import { formatEvalContext } from '../eval-output'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
+import { createSafetyExperimentEvaluator } from '../evaluators/safety'
+import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
 import { type ChatSample, sampleRecentChats } from '../sampler'
 
@@ -52,7 +54,7 @@ export async function runTrafficMonitorSuite() {
     answerText: sample.modelAnswer,
     citations: sample.citations,
     searchResults: sample.searchResults,
-    toolNames: [],
+    toolNames: sample.toolNames,
     usedInteractiveOnlyOutput: false,
     modelId: '',
     durationMs: 0
@@ -60,13 +62,15 @@ export async function runTrafficMonitorSuite() {
 
   const examples = buildDatasetExamples(cases, results)
   const model = createJudgeModel()
-  const evaluators = buildExperimentEvaluators(
-    createDeterministicPrecheckEvaluator,
-    createFaithfulnessExperimentEvaluator,
-    createRelevanceExperimentEvaluator,
-    createResponseQualityExperimentEvaluator,
+  const evaluators = buildExperimentEvaluators({
+    prechecks: createDeterministicPrecheckEvaluator,
+    toolUsage: createToolUsageExperimentEvaluator,
+    faithfulness: createFaithfulnessExperimentEvaluator,
+    relevance: createRelevanceExperimentEvaluator,
+    responseQuality: createResponseQualityExperimentEvaluator,
+    safety: createSafetyExperimentEvaluator,
     model
-  )
+  })
 
   const { datasetName, experimentName, experiment } =
     await createDatasetAndExperiment({
@@ -83,7 +87,8 @@ export async function runTrafficMonitorSuite() {
 
   const thresholds = checkExperimentThresholds(
     experiment,
-    config.scoreThreshold
+    config.scoreThreshold,
+    ['safety']
   )
   console.log(
     `[evals] Traffic monitor pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`

@@ -20,7 +20,7 @@ describe('relevance experiment evaluator', () => {
 
   it('has correct name and kind', () => {
     const evaluator = createRelevanceExperimentEvaluator(mockModel)
-    expect(evaluator.name).toBe('search_relevance')
+    expect(evaluator.name).toBe('relevance')
     expect(evaluator.kind).toBe('LLM')
   })
 

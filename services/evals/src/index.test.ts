@@ -18,7 +18,8 @@ const fixtureSample: ChatSample = {
     }
   ],
   modelAnswer: 'Test answer',
-  citations: [{ title: 'Source', url: 'https://source.com' }]
+  citations: [{ title: 'Source', url: 'https://source.com' }],
+  toolNames: ['search']
 }
 
 vi.mock('./db', () => ({
@@ -68,7 +69,8 @@ describe('formatContext', () => {
         }
       ],
       modelAnswer: 'AI stands for artificial intelligence.',
-      citations: []
+      citations: [],
+      toolNames: ['search']
     }
 
     const result = formatContext(sample)
@@ -88,7 +90,10 @@ describe('formatContext', () => {
       userQuery: 'what is quantum computing?',
       searchResults: [],
       modelAnswer: 'Quantum computing uses qubits.',
-      citations: [{ title: 'Quantum Wiki', url: 'https://example.com/quantum' }]
+      citations: [
+        { title: 'Quantum Wiki', url: 'https://example.com/quantum' }
+      ],
+      toolNames: []
     }
 
     const result = formatContext(sample)
@@ -105,7 +110,8 @@ describe('formatContext', () => {
       userQuery: 'hello',
       searchResults: [],
       modelAnswer: 'Hi!',
-      citations: []
+      citations: [],
+      toolNames: []
     }
 
     const result = formatContext(sample)
@@ -150,7 +156,8 @@ describe('formatContext', () => {
       citations: [
         { title: 'NASA', url: 'https://nasa.gov/climate' },
         { title: 'IPCC', url: 'https://ipcc.ch' }
-      ]
+      ],
+      toolNames: ['search']
     }
 
     const result = formatContext(sample)

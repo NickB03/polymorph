@@ -5,10 +5,10 @@ const mockProvider = vi.hoisted(() => vi.fn())
 const mockCreateOpenRouter = vi.hoisted(() => vi.fn(() => mockProvider))
 const mockConfig = vi.hoisted(() => ({
   phoenixHost: 'http://phoenix',
-  judgeModel: 'google/gemini-3.1-flash-lite-preview',
+  judgeModel: 'google/gemini-2.5-flash',
   judgeBaseUrl: 'https://openrouter.ai/api/v1',
   judgeApiKey: 'openrouter-key',
-  judgeReasoningEnabled: false,
+  judgeReasoningEnabled: true,
   judgeReasoningMaxTokens: 1024,
   evalRunnerUrl: 'http://localhost:3000',
   evalRunnerSecret: 'test-secret',
@@ -63,7 +63,7 @@ const mockRunExperiment = vi.hoisted(() =>
       {
         name: 'response_quality',
         error: null,
-        result: { score: 0.8, label: 'good' }
+        result: { score: 0.75, label: 'good' }
       }
     ]
   }))
@@ -103,7 +103,7 @@ vi.mock('../evaluators/response-quality', () => ({
   createResponseQualityExperimentEvaluator: vi.fn(() => ({
     name: 'response_quality',
     kind: 'LLM',
-    evaluate: async () => ({ label: 'good', score: 0.8 })
+    evaluate: async () => ({ label: 'good', score: 0.75 })
   }))
 }))
 
@@ -112,6 +112,22 @@ vi.mock('../prechecks', () => ({
     name: 'precheck',
     kind: 'CODE',
     evaluate: async () => ({ label: 'pass', score: 1 })
+  }))
+}))
+
+vi.mock('../evaluators/tool-usage', () => ({
+  createToolUsageExperimentEvaluator: vi.fn(() => ({
+    name: 'tool_usage',
+    kind: 'CODE',
+    evaluate: async () => ({ label: 'skipped', score: null })
+  }))
+}))
+
+vi.mock('../evaluators/safety', () => ({
+  createSafetyExperimentEvaluator: vi.fn(() => ({
+    name: 'safety',
+    kind: 'LLM',
+    evaluate: async () => ({ label: 'safe', score: 1 })
   }))
 }))
 
@@ -259,9 +275,7 @@ describe('createJudgeModel', () => {
       apiKey: 'openrouter-key',
       baseURL: 'https://openrouter.ai/api/v1'
     })
-    expect(mockProvider).toHaveBeenCalledWith(
-      'google/gemini-3.1-flash-lite-preview'
-    )
+    expect(mockProvider).toHaveBeenCalledWith('google/gemini-2.5-flash')
     expect(model).toEqual({ id: 'judge-model' })
   })
 
@@ -273,15 +287,12 @@ describe('createJudgeModel', () => {
 
     const model = createJudgeModel()
 
-    expect(mockProvider).toHaveBeenCalledWith(
-      'google/gemini-3.1-flash-lite-preview',
-      {
-        reasoning: {
-          enabled: true,
-          max_tokens: 2048
-        }
+    expect(mockProvider).toHaveBeenCalledWith('google/gemini-2.5-flash', {
+      reasoning: {
+        enabled: true,
+        max_tokens: 2048
       }
-    )
+    })
     expect(model).toEqual({ id: 'judge-model' })
   })
 
@@ -292,9 +303,7 @@ describe('createJudgeModel', () => {
 
     const model = createJudgeModel()
 
-    expect(mockProvider).toHaveBeenCalledWith(
-      'google/gemini-3.1-flash-lite-preview'
-    )
+    expect(mockProvider).toHaveBeenCalledWith('google/gemini-2.5-flash')
     expect(model).toEqual({ id: 'judge-model' })
   })
 })
@@ -361,7 +370,7 @@ describe('checkExperimentThresholds', () => {
     expect(result.failedEvaluators).toEqual(['quality'])
   })
 
-  it('treats null scores as failures', async () => {
+  it('excludes null scores from the denominator', async () => {
     const { checkExperimentThresholds } = await import('./shared')
     const result = checkExperimentThresholds(
       {
@@ -376,8 +385,55 @@ describe('checkExperimentThresholds', () => {
       },
       0.8
     )
+    expect(result.passed).toBe(true)
+    expect(result.passRate).toBe(1)
+    expect(result.totalEvaluations).toBe(1)
+    expect(result.passedEvaluations).toBe(1)
+  })
+
+  it('returns passed: false when all scores are null', async () => {
+    const { checkExperimentThresholds } = await import('./shared')
+    const result = checkExperimentThresholds(
+      {
+        evaluationRuns: [
+          {
+            name: 'faithfulness',
+            error: null,
+            result: { score: null, label: 'skipped' }
+          },
+          {
+            name: 'relevance',
+            error: null,
+            result: { score: null, label: 'skipped' }
+          }
+        ]
+      },
+      0.8
+    )
     expect(result.passed).toBe(false)
-    expect(result.passRate).toBe(0.5)
+    expect(result.passRate).toBe(0)
+    expect(result.totalEvaluations).toBe(0)
+  })
+
+  it('excludes named evaluators via excludeFromThreshold', async () => {
+    const { checkExperimentThresholds } = await import('./shared')
+    const result = checkExperimentThresholds(
+      {
+        evaluationRuns: [
+          { name: 'quality', error: null, result: { score: 1, label: 'pass' } },
+          {
+            name: 'safety',
+            error: null,
+            result: { score: 0, label: 'unsafe' }
+          }
+        ]
+      },
+      0.8,
+      ['safety']
+    )
+    expect(result.passed).toBe(true)
+    expect(result.passRate).toBe(1)
+    expect(result.totalEvaluations).toBe(1)
   })
 
   it('passes when there are no evaluation runs', async () => {
@@ -401,32 +457,47 @@ describe('buildExperimentEvaluators', () => {
       return { label: 'ok', score: 1 }
     }
 
-    const evaluators = buildExperimentEvaluators(
-      () => ({
+    const evaluators = buildExperimentEvaluators({
+      prechecks: () => ({
         name: 'precheck',
         kind: 'CODE',
         evaluate: () => ({ label: 'pass', score: 1 })
       }),
-      () => ({ name: 'faithfulness', kind: 'LLM', evaluate: flakyEvaluate }),
-      () => ({
+      toolUsage: () => ({
+        name: 'tool_usage',
+        kind: 'CODE',
+        evaluate: () => ({ label: 'skipped', score: null })
+      }),
+      faithfulness: () => ({
+        name: 'faithfulness',
+        kind: 'LLM',
+        evaluate: flakyEvaluate
+      }),
+      relevance: () => ({
         name: 'relevance',
         kind: 'LLM',
         evaluate: () => ({ label: 'ok', score: 1 })
       }),
-      () => ({
+      responseQuality: () => ({
         name: 'quality',
         kind: 'LLM',
         evaluate: () => ({ label: 'ok', score: 1 })
       }),
-      {} as LanguageModel
-    )
+      safety: () => ({
+        name: 'safety',
+        kind: 'LLM',
+        evaluate: () => ({ label: 'safe', score: 1 })
+      }),
+      model: {} as LanguageModel
+    })
 
-    expect(evaluators).toHaveLength(4)
+    expect(evaluators).toHaveLength(6)
     expect(evaluators[0].name).toBe('precheck')
-    expect(evaluators[1].name).toBe('faithfulness')
+    expect(evaluators[1].name).toBe('tool_usage')
+    expect(evaluators[2].name).toBe('faithfulness')
 
     // The faithfulness evaluator should retry and eventually succeed
-    const resultPromise = evaluators[1].evaluate({} as any)
+    const resultPromise = evaluators[2].evaluate({} as any)
     await vi.advanceTimersByTimeAsync(2000) // first retry delay
     await vi.advanceTimersByTimeAsync(4000) // second retry delay
     const result = await resultPromise

@@ -5,6 +5,10 @@ export interface EvalContextLike {
   citations: EvalCitation[]
 }
 
+export function inputField(input: unknown, field: string): string {
+  return String((input as Record<string, unknown>)[field] ?? '')
+}
+
 export function normalizeEvalRunResult(output: unknown): EvalRunResult {
   if (typeof output === 'string') {
     return {
