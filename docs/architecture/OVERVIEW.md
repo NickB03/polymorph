@@ -5,6 +5,23 @@
 
 This document describes the internal architecture of Polymorph — an AI platform with generative UI. It covers the agent pipeline, tool system, streaming infrastructure, database schema, authentication, UI rendering, and model selection.
 
+## Tech Stack
+
+| Category  | Technology                                                                                           |
+| --------- | ---------------------------------------------------------------------------------------------------- |
+| Framework | Next.js 16 (App Router)                                                                              |
+| Runtime   | Bun                                                                                                  |
+| Language  | TypeScript (strict mode)                                                                             |
+| Database  | PostgreSQL via Supabase + Drizzle ORM                                                                |
+| Auth      | Supabase Auth                                                                                        |
+| AI        | Vercel AI SDK + AI Gateway                                                                           |
+| Search    | Tavily (primary), Brave (multimedia), Exa, SearXNG, Firecrawl                                        |
+| Artifacts | Canvas artifact compiler + workspace (single-file HTML preview/export)                               |
+| Styling   | Tailwind CSS v4 + shadcn/ui                                                                          |
+| Testing   | Vitest                                                                                               |
+| Tracing   | Arize Phoenix                                                                                        |
+| Gen UI    | 8 display tools (tables, charts, timelines, citations, callouts, plans, link previews, option lists) |
+
 ## Table of Contents
 
 - [System Overview](#system-overview)

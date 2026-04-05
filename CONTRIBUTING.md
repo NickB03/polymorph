@@ -90,10 +90,10 @@ For troubleshooting setup issues, see [Troubleshooting](docs/operations/TROUBLES
 
 ## Quality Gate
 
-All of the following checks must pass before submitting a PR:
+All of the following checks must pass before submitting a PR. These are also enforced by GitHub Actions CI on every push:
 
 ```bash
-bun lint && bun typecheck && bun format:check && bun run test
+bun lint && bun typecheck && bun format:check && bun run test && bun run build
 ```
 
 You can fix auto-fixable lint and format issues with:
