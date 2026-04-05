@@ -341,6 +341,9 @@ export function checkExperimentThresholds(
   const failedByName = new Map<string, number>()
 
   for (const run of scoredRuns) {
+    // Non-null assertion is safe: scoredRuns only includes runs where
+    // run.error || !run.result || run.result.score != null, and the first
+    // two conditions are checked before reaching score! via short-circuit.
     if (run.error || !run.result || run.result.score! < 0.5) {
       const count = failedByName.get(run.name) ?? 0
       failedByName.set(run.name, count + 1)

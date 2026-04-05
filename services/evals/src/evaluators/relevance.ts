@@ -8,7 +8,7 @@ export function createRelevanceExperimentEvaluator(model: LanguageModel) {
   const evaluator = createDocumentRelevanceEvaluator({ model })
 
   return asExperimentEvaluator({
-    name: 'search_relevance',
+    name: 'relevance',
     kind: 'LLM',
     evaluate: async ({ input }) => {
       const context = inputField(input, 'context')

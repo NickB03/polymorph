@@ -14,6 +14,8 @@ export function createToolUsageExperimentEvaluator() {
   return asExperimentEvaluator({
     name: 'tool_usage',
     kind: 'CODE',
+    // input is not used — tool usage is determined entirely from
+    // output (which tools ran) and metadata (whether citations are required).
     evaluate: async ({
       output,
       metadata

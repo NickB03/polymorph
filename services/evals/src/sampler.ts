@@ -150,7 +150,8 @@ function parseToolNames(raw: string | null): string[] {
       (name: unknown): name is string =>
         typeof name === 'string' && name.length > 0
     )
-  } catch {
+  } catch (err) {
+    console.warn('[evals] Failed to parse tool names JSON:', err)
     return []
   }
 }

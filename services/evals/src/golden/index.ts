@@ -265,7 +265,7 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
-        response_quality: { label: 'good', score: 0.75 }
+        response_quality: { label: 'excellent', score: 1 }
       }
     },
     {
