@@ -106,7 +106,6 @@ Components render different message part types: `answer-section.tsx`, `search-se
 - `bun run test:watch` — Vitest watch mode
 - `bun run migrate` — run Drizzle migrations
 - `bun run chat` — CLI chat tool (`scripts/chat-cli.ts`)
-- `bun run build:template` — build artifact template
 - `npx supabase start` — local Supabase (DB:44322, API:44321, Studio:44323)
 
 ## Code Conventions

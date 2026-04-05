@@ -21,7 +21,6 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 - `bun run test:watch` — Vitest watch mode
 - `bun run migrate` — run Drizzle migrations
 - `bun run chat` — CLI chat interface (`scripts/chat-cli.ts`)
-- `bun run build:template` — rebuild canvas artifact React SPA template
 - `npx supabase start` — local Supabase (DB:44322, API:44321, Studio:44323)
 - `railway status` — show linked Railway project context
 - `railway logs -s <service>` — stream Railway service logs (phoenix, polymorph-evals)
