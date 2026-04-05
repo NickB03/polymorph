@@ -1,4 +1,4 @@
-import { createJudgeConfig } from './judge-config'
+import { createJudgeConfig, validBool, validInt } from './judge-config'
 import type { EvalRunMode } from './types'
 
 // Environment configuration for the evals service.
@@ -40,12 +40,6 @@ function required(env: NodeJS.ProcessEnv, name: string): string {
   return value
 }
 
-function validInt(raw: string | undefined, fallback: number): number {
-  if (!raw) return fallback
-  const n = parseInt(raw, 10)
-  return Number.isNaN(n) ? fallback : n
-}
-
 function validFloat(raw: string | undefined, fallback: number): number {
   if (!raw) return fallback
   const n = parseFloat(raw)
@@ -81,8 +75,7 @@ export function createConfig(
   options: CreateConfigOptions = { validateRunnerSettings: true }
 ): EvalsConfig {
   const evalRunMode = parseRunMode(env.EVAL_RUN_MODE)
-  const smokeEnabled =
-    env.SMOKE_ENABLED == null ? true : env.SMOKE_ENABLED === 'true'
+  const smokeEnabled = validBool(env.SMOKE_ENABLED, true)
   const needsEvalRunner =
     options.validateRunnerSettings !== false &&
     requiredEvalRunnerSettings(evalRunMode)

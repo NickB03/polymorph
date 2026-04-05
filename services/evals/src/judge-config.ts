@@ -6,7 +6,7 @@ export interface JudgeConfig {
   judgeReasoningMaxTokens: number
 }
 
-function validInt(raw: string | undefined, fallback: number): number {
+export function validInt(raw: string | undefined, fallback: number): number {
   if (!raw) return fallback
   const n = parseInt(raw, 10)
   return Number.isNaN(n) ? fallback : n
@@ -17,7 +17,7 @@ function validPositiveInt(raw: string | undefined, fallback: number): number {
   return n > 0 ? n : fallback
 }
 
-function validBool(raw: string | undefined, fallback: boolean): boolean {
+export function validBool(raw: string | undefined, fallback: boolean): boolean {
   if (raw == null) return fallback
   return raw === 'true'
 }
