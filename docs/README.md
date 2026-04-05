@@ -1,5 +1,7 @@
 # Polymorph Documentation
 
+Technical documentation for contributors and operators.
+
 ## Where to Start
 
 | I want to...                    | Start here                                              |

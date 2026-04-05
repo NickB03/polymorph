@@ -1,87 +1,37 @@
-# Polymorph
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/polymorph-wordmark-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/polymorph-wordmark-light.png">
+    <img alt="Polymorph" src="docs/assets/polymorph-wordmark-dark.png" width="320">
+  </picture>
+
+  <p>AI platform for research, creation, and exploration.</p>
 
 ![CI](https://github.com/NickB03/polymorph/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
-![Bun](https://img.shields.io/badge/Bun-runtime-f9f1e1)
 
-Polymorph is an AI platform with a generative UI. It combines multi-step research, rich interactive components, and an expanding set of creative capabilities — including code generation, image creation, and multimodal interaction.
+</div>
 
-## Table of Contents
+## Features
 
-- [Overview](#overview)
-- [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
-- [Quickstart](#quickstart)
-- [Documentation](#documentation)
-  - [Getting Started](#getting-started)
-  - [Architecture Docs](#architecture-1)
-  - [Reference](#reference)
-  - [Operations](#operations)
-  - [Contributing](#contributing)
-- [CI/CD Quality Gates](#cicd-quality-gates)
-- [Attribution](#attribution)
-
-## Overview
-
-- Next.js 16 + React 19 + TypeScript
-- Vercel AI SDK-powered chat + tool workflows
-- Search provider support (Tavily, Brave, Exa, SearXNG, Firecrawl)
-- 8 generative UI display tools for rich interactive responses
-- Canvas artifact generation with persisted single-file HTML previews
-- Voice mode with speech input and TTS playback
-- PostgreSQL + Drizzle for persisted chat history (via Supabase)
-- Supabase Auth, Supabase Storage, and Redis-backed rate limiting
-- Arize Phoenix tracing integration
-
-## Tech Stack
-
-| Category  | Technology                                                                                           |
-| --------- | ---------------------------------------------------------------------------------------------------- |
-| Framework | Next.js 16 (App Router)                                                                              |
-| Runtime   | Bun                                                                                                  |
-| Language  | TypeScript (strict mode)                                                                             |
-| Database  | PostgreSQL via Supabase + Drizzle ORM                                                                |
-| Auth      | Supabase Auth                                                                                        |
-| AI        | Vercel AI SDK + AI Gateway                                                                           |
-| Search    | Tavily (primary), Brave (multimedia), Exa, SearXNG, Firecrawl                                        |
-| Artifacts | Canvas artifact compiler + workspace (single-file HTML preview/export)                               |
-| Styling   | Tailwind CSS v4 + shadcn/ui                                                                          |
-| Testing   | Vitest                                                                                               |
-| Tracing   | Arize Phoenix                                                                                        |
-| Gen UI    | 8 display tools (tables, charts, timelines, citations, callouts, plans, link previews, option lists) |
+- **Multi-step research agent** — searches the web, reasons across sources, and synthesizes answers
+- **Generative UI** — tables, charts, timelines, citations, callouts, and link previews render inline
+- **Canvas artifacts** — generates and previews single-file React apps with live editing
+- **Multi-provider AI** — Gemini, GPT, Claude, and Grok via Vercel AI Gateway
+- **Voice mode** — speech input and text-to-speech playback
+- **Guest access** — instant search without sign-up, rate-limited per IP
 
 ## Architecture
 
-```mermaid
-graph TD
-    Browser["Browser (React 19)"]
-    NextJS["Next.js 16 App Router"]
-    API["API Routes (/api/chat)"]
-    Agent["Researcher Agent (ToolLoopAgent)"]
-    AI["AI Providers (Gateway, OpenAI, Anthropic, Google, Ollama)"]
-    Search["Search Providers (Tavily, Brave, Exa, SearXNG, Firecrawl)"]
-    Canvas["Canvas Artifact Compiler + Workspace"]
-    DB["Supabase PostgreSQL (Drizzle ORM)"]
-    Redis["Upstash Redis (Rate Limiting)"]
-    Auth["Supabase Auth"]
-    Phoenix["Arize Phoenix (Tracing)"]
-
-    Browser -->|"SSE Stream"| NextJS
-    NextJS --> API
-    API -->|"Auth Check"| Auth
-    API -->|"Guest Rate Limit"| Redis
-    API --> Agent
-    Agent -->|"LLM Calls"| AI
-    Agent -->|"Tool Calls"| Search
-    Agent -->|"Canvas Tools"| Canvas
-    Agent -->|"Persist Results"| DB
-    Agent -.->|"Telemetry"| Phoenix
-    Auth -->|"Session Cookies"| Browser
-```
-
-See [Architecture Documentation](docs/architecture/OVERVIEW.md) for detailed diagrams.
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-overview-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/architecture-overview-light.png">
+    <img alt="Polymorph architecture" src="docs/assets/architecture-overview-dark.png" width="720">
+  </picture>
+</div>
 
 ## Quickstart
 
@@ -96,51 +46,13 @@ See the [full Quickstart Guide](docs/getting-started/QUICKSTART.md) for detailed
 
 ## Documentation
 
-[Browse all documentation ->](docs/README.md)
+[Browse all documentation →](docs/README.md)
 
-### Getting Started
-
-- [Quickstart Guide](docs/getting-started/QUICKSTART.md) -- End-to-end setup from clone to first search
-- [Environment Reference](docs/getting-started/ENVIRONMENT.md) -- All environment variables explained
-- [Configuration Guide](docs/getting-started/CONFIGURATION.md) -- Auth modes, search providers, AI providers
-
-### Architecture
-
-- [Architecture Overview](docs/architecture/OVERVIEW.md) -- System design, data flow, and component relationships
-- [Research Agent](docs/architecture/RESEARCH-AGENT.md) -- ToolLoopAgent orchestration and tool pipeline
-- [Generative UI](docs/architecture/GENERATIVE-UI.md) -- Display tools and rich interactive components
-- [Streaming](docs/architecture/STREAMING.md) -- SSE response creation and message part streaming
-- [Model Configuration](docs/architecture/MODEL-CONFIGURATION.md) -- Model selection logic and provider registry
-- [Search Providers](docs/architecture/SEARCH-PROVIDERS.md) -- Tavily, Brave, Exa, SearXNG, and Firecrawl
-
-### Reference
-
-- [API Reference](docs/reference/API.md) -- Chat API endpoint, request/response schemas, error codes
-- [File Index](docs/reference/FILE-INDEX.md) -- Every file in the repository with a one-line description
-
-### Operations
-
-- [Deployment Guide](docs/operations/DEPLOYMENT.md) -- Vercel deployment and production configuration
-- [Docker Guide](docs/operations/DOCKER.md) -- Containerized setup with Docker Compose
-- [Troubleshooting](docs/operations/TROUBLESHOOTING.md) -- Common issues, error messages, and fixes
-- [Day-2 Operations](docs/operations/runbooks/day-2-operations.md) -- Monitoring, maintenance, and incident response
-
-### Contributing
-
-- [Contributing Guide](CONTRIBUTING.md)
-- [Changelog](CHANGELOG.md)
-- [Launch Decisions](docs/architecture/DECISIONS.md)
-- [Security Policy](SECURITY.md)
-
-## CI/CD Quality Gates
-
-The repository includes GitHub Actions workflows for:
-
-- Lint (`bun lint`)
-- Typecheck (`bun typecheck`)
-- Format check (`bun format:check`)
-- Tests (`bun run test`)
-- Build (`bun run build`)
+- [Architecture Overview](docs/architecture/OVERVIEW.md) — system design, data flow, tech stack
+- [Environment Reference](docs/getting-started/ENVIRONMENT.md) — all environment variables
+- [Deployment Guide](docs/operations/DEPLOYMENT.md) — Vercel deployment and production config
+- [Contributing Guide](CONTRIBUTING.md) — development workflow and quality gates
+- [API Reference](docs/reference/API.md) — chat API endpoint and schemas
 
 ## Attribution
 
