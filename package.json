@@ -17,7 +17,6 @@
     "test": "NODE_ENV=test vitest run",
     "test:watch": "vitest --watch",
     "chat": "bun run scripts/chat-cli.ts",
-    "build:template": "npx tsx lib/artifacts/templates/react-spa/build-template.ts",
     "prepare": "husky"
   },
   "dependencies": {

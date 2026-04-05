@@ -74,7 +74,6 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | `Dockerfile`          | Multi-stage Docker build for production deployment                                                                                         |
 | `.gitignore`          | Git ignore rules for node_modules, .next, env files, etc.                                                                                  |
 | `.mcp.json`           | MCP (Model Context Protocol) configuration                                                                                                 |
-| `AGENTS.md`           | Multi-agent AI assistant instructions                                                                                                      |
 | `CLAUDE.md`           | AI coding assistant instructions and project conventions                                                                                   |
 | `GEMINI.md`           | Gemini-specific AI assistant instructions                                                                                                  |
 | `README.md`           | Project overview, setup guide, and feature summary                                                                                         |
@@ -544,11 +543,11 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Schema (Zod)
 
-| File                     | Purpose                                                                    |
-| ------------------------ | -------------------------------------------------------------------------- |
-| `lib/schema/search.tsx`  | Zod schema for search tool input (query, type, content_types, max_results) |
-| `lib/schema/fetch.tsx`   | Zod schema for fetch tool input (url, type)                                |
-| `lib/schema/related.tsx` | Zod schema for related questions output (array of 3 questions)             |
+| File                    | Purpose                                                                    |
+| ----------------------- | -------------------------------------------------------------------------- |
+| `lib/schema/search.tsx` | Zod schema for search tool input (query, type, content_types, max_results) |
+| `lib/schema/fetch.tsx`  | Zod schema for fetch tool input (url, type)                                |
+| `lib/schema/related.ts` | Zod schema for related questions output (array of 3 questions)             |
 
 ### Types
 
@@ -626,7 +625,6 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/utils/message-mapping.ts` | Bidirectional mapping between AI SDK UIMessage format and database message/part records                     |
 | `lib/utils/message-utils.ts`   | Helpers for extracting text content from message parts                                                      |
 | `lib/utils/domain.ts`          | Extracts display-friendly domain name from URLs (e.g., "google" from "www.google.com")                      |
-| `lib/utils/url.ts`             | Constructs base URL from Next.js request headers (x-forwarded-proto, x-host)                                |
 | `lib/utils/cookies.ts`         | Client-side cookie get/set/remove utilities                                                                 |
 | `lib/utils/json-error.ts`      | Utility for creating structured JSON error responses with code and message                                  |
 | `lib/utils/search-config.ts`   | Environment-aware search provider configuration and tool description generation                             |
@@ -652,7 +650,6 @@ shadcn/ui-based primitives and custom UI components.
 | File                                 | Purpose                                                     |
 | ------------------------------------ | ----------------------------------------------------------- |
 | `lib/hooks/use-copy-to-clipboard.ts` | Hook for copying text to clipboard with timeout-based reset |
-| `lib/hooks/use-media-query.ts`       | Hook for tracking CSS media query match state               |
 
 ### Constants
 
@@ -736,8 +733,10 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 | `drizzle/0010_lonely_kang.sql`                           | Adds metadata and search mode columns                           |
 | `drizzle/0011_tearful_marauders.sql`                     | Adds artifacts, artifact revisions, and runtime sessions tables |
 | `drizzle/0012_equal_hiroim.sql`                          | Adds additional artifact schema refinements                     |
+| `drizzle/0013_canvas_artifacts.sql`                      | Adds canvas artifacts and canvas artifact versions tables       |
+| `drizzle/0014_canvas_artifact_grants.sql`                | Adds canvas artifact grant policies                             |
 | `drizzle/meta/_journal.json`                             | Migration journal tracking applied migrations                   |
-| `drizzle/meta/0000_snapshot.json` - `0012_snapshot.json` | Schema snapshots for each migration                             |
+| `drizzle/meta/0000_snapshot.json` - `0014_snapshot.json` | Schema snapshots for each migration                             |
 
 ---
 
@@ -806,7 +805,6 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 | `public/images/polymorph_wordmark_lightmode_black.png`  | Black wordmark for light mode                                      |
 | `public/images/placeholder-image.png`                   | Placeholder image for missing thumbnails                           |
 | `public/images/build-templates/`                        | SVG thumbnails for build template cards (website, game, dashboard) |
-| `public/screenshot-2026-02-07.png`                      | Application screenshot for README and social sharing               |
 
 ---
 
@@ -822,8 +820,6 @@ Offline evaluation pipeline (`services/evals/`) for measuring search quality via
 | `services/evals/src/sampler.ts`                     | Samples recent chats with parameterized SQL queries and safe `parseCitations()` JSON parsing               |
 | `services/evals/src/retry.ts`                       | Exponential backoff retry with `maxAttempts >= 1` validation                                               |
 | `services/evals/src/retry.test.ts`                  | Tests for retry utility including zero-attempts edge case                                                  |
-| `services/evals/src/evaluators/create-evaluator.ts` | LLM evaluator factory eliminating boilerplate across evaluator definitions                                 |
-| `services/evals/src/evaluators/extract-verdict.ts`  | Shared `extractVerdict` (word-boundary matching) + `asString` (safe coercion) utilities                    |
 | `services/evals/src/evaluators/faithfulness.ts`     | Faithfulness evaluator — checks if answers are grounded in search results                                  |
 | `services/evals/src/evaluators/relevance.ts`        | Search relevance evaluator — checks if retrieved results are relevant to the query                         |
 | `services/evals/src/evaluators/response-quality.ts` | Response quality evaluator — overall assessment of answer helpfulness and structure                        |
