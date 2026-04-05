@@ -201,6 +201,10 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
   ])
 
   results.push(faithfulness, relevance, responseQuality)
+
+  // Safety evaluator is intentionally excluded — it's in a non-blocking calibration
+  // phase (excludeFromThreshold) and golden examples will be added once scoring
+  // baselines stabilize.
   return results
 }
 
