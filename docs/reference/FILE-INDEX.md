@@ -145,6 +145,9 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | `app/api/canvas-artifacts/[artifactId]/restore/route.ts`             | Restore a previous version as the current draft (POST); uses optimistic concurrency         |
 | `app/api/canvas-artifacts/[artifactId]/export/route.ts`              | Export compiled HTML as a downloadable `.html` file attachment (GET)                        |
 | `app/api/canvas-artifacts/[artifactId]/runtime-diagnostics/route.ts` | Persist runtime diagnostics (errors, warnings) from the preview iframe (POST)               |
+| `app/api/canvas-artifacts/[artifactId]/view/route.ts`                | Serve compiled HTML for inline embedding or preview (GET)                                   |
+| `app/api/canvas-assets/image-proxy/route.ts`                         | Proxy image search results for canvas artifacts via Brave; SSRF-safe redirect (GET)         |
+| `app/api/evals/run/route.ts`                                         | Run evaluation chats through the researcher agent pipeline (POST, secret-authenticated)     |
 
 ---
 
@@ -512,6 +515,7 @@ shadcn/ui-based primitives and custom UI components.
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `lib/streaming/create-chat-stream-response.ts`           | Authenticated chat streaming; handles message persistence, title generation, context pruning, and related questions |
 | `lib/streaming/create-ephemeral-chat-stream-response.ts` | Guest/anonymous chat streaming; no persistence, context pruning only                                                |
+| `lib/streaming/eval-chat-runner.ts`                      | Runs eval chats through the researcher agent without persistence; used by `/api/evals/run`                          |
 | `lib/streaming/types.ts`                                 | TypeScript interfaces for stream configuration (BaseStreamConfig)                                                   |
 | `lib/streaming/helpers/prepare-messages.ts`              | Prepares messages for streaming by loading chat history and handling new/existing chats                             |
 | `lib/streaming/helpers/persist-stream-results.ts`        | Persists streamed response messages and chat title to the database                                                  |
@@ -589,12 +593,15 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Rate Limiting
 
-| File                               | Purpose                                                                         |
-| ---------------------------------- | ------------------------------------------------------------------------------- |
-| `lib/rate-limit/guest-limit.ts`    | Guest user daily rate limiting via Upstash Redis (default 10/day)               |
-| `lib/rate-limit/chat-limits.ts`    | Authenticated user daily chat rate limiting via Upstash Redis (default 100/day) |
-| `lib/rate-limit/redis.ts`          | Upstash Redis client initialization and configuration                           |
-| `lib/rate-limit/memory-limiter.ts` | In-memory rate limiter fallback when Redis is unavailable                       |
+| File                                   | Purpose                                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `lib/rate-limit/guest-limit.ts`        | Guest user daily rate limiting via Upstash Redis (default 10/day)                                |
+| `lib/rate-limit/chat-limits.ts`        | Authenticated user daily chat rate limiting via Upstash Redis (default 100/day)                  |
+| `lib/rate-limit/canvas-limits.ts`      | Per-minute rate limits for canvas operations (draft, version, restore, diagnostics, image-proxy) |
+| `lib/rate-limit/per-minute-limiter.ts` | Generic per-minute rate limiter using Redis with in-memory fallback                              |
+| `lib/rate-limit/voice-limits.ts`       | Per-minute rate limit for voice TTS synthesis requests                                           |
+| `lib/rate-limit/redis.ts`              | Upstash Redis client initialization and configuration                                            |
+| `lib/rate-limit/memory-limiter.ts`     | In-memory rate limiter fallback when Redis is unavailable                                        |
 
 ### Analytics
 
@@ -615,25 +622,28 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Utils
 
-| File                           | Purpose                                                                                                     |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `lib/utils/index.ts`           | Core utilities: `generateUUID`, `cn` (classname merger), `sanitizeUrl`, `createModelId`                     |
-| `lib/utils/registry.ts`        | AI provider registry wrapping OpenAI, Anthropic, Google, Ollama, and Vercel AI Gateway                      |
-| `lib/utils/model-selection.ts` | Resolves the appropriate model based on search mode and model type cookie preferences                       |
-| `lib/utils/context-window.ts`  | Token counting, context window management, and message truncation using tiktoken                            |
-| `lib/utils/citation.ts`        | Citation extraction, processing, and mapping from search results to inline references                       |
-| `lib/utils/message-mapping.ts` | Bidirectional mapping between AI SDK UIMessage format and database message/part records                     |
-| `lib/utils/message-utils.ts`   | Helpers for extracting text content from message parts                                                      |
-| `lib/utils/domain.ts`          | Extracts display-friendly domain name from URLs (e.g., "google" from "www.google.com")                      |
-| `lib/utils/cookies.ts`         | Client-side cookie get/set/remove utilities                                                                 |
-| `lib/utils/json-error.ts`      | Utility for creating structured JSON error responses with code and message                                  |
-| `lib/utils/search-config.ts`   | Environment-aware search provider configuration and tool description generation                             |
-| `lib/utils/search-mode.ts`     | Atomic searchMode cookie sync with CustomEvent dispatch                                                     |
-| `lib/utils/model-type.ts`      | Atomic modelType cookie sync with CustomEvent dispatch                                                      |
-| `lib/utils/retry.ts`           | Exponential backoff retry utility for database operations                                                   |
-| `lib/utils/perf-logging.ts`    | Conditional performance logging (enabled via `ENABLE_PERF_LOGGING`)                                         |
-| `lib/utils/perf-tracking.ts`   | Development-only counters for auth calls and DB operations                                                  |
-| `lib/utils/telemetry.ts`       | Tracing utilities: checks if tracing is enabled, `flushTraces()` with timeout and missing-provider warnings |
+| File                                  | Purpose                                                                                                     |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `lib/utils/index.ts`                  | Core utilities: `generateUUID`, `cn` (classname merger), `sanitizeUrl`, `createModelId`                     |
+| `lib/utils/registry.ts`               | AI provider registry wrapping OpenAI, Anthropic, Google, Ollama, and Vercel AI Gateway                      |
+| `lib/utils/model-selection.ts`        | Resolves the appropriate model based on search mode and model type cookie preferences                       |
+| `lib/utils/context-window.ts`         | Token counting, context window management, and message truncation using tiktoken                            |
+| `lib/utils/citation.ts`               | Citation extraction, processing, and mapping from search results to inline references                       |
+| `lib/utils/message-mapping.ts`        | Bidirectional mapping between AI SDK UIMessage format and database message/part records                     |
+| `lib/utils/message-utils.ts`          | Helpers for extracting text content from message parts                                                      |
+| `lib/utils/domain.ts`                 | Extracts display-friendly domain name from URLs (e.g., "google" from "www.google.com")                      |
+| `lib/utils/cookies.ts`                | Client-side cookie get/set/remove utilities                                                                 |
+| `lib/utils/json-error.ts`             | Utility for creating structured JSON error responses with code and message                                  |
+| `lib/utils/search-config.ts`          | Environment-aware search provider configuration and tool description generation                             |
+| `lib/utils/search-mode.ts`            | Atomic searchMode cookie sync with CustomEvent dispatch                                                     |
+| `lib/utils/model-type.ts`             | Atomic modelType cookie sync with CustomEvent dispatch                                                      |
+| `lib/utils/retry.ts`                  | Exponential backoff retry utility for database operations                                                   |
+| `lib/utils/perf-logging.ts`           | Conditional performance logging (enabled via `ENABLE_PERF_LOGGING`)                                         |
+| `lib/utils/perf-tracking.ts`          | Development-only counters for auth calls and DB operations                                                  |
+| `lib/utils/app-metadata.ts`           | Generates Next.js Metadata object (title, description, OG images) from public origin                        |
+| `lib/utils/otel-context-processor.ts` | SpanProcessor that propagates OpenInference context attributes (session.id, user.id) to spans               |
+| `lib/utils/public-origin.ts`          | Resolves the app's public origin URL from `NEXT_PUBLIC_APP_URL` with localhost fallback                     |
+| `lib/utils/telemetry.ts`              | Tracing utilities: checks if tracing is enabled, `flushTraces()` with timeout and missing-provider warnings |
 
 ### External Clients
 
@@ -663,17 +673,23 @@ shadcn/ui-based primitives and custom UI components.
 
 Server-side compile pipeline, validation, service layer, and guest token support for canvas artifacts.
 
-| File                                              | Purpose                                                                                              |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `lib/canvas/service.ts`                           | Canvas CRUD service: load state, update draft, save/restore versions, export, record diagnostics     |
-| `lib/canvas/compiler/compile-canvas-artifact.ts`  | Orchestrates the full compile pipeline: validate source, esbuild bundle, Tailwind CSS, assemble HTML |
-| `lib/canvas/compiler/build-tailwind-css.ts`       | Generates Tailwind CSS v4 from the bundled source using the Tailwind compiler                        |
-| `lib/canvas/compiler/assemble-canvas-html.ts`     | Assembles the final single-file HTML from bundled JS and CSS                                         |
-| `lib/canvas/validation/validate-canvas-source.ts` | Validates and normalizes canvas source before compilation                                            |
-| `lib/canvas/guest-token.ts`                       | HMAC-SHA256 guest token signing, verification, and rotation for scoped artifact access               |
-| `lib/canvas/tool-context.ts`                      | Context object passed to canvas AI tools with chat/artifact identity and guest token                 |
-| `lib/canvas/constants.ts`                         | Canvas system constants (max source size, revision limits, compile timeouts)                         |
-| `lib/canvas/legacy.ts`                            | Legacy artifact detection: maps old sandbox artifact references to a deterministic notice path       |
+| File                                                      | Purpose                                                                                              |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `lib/canvas/service.ts`                                   | Canvas CRUD service: load state, update draft, save/restore versions, export, record diagnostics     |
+| `lib/canvas/compiler/compile-canvas-artifact.ts`          | Orchestrates the full compile pipeline: validate source, esbuild bundle, Tailwind CSS, assemble HTML |
+| `lib/canvas/compiler/build-tailwind-css.ts`               | Generates Tailwind CSS v4 from the bundled source using the Tailwind compiler                        |
+| `lib/canvas/compiler/assemble-canvas-html.ts`             | Assembles the final single-file HTML from bundled JS and CSS                                         |
+| `lib/canvas/pre-processors/run-pre-processors.ts`         | Runs all AST pre-processors on canvas source before compilation                                      |
+| `lib/canvas/pre-processors/fix-hallucinated-imports.ts`   | Removes or comments out imports for packages not in the allowed list                                 |
+| `lib/canvas/pre-processors/fix-missing-default-export.ts` | Adds a default export when the App component exists but isn't exported                               |
+| `lib/canvas/validation/validate-canvas-source.ts`         | Validates and normalizes canvas source before compilation                                            |
+| `lib/canvas/allowed-packages.ts`                          | Derives the allowed import list from vendor chunk definitions for canvas artifacts                   |
+| `lib/canvas/inject-viewport-fit.ts`                       | Injects base CSS so canvas content fills the iframe viewport without overflow                        |
+| `lib/canvas/serve-canvas-html.ts`                         | Shared handler for serving compiled canvas HTML (inline or as download) with auth                    |
+| `lib/canvas/guest-token.ts`                               | HMAC-SHA256 guest token signing, verification, and rotation for scoped artifact access               |
+| `lib/canvas/tool-context.ts`                              | Context object passed to canvas AI tools with chat/artifact identity and guest token                 |
+| `lib/canvas/constants.ts`                                 | Canvas system constants (max source size, revision limits, compile timeouts)                         |
+| `lib/canvas/legacy.ts`                                    | Legacy artifact detection: maps old sandbox artifact references to a deterministic notice path       |
 
 ---
 
