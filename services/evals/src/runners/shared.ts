@@ -103,15 +103,15 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
   const successResults = succeeded.map(s => s.result)
   const examples = buildDatasetExamples(successCases, successResults)
   const model = createJudgeModel()
-  const evaluators = buildExperimentEvaluators(
-    createDeterministicPrecheckEvaluator,
-    createToolUsageExperimentEvaluator,
-    createFaithfulnessExperimentEvaluator,
-    createRelevanceExperimentEvaluator,
-    createResponseQualityExperimentEvaluator,
-    createSafetyExperimentEvaluator,
+  const evaluators = buildExperimentEvaluators({
+    prechecks: createDeterministicPrecheckEvaluator,
+    toolUsage: createToolUsageExperimentEvaluator,
+    faithfulness: createFaithfulnessExperimentEvaluator,
+    relevance: createRelevanceExperimentEvaluator,
+    responseQuality: createResponseQualityExperimentEvaluator,
+    safety: createSafetyExperimentEvaluator,
     model
-  )
+  })
 
   const { datasetName, experimentName, experiment } =
     await createDatasetAndExperiment({
@@ -211,22 +211,35 @@ function wrapEvaluatorWithRetry(evaluator: Evaluator): Evaluator {
   }
 }
 
-export function buildExperimentEvaluators(
-  createDeterministicPrecheckEvaluator: () => Evaluator,
-  createToolUsageExperimentEvaluator: () => Evaluator,
-  createFaithfulnessExperimentEvaluator: (model: LanguageModel) => Evaluator,
-  createRelevanceExperimentEvaluator: (model: LanguageModel) => Evaluator,
-  createResponseQualityExperimentEvaluator: (model: LanguageModel) => Evaluator,
-  createSafetyExperimentEvaluator: (model: LanguageModel) => Evaluator,
+export interface EvaluatorFactories {
+  prechecks: () => Evaluator
+  toolUsage: () => Evaluator
+  faithfulness: (model: LanguageModel) => Evaluator
+  relevance: (model: LanguageModel) => Evaluator
+  responseQuality: (model: LanguageModel) => Evaluator
+  safety: (model: LanguageModel) => Evaluator
   model: LanguageModel
+}
+
+export function buildExperimentEvaluators(
+  factories: EvaluatorFactories
 ): Evaluator[] {
+  const {
+    prechecks,
+    toolUsage,
+    faithfulness,
+    relevance,
+    responseQuality,
+    safety,
+    model
+  } = factories
   return [
-    createDeterministicPrecheckEvaluator(),
-    createToolUsageExperimentEvaluator(),
-    wrapEvaluatorWithRetry(createFaithfulnessExperimentEvaluator(model)),
-    wrapEvaluatorWithRetry(createRelevanceExperimentEvaluator(model)),
-    wrapEvaluatorWithRetry(createResponseQualityExperimentEvaluator(model)),
-    wrapEvaluatorWithRetry(createSafetyExperimentEvaluator(model))
+    prechecks(),
+    toolUsage(),
+    wrapEvaluatorWithRetry(faithfulness(model)),
+    wrapEvaluatorWithRetry(relevance(model)),
+    wrapEvaluatorWithRetry(responseQuality(model)),
+    wrapEvaluatorWithRetry(safety(model))
   ]
 }
 
@@ -275,10 +288,6 @@ export async function createDatasetAndExperiment({
   return { datasetId, experiment, experimentName, datasetName }
 }
 
-export function formatCaseContext(result: EvalRunResult): string {
-  return formatEvalContext(result)
-}
-
 export interface ThresholdResult {
   passed: boolean
   passRate: number
@@ -315,7 +324,7 @@ export function checkExperimentThresholds(
   // are excluded from the denominator — they represent legitimately
   // inapplicable evaluations, not failures.
   const scoredRuns = runs.filter(
-    r => !(!r.error && r.result && r.result.score == null)
+    r => r.error || !r.result || r.result.score != null
   )
 
   if (scoredRuns.length === 0) {

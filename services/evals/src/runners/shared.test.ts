@@ -457,35 +457,39 @@ describe('buildExperimentEvaluators', () => {
       return { label: 'ok', score: 1 }
     }
 
-    const evaluators = buildExperimentEvaluators(
-      () => ({
+    const evaluators = buildExperimentEvaluators({
+      prechecks: () => ({
         name: 'precheck',
         kind: 'CODE',
         evaluate: () => ({ label: 'pass', score: 1 })
       }),
-      () => ({
+      toolUsage: () => ({
         name: 'tool_usage',
         kind: 'CODE',
         evaluate: () => ({ label: 'skipped', score: null })
       }),
-      () => ({ name: 'faithfulness', kind: 'LLM', evaluate: flakyEvaluate }),
-      () => ({
+      faithfulness: () => ({
+        name: 'faithfulness',
+        kind: 'LLM',
+        evaluate: flakyEvaluate
+      }),
+      relevance: () => ({
         name: 'relevance',
         kind: 'LLM',
         evaluate: () => ({ label: 'ok', score: 1 })
       }),
-      () => ({
+      responseQuality: () => ({
         name: 'quality',
         kind: 'LLM',
         evaluate: () => ({ label: 'ok', score: 1 })
       }),
-      () => ({
+      safety: () => ({
         name: 'safety',
         kind: 'LLM',
         evaluate: () => ({ label: 'safe', score: 1 })
       }),
-      {} as LanguageModel
-    )
+      model: {} as LanguageModel
+    })
 
     expect(evaluators).toHaveLength(6)
     expect(evaluators[0].name).toBe('precheck')

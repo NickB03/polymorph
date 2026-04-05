@@ -54,7 +54,7 @@ export async function runTrafficMonitorSuite() {
     answerText: sample.modelAnswer,
     citations: sample.citations,
     searchResults: sample.searchResults,
-    toolNames: [],
+    toolNames: sample.toolNames,
     usedInteractiveOnlyOutput: false,
     modelId: '',
     durationMs: 0
@@ -62,15 +62,15 @@ export async function runTrafficMonitorSuite() {
 
   const examples = buildDatasetExamples(cases, results)
   const model = createJudgeModel()
-  const evaluators = buildExperimentEvaluators(
-    createDeterministicPrecheckEvaluator,
-    createToolUsageExperimentEvaluator,
-    createFaithfulnessExperimentEvaluator,
-    createRelevanceExperimentEvaluator,
-    createResponseQualityExperimentEvaluator,
-    createSafetyExperimentEvaluator,
+  const evaluators = buildExperimentEvaluators({
+    prechecks: createDeterministicPrecheckEvaluator,
+    toolUsage: createToolUsageExperimentEvaluator,
+    faithfulness: createFaithfulnessExperimentEvaluator,
+    relevance: createRelevanceExperimentEvaluator,
+    responseQuality: createResponseQualityExperimentEvaluator,
+    safety: createSafetyExperimentEvaluator,
     model
-  )
+  })
 
   const { datasetName, experimentName, experiment } =
     await createDatasetAndExperiment({

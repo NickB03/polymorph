@@ -14,6 +14,7 @@ export interface ChatSample {
   }>
   modelAnswer: string
   citations: Array<{ url: string; title: string }>
+  toolNames: string[]
 }
 
 /**
@@ -42,6 +43,7 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
         search_results: string | null
         model_answer: string
         citations: string | null
+        tool_names: string | null
       }>(sql`
     WITH recent_chats AS (
       SELECT id, created_at
@@ -97,6 +99,16 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
       WHERE m.chat_id IN (SELECT id FROM recent_chats)
         AND p.type = 'source-url'
       GROUP BY m.chat_id
+    ),
+    tool_data AS (
+      SELECT
+        m.chat_id,
+        json_agg(DISTINCT p.tool_name) FILTER (WHERE p.tool_name IS NOT NULL) AS tool_names
+      FROM messages m
+      JOIN parts p ON p.message_id = m.id
+      WHERE m.chat_id IN (SELECT id FROM recent_chats)
+        AND p.type = 'tool-invocation'
+      GROUP BY m.chat_id
     )
     SELECT
       rc.id AS chat_id,
@@ -104,12 +116,14 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
       uq.user_query,
       sd.search_results::text,
       aa.model_answer,
-      cd.citations::text
+      cd.citations::text,
+      td.tool_names::text
     FROM recent_chats rc
     JOIN user_queries uq ON uq.chat_id = rc.id
     JOIN assistant_answers aa ON aa.chat_id = rc.id
     LEFT JOIN search_data sd ON sd.chat_id = rc.id
     LEFT JOIN citation_data cd ON cd.chat_id = rc.id
+    LEFT JOIN tool_data td ON td.chat_id = rc.id
     WHERE uq.user_query IS NOT NULL
       AND aa.model_answer IS NOT NULL
   `),
@@ -122,8 +136,23 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
     userQuery: row.user_query,
     searchResults: parseSearchResults(row.search_results),
     modelAnswer: row.model_answer,
-    citations: parseCitations(row.citations)
+    citations: parseCitations(row.citations),
+    toolNames: parseToolNames(row.tool_names)
   }))
+}
+
+function parseToolNames(raw: string | null): string[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(
+      (name: unknown): name is string =>
+        typeof name === 'string' && name.length > 0
+    )
+  } catch {
+    return []
+  }
 }
 
 function parseCitations(raw: string | null): ChatSample['citations'] {

@@ -19,7 +19,7 @@ describe('createConfig', () => {
     expect(config.evalRunMode).toBe('capability')
   })
 
-  it('defaults judgeModel to google/gemini-3.1-flash-lite-preview', async () => {
+  it('defaults judgeModel to google/gemini-2.5-flash', async () => {
     vi.stubEnv('DATABASE_URL', 'postgresql://db')
     vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
     vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')

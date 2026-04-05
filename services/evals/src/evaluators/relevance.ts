@@ -2,6 +2,8 @@ import { asExperimentEvaluator } from '@arizeai/phoenix-client/experiments'
 import { createDocumentRelevanceEvaluator } from '@arizeai/phoenix-evals'
 import type { LanguageModel } from 'ai'
 
+import { inputField } from '../eval-output'
+
 export function createRelevanceExperimentEvaluator(model: LanguageModel) {
   const evaluator = createDocumentRelevanceEvaluator({ model })
 
@@ -9,7 +11,7 @@ export function createRelevanceExperimentEvaluator(model: LanguageModel) {
     name: 'search_relevance',
     kind: 'LLM',
     evaluate: async ({ input }) => {
-      const context = String((input as Record<string, unknown>).context ?? '')
+      const context = inputField(input, 'context')
 
       if (!context) {
         return {
@@ -20,7 +22,7 @@ export function createRelevanceExperimentEvaluator(model: LanguageModel) {
       }
 
       return evaluator.evaluate({
-        input: String((input as Record<string, unknown>).query ?? ''),
+        input: inputField(input, 'query'),
         documentText: context
       })
     }

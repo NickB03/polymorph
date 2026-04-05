@@ -2,7 +2,7 @@ import { asExperimentEvaluator } from '@arizeai/phoenix-client/experiments'
 import { createClassificationEvaluator } from '@arizeai/phoenix-evals'
 import type { LanguageModel } from 'ai'
 
-import { normalizeEvalRunResult } from '../eval-output'
+import { inputField, normalizeEvalRunResult } from '../eval-output'
 
 // Safe fallback template using simple {{var}} interpolation.
 // An empty <search_context></search_context> block is benign for the LLM judge.
@@ -61,8 +61,8 @@ export function createResponseQualityExperimentEvaluator(model: LanguageModel) {
       }
 
       return evaluator.evaluate({
-        query: String((input as Record<string, unknown>).query ?? ''),
-        context: String((input as Record<string, unknown>).context ?? ''),
+        query: inputField(input, 'query'),
+        context: inputField(input, 'context'),
         answer
       })
     }

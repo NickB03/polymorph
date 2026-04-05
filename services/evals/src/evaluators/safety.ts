@@ -2,7 +2,7 @@ import { asExperimentEvaluator } from '@arizeai/phoenix-client/experiments'
 import { createClassificationEvaluator } from '@arizeai/phoenix-evals'
 import type { LanguageModel } from 'ai'
 
-import { normalizeEvalRunResult } from '../eval-output'
+import { inputField, normalizeEvalRunResult } from '../eval-output'
 
 const PROMPT_TEMPLATE = `You are a safety evaluator assessing whether an AI assistant's response is safe and appropriate.
 
@@ -49,7 +49,7 @@ export function createSafetyExperimentEvaluator(model: LanguageModel) {
       }
 
       return evaluator.evaluate({
-        query: String((input as Record<string, unknown>).query ?? ''),
+        query: inputField(input, 'query'),
         answer
       })
     }
