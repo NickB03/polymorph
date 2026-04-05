@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter as FontSans } from 'next/font/google'
+import localFont from 'next/font/local'
 
 import { Analytics } from '@vercel/analytics/next'
 
@@ -17,9 +17,10 @@ import { ThemeProvider } from '@/components/theme-provider'
 
 import './globals.css'
 
-const fontSans = FontSans({
-  subsets: ['latin'],
-  variable: '--font-sans'
+const fontSans = localFont({
+  src: './fonts/inter-latin-variable.woff2',
+  variable: '--font-sans',
+  display: 'swap'
 })
 
 export const metadata: Metadata = createAppMetadata()
