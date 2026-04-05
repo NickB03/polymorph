@@ -117,8 +117,8 @@ The `services/evals/` directory contains a scheduled evaluation pipeline:
 | `JUDGE_API_KEY`              | OpenRouter API key for the judge model (preferred)                 |
 | `OPENROUTER_API_KEY`         | Fallback; read by the OpenRouter SDK when `JUDGE_API_KEY` is unset |
 | `JUDGE_BASE_URL`             | `https://openrouter.ai/api/v1`                                     |
-| `JUDGE_MODEL`                | `google/gemini-3.1-flash-lite-preview` (default)                   |
-| `JUDGE_REASONING_ENABLED`    | `false` (default)                                                  |
+| `JUDGE_MODEL`                | `google/gemini-2.5-flash` (default)                                |
+| `JUDGE_REASONING_ENABLED`    | `true` (default)                                                   |
 | `JUDGE_REASONING_MAX_TOKENS` | `1024` (default, positive integer)                                 |
 | `SAMPLE_SIZE`                | `50` (default)                                                     |
 | `LOOKBACK_HOURS`             | `6` (default)                                                      |
