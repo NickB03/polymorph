@@ -249,7 +249,7 @@ curl -X POST http://localhost:43100/api/upload \
 
 ### POST `/api/feedback`
 
-Records user feedback (thumbs up/down) on an AI response. Updates the message metadata in the database when tracing is enabled.
+Records user feedback (thumbs up/down) on an AI response. Updates the message metadata in the database when a user context is available.
 
 **Authentication:** Optional (feedback is recorded even without auth, but database update requires a user context for RLS)
 **Dynamic:** `force-dynamic`
@@ -258,18 +258,14 @@ Records user feedback (thumbs up/down) on an AI response. Updates the message me
 
 ```typescript
 {
-  traceId: string          // Trace ID for the AI response
   score: 1 | -1            // 1 = positive (thumbs up), -1 = negative (thumbs down)
-  comment?: string         // Optional text comment
   messageId?: string       // Database message ID to update metadata
 }
 ```
 
 | Field       | Type      | Required | Description                                                                  |
 | ----------- | --------- | -------- | ---------------------------------------------------------------------------- |
-| `traceId`   | `string`  | Yes      | The trace ID associated with the response.                                   |
 | `score`     | `1 \| -1` | Yes      | Feedback score. Must be exactly `1` or `-1`.                                 |
-| `comment`   | `string`  | No       | Optional comment explaining the feedback.                                    |
 | `messageId` | `string`  | No       | If provided, updates the message's `metadata.feedbackScore` in the database. |
 
 #### Response
@@ -519,9 +515,9 @@ Updates the artifact's draft source. The server validates, compiles (esbuild + T
 
 ```typescript
 {
-  baseRevision: number          // Current revision for optimistic concurrency
-  draftSource: string           // New React SPA source code
-  guestCanvasToken?: string     // Guest access token (if not authenticated)
+  baseRevision: number                    // Current revision for optimistic concurrency
+  draftSource: Record<string, string>     // File map (filename → source code) for the canvas artifact
+  guestCanvasToken?: string               // Guest access token (if not authenticated)
 }
 ```
 
@@ -687,6 +683,108 @@ Returns the updated artifact state. For guest requests, includes a rotated `gues
 | `409`  | Stale revision (diagnostics for a different revision).       |
 | `429`  | Rate limit exceeded.                                         |
 | `500`  | Unexpected server error.                                     |
+
+---
+
+### GET `/api/canvas-artifacts/[artifactId]/view`
+
+Serves the compiled HTML for inline embedding or preview. Returns the artifact's compiled HTML as an HTML response suitable for `iframe.srcdoc` or direct viewing.
+
+**Authentication:** None required (public access for embedding)
+**Dynamic:** `force-dynamic`
+
+#### Response
+
+**Content-Type:** `text/html; charset=utf-8`
+
+Returns the compiled HTML for the canvas artifact, rendered inline (not as a download).
+
+#### Error Responses
+
+| Status | Condition                |
+| ------ | ------------------------ |
+| `404`  | Artifact not found.      |
+| `500`  | Unexpected server error. |
+
+---
+
+### GET `/api/canvas-assets/image-proxy`
+
+Proxies image search results for use in canvas artifacts. Performs a Brave image search and redirects to the first safe thumbnail URL. Includes SSRF protection (blocks private IPs, requires HTTPS targets).
+
+**Authentication:** None required (rate-limited by client IP in cloud mode)
+**Dynamic:** `force-dynamic`
+
+#### Query Parameters
+
+| Parameter | Type     | Required | Description                                        |
+| --------- | -------- | -------- | -------------------------------------------------- |
+| `q`       | `string` | Yes      | Image search query. Max 200 characters, non-blank. |
+
+#### Response
+
+**Status:** `302 Found` — redirects to the thumbnail URL.
+
+**Headers:**
+
+- `Location` — Target thumbnail URL (always HTTPS, non-private IP)
+- `Cache-Control` — `private, max-age=3600, stale-while-revalidate=86400`
+
+#### Error Responses
+
+| Status | Condition                                       |
+| ------ | ----------------------------------------------- |
+| `400`  | Missing, blank, or too-long `q` parameter.      |
+| `404`  | No safe image thumbnail found for the query.    |
+| `429`  | Rate limit exceeded (canvas image-proxy limit). |
+| `502`  | Upstream search provider error.                 |
+
+---
+
+### POST `/api/evals/run`
+
+Runs an evaluation chat through the researcher agent pipeline. Used by the evals service to execute test conversations and capture agent output.
+
+**Authentication:** Required (`x-eval-runner-secret` header must match `EVAL_RUNNER_SECRET` env var)
+
+#### Request Body
+
+```typescript
+{
+  caseId: string // Unique identifier for the eval case
+  suite: 'capability' | 'regression' | 'smoke'
+  conversation: Array<{
+    // Message history to replay
+    role: 'user' | 'assistant'
+    parts: Array<{ type: 'text'; text: string }>
+  }>
+  searchMode: 'chat' | 'research'
+  modelType: 'speed' | 'quality'
+}
+```
+
+| Field          | Type     | Required | Description                                             |
+| -------------- | -------- | -------- | ------------------------------------------------------- |
+| `caseId`       | `string` | Yes      | Identifier for the evaluation case.                     |
+| `suite`        | `string` | Yes      | Eval suite: `capability`, `regression`, or `smoke`.     |
+| `conversation` | `array`  | Yes      | Message array with `role` and `parts` for each message. |
+| `searchMode`   | `string` | Yes      | Agent mode: `chat` or `research`.                       |
+| `modelType`    | `string` | Yes      | Model tier: `speed` or `quality`.                       |
+
+#### Response
+
+**Content-Type:** `application/json`
+
+Returns the eval chat result. Response is not cached (`Cache-Control: no-store`).
+
+#### Error Responses
+
+| Status | Condition                                 |
+| ------ | ----------------------------------------- |
+| `400`  | Invalid request body (schema validation). |
+| `401`  | Missing `x-eval-runner-secret` header.    |
+| `403`  | Invalid eval runner secret.               |
+| `500`  | Unexpected server error during eval run.  |
 
 ---
 
