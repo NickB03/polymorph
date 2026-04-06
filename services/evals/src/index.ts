@@ -1,10 +1,14 @@
 import { closeDb } from './db'
+import { validateJudgeCredentials } from './judge-config'
 import { runConfiguredModes } from './orchestrator'
 
 export async function main() {
   const startTime = Date.now()
   console.log(`[evals] Starting evaluation run at ${new Date().toISOString()}`)
-  console.log('[evals] Config loaded')
+
+  // Fail fast if judge credentials are missing or invalid
+  validateJudgeCredentials()
+  console.log('[evals] Config loaded, credentials validated')
 
   try {
     await runConfiguredModes()

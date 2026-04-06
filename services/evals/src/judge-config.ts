@@ -22,6 +22,28 @@ export function validBool(raw: string | undefined, fallback: boolean): boolean {
   return raw === 'true'
 }
 
+export function validateJudgeCredentials(
+  env: NodeJS.ProcessEnv = process.env
+): void {
+  const apiKey = env.JUDGE_API_KEY?.trim()
+  if (!apiKey) {
+    throw new Error(
+      'JUDGE_API_KEY is required for LLM judge evaluators. Set it in Railway env vars.'
+    )
+  }
+
+  const baseUrl = env.JUDGE_BASE_URL?.trim()
+  if (baseUrl) {
+    try {
+      new URL(baseUrl)
+    } catch {
+      throw new Error(
+        `JUDGE_BASE_URL is not a valid URL: "${baseUrl}". Expected format: https://openrouter.ai/api/v1`
+      )
+    }
+  }
+}
+
 export function createJudgeConfig(
   env: NodeJS.ProcessEnv = process.env
 ): JudgeConfig {
