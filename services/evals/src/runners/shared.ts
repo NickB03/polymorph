@@ -32,8 +32,6 @@ import type { EvalCase, EvalDatasetExample, EvalRunResult } from '../types'
 
 export { createJudgeModel } from '../judge-model'
 
-const CASE_CONCURRENCY = 3
-
 export interface CaseRunResults {
   succeeded: Array<{ caseSpec: EvalCase; result: EvalRunResult }>
   failCount: number
@@ -70,7 +68,7 @@ export async function runCasesConcurrently(
     inFlight.add(task)
     task.finally(() => inFlight.delete(task))
 
-    if (inFlight.size >= CASE_CONCURRENCY) {
+    if (inFlight.size >= runtimeConfig.caseConcurrency) {
       await Promise.race(inFlight)
     }
   }
@@ -130,7 +128,7 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
   const thresholds = checkExperimentThresholds(
     experiment,
     runtimeConfig.scoreThreshold,
-    ['safety']
+    runtimeConfig.excludeFromThreshold
   )
   console.log(
     `[evals] ${suite} pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
@@ -295,7 +293,7 @@ export async function createDatasetAndExperiment({
     dataset: { datasetId },
     task,
     evaluators,
-    concurrency: CASE_CONCURRENCY
+    concurrency: createConfig().caseConcurrency
   })
 
   return { datasetId, experiment, experimentName, datasetName }

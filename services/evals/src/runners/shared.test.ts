@@ -12,7 +12,10 @@ const mockConfig = vi.hoisted(() => ({
   judgeReasoningMaxTokens: 1024,
   evalRunnerUrl: 'http://localhost:3000',
   evalRunnerSecret: 'test-secret',
-  scoreThreshold: 0.8
+  scoreThreshold: 0.8,
+  caseConcurrency: 3,
+  dbPoolMax: 5,
+  excludeFromThreshold: ['safety']
 }))
 
 vi.mock('@openrouter/ai-sdk-provider', () => ({

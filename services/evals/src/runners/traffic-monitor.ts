@@ -90,7 +90,7 @@ export async function runTrafficMonitorSuite() {
   const thresholds = checkExperimentThresholds(
     experiment,
     config.scoreThreshold,
-    ['safety']
+    config.excludeFromThreshold
   )
   console.log(
     `[evals] Traffic monitor pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
