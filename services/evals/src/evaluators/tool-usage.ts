@@ -3,19 +3,18 @@ import { asExperimentEvaluator } from '@arizeai/phoenix-client/experiments'
 import { normalizeEvalRunResult } from '../eval-output'
 
 /**
- * Deterministic evaluator that checks whether the agent used tools
- * when the query warranted tool usage (e.g., search for factual queries).
+ * Deterministic tool-usage evaluator with a 4-level rubric:
  *
- * Returns null score when tool usage is indeterminate (e.g., simple chat
- * queries that may or may not need tools). Null scores are excluded from
- * the threshold calculation by checkExperimentThresholds.
+ * 1.0 — tools_used: Tools called, search results returned, citations present (if required)
+ * 0.5 — tools_ineffective: Tools called but search returned no results
+ * 0.5 — citations_missing: Tools called + results returned, but citations required and absent
+ * 0.0 — tools_missing: Citations required but no tools were called
+ * null — skipped: Case doesn't require citations and no tools were expected
  */
 export function createToolUsageExperimentEvaluator() {
   return asExperimentEvaluator({
     name: 'tool_usage',
     kind: 'CODE',
-    // input is not used — tool usage is determined entirely from
-    // output (which tools ran) and metadata (whether citations are required).
     evaluate: async ({
       output,
       metadata
@@ -24,36 +23,60 @@ export function createToolUsageExperimentEvaluator() {
       metadata?: Record<string, unknown> | null
     }) => {
       const result = normalizeEvalRunResult(output)
-      const toolNames = result.toolNames ?? []
+      const toolsUsed = result.toolNames.length > 0
+      const hasSearchResults = result.searchResults.some(
+        sr => sr.results.length > 0
+      )
+      const hasCitations = result.citations.length > 0
       const requiresCitations = metadata?.requiresCitations === true
 
-      // If the case requires citations, it necessarily requires search tools.
-      // A missing search tool in this scenario is a clear failure.
-      if (requiresCitations && toolNames.length === 0) {
+      // Case doesn't need citations and no tools were used — nothing to evaluate
+      if (!requiresCitations && !toolsUsed) {
         return {
-          label: 'missing_tools',
-          score: 0,
+          label: 'skipped',
+          score: null,
           explanation:
-            'Case requires citations but no tools were invoked (expected at least search)'
+            'Tool usage not required for this case type; skipping evaluation'
         }
       }
 
-      // If tools were used, validate that they produced results
-      if (toolNames.length > 0) {
+      // Citations required but no tools called — hard fail
+      if (requiresCitations && !toolsUsed) {
         return {
-          label: 'tools_used',
-          score: 1,
-          explanation: `Tools invoked: ${toolNames.join(', ')}`
+          label: 'tools_missing',
+          score: 0.0,
+          explanation:
+            'Citations were required but no search tools were invoked'
         }
       }
 
-      // For cases that don't require citations and used no tools,
-      // tool usage is indeterminate — skip scoring.
+      // Tools called but search returned no results
+      if (toolsUsed && !hasSearchResults) {
+        return {
+          label: 'tools_ineffective',
+          score: 0.5,
+          explanation:
+            'Search tools were called but returned no results — may indicate a bad query or service issue'
+        }
+      }
+
+      // Tools called, results returned, but citations required and missing
+      if (requiresCitations && hasSearchResults && !hasCitations) {
+        return {
+          label: 'citations_missing',
+          score: 0.5,
+          explanation:
+            'Search results were available but no citations were produced in the answer'
+        }
+      }
+
+      // Everything looks good
       return {
-        label: 'skipped',
-        score: null,
-        explanation:
-          'Tool usage not required for this case type; skipping evaluation'
+        label: 'tools_used',
+        score: 1.0,
+        explanation: toolsUsed
+          ? `Tools used: ${result.toolNames.join(', ')}${hasCitations ? ` with ${result.citations.length} citation(s)` : ''}`
+          : 'No tools needed and none used'
       }
     }
   })
