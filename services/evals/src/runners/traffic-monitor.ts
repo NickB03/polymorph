@@ -12,6 +12,7 @@ import {
   buildDatasetExamples,
   buildExperimentEvaluators,
   buildExperimentTask,
+  buildPublicExperimentUrl,
   buildTimestampedDatasetName,
   checkExperimentThresholds,
   createDatasetAndExperiment,
@@ -72,7 +73,7 @@ export async function runTrafficMonitorSuite() {
     model
   })
 
-  const { datasetName, experimentName, experiment } =
+  const { datasetId, datasetName, experimentName, experiment } =
     await createDatasetAndExperiment({
       suite: 'traffic-monitor',
       examples,
@@ -84,6 +85,9 @@ export async function runTrafficMonitorSuite() {
   console.log(`[evals] Traffic monitor dataset: ${datasetName}`)
   console.log(`[evals] Traffic monitor experiment: ${experimentName}`)
   console.log(`[evals] Traffic monitor experiment ID: ${experiment.id}`)
+  console.log(
+    `[evals] Traffic monitor view: ${buildPublicExperimentUrl(datasetId, experiment.id)}`
+  )
 
   const thresholds = checkExperimentThresholds(
     experiment,

@@ -8,8 +8,8 @@
     },
     "railway": {
       "type": "stdio",
-      "command": "railway",
-      "args": ["mcp"]
+      "command": "npx",
+      "args": ["-y", "@railway/mcp-server"]
     },
     "phoenix": {
       "type": "stdio",

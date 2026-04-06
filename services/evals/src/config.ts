@@ -7,6 +7,7 @@ import type { EvalRunMode } from './types'
 export interface EvalsConfig {
   databaseUrl: string
   phoenixHost: string
+  phoenixPublicUrl: string
   phoenixApiKey: string
   judgeModel: string
   judgeBaseUrl?: string
@@ -118,9 +119,12 @@ export function createConfig(
     throw new Error('Missing required env var: SEED_USER_PASSWORD')
   }
 
+  const phoenixHost = required(env, 'PHOENIX_HOST')
+
   return {
     databaseUrl: required(env, 'DATABASE_URL'),
-    phoenixHost: required(env, 'PHOENIX_HOST'),
+    phoenixHost,
+    phoenixPublicUrl: env.PHOENIX_PUBLIC_URL?.trim() || phoenixHost,
     phoenixApiKey: required(env, 'PHOENIX_API_KEY'),
     ...createJudgeConfig(env),
     sampleSize: validInt(env.SAMPLE_SIZE, 50),
