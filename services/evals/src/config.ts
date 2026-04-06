@@ -7,6 +7,7 @@ import type { EvalRunMode } from './types'
 export interface EvalsConfig {
   databaseUrl: string
   phoenixHost: string
+  phoenixPublicUrl: string
   phoenixApiKey: string
   judgeModel: string
   judgeBaseUrl?: string
@@ -121,6 +122,8 @@ export function createConfig(
   return {
     databaseUrl: required(env, 'DATABASE_URL'),
     phoenixHost: required(env, 'PHOENIX_HOST'),
+    phoenixPublicUrl:
+      env.PHOENIX_PUBLIC_URL?.trim() || required(env, 'PHOENIX_HOST'),
     phoenixApiKey: required(env, 'PHOENIX_API_KEY'),
     ...createJudgeConfig(env),
     sampleSize: validInt(env.SAMPLE_SIZE, 50),

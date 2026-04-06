@@ -5,6 +5,7 @@ const mockProvider = vi.hoisted(() => vi.fn())
 const mockCreateOpenRouter = vi.hoisted(() => vi.fn(() => mockProvider))
 const mockConfig = vi.hoisted(() => ({
   phoenixHost: 'http://phoenix',
+  phoenixPublicUrl: 'https://phoenix.example.com',
   judgeModel: 'google/gemini-2.5-flash',
   judgeBaseUrl: 'https://openrouter.ai/api/v1',
   judgeApiKey: 'openrouter-key',
@@ -441,6 +442,16 @@ describe('checkExperimentThresholds', () => {
     const result = checkExperimentThresholds({}, 0.8)
     expect(result.passed).toBe(true)
     expect(result.totalEvaluations).toBe(0)
+  })
+})
+
+describe('buildPublicExperimentUrl', () => {
+  it('builds a clickable URL using the public Phoenix host', async () => {
+    const { buildPublicExperimentUrl } = await import('./shared')
+    const url = buildPublicExperimentUrl('RGF0YXNldDoz', 'RXhwZXJpbWVudDoxOA==')
+    expect(url).toBe(
+      'https://phoenix.example.com/datasets/RGF0YXNldDoz/compare?experimentId=RXhwZXJpbWVudDoxOA%3D%3D'
+    )
   })
 })
 

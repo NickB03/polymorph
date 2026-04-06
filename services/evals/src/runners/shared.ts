@@ -113,7 +113,7 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     model
   })
 
-  const { datasetName, experimentName, experiment } =
+  const { datasetId, datasetName, experimentName, experiment } =
     await createDatasetAndExperiment({
       suite,
       examples,
@@ -124,6 +124,9 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
   console.log(`[evals] ${suite} dataset: ${datasetName}`)
   console.log(`[evals] ${suite} experiment: ${experimentName}`)
   console.log(`[evals] ${suite} experiment ID: ${experiment.id}`)
+  console.log(
+    `[evals] ${suite} view: ${buildPublicExperimentUrl(datasetId, experiment.id)}`
+  )
 
   const thresholds = checkExperimentThresholds(
     experiment,
@@ -286,6 +289,15 @@ export async function createDatasetAndExperiment({
   })
 
   return { datasetId, experiment, experimentName, datasetName }
+}
+
+export function buildPublicExperimentUrl(
+  datasetId: string,
+  experimentId: string
+): string {
+  const runtimeConfig = createConfig()
+  const base = runtimeConfig.phoenixPublicUrl.replace(/\/$/, '')
+  return `${base}/datasets/${datasetId}/compare?experimentId=${encodeURIComponent(experimentId)}`
 }
 
 export interface ThresholdResult {
