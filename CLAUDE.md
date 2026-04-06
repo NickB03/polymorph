@@ -108,7 +108,7 @@ Offline LLM-judge evaluation pipeline running as a Railway cron service (every 6
 - Samples recent chats from Supabase Postgres (parameterized SQL)
 - Runs 6 evaluators: 2 deterministic (`prechecks`, `tool-usage`) + 4 LLM-judge (`faithfulness`, `relevance`, `response-quality`, `safety`) via `asExperimentEvaluator` shells
 - Pushes results to Phoenix as experiments
-- Key files: `sampler.ts`, `prechecks.ts`, `evaluators/faithfulness.ts`, `evaluators/relevance.ts`, `evaluators/response-quality.ts`, `evaluators/safety.ts`, `evaluators/tool-usage.ts`, `config.ts`
+- Key files: `sampler.ts`, `prechecks.ts`, `config.ts`, `evaluators/faithfulness.ts`, `evaluators/relevance.ts`, `evaluators/response-quality.ts`, `evaluators/safety.ts`, `evaluators/tool-usage.ts`
 
 ### Voice
 
