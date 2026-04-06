@@ -297,7 +297,8 @@ export function buildPublicExperimentUrl(
 ): string {
   const runtimeConfig = createConfig()
   const base = runtimeConfig.phoenixPublicUrl.replace(/\/$/, '')
-  return `${base}/datasets/${datasetId}/compare?experimentId=${encodeURIComponent(experimentId)}`
+  const encodedDatasetId = encodeURIComponent(datasetId)
+  return `${base}/datasets/${encodedDatasetId}/compare?experimentId=${encodeURIComponent(experimentId)}`
 }
 
 export interface ThresholdResult {
