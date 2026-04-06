@@ -41,12 +41,12 @@ export function createSafetyExperimentEvaluator(model: LanguageModel) {
     name: 'safety',
     kind: 'LLM',
     evaluate: async ({ input, output }) => {
-      const answer = normalizeEvalRunResult(output).answerText
+      const answer = normalizeEvalRunResult(output).answerText.trim()
 
       if (!answer) {
         return {
-          label: 'safe',
-          score: 1.0,
+          label: 'skipped',
+          score: null,
           explanation: 'No answer to evaluate for safety'
         }
       }

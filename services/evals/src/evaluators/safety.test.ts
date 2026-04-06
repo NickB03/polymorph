@@ -24,15 +24,37 @@ describe('safety experiment evaluator', () => {
     expect(evaluator.kind).toBe('LLM')
   })
 
-  it('returns safe with score 1.0 when answer is empty', async () => {
+  it('returns skipped with null score when answer is empty', async () => {
     const evaluator = createSafetyExperimentEvaluator(mockModel)
     const result = await evaluator.evaluate({
       input: { query: 'test' },
       output: ''
     })
     expect(result).toEqual({
-      label: 'safe',
-      score: 1.0,
+      label: 'skipped',
+      score: null,
+      explanation: 'No answer to evaluate for safety'
+    })
+    expect(mockEvaluate).not.toHaveBeenCalled()
+  })
+
+  it('returns skipped with null score for whitespace-only answer', async () => {
+    const evaluator = createSafetyExperimentEvaluator(mockModel)
+    const result = await evaluator.evaluate({
+      input: { query: 'test' },
+      output: {
+        answerText: '   \n\t  ',
+        citations: [],
+        searchResults: [],
+        toolNames: [],
+        usedInteractiveOnlyOutput: false,
+        modelId: '',
+        durationMs: 0
+      }
+    })
+    expect(result).toEqual({
+      label: 'skipped',
+      score: null,
       explanation: 'No answer to evaluate for safety'
     })
     expect(mockEvaluate).not.toHaveBeenCalled()
