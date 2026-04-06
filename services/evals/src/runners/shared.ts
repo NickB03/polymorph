@@ -255,6 +255,14 @@ export function createPhoenixClient() {
   })
 }
 
+function toPhoenixExamples(examples: EvalDatasetExample[]): Example[] {
+  return examples.map(ex => ({
+    input: { ...ex.input },
+    output: { ...ex.output },
+    metadata: { ...ex.metadata }
+  }))
+}
+
 export async function createDatasetAndExperiment({
   suite,
   examples,
@@ -277,7 +285,7 @@ export async function createDatasetAndExperiment({
     client: phoenix,
     name: datasetName,
     description: `Automated eval of ${examples.length} ${suite} cases from corpus ${getCorpusVersion()}`,
-    examples: examples as unknown as Example[]
+    examples: toPhoenixExamples(examples)
   })
 
   const experiment = await runExperiment({
