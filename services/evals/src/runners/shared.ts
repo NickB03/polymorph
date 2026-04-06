@@ -19,6 +19,7 @@ import {
   formatEvalContext
 } from '../eval-output'
 import { runEvalCase } from '../eval-runner-client'
+import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
@@ -110,6 +111,7 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     relevance: createRelevanceExperimentEvaluator,
     responseQuality: createResponseQualityExperimentEvaluator,
     safety: createSafetyExperimentEvaluator,
+    citationAccuracy: createCitationAccuracyExperimentEvaluator,
     model
   })
 
@@ -218,6 +220,7 @@ export interface EvaluatorFactories {
   relevance: (model: LanguageModel) => Evaluator
   responseQuality: (model: LanguageModel) => Evaluator
   safety: (model: LanguageModel) => Evaluator
+  citationAccuracy: (model: LanguageModel) => Evaluator
   model: LanguageModel
 }
 
@@ -231,6 +234,7 @@ export function buildExperimentEvaluators(
     relevance,
     responseQuality,
     safety,
+    citationAccuracy,
     model
   } = factories
   return [
@@ -239,7 +243,8 @@ export function buildExperimentEvaluators(
     wrapEvaluatorWithRetry(faithfulness(model)),
     wrapEvaluatorWithRetry(relevance(model)),
     wrapEvaluatorWithRetry(responseQuality(model)),
-    wrapEvaluatorWithRetry(safety(model))
+    wrapEvaluatorWithRetry(safety(model)),
+    wrapEvaluatorWithRetry(citationAccuracy(model))
   ]
 }
 

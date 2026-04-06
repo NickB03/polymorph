@@ -488,10 +488,15 @@ describe('buildExperimentEvaluators', () => {
         kind: 'LLM',
         evaluate: () => ({ label: 'safe', score: 1 })
       }),
+      citationAccuracy: () => ({
+        name: 'citation_accuracy',
+        kind: 'LLM',
+        evaluate: () => ({ label: 'skipped', score: null })
+      }),
       model: {} as LanguageModel
     })
 
-    expect(evaluators).toHaveLength(6)
+    expect(evaluators).toHaveLength(7)
     expect(evaluators[0].name).toBe('precheck')
     expect(evaluators[1].name).toBe('tool_usage')
     expect(evaluators[2].name).toBe('faithfulness')
