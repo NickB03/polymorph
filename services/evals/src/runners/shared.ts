@@ -19,6 +19,7 @@ import {
   formatEvalContext
 } from '../eval-output'
 import { runEvalCase } from '../eval-runner-client'
+import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
@@ -30,8 +31,6 @@ import { withRetry } from '../retry'
 import type { EvalCase, EvalDatasetExample, EvalRunResult } from '../types'
 
 export { createJudgeModel } from '../judge-model'
-
-const CASE_CONCURRENCY = 3
 
 export interface CaseRunResults {
   succeeded: Array<{ caseSpec: EvalCase; result: EvalRunResult }>
@@ -69,7 +68,7 @@ export async function runCasesConcurrently(
     inFlight.add(task)
     task.finally(() => inFlight.delete(task))
 
-    if (inFlight.size >= CASE_CONCURRENCY) {
+    if (inFlight.size >= runtimeConfig.caseConcurrency) {
       await Promise.race(inFlight)
     }
   }
@@ -110,6 +109,7 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     relevance: createRelevanceExperimentEvaluator,
     responseQuality: createResponseQualityExperimentEvaluator,
     safety: createSafetyExperimentEvaluator,
+    citationAccuracy: createCitationAccuracyExperimentEvaluator,
     model
   })
 
@@ -131,7 +131,7 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
   const thresholds = checkExperimentThresholds(
     experiment,
     runtimeConfig.scoreThreshold,
-    ['safety']
+    runtimeConfig.excludeFromThreshold
   )
   console.log(
     `[evals] ${suite} pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
@@ -221,6 +221,7 @@ export interface EvaluatorFactories {
   relevance: (model: LanguageModel) => Evaluator
   responseQuality: (model: LanguageModel) => Evaluator
   safety: (model: LanguageModel) => Evaluator
+  citationAccuracy: (model: LanguageModel) => Evaluator
   model: LanguageModel
 }
 
@@ -234,6 +235,7 @@ export function buildExperimentEvaluators(
     relevance,
     responseQuality,
     safety,
+    citationAccuracy,
     model
   } = factories
   return [
@@ -242,7 +244,8 @@ export function buildExperimentEvaluators(
     wrapEvaluatorWithRetry(faithfulness(model)),
     wrapEvaluatorWithRetry(relevance(model)),
     wrapEvaluatorWithRetry(responseQuality(model)),
-    wrapEvaluatorWithRetry(safety(model))
+    wrapEvaluatorWithRetry(safety(model)),
+    wrapEvaluatorWithRetry(citationAccuracy(model))
   ]
 }
 
@@ -251,6 +254,14 @@ export function createPhoenixClient() {
   return createClient({
     options: { baseUrl: runtimeConfig.phoenixHost }
   })
+}
+
+function toPhoenixExamples(examples: EvalDatasetExample[]): Example[] {
+  return examples.map(ex => ({
+    input: { ...ex.input },
+    output: { ...ex.output },
+    metadata: { ...ex.metadata }
+  }))
 }
 
 export async function createDatasetAndExperiment({
@@ -275,7 +286,7 @@ export async function createDatasetAndExperiment({
     client: phoenix,
     name: datasetName,
     description: `Automated eval of ${examples.length} ${suite} cases from corpus ${getCorpusVersion()}`,
-    examples: examples as unknown as Example[]
+    examples: toPhoenixExamples(examples)
   })
 
   const experiment = await runExperiment({
@@ -285,7 +296,7 @@ export async function createDatasetAndExperiment({
     dataset: { datasetId },
     task,
     evaluators,
-    concurrency: CASE_CONCURRENCY
+    concurrency: createConfig().caseConcurrency
   })
 
   return { datasetId, experiment, experimentName, datasetName }

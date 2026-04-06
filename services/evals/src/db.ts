@@ -9,7 +9,7 @@ const client = postgres(config.databaseUrl, {
   // Traffic is still encrypted in transit via the pooler's TLS.
   ssl: config.databaseSslDisabled ? false : { rejectUnauthorized: false },
   prepare: false,
-  max: 5
+  max: config.dbPoolMax
 })
 
 export const db = drizzle(client)

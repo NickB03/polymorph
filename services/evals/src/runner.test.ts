@@ -44,6 +44,7 @@ describe('main runner dispatch', () => {
     vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
     vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
     vi.stubEnv('CORPUS_VERSION', 'v1')
+    vi.stubEnv('JUDGE_API_KEY', 'test-judge-key')
 
     const { main } = await import('./index')
     await main()
@@ -67,6 +68,7 @@ describe('main runner dispatch', () => {
     vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
     vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
     vi.stubEnv('CORPUS_VERSION', 'v1')
+    vi.stubEnv('JUDGE_API_KEY', 'test-judge-key')
 
     const { main } = await import('./index')
     await main()

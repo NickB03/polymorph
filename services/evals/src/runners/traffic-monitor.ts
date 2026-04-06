@@ -1,5 +1,6 @@
 import { config } from '../config'
 import { formatEvalContext } from '../eval-output'
+import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
@@ -70,6 +71,7 @@ export async function runTrafficMonitorSuite() {
     relevance: createRelevanceExperimentEvaluator,
     responseQuality: createResponseQualityExperimentEvaluator,
     safety: createSafetyExperimentEvaluator,
+    citationAccuracy: createCitationAccuracyExperimentEvaluator,
     model
   })
 
@@ -92,7 +94,7 @@ export async function runTrafficMonitorSuite() {
   const thresholds = checkExperimentThresholds(
     experiment,
     config.scoreThreshold,
-    ['safety']
+    config.excludeFromThreshold
   )
   console.log(
     `[evals] Traffic monitor pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`

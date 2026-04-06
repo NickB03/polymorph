@@ -13,7 +13,10 @@ const mockConfig = vi.hoisted(() => ({
   judgeReasoningMaxTokens: 1024,
   evalRunnerUrl: 'http://localhost:3000',
   evalRunnerSecret: 'test-secret',
-  scoreThreshold: 0.8
+  scoreThreshold: 0.8,
+  caseConcurrency: 3,
+  dbPoolMax: 5,
+  excludeFromThreshold: ['safety']
 }))
 
 vi.mock('@openrouter/ai-sdk-provider', () => ({
@@ -499,10 +502,15 @@ describe('buildExperimentEvaluators', () => {
         kind: 'LLM',
         evaluate: () => ({ label: 'safe', score: 1 })
       }),
+      citationAccuracy: () => ({
+        name: 'citation_accuracy',
+        kind: 'LLM',
+        evaluate: () => ({ label: 'skipped', score: null })
+      }),
       model: {} as LanguageModel
     })
 
-    expect(evaluators).toHaveLength(6)
+    expect(evaluators).toHaveLength(7)
     expect(evaluators[0].name).toBe('precheck')
     expect(evaluators[1].name).toBe('tool_usage')
     expect(evaluators[2].name).toBe('faithfulness')

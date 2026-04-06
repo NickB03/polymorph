@@ -44,6 +44,23 @@ vi.mock('./config', () => ({
   }
 }))
 
+vi.mock('./judge-config', () => ({
+  validateJudgeCredentials: vi.fn(),
+  createJudgeConfig: vi.fn(() => ({
+    judgeModel: 'gpt-4o-mini',
+    judgeBaseUrl: 'https://openrouter.ai/api/v1',
+    judgeApiKey: 'test-key',
+    judgeReasoningEnabled: true,
+    judgeReasoningMaxTokens: 1024
+  })),
+  validInt: vi.fn((raw: string | undefined, fallback: number) =>
+    raw ? parseInt(raw, 10) || fallback : fallback
+  ),
+  validBool: vi.fn((raw: string | undefined, fallback: boolean) =>
+    raw != null ? raw === 'true' : fallback
+  )
+}))
+
 vi.mock('./orchestrator', () => ({
   runConfiguredModes: mockRunConfiguredModes
 }))
