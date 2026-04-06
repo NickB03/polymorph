@@ -4,6 +4,15 @@ import { config } from './config'
 import { db } from './db'
 import { withRetry } from './retry'
 
+export class SamplerParseError extends Error {
+  constructor(field: string, chatId: string, cause: unknown) {
+    super(
+      `SamplerParseError: Failed to parse ${field} for chat ${chatId}: ${cause instanceof Error ? cause.message : String(cause)}`
+    )
+    this.name = 'SamplerParseError'
+  }
+}
+
 export interface ChatSample {
   chatId: string
   createdAt: Date
@@ -130,18 +139,39 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
     { maxAttempts: 3, baseDelayMs: 2000 }
   )
 
-  return rows.map(row => ({
-    chatId: row.chat_id,
-    createdAt: row.created_at,
-    userQuery: row.user_query,
-    searchResults: parseSearchResults(row.search_results),
-    modelAnswer: row.model_answer,
-    citations: parseCitations(row.citations),
-    toolNames: parseToolNames(row.tool_names)
-  }))
+  const samples: ChatSample[] = []
+  let parseFailures = 0
+
+  for (const row of rows) {
+    try {
+      samples.push({
+        chatId: row.chat_id,
+        createdAt: row.created_at,
+        userQuery: row.user_query,
+        searchResults: parseSearchResults(row.search_results),
+        modelAnswer: row.model_answer,
+        citations: parseCitations(row.citations),
+        toolNames: parseToolNames(row.tool_names)
+      })
+    } catch (err) {
+      parseFailures++
+      console.warn(
+        `[evals] Skipping chat ${row.chat_id} due to parse error:`,
+        err instanceof Error ? err.message : err
+      )
+    }
+  }
+
+  if (parseFailures > 0) {
+    console.warn(
+      `[evals] ${parseFailures}/${rows.length} chats skipped due to parse failures`
+    )
+  }
+
+  return samples
 }
 
-function parseToolNames(raw: string | null): string[] {
+export function parseToolNames(raw: string | null): string[] {
   if (!raw) return []
   try {
     const parsed = JSON.parse(raw)
@@ -151,43 +181,45 @@ function parseToolNames(raw: string | null): string[] {
         typeof name === 'string' && name.length > 0
     )
   } catch (err) {
-    console.warn('[evals] Failed to parse tool names JSON:', String(err))
-    return []
+    throw new SamplerParseError('tool_names', 'unknown', err)
   }
 }
 
-function parseCitations(raw: string | null): ChatSample['citations'] {
+export function parseCitations(
+  raw: string | null
+): Array<{ url: string; title: string }> {
   if (!raw) return []
   try {
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(Boolean).map((c: any) => ({
-      url: c?.url ?? '',
-      title: c?.title ?? ''
+    return parsed.filter(Boolean).map((c: Record<string, unknown>) => ({
+      url: String(c?.url ?? ''),
+      title: String(c?.title ?? '')
     }))
   } catch (err) {
-    console.warn('[evals] Failed to parse citations JSON:', err)
-    return []
+    throw new SamplerParseError('citations', 'unknown', err)
   }
 }
 
-function parseSearchResults(raw: string | null): ChatSample['searchResults'] {
+export function parseSearchResults(raw: string | null): Array<{
+  query: string
+  results: Array<{ title: string; url: string; snippet: string }>
+}> {
   if (!raw) return []
   try {
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(Boolean).map((result: any) => ({
-      query: result?.query ?? '',
+    return parsed.filter(Boolean).map((result: Record<string, unknown>) => ({
+      query: String(result?.query ?? ''),
       results: Array.isArray(result?.results)
-        ? result.results.map((r: any) => ({
-            title: r?.title ?? '',
-            url: r?.url ?? '',
-            snippet: r?.snippet ?? r?.content ?? ''
+        ? (result.results as Record<string, unknown>[]).map(r => ({
+            title: String(r?.title ?? ''),
+            url: String(r?.url ?? ''),
+            snippet: String(r?.snippet ?? r?.content ?? '')
           }))
         : []
     }))
   } catch (err) {
-    console.warn('[evals] Failed to parse search results JSON:', err)
-    return []
+    throw new SamplerParseError('search_results', 'unknown', err)
   }
 }
