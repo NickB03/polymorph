@@ -19,25 +19,68 @@
 - **Multi-step research agent** — searches the web, reasons across sources, and synthesizes answers
 - **Generative UI** — tables, charts, timelines, citations, callouts, and link previews render inline
 - **Canvas artifacts** — generates and previews single-file React apps with live editing
-- **Multi-provider AI** — Gemini, GPT, Claude, and Grok via Vercel AI Gateway
+- **Multi-provider AI** — Gemini and Grok via Vercel AI Gateway, plus GPT, Claude, and Ollama via direct provider keys
 - **Voice mode** — speech input and text-to-speech playback
 - **Guest access** — instant search without sign-up, rate-limited per IP
 
 ## Architecture
 
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-overview-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/architecture-overview-light.png">
-    <img alt="Polymorph architecture" src="docs/assets/architecture-overview-dark.png" width="720">
-  </picture>
-</div>
+```mermaid
+graph LR
+    User["👤 You"]
+
+    subgraph Agent["Polymorph Agent"]
+        direction TB
+        Orchestrator["Tool Loop Orchestrator"]
+        Reasoning["Multi-step Reasoning"]
+        Orchestrator --> Reasoning
+    end
+
+    subgraph Providers["AI Providers"]
+        direction TB
+        Gateway["Vercel AI Gateway"]
+        Gemini["Gemini"]
+        Grok["Grok"]
+        Gateway --> Gemini & Grok
+        GPT["GPT (direct)"]
+        Claude["Claude (direct)"]
+        Ollama["Ollama (local)"]
+    end
+
+    subgraph Search["Web Search"]
+        Brave["Brave"]
+        Tavily["Tavily"]
+        Exa["Exa"]
+    end
+
+    subgraph Response["Streaming Response"]
+        direction TB
+        GenUI["Generative UI"]
+        Tables["Tables"]
+        Charts["Charts"]
+        Timelines["Timelines"]
+        Citations["Citations"]
+        Canvas["Canvas Artifacts"]
+        GenUI --> Tables & Charts & Timelines & Citations & Canvas
+    end
+
+    subgraph Data["Persistence"]
+        Supabase["Supabase PostgreSQL"]
+        Phoenix["Phoenix Observability"]
+    end
+
+    User --> Agent
+    Agent --> Providers
+    Agent --> Search
+    Agent --> Response
+    Agent --> Data
+```
 
 ## Quickstart
 
 ```bash
 bun install
-cp .env.local.example .env.local   # then set DATABASE_URL, AI_GATEWAY_API_KEY, TAVILY_API_KEY
+cp .env.local.example .env.local   # then set DATABASE_URL, AI_GATEWAY_API_KEY, BRAVE_SEARCH_API_KEY
 bun run migrate
 bun dev                             # http://localhost:43100
 ```

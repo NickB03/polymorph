@@ -106,10 +106,9 @@ OpenTelemetry traces export to a self-hosted Phoenix instance on Railway, gated 
 Offline LLM-judge evaluation pipeline running as a Railway cron service (every 6 hours). Deployed alongside `phoenix` on Railway. See `docs/operations/DEPLOYMENT.md` for configuration details.
 
 - Samples recent chats from Supabase Postgres (parameterized SQL)
-- Runs 3 evaluators (faithfulness, relevance, response quality) via pre-built `@arizeai/phoenix-evals` factories wrapped in `asExperimentEvaluator` shells
-- Pre-built evaluators (`faithfulness.ts`, `relevance.ts`, `response-quality.ts`) handle classification extraction via structured output internally
+- Runs 6 evaluators: 2 deterministic (`prechecks`, `tool-usage`) + 4 LLM-judge (`faithfulness`, `relevance`, `response-quality`, `safety`) via `asExperimentEvaluator` shells
 - Pushes results to Phoenix as experiments
-- Key files: `sampler.ts`, `evaluators/faithfulness.ts`, `evaluators/relevance.ts`, `evaluators/response-quality.ts`, `config.ts`
+- Key files: `sampler.ts`, `prechecks.ts`, `config.ts`, `evaluators/faithfulness.ts`, `evaluators/relevance.ts`, `evaluators/response-quality.ts`, `evaluators/safety.ts`, `evaluators/tool-usage.ts`
 
 ### Voice
 

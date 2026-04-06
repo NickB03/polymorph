@@ -13,10 +13,15 @@ Polymorph requires the following environment variables to run:
 DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres
 DATABASE_SSL_DISABLED=true
 AI_GATEWAY_API_KEY=[YOUR_VERCEL_GATEWAY_KEY]
-TAVILY_API_KEY=[YOUR_TAVILY_API_KEY]
 ```
 
-These defaults are optimized for a fast local bootstrap with Vercel AI Gateway + Tavily.
+For web search, add at least one provider key:
+
+```bash
+BRAVE_SEARCH_API_KEY=[YOUR_BRAVE_SEARCH_KEY]
+```
+
+These defaults are optimized for a fast local bootstrap with Vercel AI Gateway + Brave Search.
 
 ## Authentication Modes
 
@@ -37,18 +42,18 @@ ANONYMOUS_USER_ID=anonymous-user
 
 ## Search Providers
 
-### Primary optimized provider (required)
+### Primary search provider (recommended)
 
-- **Tavily** (default)
-- Alternative: Exa, Firecrawl, or SearXNG
+- **Brave** (default) — general web research and multimedia results
+- Alternative primary: Tavily, Exa, Firecrawl, or SearXNG
 
-### Optional general/multimedia provider
+### Optional secondary/fallback providers
 
 ```bash
-BRAVE_SEARCH_API_KEY=[YOUR_BRAVE_SEARCH_API_KEY]
+TAVILY_API_KEY=[YOUR_TAVILY_API_KEY]
 ```
 
-When Brave is omitted, general searches fall back to your configured optimized provider.
+When Brave is configured, Tavily and Exa serve as automatic fallbacks. See [Environment Reference](ENVIRONMENT.md) for the full provider matrix.
 
 ## AI Provider Options
 

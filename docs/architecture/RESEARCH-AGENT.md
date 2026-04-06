@@ -229,7 +229,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 - Prohibits use of fetch on search results (only on user-provided URLs)
 - Requires all responses to use inline citations `[number](#toolCallId)`
 
-**Active tools:** `search`, `fetch`, `displayPlan`, `displayTable`, `displayChart`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayCallout`, `displayTimeline`
+**Active tools:** `search`, `fetch`, `displayPlan`, `displayTable`, `displayChart`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`
 
 ### Research Mode
 
@@ -339,16 +339,17 @@ Session-scoped task management. Each `createTodoTools()` call creates an isolate
 
 All display tools share a common pattern: they accept structured input, validate it with Zod schemas, and return the input as output (`execute: async params => params`). The actual rendering happens in the frontend via `components/tool-ui/registry.tsx`.
 
-| Tool                 | Purpose                                     | Key input fields                                                 | Trigger examples                                       |
-| -------------------- | ------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------ |
-| `displayPlan`        | Step-by-step guides and how-to checklists   | `id`, `title`, `todos[]` with `id`, `label`, `status`            | "how to deploy to AWS", "steps to learn Python"        |
-| `displayTable`       | Sortable data tables with formatted columns | `columns[]` with `key`, `label`, `format`, `data[]`              | "compare React vs Vue", "GPU benchmarks"               |
-| `displayChart`       | Bar and line chart data visualizations      | `id`, `type`, `data[]`, `xKey`, `series[]` (key, label)          | "show revenue trends", "compare sales by quarter"      |
-| `displayCitations`   | Rich source citation cards                  | `citations[]` with `id`, `href`, `title`, `snippet`              | "best resources for learning Rust"                     |
-| `displayLinkPreview` | Single featured link card                   | `id`, `href`, `title`, `description`, `image`                    | "where are the React docs"                             |
-| `displayOptionList`  | Interactive option selector                 | `id`, `options[]` with `id`, `label`, `description`              | "which database should I use"                          |
-| `displayCallout`     | Styled callout box for key information      | `id`, `variant`, `title` (optional), `content`                   | "This API was deprecated in v3"                        |
-| `displayTimeline`    | Chronological event timeline                | `id`, `title`, `events[]` with `id`, `date`, `title`, `category` | "history of TypeScript", "timeline of SpaceX launches" |
+| Tool                    | Purpose                                     | Key input fields                                                 | Trigger examples                                              |
+| ----------------------- | ------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------- |
+| `displayPlan`           | Step-by-step guides and how-to checklists   | `id`, `title`, `todos[]` with `id`, `label`, `status`            | "how to deploy to AWS", "steps to learn Python"               |
+| `displayTable`          | Sortable data tables with formatted columns | `columns[]` with `key`, `label`, `format`, `data[]`              | "compare React vs Vue", "GPU benchmarks"                      |
+| `displayChart`          | Bar and line chart data visualizations      | `id`, `type`, `data[]`, `xKey`, `series[]` (key, label)          | "show revenue trends", "compare sales by quarter"             |
+| `displayCitations`      | Rich source citation cards                  | `citations[]` with `id`, `href`, `title`, `snippet`              | "best resources for learning Rust"                            |
+| `displayLinkPreview`    | Single featured link card                   | `id`, `href`, `title`, `description`, `image`                    | "where are the React docs"                                    |
+| `displayOptionList`     | Interactive option selector                 | `id`, `options[]` with `id`, `label`, `description`              | "which database should I use"                                 |
+| `displayQuestionWizard` | Multi-step guided question wizards          | `id`, `questions[]` with `id`, `question`, `options`             | "help me choose a framework", "what kind of app do you want?" |
+| `displayCallout`        | Styled callout box for key information      | `id`, `variant`, `title` (optional), `content`                   | "This API was deprecated in v3"                               |
+| `displayTimeline`       | Chronological event timeline                | `id`, `title`, `events[]` with `id`, `date`, `title`, `category` | "history of TypeScript", "timeline of SpaceX launches"        |
 
 **`displayOptionList`** is unique: it has no `execute` function, so the frontend resolves it via `addToolResult` when the user makes a selection.
 
@@ -383,8 +384,8 @@ graph TD
     Factory["createSearchProvider()"]
 
     subgraph Providers["Provider Implementations"]
-        Tavily["TavilySearchProvider<br/>(default)"]
-        Brave["BraveSearchProvider<br/>(multimedia)"]
+        Brave["BraveSearchProvider<br/>(default)"]
+        Tavily["TavilySearchProvider<br/>(fallback)"]
         Exa["ExaSearchProvider"]
         SearXNG["SearXNGSearchProvider<br/>(self-hosted)"]
         Firecrawl["FirecrawlSearchProvider"]
@@ -418,7 +419,7 @@ interface SearchProvider {
 }
 ```
 
-#### Tavily (Default)
+#### Tavily
 
 **Source:** [`lib/tools/search/providers/tavily.ts`](../lib/tools/search/providers/tavily.ts)
 
@@ -818,8 +819,8 @@ case 'my-provider':
 | `lib/tools/display-option-list.ts`                       | Interactive option list display tool                                        |
 | `lib/tools/search/providers/index.ts`                    | Search provider factory and type exports                                    |
 | `lib/tools/search/providers/base.ts`                     | `SearchProvider` interface and `BaseSearchProvider` abstract class          |
-| `lib/tools/search/providers/tavily.ts`                   | Tavily search provider (default)                                            |
-| `lib/tools/search/providers/brave.ts`                    | Brave search provider (multimedia support)                                  |
+| `lib/tools/search/providers/brave.ts`                    | Brave search provider (default)                                             |
+| `lib/tools/search/providers/tavily.ts`                   | Tavily search provider (fallback)                                           |
 | `lib/tools/search/providers/exa.ts`                      | Exa semantic search provider                                                |
 | `lib/tools/search/providers/searxng.ts`                  | SearXNG meta-search provider (self-hosted)                                  |
 | `lib/tools/search/providers/firecrawl.ts`                | Firecrawl search provider                                                   |

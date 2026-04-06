@@ -45,7 +45,7 @@ The first run downloads Docker images and may take a few minutes.
 cp .env.local.example .env.local
 ```
 
-Open `.env.local` and set the three required variables:
+Open `.env.local` and set the two required variables:
 
 ```bash
 # Database -- local Supabase PostgreSQL
@@ -54,9 +54,15 @@ DATABASE_SSL_DISABLED=true
 
 # AI -- Vercel AI Gateway (powers all LLM calls)
 AI_GATEWAY_API_KEY=your_vercel_gateway_key
+```
 
-# Search -- Tavily (primary search provider)
-TAVILY_API_KEY=your_tavily_key
+For web search, add at least one search provider key (Brave recommended):
+
+```bash
+# Search -- Brave (default primary search provider)
+BRAVE_SEARCH_API_KEY=your_brave_key
+# Or use Tavily as an alternative:
+# TAVILY_API_KEY=your_tavily_key
 ```
 
 For Supabase Auth (recommended), also set:
@@ -98,7 +104,7 @@ Here's the flow your search triggered:
 
 1. **Browser** sent a request to `/api/chat` via SSE
 2. **Researcher agent** (`lib/agents/researcher.ts`) received the query and selected tools
-3. **Search tool** called Tavily to find relevant web pages
+3. **Search tool** called Brave (or your configured provider) to find relevant web pages
 4. **Fetch tool** extracted content from top results
 5. **LLM** (via Vercel AI Gateway) synthesized an answer with citations
 6. **Streaming** sent message parts back to the browser incrementally
@@ -121,6 +127,6 @@ Check if ports 44321-44323 are in use: `lsof -i :44321 -i :44322 -i :44323`. Sto
 Make sure `DATABASE_SSL_DISABLED=true` is set in `.env.local`. The local Supabase instance doesn't use SSL.
 
 **App starts but searches fail:**
-Verify `TAVILY_API_KEY` is set correctly. Check the terminal for error messages.
+Verify your search provider key (`BRAVE_SEARCH_API_KEY` or `TAVILY_API_KEY`) is set correctly. Check the terminal for error messages.
 
 For more solutions, see [Troubleshooting](../operations/TROUBLESHOOTING.md).
