@@ -31,7 +31,7 @@ function caseSpec({
   tags,
   requiresTextAnswer = true,
   requiresCitations = false,
-  allowsInteractiveOnly = true
+  allowsInteractiveOnly = false
 }: {
   id: string
   suite: EvalSuite
@@ -65,7 +65,8 @@ const CAPABILITY_CASES: EvalCase[] = [
     ],
     searchMode: 'chat',
     modelType: 'speed',
-    tags: ['factual', 'evergreen']
+    tags: ['factual', 'evergreen'],
+    allowsInteractiveOnly: false
   }),
   caseSpec({
     id: 'cap-comparison',
@@ -78,7 +79,8 @@ const CAPABILITY_CASES: EvalCase[] = [
     searchMode: 'research',
     modelType: 'quality',
     tags: ['comparison', 'evergreen'],
-    requiresCitations: true
+    requiresCitations: true,
+    allowsInteractiveOnly: false
   }),
   caseSpec({
     id: 'cap-multi-hop',
@@ -91,7 +93,8 @@ const CAPABILITY_CASES: EvalCase[] = [
     searchMode: 'research',
     modelType: 'quality',
     tags: ['multi-hop', 'evergreen'],
-    requiresCitations: true
+    requiresCitations: true,
+    allowsInteractiveOnly: false
   }),
   caseSpec({
     id: 'cap-how-to',
@@ -101,7 +104,8 @@ const CAPABILITY_CASES: EvalCase[] = [
     ],
     searchMode: 'chat',
     modelType: 'speed',
-    tags: ['how-to', 'evergreen']
+    tags: ['how-to', 'evergreen'],
+    allowsInteractiveOnly: false
   }),
   caseSpec({
     id: 'cap-ambiguity',
@@ -113,7 +117,8 @@ const CAPABILITY_CASES: EvalCase[] = [
     ],
     searchMode: 'chat',
     modelType: 'speed',
-    tags: ['ambiguous', 'clarification']
+    tags: ['ambiguous', 'clarification'],
+    allowsInteractiveOnly: false
   }),
   caseSpec({
     id: 'cap-citation-critical',
@@ -124,7 +129,8 @@ const CAPABILITY_CASES: EvalCase[] = [
     searchMode: 'research',
     modelType: 'quality',
     tags: ['citation-critical', 'evergreen'],
-    requiresCitations: true
+    requiresCitations: true,
+    allowsInteractiveOnly: false
   }),
   caseSpec({
     id: 'cap-long-form',
@@ -137,7 +143,8 @@ const CAPABILITY_CASES: EvalCase[] = [
     searchMode: 'research',
     modelType: 'quality',
     tags: ['long-form', 'synthesis'],
-    requiresCitations: true
+    requiresCitations: true,
+    allowsInteractiveOnly: false
   }),
   caseSpec({
     id: 'cap-multi-turn',
@@ -153,7 +160,8 @@ const CAPABILITY_CASES: EvalCase[] = [
     ],
     searchMode: 'chat',
     modelType: 'speed',
-    tags: ['multi-turn', 'decision-support']
+    tags: ['multi-turn', 'decision-support'],
+    allowsInteractiveOnly: false
   }),
 
   // --- Safety-adversarial cases ---
@@ -389,7 +397,8 @@ const REGRESSION_CASES: EvalCase[] = [
     ],
     searchMode: 'chat',
     modelType: 'speed',
-    tags: ['concise', 'direct-answer']
+    tags: ['concise', 'direct-answer'],
+    allowsInteractiveOnly: false
   }),
   caseSpec({
     id: 'reg-research-mode',
@@ -402,7 +411,8 @@ const REGRESSION_CASES: EvalCase[] = [
     searchMode: 'research',
     modelType: 'quality',
     tags: ['research', 'react'],
-    requiresCitations: true
+    requiresCitations: true,
+    allowsInteractiveOnly: false
   }),
   caseSpec({
     id: 'reg-follow-up',
@@ -416,7 +426,8 @@ const REGRESSION_CASES: EvalCase[] = [
     ],
     searchMode: 'chat',
     modelType: 'speed',
-    tags: ['follow-up', 'observability']
+    tags: ['follow-up', 'observability'],
+    allowsInteractiveOnly: false
   })
 ]
 
@@ -429,7 +440,8 @@ const SMOKE_CASES: EvalCase[] = [
     ],
     searchMode: 'chat',
     modelType: 'speed',
-    tags: ['smoke']
+    tags: ['smoke'],
+    allowsInteractiveOnly: false
   }),
   caseSpec({
     id: 'smoke-research',
@@ -438,7 +450,8 @@ const SMOKE_CASES: EvalCase[] = [
     searchMode: 'research',
     modelType: 'quality',
     tags: ['smoke', 'comparison'],
-    requiresCitations: true
+    requiresCitations: true,
+    allowsInteractiveOnly: false
   })
 ]
 
