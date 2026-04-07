@@ -811,23 +811,15 @@ export function Chat({
     useFileDropzone({
       uploadedFiles,
       setUploadedFiles,
-      chatId: chatId
+      chatId: chatId,
+      isGuest
     })
-  const guestDragHandlers = {
-    isDragging: false,
-    handleDragOver: (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault()
-    },
-    handleDragLeave: (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault()
-    },
-    handleDrop: (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault()
-    }
+  const dragHandlers = {
+    isDragging,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop
   }
-  const dragHandlers = isGuest
-    ? guestDragHandlers
-    : { isDragging, handleDragOver, handleDragLeave, handleDrop }
 
   // Voice conversation loop (Phase 3) — hook is always called (React rules)
   // but UI is only rendered when NEXT_PUBLIC_ENABLE_VOICE=true

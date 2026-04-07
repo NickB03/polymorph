@@ -4,12 +4,15 @@ import { toast } from 'sonner'
 
 import { UploadedFile } from '@/lib/types'
 
+import { readFileAsDataUrl } from '@/components/file-upload-button'
+
 type UseFileDropzoneProps = {
   uploadedFiles: UploadedFile[]
   setUploadedFiles: React.Dispatch<React.SetStateAction<UploadedFile[]>>
   maxFiles?: number
   allowedTypes?: string[]
   chatId: string
+  isGuest?: boolean
 }
 
 export function useFileDropzone({
@@ -17,7 +20,8 @@ export function useFileDropzone({
   setUploadedFiles,
   chatId,
   maxFiles = 3,
-  allowedTypes = ['image/png', 'image/jpeg', 'application/pdf']
+  allowedTypes = ['image/png', 'image/jpeg', 'application/pdf'],
+  isGuest = false
 }: UseFileDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -64,33 +68,50 @@ export function useFileDropzone({
 
       await Promise.all(
         initialFiles.map(async uf => {
-          const formData = new FormData()
-          formData.append('file', uf.file)
-          formData.append('chatId', chatId)
-
           try {
-            const res = await fetch('/api/upload', {
-              method: 'POST',
-              body: formData
-            })
-
-            if (!res.ok) throw new Error('Upload failed')
-
-            const { file: uploaded } = await res.json()
-
-            setUploadedFiles(prev =>
-              prev.map(f =>
-                f.file === uf.file
-                  ? {
-                      ...f,
-                      status: 'uploaded',
-                      url: uploaded.url,
-                      name: uploaded.name,
-                      key: uploaded.key
-                    }
-                  : f
+            if (isGuest) {
+              const dataUrl = await readFileAsDataUrl(uf.file)
+              setUploadedFiles(prev =>
+                prev.map(f =>
+                  f.file === uf.file
+                    ? {
+                        ...f,
+                        status: 'uploaded',
+                        url: dataUrl,
+                        name: uf.file.name,
+                        dataUrl
+                      }
+                    : f
+                )
               )
-            )
+            } else {
+              const formData = new FormData()
+              formData.append('file', uf.file)
+              formData.append('chatId', chatId)
+
+              const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+              })
+
+              if (!res.ok) throw new Error('Upload failed')
+
+              const { file: uploaded } = await res.json()
+
+              setUploadedFiles(prev =>
+                prev.map(f =>
+                  f.file === uf.file
+                    ? {
+                        ...f,
+                        status: 'uploaded',
+                        url: uploaded.url,
+                        name: uploaded.filename,
+                        key: uploaded.key
+                      }
+                    : f
+                )
+              )
+            }
           } catch (err) {
             toast.error(`Failed to upload ${uf.file.name}`)
             setUploadedFiles(prev =>
@@ -102,7 +123,7 @@ export function useFileDropzone({
         })
       )
     },
-    [allowedTypes, maxFiles, uploadedFiles, setUploadedFiles, chatId]
+    [allowedTypes, maxFiles, uploadedFiles, setUploadedFiles, chatId, isGuest]
   )
 
   return {

@@ -398,6 +398,86 @@ describe('POST /api/chat', () => {
     })
   })
 
+  describe('file part validation', () => {
+    it('rejects authenticated user with disallowed file mediaType', async () => {
+      const req = createRequest({
+        chatId: 'chat-123',
+        trigger: 'submit-message',
+        isNewChat: true,
+        message: {
+          id: 'msg-1',
+          role: 'user',
+          parts: [
+            {
+              type: 'file',
+              url: 'https://example.com/f.exe',
+              mediaType: 'application/x-msdownload'
+            }
+          ]
+        }
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(400)
+      const json = await res.json()
+      expect(json.message).toMatch(/not allowed/i)
+    })
+
+    it('rejects guest with disallowed file mediaType', async () => {
+      vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+        undefined as unknown as string
+      )
+      process.env.ENABLE_GUEST_CHAT = 'true'
+
+      const req = createRequest({
+        chatId: 'chat-456',
+        trigger: 'submit-message',
+        isNewChat: true,
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: [
+          {
+            role: 'user',
+            parts: [
+              {
+                type: 'file',
+                url: 'data:text/html;base64,abc',
+                mediaType: 'text/html'
+              }
+            ]
+          }
+        ]
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(400)
+
+      delete process.env.ENABLE_GUEST_CHAT
+    })
+
+    it('allows authenticated user with valid image file part', async () => {
+      const req = createRequest({
+        chatId: 'chat-789',
+        trigger: 'submit-message',
+        isNewChat: true,
+        message: {
+          id: 'msg-1',
+          role: 'user',
+          parts: [
+            { type: 'text', text: 'analyze this' },
+            {
+              type: 'file',
+              url: 'https://storage.example.com/img.png',
+              mediaType: 'image/png'
+            }
+          ]
+        }
+      })
+
+      const res = await POST(req)
+      expect(res.status).toBe(200)
+    })
+  })
+
   it('returns 500 on unexpected errors', async () => {
     const req = new Request('http://localhost/api/chat', {
       method: 'POST',

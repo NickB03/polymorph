@@ -8,6 +8,7 @@ import { checkAndEnforceGuestLimit } from '@/lib/rate-limit/guest-limit'
 import { createChatStreamResponse } from '@/lib/streaming/create-chat-stream-response'
 import { createEphemeralChatStreamResponse } from '@/lib/streaming/create-ephemeral-chat-stream-response'
 import { SearchMode } from '@/lib/types/search'
+import { validateFilePart } from '@/lib/utils/file-validation'
 import { jsonError } from '@/lib/utils/json-error'
 import { selectModel } from '@/lib/utils/model-selection'
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
@@ -196,6 +197,25 @@ export async function POST(req: Request) {
           'Invalid messages: expected non-empty array with valid role and parts',
           400
         )
+      }
+    }
+
+    // Validate file parts for all users (guests and authenticated)
+    const messagesToValidate = isGuest
+      ? messages
+      : message?.parts
+        ? [message]
+        : []
+
+    for (const msg of messagesToValidate) {
+      if (!Array.isArray(msg.parts)) continue
+      for (const part of msg.parts) {
+        if (part.type === 'file') {
+          const result = validateFilePart(part)
+          if (!result.valid) {
+            return jsonError('BAD_REQUEST', result.reason, 400)
+          }
+        }
       }
     }
 

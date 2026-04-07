@@ -228,7 +228,10 @@ export function ChatPanel({
                 !isComposing &&
                 !enterDisabled
               ) {
-                if (input.trim().length === 0) {
+                if (
+                  input.trim().length === 0 &&
+                  !uploadedFiles.some(f => f.status === 'uploaded')
+                ) {
                   e.preventDefault()
                   return
                 }
@@ -245,56 +248,67 @@ export function ChatPanel({
           {/* Bottom menu area */}
           <div className="flex items-center justify-between p-3">
             <div className="flex items-center gap-2">
-              {!isGuest && (
-                <FileUploadButton
-                  onFileSelect={async files => {
-                    const newFiles: UploadedFile[] = files.map(file => ({
+              <FileUploadButton
+                isGuest={isGuest}
+                onGuestFileSelect={files => {
+                  const newFiles: UploadedFile[] = files.map(
+                    ({ file, dataUrl }) => ({
                       file,
-                      status: 'uploading'
-                    }))
-                    setUploadedFiles(prev => [...prev, ...newFiles])
-                    await Promise.all(
-                      newFiles.map(async uf => {
-                        const formData = new FormData()
-                        formData.append('file', uf.file)
-                        formData.append('chatId', chatId)
-                        try {
-                          const res = await fetch('/api/upload', {
-                            method: 'POST',
-                            body: formData
-                          })
+                      status: 'uploaded' as const,
+                      url: dataUrl,
+                      name: file.name,
+                      dataUrl
+                    })
+                  )
+                  setUploadedFiles(prev => [...prev, ...newFiles].slice(0, 3))
+                }}
+                onFileSelect={async files => {
+                  const newFiles: UploadedFile[] = files.map(file => ({
+                    file,
+                    status: 'uploading'
+                  }))
+                  setUploadedFiles(prev => [...prev, ...newFiles])
+                  await Promise.all(
+                    newFiles.map(async uf => {
+                      const formData = new FormData()
+                      formData.append('file', uf.file)
+                      formData.append('chatId', chatId)
+                      try {
+                        const res = await fetch('/api/upload', {
+                          method: 'POST',
+                          body: formData
+                        })
 
-                          if (!res.ok) {
-                            throw new Error('Upload failed')
-                          }
-
-                          const { file: uploaded } = await res.json()
-                          setUploadedFiles(prev =>
-                            prev.map(f =>
-                              f.file === uf.file
-                                ? {
-                                    ...f,
-                                    status: 'uploaded',
-                                    url: uploaded.url,
-                                    name: uploaded.filename,
-                                    key: uploaded.key
-                                  }
-                                : f
-                            )
-                          )
-                        } catch (e) {
-                          toast.error(`Failed to upload ${uf.file.name}`)
-                          setUploadedFiles(prev =>
-                            prev.map(f =>
-                              f.file === uf.file ? { ...f, status: 'error' } : f
-                            )
-                          )
+                        if (!res.ok) {
+                          throw new Error('Upload failed')
                         }
-                      })
-                    )
-                  }}
-                />
-              )}
+
+                        const { file: uploaded } = await res.json()
+                        setUploadedFiles(prev =>
+                          prev.map(f =>
+                            f.file === uf.file
+                              ? {
+                                  ...f,
+                                  status: 'uploaded',
+                                  url: uploaded.url,
+                                  name: uploaded.filename,
+                                  key: uploaded.key
+                                }
+                              : f
+                          )
+                        )
+                      } catch (e) {
+                        toast.error(`Failed to upload ${uf.file.name}`)
+                        setUploadedFiles(prev =>
+                          prev.map(f =>
+                            f.file === uf.file ? { ...f, status: 'error' } : f
+                          )
+                        )
+                      }
+                    })
+                  )
+                }}
+              />
               <SearchModeSelector />
             </div>
             <div className="flex items-center gap-2">
@@ -310,7 +324,11 @@ export function ChatPanel({
                 type={isLoading ? 'button' : 'submit'}
                 size={'icon'}
                 className={cn(isLoading && 'animate-pulse', 'rounded-full')}
-                disabled={input.length === 0 && !isLoading}
+                disabled={
+                  input.length === 0 &&
+                  !isLoading &&
+                  !uploadedFiles.some(f => f.status === 'uploaded')
+                }
                 onClick={isLoading ? stop : undefined}
                 aria-label={isLoading ? 'Stop generating' : 'Send message'}
               >

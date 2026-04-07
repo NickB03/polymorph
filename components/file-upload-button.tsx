@@ -19,10 +19,23 @@ const allowedOtherTypes = [
 const isAllowedFileType = (file: File) =>
   allowedImageTypes.includes(file.type) || allowedOtherTypes.includes(file.type)
 
+export function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 export function FileUploadButton({
-  onFileSelect
+  onFileSelect,
+  isGuest = false,
+  onGuestFileSelect
 }: {
   onFileSelect: (files: File[]) => void
+  isGuest?: boolean
+  onGuestFileSelect?: (files: { file: File; dataUrl: string }[]) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -42,7 +55,16 @@ export function FileUploadButton({
     }
 
     if (validFiles.length > 0) {
-      onFileSelect(validFiles)
+      if (isGuest && onGuestFileSelect) {
+        Promise.all(
+          validFiles.map(async file => ({
+            file,
+            dataUrl: await readFileAsDataUrl(file)
+          }))
+        ).then(onGuestFileSelect)
+      } else {
+        onFileSelect(validFiles)
+      }
     }
   }
 

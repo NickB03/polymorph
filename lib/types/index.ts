@@ -104,4 +104,6 @@ export type UploadedFile = {
   url?: string
   name?: string
   key?: string
+  /** Base64 data URL for guest uploads (no server storage) */
+  dataUrl?: string
 }
