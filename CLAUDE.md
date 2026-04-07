@@ -135,7 +135,7 @@ To keep quality consistent, Claude Code should automatically invoke the followin
 - **Canvas artifact issues** (preview iframe, compile pipeline, diagnostics) → `harden`
 - **Supabase/Postgres schema/query/perf changes** → `supabase-postgres-best-practices`
 - **Next.js App Router architecture decisions** → `nextjs-app-router-patterns`
-- **New page, major UI section, or complex layout** → Pencil wireframe workflow (see "Design Workflow" section above), then `frontend-design`
+- **New page, major UI section, or complex layout** → Pencil wireframe workflow (see `.claude/rules/design-workflow.md`), then `frontend-design`
 - **Any creative/visual work** → `brainstorming` (before wireframing or implementation)
 
 #### Precedence rules
