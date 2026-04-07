@@ -114,3 +114,36 @@ describe('ChatPanel', () => {
     expect(screen.getByRole('button', { name: /build/i })).toBeInTheDocument()
   })
 })
+
+describe('file-only submit', () => {
+  it('enables send button when files are uploaded even with empty input', () => {
+    const mockSubmit = vi.fn(e => e.preventDefault())
+
+    render(
+      <ChatPanel
+        chatId="test-chat"
+        input=""
+        handleInputChange={vi.fn()}
+        handleSubmit={mockSubmit}
+        status="ready"
+        messages={[]}
+        stop={vi.fn()}
+        append={vi.fn()}
+        showScrollToBottomButton={false}
+        scrollContainerRef={{ current: null }}
+        uploadedFiles={[
+          {
+            file: new File(['test'], 'photo.png', { type: 'image/png' }),
+            status: 'uploaded' as const,
+            url: 'https://example.com/photo.png',
+            name: 'photo.png'
+          }
+        ]}
+        setUploadedFiles={vi.fn()}
+      />
+    )
+
+    const sendButton = screen.getByRole('button', { name: /send message/i })
+    expect(sendButton).not.toBeDisabled()
+  })
+})

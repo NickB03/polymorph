@@ -3,6 +3,12 @@ import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 
 import { UploadedFile } from '@/lib/types'
+import {
+  ALLOWED_UPLOAD_TYPES,
+  MAX_UPLOAD_SIZE_BYTES
+} from '@/lib/utils/file-validation'
+
+import { readFileAsDataUrl } from '@/components/file-upload-button'
 
 type UseFileDropzoneProps = {
   uploadedFiles: UploadedFile[]
@@ -10,6 +16,7 @@ type UseFileDropzoneProps = {
   maxFiles?: number
   allowedTypes?: string[]
   chatId: string
+  isGuest?: boolean
 }
 
 export function useFileDropzone({
@@ -17,7 +24,8 @@ export function useFileDropzone({
   setUploadedFiles,
   chatId,
   maxFiles = 3,
-  allowedTypes = ['image/png', 'image/jpeg', 'application/pdf']
+  allowedTypes = [...ALLOWED_UPLOAD_TYPES],
+  isGuest = false
 }: UseFileDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -49,13 +57,22 @@ export function useFileDropzone({
         )
       }
 
-      const total = uploadedFiles.length + allowed.length
+      const sizeValid = allowed.filter(f => f.size <= MAX_UPLOAD_SIZE_BYTES)
+      const tooLarge = allowed.filter(f => f.size > MAX_UPLOAD_SIZE_BYTES)
+
+      if (tooLarge.length > 0) {
+        toast.error(
+          'Files too large (max 5 MB): ' + tooLarge.map(f => f.name).join(', ')
+        )
+      }
+
+      const total = uploadedFiles.length + sizeValid.length
       if (total > maxFiles) {
         toast.error(`You can upload a maximum of ${maxFiles} files.`)
         return
       }
 
-      const initialFiles: UploadedFile[] = allowed.map(file => ({
+      const initialFiles: UploadedFile[] = sizeValid.map(file => ({
         file,
         status: 'uploading'
       }))
@@ -64,33 +81,50 @@ export function useFileDropzone({
 
       await Promise.all(
         initialFiles.map(async uf => {
-          const formData = new FormData()
-          formData.append('file', uf.file)
-          formData.append('chatId', chatId)
-
           try {
-            const res = await fetch('/api/upload', {
-              method: 'POST',
-              body: formData
-            })
-
-            if (!res.ok) throw new Error('Upload failed')
-
-            const { file: uploaded } = await res.json()
-
-            setUploadedFiles(prev =>
-              prev.map(f =>
-                f.file === uf.file
-                  ? {
-                      ...f,
-                      status: 'uploaded',
-                      url: uploaded.url,
-                      name: uploaded.name,
-                      key: uploaded.key
-                    }
-                  : f
+            if (isGuest) {
+              const dataUrl = await readFileAsDataUrl(uf.file)
+              setUploadedFiles(prev =>
+                prev.map(f =>
+                  f.file === uf.file
+                    ? {
+                        ...f,
+                        status: 'uploaded',
+                        url: dataUrl,
+                        name: uf.file.name,
+                        dataUrl
+                      }
+                    : f
+                )
               )
-            )
+            } else {
+              const formData = new FormData()
+              formData.append('file', uf.file)
+              formData.append('chatId', chatId)
+
+              const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+              })
+
+              if (!res.ok) throw new Error('Upload failed')
+
+              const { file: uploaded } = await res.json()
+
+              setUploadedFiles(prev =>
+                prev.map(f =>
+                  f.file === uf.file
+                    ? {
+                        ...f,
+                        status: 'uploaded',
+                        url: uploaded.url,
+                        name: uploaded.filename,
+                        key: uploaded.key
+                      }
+                    : f
+                )
+              )
+            }
           } catch (err) {
             toast.error(`Failed to upload ${uf.file.name}`)
             setUploadedFiles(prev =>
@@ -102,7 +136,7 @@ export function useFileDropzone({
         })
       )
     },
-    [allowedTypes, maxFiles, uploadedFiles, setUploadedFiles, chatId]
+    [allowedTypes, maxFiles, uploadedFiles, setUploadedFiles, chatId, isGuest]
   )
 
   return {

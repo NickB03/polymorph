@@ -25,6 +25,7 @@ import {
 import { maybeTruncateMessages } from '../utils/context-window'
 
 import { hasPendingInteractiveTool } from './helpers/has-pending-interactive-tool'
+import { inlineFileUrls } from './helpers/inline-file-urls'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
 import { createCanvasEmitter } from './helpers/write-canvas-data'
@@ -83,6 +84,10 @@ export async function createEphemeralChatStreamResponse(
           toolCalls: 'before-last-2-messages',
           emptyMessages: 'remove'
         })
+
+        // Inline any HTTPS file URLs as binary data so the model receives
+        // image content directly instead of URLs it cannot fetch.
+        modelMessages = await inlineFileUrls(modelMessages)
 
         modelMessages = maybeTruncateMessages(modelMessages, model)
 

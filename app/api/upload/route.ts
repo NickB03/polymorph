@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import { uploadFileToSupabase } from '@/lib/supabase/storage'
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
+import {
+  ALLOWED_UPLOAD_TYPES,
+  MAX_UPLOAD_SIZE_BYTES
+} from '@/lib/utils/file-validation'
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,14 +28,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File is required' }, { status: 400 })
     }
 
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
       return NextResponse.json(
         { error: 'File too large (max 5MB)' },
         { status: 400 }
       )
     }
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!(ALLOWED_UPLOAD_TYPES as readonly string[]).includes(file.type)) {
       return NextResponse.json(
         { error: 'Unsupported file type' },
         { status: 400 }
