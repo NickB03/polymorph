@@ -30,6 +30,7 @@ import { getTextFromParts } from '../utils/message-utils'
 import { perfLog, perfTime } from '../utils/perf-logging'
 
 import { hasPendingInteractiveTool } from './helpers/has-pending-interactive-tool'
+import { inlineFileUrls } from './helpers/inline-file-urls'
 import { persistStreamResults } from './helpers/persist-stream-results'
 import { prepareMessages } from './helpers/prepare-messages'
 import {
@@ -226,6 +227,10 @@ export async function createChatStreamResponse(
             toolCalls: 'before-last-2-messages',
             emptyMessages: 'remove'
           })
+
+          // Inline any HTTPS file URLs as binary data so the model receives
+          // image content directly instead of URLs it cannot fetch.
+          modelMessages = await inlineFileUrls(modelMessages)
 
           const preTruncationCount = modelMessages.length
           modelMessages = maybeTruncateMessages(modelMessages, model)

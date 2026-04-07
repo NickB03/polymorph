@@ -10,6 +10,10 @@ import { toast } from 'sonner'
 import { UploadedFile } from '@/lib/types'
 import type { ToolPart, UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 import { cn, isChatLoading } from '@/lib/utils'
+import {
+  isAllowedUploadType,
+  MAX_UPLOAD_SIZE_BYTES
+} from '@/lib/utils/file-validation'
 import { syncModelType } from '@/lib/utils/model-type'
 import { syncSearchMode } from '@/lib/utils/search-mode'
 import type { VoiceState } from '@/lib/voice/config'
@@ -20,7 +24,7 @@ import { useTrendingSuggestions } from '@/hooks/use-trending-suggestions'
 import { Button } from './ui/button'
 import { VoiceModeToggle } from './voice/voice-mode-toggle'
 import { ActionButtons } from './action-buttons'
-import { FileUploadButton } from './file-upload-button'
+import { FileUploadButton, readFileAsDataUrl } from './file-upload-button'
 import { PolymorphWordmark } from './polymorph-wordmark'
 import { SearchModeSelector } from './search-mode-selector'
 import { UploadedFileList } from './uploaded-file-list'
@@ -138,6 +142,99 @@ export function ChatPanel({
     },
     [setUploadedFiles]
   )
+
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent) => {
+      const items = Array.from(e.clipboardData.items)
+      const imageFiles = items
+        .filter(item => item.kind === 'file' && isAllowedUploadType(item.type))
+        .map(item => item.getAsFile()!)
+        .filter(Boolean)
+
+      if (imageFiles.length === 0) return
+
+      // Prevent the default paste so the binary data doesn't end up in the textarea
+      e.preventDefault()
+
+      const maxFiles = 3
+      const sizeValid = imageFiles.filter(f => f.size <= MAX_UPLOAD_SIZE_BYTES)
+      const tooLarge = imageFiles.filter(f => f.size > MAX_UPLOAD_SIZE_BYTES)
+
+      if (tooLarge.length > 0) {
+        toast.error(
+          'Files too large (max 5 MB): ' + tooLarge.map(f => f.name).join(', ')
+        )
+      }
+
+      const available = maxFiles - uploadedFiles.length
+      if (available <= 0) {
+        toast.error(`You can upload a maximum of ${maxFiles} files.`)
+        return
+      }
+
+      const filesToAdd = sizeValid.slice(0, available)
+      if (filesToAdd.length === 0) return
+
+      if (isGuest) {
+        const results = await Promise.all(
+          filesToAdd.map(async file => ({
+            file,
+            dataUrl: await readFileAsDataUrl(file)
+          }))
+        )
+        const newFiles: UploadedFile[] = results.map(({ file, dataUrl }) => ({
+          file,
+          status: 'uploaded' as const,
+          url: dataUrl,
+          name: file.name,
+          dataUrl
+        }))
+        setUploadedFiles(prev => [...prev, ...newFiles].slice(0, maxFiles))
+      } else {
+        const newFiles: UploadedFile[] = filesToAdd.map(file => ({
+          file,
+          status: 'uploading' as const
+        }))
+        setUploadedFiles(prev => [...prev, ...newFiles])
+        await Promise.all(
+          newFiles.map(async uf => {
+            const formData = new FormData()
+            formData.append('file', uf.file)
+            formData.append('chatId', chatId)
+            try {
+              const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+              })
+              if (!res.ok) throw new Error('Upload failed')
+              const { file: uploaded } = await res.json()
+              setUploadedFiles(prev =>
+                prev.map(f =>
+                  f.file === uf.file
+                    ? {
+                        ...f,
+                        status: 'uploaded' as const,
+                        url: uploaded.url,
+                        name: uploaded.filename,
+                        key: uploaded.key
+                      }
+                    : f
+                )
+              )
+            } catch {
+              toast.error(`Failed to upload ${uf.file.name}`)
+              setUploadedFiles(prev =>
+                prev.map(f =>
+                  f.file === uf.file ? { ...f, status: 'error' as const } : f
+                )
+              )
+            }
+          })
+        )
+      }
+    },
+    [uploadedFiles, setUploadedFiles, chatId, isGuest]
+  )
   // Scroll to the bottom of the container
   const handleScrollToBottom = () => {
     const scrollContainer = scrollContainerRef.current
@@ -221,6 +318,7 @@ export function ChatPanel({
             disabled={isLoading || isToolInvocationInProgress()}
             className="resize-none w-full min-h-14 bg-transparent border-0 p-4 text-base placeholder:text-muted-foreground focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
             onChange={handleInputChange}
+            onPaste={handlePaste}
             onKeyDown={e => {
               if (
                 e.key === 'Enter' &&
