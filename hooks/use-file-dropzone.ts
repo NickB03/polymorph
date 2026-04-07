@@ -3,6 +3,10 @@ import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 
 import { UploadedFile } from '@/lib/types'
+import {
+  ALLOWED_UPLOAD_TYPES,
+  MAX_UPLOAD_SIZE_BYTES
+} from '@/lib/utils/file-validation'
 
 import { readFileAsDataUrl } from '@/components/file-upload-button'
 
@@ -20,7 +24,7 @@ export function useFileDropzone({
   setUploadedFiles,
   chatId,
   maxFiles = 3,
-  allowedTypes = ['image/png', 'image/jpeg', 'application/pdf'],
+  allowedTypes = [...ALLOWED_UPLOAD_TYPES],
   isGuest = false
 }: UseFileDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false)
@@ -53,13 +57,22 @@ export function useFileDropzone({
         )
       }
 
-      const total = uploadedFiles.length + allowed.length
+      const sizeValid = allowed.filter(f => f.size <= MAX_UPLOAD_SIZE_BYTES)
+      const tooLarge = allowed.filter(f => f.size > MAX_UPLOAD_SIZE_BYTES)
+
+      if (tooLarge.length > 0) {
+        toast.error(
+          'Files too large (max 5 MB): ' + tooLarge.map(f => f.name).join(', ')
+        )
+      }
+
+      const total = uploadedFiles.length + sizeValid.length
       if (total > maxFiles) {
         toast.error(`You can upload a maximum of ${maxFiles} files.`)
         return
       }
 
-      const initialFiles: UploadedFile[] = allowed.map(file => ({
+      const initialFiles: UploadedFile[] = sizeValid.map(file => ({
         file,
         status: 'uploading'
       }))

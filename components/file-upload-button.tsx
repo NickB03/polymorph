@@ -6,18 +6,12 @@ import { Paperclip } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { cn } from '@/lib/utils'
+import {
+  isAllowedUploadType,
+  MAX_UPLOAD_SIZE_BYTES
+} from '@/lib/utils/file-validation'
 
 import { Button } from './ui/button'
-
-const allowedImageTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
-const allowedOtherTypes = [
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-]
-
-const isAllowedFileType = (file: File) =>
-  allowedImageTypes.includes(file.type) || allowedOtherTypes.includes(file.type)
 
 export function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -45,8 +39,8 @@ export function FileUploadButton({
 
     const fileArray = Array.from(files).slice(0, 3)
 
-    const validFiles = fileArray.filter(isAllowedFileType)
-    const rejected = fileArray.filter(f => !isAllowedFileType(f))
+    const validFiles = fileArray.filter(f => isAllowedUploadType(f.type))
+    const rejected = fileArray.filter(f => !isAllowedUploadType(f.type))
 
     if (rejected.length > 0) {
       toast.error(
@@ -54,16 +48,25 @@ export function FileUploadButton({
       )
     }
 
-    if (validFiles.length > 0) {
+    const sizeValid = validFiles.filter(f => f.size <= MAX_UPLOAD_SIZE_BYTES)
+    const tooLarge = validFiles.filter(f => f.size > MAX_UPLOAD_SIZE_BYTES)
+
+    if (tooLarge.length > 0) {
+      toast.error(
+        'Files too large (max 5 MB): ' + tooLarge.map(f => f.name).join(', ')
+      )
+    }
+
+    if (sizeValid.length > 0) {
       if (isGuest && onGuestFileSelect) {
         Promise.all(
-          validFiles.map(async file => ({
+          sizeValid.map(async file => ({
             file,
             dataUrl: await readFileAsDataUrl(file)
           }))
         ).then(onGuestFileSelect)
       } else {
-        onFileSelect(validFiles)
+        onFileSelect(sizeValid)
       }
     }
   }

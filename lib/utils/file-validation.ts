@@ -32,6 +32,12 @@ export function isImageType(mediaType: string): boolean {
 
 type ValidationResult = { valid: true } | { valid: false; reason: string }
 
+/** Parse the MIME type from a data URL (e.g. "data:image/png;base64,..." → "image/png") */
+export function parseDataUrlMimeType(dataUrl: string): string | null {
+  const match = dataUrl.match(/^data:([^;,]+)/)
+  return match ? match[1] : null
+}
+
 export function validateFilePart(
   part: Record<string, unknown>
 ): ValidationResult {
@@ -50,13 +56,23 @@ export function validateFilePart(
     }
   }
 
-  // Size-check data URLs (base64 images from guests)
-  if (
-    typeof part.url === 'string' &&
-    part.url.startsWith('data:') &&
-    part.url.length > MAX_DATA_URL_LENGTH
-  ) {
-    return { valid: false, reason: 'Data URL too large (max 5 MB)' }
+  // For data URLs: parse the embedded MIME and require it to match mediaType
+  if (typeof part.url === 'string' && part.url.startsWith('data:')) {
+    const embeddedMime = parseDataUrlMimeType(part.url)
+    if (!embeddedMime) {
+      return { valid: false, reason: 'Could not parse MIME type from data URL' }
+    }
+    if (embeddedMime !== part.mediaType) {
+      return {
+        valid: false,
+        reason: `Data URL MIME type '${embeddedMime}' does not match declared mediaType '${part.mediaType}'`
+      }
+    }
+
+    // Size-check data URLs (base64 images from guests)
+    if (part.url.length > MAX_DATA_URL_LENGTH) {
+      return { valid: false, reason: 'Data URL too large (max 5 MB)' }
+    }
   }
 
   return { valid: true }
