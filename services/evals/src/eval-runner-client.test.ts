@@ -16,7 +16,8 @@ const baseCaseSpec: EvalCase = {
   tags: ['evergreen'],
   requiresTextAnswer: true,
   requiresCitations: false,
-  allowsInteractiveOnly: true
+  allowsInteractiveOnly: true,
+  expectsRefusal: false
 }
 
 const successBody = JSON.stringify({

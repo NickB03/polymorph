@@ -10,7 +10,23 @@ export function createFaithfulnessExperimentEvaluator(model: LanguageModel) {
   return asExperimentEvaluator({
     name: 'faithfulness',
     kind: 'LLM',
-    evaluate: async ({ input, output }) => {
+    evaluate: async ({
+      input,
+      output,
+      metadata
+    }: {
+      input: Record<string, unknown>
+      output: unknown
+      metadata?: Record<string, unknown> | null
+    }) => {
+      if (metadata?.expectsRefusal === true) {
+        return {
+          label: 'skipped',
+          score: null,
+          explanation: 'Refusal case — no search results expected'
+        }
+      }
+
       const context = inputField(input, 'context')
       const answer = normalizeEvalRunResult(output).answerText
 

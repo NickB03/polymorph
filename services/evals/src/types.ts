@@ -34,6 +34,7 @@ export interface EvalCase {
   requiresTextAnswer: boolean
   requiresCitations: boolean
   allowsInteractiveOnly: boolean
+  expectsRefusal: boolean
 }
 
 export interface EvalCitation {
@@ -86,5 +87,6 @@ export interface EvalDatasetExample {
     requiresTextAnswer: boolean
     requiresCitations: boolean
     allowsInteractiveOnly: boolean
+    expectsRefusal: boolean
   }
 }

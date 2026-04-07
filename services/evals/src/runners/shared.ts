@@ -193,7 +193,8 @@ export function buildDatasetExamples(
         corpusVersion: getCorpusVersion(),
         requiresTextAnswer: caseSpec.requiresTextAnswer,
         requiresCitations: caseSpec.requiresCitations,
-        allowsInteractiveOnly: caseSpec.allowsInteractiveOnly
+        allowsInteractiveOnly: caseSpec.allowsInteractiveOnly,
+        expectsRefusal: caseSpec.expectsRefusal
       }
     }
   })

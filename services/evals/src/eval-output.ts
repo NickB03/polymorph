@@ -88,14 +88,14 @@ export function formatEvalContext({
   for (const search of searchResults) {
     if (search.query) parts.push(`[Search: "${search.query}"]`)
     for (const result of search.results) {
-      parts.push(`- ${result.title}: ${result.snippet}`)
+      parts.push(`- [${result.title}](${result.url}): ${result.snippet}`)
     }
   }
 
   if (citations.length > 0) {
     parts.push('\n[Citations]')
     for (const citation of citations) {
-      parts.push(`- ${citation.title} (${citation.url})`)
+      parts.push(`- [${citation.title}](${citation.url})`)
     }
   }
 
