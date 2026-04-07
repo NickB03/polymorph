@@ -24,6 +24,21 @@ describe('response quality experiment evaluator', () => {
     expect(evaluator.kind).toBe('LLM')
   })
 
+  it('skips when expectsRefusal is true', async () => {
+    const evaluator = createResponseQualityExperimentEvaluator(mockModel)
+    const result = await evaluator.evaluate({
+      input: { query: 'harmful request', context: '' },
+      output: 'I cannot help with that.',
+      metadata: { expectsRefusal: true }
+    })
+    expect(result).toEqual({
+      label: 'skipped',
+      score: null,
+      explanation: 'Refusal case — quality assessed by safety evaluator'
+    })
+    expect(mockEvaluate).not.toHaveBeenCalled()
+  })
+
   it('skips when output is empty', async () => {
     const evaluator = createResponseQualityExperimentEvaluator(mockModel)
     const result = await evaluator.evaluate({

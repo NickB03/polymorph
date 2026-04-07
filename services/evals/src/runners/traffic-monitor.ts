@@ -49,7 +49,8 @@ export async function runTrafficMonitorSuite() {
     tags: ['traffic-monitor'],
     requiresTextAnswer: true,
     requiresCitations: sample.citations.length > 0,
-    allowsInteractiveOnly: false
+    allowsInteractiveOnly: false,
+    expectsRefusal: false
   }))
 
   const results = samples.map(sample => ({

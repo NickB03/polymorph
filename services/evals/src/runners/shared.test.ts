@@ -168,7 +168,8 @@ describe('buildDatasetExamples', () => {
           tags: ['multi-turn'],
           requiresTextAnswer: true,
           requiresCitations: true,
-          allowsInteractiveOnly: false
+          allowsInteractiveOnly: false,
+          expectsRefusal: false
         }
       ],
       [
@@ -200,10 +201,12 @@ describe('buildDatasetExamples', () => {
     expect(examples[0].input.query).toBe('last question')
     expect(examples[0].input.prompt).toBe(examples[0].input.query)
     expect(examples[0].input.context).toContain('[Search: "last question"]')
-    expect(examples[0].input.context).toContain('- Result 1: Relevant snippet')
+    expect(examples[0].input.context).toContain(
+      '- [Result 1](https://example.com/r1): Relevant snippet'
+    )
     expect(examples[0].input.context).toContain('[Citations]')
     expect(examples[0].input.context).toContain(
-      '- Source (https://example.com)'
+      '- [Source](https://example.com)'
     )
   })
 
@@ -226,7 +229,8 @@ describe('buildDatasetExamples', () => {
           tags: [],
           requiresTextAnswer: true,
           requiresCitations: false,
-          allowsInteractiveOnly: true
+          allowsInteractiveOnly: true,
+          expectsRefusal: false
         }
       ],
       [
@@ -542,7 +546,8 @@ describe('runJudgedSuite', () => {
     tags: [],
     requiresTextAnswer: true,
     requiresCitations: false,
-    allowsInteractiveOnly: false
+    allowsInteractiveOnly: false,
+    expectsRefusal: false
   })
 
   const makeRunResult = (id: string) => ({
@@ -679,7 +684,8 @@ describe('runCasesConcurrently', () => {
     tags: [],
     requiresTextAnswer: true,
     requiresCitations: false,
-    allowsInteractiveOnly: false
+    allowsInteractiveOnly: false,
+    expectsRefusal: false
   })
 
   const makeConcurrencyResult = (

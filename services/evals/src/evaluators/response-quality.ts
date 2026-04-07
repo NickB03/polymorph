@@ -49,7 +49,23 @@ export function createResponseQualityExperimentEvaluator(model: LanguageModel) {
   return asExperimentEvaluator({
     name: 'response_quality',
     kind: 'LLM',
-    evaluate: async ({ input, output }) => {
+    evaluate: async ({
+      input,
+      output,
+      metadata
+    }: {
+      input: Record<string, unknown>
+      output: unknown
+      metadata?: Record<string, unknown> | null
+    }) => {
+      if (metadata?.expectsRefusal === true) {
+        return {
+          label: 'skipped',
+          score: null,
+          explanation: 'Refusal case — quality assessed by safety evaluator'
+        }
+      }
+
       const answer = normalizeEvalRunResult(output).answerText
 
       if (!answer) {

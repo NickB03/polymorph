@@ -93,7 +93,7 @@ describe('formatContext', () => {
     const result = formatContext(sample)
     expect(result).toContain('[Search: "artificial intelligence"]')
     expect(result).toContain(
-      '- AI Wikipedia: AI is the simulation of human intelligence'
+      '- [AI Wikipedia](https://en.wikipedia.org/wiki/AI): AI is the simulation of human intelligence'
     )
     expect(result).not.toContain('[Citations]')
   })
@@ -115,7 +115,7 @@ describe('formatContext', () => {
 
     const result = formatContext(sample)
     expect(result).toContain('[Citations]')
-    expect(result).toContain('- Quantum Wiki (https://example.com/quantum)')
+    expect(result).toContain('- [Quantum Wiki](https://example.com/quantum)')
   })
 
   it('returns empty string when no search results or citations', async () => {
@@ -180,14 +180,18 @@ describe('formatContext', () => {
     const result = formatContext(sample)
     expect(result).toContain('[Search: "climate change effects"]')
     expect(result).toContain('[Search: "climate solutions"]')
-    expect(result).toContain('- NASA Climate: Rising temperatures worldwide')
     expect(result).toContain(
-      '- IPCC Report: Human activities are the main cause'
+      '- [NASA Climate](https://nasa.gov/climate): Rising temperatures worldwide'
     )
-    expect(result).toContain('- Renewable Energy: Solar and wind power')
+    expect(result).toContain(
+      '- [IPCC Report](https://ipcc.ch): Human activities are the main cause'
+    )
+    expect(result).toContain(
+      '- [Renewable Energy](https://energy.gov): Solar and wind power'
+    )
     expect(result).toContain('[Citations]')
-    expect(result).toContain('- NASA (https://nasa.gov/climate)')
-    expect(result).toContain('- IPCC (https://ipcc.ch)')
+    expect(result).toContain('- [NASA](https://nasa.gov/climate)')
+    expect(result).toContain('- [IPCC](https://ipcc.ch)')
   })
 })
 

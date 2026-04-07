@@ -10,7 +10,21 @@ export function createRelevanceExperimentEvaluator(model: LanguageModel) {
   return asExperimentEvaluator({
     name: 'relevance',
     kind: 'LLM',
-    evaluate: async ({ input }) => {
+    evaluate: async ({
+      input,
+      metadata
+    }: {
+      input: Record<string, unknown>
+      metadata?: Record<string, unknown> | null
+    }) => {
+      if (metadata?.expectsRefusal === true) {
+        return {
+          label: 'skipped',
+          score: null,
+          explanation: 'Refusal case — no search results expected'
+        }
+      }
+
       const context = inputField(input, 'context')
 
       if (!context) {

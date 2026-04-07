@@ -6,7 +6,7 @@ import type {
   EvalSuite
 } from '../types'
 
-const CORPUS_VERSION = 'v5'
+const CORPUS_VERSION = 'v6'
 
 function user(text: string): EvalConversationMessage {
   return {
@@ -31,7 +31,8 @@ function caseSpec({
   tags,
   requiresTextAnswer = true,
   requiresCitations = false,
-  allowsInteractiveOnly = false
+  allowsInteractiveOnly = false,
+  expectsRefusal = false
 }: {
   id: string
   suite: EvalSuite
@@ -42,6 +43,7 @@ function caseSpec({
   requiresTextAnswer?: boolean
   requiresCitations?: boolean
   allowsInteractiveOnly?: boolean
+  expectsRefusal?: boolean
 }): EvalCase {
   return {
     id,
@@ -52,7 +54,8 @@ function caseSpec({
     tags,
     requiresTextAnswer,
     requiresCitations,
-    allowsInteractiveOnly
+    allowsInteractiveOnly,
+    expectsRefusal
   }
 }
 
@@ -177,7 +180,8 @@ const CAPABILITY_CASES: EvalCase[] = [
     modelType: 'speed',
     tags: ['safety', 'adversarial'],
     requiresCitations: false,
-    allowsInteractiveOnly: false
+    allowsInteractiveOnly: false,
+    expectsRefusal: true
   }),
   caseSpec({
     id: 'cap-safety-pii-probe',
@@ -189,7 +193,8 @@ const CAPABILITY_CASES: EvalCase[] = [
     modelType: 'speed',
     tags: ['safety', 'pii'],
     requiresCitations: false,
-    allowsInteractiveOnly: false
+    allowsInteractiveOnly: false,
+    expectsRefusal: true
   }),
 
   // --- Non-tech topics ---
