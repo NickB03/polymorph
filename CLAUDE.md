@@ -101,15 +101,6 @@ OpenTelemetry traces export to a self-hosted Phoenix instance on Railway, gated 
 - **Trace flushing** (`lib/utils/telemetry.ts`): `flushTraces()` forces pending spans to export before serverless shutdown. Call in `onFinish` callbacks of streaming routes.
 - **Architecture:** `Vercel (app) --OTLP/HTTPS--> Railway (phoenix) <--API-- Railway (evals cron)`
 
-### Evals Service (`services/evals/`)
-
-Offline LLM-judge evaluation pipeline running as a Railway cron service (every 6 hours). Deployed alongside `phoenix` on Railway. See `docs/operations/DEPLOYMENT.md` for configuration details.
-
-- Samples recent chats from Supabase Postgres (parameterized SQL)
-- Runs 6 evaluators: 2 deterministic (`prechecks`, `tool-usage`) + 4 LLM-judge (`faithfulness`, `relevance`, `response-quality`, `safety`) via `asExperimentEvaluator` shells
-- Pushes results to Phoenix as experiments
-- Key files: `sampler.ts`, `prechecks.ts`, `config.ts`, `evaluators/faithfulness.ts`, `evaluators/relevance.ts`, `evaluators/response-quality.ts`, `evaluators/safety.ts`, `evaluators/tool-usage.ts`
-
 ### Voice
 
 Feature-gated behind `NEXT_PUBLIC_ENABLE_VOICE=true`.
@@ -126,45 +117,6 @@ Components render different message part types: `answer-section.tsx`, `search-se
 Custom React hooks in `hooks/`: `use-activity-feed`, `use-auth-check`, `use-content-entrance`, `use-current-user`, `use-file-dropzone`, `use-mobile`, `use-trending-suggestions`, plus voice hooks (`use-audio-stream`, `use-voice-conversation`, `use-voice-input`, `use-voice-player`). Additional hooks in `lib/hooks/`: `use-copy-to-clipboard`, `use-media-query`.
 
 Supporting modules: `lib/analytics/` (event tracking), `lib/config/` (env validation, model loading), `lib/schema/` (tool input schemas), `lib/auth/` (current user resolution).
-
-## Design Workflow (Pencil Wireframes)
-
-Polymorph uses Pencil (`.pen` files) for wireframing UI before implementation. The primary wireframe file is `polymorph.pen` at the project root.
-
-### When to wireframe first
-
-- **New pages or major UI sections** — always wireframe before writing code
-- **Complex layouts** (multi-panel views, dashboards, dense information displays) — wireframe to resolve layout decisions cheaply
-- **Significant redesigns** of existing screens — wireframe the target state
-
-### When to skip wireframes
-
-- Small tweaks, bug fixes, or adjustments to existing UI
-- Non-visual work (API routes, data logic, tooling)
-- Component-level changes where the layout is already established
-
-### Workflow
-
-1. **Open the wireframe:** Use `get_editor_state()` to check if a `.pen` file is active, or `open_document()` to open `polymorph.pen`
-2. **Pull design context:** Use `get_guidelines(topic)` for layout patterns and `get_style_guide()` for visual direction. The project's design system lives in `.impeccable.md`
-3. **Read the wireframe:** Use `batch_get()` and `snapshot_layout()` to understand the layout structure. Use `get_screenshot()` to see the visual result
-4. **Implement from the wireframe:** Translate the wireframe layout, spacing, hierarchy, and component choices into React code. The wireframe is the spec — match it
-5. **Validate visually:** After implementation, compare the browser output against the wireframe. Use `webapp-testing` for screenshot verification when precision matters
-
-### Wireframe maintenance
-
-Wireframes are **planning tools, not documentation**. Once code ships, the wireframe's job is done.
-
-- **Don't back-port small changes.** If you remove a button, adjust spacing, or swap a component in code, the code is the updated design. Don't touch the wireframe.
-- **Update the wireframe when redesigning.** Before a significant change to an existing screen, update the relevant frame to reflect the _new_ target state, then implement from it.
-- **Wireframes naturally drift from the live app — that's fine.** They represent decisions already made. Only bring them current when actively using them to plan the next change.
-- **Color, typography, and token changes don't go in wireframes.** That's `.impeccable.md` territory.
-
-### Rules
-
-- **Wireframe is the source of truth for layout — during implementation.** While building from a wireframe, don't improvise layout decisions it already specifies. If the wireframe is wrong, update it first, then update the code. After implementation, the code becomes the source of truth.
-- **Design tokens come from `.impeccable.md`.** The wireframe defines _where_; the design system defines _how_.
-- **The user has no design or development background.** Wireframes are their primary tool for communicating visual intent. Read them carefully and ask clarifying questions if the wireframe is ambiguous rather than guessing.
 
 ## Code Conventions
 
@@ -183,7 +135,7 @@ To keep quality consistent, Claude Code should automatically invoke the followin
 - **Canvas artifact issues** (preview iframe, compile pipeline, diagnostics) → `harden`
 - **Supabase/Postgres schema/query/perf changes** → `supabase-postgres-best-practices`
 - **Next.js App Router architecture decisions** → `nextjs-app-router-patterns`
-- **New page, major UI section, or complex layout** → Pencil wireframe workflow (see "Design Workflow" section above), then `frontend-design`
+- **New page, major UI section, or complex layout** → Pencil wireframe workflow (see `.claude/rules/design-workflow.md`), then `frontend-design`
 - **Any creative/visual work** → `brainstorming` (before wireframing or implementation)
 
 #### Precedence rules
@@ -246,49 +198,12 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 - `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` — Redis for guest rate limiting (required when `ENABLE_GUEST_CHAT=true` in cloud mode)
 - `NEXT_PUBLIC_ENABLE_VOICE` — enables voice input/output UI
 
-## Railway & Phoenix Operations
-
-Railway CLI (`railway`, v4.35.2) and Phoenix CLI (`npx @arizeai/phoenix-cli`) manage production infrastructure. MCP servers for both are configured in `.mcp.json`.
-
-### Railway CLI (infrastructure, deploys, env vars)
-
-- `railway status` — show linked project/service/environment
-- `railway logs -s phoenix` — stream Phoenix service logs
-- `railway logs -s phoenix --since 1h --filter "@level:error"` — recent errors
-- `railway logs -s polymorph-evals -n 50` — last 50 evals cron log lines
-- `railway variable list -s phoenix` — list Phoenix env vars
-- `railway variable set KEY=VALUE -s <service>` — update env var (triggers redeploy)
-- `railway restart -s phoenix` — restart without rebuild
-- `railway redeploy -s polymorph-evals` — full rebuild + deploy
-- `railway open` — open Railway dashboard in browser
-
-### Phoenix CLI (traces, experiments, evals)
-
-All commands require `PHOENIX_API_KEY` set in the shell environment for authenticated access.
-
-- `npx @arizeai/phoenix-cli trace list --endpoint https://phoenix-production-c6b5.up.railway.app --limit 10` — recent traces
-- `npx @arizeai/phoenix-cli experiment list --dataset <name>` — list eval experiments
-- `npx @arizeai/phoenix-cli span list --span-kind LLM --status-code ERROR` — find LLM errors
-- `npx @arizeai/phoenix-cli trace get <trace-id>` — inspect a specific trace
-
 ## Key Files
 
 - `app/api/chat/route.ts` — main chat API endpoint (300s timeout)
 - `lib/agents/researcher.ts` — ToolLoopAgent orchestration
-- `lib/agents/prompts/` — system prompts for search modes
-- `lib/tools/search.ts` — multi-provider search tool
 - `lib/db/schema.ts` — Drizzle schema with RLS
 - `lib/streaming/` — SSE response creation
-- `lib/utils/registry.ts` — AI provider registry
-- `config/models/` — model configuration JSON files (default.json, cloud.json)
-- `proxy.ts` — Supabase session + base URL propagation (Next.js middleware entry point)
-- `lib/canvas/` — canvas artifact compile pipeline, validation, service, guest tokens, legacy notice path
-- `lib/tools/create-canvas-artifact.ts` — AI tool: create a new canvas artifact in the current chat
-- `lib/tools/update-canvas-artifact.ts` — AI tool: update the existing canvas artifact source
-- `lib/tools/read-canvas-artifact.ts` — AI tool: read current canvas artifact source (no side effects)
-- `components/canvas/` — canvas workspace shell, live preview, CodeMirror editor, diagnostics, version history
-- `app/api/canvas-artifacts/` — REST routes for canvas artifact state, drafts, versions, restore, export, diagnostics
-- `instrumentation.ts` — OTel registration with Phoenix exporter, HTTPS enforcement via `isProductionTarget()`
-- `lib/config/env.ts` — env validation, `isProductionTarget()` for Vercel/Railway production detection
-- `lib/utils/telemetry.ts` — `flushTraces()` for serverless span export with timeout
-- `services/evals/` — offline LLM-judge evaluation pipeline (Railway cron, own Dockerfile)
+- `lib/canvas/` — canvas artifact compile pipeline, validation, service, guest tokens
+- `components/canvas/` — canvas workspace shell, live preview, editor, diagnostics
+- `instrumentation.ts` — OTel registration with Phoenix exporter
