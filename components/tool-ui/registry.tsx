@@ -10,6 +10,8 @@ import { CitationList } from './citation/citation-list'
 import { safeParseSerializableCitation } from './citation/schema'
 import { DataTable } from './data-table/data-table'
 import { safeParseSerializableDataTable } from './data-table/schema'
+import { GenerateImage } from './generate-image/generate-image'
+import { safeParseSerializableGenerateImage } from './generate-image/schema'
 import { LinkPreview } from './link-preview/link-preview'
 import { safeParseSerializableLinkPreview } from './link-preview/schema'
 import { OptionList } from './option-list/option-list'
@@ -148,6 +150,18 @@ const entries: ToolUIEntry[] = [
       return (
         <ToolErrorBoundary toolName="Timeline">
           <Timeline {...parsed} />
+        </ToolErrorBoundary>
+      )
+    }
+  },
+  {
+    name: 'generateImage',
+    tryRender: output => {
+      const parsed = safeParseSerializableGenerateImage(output)
+      if (!parsed) return null
+      return (
+        <ToolErrorBoundary toolName="GenerateImage">
+          <GenerateImage {...parsed} />
         </ToolErrorBoundary>
       )
     }

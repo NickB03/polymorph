@@ -206,7 +206,8 @@ export async function createChatStreamResponse(
             parentTraceId,
             searchMode,
             modelType,
-            canvasToolContext
+            canvasToolContext,
+            imageToolContext: { userId, chatId }
           })
 
           // For OpenAI models, strip reasoning parts from UIMessages before conversion

@@ -341,7 +341,8 @@ export function mapUIMessagePartsToDBParts(
         if (
           part.type.startsWith('tool-display') ||
           part.type === 'tool-createCanvasArtifact' ||
-          part.type === 'tool-updateCanvasArtifact'
+          part.type === 'tool-updateCanvasArtifact' ||
+          part.type === 'tool-generateImage'
         ) {
           if (!isExtendedToolPart(part)) {
             console.error('Invalid extended tool part:', part)
@@ -464,7 +465,8 @@ export function mapDBPartToUIMessagePart(
             part.tool_dynamic_name &&
             (part.tool_dynamic_type === 'display' ||
               part.tool_dynamic_name === 'createCanvasArtifact' ||
-              part.tool_dynamic_name === 'updateCanvasArtifact')
+              part.tool_dynamic_name === 'updateCanvasArtifact' ||
+              part.tool_dynamic_name === 'generateImage')
           ) {
             return {
               type: `tool-${part.tool_dynamic_name}` as any,
@@ -617,10 +619,11 @@ function getToolNameFromType(toolName: string): string {
     return 'dynamic'
   }
 
-  // Canvas artifact tools route to dynamic columns
+  // Canvas artifact tools and image generation route to dynamic columns
   if (
     toolName === 'createCanvasArtifact' ||
-    toolName === 'updateCanvasArtifact'
+    toolName === 'updateCanvasArtifact' ||
+    toolName === 'generateImage'
   ) {
     return 'dynamic'
   }
