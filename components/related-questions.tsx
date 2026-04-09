@@ -1,95 +1,124 @@
 'use client'
 
-import React from 'react'
+import { useMemo } from 'react'
 
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Repeat2 } from 'lucide-react'
 
 import type { RelatedQuestionsData } from '@/lib/types/ai'
+import { cn } from '@/lib/utils'
+
+import { useTickerRotation } from '@/hooks/use-ticker-rotation'
 
 import { Button } from './ui/button'
 import { Skeleton } from './ui/skeleton'
-import { CollapsibleMessage } from './collapsible-message'
-import { Section } from './section'
+
+const DISPLAY_MS = 3000
+const ROTATIONS = 2
 
 interface RelatedQuestionsProps {
   data: RelatedQuestionsData
   onQuerySelect: (query: string) => void
+  isLatestMessage?: boolean
 }
 
-export const RelatedQuestions: React.FC<RelatedQuestionsProps> = ({
+export function RelatedQuestions({
   data,
-  onQuerySelect
-}) => {
-  const renderQuestionButtons = (questions: Array<{ question: string }>) =>
-    questions.map((item, index) => (
-      <div className="flex items-start w-full" key={index}>
-        <ArrowRight className="h-4 w-4 mr-2 mt-0.5 shrink-0 text-accent-foreground/50" />
-        <Button
-          variant="link"
-          className="flex-1 justify-start px-0 py-0 h-fit font-semibold text-accent-foreground/50 whitespace-normal text-left"
-          type="submit"
-          name={'related_query'}
-          value={item.question}
-          onClick={() => onQuerySelect(item.question)}
-        >
-          {item.question}
-        </Button>
-      </div>
-    ))
+  onQuerySelect,
+  isLatestMessage = false
+}: RelatedQuestionsProps) {
+  const questions = useMemo(() => data.questions ?? [], [data.questions])
+  const isReady = data.status === 'success' && questions.length > 0
+  const isTickerActive = isReady && isLatestMessage
+
+  const { activeIndex, phase, isComplete, pause, resume, restart } =
+    useTickerRotation({
+      items: questions,
+      displayMs: DISPLAY_MS,
+      rotations: ROTATIONS,
+      isActive: isTickerActive
+    })
+
+  const currentQuestion =
+    activeIndex >= 0 && activeIndex < questions.length
+      ? questions[activeIndex]
+      : null
+
+  const showTicker = isTickerActive && !isComplete && currentQuestion
 
   return (
-    <CollapsibleMessage
-      role="assistant"
-      isCollapsible={false}
-      isOpen={true}
-      onOpenChange={() => {}}
-      showIcon={false}
-      showBorder={false}
+    <section
+      className="flex items-center gap-1.5 overflow-hidden px-3 py-2"
+      onMouseEnter={isTickerActive ? (isComplete ? restart : pause) : undefined}
+      onMouseLeave={isTickerActive && !isComplete ? resume : undefined}
     >
-      <Section title="Related" className="pt-0 pb-4">
-        <div className="flex flex-col gap-2">
-          {data.status === 'streaming' && data.questions && (
-            // Show received questions immediately while the rest stream
-            <>
-              {renderQuestionButtons(data.questions)}
-              {Array.from({
-                length: Math.max(0, 3 - data.questions.length)
-              }).map((_, index) => (
-                <div
-                  className="flex items-start w-full"
-                  key={`placeholder-${index}`}
-                >
-                  <ArrowRight className="h-4 w-4 mr-2 mt-0.5 shrink-0 text-accent-foreground/50" />
-                  <Skeleton className="h-6 w-full" />
-                </div>
-              ))}
-            </>
-          )}
+      <Repeat2 size={16} className="shrink-0 text-muted-foreground" />
+      <span
+        className="shrink-0 text-sm font-semibold text-muted-foreground"
+        data-testid="related-questions-label"
+      >
+        Related
+      </span>
 
-          {data.status === 'loading' && (
-            <>
-              {[1, 2, 3].map((_, index) => (
-                <div className="flex items-start w-full" key={index}>
-                  <ArrowRight className="h-4 w-4 mr-2 mt-0.5 shrink-0 text-accent-foreground/50" />
-                  <Skeleton className="h-6 w-full" />
-                </div>
-              ))}
-            </>
-          )}
+      {data.status === 'loading' && (
+        <Skeleton
+          className="ml-0.5 h-4 w-48"
+          data-testid="related-question-skeleton"
+        />
+      )}
 
-          {data.status === 'error' && (
-            <div className="text-sm text-muted-foreground">
-              Failed to generate related questions
-            </div>
-          )}
+      {data.status === 'streaming' && questions.length === 0 && (
+        <Skeleton
+          className="ml-0.5 h-4 w-48"
+          data-testid="related-question-skeleton"
+        />
+      )}
 
-          {data.status === 'success' && data.questions && (
-            <>{renderQuestionButtons(data.questions)}</>
-          )}
-        </div>
-      </Section>
-    </CollapsibleMessage>
+      {data.status === 'streaming' && questions.length > 0 && (
+        <>
+          <span className="h-3.5 w-px shrink-0 bg-border" />
+          <Button
+            type="button"
+            variant="link"
+            className="min-w-0 flex-1 justify-start px-0 py-0 h-auto font-semibold text-accent-foreground/50 whitespace-nowrap text-left no-underline hover:text-accent-foreground/50 truncate"
+            onClick={() => onQuerySelect(questions[0].question)}
+          >
+            <ArrowRight className="mr-1 h-3.5 w-3.5 shrink-0 opacity-50" />
+            <span className="truncate">{questions[0].question}</span>
+          </Button>
+        </>
+      )}
+
+      {data.status === 'error' && (
+        <span
+          className="ml-0.5 text-sm text-muted-foreground"
+          data-testid="related-questions-error"
+        >
+          Failed to load
+        </span>
+      )}
+
+      {showTicker && (
+        <>
+          <span className="h-3.5 w-px shrink-0 bg-border" />
+          <Button
+            type="button"
+            variant="link"
+            className={cn(
+              'flex min-w-0 flex-1 items-center justify-start gap-1.5 px-0 py-0 h-auto font-semibold text-accent-foreground/60 whitespace-nowrap text-left no-underline hover:text-accent-foreground/60',
+              phase === 'entering' && 'animate-ticker-in',
+              phase === 'exiting' && 'animate-ticker-out',
+              phase === 'visible' && 'opacity-100'
+            )}
+            onClick={() => onQuerySelect(currentQuestion.question)}
+            data-testid="related-questions-ticker"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <ArrowRight className="h-3.5 w-3.5 shrink-0 opacity-50" />
+            <span className="truncate">{currentQuestion.question}</span>
+          </Button>
+        </>
+      )}
+    </section>
   )
 }
-
-export default RelatedQuestions

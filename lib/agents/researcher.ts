@@ -21,6 +21,7 @@ import { displayQuestionWizardTool } from '../tools/display-question-wizard'
 import { displayTableTool } from '../tools/display-table'
 import { displayTimelineTool } from '../tools/display-timeline'
 import { fetchTool } from '../tools/fetch'
+import { createGenerateImageTool } from '../tools/generate-image'
 import { readCanvasArtifactTool } from '../tools/read-canvas-artifact'
 import { createSearchTool } from '../tools/search'
 import { createTodoTools } from '../tools/todo'
@@ -91,7 +92,8 @@ export function createResearcher({
   modelType,
   telemetryEnabled,
   experimentalContext,
-  canvasToolContext
+  canvasToolContext,
+  imageToolContext
 }: {
   model: string
   modelConfig?: Model
@@ -102,6 +104,7 @@ export function createResearcher({
   telemetryEnabled?: boolean
   experimentalContext?: unknown
   canvasToolContext?: CanvasToolContext
+  imageToolContext?: { userId: string; chatId: string }
 }) {
   try {
     const currentDate = new Date().toLocaleString()
@@ -210,6 +213,17 @@ export function createResearcher({
       )
     }
 
+    // Build image generation tool when context is available
+    const imageTools = imageToolContext
+      ? {
+          generateImage: createGenerateImageTool(imageToolContext)
+        }
+      : {}
+
+    if (imageToolContext) {
+      activeToolsList.push('generateImage' as keyof ResearcherTools)
+    }
+
     // Build tools object with proper typing
     const tools: ResearcherTools = {
       search: searchTool,
@@ -224,7 +238,8 @@ export function createResearcher({
       displayCallout: displayCalloutTool,
       displayTimeline: displayTimelineTool,
       ...todoTools,
-      ...canvasTools
+      ...canvasTools,
+      ...imageTools
     } as ResearcherTools
 
     // Create ToolLoopAgent with all configuration

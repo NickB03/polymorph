@@ -113,33 +113,52 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     model
   })
 
-  const { datasetId, datasetName, experimentName, experiment } =
-    await createDatasetAndExperiment({
-      suite,
-      examples,
-      evaluators,
-      task: buildExperimentTask()
-    })
+  try {
+    const { datasetId, datasetName, experimentName, experiment } =
+      await createDatasetAndExperiment({
+        suite,
+        examples,
+        evaluators,
+        task: buildExperimentTask()
+      })
 
-  console.log(`[evals] ${suite} dataset: ${datasetName}`)
-  console.log(`[evals] ${suite} experiment: ${experimentName}`)
-  console.log(`[evals] ${suite} experiment ID: ${experiment.id}`)
-  console.log(
-    `[evals] ${suite} view: ${buildPublicExperimentUrl(datasetId, experiment.id)}`
-  )
-
-  const thresholds = checkExperimentThresholds(
-    experiment,
-    runtimeConfig.scoreThreshold,
-    runtimeConfig.excludeFromThreshold
-  )
-  console.log(
-    `[evals] ${suite} pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
-  )
-  if (!thresholds.passed) {
-    throw new Error(
-      `[evals] ${suite} scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(runtimeConfig.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
+    console.log(`[evals] ${suite} dataset: ${datasetName}`)
+    console.log(`[evals] ${suite} experiment: ${experimentName}`)
+    console.log(`[evals] ${suite} experiment ID: ${experiment.id}`)
+    console.log(
+      `[evals] ${suite} view: ${buildPublicExperimentUrl(datasetId, experiment.id)}`
     )
+
+    const thresholds = checkExperimentThresholds(
+      experiment,
+      runtimeConfig.scoreThreshold,
+      runtimeConfig.excludeFromThreshold
+    )
+    console.log(
+      `[evals] ${suite} pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
+    )
+    if (!thresholds.passed) {
+      throw new Error(
+        `[evals] ${suite} scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(runtimeConfig.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
+      )
+    }
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes('scores below threshold')
+    ) {
+      throw error
+    }
+    console.error(
+      `[evals] PHOENIX UNAVAILABLE - could not record ${suite} experiment results`
+    )
+    console.error(
+      `[evals] Error: ${error instanceof Error ? error.message : error}`
+    )
+    console.log(
+      `[evals] ${suite} completed ${succeeded.length}/${cases.length} cases successfully (results NOT recorded to Phoenix)`
+    )
+    return
   }
 }
 

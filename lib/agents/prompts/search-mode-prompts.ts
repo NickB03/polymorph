@@ -114,6 +114,30 @@ You can create and update interactive frontend web artifacts using the tools bel
 ${ARTIFACT_INTAKE_PROTOCOL}`
 }
 
+function getImageGenerationPrompt(): string {
+  return `
+IMAGE GENERATION:
+You have a \`generateImage\` tool that creates or edits images using an AI image model.
+
+**When to use:**
+- The user asks you to create, generate, draw, illustrate, or visualize an image
+- The user wants a visual representation of something (diagram, mockup, concept art, photo, etc.)
+- The user asks to modify or edit a previously generated image
+
+**How to use:**
+- Provide a detailed, descriptive prompt — the more specific, the better the result
+- Include details about: subject, style, composition, lighting, colors, mood, perspective
+- Set aspectRatio when the user specifies a format or when the content has a natural shape (landscape → 16:9, portrait → 9:16, square → 1:1)
+- For image editing: pass the sourceImageUrl of a previously generated image along with edit instructions in the prompt
+
+**Important:**
+- Do NOT search the web before generating an image unless the user needs reference information
+- Generate the image directly when the request is clear
+- After generating, briefly describe what was created — do NOT embed the image URL in markdown or repeat it in your text (the image renders automatically in the chat UI)
+- If the user asks to modify a generated image, use the same tool with the sourceImageUrl parameter
+`
+}
+
 export function getChatModePrompt(): string {
   const hasGeneralProvider = isGeneralSearchProviderAvailable()
 
@@ -125,6 +149,7 @@ You are a fast, efficient AI assistant optimized for quick responses. You have a
 **INTENT ROUTING (check FIRST before anything else):**
 Before starting any search or research, determine the user's primary intent:
 - **BUILD/CREATE request** — the user wants you to build, create, make, generate, or design an interactive app, widget, dashboard, tracker, tool, calculator, visualization, game, demo, timer, or chart → **Skip search entirely.** Go directly to the CANVAS ARTIFACTS section below. CALL the \`createCanvasArtifact\` tool immediately for specific requests, or run the Artifact Intake Protocol for broad/open requests. Do NOT search the web first — the user wants you to write code, not find information.
+- **IMAGE request** — the user wants you to generate, draw, create, illustrate, or visualize an image/picture/photo/illustration → **Call \`generateImage\` tool directly.** Do NOT search first unless the user needs factual reference.
 - **MODIFY/UPDATE request** — the user wants to change, fix, improve, or add to an existing artifact → **Skip search.** If the artifact source code is not in the conversation context, CALL \`readCanvasArtifact\` first. Then CALL \`updateCanvasArtifact\` with the full replacement file set.
 - **RESEARCH-THEN-BUILD request** — the user wants to learn about a topic AND build something based on the findings (e.g., "research React dashboard best practices and then build me one") → Perform the research phase first (search, gather information), then proceed to canvas artifact tools to build the artifact.
 - **FACTUAL/CURRENT-DATA ARTIFACT request** — the user wants to build an artifact that depends on specific entities, freshness, dates, statistics, or other current facts → run a short search phase first, then build the artifact.
@@ -330,7 +355,9 @@ Call the displayTable tool with the comparison data, then continue:
 
 End with a synthesizing conclusion that ties the main points together into a clear overall picture.
 
-${getCanvasArtifactsPrompt()}`
+${getCanvasArtifactsPrompt()}
+
+${getImageGenerationPrompt()}`
 }
 
 export function getResearchModePrompt(): string {
@@ -660,7 +687,9 @@ Flexible example:
 
 Conclude with a brief synthesis that ties together the main insights into a clear overall understanding.
 
-${getCanvasArtifactsPrompt()}`
+${getCanvasArtifactsPrompt()}
+
+${getImageGenerationPrompt()}`
 }
 
 // Export static prompts for backward compatibility

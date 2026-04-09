@@ -54,6 +54,42 @@ function makeModel() {
 }
 
 describe('createEphemeralChatStreamResponse', () => {
+  it('passes guest image tool context into the researcher', async () => {
+    mockResearcher.mockReturnValue({
+      stream: vi.fn().mockResolvedValue({
+        toUIMessageStream: vi.fn(() => ({})),
+        response: Promise.resolve({ messages: [] })
+      })
+    })
+
+    await createEphemeralChatStreamResponse({
+      messages: [
+        {
+          id: 'user-1',
+          role: 'user',
+          parts: [{ type: 'text', text: 'Generate an image of a sunrise' }]
+        }
+      ],
+      model: makeModel(),
+      abortSignal: new AbortController().signal,
+      searchMode: 'chat',
+      modelType: 'speed',
+      chatId: 'guest-chat-1',
+      trigger: 'submit-message'
+    })
+
+    await vi.waitFor(() => {
+      expect(mockResearcher).toHaveBeenCalledWith(
+        expect.objectContaining({
+          imageToolContext: {
+            userId: 'guest',
+            chatId: 'guest-chat-1'
+          }
+        })
+      )
+    })
+  })
+
   it('hydrates guest currentArtifact before constructing the researcher', async () => {
     mockVerifyGuestCanvasToken.mockResolvedValue({
       chatId: 'chat-1',

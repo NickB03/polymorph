@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion'
+
 const SUFFIX_WORDS = [
   'morph',
   'learn',
@@ -16,20 +18,8 @@ const SUFFIX_WORDS = [
 const SUFFIX_MAX_LEN = Math.max(...SUFFIX_WORDS.map(w => w.length))
 const FINAL_WORD = 'morph'
 
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(false)
-  useEffect(() => {
-    const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setReduced(mql.matches)
-    const handler = (e: MediaQueryListEvent) => setReduced(e.matches)
-    mql.addEventListener('change', handler)
-    return () => mql.removeEventListener('change', handler)
-  }, [])
-  return reduced
-}
-
 function PolySuffixFluid({ staggerMs = 70 }: { staggerMs?: number }) {
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
   const [word, setWord] = useState('')
   const [wordKey, setWordKey] = useState(0)
   const [isExiting, setIsExiting] = useState(false)

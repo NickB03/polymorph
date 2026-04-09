@@ -667,6 +667,23 @@ describe('runJudgedSuite', () => {
 
     expect(mockGetCasesForEvaluation).toHaveBeenCalledWith('regression')
   })
+
+  it('does not throw when Phoenix is unavailable after local cases succeed', async () => {
+    const cases = [makeCaseSpec('c1', 'capability')]
+    mockGetCasesForEvaluation.mockReturnValue(cases)
+    mockRunEvalCase.mockResolvedValueOnce(makeRunResult('c1'))
+    mockCreateOrGetDataset.mockRejectedValueOnce(new Error('phoenix down'))
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { runJudgedSuite } = await import('./shared')
+    await expect(runJudgedSuite('capability')).resolves.toBeUndefined()
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[evals] PHOENIX UNAVAILABLE - could not record capability experiment results'
+    )
+    errorSpy.mockRestore()
+  })
 })
 
 describe('runCasesConcurrently', () => {

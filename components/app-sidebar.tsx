@@ -52,7 +52,7 @@ export default function AppSidebar({ hasUser = false }: { hasUser?: boolean }) {
         </a>
         <SidebarTrigger />
       </SidebarHeader>
-      <SidebarContent className="flex flex-col px-2 py-4 h-full">
+      <SidebarContent className="flex flex-col px-2 py-3 h-full">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>

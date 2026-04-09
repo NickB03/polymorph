@@ -27,9 +27,17 @@ export function MarkdownMessage({
   // Process citations to replace [number](#toolCallId) with [number](actual-url)
   const processedMessage = processCitations(message || '', citationMaps || {})
 
-  // Define custom components for links (use Streamdown defaults for code blocks)
+  // Define custom components for links and images (use Streamdown defaults for code blocks)
   const customComponents = {
-    a: Citing
+    a: Citing,
+    img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
+      // eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element -- alt passed via props spread, user/model-provided URLs
+      <img
+        {...props}
+        className="my-2 max-h-[300px] w-auto max-w-full rounded-lg object-contain"
+        loading="lazy"
+      />
+    )
   }
 
   return (

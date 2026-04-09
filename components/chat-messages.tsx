@@ -14,7 +14,6 @@ import { cn, isChatLoading } from '@/lib/utils'
 import { extractCitationMapsFromMessages } from '@/lib/utils/citation'
 
 import { useActivityFeed } from '@/hooks/use-activity-feed'
-import { useIsMobile } from '@/hooks/use-mobile'
 
 import { AnimatedLogo } from './ui/animated-logo'
 import { useSidebar } from './ui/sidebar'
@@ -74,7 +73,7 @@ export function ChatMessages({
     citationCacheRef.current = {}
   }
   const isLoading = isChatLoading(status)
-  const isMobile = useIsMobile()
+
   const { open: sidebarOpen } = useSidebar()
 
   // Flatten sections into messages for the activity feed hook
@@ -83,12 +82,6 @@ export function ChatMessages({
     [sections]
   )
   const { isResearchMode } = useActivityFeed(allMessages, status, chatId)
-
-  // Calculate the offset height based on device type
-  // Note: pt-14 (56px) on scroll-container must be included in desktop offset
-  const offsetHeight = isMobile
-    ? 208 // Mobile: larger offset for mobile header/input
-    : 196 // Desktop: smaller offset (140px) + pt-14 (56px)
 
   // Extract citation maps from all messages in all sections
   const allCitationMaps = useMemo(() => {
@@ -163,7 +156,7 @@ export function ChatMessages({
     >
       <div
         className={cn(
-          'relative mx-auto w-full max-w-full md:max-w-4xl px-4',
+          'relative mx-auto w-full max-w-full md:max-w-4xl px-4 pb-6',
           !sidebarOpen && 'md:pl-12'
         )}
       >
@@ -171,12 +164,12 @@ export function ChatMessages({
           <div
             key={section.id}
             id={`section-${section.id}`}
-            className="chat-section pb-14"
-            style={
-              sectionIndex === sections.length - 1
-                ? { minHeight: `calc(100dvh - ${offsetHeight}px)` }
-                : {}
-            }
+            className={cn(
+              'chat-section',
+              sectionIndex < sections.length - 1
+                ? 'pb-14'
+                : 'min-h-[calc(100dvh-12rem)]'
+            )}
           >
             {/* User message */}
             <div className="flex flex-col gap-4 mb-4 animate-content-enter">

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import type { VoiceState } from '@/lib/voice/config'
 
 import { useAudioStream } from '@/hooks/use-audio-stream'
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion'
 
 import { type AgentState, BarVisualizer } from '@/components/ui/bar-visualizer'
 import { Button } from '@/components/ui/button'
@@ -39,18 +40,6 @@ function useVoiceBreakpoint() {
   const [matches, setMatches] = useState(false)
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 639px)')
-    const onChange = () => setMatches(mql.matches)
-    onChange()
-    mql.addEventListener('change', onChange)
-    return () => mql.removeEventListener('change', onChange)
-  }, [])
-  return matches
-}
-
-function usePrefersReducedMotion() {
-  const [matches, setMatches] = useState(false)
-  useEffect(() => {
-    const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
     const onChange = () => setMatches(mql.matches)
     onChange()
     mql.addEventListener('change', onChange)

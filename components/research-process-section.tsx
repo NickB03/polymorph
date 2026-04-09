@@ -67,6 +67,7 @@ type Props = {
   onQuerySelect: (query: string) => void
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   addToolResult?: (params: { toolCallId: string; result: any }) => void
+  isLatestMessage?: boolean
   parts?: MessagePart[]
 }
 
@@ -187,7 +188,8 @@ function RenderPart({
   handleAccordionChange,
   status,
   addToolResult,
-  onQuerySelect
+  onQuerySelect,
+  isLatestMessage
 }: {
   part: MessagePart
   partId: string
@@ -204,6 +206,7 @@ function RenderPart({
   status?: any
   addToolResult?: (params: { toolCallId: string; result: any }) => void
   onQuerySelect: (query: string) => void
+  isLatestMessage?: boolean
 }) {
   const hasSubsequent = hasNext || hasSubsequentContent
 
@@ -247,7 +250,13 @@ function RenderPart({
   }
 
   if (isDataPart(part)) {
-    return <DataSection part={part} onQuerySelect={onQuerySelect} />
+    return (
+      <DataSection
+        part={part}
+        onQuerySelect={onQuerySelect}
+        isLatestMessage={isLatestMessage}
+      />
+    )
   }
 
   return null
@@ -297,6 +306,7 @@ export function ResearchProcessSection({
   onQuerySelect,
   status,
   addToolResult,
+  isLatestMessage,
   parts: partsOverride
 }: Props) {
   const allParts = (partsOverride ?? (message.parts || [])) as MessagePart[]
@@ -369,6 +379,7 @@ export function ResearchProcessSection({
                       status={status}
                       addToolResult={addToolResult}
                       onQuerySelect={onQuerySelect}
+                      isLatestMessage={isLatestMessage}
                     />
                   )
                 })}
