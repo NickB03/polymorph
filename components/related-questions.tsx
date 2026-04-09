@@ -47,7 +47,7 @@ export function RelatedQuestions({
 
   return (
     <section
-      className="flex items-center gap-1.5 overflow-hidden px-3 py-2"
+      className="flex items-center gap-1.5 overflow-x-hidden px-3 py-2"
       onMouseEnter={isTickerActive ? (isComplete ? restart : pause) : undefined}
       onMouseLeave={isTickerActive && !isComplete ? resume : undefined}
     >
@@ -101,6 +101,7 @@ export function RelatedQuestions({
         <>
           <span className="h-3.5 w-px shrink-0 bg-border" />
           <Button
+            key={activeIndex}
             type="button"
             variant="link"
             className={cn(
@@ -116,6 +117,22 @@ export function RelatedQuestions({
           >
             <ArrowRight className="h-3.5 w-3.5 shrink-0 opacity-50" />
             <span className="truncate">{currentQuestion.question}</span>
+          </Button>
+        </>
+      )}
+
+      {isReady && !showTicker && (
+        <>
+          <span className="h-3.5 w-px shrink-0 bg-border" />
+          <Button
+            type="button"
+            variant="link"
+            className="min-w-0 flex-1 justify-start px-0 py-0 h-auto font-semibold text-accent-foreground/50 whitespace-nowrap text-left no-underline hover:text-accent-foreground/50 truncate"
+            onClick={() => onQuerySelect(questions[0].question)}
+            data-testid="related-questions-static"
+          >
+            <ArrowRight className="mr-1 h-3.5 w-3.5 shrink-0 opacity-50" />
+            <span className="truncate">{questions[0].question}</span>
           </Button>
         </>
       )}

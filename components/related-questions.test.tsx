@@ -107,7 +107,7 @@ describe('RelatedQuestions', () => {
     )
   })
 
-  it('stops after the configured rotations and leaves only the label', () => {
+  it('stops after the configured rotations and shows static fallback', () => {
     const data: RelatedQuestionsData = {
       status: 'success',
       questions: [{ question: 'One' }, { question: 'Two' }]
@@ -131,6 +131,8 @@ describe('RelatedQuestions', () => {
     expect(screen.getByTestId('related-questions-label')).toHaveTextContent(
       'Related'
     )
+    expect(screen.getByTestId('related-questions-static')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'One' })).toBeInTheDocument()
   })
 
   it('restarts ticker on hover after completion', () => {
@@ -167,7 +169,7 @@ describe('RelatedQuestions', () => {
     )
   })
 
-  it('renders only the static label for older success messages', () => {
+  it('renders static question for older success messages', () => {
     const data: RelatedQuestionsData = {
       status: 'success',
       questions: [{ question: 'One' }, { question: 'Two' }]
@@ -179,10 +181,9 @@ describe('RelatedQuestions', () => {
       'Related'
     )
     expect(
-      screen.queryByRole('button', { name: 'One' })
-    ).not.toBeInTheDocument()
-    expect(
       screen.queryByTestId('related-questions-ticker')
     ).not.toBeInTheDocument()
+    expect(screen.getByTestId('related-questions-static')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'One' })).toBeInTheDocument()
   })
 })
