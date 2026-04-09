@@ -132,7 +132,15 @@ export async function createEphemeralChatStreamResponse(
           parentTraceId,
           searchMode,
           modelType,
-          canvasToolContext
+          canvasToolContext,
+          ...(chatId
+            ? {
+                imageToolContext: {
+                  userId: 'guest',
+                  chatId
+                }
+              }
+            : {})
         })
 
         const result = await researchAgent.stream({

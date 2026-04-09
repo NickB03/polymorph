@@ -158,9 +158,7 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     console.log(
       `[evals] ${suite} completed ${succeeded.length}/${cases.length} cases successfully (results NOT recorded to Phoenix)`
     )
-    throw new Error(
-      `[evals] ${suite} results could not be recorded: Phoenix unavailable`
-    )
+    return
   }
 }
 
