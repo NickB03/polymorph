@@ -79,7 +79,7 @@ export function RelatedQuestions({
           <Button
             type="button"
             variant="link"
-            className="min-w-0 flex-1 justify-start px-0 py-0 h-auto font-semibold text-accent-foreground/50 whitespace-nowrap text-left no-underline hover:no-underline hover:text-accent-foreground/50 truncate"
+            className="min-w-0 flex-1 justify-start px-0 py-0 h-auto font-semibold text-accent-foreground/50 whitespace-nowrap text-left no-underline hover:text-accent-foreground/50 truncate"
             onClick={() => onQuerySelect(questions[0].question)}
           >
             <ArrowRight className="mr-1 h-3.5 w-3.5 shrink-0 opacity-50" />
@@ -104,7 +104,7 @@ export function RelatedQuestions({
             type="button"
             variant="link"
             className={cn(
-              'flex min-w-0 flex-1 items-center justify-start gap-1.5 px-0 py-0 h-auto font-semibold text-accent-foreground/60 whitespace-nowrap text-left no-underline hover:no-underline hover:text-accent-foreground/60',
+              'flex min-w-0 flex-1 items-center justify-start gap-1.5 px-0 py-0 h-auto font-semibold text-accent-foreground/60 whitespace-nowrap text-left no-underline hover:text-accent-foreground/60',
               phase === 'entering' && 'animate-ticker-in',
               phase === 'exiting' && 'animate-ticker-out',
               phase === 'visible' && 'opacity-100'
