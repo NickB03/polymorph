@@ -1,5 +1,7 @@
 'use client'
 
+import { useMemo } from 'react'
+
 import { ArrowRight, Repeat2 } from 'lucide-react'
 
 import type { RelatedQuestionsData } from '@/lib/types/ai'
@@ -11,7 +13,6 @@ import { Button } from './ui/button'
 import { Skeleton } from './ui/skeleton'
 
 const DISPLAY_MS = 3000
-const MAX_SHOWN_QUESTIONS = 3
 const ROTATIONS = 2
 
 interface RelatedQuestionsProps {
@@ -20,105 +21,84 @@ interface RelatedQuestionsProps {
   isLatestMessage?: boolean
 }
 
-function renderSkeletonRow(index: number) {
-  return (
-    <div
-      className="flex items-start w-full"
-      key={`related-question-skeleton-${index}`}
-    >
-      <ArrowRight className="mr-2 mt-0.5 h-4 w-4 shrink-0 text-accent-foreground/50" />
-      <Skeleton
-        className="h-6 w-full"
-        data-testid="related-question-skeleton"
-      />
-    </div>
-  )
-}
-
 export function RelatedQuestions({
   data,
   onQuerySelect,
   isLatestMessage = false
 }: RelatedQuestionsProps) {
-  const questions = data.questions ?? []
+  const questions = useMemo(() => data.questions ?? [], [data.questions])
   const isReady = data.status === 'success' && questions.length > 0
   const isTickerActive = isReady && isLatestMessage
 
-  const { activeIndex, phase, isComplete, pause, resume } = useTickerRotation({
-    items: questions,
-    displayMs: DISPLAY_MS,
-    rotations: ROTATIONS,
-    isActive: isTickerActive
-  })
+  const { activeIndex, phase, isComplete, pause, resume, restart } =
+    useTickerRotation({
+      items: questions,
+      displayMs: DISPLAY_MS,
+      rotations: ROTATIONS,
+      isActive: isTickerActive
+    })
 
   const currentQuestion =
     activeIndex >= 0 && activeIndex < questions.length
       ? questions[activeIndex]
       : null
 
+  const showTicker = isTickerActive && !isComplete && currentQuestion
+
   return (
-    <section className="rounded-2xl border border-border/60 bg-card/80 px-3 py-2 shadow-sm">
-      <div className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-        <Repeat2 size={16} className="text-muted-foreground" />
-        <span data-testid="related-questions-label">Related</span>
-      </div>
+    <section
+      className="flex items-center gap-1.5 overflow-hidden rounded-2xl border border-border/60 bg-card/80 px-3 py-2 shadow-sm"
+      onMouseEnter={isTickerActive ? (isComplete ? restart : pause) : undefined}
+      onMouseLeave={isTickerActive && !isComplete ? resume : undefined}
+    >
+      <Repeat2 size={16} className="shrink-0 text-muted-foreground" />
+      <span
+        className="shrink-0 text-sm font-semibold text-muted-foreground"
+        data-testid="related-questions-label"
+      >
+        Related
+      </span>
 
       {data.status === 'loading' && (
-        <div
-          className="mt-2 flex flex-col gap-2"
-          data-testid="related-questions-loading"
-        >
-          {Array.from({ length: MAX_SHOWN_QUESTIONS }).map((_, index) =>
-            renderSkeletonRow(index)
-          )}
-        </div>
+        <Skeleton
+          className="ml-0.5 h-4 w-48"
+          data-testid="related-question-skeleton"
+        />
       )}
 
-      {data.status === 'streaming' && (
-        <div
-          className="mt-2 flex flex-col gap-2"
-          data-testid="related-questions-streaming"
-        >
-          {questions.map((item, index) => (
-            <div
-              className="flex items-start w-full"
-              key={item.question || index}
-            >
-              <ArrowRight className="mr-2 mt-0.5 h-4 w-4 shrink-0 text-accent-foreground/50" />
-              <Button
-                type="button"
-                variant="link"
-                className="flex-1 justify-start px-0 py-0 h-fit font-semibold text-accent-foreground/50 whitespace-normal text-left"
-                onClick={() => onQuerySelect(item.question)}
-              >
-                {item.question}
-              </Button>
-            </div>
-          ))}
-          {Array.from({
-            length: Math.max(0, MAX_SHOWN_QUESTIONS - questions.length)
-          }).map((_, index) => renderSkeletonRow(index))}
-        </div>
+      {data.status === 'streaming' && questions.length === 0 && (
+        <Skeleton
+          className="ml-0.5 h-4 w-48"
+          data-testid="related-question-skeleton"
+        />
+      )}
+
+      {data.status === 'streaming' && questions.length > 0 && (
+        <>
+          <span className="h-3.5 w-px shrink-0 bg-border" />
+          <Button
+            type="button"
+            variant="link"
+            className="min-w-0 flex-1 justify-start px-0 py-0 h-auto font-semibold text-accent-foreground/50 whitespace-nowrap text-left no-underline truncate"
+            onClick={() => onQuerySelect(questions[0].question)}
+          >
+            <ArrowRight className="mr-1 h-3.5 w-3.5 shrink-0 opacity-50" />
+            <span className="truncate">{questions[0].question}</span>
+          </Button>
+        </>
       )}
 
       {data.status === 'error' && (
-        <div
-          className="mt-2 text-sm text-muted-foreground"
+        <span
+          className="ml-0.5 text-sm text-muted-foreground"
           data-testid="related-questions-error"
         >
-          Failed to generate related questions
-        </div>
+          Failed to load
+        </span>
       )}
 
-      {isTickerActive && !isComplete && currentQuestion && (
-        <div
-          className="mt-2 flex items-center gap-2"
-          data-testid="related-questions-ticker"
-          aria-live="polite"
-          aria-atomic="true"
-          onMouseEnter={pause}
-          onMouseLeave={resume}
-        >
+      {showTicker && (
+        <>
           <span className="h-3.5 w-px shrink-0 bg-border" />
           <Button
             type="button"
@@ -130,14 +110,15 @@ export function RelatedQuestions({
               phase === 'visible' && 'opacity-100'
             )}
             onClick={() => onQuerySelect(currentQuestion.question)}
+            data-testid="related-questions-ticker"
+            aria-live="polite"
+            aria-atomic="true"
           >
             <ArrowRight className="h-3.5 w-3.5 shrink-0 opacity-50" />
             <span className="truncate">{currentQuestion.question}</span>
           </Button>
-        </div>
+        </>
       )}
     </section>
   )
 }
-
-export default RelatedQuestions

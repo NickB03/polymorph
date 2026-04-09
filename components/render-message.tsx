@@ -339,6 +339,26 @@ export function RenderMessage({
   )
   const generatedImageUrls = collectGeneratedImageUrls(message.parts)
 
+  // Pre-compute: for each text part, whether there's any visible content after it.
+  // Single reverse pass avoids O(n²) slice+some inside the render loop.
+  const hasVisibleContentAfter = new Array<boolean>(renderParts.length)
+  let seenVisible = false
+  for (let i = renderParts.length - 1; i >= 0; i--) {
+    hasVisibleContentAfter[i] = seenVisible
+    const p = renderParts[i]
+    if (
+      p.type === 'text' ||
+      p.type?.startsWith?.('tool-display') ||
+      p.type === 'tool-createCanvasArtifact' ||
+      p.type === 'tool-updateCanvasArtifact' ||
+      p.type === 'data-canvasArtifact' ||
+      p.type === 'dynamic-tool' ||
+      (p.type as string) === 'data-artifact'
+    ) {
+      seenVisible = true
+    }
+  }
+
   // Interleave text parts with grouped non-text segments
   const elements: React.ReactNode[] = []
   // Buffer collects non-text parts for ResearchProcessSection.
@@ -548,20 +568,7 @@ export function RenderMessage({
       // Flush accumulated non-text parts before rendering text
       flushBuffer(`seg-${index}`)
 
-      const remainingParts = renderParts.slice(index + 1)
-      // Check for any remaining parts that produce visible UI —
-      // not just text, but also display tools, canvas artifacts, etc.
-      const hasMoreVisibleContent = remainingParts.some(p => {
-        if (p.type === 'text') return true
-        if (p.type?.startsWith?.('tool-display')) return true
-        if (p.type === 'tool-createCanvasArtifact') return true
-        if (p.type === 'tool-updateCanvasArtifact') return true
-        if (p.type === 'data-canvasArtifact') return true
-        if (p.type === 'dynamic-tool') return true
-        if ((p.type as string) === 'data-artifact') return true
-        return false
-      })
-      const isLastVisiblePart = !hasMoreVisibleContent
+      const isLastVisiblePart = !hasVisibleContentAfter[index]
       const isStreamingComplete =
         status !== 'streaming' && status !== 'submitted'
       const shouldShowActions =

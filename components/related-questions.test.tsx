@@ -17,16 +17,18 @@ describe('RelatedQuestions', () => {
     vi.clearAllTimers()
   })
 
-  it('renders loading placeholders instead of dropping the state', () => {
+  it('renders inline loading skeleton', () => {
     const data: RelatedQuestionsData = { status: 'loading' }
 
     render(<RelatedQuestions data={data} onQuerySelect={onQuerySelect} />)
 
-    expect(screen.getByTestId('related-questions-loading')).toBeInTheDocument()
-    expect(screen.getAllByTestId('related-question-skeleton')).toHaveLength(3)
+    expect(screen.getByTestId('related-questions-label')).toHaveTextContent(
+      'Related'
+    )
+    expect(screen.getByTestId('related-question-skeleton')).toBeInTheDocument()
   })
 
-  it('renders streaming questions and placeholders', () => {
+  it('renders first streaming question inline', () => {
     const data: RelatedQuestionsData = {
       status: 'streaming',
       questions: [{ question: 'First' }]
@@ -34,20 +36,27 @@ describe('RelatedQuestions', () => {
 
     render(<RelatedQuestions data={data} onQuerySelect={onQuerySelect} />)
 
-    expect(
-      screen.getByTestId('related-questions-streaming')
-    ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'First' })).toBeInTheDocument()
-    expect(screen.getAllByTestId('related-question-skeleton')).toHaveLength(2)
   })
 
-  it('renders the error state explicitly', () => {
+  it('renders inline skeleton when streaming with no questions yet', () => {
+    const data: RelatedQuestionsData = {
+      status: 'streaming',
+      questions: []
+    }
+
+    render(<RelatedQuestions data={data} onQuerySelect={onQuerySelect} />)
+
+    expect(screen.getByTestId('related-question-skeleton')).toBeInTheDocument()
+  })
+
+  it('renders the error state inline', () => {
     const data: RelatedQuestionsData = { status: 'error' }
 
     render(<RelatedQuestions data={data} onQuerySelect={onQuerySelect} />)
 
     expect(screen.getByTestId('related-questions-error')).toHaveTextContent(
-      'Failed to generate related questions'
+      'Failed to load'
     )
   })
 
@@ -78,6 +87,7 @@ describe('RelatedQuestions', () => {
       'animate-ticker-in'
     )
 
+    // Hover the ticker button to pause
     fireEvent.mouseEnter(screen.getByTestId('related-questions-ticker'))
 
     act(() => {
@@ -120,6 +130,40 @@ describe('RelatedQuestions', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByTestId('related-questions-label')).toHaveTextContent(
       'Related'
+    )
+  })
+
+  it('restarts ticker on hover after completion', () => {
+    const data: RelatedQuestionsData = {
+      status: 'success',
+      questions: [{ question: 'One' }, { question: 'Two' }]
+    }
+
+    const { container } = render(
+      <RelatedQuestions
+        data={data}
+        onQuerySelect={onQuerySelect}
+        isLatestMessage
+      />
+    )
+
+    // Complete all rotations
+    act(() => {
+      vi.advanceTimersByTime(15600)
+    })
+
+    expect(
+      screen.queryByTestId('related-questions-ticker')
+    ).not.toBeInTheDocument()
+
+    // Hover the section to restart
+    const section = container.querySelector('section')!
+    fireEvent.mouseEnter(section)
+
+    // Ticker should restart from the first question
+    expect(screen.getByRole('button', { name: 'One' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'One' })).toHaveClass(
+      'animate-ticker-in'
     )
   })
 

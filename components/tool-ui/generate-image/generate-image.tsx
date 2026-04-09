@@ -12,8 +12,7 @@ import type { GenerateImageProps } from './schema'
 export function GenerateImage({
   imageUrl,
   filename,
-  description,
-  aspectRatio
+  description
 }: GenerateImageProps) {
   const [expanded, setExpanded] = useState(false)
 

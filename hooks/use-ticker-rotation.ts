@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { usePrefersReducedMotion } from './use-prefers-reduced-motion'
+
 type Phase = 'entering' | 'visible' | 'exiting' | 'idle'
 type Step = 'enter-to-visible' | 'visible-to-exit' | 'exit-to-next'
 
@@ -19,34 +21,7 @@ interface UseTickerRotationReturn {
   isComplete: boolean
   pause: () => void
   resume: () => void
-}
-
-function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
-
-  useEffect(() => {
-    if (
-      typeof window === 'undefined' ||
-      typeof window.matchMedia !== 'function'
-    ) {
-      return
-    }
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const update = () => setPrefersReducedMotion(mediaQuery.matches)
-
-    update()
-
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', update)
-      return () => mediaQuery.removeEventListener('change', update)
-    }
-
-    mediaQuery.addListener(update)
-    return () => mediaQuery.removeListener(update)
-  }, [])
-
-  return prefersReducedMotion
+  restart: () => void
 }
 
 export function useTickerRotation<T>({
@@ -187,6 +162,26 @@ export function useTickerRotation<T>({
     }, remainingMs)
   }, [])
 
+  const restart = useCallback(() => {
+    clearTimer()
+    pausedRef.current = false
+    remainingMsRef.current = 0
+    stepRef.current = null
+    shownCountRef.current = 0
+
+    if (!isActive || items.length === 0 || totalShows === 0) {
+      setActiveIndex(-1)
+      setPhase('idle')
+      setIsComplete(true)
+      return
+    }
+
+    setIsComplete(false)
+    setActiveIndex(0)
+    setPhase('entering')
+    scheduleStep('enter-to-visible', enterMs)
+  }, [clearTimer, enterMs, isActive, items.length, scheduleStep, totalShows])
+
   useEffect(() => {
     clearTimer()
     pausedRef.current = false
@@ -214,6 +209,7 @@ export function useTickerRotation<T>({
     phase,
     isComplete,
     pause,
-    resume
+    resume,
+    restart
   }
 }

@@ -72,11 +72,9 @@ export function createGenerateImageTool(context: ImageToolContext) {
         const result = await generateText({
           model,
           messages: [{ role: 'user', content }],
-          providerOptions: {
-            google: {
-              ...(aspectRatio && { aspectRatio })
-            }
-          }
+          ...(aspectRatio && {
+            providerOptions: { google: { aspectRatio } }
+          })
         })
 
         const imageFile = result.files.find(f =>
@@ -117,7 +115,7 @@ export function createGenerateImageTool(context: ImageToolContext) {
     toModelOutput: ({ output }) => {
       if ('error' in output) {
         return {
-          type: 'text' as const,
+          type: 'text',
           value: `Image generation failed: ${output.error}`
         }
       }
@@ -126,7 +124,7 @@ export function createGenerateImageTool(context: ImageToolContext) {
       parts.push(
         '— the image is displayed automatically in the chat. Do NOT embed or repeat the image URL in your response.'
       )
-      return { type: 'text' as const, value: parts.join(' ') }
+      return { type: 'text', value: parts.join(' ') }
     }
   })
 }

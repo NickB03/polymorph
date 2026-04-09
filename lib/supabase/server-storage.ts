@@ -2,12 +2,10 @@ import { createClient } from '@supabase/supabase-js'
 
 import { SUPABASE_STORAGE_BUCKET } from './storage'
 
-/**
- * Lazily-created admin client for server-side storage operations.
- * Uses the service role key to bypass RLS — only call from trusted
- * server code where the userId has already been authenticated.
- */
+let _adminClient: ReturnType<typeof createClient> | null = null
+
 function getAdminClient() {
+  if (_adminClient) return _adminClient
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) {
@@ -15,7 +13,8 @@ function getAdminClient() {
       'NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for server-side storage uploads'
     )
   }
-  return createClient(url, key)
+  _adminClient = createClient(url, key)
+  return _adminClient
 }
 
 export function buildGeneratedImagePath(
