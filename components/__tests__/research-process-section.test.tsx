@@ -8,6 +8,8 @@ import type { ToolPart, UIMessage } from '@/lib/types/ai'
 
 import { ResearchProcessSection } from '../research-process-section'
 
+const mockRelatedQuestions = vi.hoisted(() => vi.fn())
+
 // Mock the child components
 vi.mock('../reasoning-section', () => ({
   ReasoningSection: ({ content, isOpen, onOpenChange }: any) => (
@@ -29,6 +31,13 @@ vi.mock('../tool-section', () => ({
       {isOpen && <div>{tool.type}</div>}
     </div>
   )
+}))
+
+vi.mock('../related-questions', () => ({
+  RelatedQuestions: (props: any) => {
+    mockRelatedQuestions(props)
+    return <div data-testid="related-questions" />
+  }
 }))
 
 describe('ResearchProcessSection', () => {
@@ -423,6 +432,41 @@ describe('ResearchProcessSection', () => {
       )
 
       expect(screen.getByTestId('tool-section')).toBeInTheDocument()
+    })
+
+    test('forwards isLatestMessage to related questions data parts', () => {
+      const message = {
+        id: 'test-message',
+        role: 'assistant' as const,
+        parts: [
+          {
+            type: 'data-relatedQuestions',
+            data: {
+              status: 'success',
+              questions: [{ question: 'What next?' }]
+            }
+          } as any
+        ]
+      } as UIMessage
+
+      render(
+        <ResearchProcessSection
+          message={message}
+          messageId="test-14"
+          getIsOpen={mockGetIsOpen}
+          onOpenChange={mockOnOpenChange}
+          onQuerySelect={mockOnQuerySelect}
+          isLatestMessage
+        />
+      )
+
+      expect(mockRelatedQuestions).toHaveBeenCalled()
+      expect(mockRelatedQuestions.mock.calls[0][0]).toEqual(
+        expect.objectContaining({
+          isLatestMessage: true,
+          onQuerySelect: mockOnQuerySelect
+        })
+      )
     })
 
     test('passes addToolResult prop correctly', () => {

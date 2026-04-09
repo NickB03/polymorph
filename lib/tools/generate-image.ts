@@ -123,7 +123,9 @@ export function createGenerateImageTool(context: ImageToolContext) {
       }
       const parts = [`Image generated successfully: "${output.description}"`]
       if (output.aspectRatio) parts.push(`(${output.aspectRatio})`)
-      parts.push(`— URL: ${output.imageUrl}`)
+      parts.push(
+        '— the image is displayed automatically in the chat. Do NOT embed or repeat the image URL in your response.'
+      )
       return { type: 'text' as const, value: parts.join(' ') }
     }
   })

@@ -92,9 +92,7 @@ export function ChatMenuItem({ chat }: ChatMenuItemProps) {
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive} className="pr-8">
         <Link href={path}>
-          <span className="text-xs font-medium truncate select-none">
-            {chat.title}
-          </span>
+          <span className="text-sm truncate select-none">{chat.title}</span>
         </Link>
       </SidebarMenuButton>
 
@@ -102,7 +100,7 @@ export function ChatMenuItem({ chat }: ChatMenuItemProps) {
         <DropdownMenuTrigger asChild>
           <SidebarMenuAction
             showOnHover
-            className="size-8 p-1.5 mr-1 overflow-hidden"
+            className="size-8 p-1.5 mr-1 overflow-hidden top-1/2 -translate-y-1/2"
           >
             <EllipsisVertical size={13} />
             <span className="sr-only">Chat Actions</span>

@@ -19,6 +19,8 @@ import {
   CanvasArtifactCard,
   tryParseCanvasArtifactCardData
 } from './tool-ui/canvas-artifact-card'
+import { GenerateImage } from './tool-ui/generate-image'
+import { safeParseSerializableGenerateImage } from './tool-ui/generate-image/schema'
 import { OptionList } from './tool-ui/option-list/option-list'
 import type { OptionListSelection } from './tool-ui/option-list/schema'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
@@ -130,6 +132,33 @@ function extractToolUIFromText(text: string): Segment[] {
     segments.push({ type: 'text', content: text.slice(lastIndex) })
   }
   return segments
+}
+
+/** Collect image URLs from completed generateImage tool parts for deduplication */
+function collectGeneratedImageUrls(parts: UIMessage['parts']): Set<string> {
+  const urls = new Set<string>()
+  for (const part of parts || []) {
+    if (part.type === 'tool-generateImage') {
+      const toolPart = part as { state?: string; output?: unknown }
+      if (toolPart.state === 'output-available' && toolPart.output) {
+        const output = toolPart.output as { imageUrl?: string }
+        if (output.imageUrl) urls.add(output.imageUrl)
+      }
+    }
+  }
+  return urls
+}
+
+/** Remove markdown image syntax that references already-rendered generated images */
+function stripDuplicateImageMarkdown(
+  text: string,
+  generatedImageUrls: Set<string>
+): string {
+  if (generatedImageUrls.size === 0) return text
+  return text.replace(
+    /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)\n?/g,
+    (match, url) => (generatedImageUrls.has(url) ? '' : match)
+  )
 }
 
 function isHiddenInfrastructurePart(part: { type?: string } | undefined) {
@@ -308,6 +337,7 @@ export function RenderMessage({
   const latestCanvasArtifactStatuses = getLatestCanvasArtifactStatuses(
     message.parts
   )
+  const generatedImageUrls = collectGeneratedImageUrls(message.parts)
 
   // Interleave text parts with grouped non-text segments
   const elements: React.ReactNode[] = []
@@ -326,6 +356,7 @@ export function RenderMessage({
         onQuerySelect={onQuerySelect}
         status={status}
         addToolResult={addToolResult}
+        isLatestMessage={isLatestMessage}
       />
     )
     buffer = []
@@ -536,7 +567,11 @@ export function RenderMessage({
       const shouldShowActions =
         isLastVisiblePart && (isLatestMessage ? isStreamingComplete : true)
 
-      const segments = extractToolUIFromText(part.text)
+      const textContent = stripDuplicateImageMarkdown(
+        part.text,
+        generatedImageUrls
+      )
+      const segments = extractToolUIFromText(textContent)
       for (let si = 0; si < segments.length; si++) {
         const segment = segments[si]
         if (segment.type === 'tool-ui') {
@@ -726,6 +761,23 @@ export function RenderMessage({
           available.
         </button>
       )
+    } else if (part.type === 'tool-generateImage') {
+      const toolPart = part as { state?: string; output?: unknown }
+      if (toolPart.state === 'output-available' && toolPart.output) {
+        const parsed = safeParseSerializableGenerateImage(toolPart.output)
+        if (parsed) {
+          flushBuffer(`seg-${index}`)
+          elements.push(
+            <GenerateImage
+              key={`${messageId}-generate-image-${index}`}
+              {...parsed}
+            />
+          )
+          return
+        }
+      }
+      // Streaming/pending state — push to buffer for process section
+      buffer.push(part)
     } else if (
       part.type === 'reasoning' ||
       part.type?.startsWith?.('tool-') ||

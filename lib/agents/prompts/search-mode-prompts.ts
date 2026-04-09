@@ -133,7 +133,7 @@ You have a \`generateImage\` tool that creates or edits images using an AI image
 **Important:**
 - Do NOT search the web before generating an image unless the user needs reference information
 - Generate the image directly when the request is clear
-- After generating, continue your response naturally — reference the image in your text
+- After generating, briefly describe what was created — do NOT embed the image URL in markdown or repeat it in your text (the image renders automatically in the chat UI)
 - If the user asks to modify a generated image, use the same tool with the sourceImageUrl parameter
 `
 }

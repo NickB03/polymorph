@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import { Download, X } from 'lucide-react'
 
@@ -52,7 +53,7 @@ export function GenerateImage({
 
   return (
     <>
-      <figure className="group relative my-3 w-fit max-w-full overflow-hidden rounded-xl border border-border/50 bg-muted/30">
+      <figure className="group relative my-3 w-fit max-w-full overflow-hidden rounded-xl">
         <button
           type="button"
           onClick={() => setExpanded(true)}
@@ -62,65 +63,59 @@ export function GenerateImage({
           <img
             src={imageUrl}
             alt={description}
-            className="max-h-[200px] w-auto max-w-full rounded-t-xl object-contain"
+            className="max-h-[min(300px,40vh)] w-auto max-w-full rounded-xl object-contain"
             loading="lazy"
           />
         </button>
-        <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-muted-foreground">
-          <span className="line-clamp-1">{description}</span>
-          <div className="flex shrink-0 items-center gap-1">
-            {aspectRatio && (
-              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
-                {aspectRatio}
-              </span>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-6"
-              onClick={handleDownload}
-            >
-              <Download className="size-3" />
-            </Button>
-          </div>
-        </figcaption>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-end rounded-b-xl bg-gradient-to-t from-black/40 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="pointer-events-auto size-7 text-white/80 hover:bg-white/15 hover:text-white"
+            onClick={handleDownload}
+          >
+            <Download className="size-3.5" />
+          </Button>
+        </div>
       </figure>
 
-      {expanded && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-8"
-          onClick={() => setExpanded(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label={description}
-        >
-          <div className="absolute right-3 top-3 flex items-center gap-1 sm:right-4 sm:top-4 sm:gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 text-white hover:bg-white/10 sm:size-9"
-              onClick={handleDownload}
-            >
-              <Download className="size-4 sm:size-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 text-white hover:bg-white/10 sm:size-9"
-              onClick={() => setExpanded(false)}
-            >
-              <X className="size-4 sm:size-5" />
-            </Button>
-          </div>
-          {/* eslint-disable-next-line @next/next/no-img-element -- lightbox, dynamic URL */}
-          <img
-            src={imageUrl}
-            alt={description}
-            className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
-      )}
+      {expanded &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-8"
+            onClick={() => setExpanded(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label={description}
+          >
+            <div className="absolute right-3 top-3 flex items-center gap-1 sm:right-4 sm:top-4 sm:gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 text-white hover:bg-white/10 sm:size-9"
+                onClick={handleDownload}
+              >
+                <Download className="size-4 sm:size-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 text-white hover:bg-white/10 sm:size-9"
+                onClick={() => setExpanded(false)}
+              >
+                <X className="size-4 sm:size-5" />
+              </Button>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element -- lightbox, dynamic URL */}
+            <img
+              src={imageUrl}
+              alt={description}
+              className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"
+              onClick={e => e.stopPropagation()}
+            />
+          </div>,
+          document.body
+        )}
     </>
   )
 }

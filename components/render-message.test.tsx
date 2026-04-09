@@ -5,6 +5,10 @@ import type { UIMessage } from '@/lib/types/ai'
 
 import { RenderMessage } from './render-message'
 
+const { mockResearchProcessSection } = vi.hoisted(() => ({
+  mockResearchProcessSection: vi.fn((_props: Record<string, unknown>) => null)
+}))
+
 vi.mock('./answer-section', () => ({
   AnswerSection: ({ content }: { content: string }) => (
     <div data-testid="answer-section">{content}</div>
@@ -38,7 +42,7 @@ vi.mock('./research-plan', () => ({
 
 vi.mock('./research-process-section', () => ({
   __esModule: true,
-  default: () => null
+  default: (props: Record<string, unknown>) => mockResearchProcessSection(props)
 }))
 
 vi.mock('./research-status-line', () => ({
@@ -127,6 +131,7 @@ vi.mock('./user-text-section', () => ({
 describe('RenderMessage', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    mockResearchProcessSection.mockClear()
   })
 
   it('does not emit a React key warning for suppressed research sidebar tools', () => {
@@ -491,6 +496,38 @@ describe('RenderMessage', () => {
     )
 
     expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+  })
+
+  it('passes isLatestMessage through to ResearchProcessSection', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'reasoning',
+          text: 'Researching'
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+        isLatestMessage
+      />
+    )
+
+    expect(mockResearchProcessSection).toHaveBeenCalled()
+    const researchProcessProps =
+      mockResearchProcessSection.mock.calls.at(0)?.[0]
+    expect(researchProcessProps).toBeDefined()
+    expect(researchProcessProps).toMatchObject({
+      isLatestMessage: true
+    })
   })
 
   it('shows only the data-canvasArtifact card when failed creates with empty IDs precede a success', () => {

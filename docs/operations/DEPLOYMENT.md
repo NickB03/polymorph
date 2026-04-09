@@ -72,7 +72,7 @@ Railway (polymorph-evals cron) --API--/
 - **Railway project:** `polymorph`
 - **Service:** `phoenix`
 - **Image:** `arizephoenix/phoenix`
-- **Storage:** SQLite + Railway Volume (mounted at `/data`, working dir `/data/v2`)
+- **Storage:** SQLite + Railway Volume (mounted at `/data`, working dir `/data/v3`)
 - **Public domain:** `phoenix-production-c6b5.up.railway.app`
 - **Private domain:** `phoenix.railway.internal` (for Railway-internal services)
 - **Auth:** Enabled (`PHOENIX_ENABLE_AUTH=true`, `PHOENIX_SECRET` for JWT signing)
