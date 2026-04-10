@@ -151,9 +151,10 @@ export function ChatMessages({
       aria-roledescription="chat messages"
       className={cn(
         'relative size-full pt-14',
-        sections.length > 0 ? 'flex-1 overflow-y-auto' : ''
+        sections.length > 0 ? 'flex flex-col flex-1 overflow-y-auto' : ''
       )}
     >
+      {sections.length > 0 && <div className="flex-1" />}
       <div
         className={cn(
           'relative mx-auto w-full max-w-full md:max-w-4xl px-4 pb-6',
@@ -166,9 +167,7 @@ export function ChatMessages({
             id={`section-${section.id}`}
             className={cn(
               'chat-section',
-              sectionIndex < sections.length - 1
-                ? 'pb-14'
-                : 'min-h-[calc(100dvh-12rem)]'
+              sectionIndex < sections.length - 1 && 'pb-14'
             )}
           >
             {/* User message */}
