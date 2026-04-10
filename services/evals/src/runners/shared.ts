@@ -14,11 +14,13 @@ import type { LanguageModel } from 'ai'
 
 import { createConfig } from '../config'
 import { getCasesForEvaluation, getCorpusVersion } from '../corpus'
+import { db } from '../db'
 import {
   extractPromptFromConversation,
   formatEvalContext
 } from '../eval-output'
 import { runEvalCase } from '../eval-runner-client'
+import { persistEvalSummary } from '../eval-summary'
 import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
@@ -125,9 +127,8 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     console.log(`[evals] ${suite} dataset: ${datasetName}`)
     console.log(`[evals] ${suite} experiment: ${experimentName}`)
     console.log(`[evals] ${suite} experiment ID: ${experiment.id}`)
-    console.log(
-      `[evals] ${suite} view: ${buildPublicExperimentUrl(datasetId, experiment.id)}`
-    )
+    const phoenixUrl = buildPublicExperimentUrl(datasetId, experiment.id)
+    console.log(`[evals] ${suite} view: ${phoenixUrl}`)
 
     const thresholds = checkExperimentThresholds(
       experiment,
@@ -137,6 +138,20 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     console.log(
       `[evals] ${suite} pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
     )
+
+    await persistEvalSummary(
+      { execute: db.execute.bind(db) },
+      {
+        suite,
+        experimentName,
+        datasetName,
+        passRate: thresholds.passRate,
+        experiment,
+        totalCases: examples.length,
+        phoenixUrl
+      }
+    )
+
     if (!thresholds.passed) {
       throw new Error(
         `[evals] ${suite} scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(runtimeConfig.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
@@ -163,8 +178,12 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
 }
 
 export function buildTimestampedExperimentName(suite: string): string {
-  const timestamp = new Date().toISOString().slice(0, 13).replace('T', '-')
-  return `polymorph-${suite}-${timestamp}h`
+  const timestamp = new Date()
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', '-')
+    .replaceAll(':', '-')
+  return `polymorph-${suite}-${timestamp}`
 }
 
 export function buildStableDatasetName(suite: string): string {
@@ -351,7 +370,9 @@ export function checkExperimentThresholds(
   threshold: number,
   excludeFromThreshold: string[] = []
 ): ThresholdResult {
-  const allRuns = experiment.evaluationRuns ?? []
+  const allRuns = Array.isArray(experiment.evaluationRuns)
+    ? experiment.evaluationRuns
+    : []
   const runs = allRuns.filter(r => !excludeFromThreshold.includes(r.name))
 
   if (runs.length === 0) {

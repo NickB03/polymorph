@@ -2,6 +2,19 @@ import { type NextRequest, NextResponse } from 'next/server'
 
 import { type CookieOptions, createServerClient } from '@supabase/ssr'
 
+const PUBLIC_EXACT_PATHS = new Set(['/'])
+const PUBLIC_PREFIX_PATHS = ['/auth', '/share', '/api']
+
+export function isPublicPath(pathname: string) {
+  if (PUBLIC_EXACT_PATHS.has(pathname)) {
+    return true
+  }
+
+  return PUBLIC_PREFIX_PATHS.some(
+    prefix => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  )
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request
@@ -64,19 +77,10 @@ export async function updateSession(request: NextRequest) {
     console.error('[proxy] getUser failed:', e)
   }
 
-  // Define public paths that don't require authentication
-  const publicPaths = [
-    '/', // Root path
-    '/auth', // Auth-related pages
-    '/share', // Share pages
-    '/api' // API routes
-    // Add other public paths here if needed
-  ]
-
   const pathname = request.nextUrl.pathname
 
   // Redirect to login if the user is not authenticated and the path is not public
-  if (!user && !publicPaths.some(path => pathname.startsWith(path))) {
+  if (!user && !isPublicPath(pathname)) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'

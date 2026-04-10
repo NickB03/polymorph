@@ -3,6 +3,7 @@ import localFont from 'next/font/local'
 
 import { Analytics } from '@vercel/analytics/next'
 
+import { isAdminUserId } from '@/lib/auth/is-admin'
 import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { createAppMetadata } from '@/lib/utils/app-metadata'
@@ -37,6 +38,7 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   let user = null
+  let isAdmin = false
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -46,6 +48,7 @@ export default async function RootLayout({
       data: { user: supabaseUser }
     } = await supabase.auth.getUser()
     user = supabaseUser
+    isAdmin = isAdminUserId(supabaseUser?.id)
   }
 
   return (
@@ -65,7 +68,7 @@ export default async function RootLayout({
           <SidebarProvider defaultOpen>
             <AppSidebar hasUser={!!user} />
             <div className="flex flex-col flex-1 min-w-0">
-              <Header user={user} />
+              <Header user={user} isAdmin={isAdmin} />
               <main className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
                 <CanvasRoot>{children}</CanvasRoot>
               </main>

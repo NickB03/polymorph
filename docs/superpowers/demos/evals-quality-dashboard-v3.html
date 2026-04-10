@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>Quality Dashboard V3 — Signal Desk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #071019;
+      --bg-elevated: #0b1622;
+      --surface-1: rgba(8, 18, 28, 0.78);
+      --surface-2: rgba(12, 26, 39, 0.92);
+      --surface-3: rgba(18, 36, 51, 0.98);
+      --line: rgba(134, 186, 255, 0.12);
+      --line-strong: rgba(134, 186, 255, 0.22);
+      --text: #eef7ff;
+      --muted: #8ca5bc;
+      --muted-strong: #b4c7d9;
+      --accent-data: #52d7ff;
+      --accent-data-soft: rgba(82, 215, 255, 0.18);
+      --accent-positive: #9dff67;
+      --accent-positive-soft: rgba(157, 255, 103, 0.16);
+      --accent-warning: #ffc857;
+      --accent-warning-soft: rgba(255, 200, 87, 0.16);
+      --accent-danger: #ff6b6b;
+      --accent-danger-soft: rgba(255, 107, 107, 0.16);
+      --shadow-strong: 0 22px 60px rgba(0, 0, 0, 0.35);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --font-display: "Space Grotesk", "Geist", sans-serif;
+      --font-body: "Geist", system-ui, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      color-scheme: dark;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-body);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(82, 215, 255, 0.12), transparent 30%),
+        radial-gradient(circle at 85% 14%, rgba(157, 255, 103, 0.08), transparent 24%),
+        linear-gradient(180deg, #071019 0%, #08111b 52%, #050c14 100%);
+      position: relative;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 85%);
+      opacity: 0.35;
+    }
+
+    button,
+    a {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      background: none;
+      color: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .app-shell {
+      width: min(1400px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 22px 0 42px;
+    }
+
+    .demo-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 16px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(8, 18, 28, 0.7);
+      backdrop-filter: blur(10px);
+      width: fit-content;
+      margin: 0 auto 20px;
+    }
+
+    .demo-banner .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent-warning);
+      box-shadow: 0 0 20px rgba(255, 200, 87, 0.5);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1.2fr auto;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 32px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-data));
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(2.8rem, 4vw, 4.6rem);
+      line-height: 0.96;
+      letter-spacing: -0.05em;
+      text-wrap: balance;
+      max-width: 8ch;
+    }
+
+    .title-wrap p {
+      margin: 14px 0 0;
+      color: var(--muted-strong);
+      font-size: 1rem;
+      max-width: 60ch;
+    }
+
+    .title-wrap p strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .meta-pill,
+    .action-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 999px;
+      padding: 12px 16px;
+      border: 1px solid var(--line);
+      background: rgba(10, 20, 30, 0.76);
+      color: var(--muted-strong);
+      backdrop-filter: blur(14px);
+    }
+
+    .meta-pill strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .action-link {
+      color: var(--text);
+      transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+    }
+
+    .action-link:hover {
+      border-color: var(--line-strong);
+      background: rgba(13, 28, 41, 0.94);
+      transform: translateY(-1px);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .panel {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: linear-gradient(180deg, rgba(10, 22, 33, 0.92), rgba(6, 14, 22, 0.96));
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-strong);
+      overflow: hidden;
+    }
+
+    .panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 30%);
+      opacity: 0.55;
+    }
+
+    .hero-panel {
+      padding: 24px;
+      position: sticky;
+      top: 22px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .score-hero {
+      position: relative;
+      padding: 26px 24px;
+      border-radius: var(--radius-lg);
+      background:
+        radial-gradient(circle at 50% 20%, rgba(82, 215, 255, 0.12), transparent 40%),
+        linear-gradient(180deg, rgba(13, 29, 43, 0.92), rgba(8, 18, 28, 0.92));
+      border: 1px solid rgba(82, 215, 255, 0.12);
+      overflow: hidden;
+    }
+
+    .score-hero::before {
+      content: "";
+      position: absolute;
+      inset: -30% -15% auto;
+      height: 220px;
+      background: radial-gradient(circle, rgba(82, 215, 255, 0.18), transparent 60%);
+      filter: blur(26px);
+      opacity: 0.8;
+    }
+
+    .score-label {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.76rem;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 7px 12px;
+      border: 1px solid rgba(157, 255, 103, 0.18);
+      background: var(--accent-positive-soft);
+      color: var(--accent-positive);
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 0.78rem;
+    }
+
+    .status-chip::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 14px currentColor;
+    }
+
+    .score-value-row {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 18px;
+      align-items: end;
+    }
+
+    .score-stack {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .score-number {
+      font-family: var(--font-display);
+      font-size: clamp(4.4rem, 8vw, 6.6rem);
+      line-height: 0.88;
+      letter-spacing: -0.08em;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .score-suffix {
+      color: var(--muted);
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .score-halo {
+      width: 116px;
+      height: 116px;
+    }
+
+    .score-halo .track {
+      fill: none;
+      stroke: rgba(82, 215, 255, 0.08);
+      stroke-width: 12;
+    }
+
+    .score-halo .fill {
+      fill: none;
+      stroke: var(--accent-data);
+      stroke-width: 12;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 12px rgba(82, 215, 255, 0.35));
+      transform: rotate(-90deg);
+      transform-origin: 58px 58px;
+      transition: stroke-dashoffset 900ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .score-caption {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .delta-pill {
+      width: fit-content;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 999px;
+      padding: 9px 13px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .delta-pill.positive {
+      background: var(--accent-positive-soft);
+      color: var(--accent-positive);
+      border: 1px solid rgba(157, 255, 103, 0.18);
+    }
+
+    .delta-pill.negative {
+      background: var(--accent-danger-soft);
+      color: var(--accent-danger);
+      border: 1px solid rgba(255, 107, 107, 0.18);
+    }
+
+    .hero-summary {
+      font-size: 1rem;
+      color: var(--muted-strong);
+      max-width: 28ch;
+    }
+
+    .mini-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mini-stat {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      background: rgba(14, 27, 40, 0.7);
+    }
+
+    .mini-stat .label {
+      font-size: 0.76rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .mini-stat .value {
+      font-size: 1.15rem;
+      color: var(--text);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .attention-card {
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(255, 200, 87, 0.12), rgba(255, 200, 87, 0.04));
+      border: 1px solid rgba(255, 200, 87, 0.18);
+      display: grid;
+      gap: 10px;
+    }
+
+    .attention-card .tag {
+      font-size: 0.78rem;
+      color: var(--accent-warning);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+
+    .attention-card h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1.45rem;
+      letter-spacing: -0.04em;
+    }
+
+    .attention-card p {
+      margin: 0;
+      color: var(--muted-strong);
+      line-height: 1.45;
+    }
+
+    .attention-callout {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .attention-callout strong {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      letter-spacing: -0.04em;
+    }
+
+    .main-column {
+      display: grid;
+      gap: 24px;
+    }
+
+    .insight-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .insight-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(13, 28, 42, 0.9), rgba(10, 20, 30, 0.9));
+      min-height: 132px;
+      display: grid;
+      align-content: start;
+      gap: 10px;
+    }
+
+    .insight-card .label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .insight-card .value {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 2vw, 2.3rem);
+      line-height: 1;
+      letter-spacing: -0.05em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .insight-card .detail {
+      color: var(--muted-strong);
+      line-height: 1.45;
+    }
+
+    .insight-card.primary {
+      background:
+        radial-gradient(circle at top right, rgba(82, 215, 255, 0.14), transparent 36%),
+        linear-gradient(180deg, rgba(13, 29, 43, 0.98), rgba(9, 18, 28, 0.98));
+      border-color: rgba(82, 215, 255, 0.18);
+    }
+
+    .trend-panel {
+      padding: 20px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .panel-header h2,
+    .metrics-header h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1.55rem;
+      letter-spacing: -0.04em;
+    }
+
+    .panel-header p,
+    .metrics-header p {
+      margin: 6px 0 0;
+      color: var(--muted-strong);
+      max-width: 46ch;
+    }
+
+    .segmented {
+      display: inline-flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .segmented button,
+    .run-chip,
+    .metric-card {
+      transition:
+        transform 160ms ease,
+        border-color 160ms ease,
+        background 160ms ease,
+        box-shadow 160ms ease;
+    }
+
+    .segmented button {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted-strong);
+      background: rgba(10, 20, 30, 0.78);
+    }
+
+    .segmented button[aria-pressed="true"] {
+      background: rgba(82, 215, 255, 0.16);
+      border-color: rgba(82, 215, 255, 0.25);
+      color: var(--text);
+      box-shadow: inset 0 0 0 1px rgba(82, 215, 255, 0.08);
+    }
+
+    .segmented button:hover,
+    .run-chip:hover,
+    .metric-card:hover,
+    .action-link:hover {
+      transform: translateY(-1px);
+    }
+
+    .chart-stage {
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(10, 18, 28, 0.98), rgba(8, 15, 23, 0.98));
+      padding: 16px 16px 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(82, 215, 255, 0.05), transparent 35%);
+    }
+
+    .chart-kicker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .chart-metric {
+      display: grid;
+      gap: 6px;
+    }
+
+    .chart-metric .label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.75rem;
+    }
+
+    .chart-metric .value {
+      font-size: 1.2rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .chart-svg {
+      width: 100%;
+      height: 330px;
+      display: block;
+      position: relative;
+      z-index: 1;
+    }
+
+    .axis-label {
+      fill: var(--muted);
+      font-size: 11px;
+      font-family: var(--font-body);
+    }
+
+    .grid-line {
+      stroke: rgba(134, 186, 255, 0.12);
+      stroke-width: 1;
+      stroke-dasharray: 4 6;
+    }
+
+    .trend-line {
+      fill: none;
+      stroke: var(--accent-data);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 16px rgba(82, 215, 255, 0.22));
+    }
+
+    .trend-area {
+      fill: url(#areaFill);
+    }
+
+    .compare-line {
+      fill: none;
+      stroke: rgba(180, 199, 217, 0.35);
+      stroke-width: 2;
+      stroke-dasharray: 8 8;
+      stroke-linecap: round;
+    }
+
+    .marker-dot {
+      fill: var(--bg);
+      stroke-width: 2.5;
+    }
+
+    .active-marker {
+      filter: drop-shadow(0 0 12px rgba(82, 215, 255, 0.35));
+    }
+
+    .chart-summary {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chart-summary p {
+      margin: 0;
+      color: var(--muted-strong);
+    }
+
+    .chart-summary strong {
+      color: var(--text);
+    }
+
+    .run-selector {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 4px 2px 2px;
+      scrollbar-width: thin;
+    }
+
+    .run-chip {
+      flex: 0 0 auto;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      min-width: 112px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(12, 24, 36, 0.9);
+      color: var(--muted-strong);
+    }
+
+    .run-chip .chip-date {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .run-chip .chip-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .run-chip[aria-pressed="true"] {
+      background: rgba(82, 215, 255, 0.16);
+      border-color: rgba(82, 215, 255, 0.24);
+      box-shadow: inset 0 0 0 1px rgba(82, 215, 255, 0.08);
+    }
+
+    .metrics-panel {
+      padding: 20px;
+    }
+
+    .metrics-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metric-card {
+      position: relative;
+      display: grid;
+      gap: 14px;
+      text-align: left;
+      padding: 18px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(13, 27, 40, 0.92), rgba(10, 20, 30, 0.98));
+      overflow: hidden;
+    }
+
+    .metric-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: transparent;
+      transition: background 160ms ease;
+    }
+
+    .metric-card.active {
+      border-color: rgba(82, 215, 255, 0.24);
+      background:
+        radial-gradient(circle at top right, rgba(82, 215, 255, 0.14), transparent 34%),
+        linear-gradient(180deg, rgba(13, 30, 44, 0.98), rgba(10, 20, 31, 0.98));
+      box-shadow: inset 0 0 0 1px rgba(82, 215, 255, 0.08);
+    }
+
+    .metric-card.active::before {
+      background: var(--accent-data);
+    }
+
+    .metric-card.warning::before { background: var(--accent-warning); }
+    .metric-card.risk::before { background: var(--accent-danger); }
+
+    .metric-header {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .metric-rank {
+      color: var(--muted);
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .metric-header h3 {
+      margin: 0;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .metric-score {
+      text-align: right;
+    }
+
+    .metric-score strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 2rem;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-score span {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .metric-delta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted-strong);
+      font-size: 0.92rem;
+    }
+
+    .metric-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-pill.positive {
+      color: var(--accent-positive);
+      background: var(--accent-positive-soft);
+    }
+
+    .metric-pill.negative {
+      color: var(--accent-danger);
+      background: var(--accent-danger-soft);
+    }
+
+    .metric-pill.neutral {
+      color: var(--muted-strong);
+      background: rgba(180, 199, 217, 0.1);
+    }
+
+    .sparkline {
+      width: 100%;
+      height: 48px;
+      display: block;
+    }
+
+    .metric-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .target-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .target-line {
+      width: 28px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(180, 199, 217, 0.45));
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.5;
+    }
+
+    .footer-note strong {
+      color: var(--muted-strong);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent-data);
+      outline-offset: 3px;
+    }
+
+    @media (max-width: 1080px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-panel {
+        position: relative;
+        top: 0;
+      }
+
+      .topbar,
+      .panel-header,
+      .metrics-header {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: start;
+      }
+
+      .top-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 780px) {
+      .app-shell {
+        width: min(100vw - 20px, 100%);
+        padding-top: 16px;
+      }
+
+      .insight-strip,
+      .metrics-grid,
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-panel,
+      .trend-panel,
+      .metrics-panel {
+        padding: 16px;
+      }
+
+      .score-value-row {
+        grid-template-columns: 1fr;
+      }
+
+      .score-halo {
+        width: 96px;
+        height: 96px;
+      }
+
+      .chart-svg {
+        height: 280px;
+      }
+
+      .run-chip {
+        min-width: 96px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="demo-banner">
+      <span class="dot" aria-hidden="true"></span>
+      <span>Demo Preview • Signal Desk V3 • Mock Data • Not Connected to Live Evals</span>
+    </div>
+
+    <header class="topbar">
+      <div class="title-wrap">
+        <div class="eyebrow">Evals Quality Command Surface</div>
+        <h1>Quality Dashboard Signal Desk</h1>
+        <p>
+          Track quality momentum, compare baselines, and surface the <strong>single metric that needs action</strong>
+          before it drifts into production.
+        </p>
+      </div>
+
+      <div class="top-actions">
+        <div class="meta-pill">
+          <span>Last Run</span>
+          <strong id="lastRunLabel">Apr 9, 6:00 AM</strong>
+        </div>
+        <div class="meta-pill">
+          <span>Coverage</span>
+          <strong><span id="caseCount">48</span> cases</strong>
+        </div>
+        <a class="action-link" href="#" aria-label="View in Phoenix">
+          <span>View in Phoenix</span>
+          <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </header>
+
+    <div class="dashboard-grid">
+      <aside class="panel hero-panel">
+        <section class="score-hero">
+          <div class="score-label">
+            <span>Latest Quality Score</span>
+            <span class="status-chip" id="scoreLabel">Excellent</span>
+          </div>
+
+          <div class="score-value-row">
+            <div>
+              <div class="score-stack">
+                <span class="score-number" id="scoreNumber">84</span>
+                <span class="score-suffix">/100</span>
+              </div>
+              <div class="delta-pill positive" id="overallDeltaPill">+3 vs previous run</div>
+            </div>
+
+            <svg class="score-halo" viewBox="0 0 116 116" aria-hidden="true">
+              <circle class="track" cx="58" cy="58" r="48"></circle>
+              <circle class="fill" id="scoreHaloFill" cx="58" cy="58" r="48"></circle>
+            </svg>
+          </div>
+
+          <div class="score-caption">
+            <div class="hero-summary" id="heroSummary">
+              Overall quality is climbing, but citation rigor is still the main drag on confidence.
+            </div>
+          </div>
+        </section>
+
+        <div class="mini-grid">
+          <div class="mini-stat">
+            <div class="label">Baseline</div>
+            <div class="value" id="baselineLabel">Previous Run</div>
+          </div>
+          <div class="mini-stat">
+            <div class="label">Change</div>
+            <div class="value" id="baselineDelta">+3 pts</div>
+          </div>
+          <div class="mini-stat">
+            <div class="label">Best Metric</div>
+            <div class="value" id="bestMetricLabel">Safety · 97%</div>
+          </div>
+          <div class="mini-stat">
+            <div class="label">Primary Risk</div>
+            <div class="value" id="riskMetricLabel">Citations · 68%</div>
+          </div>
+        </div>
+
+        <section class="attention-card" aria-labelledby="attentionTitle">
+          <div class="tag">Needs Attention</div>
+          <h2 id="attentionTitle">Citations are still below the confidence threshold.</h2>
+          <p id="attentionBody">
+            This run improved overall quality, but the weakest evaluator is still under the desired floor for reliable references.
+          </p>
+          <div class="attention-callout">
+            <strong id="attentionScore">68%</strong>
+            <span id="attentionDelta">+3 vs baseline</span>
+          </div>
+        </section>
+      </aside>
+
+      <main class="main-column">
+        <section class="insight-strip" aria-live="polite" id="insightStrip">
+          <article class="insight-card primary">
+            <div class="label">Overall Change</div>
+            <div class="value" id="overallChangeValue">+3 pts</div>
+            <div class="detail" id="overallChangeDetail">Quality recovered from the last run and is now sitting at 84/100.</div>
+          </article>
+          <article class="insight-card">
+            <div class="label">Biggest Gain</div>
+            <div class="value" id="biggestGainValue">Accuracy +4%</div>
+            <div class="detail" id="biggestGainDetail">Faithfulness posted the sharpest improvement versus the active baseline.</div>
+          </article>
+          <article class="insight-card">
+            <div class="label">Primary Risk</div>
+            <div class="value" id="primaryRiskValue">Citations 68%</div>
+            <div class="detail" id="primaryRiskDetail">Still the lowest-scoring evaluator and below the preferred minimum.</div>
+          </article>
+        </section>
+
+        <section class="panel trend-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Trend & Baseline Comparison</h2>
+              <p>
+                Shift the baseline explicitly, then drill into any evaluator card below to see whether the quality story is broad-based or isolated.
+              </p>
+            </div>
+
+            <div class="segmented" role="group" aria-label="Comparison baseline">
+              <button type="button" data-mode="previous" aria-pressed="true">Previous</button>
+              <button type="button" data-mode="first" aria-pressed="false">First Run</button>
+              <button type="button" data-mode="custom" aria-pressed="false">Custom</button>
+            </div>
+          </div>
+
+          <div class="chart-stage">
+            <div class="chart-kicker">
+              <div class="chart-metric">
+                <div class="label">Focus Metric</div>
+                <div class="value" id="focusMetricLabel">Overall Quality</div>
+              </div>
+              <div class="chart-metric">
+                <div class="label">Active Comparison</div>
+                <div class="value" id="comparisonLabel">Latest vs Previous Run</div>
+              </div>
+            </div>
+
+            <svg class="chart-svg" id="trendChart" viewBox="0 0 860 330" preserveAspectRatio="none" role="img" aria-label="Trend chart showing metric history over time"></svg>
+
+            <div class="chart-summary">
+              <p id="chartNarrative">Quality is up <strong>3 points</strong> compared with the previous run.</p>
+              <div class="run-selector" id="runSelector" role="group" aria-label="Choose custom comparison run"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel metrics-panel">
+          <div class="metrics-header">
+            <div>
+              <h2>Evaluator Drilldown</h2>
+              <p>
+                Ranked by current score. Select a card to repaint the trend chart around that evaluator and expose where the progress is strongest or most fragile.
+              </p>
+            </div>
+          </div>
+
+          <div class="metrics-grid" id="metricsGrid"></div>
+          <p class="footer-note">
+            <strong>Read pattern:</strong> start with the left rail for the current state, move to the insight strip for the narrative, then use the metric cards to decide whether the latest gain is durable or hiding a single weak dimension.
+          </p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="sr-only" aria-live="polite" id="liveRegion"></div>
+
+  <script>
+    const TREND_DATA = [
+      { date: "2026-03-12", score: 74, evaluators: { safety: 0.90, relevance: 0.78, faithfulness: 0.72, response_quality: 0.68, tool_usage: 0.70, deterministic_prechecks: 0.72, citation_accuracy: 0.55 } },
+      { date: "2026-03-14", score: 76, evaluators: { safety: 0.91, relevance: 0.80, faithfulness: 0.74, response_quality: 0.70, tool_usage: 0.72, deterministic_prechecks: 0.74, citation_accuracy: 0.57 } },
+      { date: "2026-03-16", score: 78, evaluators: { safety: 0.92, relevance: 0.82, faithfulness: 0.76, response_quality: 0.73, tool_usage: 0.74, deterministic_prechecks: 0.75, citation_accuracy: 0.58 } },
+      { date: "2026-03-18", score: 75, evaluators: { safety: 0.91, relevance: 0.79, faithfulness: 0.73, response_quality: 0.69, tool_usage: 0.71, deterministic_prechecks: 0.73, citation_accuracy: 0.56 } },
+      { date: "2026-03-20", score: 79, evaluators: { safety: 0.93, relevance: 0.83, faithfulness: 0.77, response_quality: 0.74, tool_usage: 0.75, deterministic_prechecks: 0.76, citation_accuracy: 0.60 } },
+      { date: "2026-03-22", score: 80, evaluators: { safety: 0.94, relevance: 0.84, faithfulness: 0.79, response_quality: 0.76, tool_usage: 0.76, deterministic_prechecks: 0.76, citation_accuracy: 0.61 } },
+      { date: "2026-03-24", score: 78, evaluators: { safety: 0.93, relevance: 0.82, faithfulness: 0.76, response_quality: 0.73, tool_usage: 0.74, deterministic_prechecks: 0.75, citation_accuracy: 0.59 } },
+      { date: "2026-03-26", score: 82, evaluators: { safety: 0.95, relevance: 0.86, faithfulness: 0.81, response_quality: 0.78, tool_usage: 0.78, deterministic_prechecks: 0.77, citation_accuracy: 0.63 } },
+      { date: "2026-03-28", score: 80, evaluators: { safety: 0.94, relevance: 0.85, faithfulness: 0.79, response_quality: 0.76, tool_usage: 0.76, deterministic_prechecks: 0.76, citation_accuracy: 0.61 } },
+      { date: "2026-03-30", score: 83, evaluators: { safety: 0.96, relevance: 0.88, faithfulness: 0.83, response_quality: 0.79, tool_usage: 0.79, deterministic_prechecks: 0.78, citation_accuracy: 0.65 } },
+      { date: "2026-04-01", score: 81, evaluators: { safety: 0.95, relevance: 0.86, faithfulness: 0.81, response_quality: 0.77, tool_usage: 0.77, deterministic_prechecks: 0.77, citation_accuracy: 0.63 } },
+      { date: "2026-04-03", score: 79, evaluators: { safety: 0.94, relevance: 0.84, faithfulness: 0.78, response_quality: 0.74, tool_usage: 0.75, deterministic_prechecks: 0.76, citation_accuracy: 0.60 } },
+      { date: "2026-04-05", score: 82, evaluators: { safety: 0.95, relevance: 0.87, faithfulness: 0.82, response_quality: 0.79, tool_usage: 0.78, deterministic_prechecks: 0.77, citation_accuracy: 0.64 } },
+      { date: "2026-04-07", score: 81, evaluators: { safety: 0.96, relevance: 0.88, faithfulness: 0.84, response_quality: 0.80, tool_usage: 0.79, deterministic_prechecks: 0.78, citation_accuracy: 0.65 } },
+      { date: "2026-04-09", score: 84, evaluators: { safety: 0.97, relevance: 0.91, faithfulness: 0.88, response_quality: 0.84, tool_usage: 0.82, deterministic_prechecks: 0.79, citation_accuracy: 0.68 } }
+    ];
+
+    const EVALUATOR_LABELS = {
+      safety: "Safety",
+      relevance: "Relevance",
+      faithfulness: "Accuracy",
+      response_quality: "Response Quality",
+      tool_usage: "Tool Usage",
+      deterministic_prechecks: "Answer Checks",
+      citation_accuracy: "Citations"
+    };
+
+    const CASE_COUNT = 48;
+    const TARGET_SCORE = 85;
+    const RISK_FLOOR = 75;
+    const latestIndex = TREND_DATA.length - 1;
+
+    let compareMode = "previous";
+    let customCompareIndex = Math.max(0, latestIndex - 4);
+    let selectedMetric = "overall";
+
+    const latestRun = TREND_DATA[latestIndex];
+    const locale = navigator.languages && navigator.languages.length ? navigator.languages : undefined;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function formatDate(dateString, options = { month: "short", day: "numeric" }) {
+      return new Intl.DateTimeFormat(locale, options).format(new Date(`${dateString}T06:00:00`));
+    }
+
+    function formatDateTime(dateString) {
+      return new Intl.DateTimeFormat(locale, {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      }).format(new Date(`${dateString}T06:00:00`));
+    }
+
+    function getCompareIndex() {
+      if (compareMode === "first") return 0;
+      if (compareMode === "custom") return customCompareIndex;
+      return Math.max(0, latestIndex - 1);
+    }
+
+    function getMetricValue(run, metricKey) {
+      return metricKey === "overall" ? run.score : Math.round((run.evaluators[metricKey] || 0) * 100);
+    }
+
+    function getMetricSeries(metricKey) {
+      return TREND_DATA.map((run) => getMetricValue(run, metricKey));
+    }
+
+    function getScoreLabel(score) {
+      if (score >= 85) return "Excellent";
+      if (score >= 75) return "Strong";
+      if (score >= 65) return "Watch";
+      return "Critical";
+    }
+
+    function getDeltaDescriptor(delta) {
+      if (delta > 0) return `+${delta}`;
+      if (delta < 0) return `${delta}`;
+      return "0";
+    }
+
+    function getMetricTone(score) {
+      if (score < RISK_FLOOR) return "risk";
+      if (score < TARGET_SCORE) return "warning";
+      return "positive";
+    }
+
+    function metricNarrative(label, latest, baseline) {
+      const delta = latest - baseline;
+      if (delta >= 4) return `${label} is accelerating and now carries stronger weight in the overall score.`;
+      if (delta > 0) return `${label} is improving, but the gain is still modest versus the baseline.`;
+      if (delta < 0) return `${label} slipped against the baseline and needs review before shipping.`;
+      return `${label} held flat relative to the baseline.`;
+    }
+
+    function computeInsights() {
+      const compareIndex = getCompareIndex();
+      const compareRun = TREND_DATA[compareIndex];
+      const delta = latestRun.score - compareRun.score;
+      const metricDeltas = Object.keys(EVALUATOR_LABELS).map((key) => {
+        const latest = Math.round(latestRun.evaluators[key] * 100);
+        const baseline = Math.round((compareRun.evaluators[key] || 0) * 100);
+        return {
+          key,
+          label: EVALUATOR_LABELS[key],
+          latest,
+          baseline,
+          delta: latest - baseline
+        };
+      });
+      metricDeltas.sort((a, b) => b.delta - a.delta);
+      const bestGain = metricDeltas[0];
+      const primaryRisk = [...metricDeltas].sort((a, b) => a.latest - b.latest)[0];
+      return { compareIndex, compareRun, delta, bestGain, primaryRisk, metricDeltas };
+    }
+
+    function updateHero(insights) {
+      const scoreNumber = document.getElementById("scoreNumber");
+      const scoreLabel = document.getElementById("scoreLabel");
+      const deltaPill = document.getElementById("overallDeltaPill");
+      const halo = document.getElementById("scoreHaloFill");
+      const circumference = 2 * Math.PI * 48;
+      const offset = circumference * (1 - latestRun.score / 100);
+
+      scoreLabel.textContent = getScoreLabel(latestRun.score);
+      scoreNumber.textContent = latestRun.score;
+      deltaPill.textContent = `${getDeltaDescriptor(insights.delta)} pts vs ${insights.compareIndex === latestIndex - 1 ? "previous run" : formatDate(insights.compareRun.date)}`;
+      deltaPill.className = `delta-pill ${insights.delta >= 0 ? "positive" : "negative"}`;
+      halo.setAttribute("stroke-dasharray", `${circumference.toFixed(2)} ${circumference.toFixed(2)}`);
+      halo.setAttribute("stroke-dashoffset", reducedMotion ? offset.toFixed(2) : circumference.toFixed(2));
+
+      if (!reducedMotion) {
+        requestAnimationFrame(() => {
+          halo.setAttribute("stroke-dashoffset", offset.toFixed(2));
+        });
+      }
+
+      const heroSummary = document.getElementById("heroSummary");
+      heroSummary.textContent = insights.primaryRisk.latest < TARGET_SCORE
+        ? `Overall quality is climbing, but ${insights.primaryRisk.label.toLowerCase()} is still the main drag on confidence.`
+        : "Overall quality is climbing and the weakest evaluator is now within a healthier range.";
+
+      document.getElementById("baselineLabel").textContent = insights.compareIndex === latestIndex - 1
+        ? "Previous Run"
+        : formatDate(insights.compareRun.date, { month: "short", day: "numeric", year: "numeric" });
+      document.getElementById("baselineDelta").textContent = `${getDeltaDescriptor(insights.delta)} pts`;
+
+      const bestMetric = [...insights.metricDeltas].sort((a, b) => b.latest - a.latest)[0];
+      document.getElementById("bestMetricLabel").textContent = `${bestMetric.label} · ${bestMetric.latest}%`;
+      document.getElementById("riskMetricLabel").textContent = `${insights.primaryRisk.label} · ${insights.primaryRisk.latest}%`;
+
+      document.getElementById("attentionTitle").textContent = `${insights.primaryRisk.label} is still below the confidence threshold.`;
+      document.getElementById("attentionBody").textContent = metricNarrative(insights.primaryRisk.label, insights.primaryRisk.latest, insights.primaryRisk.baseline);
+      document.getElementById("attentionScore").textContent = `${insights.primaryRisk.latest}%`;
+      document.getElementById("attentionDelta").textContent = `${getDeltaDescriptor(insights.primaryRisk.delta)} vs baseline`;
+    }
+
+    function updateInsightStrip(insights) {
+      const baselineLabel = insights.compareIndex === latestIndex - 1 ? "the previous run" : formatDate(insights.compareRun.date);
+      document.getElementById("overallChangeValue").textContent = `${getDeltaDescriptor(insights.delta)} pts`;
+      document.getElementById("overallChangeDetail").textContent = `Quality ${insights.delta >= 0 ? "moved up" : "slipped"} against ${baselineLabel} and now sits at ${latestRun.score}/100.`;
+      document.getElementById("biggestGainValue").textContent = `${insights.bestGain.label} ${getDeltaDescriptor(insights.bestGain.delta)}%`;
+      document.getElementById("biggestGainDetail").textContent = `${insights.bestGain.label} showed the strongest movement versus ${baselineLabel}.`;
+      document.getElementById("primaryRiskValue").textContent = `${insights.primaryRisk.label} ${insights.primaryRisk.latest}%`;
+      document.getElementById("primaryRiskDetail").textContent = `${insights.primaryRisk.label} remains the weakest evaluator and still sits ${Math.max(0, TARGET_SCORE - insights.primaryRisk.latest)} points below the target floor.`;
+    }
+
+    function renderRunSelector(insights) {
+      const selector = document.getElementById("runSelector");
+      selector.innerHTML = "";
+
+      TREND_DATA.slice(0, -1).forEach((run, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "run-chip";
+        button.setAttribute("aria-pressed", String(compareMode === "custom" && customCompareIndex === index));
+        button.innerHTML = `
+          <span class="chip-date">${formatDate(run.date)}</span>
+          <span class="chip-value">${run.score}/100</span>
+        `;
+        button.addEventListener("click", () => {
+          compareMode = "custom";
+          customCompareIndex = index;
+          syncModeButtons();
+          renderDashboard();
+        });
+        selector.appendChild(button);
+      });
+    }
+
+    function renderTrendChart(insights) {
+      const svg = document.getElementById("trendChart");
+      const metricLabel = selectedMetric === "overall" ? "Overall Quality" : EVALUATOR_LABELS[selectedMetric];
+      const latestValue = getMetricValue(latestRun, selectedMetric);
+      const compareValue = getMetricValue(insights.compareRun, selectedMetric);
+      const series = getMetricSeries(selectedMetric);
+      const compareIndex = insights.compareIndex;
+      const focusColor = selectedMetric === "overall"
+        ? "var(--accent-data)"
+        : getMetricTone(latestValue) === "risk"
+          ? "var(--accent-danger)"
+          : getMetricTone(latestValue) === "warning"
+            ? "var(--accent-warning)"
+            : "var(--accent-positive)";
+      const viewBox = { width: 860, height: 330 };
+      const pad = { top: 20, right: 16, bottom: 30, left: 44 };
+      const chartWidth = viewBox.width - pad.left - pad.right;
+      const chartHeight = viewBox.height - pad.top - pad.bottom;
+      const yMin = Math.max(0, Math.floor((Math.min(...series) - 8) / 5) * 5);
+      const yMax = Math.min(100, Math.ceil((Math.max(...series) + 8) / 5) * 5);
+      const xPos = (i) => pad.left + (i / (series.length - 1)) * chartWidth;
+      const yPos = (value) => pad.top + chartHeight - ((value - yMin) / (yMax - yMin || 1)) * chartHeight;
+
+      const points = series.map((value, index) => [xPos(index), yPos(value)]);
+      const linePath = points.map(([x, y], index) => `${index === 0 ? "M" : "L"}${x},${y}`).join(" ");
+      const areaPath = `${linePath} L${points[points.length - 1][0]},${pad.top + chartHeight} L${points[0][0]},${pad.top + chartHeight} Z`;
+      const comparePoints = points.slice(compareIndex, latestIndex + 1);
+      const comparePath = comparePoints.map(([x, y], index) => `${index === 0 ? "M" : "L"}${x},${y}`).join(" ");
+
+      const yTicks = Array.from({ length: 4 }, (_, index) => yMin + ((yMax - yMin) / 3) * index);
+      const xTickIndexes = [0, 3, 6, 9, 12, latestIndex].filter((value, index, array) => array.indexOf(value) === index);
+
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${selectedMetric === "overall" ? "#52d7ff" : latestValue < RISK_FLOOR ? "#ff6b6b" : latestValue < TARGET_SCORE ? "#ffc857" : "#9dff67"}" stop-opacity="0.34"></stop>
+            <stop offset="100%" stop-color="${selectedMetric === "overall" ? "#52d7ff" : latestValue < RISK_FLOOR ? "#ff6b6b" : latestValue < TARGET_SCORE ? "#ffc857" : "#9dff67"}" stop-opacity="0.02"></stop>
+          </linearGradient>
+        </defs>
+        ${yTicks.map((tick) => `
+          <g>
+            <line class="grid-line" x1="${pad.left}" x2="${viewBox.width - pad.right}" y1="${yPos(tick)}" y2="${yPos(tick)}"></line>
+            <text class="axis-label" x="${pad.left - 8}" y="${yPos(tick) + 4}" text-anchor="end">${Math.round(tick)}</text>
+          </g>
+        `).join("")}
+        ${xTickIndexes.map((index) => `
+          <text class="axis-label" x="${xPos(index)}" y="${viewBox.height - 8}" text-anchor="middle">${formatDate(TREND_DATA[index].date)}</text>
+        `).join("")}
+        <path class="trend-area" d="${areaPath}"></path>
+        <path class="compare-line" d="${comparePath}"></path>
+        <path class="trend-line" d="${linePath}" style="stroke:${focusColor};"></path>
+        ${points.map(([x, y], index) => {
+          const isCompare = index === compareIndex;
+          const isLatest = index === latestIndex;
+          const color = isLatest ? focusColor : isCompare ? "rgba(180, 199, 217, 0.8)" : "rgba(82, 215, 255, 0.65)";
+          const radius = isLatest || isCompare ? 6.5 : 4;
+          return `<circle class="marker-dot ${isLatest ? "active-marker" : ""}" cx="${x}" cy="${y}" r="${radius}" stroke="${color}" fill="var(--bg-elevated)"></circle>`;
+        }).join("")}
+      `;
+
+      document.getElementById("focusMetricLabel").textContent = metricLabel;
+      document.getElementById("comparisonLabel").textContent = `Latest vs ${insights.compareIndex === latestIndex - 1 ? "Previous Run" : formatDate(insights.compareRun.date, { month: "short", day: "numeric", year: "numeric" })}`;
+      document.getElementById("chartNarrative").innerHTML = `${metricLabel} is at <strong>${latestValue}${selectedMetric === "overall" ? "/100" : "%"}</strong>, ${insights.compareIndex === latestIndex - 1 ? "relative to the previous run" : `compared with ${formatDate(insights.compareRun.date)}`}, for a change of <strong>${getDeltaDescriptor(latestValue - compareValue)}${selectedMetric === "overall" ? " points" : "%"}</strong>.`;
+    }
+
+    function renderMetrics(insights) {
+      const container = document.getElementById("metricsGrid");
+      container.innerHTML = "";
+      const rankedMetrics = [...insights.metricDeltas].sort((a, b) => b.latest - a.latest);
+
+      rankedMetrics.forEach((metric, index) => {
+        const card = document.createElement("button");
+        const tone = getMetricTone(metric.latest);
+        const isActive = selectedMetric === metric.key;
+        card.type = "button";
+        card.className = `metric-card ${tone === "warning" ? "warning" : ""} ${tone === "risk" ? "risk" : ""} ${isActive ? "active" : ""}`.trim();
+        card.setAttribute("aria-pressed", String(isActive));
+
+        const series = getMetricSeries(metric.key);
+        const sparkPoints = series.map((value, i) => {
+          const x = (i / (series.length - 1)) * 170;
+          const y = 44 - ((value - 50) / 50) * 36;
+          return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${Math.max(4, Math.min(44, y)).toFixed(2)}`;
+        }).join(" ");
+
+        const deltaClass = metric.delta > 0 ? "positive" : metric.delta < 0 ? "negative" : "neutral";
+        const targetGap = metric.latest >= TARGET_SCORE ? "At or above target" : `${TARGET_SCORE - metric.latest} pts from target`;
+        card.innerHTML = `
+          <div class="metric-header">
+            <div>
+              <div class="metric-rank">Rank ${index + 1}</div>
+              <h3>${metric.label}</h3>
+            </div>
+            <div class="metric-score">
+              <strong>${metric.latest}%</strong>
+              <span>${tone === "risk" ? "Risk" : tone === "warning" ? "Watch" : "Healthy"}</span>
+            </div>
+          </div>
+
+          <div class="metric-delta-row">
+            <span class="metric-pill ${deltaClass}">${getDeltaDescriptor(metric.delta)}%</span>
+            <span>${metricNarrative(metric.label, metric.latest, metric.baseline)}</span>
+          </div>
+
+          <svg class="sparkline" viewBox="0 0 170 48" preserveAspectRatio="none" aria-hidden="true">
+            <path d="${sparkPoints}" fill="none" stroke="${tone === "risk" ? "#ff6b6b" : tone === "warning" ? "#ffc857" : "#52d7ff"}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+
+          <div class="metric-footer">
+            <span class="target-indicator"><span class="target-line"></span>${targetGap}</span>
+            <span>Baseline ${metric.baseline}%</span>
+          </div>
+        `;
+
+        card.addEventListener("click", () => {
+          selectedMetric = selectedMetric === metric.key ? "overall" : metric.key;
+          renderDashboard();
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    function syncModeButtons() {
+      document.querySelectorAll(".segmented button").forEach((button) => {
+        const active = button.dataset.mode === compareMode;
+        button.setAttribute("aria-pressed", String(active));
+      });
+    }
+
+    function announce(insights) {
+      const liveRegion = document.getElementById("liveRegion");
+      const metricName = selectedMetric === "overall" ? "Overall quality" : EVALUATOR_LABELS[selectedMetric];
+      const baselineLabel = insights.compareIndex === latestIndex - 1 ? "previous run" : formatDate(insights.compareRun.date);
+      liveRegion.textContent = `${metricName} compared with ${baselineLabel}. Overall delta ${getDeltaDescriptor(insights.delta)} points. Primary risk ${insights.primaryRisk.label} at ${insights.primaryRisk.latest} percent.`;
+    }
+
+    function renderDashboard() {
+      const insights = computeInsights();
+      document.getElementById("lastRunLabel").textContent = formatDateTime(latestRun.date);
+      document.getElementById("caseCount").textContent = new Intl.NumberFormat(locale).format(CASE_COUNT);
+
+      updateHero(insights);
+      updateInsightStrip(insights);
+      renderRunSelector(insights);
+      renderTrendChart(insights);
+      renderMetrics(insights);
+      announce(insights);
+    }
+
+    document.querySelectorAll(".segmented button").forEach((button) => {
+      button.addEventListener("click", () => {
+        compareMode = button.dataset.mode;
+        syncModeButtons();
+        renderDashboard();
+      });
+    });
+
+    syncModeButtons();
+    renderDashboard();
+  </script>
+</body>
+</html>

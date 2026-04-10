@@ -1,10 +1,18 @@
 'use client'
 
 import { useCallback, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { User } from '@supabase/supabase-js'
-import { Link2, LogOut, MessageSquare, Palette, Trash2 } from 'lucide-react'
+import {
+  ChartColumnIncreasing,
+  Link2,
+  LogOut,
+  MessageSquare,
+  Palette,
+  Trash2
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { clearChats } from '@/lib/actions/chat'
@@ -41,10 +49,15 @@ import { ThemeMenuItems } from './theme-menu-items'
 
 interface UserMenuProps {
   user: User
+  isAdmin: boolean
   onFeedbackClick?: () => void
 }
 
-export default function UserMenu({ user, onFeedbackClick }: UserMenuProps) {
+export default function UserMenu({
+  user,
+  isAdmin,
+  onFeedbackClick
+}: UserMenuProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [isClearAlertOpen, setIsClearAlertOpen] = useState(false)
@@ -174,6 +187,18 @@ export default function UserMenu({ user, onFeedbackClick }: UserMenuProps) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        {isAdmin ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Admin</DropdownMenuLabel>
+            <DropdownMenuItem asChild>
+              <Link href="/evals">
+                <ChartColumnIncreasing className="mr-2 h-4 w-4" />
+                <span>Evals</span>
+              </Link>
+            </DropdownMenuItem>
+          </>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
