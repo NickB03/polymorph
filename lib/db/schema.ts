@@ -555,6 +555,9 @@ export const feedback = pgTable(
 export type Feedback = InferSelectModel<typeof feedback>
 
 // Eval experiment summaries
+// Note: Only SELECT RLS policy — no INSERT/UPDATE/DELETE policies.
+// Writes come exclusively from the trusted evals service backend
+// (services/evals/) which uses a direct DB connection without RLS context.
 export const evalSummaries = pgTable(
   'eval_summaries',
   {

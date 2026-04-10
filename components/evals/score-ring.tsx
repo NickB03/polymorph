@@ -33,7 +33,15 @@ export function ScoreRing({
           className="relative flex h-52 w-52 items-center justify-center"
           data-testid="score-ring"
         >
-          <svg className="h-full w-full -rotate-90" viewBox="0 0 180 180">
+          <svg
+            className="h-full w-full -rotate-90"
+            viewBox="0 0 180 180"
+            role="progressbar"
+            aria-valuenow={Math.round(clampedScore * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`${label} score: ${formatPercent(score)}`}
+          >
             <circle
               cx="90"
               cy="90"

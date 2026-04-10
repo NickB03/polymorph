@@ -75,6 +75,10 @@ export async function persistEvalSummary(
       ${params.totalCases},
       ${params.phoenixUrl}
     )
-    ON CONFLICT (experiment_name) DO NOTHING
+    ON CONFLICT (experiment_name) DO UPDATE SET
+      pass_rate_bps = EXCLUDED.pass_rate_bps,
+      evaluator_scores = EXCLUDED.evaluator_scores,
+      total_cases = EXCLUDED.total_cases,
+      phoenix_url = EXCLUDED.phoenix_url
   `)
 }

@@ -1,4 +1,4 @@
-import { getCurrentUser, getCurrentUserId } from './get-current-user'
+import { getCurrentUser } from './get-current-user'
 
 function getConfiguredAdminUserId() {
   const adminUserId = process.env.ADMIN_USER_ID?.trim()
@@ -21,10 +21,5 @@ export async function isCurrentUserAdmin() {
   }
 
   const user = await getCurrentUser()
-  if (!user) {
-    return false
-  }
-
-  const userId = await getCurrentUserId()
-  return Boolean(userId && user.id === adminUserId && userId === adminUserId)
+  return Boolean(user && user.id === adminUserId)
 }
