@@ -20,7 +20,7 @@ Then fill in the required values. See [Environment Reference](../getting-started
 
 - `DATABASE_URL`
 - `AI_GATEWAY_API_KEY`
-- `TAVILY_API_KEY`
+- `BRAVE_SEARCH_API_KEY` (or another search provider key)
 
 ### Port Conflicts
 
@@ -206,16 +206,16 @@ const name = user?.name ?? 'default'
 
 **Causes:**
 
-- `TAVILY_API_KEY` is missing or invalid
-- API rate limit exceeded on Tavily's end
+- Search provider API key is missing or invalid (e.g. `BRAVE_SEARCH_API_KEY`, `TAVILY_API_KEY`)
+- API rate limit exceeded on the search provider's end
 
-**Fix:** Verify your Tavily key at [tavily.com](https://tavily.com). Check that `TAVILY_API_KEY` is set correctly in `.env.local`.
+**Fix:** Verify your search API key is set correctly in `.env.local`. The default provider is Brave (`BRAVE_SEARCH_API_KEY`). If using Tavily, verify at [tavily.com](https://tavily.com).
 
 ### `SEARXNG_API_URL` Not Set
 
 **Symptoms:** Advanced search requests fail. Only relevant if you are using SearXNG as a search provider.
 
-The `SEARXNG_API_URL` variable is required only when `SEARCH_API=searxng` or when advanced search depth is configured via `SEARXNG_DEFAULT_DEPTH=advanced`. It is not needed for the default Tavily provider.
+The `SEARXNG_API_URL` variable is required only when `SEARCH_API=searxng` or when advanced search depth is configured via `SEARXNG_DEFAULT_DEPTH=advanced`. It is not needed for the default Brave provider.
 
 **Fix:** If not using SearXNG, this can be ignored. If using SearXNG, set:
 

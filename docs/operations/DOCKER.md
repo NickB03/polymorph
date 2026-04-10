@@ -24,7 +24,7 @@ npx supabase start
 ```bash
 DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres
 AI_GATEWAY_API_KEY=your_vercel_gateway_key
-TAVILY_API_KEY=your_tavily_key
+BRAVE_SEARCH_API_KEY=your_brave_key
 ```
 
 4. Start services:

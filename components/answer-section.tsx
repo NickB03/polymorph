@@ -29,7 +29,6 @@ export type AnswerSectionProps = {
     options?: ChatRequestOptions
   ) => Promise<void | string | null | undefined>
   citationMaps?: Record<string, Record<number, SearchResultItem>>
-  isGuest?: boolean
 }
 
 export function AnswerSection({
@@ -42,12 +41,8 @@ export function AnswerSection({
   metadata,
   status,
   reload,
-  citationMaps,
-  isGuest = false
+  citationMaps
 }: AnswerSectionProps) {
-  const enableShare =
-    process.env.NEXT_PUBLIC_SUPABASE_URL !== undefined && !isGuest
-
   const handleReload = () => {
     if (reload) {
       return reload(messageId)
@@ -73,7 +68,6 @@ export function AnswerSection({
             traceId={metadata?.traceId}
             feedbackScore={metadata?.feedbackScore}
             chatId={chatId}
-            enableShare={enableShare}
             reload={handleReload}
             status={status}
             visible={showActions}

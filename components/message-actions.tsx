@@ -14,7 +14,6 @@ import { isVoiceEnabled } from '@/lib/voice/config'
 
 import { Button } from './ui/button'
 import { SpeakButton } from './voice/speak-button'
-import { ChatShare } from './chat-share'
 import { RetryButton } from './retry-button'
 
 interface MessageActionsProps {
@@ -24,7 +23,6 @@ interface MessageActionsProps {
   feedbackScore?: number | null
   reload?: () => Promise<void | string | null | undefined>
   chatId?: string
-  enableShare?: boolean
   className?: string
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   visible?: boolean
@@ -38,7 +36,6 @@ export function MessageActions({
   feedbackScore: initialFeedbackScore,
   reload,
   chatId,
-  enableShare,
   className,
   status,
   visible = true,
@@ -102,7 +99,7 @@ export function MessageActions({
     <div
       aria-hidden={!visible}
       className={cn(
-        'flex flex-wrap items-center gap-0.5 self-end transition-opacity duration-200',
+        'flex flex-wrap items-center gap-0 self-end transition-opacity duration-200',
         visible ? 'opacity-100' : 'pointer-events-none opacity-0 invisible',
         className
       )}
@@ -112,7 +109,7 @@ export function MessageActions({
         variant="ghost"
         size="icon"
         onClick={handleCopy}
-        className="rounded-full"
+        className="rounded-full h-8 w-8"
         aria-label="Copy message"
       >
         <Copy size={14} />
@@ -124,7 +121,7 @@ export function MessageActions({
           size="icon"
           onClick={() => handleFeedback(1)}
           disabled={isSubmittingFeedback || feedbackScore === 1}
-          className="rounded-full"
+          className="rounded-full h-8 w-8"
           aria-label="Helpful"
         >
           <ThumbsUp
@@ -139,7 +136,7 @@ export function MessageActions({
           size="icon"
           onClick={() => handleFeedback(-1)}
           disabled={isSubmittingFeedback || feedbackScore === -1}
-          className="rounded-full"
+          className="rounded-full h-8 w-8"
           aria-label="Not helpful"
         >
           <ThumbsDown
@@ -148,7 +145,6 @@ export function MessageActions({
           />
         </Button>
       )}
-      {enableShare && chatId && <ChatShare chatId={chatId} />}
     </div>
   )
 }

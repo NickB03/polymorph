@@ -179,7 +179,6 @@ export function ChatMessages({
                 onOpenChange={handleOpenChange}
                 onQuerySelect={onQuerySelect}
                 chatId={chatId}
-                isGuest={isGuest}
                 status={status}
                 addToolResult={addToolResult}
                 onUpdateMessage={onUpdateMessage}
@@ -215,7 +214,6 @@ export function ChatMessages({
                     onOpenChange={handleOpenChange}
                     onQuerySelect={onQuerySelect}
                     chatId={chatId}
-                    isGuest={isGuest}
                     status={status}
                     addToolResult={addToolResult}
                     onUpdateMessage={onUpdateMessage}

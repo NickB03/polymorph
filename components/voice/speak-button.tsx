@@ -68,7 +68,7 @@ export function SpeakButton({ text, className }: SpeakButtonProps) {
       variant="ghost"
       size="icon"
       onClick={handleClick}
-      className={cn('rounded-full', className)}
+      className={cn('rounded-full h-8 w-8', className)}
       aria-label={playbackState === 'playing' ? 'Stop speaking' : 'Read aloud'}
     >
       {playbackState === 'loading' ? (
