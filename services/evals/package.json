@@ -13,6 +13,7 @@
     "@openrouter/ai-sdk-provider": "^2.3.3",
     "@arizeai/phoenix-client": "6.6.0",
     "@arizeai/phoenix-evals": "1.0.2",
+    "@paralleldrive/cuid2": "^2.2.2",
     "@supabase/ssr": "^0.6.1",
     "ai": "^6.0.90",
     "drizzle-orm": "^0.43.1",
