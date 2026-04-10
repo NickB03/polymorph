@@ -107,7 +107,7 @@ describe('RelatedQuestions', () => {
     )
   })
 
-  it('stops after the configured rotations and shows static fallback', () => {
+  it('fades away after configured rotations', () => {
     const data: RelatedQuestionsData = {
       status: 'success',
       questions: [{ question: 'One' }, { question: 'Two' }]
@@ -131,11 +131,14 @@ describe('RelatedQuestions', () => {
     expect(screen.getByTestId('related-questions-label')).toHaveTextContent(
       'Related'
     )
-    expect(screen.getByTestId('related-questions-static')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'One' })).toBeInTheDocument()
+    // Suggestion fades away — no static fallback
+    expect(
+      screen.queryByTestId('related-questions-static')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('restarts ticker on hover after completion', () => {
+  it('restarts ticker on intentional hover after completion', () => {
     const data: RelatedQuestionsData = {
       status: 'success',
       questions: [{ question: 'One' }, { question: 'Two' }]
@@ -158,15 +161,65 @@ describe('RelatedQuestions', () => {
       screen.queryByTestId('related-questions-ticker')
     ).not.toBeInTheDocument()
 
-    // Hover the section to restart
+    // Hover the section — should NOT restart immediately
     const section = container.querySelector('section')!
     fireEvent.mouseEnter(section)
 
-    // Ticker should restart from the first question
+    expect(
+      screen.queryByTestId('related-questions-ticker')
+    ).not.toBeInTheDocument()
+
+    // After hover intent delay, ticker restarts
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+
     expect(screen.getByRole('button', { name: 'One' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'One' })).toHaveClass(
       'animate-ticker-in'
     )
+  })
+
+  it('does not restart on brief hover (accidental scroll-over)', () => {
+    const data: RelatedQuestionsData = {
+      status: 'success',
+      questions: [{ question: 'One' }, { question: 'Two' }]
+    }
+
+    const { container } = render(
+      <RelatedQuestions
+        data={data}
+        onQuerySelect={onQuerySelect}
+        isLatestMessage
+      />
+    )
+
+    // Complete all rotations
+    act(() => {
+      vi.advanceTimersByTime(15600)
+    })
+
+    // Brief hover — mouse enters and leaves before intent delay
+    const section = container.querySelector('section')!
+    fireEvent.mouseEnter(section)
+
+    act(() => {
+      vi.advanceTimersByTime(100)
+    })
+
+    fireEvent.mouseLeave(section)
+
+    act(() => {
+      vi.advanceTimersByTime(500)
+    })
+
+    // Should not have restarted
+    expect(
+      screen.queryByTestId('related-questions-ticker')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('related-questions-static')
+    ).not.toBeInTheDocument()
   })
 
   it('renders static question for older success messages', () => {

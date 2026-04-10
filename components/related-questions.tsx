@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 import { ArrowRight, Repeat2 } from 'lucide-react'
 
@@ -14,6 +14,7 @@ import { Skeleton } from './ui/skeleton'
 
 const DISPLAY_MS = 3000
 const ROTATIONS = 2
+const HOVER_INTENT_MS = 300
 
 interface RelatedQuestionsProps {
   data: RelatedQuestionsData
@@ -45,11 +46,44 @@ export function RelatedQuestions({
 
   const showTicker = isTickerActive && !isComplete && currentQuestion
 
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearHoverTimer = useCallback(() => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current)
+      hoverTimerRef.current = null
+    }
+  }, [])
+
+  useEffect(() => clearHoverTimer, [clearHoverTimer])
+
+  const handleMouseEnter = useCallback(() => {
+    if (!isTickerActive) return
+
+    if (isComplete) {
+      clearHoverTimer()
+      hoverTimerRef.current = setTimeout(() => {
+        hoverTimerRef.current = null
+        restart()
+      }, HOVER_INTENT_MS)
+    } else {
+      pause()
+    }
+  }, [isTickerActive, isComplete, restart, pause, clearHoverTimer])
+
+  const handleMouseLeave = useCallback(() => {
+    if (!isTickerActive) return
+    clearHoverTimer()
+    if (!isComplete) {
+      resume()
+    }
+  }, [isTickerActive, isComplete, resume, clearHoverTimer])
+
   return (
     <section
-      className="flex items-center gap-1.5 overflow-x-hidden px-3 py-2"
-      onMouseEnter={isTickerActive ? (isComplete ? restart : pause) : undefined}
-      onMouseLeave={isTickerActive && !isComplete ? resume : undefined}
+      className="flex items-center gap-1.5 px-3 py-2 [overflow-x:clip]"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <Repeat2 size={16} className="shrink-0 text-muted-foreground" />
       <span
@@ -121,7 +155,7 @@ export function RelatedQuestions({
         </>
       )}
 
-      {isReady && !showTicker && (
+      {isReady && !showTicker && !isTickerActive && (
         <>
           <span className="h-3.5 w-px shrink-0 bg-border" />
           <Button
