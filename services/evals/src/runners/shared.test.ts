@@ -40,9 +40,14 @@ vi.mock('../corpus', () => ({
 }))
 
 const mockRunEvalCase = vi.hoisted(() => vi.fn())
+const mockPersistEvalSummary = vi.hoisted(() => vi.fn())
 
 vi.mock('../eval-runner-client', () => ({
   runEvalCase: mockRunEvalCase
+}))
+
+vi.mock('../eval-summary', () => ({
+  persistEvalSummary: mockPersistEvalSummary
 }))
 
 const mockCreateClient = vi.hoisted(() => vi.fn(() => ({})))
@@ -565,6 +570,7 @@ describe('runJudgedSuite', () => {
     mockCreateOpenRouter.mockReturnValue(mockProvider)
     mockProvider.mockReturnValue({ id: 'judge-model' })
     mockConfig.judgeReasoningEnabled = false
+    mockPersistEvalSummary.mockResolvedValue(undefined)
   })
 
   it('runs all cases, creates experiment, and passes when thresholds are met', async () => {
@@ -584,6 +590,7 @@ describe('runJudgedSuite', () => {
     expect(mockRunEvalCase).toHaveBeenCalledTimes(2)
     expect(mockCreateOrGetDataset).toHaveBeenCalledTimes(1)
     expect(mockRunExperiment).toHaveBeenCalledTimes(1)
+    expect(mockPersistEvalSummary).toHaveBeenCalledTimes(1)
   })
 
   it('throws when all cases fail', async () => {
@@ -682,6 +689,7 @@ describe('runJudgedSuite', () => {
     expect(errorSpy).toHaveBeenCalledWith(
       '[evals] PHOENIX UNAVAILABLE - could not record capability experiment results'
     )
+    expect(mockPersistEvalSummary).not.toHaveBeenCalled()
     errorSpy.mockRestore()
   })
 })

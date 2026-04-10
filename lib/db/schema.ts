@@ -553,3 +553,48 @@ export const feedback = pgTable(
 ).enableRLS()
 
 export type Feedback = InferSelectModel<typeof feedback>
+
+// Eval experiment summaries
+// Note: Only SELECT RLS policy — no INSERT/UPDATE/DELETE policies.
+// Writes come exclusively from the trusted evals service backend
+// (services/evals/) which uses a direct DB connection without RLS context.
+export const evalSummaries = pgTable(
+  'eval_summaries',
+  {
+    id: varchar('id', { length: ID_LENGTH })
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    suite: varchar('suite', {
+      length: VARCHAR_LENGTH,
+      enum: ['capability', 'regression', 'traffic-monitor']
+    }).notNull(),
+    experimentName: text('experiment_name').notNull(),
+    datasetName: text('dataset_name').notNull(),
+    passRateBps: integer('pass_rate_bps').notNull(),
+    evaluatorScores: jsonb('evaluator_scores')
+      .$type<Record<string, number>>()
+      .notNull(),
+    totalCases: integer('total_cases').notNull(),
+    phoenixUrl: text('phoenix_url'),
+    createdAt: timestamp('created_at').notNull().defaultNow()
+  },
+  table => [
+    index('eval_summaries_suite_created_at_idx').on(
+      table.suite,
+      table.createdAt.desc()
+    ),
+    uniqueIndex('eval_summaries_experiment_name_idx').on(table.experimentName),
+    check(
+      'eval_summaries_pass_rate_bps_range',
+      sql`${table.passRateBps} >= 0 AND ${table.passRateBps} <= 10000`
+    ),
+    pgPolicy('authenticated_read_eval_summaries', {
+      as: 'permissive',
+      for: 'select',
+      to: 'public',
+      using: sql`current_setting('app.current_user_id', true) IS NOT NULL`
+    })
+  ]
+).enableRLS()
+
+export type EvalSummary = InferSelectModel<typeof evalSummaries>

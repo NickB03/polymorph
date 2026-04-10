@@ -17,9 +17,10 @@ import UserMenu from './user-menu'
 
 interface HeaderProps {
   user: User | null
+  isAdmin: boolean
 }
 
-export const Header: React.FC<HeaderProps> = ({ user }) => {
+export const Header: React.FC<HeaderProps> = ({ user, isAdmin }) => {
   const { open, isMobile } = useSidebar()
   const pathname = usePathname()
   const [feedbackOpen, setFeedbackOpen] = useState(false)
@@ -46,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({ user }) => {
             {user ? (
               <UserMenu
                 user={user}
+                isAdmin={isAdmin}
                 onFeedbackClick={
                   isRootPage ? () => setFeedbackOpen(true) : undefined
                 }
