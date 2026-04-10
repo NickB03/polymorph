@@ -9,12 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Image generation tool (`generateImage`) with Gemini Flash for inline image creation
+- Image upload as LLM context for all users — multimodal input support
+- `readCanvasArtifact` tool for reading current canvas artifact source without side effects
+- `displayQuestionWizard` display tool for interactive question flows in generative UI
+- Safety evaluator for LLM response safety assessment (`services/evals/src/evaluators/safety.ts`)
+- Citation accuracy evaluator for verifying citation quality (`services/evals/src/evaluators/citation-accuracy.ts`)
+- Tool usage evaluator (deterministic) for validating agent tool selection (`services/evals/src/evaluators/tool-usage.ts`)
+- Traffic monitor eval runner (`services/evals/src/runners/traffic-monitor.ts`)
+- Related questions ticker with auto-rotation (`hooks/use-ticker-rotation.ts`)
+- File validation utilities for upload restrictions (`lib/utils/file-validation.ts`)
+- Supabase server storage helper (`lib/supabase/server-storage.ts`)
+- Inline file URL processing for streaming (`lib/streaming/helpers/inline-file-urls.ts`)
 - `--accent-violet` design token (OKLCH hue ~293) for the Research Agent brand color, with light and dark mode definitions
 - Evaluator factory (`services/evals/src/evaluators/create-evaluator.ts`) eliminating ~60% boilerplate across LLM evaluators
 - Shared `extractVerdict` + `asString` utilities (`services/evals/src/evaluators/extract-verdict.ts`) with word-boundary matching to prevent substring false positives
 
 ### Changed
 
+- Default search provider changed from Tavily to Brave
 - Migrated observability from Langfuse to Arize Phoenix with OpenInference tracing
 - Renamed `ENABLE_LANGFUSE_TRACING` to `ENABLE_TRACING`
 - Replaced Langfuse environment variables with Phoenix equivalents (`PHOENIX_COLLECTOR_ENDPOINT`, `PHOENIX_PROJECT_NAME`, `PHOENIX_API_KEY`)
@@ -28,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Evals skip `response_quality` for refusal cases and add `expectsRefusal` flag
 - SQL injection risk in evals sampler: replaced `sql.raw()` interpolation with parameterized `make_interval(hours => $1)` query
 - `extractVerdict` substring false positive where "faithful" matched inside "unfaithful", inflating faithfulness scores
 - Evals entrypoint now guarantees `closeDb()` runs on fatal error paths (previously leaked Postgres connections)

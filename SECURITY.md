@@ -37,7 +37,8 @@ All database tables enforce PostgreSQL Row-Level Security via `current_setting('
 - **chats** -- Users can only read, create, update, and delete their own chats. Chats with `visibility = 'public'` are readable by anyone.
 - **messages** -- Access is granted only when the user owns the parent chat (verified via `EXISTS` subquery).
 - **parts** -- Access is granted only when the user owns the parent chat (verified via join through `messages` to `chats`).
-- **artifacts**, **artifactRevisions**, **artifactRuntimeSessions** -- Access scoped to the owning user via the parent artifact/chat chain.
+- **canvasArtifacts**, **canvasArtifactVersions** -- Access scoped to the owning user via the parent chat chain.
+- **artifacts**, **artifactRevisions**, **artifactRuntimeSessions** -- Legacy artifact tables; access scoped to the owning user via the parent artifact/chat chain.
 - **feedback** -- Anyone can insert feedback; all feedback is readable (no sensitive user data stored).
 
 RLS is enabled on every table (`enableRLS()` in the Drizzle schema at `lib/db/schema.ts`).

@@ -97,7 +97,7 @@ See [Environment Reference](../getting-started/ENVIRONMENT.md#tracing-arize-phoe
 The `services/evals/` directory contains a scheduled evaluation pipeline:
 
 - Samples recent chats from Supabase Postgres using parameterized SQL (no string interpolation)
-- Runs 3 LLM-judge evaluators (faithfulness, search relevance, response quality) built with a shared factory pattern and `extractVerdict()` with word-boundary matching
+- Runs 5 LLM-judge evaluators (faithfulness, relevance, response quality, safety, citation accuracy) built with a shared factory pattern and `extractVerdict()` with word-boundary matching
 - Pushes results to Phoenix as experiments
 - **Robustness:** `closeDb()` guaranteed on all exit paths (happy + fatal), NaN-safe `validInt()` config parsing, `maxAttempts >= 1` retry validation, safe `JSON.parse` for citations
 

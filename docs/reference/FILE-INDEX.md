@@ -350,6 +350,14 @@ The `components/tool-ui/` directory contains generative UI components rendered b
 | `components/tool-ui/data-table/utilities.ts`   | Sorting, formatting, and column detection utilities                                      |
 | `components/tool-ui/data-table/schema.ts`      | Zod schema and serialization types for data table data                                   |
 
+#### Generate Image Tool
+
+| File                                                   | Purpose                                                         |
+| ------------------------------------------------------ | --------------------------------------------------------------- |
+| `components/tool-ui/generate-image/index.tsx`          | Barrel export for GenerateImage component and schema            |
+| `components/tool-ui/generate-image/generate-image.tsx` | Image display component with expandable lightbox and download   |
+| `components/tool-ui/generate-image/schema.ts`          | Zod schema and serialization types for generate-image tool data |
+
 #### Link Preview Tool
 
 | File                                               | Purpose                                                             |
@@ -479,23 +487,25 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Tools
 
-| File                                  | Purpose                                                                                          |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `lib/tools/search.ts`                 | Multi-provider search tool with streaming progress; supports general and optimized search types  |
-| `lib/tools/fetch.ts`                  | Web content extraction tool; supports regular HTML fetch and API-based extraction (Jina, Tavily) |
-| `lib/tools/todo.ts`                   | Task list management tool; creates and updates structured todo items                             |
-| `lib/tools/display-callout.ts`        | Display tool that renders a styled callout box with variant-specific icons and colors            |
-| `lib/tools/display-chart.ts`          | Display tool that renders bar and line charts                                                    |
-| `lib/tools/display-citations.ts`      | Display tool that renders a formatted citation list                                              |
-| `lib/tools/display-link-preview.ts`   | Display tool that renders a rich link preview card                                               |
-| `lib/tools/display-plan.ts`           | Display tool that renders a step-by-step research plan                                           |
-| `lib/tools/display-table.ts`          | Display tool that renders a formatted data table with column types                               |
-| `lib/tools/display-option-list.ts`    | Display tool that renders an interactive option list for user selection                          |
-| `lib/tools/display-timeline.ts`       | Display tool that renders a chronological event timeline with category styling                   |
-| `lib/tools/create-canvas-artifact.ts` | AI tool: creates a new canvas artifact in the current chat with initial React SPA source         |
-| `lib/tools/update-canvas-artifact.ts` | AI tool: updates the existing canvas artifact source with a full replacement                     |
-| `lib/tools/read-canvas-artifact.ts`   | AI tool: reads the current canvas artifact source for inspection (no side effects)               |
-| `lib/tools/dynamic.ts`                | Factory for creating runtime-defined tools (MCP tools, user-defined functions)                   |
+| File                                   | Purpose                                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `lib/tools/search.ts`                  | Multi-provider search tool with streaming progress; supports general and optimized search types  |
+| `lib/tools/fetch.ts`                   | Web content extraction tool; supports regular HTML fetch and API-based extraction (Jina, Tavily) |
+| `lib/tools/todo.ts`                    | Task list management tool; creates and updates structured todo items                             |
+| `lib/tools/create-canvas-artifact.ts`  | AI tool: creates a new canvas artifact in the current chat with initial React SPA source         |
+| `lib/tools/display-callout.ts`         | Display tool that renders a styled callout box with variant-specific icons and colors            |
+| `lib/tools/display-chart.ts`           | Display tool that renders bar and line charts                                                    |
+| `lib/tools/display-citations.ts`       | Display tool that renders a formatted citation list                                              |
+| `lib/tools/display-link-preview.ts`    | Display tool that renders a rich link preview card                                               |
+| `lib/tools/display-option-list.ts`     | Display tool that renders an interactive option list for user selection                          |
+| `lib/tools/display-plan.ts`            | Display tool that renders a step-by-step research plan                                           |
+| `lib/tools/display-question-wizard.ts` | Display tool that renders a multi-step interactive question wizard                               |
+| `lib/tools/display-table.ts`           | Display tool that renders a formatted data table with column types                               |
+| `lib/tools/display-timeline.ts`        | Display tool that renders a chronological event timeline with category styling                   |
+| `lib/tools/dynamic.ts`                 | Factory for creating runtime-defined tools (MCP tools, user-defined functions)                   |
+| `lib/tools/generate-image.ts`          | AI tool: generates images via Gemini Flash and uploads to Supabase Storage                       |
+| `lib/tools/read-canvas-artifact.ts`    | AI tool: reads the current canvas artifact source for inspection (no side effects)               |
+| `lib/tools/update-canvas-artifact.ts`  | AI tool: updates the existing canvas artifact source with a full replacement                     |
 
 ### Search Providers
 
@@ -521,6 +531,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/streaming/helpers/persist-stream-results.ts`        | Persists streamed response messages and chat title to the database                                                  |
 | `lib/streaming/helpers/prepare-tool-result-messages.ts`  | Handles tool result continuation messages; rebuilds state from DB to prevent prompt injection                       |
 | `lib/streaming/helpers/has-pending-interactive-tool.ts`  | Checks if the response has pending interactive tools awaiting user input                                            |
+| `lib/streaming/helpers/inline-file-urls.ts`              | Downloads HTTPS file URLs and inlines them as binary data for providers that cannot fetch externally                |
 | `lib/streaming/helpers/stream-related-questions.ts`      | Generates and streams related follow-up questions alongside the main response                                       |
 | `lib/streaming/helpers/strip-reasoning-parts.ts`         | Strips reasoning parts from messages to avoid OpenAI API compatibility issues                                       |
 | `lib/streaming/helpers/types.ts`                         | TypeScript interfaces for streaming context (StreamContext)                                                         |
@@ -584,12 +595,13 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Supabase
 
-| File                         | Purpose                                                                          |
-| ---------------------------- | -------------------------------------------------------------------------------- |
-| `lib/supabase/client.ts`     | Browser-side Supabase client using `createBrowserClient`                         |
-| `lib/supabase/server.ts`     | Server-side Supabase client using `createServerClient` with cookie-based session |
-| `lib/supabase/middleware.ts` | Middleware helper that refreshes Supabase auth session on each request           |
-| `lib/supabase/storage.ts`    | Uploads files to Supabase Storage bucket with sanitized file paths               |
+| File                             | Purpose                                                                          |
+| -------------------------------- | -------------------------------------------------------------------------------- |
+| `lib/supabase/client.ts`         | Browser-side Supabase client using `createBrowserClient`                         |
+| `lib/supabase/middleware.ts`     | Middleware helper that refreshes Supabase auth session on each request           |
+| `lib/supabase/server.ts`         | Server-side Supabase client using `createServerClient` with cookie-based session |
+| `lib/supabase/server-storage.ts` | Server-side Supabase admin client for uploading generated images to Storage      |
+| `lib/supabase/storage.ts`        | Uploads files to Supabase Storage bucket with sanitized file paths               |
 
 ### Rate Limiting
 
@@ -632,6 +644,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/utils/message-mapping.ts`        | Bidirectional mapping between AI SDK UIMessage format and database message/part records                     |
 | `lib/utils/message-utils.ts`          | Helpers for extracting text content from message parts                                                      |
 | `lib/utils/domain.ts`                 | Extracts display-friendly domain name from URLs (e.g., "google" from "www.google.com")                      |
+| `lib/utils/file-validation.ts`        | Allowed file types, size limits, and validation constants for uploads                                       |
 | `lib/utils/cookies.ts`                | Client-side cookie get/set/remove utilities                                                                 |
 | `lib/utils/json-error.ts`             | Utility for creating structured JSON error responses with code and message                                  |
 | `lib/utils/search-config.ts`          | Environment-aware search provider configuration and tool description generation                             |
@@ -695,18 +708,20 @@ Server-side compile pipeline, validation, service layer, and guest token support
 
 ## Top-Level Hooks
 
-| File                                | Purpose                                                                   |
-| ----------------------------------- | ------------------------------------------------------------------------- |
-| `hooks/use-activity-feed.ts`        | Hook for activity stream display                                          |
-| `hooks/use-auth-check.tsx`          | Hook checking Supabase auth state and subscribing to auth changes         |
-| `hooks/use-content-entrance.ts`     | Hook for content display entrance logic                                   |
-| `hooks/use-current-user.ts`         | Hook fetching the current user's session data from Supabase               |
-| `hooks/use-file-dropzone.ts`        | Hook managing file drag-and-drop, validation, and upload to `/api/upload` |
-| `hooks/use-mobile.tsx`              | Hook detecting mobile viewport (< 768px breakpoint)                       |
-| `hooks/use-trending-suggestions.ts` | Hook for fetching and displaying trending topic suggestions               |
-| `hooks/use-voice-conversation.ts`   | Hook orchestrating full voice conversation mode (input + playback)        |
-| `hooks/use-voice-input.ts`          | Hook managing voice input via browser speech recognition API              |
-| `hooks/use-voice-player.ts`         | Hook managing TTS audio playback via server-side synthesis                |
+| File                                  | Purpose                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------- |
+| `hooks/use-activity-feed.ts`          | Hook for activity stream display                                          |
+| `hooks/use-auth-check.tsx`            | Hook checking Supabase auth state and subscribing to auth changes         |
+| `hooks/use-content-entrance.ts`       | Hook for content display entrance logic                                   |
+| `hooks/use-current-user.ts`           | Hook fetching the current user's session data from Supabase               |
+| `hooks/use-file-dropzone.ts`          | Hook managing file drag-and-drop, validation, and upload to `/api/upload` |
+| `hooks/use-mobile.tsx`                | Hook detecting mobile viewport (< 768px breakpoint)                       |
+| `hooks/use-prefers-reduced-motion.ts` | Hook tracking the `prefers-reduced-motion` media query                    |
+| `hooks/use-ticker-rotation.ts`        | Hook for timed item rotation with enter/exit animation phases             |
+| `hooks/use-trending-suggestions.ts`   | Hook for fetching and displaying trending topic suggestions               |
+| `hooks/use-voice-conversation.ts`     | Hook orchestrating full voice conversation mode (input + playback)        |
+| `hooks/use-voice-input.ts`            | Hook managing voice input via browser speech recognition API              |
+| `hooks/use-voice-player.ts`           | Hook managing TTS audio playback via server-side synthesis                |
 
 ---
 
@@ -828,17 +843,33 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 
 Offline evaluation pipeline (`services/evals/`) for measuring search quality via LLM-as-judge evaluators. Runs against sampled chat data in Phoenix experiments.
 
-| File                                                | Purpose                                                                                                    |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `services/evals/src/index.ts`                       | Evals entrypoint: samples chats, runs evaluators, guarantees `closeDb()` on all exit paths                 |
-| `services/evals/src/config.ts`                      | Configuration with `validInt()` NaN-safe parsing for `SAMPLE_SIZE`, `LOOKBACK_HOURS`, judge model settings |
-| `services/evals/src/db.ts`                          | Database client for the evals service                                                                      |
-| `services/evals/src/sampler.ts`                     | Samples recent chats with parameterized SQL queries and safe `parseCitations()` JSON parsing               |
-| `services/evals/src/retry.ts`                       | Exponential backoff retry with `maxAttempts >= 1` validation                                               |
-| `services/evals/src/retry.test.ts`                  | Tests for retry utility including zero-attempts edge case                                                  |
-| `services/evals/src/evaluators/faithfulness.ts`     | Faithfulness evaluator — checks if answers are grounded in search results                                  |
-| `services/evals/src/evaluators/relevance.ts`        | Search relevance evaluator — checks if retrieved results are relevant to the query                         |
-| `services/evals/src/evaluators/response-quality.ts` | Response quality evaluator — overall assessment of answer helpfulness and structure                        |
+| File                                                 | Purpose                                                                                                    |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `services/evals/src/index.ts`                        | Evals entrypoint: samples chats, runs evaluators, guarantees `closeDb()` on all exit paths                 |
+| `services/evals/src/config.ts`                       | Configuration with `validInt()` NaN-safe parsing for `SAMPLE_SIZE`, `LOOKBACK_HOURS`, judge model settings |
+| `services/evals/src/db.ts`                           | Database client for the evals service                                                                      |
+| `services/evals/src/eval-output.ts`                  | Eval output normalization, context formatting, and prompt extraction helpers                               |
+| `services/evals/src/eval-runner-client.ts`           | HTTP client for dispatching eval cases to the eval runner API endpoint                                     |
+| `services/evals/src/judge-config.ts`                 | Judge model configuration with NaN-safe env parsing and reasoning settings                                 |
+| `services/evals/src/judge-model.ts`                  | Creates the LLM judge model client via OpenRouter provider                                                 |
+| `services/evals/src/orchestrator.ts`                 | Orchestrates eval suite execution by dispatching to the configured run mode                                |
+| `services/evals/src/retry.ts`                        | Exponential backoff retry with `maxAttempts >= 1` validation                                               |
+| `services/evals/src/retry.test.ts`                   | Tests for retry utility including zero-attempts edge case                                                  |
+| `services/evals/src/sampler.ts`                      | Samples recent chats with parameterized SQL queries and safe `parseCitations()` JSON parsing               |
+| `services/evals/src/types.ts`                        | TypeScript type definitions for eval suites, run modes, cases, and results                                 |
+| `services/evals/src/evaluators/citation-accuracy.ts` | Citation accuracy evaluator — checks if citations match source content and claims                          |
+| `services/evals/src/evaluators/faithfulness.ts`      | Faithfulness evaluator — checks if answers are grounded in search results                                  |
+| `services/evals/src/evaluators/relevance.ts`         | Search relevance evaluator — checks if retrieved results are relevant to the query                         |
+| `services/evals/src/evaluators/response-quality.ts`  | Response quality evaluator — overall assessment of answer helpfulness and structure                        |
+| `services/evals/src/evaluators/safety.ts`            | Safety evaluator — checks responses for harmful, dangerous, or inappropriate content                       |
+| `services/evals/src/evaluators/tool-usage.ts`        | Tool usage evaluator — deterministic 4-level rubric for tool calls, results, and citations                 |
+| `services/evals/src/golden/index.ts`                 | Golden dataset management with example loading and eval output construction                                |
+| `services/evals/src/golden/validate.ts`              | Golden dataset validation against evaluators to measure scoring accuracy                                   |
+| `services/evals/src/runners/capability.ts`           | Capability eval runner — executes the capability test suite                                                |
+| `services/evals/src/runners/regression.ts`           | Regression eval runner — executes the regression test suite                                                |
+| `services/evals/src/runners/shared.ts`               | Shared runner utilities for dataset creation, experiment execution, and threshold checks                   |
+| `services/evals/src/runners/smoke.ts`                | Smoke test runner — executes lightweight smoke tests via live chat API                                     |
+| `services/evals/src/runners/traffic-monitor.ts`      | Traffic monitor runner — samples recent production chats and evaluates quality                             |
 
 ---
 

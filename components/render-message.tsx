@@ -262,7 +262,6 @@ interface RenderMessageProps {
   onOpenChange: (id: string, open: boolean) => void
   onQuerySelect: (query: string) => void
   chatId?: string
-  isGuest?: boolean
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   addToolResult?: (params: { toolCallId: string; result: any }) => void
   onUpdateMessage?: (messageId: string, newContent: string) => Promise<void>
@@ -283,7 +282,6 @@ export function RenderMessage({
   onOpenChange,
   onQuerySelect,
   chatId,
-  isGuest = false,
   status,
   addToolResult,
   onUpdateMessage,
@@ -606,7 +604,6 @@ export function RenderMessage({
               )}
               onOpenChange={open => onOpenChange(messageId, open)}
               chatId={chatId}
-              isGuest={isGuest}
               showActions={showActionsHere}
               messageId={messageId}
               metadata={message.metadata as UIMessageMetadata | undefined}
@@ -865,8 +862,6 @@ export function RenderMessage({
     const isStreamingComplete = status !== 'streaming' && status !== 'submitted'
     const shouldShow = isLatestMessage ? isStreamingComplete : true
     const metadata = message.metadata as UIMessageMetadata | undefined
-    const enableShare =
-      process.env.NEXT_PUBLIC_SUPABASE_URL !== undefined && !isGuest
     elements.push(
       <MessageActions
         key={`${messageId}-trailing-actions`}
@@ -875,7 +870,6 @@ export function RenderMessage({
         traceId={metadata?.traceId}
         feedbackScore={metadata?.feedbackScore}
         chatId={chatId}
-        enableShare={enableShare}
         reload={reload ? () => reload(messageId) : undefined}
         status={status}
         visible={shouldShow}

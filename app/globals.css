@@ -235,6 +235,8 @@
   --animate-slide-in-right: slide-in-right 0.3s ease-out;
   --animate-slide-out-right: slide-out-right 0.3s ease-out;
   --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-ticker-in: ticker-in 0.5s ease both;
+  --animate-ticker-out: ticker-out 0.4s ease both;
 
   @keyframes accordion-down {
     from {
@@ -400,14 +402,6 @@
     opacity: 0;
     transform: translateY(-6px);
   }
-}
-
-@utility animate-ticker-in {
-  animation: ticker-in 0.5s ease both;
-}
-
-@utility animate-ticker-out {
-  animation: ticker-out 0.4s ease both;
 }
 
 @utility skeleton-shimmer {

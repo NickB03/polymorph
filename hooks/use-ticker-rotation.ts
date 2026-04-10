@@ -202,7 +202,10 @@ export function useTickerRotation<T>({
     scheduleStep('enter-to-visible', enterMs)
 
     return () => clearTimer()
-  }, [clearTimer, enterMs, isActive, items, scheduleStep, totalShows])
+    // Depend on items.length (not the items reference) so a parent re-render
+    // that produces a new array with the same questions doesn't reset the ticker.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clearTimer, enterMs, isActive, items.length, scheduleStep, totalShows])
 
   return {
     activeIndex,

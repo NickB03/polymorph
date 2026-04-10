@@ -35,7 +35,7 @@ The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → too
 - **Researcher agent** (`lib/agents/researcher.ts`): Uses Vercel AI SDK's `ToolLoopAgent` with two modes:
   - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline]` + canvas artifact tools
   - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline, todoWrite]` + canvas artifact tools
-- **Tools** (`lib/tools/`): `search` (Brave primary, Tavily fallback, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todo` (task management), `dynamic` (MCP/runtime-defined tools)
+- **Tools** (`lib/tools/`): `search` (Brave primary, Tavily fallback, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todo` (task management), `generateImage` (conditional, Gemini Flash), `dynamic` (MCP/runtime-defined tools)
 - **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Gemini 3 Flash (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway
 - **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
 
@@ -76,7 +76,7 @@ Supabase Auth with three client patterns:
 Canvas is the active artifact model. It is always-on (no feature flag gating).
 
 - **Compile pipeline** (`lib/canvas/compiler/`): Server-side esbuild + Tailwind CSS v4 compiles React SPA source into a single self-contained HTML string. The compiled HTML is persisted in the database and served via `iframe.srcdoc` for preview and export.
-- **One-artifact-per-chat rule:** Each chat maps to at most one canvas artifact. The `createCanvasArtifact` tool creates it; `updateCanvasArtifact` mutates it. Both are always available in the researcher tool set.
+- **One-artifact-per-chat rule:** Each chat maps to at most one canvas artifact. Three canvas tools are conditionally available when canvas context is present: `createCanvasArtifact` (create), `updateCanvasArtifact` (mutate), and `readCanvasArtifact` (read current source).
 - **Canvas service** (`lib/canvas/service.ts`): CRUD operations with optimistic concurrency (revision counter). Draft updates, version saves, restores, exports, and runtime diagnostics all go through this service layer.
 - **Guest access** (`lib/canvas/guest-token.ts`): HMAC-SHA256 signed tokens grant guest users scoped access to a specific artifact. Tokens rotate on every successful write.
 - **Legacy notice** (`components/canvas/canvas-legacy-notice.tsx`): Old artifact references from the removed sandbox system fail closed into a static "artifact unavailable" notice.

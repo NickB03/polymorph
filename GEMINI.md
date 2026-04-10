@@ -15,7 +15,7 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 - **Auth:** Supabase Auth
 - **Storage:** Supabase Storage
 - **Caching/Rate Limiting:** Upstash Redis
-- **Search:** Tavily (primary), Brave (multimedia), Exa, SearXNG, Firecrawl
+- **Search:** Brave (primary), Tavily (fallback), Exa, SearXNG, Firecrawl
 - **AI Providers:** Google (Gemini 3 Flash), xAI (Grok 4.1 Fast Reasoning) via Vercel AI Gateway
 - **Styling:** Tailwind CSS v4 + shadcn/ui
 - **Testing:** Vitest
@@ -28,10 +28,11 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → tools → streaming response.
 
 - **Researcher agent** (`lib/agents/researcher.ts`): Uses Vercel AI SDK's `ToolLoopAgent` with two modes:
-  - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline]` + canvas artifact tools
-  - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline, todoWrite]` + canvas artifact tools
-- **Canvas artifact tools**: `createCanvasArtifact`, `updateCanvasArtifact` — generate and iterate on React SPA artifacts compiled server-side via esbuild + Tailwind CSS v4
-- **Tools** (`lib/tools/`): `search` (Tavily primary, Brave multimedia, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todoWrite` (task management), `dynamic` (MCP/runtime-defined tools)
+  - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline]` + canvas artifact tools
+  - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline, todoWrite]` + canvas artifact tools
+- **Canvas artifact tools** (conditional): `createCanvasArtifact`, `updateCanvasArtifact`, `readCanvasArtifact` — generate, iterate, and read React SPA artifacts compiled server-side via esbuild + Tailwind CSS v4
+- **Image generation** (conditional): `generateImage` — generates images via Gemini Flash when image context is available
+- **Tools** (`lib/tools/`): `search` (Brave primary, Tavily fallback, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todoWrite` (task management), `dynamic` (MCP/runtime-defined tools)
 - **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Gemini 3 Flash (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway
 - **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
 
@@ -85,7 +86,7 @@ OpenTelemetry tracing to a self-hosted Arize Phoenix instance, gated by `ENABLE_
 Offline evaluation pipeline (`services/evals/`) running as a Railway cron service:
 
 - **Sampler** (`services/evals/src/sampler.ts`): Queries recent chats from Supabase Postgres using parameterized SQL with safe `parseCitations()` JSON parsing
-- **Evaluators** (`services/evals/src/evaluators/`): Three LLM-judge evaluators (faithfulness, search relevance, response quality) built with a shared factory pattern (`create-evaluator.ts`). Shared `extractVerdict()` uses word-boundary matching to prevent substring false positives
+- **Evaluators** (`services/evals/src/evaluators/`): Five LLM-judge evaluators (faithfulness, relevance, response quality, safety, citation accuracy) built with a shared factory pattern (`create-evaluator.ts`). Shared `extractVerdict()` uses word-boundary matching to prevent substring false positives
 - **Config** (`services/evals/src/config.ts`): NaN-safe `validInt()` parsing for `SAMPLE_SIZE` and `LOOKBACK_HOURS`
 - **Robustness**: `closeDb()` guaranteed on all exit paths; `withRetry()` validates `maxAttempts >= 1`
 
@@ -139,7 +140,7 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 
 - `DATABASE_URL` — PostgreSQL connection
 - `AI_GATEWAY_API_KEY` — Vercel AI Gateway (primary model provider)
-- `TAVILY_API_KEY` — search
+- `BRAVE_SEARCH_API_KEY` — search (Brave is default provider)
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase
 - `DATABASE_SSL_DISABLED=true` — for local dev with Supabase CLI
 - `GUEST_CANVAS_SECRET` — HMAC secret for guest canvas artifact tokens
