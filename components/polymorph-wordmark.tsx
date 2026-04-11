@@ -8,7 +8,7 @@ import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion'
 
 const SUFFIX_WORDS = [
   'morph',
-  'learn',
+  'explore',
   'create',
   'discover',
   'research',
@@ -18,18 +18,19 @@ const SUFFIX_WORDS = [
 const SUFFIX_MAX_LEN = Math.max(...SUFFIX_WORDS.map(w => w.length))
 const FINAL_WORD = 'morph'
 
-function PolySuffixFluid({ staggerMs = 70 }: { staggerMs?: number }) {
+function PolySuffixFluid() {
   const reducedMotion = usePrefersReducedMotion()
   const [word, setWord] = useState('')
   const [wordKey, setWordKey] = useState(0)
   const [isExiting, setIsExiting] = useState(false)
   const [wordIndex, setWordIndex] = useState(-1)
   const [settled, setSettled] = useState(false)
+  const [isSettling, setIsSettling] = useState(false)
 
-  const enterDuration = 50
-  const exitDuration = 40
+  const enterDuration = 440
+  const exitDuration = 190
 
-  // In reduced-motion mode, skip animation and show final word immediately
+  // Reduced motion: skip to final word immediately
   useEffect(() => {
     if (reducedMotion && !settled) {
       setWord(FINAL_WORD)
@@ -39,6 +40,7 @@ function PolySuffixFluid({ staggerMs = 70 }: { staggerMs?: number }) {
     }
   }, [reducedMotion, settled])
 
+  // Word cycling
   useEffect(() => {
     if (settled || reducedMotion) return
     const nextIdx = wordIndex + 1
@@ -47,27 +49,19 @@ function PolySuffixFluid({ staggerMs = 70 }: { staggerMs?: number }) {
       return
     }
 
-    // First word types in immediately, others hold briefly before transitioning
-    const holdDelay =
-      wordIndex === -1
-        ? 100
-        : enterDuration +
-          staggerMs * (SUFFIX_WORDS[wordIndex] as string).length +
-          400
+    const holdDelay = wordIndex === -1 ? 100 : enterDuration + 600
 
     const timeout = setTimeout(() => {
       const target = SUFFIX_WORDS[nextIdx] as string
 
       if (wordIndex >= 0) {
         setIsExiting(true)
-        const currentWord = SUFFIX_WORDS[wordIndex] as string
-        const totalExit = exitDuration + staggerMs * currentWord.length
         setTimeout(() => {
           setIsExiting(false)
           setWord(target)
           setWordKey(k => k + 1)
           setWordIndex(nextIdx)
-        }, totalExit)
+        }, exitDuration + 20)
       } else {
         setWord(target)
         setWordKey(k => k + 1)
@@ -76,55 +70,55 @@ function PolySuffixFluid({ staggerMs = 70 }: { staggerMs?: number }) {
     }, holdDelay)
 
     return () => clearTimeout(timeout)
-  }, [wordIndex, settled, staggerMs, reducedMotion])
+  }, [wordIndex, settled, reducedMotion])
+
+  // One-time settle pulse after final word lands
+  useEffect(() => {
+    if (!settled || reducedMotion) return
+    const timeout = setTimeout(() => {
+      setIsSettling(true)
+      setTimeout(() => setIsSettling(false), 400)
+    }, enterDuration)
+    return () => clearTimeout(timeout)
+  }, [settled, reducedMotion])
+
+  const animation = reducedMotion
+    ? undefined
+    : isSettling
+      ? 'morphSlotSettle 400ms ease-in-out both'
+      : isExiting
+        ? `morphSlotOut ${exitDuration}ms cubic-bezier(0.4,0,1,1) both`
+        : word
+          ? `morphSlotIn ${enterDuration}ms linear both`
+          : undefined
 
   return (
-    <>
-      <span
-        className="inline-flex select-none leading-none font-medium"
-        style={{
-          marginRight: `-${SUFFIX_MAX_LEN - FINAL_WORD.length}ch`
-        }}
-      >
-        <span className="shrink-0 text-neutral-900 dark:text-neutral-100">
-          poly
-        </span>
-        <span style={{ minWidth: `${SUFFIX_MAX_LEN}ch` }}>
-          {word.split('').map((char, i) => {
-            const isFinal =
-              word === FINAL_WORD && wordIndex === SUFFIX_WORDS.length - 1
-            const enter = isFinal ? 60 : enterDuration
-            const entryStagger = isFinal ? staggerMs * 1.2 : staggerMs
-            // Exit in reverse order (backspace: last char disappears first)
-            const exitDelay = staggerMs * (word.length - 1 - i)
-            return (
-              <span
-                key={`${wordKey}-${i}`}
-                className="inline-block text-accent-blue"
-                style={{
-                  animation: reducedMotion
-                    ? undefined
-                    : isExiting
-                      ? `morphFluidExit ${exitDuration}ms linear ${exitDelay}ms forwards`
-                      : word
-                        ? `morphFluidEnter ${enter}ms linear ${entryStagger * i}ms both`
-                        : undefined
-                }}
-              >
-                {char}
-              </span>
-            )
-          })}
+    <span
+      className="inline-flex select-none leading-none font-medium"
+      style={{
+        marginRight: `-${SUFFIX_MAX_LEN - FINAL_WORD.length}ch`
+      }}
+    >
+      <span className="shrink-0 text-neutral-900 dark:text-neutral-100">
+        poly
+      </span>
+      <span style={{ minWidth: `${SUFFIX_MAX_LEN}ch`, overflow: 'hidden' }}>
+        <span
+          key={wordKey}
+          className="inline-block text-accent-blue"
+          style={{ animation }}
+        >
+          {word}
         </span>
       </span>
-    </>
+    </span>
   )
 }
 
 export function PolymorphWordmark({ className }: { className?: string }) {
   return (
     <span className={cn('text-[2.5rem]', className)}>
-      <PolySuffixFluid staggerMs={70} />
+      <PolySuffixFluid />
     </span>
   )
 }

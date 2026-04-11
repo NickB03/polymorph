@@ -343,21 +343,44 @@
   }
 }
 
-@keyframes morphFluidEnter {
+@keyframes morphSlotIn {
   0% {
     opacity: 0;
+    transform: translateY(52px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-1.5px);
+  }
+  86% {
+    transform: translateY(0.5px);
   }
   100% {
     opacity: 1;
+    transform: none;
   }
 }
 
-@keyframes morphFluidExit {
+@keyframes morphSlotOut {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-38px);
+  }
+}
+
+@keyframes morphSlotSettle {
   0% {
     opacity: 1;
   }
+  40% {
+    opacity: 0.85;
+  }
   100% {
-    opacity: 0;
+    opacity: 1;
   }
 }
 
