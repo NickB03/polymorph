@@ -1,209 +1,95 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code when working in this repository. Keep this file short: it loads on every session. Anything that can be discovered by reading the code or a leaf doc belongs in that leaf doc, not here.
 
 ## Project Overview
 
-Polymorph is an AI platform with a generative UI for research, creation, and exploration. Research is its first capability, with code generation, image creation, and multimodal features expanding the platform.
-
-**Stack:** Next.js 16 (App Router), React 19, TypeScript (strict), Bun, Tailwind CSS v4, shadcn/ui
+Polymorph is an AI platform with a generative UI for research, creation, and exploration. Stack: Next.js 16 (App Router), React 19, TypeScript (strict), Bun, Tailwind v4, shadcn/ui.
 
 ## Commands
 
 - `bun dev` — dev server on port 43100
 - `bun run build` — production build
-- `bun lint` — ESLint
-- `bun typecheck` — TypeScript checking
-- `bun format` — Prettier format
-- `bun format:check` — Prettier check
-- `bun run test` — Vitest (single run)
-- `bun run test -- path/to/file.test.ts` — run a single test file
-- `bun run test:watch` — Vitest watch mode
-- `bun run migrate` — run Drizzle migrations
+- `bun lint` / `bun typecheck` — must pass before claiming done
+- `bun format` / `bun format:check` — Prettier
+- `bun run test` — Vitest (single run); `bun run test -- path/to/file.test.ts` for one file; `bun run test:watch` for watch mode
+- `bun run migrate` — Drizzle migrations
 - `bun run chat` — CLI chat interface (`scripts/chat-cli.ts`)
-- `npx supabase start` — local Supabase (DB:44322, API:44321, Studio:44323)
-- `railway status` — show linked Railway project context
-- `railway logs -s <service>` — stream Railway service logs (phoenix, polymorph-evals)
-- `npx @arizeai/phoenix-cli trace list` — list recent Phoenix traces
+- `npx supabase start` — local Supabase (DB 44322, API 44321, Studio 44323)
 
-## Architecture
+## Code conventions
 
-### AI Agent Pipeline
+- **Path alias:** `@/*` maps to project root. Use `@/lib/...`, `@/components/...`, etc.
+- **Prettier:** no semicolons, single quotes, no trailing commas, 2-space indent, avoid arrow parens, LF line endings.
+- **Import order (ESLint `simple-import-sort`):** `react`/`next` → third-party → `@/types` → `@/config` → `@/lib` → `@/hooks` → `@/components/ui` → `@/components` → `@/registry` → `@/styles` → `@/app` → side effects → parents → relatives → styles.
 
-The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → tools → streaming response.
+## Non-obvious invariants
 
-- **Researcher agent** (`lib/agents/researcher.ts`): Uses Vercel AI SDK's `ToolLoopAgent` with two modes:
-  - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline]` + canvas artifact tools
-  - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline, todoWrite]` + canvas artifact tools
-- **Tools** (`lib/tools/`): `search` (Brave primary, Tavily fallback, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todo` (task management), `generateImage` (conditional, Gemini Flash), `dynamic` (MCP/runtime-defined tools)
-- **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Gemini 3 Flash (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway
-- **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
+These are load-bearing and not derivable by reading any single file:
 
-### Database (Drizzle + Supabase PostgreSQL)
+- **Row-Level Security.** Every user-scoped table in `lib/db/schema.ts` uses RLS keyed on `current_setting('app.current_user_id')`. Server code must set that GUC before querying or rows are invisible.
+- **Canvas is one-artifact-per-chat.** `createCanvasArtifact` / `updateCanvasArtifact` / `readCanvasArtifact` are conditionally registered only when a canvas context is present. Compiled HTML lives in the DB and is served via `iframe.srcdoc`.
+- **Guest canvas tokens** are HMAC-SHA256 signed with `GUEST_CANVAS_SECRET` and rotate on every successful write.
+- **Phoenix tracing enforces HTTPS in production.** `instrumentation.ts` silently disables tracing if the collector endpoint is plain HTTP when any of `VERCEL_ENV=production`, `VERCEL_TARGET_ENV=production`, `RAILWAY_ENVIRONMENT=production`, or `NODE_ENV=production` is set.
+- **Cron triggers:** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image but does **not** run the container CMD. Use the Railway dashboard redeploy button for an immediate one-off run.
 
-Schema in `lib/db/schema.ts` with core tables:
+## Skill invocation policy
 
-- **chats** → **messages** → **parts** (cascade delete)
-- **canvasArtifacts** → **canvasArtifactVersions** (cascade delete)
-- **feedback** — user feedback storage
-- **artifacts** → **artifactRevisions**, **artifactRuntimeSessions** — SPA artifact system (still active, separate from canvas)
-- `parts` is a wide table storing all message part types (text, reasoning, files, sources, tool calls) with check constraints per type
-- All tables use Row-Level Security (RLS) via `current_setting('app.current_user_id')` — users see only their own data, public chats are readable by all
-- Server actions in `lib/actions/chat.ts` use `unstable_cache` with revalidation tags
-
-### Streaming
-
-- `lib/streaming/create-chat-stream-response.ts` — authenticated chat streaming
-- `lib/streaming/create-ephemeral-chat-stream-response.ts` — anonymous/guest streaming
-- `lib/streaming/helpers/` — message preparation, persistence, related questions, canvas data writing
-- Responses are SSE with message parts streamed incrementally
-
-### Rate Limiting
-
-`lib/rate-limit/` — per-chat, per-canvas, and guest IP-based rate limits. Uses Upstash Redis with in-memory fallback.
-
-### Auth
-
-Supabase Auth with three client patterns:
-
-- `lib/supabase/client.ts` — browser client
-- `lib/supabase/server.ts` — server-side client (cookies-based)
-- `lib/supabase/middleware.ts` — session refresh in middleware
-- **Guest mode** (default): `ENABLE_GUEST_CHAT=true` lets unauthenticated users search immediately. Guest chats are ephemeral (not persisted), use speed-mode models only, and are rate-limited per IP via Upstash Redis. A gentle inline nudge encourages sign-up after the 5th search.
-
-### Canvas Artifacts
-
-Canvas is the active artifact model. It is always-on (no feature flag gating).
-
-- **Compile pipeline** (`lib/canvas/compiler/`): Server-side esbuild + Tailwind CSS v4 compiles React SPA source into a single self-contained HTML string. The compiled HTML is persisted in the database and served via `iframe.srcdoc` for preview and export.
-- **One-artifact-per-chat rule:** Each chat maps to at most one canvas artifact. Three canvas tools are conditionally available when canvas context is present: `createCanvasArtifact` (create), `updateCanvasArtifact` (mutate), and `readCanvasArtifact` (read current source).
-- **Canvas service** (`lib/canvas/service.ts`): CRUD operations with optimistic concurrency (revision counter). Draft updates, version saves, restores, exports, and runtime diagnostics all go through this service layer.
-- **Guest access** (`lib/canvas/guest-token.ts`): HMAC-SHA256 signed tokens grant guest users scoped access to a specific artifact. Tokens rotate on every successful write.
-- **Legacy notice** (`components/canvas/canvas-legacy-notice.tsx`): Old artifact references from the removed sandbox system fail closed into a static "artifact unavailable" notice.
-- **Canvas API routes** (`app/api/canvas-artifacts/[artifactId]/`):
-  - `GET /` — Load artifact state
-  - `PATCH /draft` — Update draft source (optimistic concurrency)
-  - `POST /versions` — Create immutable version snapshot
-  - `POST /restore` — Restore a previous version
-  - `GET /export` — Download compiled HTML as a file
-  - `POST /runtime-diagnostics` — Persist iframe runtime errors
-  - `GET /view` — Serve compiled HTML for embedding
-- **Pre-processors** (`lib/canvas/pre-processors/`): AST transforms that fix AI-generated code before compilation
-- **Source validation** (`lib/canvas/validation/`): Validates and normalizes canvas source before compilation
-- **Canvas workspace UI** (`components/canvas/`): Split-view workspace with live preview, CodeMirror editor, diagnostics panel, and version history
-
-### Observability (Arize Phoenix on Railway)
-
-OpenTelemetry traces export to a self-hosted Phoenix instance on Railway, gated by `ENABLE_TRACING=true`.
-
-- **Instrumentation** (`instrumentation.ts`): Registers OTel with Phoenix OTLP exporter. Enforces HTTPS in production via `isProductionTarget()`.
-- **Production detection** (`lib/config/env.ts`): `isProductionTarget()` checks `VERCEL_ENV`, `VERCEL_TARGET_ENV`, `RAILWAY_ENVIRONMENT`, or `NODE_ENV=production`. Used by instrumentation and env validation.
-- **Trace flushing** (`lib/utils/telemetry.ts`): `flushTraces()` forces pending spans to export before serverless shutdown. Call in `onFinish` callbacks of streaming routes.
-- **Architecture:** `Vercel (app) --OTLP/HTTPS--> Railway (phoenix) <--API-- Railway (evals cron)`
-
-### Voice
-
-Feature-gated behind `NEXT_PUBLIC_ENABLE_VOICE=true`.
-
-- **TTS providers** (`lib/voice/`): ElevenLabs (default), OpenAI, browser Web Speech API — configurable per-user
-- **API route** (`app/api/voice/synthesize/`): server-side TTS synthesis
-
-### Generative UI
-
-Components render different message part types: `answer-section.tsx`, `search-section.tsx`, `reasoning-section.tsx`, `artifact/` directory for rich artifacts. These map to part types from the `parts` database table.
-
-### Hooks
-
-Custom React hooks in `hooks/`: `use-activity-feed`, `use-auth-check`, `use-content-entrance`, `use-current-user`, `use-file-dropzone`, `use-mobile`, `use-trending-suggestions`, plus voice hooks (`use-audio-stream`, `use-voice-conversation`, `use-voice-input`, `use-voice-player`). Additional hooks in `lib/hooks/`: `use-copy-to-clipboard`, `use-media-query`.
-
-Supporting modules: `lib/analytics/` (event tracking), `lib/config/` (env validation, model loading), `lib/schema/` (tool input schemas), `lib/auth/` (current user resolution).
-
-## Code Conventions
-
-### Skill Invocation Policy (Claude Code)
-
-To keep quality consistent, Claude Code should automatically invoke the following project-scoped skills based on task type:
-
-**Important UX rule:** Users should not need to say the word "skill" or mention skill names. Infer intent from normal requests and invoke relevant skills automatically.
+Users should not need to say the word "skill." Infer intent from normal requests and invoke project-scoped skills automatically:
 
 - **Bug, test failure, unexpected behavior** → `systematic-debugging`
 - **Multi-step feature, refactor, migration** → `writing-plans` (before implementation)
 - **Before claiming done / opening PR** → `verification-before-completion`
-- **When preparing for review** → `requesting-code-review`
-- **When applying review feedback** → `receiving-code-review`
+- **Preparing for review** → `requesting-code-review`
+- **Applying review feedback** → `receiving-code-review`
 - **UI behavior changes / interaction regressions** → `webapp-testing`
 - **Canvas artifact issues** (preview iframe, compile pipeline, diagnostics) → `harden`
 - **Supabase/Postgres schema/query/perf changes** → `supabase-postgres-best-practices`
 - **Next.js App Router architecture decisions** → `nextjs-app-router-patterns`
-- **New page, major UI section, or complex layout** → Pencil wireframe workflow (see `.claude/rules/design-workflow.md`), then `frontend-design`
+- **New page, major UI section, complex layout** → Pencil wireframe workflow (`.claude/rules/design-workflow.md`), then `frontend-design`
 - **Any creative/visual work** → `brainstorming` (before wireframing or implementation)
 
-#### Precedence rules
+**Precedence:** process/quality skills first (debugging/planning/verification/review), then domain skills (Next.js, Supabase, testing). When multiple apply, order:
+`systematic-debugging` → `writing-plans` → domain skill(s) → `verification-before-completion` → review skill(s).
 
-1. Prefer **process/quality skills first** (debugging/planning/verification/review).
-2. Then apply **domain skills** (Next.js, Supabase, testing) for implementation details.
-3. If multiple skills could apply, invoke all relevant ones in this order:
-   `systematic-debugging` → `writing-plans` → domain skill(s) → `verification-before-completion` → review skill(s).
+For ambiguous tasks, begin with: _"Select and invoke any relevant skills before answering, then proceed."_
 
-#### Prompting hint for reliable auto-selection
+## Quality standards
 
-When tasks are ambiguous, begin with:
-"Select and invoke any relevant skills before answering, then proceed."
+- **Make the change, don't describe it.** When you identify a fix, implement it directly — don't explain what to do and wait for permission. The user can always revert.
+- **Fix every warning and error you encounter.** Never dismiss issues as "pre-existing," "unrelated," or "from a previous session." If you see it, you own it.
+- **Always run `bun lint` and `bun typecheck` before claiming done.** Fix every warning, not just the ones your changes introduced.
 
-### Quality Standards
+## Investigation & verification standards
 
-- **Make the change, don't describe it.** When you identify a fix or improvement, implement it directly using the available tools. Never explain what needs to change and wait for permission — read the file, propose the edit, and apply it in one pass. The user can always revert.
-- **Fix every warning and error you encounter.** Never dismiss issues as "pre-existing," "unrelated to our changes," or "from a previous session." If you see it, you own it. Either fix it immediately or explicitly flag it to the user as something that needs attention — do not silently pass over it.
-- Before claiming any task is complete, run `bun lint` and `bun typecheck`. If either produces warnings or errors, fix them — all of them, not just the ones your changes introduced.
+A hypothesis is not a conclusion. Before declaring a root cause found or a fix correct:
 
-### Investigation & Verification Standards
+- **Read the actual code.** A root cause claim must cite a specific `file:line`. Don't reason about what a file "probably" contains — open it.
+- **Trace the full path.** For bugs, follow execution from symptom → call site → implementation. Don't stop at the first plausible explanation.
+- **Verify, then fix.** Confirm the problem exists where you think it does before writing a fix. Write a failing test or a log statement that proves the bug if you can.
+- **State your evidence.** When reporting a root cause, include `file:line`, the actual value, or the error message. "This is likely because…" is a hypothesis — label it as one and then verify.
+- **Don't trust your own prior analysis.** Re-check before acting on earlier session conclusions; state may have changed.
 
-**A hypothesis is not a conclusion.** Before declaring a root cause found or a fix correct:
+The bar: _could you point a skeptical reviewer to the exact evidence?_ If not, keep investigating.
 
-- **Read the actual code.** Don't reason about what a file probably contains — open it. A root cause claim must cite a specific file and line number.
-- **Trace the full path.** For bugs: follow the execution path from symptom → call site → implementation. Don't stop at the first plausible explanation.
-- **Verify, then fix.** Confirm the problem exists where you think it does before writing a fix. If you can write a failing test or log statement that proves the bug, do it.
-- **State your evidence.** When reporting a root cause, include the specific evidence (file:line, actual value, error message). "This is likely because..." is a hypothesis — say so explicitly, then go verify it.
-- **Don't trust your own prior analysis.** If you identified a probable cause in a previous step, re-check it before acting on it. Codebase state may have changed, or the initial read may have been incomplete.
+## Deeper references (load on demand)
 
-This applies to all debugging, architecture questions, and any claim that something "should work" or "is broken." The bar is: **could you point a skeptical reviewer to the exact evidence?** If not, keep investigating.
+Claude should `Read` these only when the current task needs them.
 
-### Formatting (Prettier)
-
-No semicolons, single quotes, no trailing commas, 2-space indent, avoid arrow parens, LF line endings.
-
-### Import Order (ESLint enforced)
-
-Strict import sorting via `simple-import-sort`:
-
-1. `react`, `next`
-2. Third-party (`@?\\w`)
-3. Internal in order: `@/types` → `@/config` → `@/lib` → `@/hooks` → `@/components/ui` → `@/components` → `@/registry` → `@/styles` → `@/app`
-4. Side effects, parent imports, relative imports, styles
-
-### Path Aliases
-
-`@/*` maps to project root. Use `@/lib/...`, `@/components/...`, etc.
-
-## Environment
-
-See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
-
-- `DATABASE_URL` — PostgreSQL connection
-- `AI_GATEWAY_API_KEY` — Vercel AI Gateway (primary model provider)
-- `TAVILY_API_KEY` — search
-- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase
-- `DATABASE_SSL_DISABLED=true` — for local dev with Supabase CLI
-- `GUEST_CANVAS_SECRET` — HMAC secret for guest canvas artifact tokens
-- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` — Redis for guest rate limiting (required when `ENABLE_GUEST_CHAT=true` in cloud mode)
-- `NEXT_PUBLIC_ENABLE_VOICE` — enables voice input/output UI
-
-## Key Files
-
-- `app/api/chat/route.ts` — main chat API endpoint (300s timeout)
-- `lib/agents/researcher.ts` — ToolLoopAgent orchestration
-- `lib/db/schema.ts` — Drizzle schema with RLS
-- `lib/streaming/` — SSE response creation
-- `lib/canvas/` — canvas artifact compile pipeline, validation, service, guest tokens
-- `components/canvas/` — canvas workspace shell, live preview, editor, diagnostics
-- `instrumentation.ts` — OTel registration with Phoenix exporter
+| Topic                                      | File                                           |
+| ------------------------------------------ | ---------------------------------------------- |
+| Architecture overview                      | `docs/architecture/OVERVIEW.md`                |
+| Researcher agent / tool loop               | `docs/architecture/RESEARCH-AGENT.md`          |
+| Streaming & SSE                            | `docs/architecture/STREAMING.md`               |
+| Generative UI message parts                | `docs/architecture/GENERATIVE-UI.md`           |
+| Model configuration                        | `docs/architecture/MODEL-CONFIGURATION.md`     |
+| Search providers                           | `docs/architecture/SEARCH-PROVIDERS.md`        |
+| Architecture decisions                     | `docs/architecture/DECISIONS.md`               |
+| Environment variables                      | `docs/getting-started/ENVIRONMENT.md`          |
+| Quickstart                                 | `docs/getting-started/QUICKSTART.md`           |
+| Deployment + Phoenix persistence procedure | `docs/operations/DEPLOYMENT.md`                |
+| Day-2 operations runbook                   | `docs/operations/runbooks/day-2-operations.md` |
+| File index (where things live)             | `docs/reference/FILE-INDEX.md`                 |
+| API reference                              | `docs/reference/API.md`                        |
+| Railway + Phoenix CLI cheat sheet          | `.claude/rules/operations.md`                  |
+| Design / wireframing workflow              | `.claude/rules/design-workflow.md`             |
