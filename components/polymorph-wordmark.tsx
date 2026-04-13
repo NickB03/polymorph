@@ -109,12 +109,12 @@ function PolySuffixFluid() {
 
   return (
     <span
-      aria-label="Polymorph"
       className="inline-flex select-none leading-none font-medium"
       style={{
         marginRight: `-${SUFFIX_MAX_LEN - FINAL_WORD.length}ch`
       }}
     >
+      <span className="sr-only">Polymorph</span>
       <span
         aria-hidden="true"
         className="shrink-0 text-neutral-900 dark:text-neutral-100"
