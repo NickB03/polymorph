@@ -60,7 +60,7 @@ export async function register() {
       })
 
       console.log(
-        `[otel] Tracing enabled → ${collectorEndpoint} (project: ${process.env.PHOENIX_PROJECT_NAME ?? 'polymorph'})`
+        `[otel] Tracing enabled → ${collectorEndpoint} (project: ${process.env.PHOENIX_PROJECT_NAME ?? 'polymorph-local'})`
       )
     } catch (err) {
       console.error('[otel] Failed to initialize tracing:', err)

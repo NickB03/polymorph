@@ -107,7 +107,7 @@ Set these env vars in the Vercel dashboard (Settings → Environment Variables, 
 | ---------------------------- | ------------------------------------------------ |
 | `ENABLE_TRACING`             | `true`                                           |
 | `PHOENIX_COLLECTOR_ENDPOINT` | `https://phoenix-production-c6b5.up.railway.app` |
-| `PHOENIX_PROJECT_NAME`       | `polymorph`                                      |
+| `PHOENIX_PROJECT_NAME`       | `polymorph-prod`                                 |
 | `PHOENIX_API_KEY`            | System API key created in Phoenix UI             |
 
 See [Environment Reference](../getting-started/ENVIRONMENT.md#tracing-arize-phoenix) for details.
@@ -120,6 +120,10 @@ The `services/evals/` directory contains a scheduled evaluation pipeline:
 - Runs 5 LLM-judge evaluators (faithfulness, relevance, response quality, safety, citation accuracy) built with a shared factory pattern and `extractVerdict()` with word-boundary matching
 - Pushes results to Phoenix as experiments
 - **Robustness:** `closeDb()` guaranteed on all exit paths (happy + fatal), NaN-safe `validInt()` config parsing, `maxAttempts >= 1` retry validation, safe `JSON.parse` for citations
+
+> **The `evaluators` project in the Phoenix UI is Phoenix-managed, not ours.** When an experiment runs, Phoenix auto-routes the judge model's LLM spans into a reserved project called `evaluators`. You can't rename, delete, or reconfigure it — it exists anywhere experiments run. This is why you'll see traces there even though `services/evals/` never sets `PHOENIX_PROJECT_NAME`.
+
+> **Ad-hoc evals run locally against `bun dev`, not against preview deployments.** The Railway cron above targets production (`EVAL_RUNNER_URL=https://polymorph-nb.vercel.app`). For one-off runs on a branch, point the evals service at your local app and a fresh `EVAL_RUN_MODE=smoke`: `cd services/evals && EVAL_RUNNER_URL=http://localhost:43100 EVAL_RUN_MODE=smoke bun src/index.ts` (plus the usual `DATABASE_URL` / `PHOENIX_*` / `JUDGE_API_KEY` env). Vercel Preview deployments do **not** have `EVAL_RUNNER_SECRET` set and will reject `/api/evals/run` with 401 — this is intentional, so that preview remains a visual-QA surface, not an eval target.
 
 **Railway deployment:**
 
