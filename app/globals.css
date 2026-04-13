@@ -372,15 +372,17 @@
   }
 }
 
-@keyframes morphSlotSettle {
+@keyframes morphSlotLand {
   0% {
-    opacity: 1;
+    opacity: 0;
+    transform: translateY(52px);
   }
-  40% {
-    opacity: 0.85;
+  45% {
+    opacity: 1;
   }
   100% {
     opacity: 1;
+    transform: none;
   }
 }
 
