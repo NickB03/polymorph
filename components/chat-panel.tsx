@@ -304,7 +304,7 @@ export function ChatPanel({
           <Textarea
             ref={inputRef}
             name="input"
-            rows={2}
+            rows={1}
             maxRows={5}
             tabIndex={0}
             aria-label="Message input"
