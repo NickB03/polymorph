@@ -112,11 +112,12 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
     tool_data AS (
       SELECT
         m.chat_id,
-        json_agg(DISTINCT p.tool_name) FILTER (WHERE p.tool_name IS NOT NULL) AS tool_names
+        json_agg(DISTINCT COALESCE(p.tool_dynamic_name, substring(p.type from 6)))
+          FILTER (WHERE p.type LIKE 'tool-%') AS tool_names
       FROM messages m
       JOIN parts p ON p.message_id = m.id
       WHERE m.chat_id IN (SELECT id FROM recent_chats)
-        AND p.type = 'tool-invocation'
+        AND p.type LIKE 'tool-%'
       GROUP BY m.chat_id
     )
     SELECT
