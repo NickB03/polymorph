@@ -23,6 +23,13 @@ export interface CapabilityDashboardData {
   lastUpdated: string | null
 }
 
+export type TrafficMonitorDashboardData = CapabilityDashboardData
+
+export interface EvalsDashboardData {
+  capability: CapabilityDashboardData
+  trafficMonitor: TrafficMonitorDashboardData
+}
+
 export interface EvalSummaryRow {
   id: string
   experimentName: string
