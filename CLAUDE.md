@@ -60,6 +60,13 @@ For ambiguous tasks, begin with: _"Select and invoke any relevant skills before 
 - **Fix every warning and error you encounter.** Never dismiss issues as "pre-existing," "unrelated," or "from a previous session." If you see it, you own it.
 - **Always run `bun lint` and `bun typecheck` before claiming done.** Fix every warning, not just the ones your changes introduced.
 
+## Behavioral guardrails
+
+- **Surface ambiguity before coding.** If a request has multiple plausible interpretations, state the ambiguity explicitly and ask only the minimum clarifying question needed. Do not pick silently when scope, UX, or data semantics are unclear.
+- **Prefer the simplest implementation that satisfies the request.** Do not add speculative abstractions, configurability, or future-proofing unless the requirement is explicit or already established in nearby code.
+- **Keep diffs surgical.** Every changed line should trace back to the user's request or to cleanup made necessary by your own change. Do not perform drive-by refactors or style edits.
+- **Push back on unnecessary complexity.** If a simpler approach is sufficient, say so briefly and implement the simpler version unless the user asks otherwise.
+
 ## Investigation & verification standards
 
 A hypothesis is not a conclusion. Before declaring a root cause found or a fix correct:
