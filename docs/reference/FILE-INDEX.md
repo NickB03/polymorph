@@ -843,33 +843,33 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 
 Offline evaluation pipeline (`services/evals/`) for measuring search quality via LLM-as-judge evaluators. Runs against sampled chat data in Phoenix experiments.
 
-| File                                                 | Purpose                                                                                                    |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `services/evals/src/index.ts`                        | Evals entrypoint: samples chats, runs evaluators, guarantees `closeDb()` on all exit paths                 |
-| `services/evals/src/config.ts`                       | Configuration with `validInt()` NaN-safe parsing for `SAMPLE_SIZE`, `LOOKBACK_HOURS`, judge model settings |
-| `services/evals/src/db.ts`                           | Database client for the evals service                                                                      |
-| `services/evals/src/eval-output.ts`                  | Eval output normalization, context formatting, and prompt extraction helpers                               |
-| `services/evals/src/eval-runner-client.ts`           | HTTP client for dispatching eval cases to the eval runner API endpoint                                     |
-| `services/evals/src/judge-config.ts`                 | Judge model configuration with NaN-safe env parsing and reasoning settings                                 |
-| `services/evals/src/judge-model.ts`                  | Creates the LLM judge model client via OpenRouter provider                                                 |
-| `services/evals/src/orchestrator.ts`                 | Orchestrates eval suite execution by dispatching to the configured run mode                                |
-| `services/evals/src/retry.ts`                        | Exponential backoff retry with `maxAttempts >= 1` validation                                               |
-| `services/evals/src/retry.test.ts`                   | Tests for retry utility including zero-attempts edge case                                                  |
-| `services/evals/src/sampler.ts`                      | Samples recent chats with parameterized SQL queries and safe `parseCitations()` JSON parsing               |
-| `services/evals/src/types.ts`                        | TypeScript type definitions for eval suites, run modes, cases, and results                                 |
-| `services/evals/src/evaluators/citation-accuracy.ts` | Citation accuracy evaluator — checks if citations match source content and claims                          |
-| `services/evals/src/evaluators/faithfulness.ts`      | Faithfulness evaluator — checks if answers are grounded in search results                                  |
-| `services/evals/src/evaluators/relevance.ts`         | Search relevance evaluator — checks if retrieved results are relevant to the query                         |
-| `services/evals/src/evaluators/response-quality.ts`  | Response quality evaluator — overall assessment of answer helpfulness and structure                        |
-| `services/evals/src/evaluators/safety.ts`            | Safety evaluator — checks responses for harmful, dangerous, or inappropriate content                       |
-| `services/evals/src/evaluators/tool-usage.ts`        | Tool usage evaluator — deterministic 4-level rubric for tool calls, results, and citations                 |
-| `services/evals/src/golden/index.ts`                 | Golden dataset management with example loading and eval output construction                                |
-| `services/evals/src/golden/validate.ts`              | Golden dataset validation against evaluators to measure scoring accuracy                                   |
-| `services/evals/src/runners/capability.ts`           | Capability eval runner — executes the capability test suite                                                |
-| `services/evals/src/runners/regression.ts`           | Regression eval runner — executes the regression test suite                                                |
-| `services/evals/src/runners/shared.ts`               | Shared runner utilities for dataset creation, experiment execution, and threshold checks                   |
-| `services/evals/src/runners/smoke.ts`                | Smoke test runner — executes lightweight smoke tests via live chat API                                     |
-| `services/evals/src/runners/traffic-monitor.ts`      | Traffic monitor runner — samples recent production chats and evaluates quality                             |
+| File                                                 | Purpose                                                                                                                                                                           |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `services/evals/src/index.ts`                        | Evals entrypoint: samples chats, runs evaluators, guarantees `closeDb()` on all exit paths                                                                                        |
+| `services/evals/src/config.ts`                       | Configuration with `validInt()` NaN-safe parsing for `SAMPLE_SIZE`, `LOOKBACK_HOURS`, judge model settings                                                                        |
+| `services/evals/src/db.ts`                           | Database client for the evals service                                                                                                                                             |
+| `services/evals/src/eval-output.ts`                  | Eval output normalization, context formatting, and prompt extraction helpers                                                                                                      |
+| `services/evals/src/eval-runner-client.ts`           | HTTP client for dispatching eval cases to the eval runner API endpoint                                                                                                            |
+| `services/evals/src/judge-config.ts`                 | Judge model configuration with NaN-safe env parsing and reasoning settings                                                                                                        |
+| `services/evals/src/judge-model.ts`                  | Creates the LLM judge model client via OpenRouter provider                                                                                                                        |
+| `services/evals/src/orchestrator.ts`                 | Orchestrates eval suite execution by dispatching to the configured run mode                                                                                                       |
+| `services/evals/src/retry.ts`                        | Exponential backoff retry with `maxAttempts >= 1` validation                                                                                                                      |
+| `services/evals/src/retry.test.ts`                   | Tests for retry utility including zero-attempts edge case                                                                                                                         |
+| `services/evals/src/sampler.ts`                      | Samples recent chats with parameterized SQL queries and safe `parseCitations()` JSON parsing                                                                                      |
+| `services/evals/src/types.ts`                        | TypeScript type definitions for eval suites, run modes, cases, and results; exports `PersistedEvalSuite` (`Exclude<EvalSuite, 'smoke'>`)                                          |
+| `services/evals/src/evaluators/citation-accuracy.ts` | Citation accuracy evaluator — checks if citations match source content and claims                                                                                                 |
+| `services/evals/src/evaluators/faithfulness.ts`      | Faithfulness evaluator — checks if answers are grounded in search results                                                                                                         |
+| `services/evals/src/evaluators/relevance.ts`         | Search relevance evaluator — checks if retrieved results are relevant to the query                                                                                                |
+| `services/evals/src/evaluators/response-quality.ts`  | Response quality evaluator — overall assessment of answer helpfulness and structure                                                                                               |
+| `services/evals/src/evaluators/safety.ts`            | Safety evaluator — checks responses for harmful, dangerous, or inappropriate content                                                                                              |
+| `services/evals/src/evaluators/tool-usage.ts`        | Tool usage evaluator — deterministic 4-level rubric for tool calls, results, and citations                                                                                        |
+| `services/evals/src/golden/index.ts`                 | Golden dataset management with example loading and eval output construction                                                                                                       |
+| `services/evals/src/golden/validate.ts`              | Golden dataset validation against evaluators to measure scoring accuracy                                                                                                          |
+| `services/evals/src/runners/capability.ts`           | Capability eval runner — executes the capability test suite                                                                                                                       |
+| `services/evals/src/runners/regression.ts`           | Regression eval runner — executes the regression test suite                                                                                                                       |
+| `services/evals/src/runners/shared.ts`               | Shared runner utilities for dataset creation, experiment execution, and threshold checks; split try/catch isolates Phoenix vs. DB persistence failures with distinct error labels |
+| `services/evals/src/runners/smoke.ts`                | Smoke test runner — executes lightweight smoke tests via live chat API                                                                                                            |
+| `services/evals/src/runners/traffic-monitor.ts`      | Traffic monitor runner — samples recent production chats, evaluates quality, and persists results to `eval_summaries`                                                             |
 
 ---
 

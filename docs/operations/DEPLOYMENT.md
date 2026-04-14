@@ -118,8 +118,12 @@ The `services/evals/` directory contains a scheduled evaluation pipeline:
 
 - Samples recent chats from Supabase Postgres using parameterized SQL (no string interpolation)
 - Runs 5 LLM-judge evaluators (faithfulness, relevance, response quality, safety, citation accuracy) built with a shared factory pattern and `extractVerdict()` with word-boundary matching
-- Pushes results to Phoenix as experiments
+- Pushes results to Phoenix as experiments **and** persists eval summaries to the `eval_summaries` Postgres table, which powers the admin `/evals` dashboard (capability, regression, and Traffic Monitor sections). After the next cron firing, operators should see fresh rows on the dashboard; if they don't, suspect the sampler's DB role missing the RLS context for write paths (see `lib/db/schema.ts:558-560` and the live Railway `DATABASE_URL` role).
 - **Robustness:** `closeDb()` guaranteed on all exit paths (happy + fatal), NaN-safe `validInt()` config parsing, `maxAttempts >= 1` retry validation, safe `JSON.parse` for citations
+- **Failure-mode split in logs:** two distinct error labels, each pointing at a different system.
+  - `[evals] PHOENIX UNAVAILABLE - could not record <suite> experiment results` — Phoenix HTTP layer is down, dataset/experiment creation failed. The suite never reached the DB write step. Investigate Phoenix service health (`railway logs -s phoenix`, `/` 200 check).
+  - `[evals] DB WRITE FAILED - could not persist <suite> eval summary` — Phoenix experiment was created successfully, but the Postgres write to `eval_summaries` failed. The Phoenix experiment is intact; only the dashboard row is missing. Investigate Postgres connectivity, the RLS role on `DATABASE_URL`, and the `eval_summaries` table.
+  - Threshold gating survives DB failures: if a capability/regression suite scores below threshold **and** the DB write fails, the runner still throws the threshold-failure error so the cron fails and pages alert.
 
 > **The `evaluators` project in the Phoenix UI is Phoenix-managed, not ours.** When an experiment runs, Phoenix auto-routes the judge model's LLM spans into a reserved project called `evaluators`. You can't rename, delete, or reconfigure it — it exists anywhere experiments run. This is why you'll see traces there even though `services/evals/` never sets `PHOENIX_PROJECT_NAME`.
 

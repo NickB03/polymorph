@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Citation accuracy evaluator for verifying citation quality (`services/evals/src/evaluators/citation-accuracy.ts`)
 - Tool usage evaluator (deterministic) for validating agent tool selection (`services/evals/src/evaluators/tool-usage.ts`)
 - Traffic monitor eval runner (`services/evals/src/runners/traffic-monitor.ts`)
+- Traffic monitor suite results now persist to `eval_summaries` so the admin `/evals` dashboard renders them
+- Admin `/evals` dashboard renders Capability and Traffic Monitor as parallel suite sections with per-suite ring, latest run, trend chart, and evaluator bars
 - Related questions ticker with auto-rotation (`hooks/use-ticker-rotation.ts`)
 - File validation utilities for upload restrictions (`lib/utils/file-validation.ts`)
 - Supabase server storage helper (`lib/supabase/server-storage.ts`)
@@ -48,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `parseInt` NaN guard (`validInt()`) in evals config prevents silent corruption from non-numeric env vars
 - `maxAttempts` validation in retry utility prevents undefined throw when value is 0 or negative
 - Safe `JSON.parse` wrapper for citations in evals sampler, matching the existing `parseSearchResults` pattern
+- Evals runners split Phoenix HTTP and Postgres write failures into distinct `PHOENIX UNAVAILABLE` and `DB WRITE FAILED` error labels so DB outages are no longer misdiagnosed as Phoenix downtime
+- Threshold-failure throw in `runJudgedSuite` now survives a DB write outage (threshold check moved before the DB persist)
 
 ## [0.1.0] - 2026-02-28
 
