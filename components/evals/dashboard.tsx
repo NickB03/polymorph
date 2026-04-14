@@ -1,6 +1,9 @@
 import { formatDistanceToNow } from 'date-fns'
 
-import type { CapabilityDashboardData } from '@/lib/evals/types'
+import type {
+  CapabilityDashboardData,
+  EvalsDashboardData
+} from '@/lib/evals/types'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -19,25 +22,42 @@ function computeDelta(
   return latest - previous
 }
 
-export default function EvalsDashboard({
+function EmptySuiteCard({
+  title,
+  description
+}: {
+  title: string
+  description: string
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2 text-sm text-muted-foreground">
+        <p>{description}</p>
+        <p>
+          This section stays empty until the evals service records at least one
+          persisted summary row for this suite.
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SuiteSection({
+  heading,
   data
 }: {
+  heading: string
   data: CapabilityDashboardData
 }) {
   if (!data.latest) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>No eval summaries yet</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>Run the capability eval suite to populate the admin dashboard.</p>
-          <p>
-            This page stays empty until the evals service records at least one
-            persisted summary row.
-          </p>
-        </CardContent>
-      </Card>
+      <EmptySuiteCard
+        title={`${heading} — no summaries yet`}
+        description={`Run the ${heading.toLowerCase()} eval suite to populate this section.`}
+      />
     )
   }
 
@@ -47,7 +67,8 @@ export default function EvalsDashboard({
   )
 
   return (
-    <div className="space-y-6">
+    <section className="space-y-6">
+      <h2 className="text-xl font-semibold">{heading}</h2>
       <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <ScoreRing
           label="Overall"
@@ -101,8 +122,26 @@ export default function EvalsDashboard({
         </Card>
       </div>
 
-      <TrendChart trend={data.trend} />
+      <TrendChart title={`${heading} Trend`} trend={data.trend} />
       <EvaluatorBars evaluatorScores={data.latest.evaluatorScores} />
+    </section>
+  )
+}
+
+export default function EvalsDashboard({ data }: { data: EvalsDashboardData }) {
+  if (!data.capability.latest && !data.trafficMonitor.latest) {
+    return (
+      <EmptySuiteCard
+        title="No eval summaries yet"
+        description="Run the capability or traffic-monitor eval suite to populate the admin dashboard."
+      />
+    )
+  }
+
+  return (
+    <div className="space-y-10">
+      <SuiteSection heading="Capability" data={data.capability} />
+      <SuiteSection heading="Traffic Monitor" data={data.trafficMonitor} />
     </div>
   )
 }

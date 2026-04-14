@@ -19,11 +19,17 @@ const chartConfig = {
   }
 }
 
-export function TrendChart({ trend }: { trend: EvalTrendPoint[] }) {
+export function TrendChart({
+  title,
+  trend
+}: {
+  title: string
+  trend: EvalTrendPoint[]
+}) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Capability Trend</CardTitle>
+        <CardTitle className="text-lg">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[320px] w-full">
