@@ -692,6 +692,53 @@ describe('runJudgedSuite', () => {
     expect(mockPersistEvalSummary).not.toHaveBeenCalled()
     errorSpy.mockRestore()
   })
+
+  it('logs a DB-specific label (not PHOENIX UNAVAILABLE) when persistEvalSummary throws', async () => {
+    const cases = [makeCaseSpec('c1', 'capability')]
+    mockGetCasesForEvaluation.mockReturnValue(cases)
+    mockRunEvalCase.mockResolvedValueOnce(makeRunResult('c1'))
+    mockPersistEvalSummary.mockRejectedValueOnce(
+      new Error('connection refused')
+    )
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { runJudgedSuite } = await import('./shared')
+    await expect(runJudgedSuite('capability')).resolves.toBeUndefined()
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[evals] DB WRITE FAILED - could not persist capability eval summary'
+    )
+    expect(errorSpy).not.toHaveBeenCalledWith(
+      '[evals] PHOENIX UNAVAILABLE - could not record capability experiment results'
+    )
+    errorSpy.mockRestore()
+  })
+
+  it('still throws the threshold failure when scores are below threshold and the DB write also fails', async () => {
+    const cases = [makeCaseSpec('c1', 'capability')]
+    mockGetCasesForEvaluation.mockReturnValue(cases)
+    mockRunEvalCase.mockResolvedValueOnce(makeRunResult('c1'))
+    mockRunExperiment.mockResolvedValueOnce({
+      id: 'exp-fail',
+      evaluationRuns: [
+        {
+          name: 'faithfulness',
+          error: null,
+          result: { score: 0.2, label: 'bad' }
+        }
+      ]
+    })
+    mockPersistEvalSummary.mockRejectedValueOnce(
+      new Error('connection refused')
+    )
+
+    const { runJudgedSuite } = await import('./shared')
+
+    await expect(runJudgedSuite('capability')).rejects.toThrow(
+      'capability scores below threshold'
+    )
+  })
 })
 
 describe('runCasesConcurrently', () => {
