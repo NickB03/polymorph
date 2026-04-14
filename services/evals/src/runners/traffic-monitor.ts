@@ -1,5 +1,7 @@
 import { config } from '../config'
+import { db } from '../db'
 import { formatEvalContext } from '../eval-output'
+import { persistEvalSummary } from '../eval-summary'
 import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
@@ -76,36 +78,22 @@ export async function runTrafficMonitorSuite() {
     model
   })
 
+  let datasetId: string
+  let datasetName: string
+  let experimentName: string
+  let experiment: Awaited<
+    ReturnType<typeof createDatasetAndExperiment>
+  >['experiment']
+
   try {
-    const { datasetId, datasetName, experimentName, experiment } =
+    ;({ datasetId, datasetName, experimentName, experiment } =
       await createDatasetAndExperiment({
         suite: 'traffic-monitor',
         examples,
         evaluators,
         task: buildExperimentTask(),
         datasetName: buildTimestampedDatasetName('traffic-monitor')
-      })
-
-    console.log(`[evals] Traffic monitor dataset: ${datasetName}`)
-    console.log(`[evals] Traffic monitor experiment: ${experimentName}`)
-    console.log(`[evals] Traffic monitor experiment ID: ${experiment.id}`)
-    console.log(
-      `[evals] Traffic monitor view: ${buildPublicExperimentUrl(datasetId, experiment.id)}`
-    )
-
-    const thresholds = checkExperimentThresholds(
-      experiment,
-      config.scoreThreshold,
-      config.excludeFromThreshold
-    )
-    console.log(
-      `[evals] Traffic monitor pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
-    )
-    if (!thresholds.passed) {
-      console.warn(
-        `[evals] Traffic monitor scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(config.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
-      )
-    }
+      }))
   } catch (error) {
     console.error(
       '[evals] PHOENIX UNAVAILABLE - could not record traffic-monitor experiment results'
@@ -117,5 +105,52 @@ export async function runTrafficMonitorSuite() {
       `[evals] traffic-monitor completed ${samples.length} samples (results NOT recorded to Phoenix)`
     )
     return
+  }
+
+  console.log(`[evals] Traffic monitor dataset: ${datasetName}`)
+  console.log(`[evals] Traffic monitor experiment: ${experimentName}`)
+  console.log(`[evals] Traffic monitor experiment ID: ${experiment.id}`)
+  const phoenixUrl = buildPublicExperimentUrl(datasetId, experiment.id)
+  console.log(`[evals] Traffic monitor view: ${phoenixUrl}`)
+
+  const thresholds = checkExperimentThresholds(
+    experiment,
+    config.scoreThreshold,
+    config.excludeFromThreshold
+  )
+  console.log(
+    `[evals] Traffic monitor pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
+  )
+
+  try {
+    await persistEvalSummary(
+      { execute: db.execute.bind(db) },
+      {
+        suite: 'traffic-monitor',
+        experimentName,
+        datasetName,
+        passRate: thresholds.passRate,
+        experiment,
+        totalCases: examples.length,
+        phoenixUrl
+      }
+    )
+  } catch (error) {
+    console.error(
+      '[evals] DB WRITE FAILED - could not persist traffic-monitor eval summary'
+    )
+    console.error(
+      `[evals] Error: ${error instanceof Error ? error.message : error}`
+    )
+    console.log(
+      `[evals] traffic-monitor experiment succeeded in Phoenix at ${phoenixUrl} but dashboard will be stale`
+    )
+    return
+  }
+
+  if (!thresholds.passed) {
+    console.warn(
+      `[evals] Traffic monitor scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(config.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
+    )
   }
 }
