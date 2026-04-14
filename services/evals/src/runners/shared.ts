@@ -115,30 +115,56 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     model
   })
 
+  let datasetId: string
+  let datasetName: string
+  let experimentName: string
+  let experiment: Awaited<
+    ReturnType<typeof createDatasetAndExperiment>
+  >['experiment']
+
   try {
-    const { datasetId, datasetName, experimentName, experiment } =
+    ;({ datasetId, datasetName, experimentName, experiment } =
       await createDatasetAndExperiment({
         suite,
         examples,
         evaluators,
         task: buildExperimentTask()
-      })
-
-    console.log(`[evals] ${suite} dataset: ${datasetName}`)
-    console.log(`[evals] ${suite} experiment: ${experimentName}`)
-    console.log(`[evals] ${suite} experiment ID: ${experiment.id}`)
-    const phoenixUrl = buildPublicExperimentUrl(datasetId, experiment.id)
-    console.log(`[evals] ${suite} view: ${phoenixUrl}`)
-
-    const thresholds = checkExperimentThresholds(
-      experiment,
-      runtimeConfig.scoreThreshold,
-      runtimeConfig.excludeFromThreshold
+      }))
+  } catch (error) {
+    console.error(
+      `[evals] PHOENIX UNAVAILABLE - could not record ${suite} experiment results`
+    )
+    console.error(
+      `[evals] Error: ${error instanceof Error ? error.message : error}`
     )
     console.log(
-      `[evals] ${suite} pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
+      `[evals] ${suite} completed ${succeeded.length}/${cases.length} cases successfully (results NOT recorded to Phoenix)`
     )
+    return
+  }
 
+  console.log(`[evals] ${suite} dataset: ${datasetName}`)
+  console.log(`[evals] ${suite} experiment: ${experimentName}`)
+  console.log(`[evals] ${suite} experiment ID: ${experiment.id}`)
+  const phoenixUrl = buildPublicExperimentUrl(datasetId, experiment.id)
+  console.log(`[evals] ${suite} view: ${phoenixUrl}`)
+
+  const thresholds = checkExperimentThresholds(
+    experiment,
+    runtimeConfig.scoreThreshold,
+    runtimeConfig.excludeFromThreshold
+  )
+  console.log(
+    `[evals] ${suite} pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
+  )
+
+  const thresholdError = thresholds.passed
+    ? null
+    : new Error(
+        `[evals] ${suite} scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(runtimeConfig.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
+      )
+
+  try {
     await persistEvalSummary(
       { execute: db.execute.bind(db) },
       {
@@ -151,29 +177,24 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
         phoenixUrl
       }
     )
-
-    if (!thresholds.passed) {
-      throw new Error(
-        `[evals] ${suite} scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(runtimeConfig.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
-      )
-    }
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.includes('scores below threshold')
-    ) {
-      throw error
-    }
     console.error(
-      `[evals] PHOENIX UNAVAILABLE - could not record ${suite} experiment results`
+      `[evals] DB WRITE FAILED - could not persist ${suite} eval summary`
     )
     console.error(
       `[evals] Error: ${error instanceof Error ? error.message : error}`
     )
     console.log(
-      `[evals] ${suite} completed ${succeeded.length}/${cases.length} cases successfully (results NOT recorded to Phoenix)`
+      `[evals] ${suite} experiment succeeded in Phoenix at ${phoenixUrl} but dashboard will be stale`
     )
+    if (thresholdError) {
+      throw thresholdError
+    }
     return
+  }
+
+  if (thresholdError) {
+    throw thresholdError
   }
 }
 

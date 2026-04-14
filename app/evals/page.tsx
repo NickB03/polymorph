@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { isAdminUserId } from '@/lib/auth/is-admin'
-import { getCapabilityDashboard } from '@/lib/evals/queries'
+import { getEvalsDashboard } from '@/lib/evals/queries'
 
 import EvalsDashboard from '@/components/evals/dashboard'
 
@@ -21,7 +21,7 @@ export default async function EvalsPage() {
     return null
   }
 
-  const data = await getCapabilityDashboard(user.id)
+  const data = await getEvalsDashboard(user.id)
 
   return (
     <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">

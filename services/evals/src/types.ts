@@ -4,6 +4,8 @@ export type EvalSuite =
   | 'smoke'
   | 'traffic-monitor'
 
+export type PersistedEvalSuite = Exclude<EvalSuite, 'smoke'>
+
 export type EvalRunMode =
   | 'capability'
   | 'regression'

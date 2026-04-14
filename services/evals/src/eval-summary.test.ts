@@ -80,3 +80,26 @@ describe('persistEvalSummary', () => {
     )
   })
 })
+
+describe('persistEvalSummary traffic-monitor support', () => {
+  it('accepts traffic-monitor as a valid suite value', async () => {
+    const execute = vi.fn().mockResolvedValue(undefined)
+
+    await persistEvalSummary({ execute } as never, {
+      suite: 'traffic-monitor',
+      experimentName: 'traffic-exp-1',
+      datasetName: 'traffic-dataset-1',
+      passRate: 0.91,
+      experiment: {
+        id: 'traffic-exp-1',
+        evaluationRuns: [
+          { name: 'faithfulness', error: null, result: { score: 0.9 } }
+        ]
+      } as never,
+      totalCases: 25,
+      phoenixUrl: 'https://phoenix.example.com/traffic-exp-1'
+    })
+
+    expect(execute).toHaveBeenCalledTimes(1)
+  })
+})

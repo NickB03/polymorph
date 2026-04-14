@@ -4,7 +4,7 @@ const mockRedirect = vi.hoisted(() => vi.fn())
 const mockNotFound = vi.hoisted(() => vi.fn())
 const mockGetCurrentUser = vi.hoisted(() => vi.fn())
 const mockIsAdminUserId = vi.hoisted(() => vi.fn())
-const mockGetCapabilityDashboard = vi.hoisted(() => vi.fn())
+const mockGetEvalsDashboard = vi.hoisted(() => vi.fn())
 
 vi.mock('next/navigation', () => ({
   redirect: mockRedirect,
@@ -20,7 +20,7 @@ vi.mock('@/lib/auth/is-admin', () => ({
 }))
 
 vi.mock('@/lib/evals/queries', () => ({
-  getCapabilityDashboard: mockGetCapabilityDashboard
+  getEvalsDashboard: mockGetEvalsDashboard
 }))
 
 vi.mock('@/components/evals/dashboard', () => ({
@@ -50,17 +50,25 @@ describe('/evals page', () => {
   it('loads dashboard data for the admin user', async () => {
     mockGetCurrentUser.mockResolvedValue({ id: 'admin-1' })
     mockIsAdminUserId.mockReturnValue(true)
-    mockGetCapabilityDashboard.mockResolvedValue({
-      latest: null,
-      previous: null,
-      trend: [],
-      lastUpdated: null
+    mockGetEvalsDashboard.mockResolvedValue({
+      capability: {
+        latest: null,
+        previous: null,
+        trend: [],
+        lastUpdated: null
+      },
+      trafficMonitor: {
+        latest: null,
+        previous: null,
+        trend: [],
+        lastUpdated: null
+      }
     })
 
     const { default: EvalsPage } = await import('./page')
     const result = await EvalsPage()
 
-    expect(mockGetCapabilityDashboard).toHaveBeenCalledWith('admin-1')
+    expect(mockGetEvalsDashboard).toHaveBeenCalledWith('admin-1')
     expect(result).toBeTruthy()
   })
 })

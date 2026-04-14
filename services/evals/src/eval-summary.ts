@@ -5,6 +5,8 @@ import type {
 import { createId } from '@paralleldrive/cuid2'
 import { sql } from 'drizzle-orm'
 
+import type { PersistedEvalSuite } from './types'
+
 export function normalizeEvaluationRuns(experiment: RanExperiment) {
   return Array.isArray(experiment.evaluationRuns)
     ? experiment.evaluationRuns
@@ -41,7 +43,7 @@ function clampPassRateBps(passRate: number) {
 export async function persistEvalSummary(
   db: { execute: (query: ReturnType<typeof sql>) => Promise<unknown> },
   params: {
-    suite: 'capability' | 'regression'
+    suite: PersistedEvalSuite
     experimentName: string
     datasetName: string
     passRate: number
