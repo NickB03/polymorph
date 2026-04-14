@@ -1,12 +1,14 @@
 import { desc, eq } from 'drizzle-orm'
 
 import { evalSummaries } from '@/lib/db/schema'
-import { withRLS } from '@/lib/db/with-rls'
+import { type TxInstance, withRLS } from '@/lib/db/with-rls'
 
 import type {
   CapabilityDashboardData,
+  EvalsDashboardData,
   EvalSummaryRow,
-  EvalSummarySnapshot
+  EvalSummarySnapshot,
+  TrafficMonitorDashboardData
 } from './types'
 
 function computeOverallScore(evaluatorScores: Record<string, number>) {
@@ -56,24 +58,58 @@ export function buildCapabilityDashboardData(
   }
 }
 
+export const buildTrafficMonitorDashboardData = buildCapabilityDashboardData
+
+type SuiteValue = 'capability' | 'regression' | 'traffic-monitor'
+
+async function selectSuiteRows(
+  tx: TxInstance,
+  suite: SuiteValue
+): Promise<EvalSummaryRow[]> {
+  return tx
+    .select({
+      id: evalSummaries.id,
+      experimentName: evalSummaries.experimentName,
+      datasetName: evalSummaries.datasetName,
+      passRateBps: evalSummaries.passRateBps,
+      evaluatorScores: evalSummaries.evaluatorScores,
+      totalCases: evalSummaries.totalCases,
+      phoenixUrl: evalSummaries.phoenixUrl,
+      createdAt: evalSummaries.createdAt
+    })
+    .from(evalSummaries)
+    .where(eq(evalSummaries.suite, suite))
+    .orderBy(desc(evalSummaries.createdAt))
+    .limit(12)
+}
+
 export async function getCapabilityDashboard(userId: string) {
   return withRLS(userId, async tx => {
-    const rows = await tx
-      .select({
-        id: evalSummaries.id,
-        experimentName: evalSummaries.experimentName,
-        datasetName: evalSummaries.datasetName,
-        passRateBps: evalSummaries.passRateBps,
-        evaluatorScores: evalSummaries.evaluatorScores,
-        totalCases: evalSummaries.totalCases,
-        phoenixUrl: evalSummaries.phoenixUrl,
-        createdAt: evalSummaries.createdAt
-      })
-      .from(evalSummaries)
-      .where(eq(evalSummaries.suite, 'capability'))
-      .orderBy(desc(evalSummaries.createdAt))
-      .limit(12)
-
+    const rows = await selectSuiteRows(tx, 'capability')
     return buildCapabilityDashboardData(rows)
+  })
+}
+
+export async function getTrafficMonitorDashboard(
+  userId: string
+): Promise<TrafficMonitorDashboardData> {
+  return withRLS(userId, async tx => {
+    const rows = await selectSuiteRows(tx, 'traffic-monitor')
+    return buildTrafficMonitorDashboardData(rows)
+  })
+}
+
+export async function getEvalsDashboard(
+  userId: string
+): Promise<EvalsDashboardData> {
+  return withRLS(userId, async tx => {
+    const [capabilityRows, trafficRows] = await Promise.all([
+      selectSuiteRows(tx, 'capability'),
+      selectSuiteRows(tx, 'traffic-monitor')
+    ])
+    return {
+      capability: buildCapabilityDashboardData(capabilityRows),
+      trafficMonitor: buildTrafficMonitorDashboardData(trafficRows)
+    }
   })
 }
