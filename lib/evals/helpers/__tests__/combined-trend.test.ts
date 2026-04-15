@@ -4,7 +4,7 @@ import type { EvalsDashboardData } from '@/lib/evals/types'
 
 import { buildCombinedTrend } from '../combined-trend'
 
-function emptySnapshot() {
+function emptySnapshot(): EvalsDashboardData {
   return {
     capability: { latest: null, previous: null, trend: [], lastUpdated: null },
     trafficMonitor: {
@@ -13,7 +13,7 @@ function emptySnapshot() {
       trend: [],
       lastUpdated: null
     }
-  } satisfies EvalsDashboardData
+  }
 }
 
 describe('buildCombinedTrend', () => {
