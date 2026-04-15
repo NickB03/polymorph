@@ -1,8 +1,10 @@
 import { desc, eq } from 'drizzle-orm'
 
-import { evalSummaries } from '@/lib/db/schema'
+import { evalSummaries, userEvalPreferences } from '@/lib/db/schema'
 import { type TxInstance, withRLS } from '@/lib/db/with-rls'
 
+import { DEFAULT_TEMPLATE_ID } from './layout/templates'
+import type { TemplateId } from './layout/types'
 import type {
   CapabilityDashboardData,
   EvalsDashboardData,
@@ -112,4 +114,19 @@ export async function getEvalsDashboard(
       trafficMonitor: buildTrafficMonitorDashboardData(trafficRows)
     }
   })
+}
+
+export async function getPreferredEvalsLayout(
+  userId: string
+): Promise<TemplateId> {
+  const rows = await withRLS(userId, tx =>
+    tx
+      .select({ preferredLayout: userEvalPreferences.preferredLayout })
+      .from(userEvalPreferences)
+      .where(eq(userEvalPreferences.userId, userId))
+      .limit(1)
+  )
+  const value = rows[0]?.preferredLayout
+  if (value === 'a' || value === 'b' || value === 'c') return value
+  return DEFAULT_TEMPLATE_ID
 }
