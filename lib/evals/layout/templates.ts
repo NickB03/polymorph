@@ -9,7 +9,7 @@ function toStacked(lg: GridPosition[]): GridPosition[] {
   })
 }
 
-const TEMPLATE_A: EvalsLayoutTemplate = {
+export const TEMPLATE_A: EvalsLayoutTemplate = {
   id: 'a',
   name: 'Health Monitor',
   description: 'KPI strip + Traffic hero + Capability rail',
@@ -112,7 +112,7 @@ const TEMPLATE_A: EvalsLayoutTemplate = {
   }
 }
 
-const TEMPLATE_B: EvalsLayoutTemplate = {
+export const TEMPLATE_B: EvalsLayoutTemplate = {
   id: 'b',
   name: 'Rehearsed vs. Real',
   description: 'Two-column suite comparison + divergence banner',
@@ -184,7 +184,7 @@ const TEMPLATE_B: EvalsLayoutTemplate = {
   }
 }
 
-const TEMPLATE_C: EvalsLayoutTemplate = {
+export const TEMPLATE_C: EvalsLayoutTemplate = {
   id: 'c',
   name: 'Activity Feed',
   description: 'What-changed summary + reverse-chron feed',
