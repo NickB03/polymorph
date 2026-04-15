@@ -3,6 +3,7 @@
 import { useState } from 'react'
 
 import { format } from 'date-fns'
+import { History } from 'lucide-react'
 
 import {
   getEvaluatorColor,
@@ -19,7 +20,7 @@ import { stateColor } from '@/lib/evals/helpers/health-state'
 import type { EvalsDashboardData } from '@/lib/evals/types'
 
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 import type { WidgetProps } from './shared/widget-props'
 
@@ -153,9 +154,21 @@ export function ActivityFeed({ data, config }: WidgetProps<Config>) {
   const [expandedId, setExpandedId] = useState<string | null>(initial)
   if (feed.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6 text-sm text-muted-foreground">
-          No runs yet.
+      <Card className="flex h-full flex-col border-dashed bg-muted/10">
+        <CardHeader>
+          <CardTitle className="text-sm">Activity feed</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-1 flex-col items-center justify-center gap-3 py-10 text-center">
+          <div className="rounded-full border border-dashed border-muted-foreground/30 p-3 text-muted-foreground">
+            <History aria-hidden className="h-5 w-5" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium">No runs yet</p>
+            <p className="max-w-sm text-xs text-muted-foreground">
+              As eval runs land in Postgres, they&apos;ll stream in here
+              newest-first. The next Traffic Monitor run is scheduled every 6h.
+            </p>
+          </div>
         </CardContent>
       </Card>
     )

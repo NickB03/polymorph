@@ -1,6 +1,7 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
+import { Activity, BarChart3, Sparkles } from 'lucide-react'
 
 import type { HealthState } from '@/lib/evals/helpers/health-state'
 import {
@@ -42,15 +43,9 @@ export function SuiteHeaderCard({
   const suiteKey = config.suite
   const suite = data[suiteKey]
   const latest = suite.latest
+  const title = suiteKey === 'capability' ? 'Capability' : 'Traffic Monitor'
   if (!latest) {
-    return (
-      <Card className="h-full">
-        <CardContent className="p-6 text-sm text-muted-foreground">
-          No {suiteKey === 'capability' ? 'Capability' : 'Traffic Monitor'} runs
-          yet.
-        </CardContent>
-      </Card>
-    )
+    return <SuiteEmptyState title={title} variant={config.variant} />
   }
   const previous = suite.previous
   const delta = previous ? latest.overallScore - previous.overallScore : null
@@ -59,8 +54,6 @@ export function SuiteHeaderCard({
     suiteKey === 'capability' ? 0.9 : 0.85,
     suiteKey === 'capability' ? 0.75 : 0.7
   )
-
-  const title = suiteKey === 'capability' ? 'Capability' : 'Traffic Monitor'
 
   if (config.variant === 'rail') {
     return (
@@ -250,6 +243,90 @@ export function SuiteHeaderCard({
               Open in Phoenix →
             </a>
           ) : null}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SuiteEmptyState({
+  title,
+  variant
+}: {
+  title: string
+  variant: Variant
+}) {
+  const Icon =
+    variant === 'hero' ? Activity : variant === 'ring' ? Sparkles : BarChart3
+  const helper =
+    title === 'Traffic Monitor'
+      ? 'Runs land every 6h from the evals cron.'
+      : 'Runs land on demand from the rehearsed suite.'
+
+  if (variant === 'rail' || variant === 'ring') {
+    return (
+      <Card className="flex h-full flex-col border-dashed bg-muted/10">
+        <CardHeader className="flex-row items-start justify-between space-y-0">
+          <CardTitle className="text-sm">{title}</CardTitle>
+          <Badge variant="outline" className="text-muted-foreground">
+            No data
+          </Badge>
+        </CardHeader>
+        <CardContent className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
+          <div className="rounded-full border border-dashed border-muted-foreground/30 p-3 text-muted-foreground">
+            <Icon aria-hidden className="h-5 w-5" />
+          </div>
+          <p className="text-xs text-muted-foreground">{helper}</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (variant === 'column') {
+    return (
+      <Card className="flex h-full flex-col border-dashed bg-muted/10">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base">{title}</CardTitle>
+            <Badge variant="outline" className="text-muted-foreground">
+              No data
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+          <div className="rounded-full border border-dashed border-muted-foreground/30 p-3 text-muted-foreground">
+            <Icon aria-hidden className="h-5 w-5" />
+          </div>
+          <p className="text-xs text-muted-foreground">{helper}</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="flex h-full flex-col border-dashed bg-muted/10">
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-base">{title}</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              {title === 'Traffic Monitor'
+                ? 'real user chats · sampled every 6h'
+                : 'rehearsed · on-demand'}
+            </p>
+          </div>
+          <Badge variant="outline" className="text-muted-foreground">
+            No data
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col items-center justify-center gap-4 py-10 text-center">
+        <div className="rounded-full border border-dashed border-muted-foreground/30 p-4 text-muted-foreground">
+          <Icon aria-hidden className="h-7 w-7" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium">{title} hasn&apos;t run yet</p>
+          <p className="max-w-sm text-xs text-muted-foreground">{helper}</p>
         </div>
       </CardContent>
     </Card>

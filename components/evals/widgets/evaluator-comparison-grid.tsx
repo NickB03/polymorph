@@ -1,3 +1,5 @@
+import { Rows3 } from 'lucide-react'
+
 import {
   getEvaluatorColor,
   getEvaluatorLabel
@@ -33,13 +35,25 @@ export function EvaluatorComparisonGrid({ data }: WidgetProps) {
   const cap = data.capability.latest
   const traf = data.trafficMonitor.latest
   if (!cap || !traf) {
+    const missing =
+      !cap && !traf ? 'Neither' : !cap ? 'Capability' : 'Traffic Monitor'
     return (
-      <Card>
+      <Card className="flex h-full flex-col border-dashed bg-muted/10">
         <CardHeader>
           <CardTitle className="text-base">Evaluator comparison</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Both suites must have data to render a comparison.
+        <CardContent className="flex flex-1 flex-col items-center justify-center gap-4 py-10 text-center">
+          <div className="rounded-full border border-dashed border-muted-foreground/30 p-3 text-muted-foreground">
+            <Rows3 aria-hidden className="h-5 w-5" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Comparison unavailable</p>
+            <p className="max-w-sm text-xs text-muted-foreground">
+              {missing === 'Neither'
+                ? 'Neither suite has run yet. Both are required to compute divergences.'
+                : `${missing} has no runs yet. Both suites are required to compute divergences.`}
+            </p>
+          </div>
         </CardContent>
       </Card>
     )

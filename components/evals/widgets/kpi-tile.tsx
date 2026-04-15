@@ -27,6 +27,14 @@ type Config = {
   sparkline?: boolean
 }
 
+const METRIC_LABELS: Record<Metric, string> = {
+  systemHealth: 'System Health',
+  passRate: 'Pass Rate',
+  overallScore: 'Overall Score',
+  sampleCount: 'Samples',
+  freshness: 'Freshness'
+}
+
 const HOUR = 60 * 60 * 1000
 
 function percent(v: number) {
@@ -48,10 +56,20 @@ export function KpiTile({ data, config, breakpoint }: WidgetProps<Config>) {
   const suite = data[config.suite]
   const latest = suite.latest
   if (!latest) {
+    const suiteLabel =
+      config.suite === 'capability' ? 'Capability' : 'Traffic Monitor'
     return (
-      <Card className="border">
-        <CardContent className="p-4 text-xs text-muted-foreground">
-          {config.metric} unavailable
+      <Card className="h-full border border-dashed bg-muted/10">
+        <CardContent className="flex h-full flex-col justify-between gap-2 p-4">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {METRIC_LABELS[config.metric]}
+          </span>
+          <span className="text-3xl font-semibold tabular-nums text-muted-foreground/60">
+            —
+          </span>
+          <span className="text-[11px] text-muted-foreground/70">
+            {suiteLabel} has no runs yet
+          </span>
         </CardContent>
       </Card>
     )
@@ -148,10 +166,17 @@ function SystemHealthPill({
   const suite = data[config.suite]
   const latest = suite.latest
   if (!latest) {
+    const suiteLabel =
+      config.suite === 'capability' ? 'Capability' : 'Traffic Monitor'
     return (
-      <Card className="border">
-        <CardContent className="p-4 text-xs text-muted-foreground">
-          No runs yet
+      <Card className="h-full border border-dashed bg-muted/10">
+        <CardContent className="flex h-full flex-col justify-center gap-2 p-4">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            System Health
+          </span>
+          <span className="text-sm text-muted-foreground">
+            {suiteLabel} has no runs yet
+          </span>
         </CardContent>
       </Card>
     )

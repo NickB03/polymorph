@@ -219,26 +219,26 @@ export const TEMPLATE_C: EvalsLayoutTemplate = {
     lg: [
       { i: 'header', x: 0, y: 0, w: 8, h: 1, static: true },
       { i: 'filters', x: 8, y: 0, w: 4, h: 1, static: true },
-      { i: 'ring-cap', x: 0, y: 1, w: 6, h: 3 },
-      { i: 'ring-traf', x: 6, y: 1, w: 6, h: 3 },
-      { i: 'what-changed', x: 0, y: 4, w: 12, h: 4 },
-      { i: 'feed', x: 0, y: 8, w: 12, h: 10 }
+      { i: 'ring-cap', x: 0, y: 1, w: 6, h: 6 },
+      { i: 'ring-traf', x: 6, y: 1, w: 6, h: 6 },
+      { i: 'what-changed', x: 0, y: 7, w: 12, h: 4 },
+      { i: 'feed', x: 0, y: 11, w: 12, h: 10 }
     ],
     md: [
       { i: 'header', x: 0, y: 0, w: 12, h: 1, static: true },
       { i: 'filters', x: 0, y: 1, w: 12, h: 1, static: true },
-      { i: 'ring-cap', x: 0, y: 2, w: 6, h: 3 },
-      { i: 'ring-traf', x: 6, y: 2, w: 6, h: 3 },
-      { i: 'what-changed', x: 0, y: 5, w: 12, h: 4 },
-      { i: 'feed', x: 0, y: 9, w: 12, h: 10 }
+      { i: 'ring-cap', x: 0, y: 2, w: 6, h: 6 },
+      { i: 'ring-traf', x: 6, y: 2, w: 6, h: 6 },
+      { i: 'what-changed', x: 0, y: 8, w: 12, h: 4 },
+      { i: 'feed', x: 0, y: 12, w: 12, h: 10 }
     ],
     sm: toStacked([
       { i: 'header', x: 0, y: 0, w: 12, h: 1, static: true },
       { i: 'filters', x: 0, y: 1, w: 12, h: 1, static: true },
-      { i: 'ring-cap', x: 0, y: 2, w: 12, h: 3 },
-      { i: 'ring-traf', x: 0, y: 5, w: 12, h: 3 },
-      { i: 'what-changed', x: 0, y: 8, w: 12, h: 4 },
-      { i: 'feed', x: 0, y: 12, w: 12, h: 10 }
+      { i: 'ring-cap', x: 0, y: 2, w: 12, h: 6 },
+      { i: 'ring-traf', x: 0, y: 8, w: 12, h: 6 },
+      { i: 'what-changed', x: 0, y: 14, w: 12, h: 4 },
+      { i: 'feed', x: 0, y: 18, w: 12, h: 10 }
     ])
   }
 }

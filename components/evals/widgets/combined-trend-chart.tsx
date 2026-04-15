@@ -1,6 +1,7 @@
 'use client'
 
 import { format } from 'date-fns'
+import { LineChart as LineChartIcon } from 'lucide-react'
 import { CartesianGrid, Legend, Line, LineChart, XAxis, YAxis } from 'recharts'
 
 import { buildCombinedTrend } from '@/lib/evals/helpers/combined-trend'
@@ -20,6 +21,25 @@ type Config = {
 
 export function CombinedTrendChart({ data, config }: WidgetProps<Config>) {
   const combined = buildCombinedTrend(data)
+  const title = config.title ?? 'Trend · both suites overlaid'
+  if (combined.length === 0) {
+    return (
+      <Card className="flex h-full flex-col border-dashed bg-muted/10">
+        <CardHeader>
+          <CardTitle className="text-base">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-1 flex-col items-center justify-center gap-3 py-10 text-center">
+          <div className="rounded-full border border-dashed border-muted-foreground/30 p-3 text-muted-foreground">
+            <LineChartIcon aria-hidden className="h-5 w-5" />
+          </div>
+          <p className="max-w-sm text-xs text-muted-foreground">
+            No trend data yet. Both suites need at least one run to overlay
+            their history.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
   return (
     <Card className="h-full">
       <CardHeader>
