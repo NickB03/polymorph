@@ -8,10 +8,12 @@ vi.mock('@/lib/db/with-rls', () => ({
   withRLS: mockWithRLS
 }))
 
+import { DEFAULT_TEMPLATE_ID } from './layout/templates'
 import {
   buildCapabilityDashboardData,
   buildTrafficMonitorDashboardData,
-  getEvalsDashboard
+  getEvalsDashboard,
+  getPreferredEvalsLayout
 } from './queries'
 
 const sampleRow = (
@@ -146,5 +148,50 @@ describe('getEvalsDashboard', () => {
     expect(mockWithRLS).toHaveBeenCalledWith('user-1', expect.any(Function))
     expect(data.capability.latest?.experimentName).toBe('cap-exp-1')
     expect(data.trafficMonitor.latest?.experimentName).toBe('tm-exp-1')
+  })
+})
+
+describe('getPreferredEvalsLayout', () => {
+  beforeEach(() => {
+    mockWithRLS.mockReset()
+  })
+
+  const stubTxReturning = (rows: Array<{ preferredLayout: string }>) =>
+    ({
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: async () => rows
+          })
+        })
+      })
+    }) as never
+
+  it('returns the stored preference when a row exists', async () => {
+    mockWithRLS.mockImplementation(async (_userId, cb) =>
+      cb(stubTxReturning([{ preferredLayout: 'a' }]))
+    )
+
+    const result = await getPreferredEvalsLayout('user-1')
+    expect(result).toBe('a')
+    expect(mockWithRLS).toHaveBeenCalledWith('user-1', expect.any(Function))
+  })
+
+  it('returns DEFAULT_TEMPLATE_ID when no row exists', async () => {
+    mockWithRLS.mockImplementation(async (_userId, cb) =>
+      cb(stubTxReturning([]))
+    )
+
+    const result = await getPreferredEvalsLayout('user-1')
+    expect(result).toBe(DEFAULT_TEMPLATE_ID)
+  })
+
+  it('falls back to default on malformed values', async () => {
+    mockWithRLS.mockImplementation(async (_userId, cb) =>
+      cb(stubTxReturning([{ preferredLayout: 'zzz' }]))
+    )
+
+    const result = await getPreferredEvalsLayout('user-1')
+    expect(result).toBe(DEFAULT_TEMPLATE_ID)
   })
 })
