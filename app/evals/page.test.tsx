@@ -5,6 +5,7 @@ const mockNotFound = vi.hoisted(() => vi.fn())
 const mockGetCurrentUser = vi.hoisted(() => vi.fn())
 const mockIsAdminUserId = vi.hoisted(() => vi.fn())
 const mockGetEvalsDashboard = vi.hoisted(() => vi.fn())
+const mockGetPreferredEvalsLayout = vi.hoisted(() => vi.fn())
 
 vi.mock('next/navigation', () => ({
   redirect: mockRedirect,
@@ -20,11 +21,22 @@ vi.mock('@/lib/auth/is-admin', () => ({
 }))
 
 vi.mock('@/lib/evals/queries', () => ({
-  getEvalsDashboard: mockGetEvalsDashboard
+  getEvalsDashboard: mockGetEvalsDashboard,
+  getPreferredEvalsLayout: mockGetPreferredEvalsLayout
 }))
 
-vi.mock('@/components/evals/dashboard', () => ({
-  default: ({ data }: { data: unknown }) => <div>{JSON.stringify(data)}</div>
+vi.mock('@/components/evals/dashboard-v2/dashboard', () => ({
+  EvalsDashboardV2: ({
+    data,
+    initialLayout
+  }: {
+    data: unknown
+    initialLayout: string
+  }) => (
+    <div data-testid="dashboard-v2" data-layout={initialLayout}>
+      {JSON.stringify(data)}
+    </div>
+  )
 }))
 
 describe('/evals page', () => {
@@ -47,7 +59,7 @@ describe('/evals page', () => {
     expect(mockNotFound).toHaveBeenCalled()
   })
 
-  it('loads dashboard data for the admin user', async () => {
+  it('loads dashboard data and preferred layout in parallel for admin users', async () => {
     mockGetCurrentUser.mockResolvedValue({ id: 'admin-1' })
     mockIsAdminUserId.mockReturnValue(true)
     mockGetEvalsDashboard.mockResolvedValue({
@@ -64,11 +76,13 @@ describe('/evals page', () => {
         lastUpdated: null
       }
     })
+    mockGetPreferredEvalsLayout.mockResolvedValue('b')
 
     const { default: EvalsPage } = await import('./page')
     const result = await EvalsPage()
 
     expect(mockGetEvalsDashboard).toHaveBeenCalledWith('admin-1')
+    expect(mockGetPreferredEvalsLayout).toHaveBeenCalledWith('admin-1')
     expect(result).toBeTruthy()
   })
 })
