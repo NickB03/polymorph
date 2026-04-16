@@ -10,7 +10,6 @@ export class SearchProviderError extends Error {
   readonly status?: number
   readonly retryable: boolean
   readonly retryAfterMs?: number
-  readonly cause?: unknown
 
   constructor(opts: {
     provider: SearchProviderName
@@ -20,13 +19,12 @@ export class SearchProviderError extends Error {
     retryAfterMs?: number
     cause?: unknown
   }) {
-    super(opts.message)
+    super(opts.message, { cause: opts.cause })
     this.name = 'SearchProviderError'
     this.provider = opts.provider
     this.status = opts.status
     this.retryable = opts.retryable
     this.retryAfterMs = opts.retryAfterMs
-    this.cause = opts.cause
   }
 }
 

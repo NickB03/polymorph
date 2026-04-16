@@ -102,11 +102,14 @@ export class SearXNGSearchProvider extends BaseSearchProvider {
       }
     } catch (error) {
       if (error instanceof SearchProviderError) throw error
+      const isParseError =
+        error instanceof SyntaxError ||
+        (error instanceof Error && error.message.includes('JSON'))
       throw new SearchProviderError({
         provider: 'searxng',
         message:
           error instanceof Error ? error.message : 'SearXNG search failed',
-        retryable: true,
+        retryable: !isParseError,
         cause: error
       })
     }
