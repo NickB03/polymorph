@@ -308,4 +308,53 @@ describe('createResearcher', () => {
     expect(Object.keys(config.tools)).not.toContain('getArtifactStatus')
     expect(Object.keys(config.tools)).not.toContain('restartArtifactPreview')
   })
+
+  it('applies pacing wrapper to search tool', () => {
+    MockToolLoopAgent.mockClear()
+
+    createResearcher({
+      model: 'gateway:google/gemini-3-flash',
+      searchMode: 'research'
+    })
+
+    const config = MockToolLoopAgent.mock.calls[0][0] as any
+    // The search tool should be wrapped via tool() (has _isTool marker from mock)
+    expect(config.tools.search._isTool).toBe(true)
+  })
+
+  it('applies pacing wrapper in both chat and research modes', () => {
+    for (const searchMode of ['chat', 'research'] as const) {
+      MockToolLoopAgent.mockClear()
+
+      createResearcher({
+        model: 'gateway:google/gemini-3-flash',
+        searchMode
+      })
+
+      const config = MockToolLoopAgent.mock.calls[0][0] as any
+      // Both modes should have the search tool wrapped via tool() calls
+      expect(config.tools.search._isTool).toBe(true)
+    }
+  })
+
+  it('creates request-local pacing per createResearcher call', () => {
+    MockToolLoopAgent.mockClear()
+
+    const agent1 = createResearcher({
+      model: 'gateway:google/gemini-3-flash',
+      searchMode: 'research'
+    })
+
+    const agent2 = createResearcher({
+      model: 'gateway:google/gemini-3-flash',
+      searchMode: 'research'
+    })
+
+    // Each call produces a separate agent with its own tools object
+    expect(agent1).not.toBe(agent2)
+    const config1 = MockToolLoopAgent.mock.calls[0][0] as any
+    const config2 = MockToolLoopAgent.mock.calls[1][0] as any
+    // Each agent got its own wrapped search tool (different object references)
+    expect(config1.tools.search).not.toBe(config2.tools.search)
+  })
 })

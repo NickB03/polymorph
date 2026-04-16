@@ -1,11 +1,23 @@
 // Exponential backoff retry utility
 
+import {
+  getRetryDelayFromSearchError,
+  isRetryableSearchError
+} from '@/lib/tools/search/providers/errors'
+
 export interface RetryOptions {
   maxRetries?: number
   initialDelayMs?: number
   maxDelayMs?: number
   backoffMultiplier?: number
   onRetry?: (error: unknown, attempt: number) => void
+  shouldRetry?: (error: unknown, attempt: number) => boolean
+  getRetryDelay?: (
+    error: unknown,
+    attempt: number,
+    defaultDelay: number
+  ) => number
+  jitter?: boolean
 }
 
 export async function retryWithBackoff<T>(
@@ -17,7 +29,10 @@ export async function retryWithBackoff<T>(
     initialDelayMs = 100,
     maxDelayMs = 5000,
     backoffMultiplier = 2,
-    onRetry
+    onRetry,
+    shouldRetry,
+    getRetryDelay,
+    jitter = false
   } = options
 
   let lastError: unknown
@@ -32,11 +47,23 @@ export async function retryWithBackoff<T>(
         throw error
       }
 
+      if (shouldRetry && !shouldRetry(error, attempt + 1)) {
+        throw error
+      }
+
       // Calculate delay with exponential backoff
-      const delay = Math.min(
+      let delay = Math.min(
         initialDelayMs * Math.pow(backoffMultiplier, attempt),
         maxDelayMs
       )
+
+      if (getRetryDelay) {
+        delay = getRetryDelay(error, attempt + 1, delay)
+      }
+
+      if (jitter) {
+        delay += Math.random() * 0.25 * delay
+      }
 
       if (onRetry) {
         onRetry(error, attempt + 1)
@@ -63,5 +90,22 @@ export async function retryDatabaseOperation<T>(
       const message = error instanceof Error ? error.message : String(error)
       console.log(`Retrying ${operationName} (attempt ${attempt}):`, message)
     }
+  })
+}
+
+// Specialized retry for search provider operations
+export async function retrySearchOperation<T>(
+  fn: () => Promise<T>,
+  onRetry?: (error: unknown, attempt: number) => void
+): Promise<T> {
+  return retryWithBackoff(fn, {
+    maxRetries: 2,
+    initialDelayMs: 500,
+    maxDelayMs: 5000,
+    jitter: true,
+    shouldRetry: error => isRetryableSearchError(error),
+    getRetryDelay: (error, _attempt, defaultDelay) =>
+      getRetryDelayFromSearchError(error) ?? defaultDelay,
+    onRetry
   })
 }

@@ -1,8 +1,10 @@
 import Exa from 'exa-js'
 
 import { SearchResults } from '@/lib/types'
+import { retrySearchOperation } from '@/lib/utils/retry'
 
 import { BaseSearchProvider } from './base'
+import { createHttpSearchError, SearchProviderError } from './errors'
 
 export class ExaSearchProvider extends BaseSearchProvider {
   async search(
@@ -16,12 +18,45 @@ export class ExaSearchProvider extends BaseSearchProvider {
     this.validateApiKey(apiKey, 'EXA')
 
     const exa = new Exa(apiKey)
-    const exaResults = await exa.searchAndContents(query, {
-      highlights: true,
-      numResults: maxResults,
-      includeDomains,
-      excludeDomains
-    })
+    const exaResults = await retrySearchOperation(
+      async () => {
+        try {
+          return await exa.searchAndContents(query, {
+            highlights: true,
+            numResults: maxResults,
+            includeDomains,
+            excludeDomains
+          })
+        } catch (error) {
+          if (error instanceof SearchProviderError) {
+            throw error
+          }
+          const status = (error as any)?.status
+          if (typeof status === 'number') {
+            throw createHttpSearchError(
+              'exa',
+              status,
+              (error as any)?.statusText ?? String(error),
+              (error as any)?.headers?.get?.('retry-after'),
+              error
+            )
+          }
+          throw new SearchProviderError({
+            provider: 'exa',
+            message:
+              error instanceof Error ? error.message : 'Exa search failed',
+            retryable: true,
+            cause: error
+          })
+        }
+      },
+      (error, attempt) => {
+        console.log(
+          `[Exa] Retry attempt ${attempt}:`,
+          error instanceof Error ? error.message : String(error)
+        )
+      }
+    )
 
     return {
       results: exaResults.results.map(result => ({

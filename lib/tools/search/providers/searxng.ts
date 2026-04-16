@@ -4,8 +4,10 @@ import {
   SearXNGResponse,
   SearXNGResult
 } from '@/lib/types'
+import { retrySearchOperation } from '@/lib/utils/retry'
 
 import { BaseSearchProvider } from './base'
+import { createHttpSearchError, SearchProviderError } from './errors'
 
 export class SearXNGSearchProvider extends BaseSearchProvider {
   async search(
@@ -18,46 +20,59 @@ export class SearXNGSearchProvider extends BaseSearchProvider {
     const apiUrl = process.env.SEARXNG_API_URL
     this.validateApiUrl(apiUrl, 'SEARXNG')
 
+    // Construct the URL with query parameters
+    const url = new URL(`${apiUrl}/search`)
+    url.searchParams.append('q', query)
+    url.searchParams.append('format', 'json')
+    url.searchParams.append('categories', 'general,images')
+
+    // Apply search depth settings
+    if (searchDepth === 'advanced') {
+      url.searchParams.append('time_range', '')
+      url.searchParams.append('safesearch', '0')
+      url.searchParams.append('engines', 'google,bing,duckduckgo,wikipedia')
+    } else {
+      url.searchParams.append('time_range', 'year')
+      url.searchParams.append('safesearch', '1')
+      url.searchParams.append('engines', 'google,bing')
+    }
+
+    // Apply domain filters if provided
+    if (includeDomains.length > 0) {
+      url.searchParams.append('site', includeDomains.join(','))
+    }
+
     try {
-      // Construct the URL with query parameters
-      const url = new URL(`${apiUrl}/search`)
-      url.searchParams.append('q', query)
-      url.searchParams.append('format', 'json')
-      url.searchParams.append('categories', 'general,images')
+      const data: SearXNGResponse = await retrySearchOperation(
+        async () => {
+          const response = await fetch(url.toString(), {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json'
+            }
+          })
 
-      // Apply search depth settings
-      if (searchDepth === 'advanced') {
-        url.searchParams.append('time_range', '')
-        url.searchParams.append('safesearch', '0')
-        url.searchParams.append('engines', 'google,bing,duckduckgo,wikipedia')
-      } else {
-        url.searchParams.append('time_range', 'year')
-        url.searchParams.append('safesearch', '1')
-        url.searchParams.append('engines', 'google,bing')
-      }
+          if (!response.ok) {
+            const errorText = await response.text().catch(() => '')
+            console.error(`SearXNG API error (${response.status}):`, errorText)
+            throw createHttpSearchError(
+              'searxng',
+              response.status,
+              response.statusText,
+              response.headers.get('retry-after'),
+              errorText
+            )
+          }
 
-      // Apply domain filters if provided
-      if (includeDomains.length > 0) {
-        url.searchParams.append('site', includeDomains.join(','))
-      }
-
-      // Fetch results from SearXNG
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json'
+          return response.json()
+        },
+        (error, attempt) => {
+          console.log(
+            `[SearXNG] Retry attempt ${attempt}:`,
+            error instanceof Error ? error.message : String(error)
+          )
         }
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => '')
-        console.error(`SearXNG API error (${response.status}):`, errorText)
-        throw new Error(
-          `SearXNG API error ${response.status}: ${response.statusText}`
-        )
-      }
-
-      const data: SearXNGResponse = await response.json()
+      )
 
       // Separate general results and image results, and limit to maxResults
       const generalResults = data.results
@@ -86,8 +101,14 @@ export class SearXNGSearchProvider extends BaseSearchProvider {
         number_of_results: data.number_of_results
       }
     } catch (error) {
-      console.error('SearXNG API error:', error)
-      throw error
+      if (error instanceof SearchProviderError) throw error
+      throw new SearchProviderError({
+        provider: 'searxng',
+        message:
+          error instanceof Error ? error.message : 'SearXNG search failed',
+        retryable: true,
+        cause: error
+      })
     }
   }
 }

@@ -3,8 +3,10 @@ import {
   SearchResults,
   SerperSearchResultItem
 } from '@/lib/types'
+import { retrySearchOperation } from '@/lib/utils/retry'
 
 import { SearchProvider } from './base'
+import { createHttpSearchError, SearchProviderError } from './errors'
 
 interface BraveWebResult {
   title?: string
@@ -68,7 +70,11 @@ export class BraveSearchProvider implements SearchProvider {
     }
   ): Promise<SearchResults> {
     if (!this.apiKey) {
-      throw new Error('Brave Search API key not configured')
+      throw new SearchProviderError({
+        provider: 'brave',
+        message: 'Brave Search API key not configured',
+        retryable: false
+      })
     }
 
     const contentTypes = options?.content_types || ['web']
@@ -80,22 +86,18 @@ export class BraveSearchProvider implements SearchProvider {
       number_of_results: 0
     }
 
-    // Execute searches in parallel for each content type
-    const promises: Promise<void>[] = []
-
+    // Execute searches sequentially to avoid burst rate-limit hits
     if (contentTypes.includes('web')) {
-      promises.push(this.searchWeb(query, maxResults, results))
+      await this.searchWeb(query, maxResults, results)
     }
 
     if (contentTypes.includes('video')) {
-      promises.push(this.searchVideos(query, maxResults, results))
+      await this.searchVideos(query, maxResults, results)
     }
 
     if (contentTypes.includes('image')) {
-      promises.push(this.searchImages(query, maxResults, results))
+      await this.searchImages(query, maxResults, results)
     }
-
-    await Promise.all(promises)
 
     // Update total count
     results.number_of_results = results.results.length
@@ -127,8 +129,12 @@ export class BraveSearchProvider implements SearchProvider {
         `Brave ${endpoint} search failed: ${response.status} ${response.statusText}`,
         body
       )
-      throw new Error(
-        `Brave ${endpoint} API error ${response.status}: ${response.statusText}`
+      throw createHttpSearchError(
+        'brave',
+        response.status,
+        response.statusText,
+        response.headers.get('retry-after'),
+        body
       )
     }
 
@@ -140,7 +146,15 @@ export class BraveSearchProvider implements SearchProvider {
     maxResults: number,
     results: SearchResults
   ): Promise<void> {
-    const data = await this.fetchBraveApi('web', query, maxResults)
+    const data = await retrySearchOperation(
+      () => this.fetchBraveApi('web', query, maxResults),
+      (error, attempt) => {
+        console.log(
+          `[Brave/web] Retry attempt ${attempt}:`,
+          error instanceof Error ? error.message : String(error)
+        )
+      }
+    )
     results.results = (data.web?.results || [])
       .slice(0, maxResults)
       .map((result: BraveWebResult) => ({
@@ -156,7 +170,15 @@ export class BraveSearchProvider implements SearchProvider {
     results: SearchResults
   ): Promise<void> {
     try {
-      const data = await this.fetchBraveApi('videos', query, maxResults)
+      const data = await retrySearchOperation(
+        () => this.fetchBraveApi('videos', query, maxResults),
+        (error, attempt) => {
+          console.log(
+            `[Brave/videos] Retry attempt ${attempt}:`,
+            error instanceof Error ? error.message : String(error)
+          )
+        }
+      )
 
       // Convert to SerperSearchResultItem format for compatibility
       results.videos = (data.results || []).slice(0, maxResults).map(
@@ -185,7 +207,15 @@ export class BraveSearchProvider implements SearchProvider {
     results: SearchResults
   ): Promise<void> {
     try {
-      const data = await this.fetchBraveApi('images', query, maxResults)
+      const data = await retrySearchOperation(
+        () => this.fetchBraveApi('images', query, maxResults),
+        (error, attempt) => {
+          console.log(
+            `[Brave/images] Retry attempt ${attempt}:`,
+            error instanceof Error ? error.message : String(error)
+          )
+        }
+      )
       results.images = (data.results || []).slice(0, maxResults).map(
         (result: BraveImageResult) =>
           ({
