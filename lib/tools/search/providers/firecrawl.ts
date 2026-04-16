@@ -5,7 +5,12 @@ import {
   FirecrawlWebResult
 } from '@/lib/firecrawl'
 import { BaseSearchProvider } from '@/lib/tools/search/providers/base'
+import {
+  createHttpSearchError,
+  SearchProviderError
+} from '@/lib/tools/search/providers/errors'
 import { SearchResults } from '@/lib/types'
+import { retrySearchOperation } from '@/lib/utils/retry'
 
 export class FirecrawlSearchProvider extends BaseSearchProvider {
   async search(
@@ -26,12 +31,47 @@ export class FirecrawlSearchProvider extends BaseSearchProvider {
     }
     sources.push('images')
 
-    const response = await firecrawl.search({
-      query,
-      sources,
-      limit: maxResults
-      // Note: Firecrawl Search API does not support includeDomains/excludeDomains yet...
-    })
+    const response = await retrySearchOperation(
+      async () => {
+        try {
+          return await firecrawl.search({
+            query,
+            sources,
+            limit: maxResults
+            // Note: Firecrawl Search API does not support includeDomains/excludeDomains yet...
+          })
+        } catch (error) {
+          if (error instanceof SearchProviderError) {
+            throw error
+          }
+          const status = (error as any)?.statusCode ?? (error as any)?.status
+          if (typeof status === 'number') {
+            throw createHttpSearchError(
+              'firecrawl',
+              status,
+              (error as any)?.statusText ?? String(error),
+              undefined,
+              error
+            )
+          }
+          throw new SearchProviderError({
+            provider: 'firecrawl',
+            message:
+              error instanceof Error
+                ? error.message
+                : 'Firecrawl search failed',
+            retryable: true,
+            cause: error
+          })
+        }
+      },
+      (error, attempt) => {
+        console.log(
+          `[Firecrawl] Retry attempt ${attempt}:`,
+          error instanceof Error ? error.message : String(error)
+        )
+      }
+    )
 
     const resources: (FirecrawlWebResult | FirecrawlNewsResult)[] = [
       ...(response.data?.web || []),

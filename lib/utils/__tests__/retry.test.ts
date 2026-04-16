@@ -1,6 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { retryDatabaseOperation, retryWithBackoff } from '../retry'
+import { SearchProviderError } from '@/lib/tools/search/providers/errors'
+
+import {
+  retryDatabaseOperation,
+  retrySearchOperation,
+  retryWithBackoff
+} from '../retry'
 
 describe('retryWithBackoff', () => {
   it('returns the result on first success', async () => {
@@ -135,5 +141,174 @@ describe('retryDatabaseOperation', () => {
     expect(fn).toHaveBeenCalledTimes(3) // initial + 2 retries
 
     vi.restoreAllMocks()
+  })
+})
+
+describe('retryWithBackoff shouldRetry/getRetryDelay/jitter', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('shouldRetry prevents retry on non-retryable errors', async () => {
+    const fn = vi.fn().mockRejectedValue(new Error('non-retryable'))
+
+    const promise = retryWithBackoff(fn, {
+      maxRetries: 3,
+      initialDelayMs: 100,
+      shouldRetry: () => false
+    })
+
+    await expect(promise).rejects.toThrow('non-retryable')
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  it('shouldRetry allows retry on retryable errors', async () => {
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('transient'))
+      .mockResolvedValue('ok')
+
+    const promise = retryWithBackoff(fn, {
+      maxRetries: 3,
+      initialDelayMs: 100,
+      shouldRetry: () => true
+    })
+
+    await vi.advanceTimersByTimeAsync(200)
+    const result = await promise
+
+    expect(result).toBe('ok')
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
+
+  it('getRetryDelay overrides default delay', async () => {
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('fail'))
+      .mockResolvedValue('ok')
+
+    const customDelay = 42
+    const promise = retryWithBackoff(fn, {
+      maxRetries: 1,
+      initialDelayMs: 1000,
+      getRetryDelay: () => customDelay
+    })
+
+    // Advance less than 42ms — should not resolve yet
+    await vi.advanceTimersByTimeAsync(41)
+    expect(fn).toHaveBeenCalledTimes(1)
+
+    // Advance past 42ms
+    await vi.advanceTimersByTimeAsync(2)
+    const result = await promise
+    expect(result).toBe('ok')
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
+
+  it('jitter adds randomness to delay', async () => {
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('fail'))
+      .mockResolvedValue('ok')
+
+    // Mock Math.random to return 1.0 (max jitter = 25% of delay)
+    vi.spyOn(Math, 'random').mockReturnValue(1.0)
+
+    const promise = retryWithBackoff(fn, {
+      maxRetries: 1,
+      initialDelayMs: 100,
+      jitter: true
+    })
+
+    // base delay 100 + jitter 0.25*100*1.0 = 125ms
+    await vi.advanceTimersByTimeAsync(124)
+    expect(fn).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(2)
+    const result = await promise
+    expect(result).toBe('ok')
+    expect(fn).toHaveBeenCalledTimes(2)
+
+    vi.restoreAllMocks()
+  })
+})
+
+describe('retrySearchOperation', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('retries SearchProviderError with retryable=true', async () => {
+    const retryableError = new SearchProviderError({
+      provider: 'tavily',
+      message: 'rate limited',
+      status: 429,
+      retryable: true
+    })
+
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(retryableError)
+      .mockResolvedValue('ok')
+
+    const promise = retrySearchOperation(fn)
+
+    // Advance past initial delay (500ms + jitter)
+    await vi.advanceTimersByTimeAsync(1000)
+    const result = await promise
+
+    expect(result).toBe('ok')
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not retry SearchProviderError with retryable=false', async () => {
+    const nonRetryableError = new SearchProviderError({
+      provider: 'tavily',
+      message: 'unauthorized',
+      status: 401,
+      retryable: false
+    })
+
+    const fn = vi.fn().mockRejectedValue(nonRetryableError)
+
+    const promise = retrySearchOperation(fn)
+    await expect(promise).rejects.toThrow('unauthorized')
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  it('honors retryAfterMs from error', async () => {
+    const errorWithRetryAfter = new SearchProviderError({
+      provider: 'brave',
+      message: 'rate limited',
+      status: 429,
+      retryable: true,
+      retryAfterMs: 2000
+    })
+
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(errorWithRetryAfter)
+      .mockResolvedValue('ok')
+
+    const promise = retrySearchOperation(fn)
+
+    // The delay should be retryAfterMs (2000) + jitter
+    // At 1999ms the retry should not have fired yet
+    await vi.advanceTimersByTimeAsync(1999)
+    expect(fn).toHaveBeenCalledTimes(1)
+
+    // Advance past 2000 + max jitter (500)
+    await vi.advanceTimersByTimeAsync(600)
+    const result = await promise
+    expect(result).toBe('ok')
+    expect(fn).toHaveBeenCalledTimes(2)
   })
 })

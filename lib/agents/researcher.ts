@@ -35,6 +35,68 @@ import {
   RESEARCH_MODE_PROMPT
 } from './prompts/search-mode-prompts'
 
+// Request-local pacing wrapper: adds minimum delay between consecutive
+// search calls from the same agent instance to prevent burst patterns.
+function wrapSearchToolWithPacing<
+  T extends ReturnType<typeof createSearchTool>
+>(originalTool: T, minGapMs: number = 200): T {
+  let lastCallTime = 0
+
+  return tool({
+    description: originalTool.description,
+    inputSchema: originalTool.inputSchema,
+    async *execute(params, context) {
+      const now = Date.now()
+      const elapsed = now - lastCallTime
+      if (lastCallTime > 0 && elapsed < minGapMs) {
+        const waitMs = minGapMs - elapsed
+        await new Promise<void>(resolve => {
+          if (context?.abortSignal?.aborted) {
+            resolve()
+            return
+          }
+          const timer = setTimeout(resolve, waitMs)
+          context?.abortSignal?.addEventListener(
+            'abort',
+            () => {
+              clearTimeout(timer)
+              resolve()
+            },
+            { once: true }
+          )
+        })
+        if (context?.abortSignal?.aborted) return
+      }
+      lastCallTime = Date.now()
+
+      const executeFunc = originalTool.execute
+      if (!executeFunc) {
+        throw new Error('Search tool execute function is not defined')
+      }
+
+      const result = executeFunc(params, context)
+      if (
+        result &&
+        typeof result === 'object' &&
+        Symbol.asyncIterator in result
+      ) {
+        for await (const chunk of result) {
+          yield chunk
+        }
+      } else {
+        const finalResult = await result
+        yield finalResult || {
+          state: 'complete' as const,
+          results: [],
+          images: [],
+          query: params.query,
+          number_of_results: 0
+        }
+      }
+    }
+  }) as T
+}
+
 // Enhanced wrapper function with better type safety and streaming support
 function wrapSearchToolForChatMode<
   T extends ReturnType<typeof createSearchTool>
@@ -179,6 +241,9 @@ export function createResearcher({
         searchTool = originalSearchTool
         break
     }
+
+    // Apply request-local pacing to prevent burst search patterns
+    searchTool = wrapSearchToolWithPacing(searchTool)
 
     // Strip interactive tools in eval mode — no human to resolve them
     if (isEvalMode) {

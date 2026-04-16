@@ -2,6 +2,10 @@ import { tool, UIToolInvocation } from 'ai'
 
 import { getSearchSchemaForModel } from '@/lib/schema/search'
 import { runAdvancedSearch } from '@/lib/tools/search/advanced-search'
+import {
+  isRetryableSearchError,
+  SearchProviderError
+} from '@/lib/tools/search/providers/errors'
 import { SearchResultItem, SearchResults } from '@/lib/types'
 import {
   getGeneralSearchProviderType,
@@ -199,11 +203,35 @@ export function createSearchTool(fullModel: string) {
               : 'Unknown search error'
           providerErrors.push(`${provider}: ${providerMessage}`)
 
+          const failureType = isRetryableSearchError(providerError)
+            ? 'transient'
+            : providerError instanceof SearchProviderError
+              ? 'permanent'
+              : 'unknown'
+
           const nextProvider = searchProviders[index + 1]
           if (nextProvider) {
             console.warn(
-              `[Search] Provider ${provider} failed: ${providerMessage}. Falling back to ${nextProvider}.`
+              `[Search] Provider ${provider} failed (${failureType}${providerError instanceof SearchProviderError ? `, status=${providerError.status}` : ''}): ${providerMessage}. Falling back to ${nextProvider}.`
             )
+            if (isRetryableSearchError(providerError)) {
+              await new Promise<void>(resolve => {
+                if (context?.abortSignal?.aborted) {
+                  resolve()
+                  return
+                }
+                const timer = setTimeout(resolve, 300)
+                context?.abortSignal?.addEventListener(
+                  'abort',
+                  () => {
+                    clearTimeout(timer)
+                    resolve()
+                  },
+                  { once: true }
+                )
+              })
+              if (context?.abortSignal?.aborted) return
+            }
             continue
           }
 
@@ -237,7 +265,14 @@ export function createSearchTool(fullModel: string) {
         searchResult.toolCallId = context.toolCallId
       }
 
-      console.log('completed search')
+      const usedProvider = searchProviders[providerErrors.length]
+      if (providerErrors.length > 0) {
+        console.log(
+          `[Search] Completed via ${usedProvider} after ${providerErrors.length} fallback(s)`
+        )
+      } else {
+        console.log(`[Search] Completed via ${usedProvider}`)
+      }
 
       // Yield final results with complete state
       yield {

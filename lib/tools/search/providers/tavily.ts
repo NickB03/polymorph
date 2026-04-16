@@ -1,7 +1,9 @@
 import { SearchResultImage, SearchResults } from '@/lib/types'
 import { sanitizeUrl } from '@/lib/utils'
+import { retrySearchOperation } from '@/lib/utils/retry'
 
 import { BaseSearchProvider } from './base'
+import { createHttpSearchError } from './errors'
 
 export class TavilySearchProvider extends BaseSearchProvider {
   async search(
@@ -25,36 +27,51 @@ export class TavilySearchProvider extends BaseSearchProvider {
 
     const includeImages = options?.includeImages ?? true
     const includeImageDescriptions = includeImages
-    const response = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
+
+    const data = await retrySearchOperation(
+      async () => {
+        const response = await fetch('https://api.tavily.com/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            api_key: apiKey,
+            query: filledQuery,
+            max_results: Math.max(maxResults, 5),
+            search_depth: searchDepth,
+            include_images: includeImages,
+            include_image_descriptions: includeImageDescriptions,
+            include_answers: true,
+            include_domains: includeDomains,
+            exclude_domains: excludeDomains
+          })
+        })
+
+        if (!response.ok) {
+          const body = await response.text().catch(() => '')
+          console.error(
+            `Tavily API error: ${response.status} ${response.statusText}`,
+            body
+          )
+          throw createHttpSearchError(
+            'tavily',
+            response.status,
+            response.statusText,
+            response.headers.get('retry-after'),
+            body
+          )
+        }
+
+        return response.json()
       },
-      body: JSON.stringify({
-        api_key: apiKey,
-        query: filledQuery,
-        max_results: Math.max(maxResults, 5),
-        search_depth: searchDepth,
-        include_images: includeImages,
-        include_image_descriptions: includeImageDescriptions,
-        include_answers: true,
-        include_domains: includeDomains,
-        exclude_domains: excludeDomains
-      })
-    })
-
-    if (!response.ok) {
-      const body = await response.text().catch(() => '')
-      console.error(
-        `Tavily API error: ${response.status} ${response.statusText}`,
-        body
-      )
-      throw new Error(
-        `Tavily API error ${response.status}: ${response.statusText}`
-      )
-    }
-
-    const data = await response.json()
+      (error, attempt) => {
+        console.log(
+          `[Tavily] Retry attempt ${attempt}:`,
+          error instanceof Error ? error.message : String(error)
+        )
+      }
+    )
     const processedImages = includeImageDescriptions
       ? (data.images || [])
           .map(
