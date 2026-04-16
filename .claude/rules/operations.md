@@ -8,7 +8,8 @@ Offline LLM-judge evaluation pipeline running as a Railway cron service (every 6
 
 - Samples recent chats from Supabase Postgres (parameterized SQL)
 - Runs 7 evaluators: 2 deterministic (`prechecks`, `tool-usage`) + 5 LLM-judge (`faithfulness`, `relevance`, `response-quality`, `safety`, `citation-accuracy`) via `asExperimentEvaluator` shells
-- Pushes results to Phoenix as experiments
+- Pushes results to Phoenix as experiments **and** persists eval summaries to the `eval_summaries` Postgres table, which powers the admin `/evals` dashboard (including the Traffic Monitor section)
+- Two distinct failure labels in the Railway logs: `PHOENIX UNAVAILABLE` (Phoenix HTTP layer down, experiment creation failed — suite never reached the DB write) vs `DB WRITE FAILED` (Phoenix experiment succeeded but the Postgres write failed — only the dashboard row is missing, investigate Postgres connectivity / RLS role / `eval_summaries` table). Threshold-gating errors still throw even if the DB write fails.
 - Key files: `sampler.ts`, `prechecks.ts`, `config.ts`, `evaluators/faithfulness.ts`, `evaluators/relevance.ts`, `evaluators/response-quality.ts`, `evaluators/safety.ts`, `evaluators/citation-accuracy.ts`, `evaluators/tool-usage.ts`
 
 ## Railway CLI (infrastructure, deploys, env vars)
@@ -17,6 +18,8 @@ Offline LLM-judge evaluation pipeline running as a Railway cron service (every 6
 - `railway logs -s phoenix` — stream Phoenix service logs
 - `railway logs -s phoenix --since 1h --filter "@level:error"` — recent errors
 - `railway logs -s polymorph-evals -n 50` — last 50 evals cron log lines
+- `railway logs -s polymorph-evals --filter "DB WRITE FAILED"` — grep for dashboard-write failures (Phoenix succeeded, Postgres write failed)
+- `railway logs -s polymorph-evals --filter "PHOENIX UNAVAILABLE"` — grep for Phoenix HTTP-layer failures (experiment never created; suite never reached DB write)
 - `railway variable list -s phoenix` — list Phoenix env vars
 - `railway variable set KEY=VALUE -s <service>` — update env var (triggers redeploy)
 - `railway restart -s phoenix` — restart without rebuild
