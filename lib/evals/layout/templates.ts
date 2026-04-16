@@ -1,9 +1,20 @@
 import type { EvalsLayoutTemplate, GridPosition, TemplateId } from './types'
 
-function toStacked(lg: GridPosition[]): GridPosition[] {
+// Stacks items vertically in a single full-width column for the sm breakpoint.
+// Only `i`, `h`, and `static` are used — x/y/w are computed automatically.
+function toStacked(
+  items: { i: string; h: number; static?: boolean }[]
+): GridPosition[] {
   let y = 0
-  return lg.map(p => {
-    const next = { i: p.i, x: 0, y, w: 12, h: p.h, static: p.static }
+  return items.map(p => {
+    const next: GridPosition = {
+      i: p.i,
+      x: 0,
+      y,
+      w: 12,
+      h: p.h,
+      static: p.static
+    }
     y += p.h
     return next
   })
@@ -93,21 +104,12 @@ export const TEMPLATE_A: EvalsLayoutTemplate = {
       { i: 'traffic-hero', x: 0, y: 5, w: 12, h: 8 },
       { i: 'capability-rail', x: 0, y: 13, w: 12, h: 4 }
     ],
-    // sm collapses the 5 KPI tiles into a single `kpi-health` pill that
-    // rolls up system health, pass rate, and alarm count. Stacking 5 individual
-    // tiles vertically on a phone forces the user to scroll past all of them
-    // before reaching the Traffic hero. The `kpi-tile` widget renders the
-    // SystemHealthPill variant when `config.metric === 'systemHealth'` AND
-    // `breakpoint === 'sm'`. Items `kpi-pass`, `kpi-overall`, `kpi-samples`,
-    // `kpi-freshness` intentionally stay in `items[]` but have no sm position
-    // — the templates test uses subset containment, so unrendered items are
-    // permitted at the cost of a one-way invariant. See wireframe
-    // `evals-v2-template-a-sm` (node id `WvlZ4`) in polymorph.pen.
+    // sm: collapse 5 KPI tiles into a single health pill. See wireframe WvlZ4.
     sm: toStacked([
-      { i: 'header', x: 0, y: 0, w: 12, h: 1, static: true },
-      { i: 'kpi-health', x: 0, y: 1, w: 12, h: 3 },
-      { i: 'traffic-hero', x: 0, y: 4, w: 12, h: 8 },
-      { i: 'capability-rail', x: 0, y: 12, w: 12, h: 4 }
+      { i: 'header', h: 1, static: true },
+      { i: 'kpi-health', h: 3 },
+      { i: 'traffic-hero', h: 8 },
+      { i: 'capability-rail', h: 4 }
     ])
   }
 }
@@ -174,12 +176,12 @@ export const TEMPLATE_B: EvalsLayoutTemplate = {
       { i: 'comparison-grid', x: 0, y: 12, w: 12, h: 8 }
     ],
     sm: toStacked([
-      { i: 'header', x: 0, y: 0, w: 12, h: 1, static: true },
-      { i: 'divergence', x: 0, y: 1, w: 12, h: 1 },
-      { i: 'traf-header', x: 0, y: 2, w: 12, h: 4 },
-      { i: 'cap-header', x: 0, y: 6, w: 12, h: 4 },
-      { i: 'combined-trend', x: 0, y: 10, w: 12, h: 6 },
-      { i: 'comparison-grid', x: 0, y: 16, w: 12, h: 8 }
+      { i: 'header', h: 1, static: true },
+      { i: 'divergence', h: 1 },
+      { i: 'traf-header', h: 4 },
+      { i: 'cap-header', h: 4 },
+      { i: 'combined-trend', h: 6 },
+      { i: 'comparison-grid', h: 8 }
     ])
   }
 }
@@ -233,12 +235,12 @@ export const TEMPLATE_C: EvalsLayoutTemplate = {
       { i: 'feed', x: 0, y: 12, w: 12, h: 10 }
     ],
     sm: toStacked([
-      { i: 'header', x: 0, y: 0, w: 12, h: 1, static: true },
-      { i: 'filters', x: 0, y: 1, w: 12, h: 1, static: true },
-      { i: 'ring-cap', x: 0, y: 2, w: 12, h: 6 },
-      { i: 'ring-traf', x: 0, y: 8, w: 12, h: 6 },
-      { i: 'what-changed', x: 0, y: 14, w: 12, h: 4 },
-      { i: 'feed', x: 0, y: 18, w: 12, h: 10 }
+      { i: 'header', h: 1, static: true },
+      { i: 'filters', h: 1, static: true },
+      { i: 'ring-cap', h: 6 },
+      { i: 'ring-traf', h: 6 },
+      { i: 'what-changed', h: 4 },
+      { i: 'feed', h: 10 }
     ])
   }
 }

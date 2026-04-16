@@ -1,11 +1,11 @@
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 const mockRedirect = vi.hoisted(() => vi.fn())
 const mockNotFound = vi.hoisted(() => vi.fn())
 const mockGetCurrentUser = vi.hoisted(() => vi.fn())
 const mockIsAdminUserId = vi.hoisted(() => vi.fn())
-const mockGetEvalsDashboard = vi.hoisted(() => vi.fn())
-const mockGetPreferredEvalsLayout = vi.hoisted(() => vi.fn())
+const mockGetEvalsDashboardWithLayout = vi.hoisted(() => vi.fn())
 
 vi.mock('next/navigation', () => ({
   redirect: mockRedirect,
@@ -21,8 +21,7 @@ vi.mock('@/lib/auth/is-admin', () => ({
 }))
 
 vi.mock('@/lib/evals/queries', () => ({
-  getEvalsDashboard: mockGetEvalsDashboard,
-  getPreferredEvalsLayout: mockGetPreferredEvalsLayout
+  getEvalsDashboardWithLayout: mockGetEvalsDashboardWithLayout
 }))
 
 vi.mock('@/components/evals/dashboard-v2/dashboard', () => ({
@@ -59,10 +58,8 @@ describe('/evals page', () => {
     expect(mockNotFound).toHaveBeenCalled()
   })
 
-  it('loads dashboard data and preferred layout in parallel for admin users', async () => {
-    mockGetCurrentUser.mockResolvedValue({ id: 'admin-1' })
-    mockIsAdminUserId.mockReturnValue(true)
-    mockGetEvalsDashboard.mockResolvedValue({
+  it('loads dashboard data and layout preference in a single transaction and wires them to EvalsDashboardV2', async () => {
+    const mockData = {
       capability: {
         latest: null,
         previous: null,
@@ -75,14 +72,21 @@ describe('/evals page', () => {
         trend: [],
         lastUpdated: null
       }
+    }
+    mockGetCurrentUser.mockResolvedValue({ id: 'admin-1' })
+    mockIsAdminUserId.mockReturnValue(true)
+    mockGetEvalsDashboardWithLayout.mockResolvedValue({
+      data: mockData,
+      layout: 'b'
     })
-    mockGetPreferredEvalsLayout.mockResolvedValue('b')
 
     const { default: EvalsPage } = await import('./page')
     const result = await EvalsPage()
+    render(result as React.ReactElement)
 
-    expect(mockGetEvalsDashboard).toHaveBeenCalledWith('admin-1')
-    expect(mockGetPreferredEvalsLayout).toHaveBeenCalledWith('admin-1')
-    expect(result).toBeTruthy()
+    expect(mockGetEvalsDashboardWithLayout).toHaveBeenCalledWith('admin-1')
+    const dashboard = screen.getByTestId('dashboard-v2')
+    expect(dashboard).toHaveAttribute('data-layout', 'b')
+    expect(dashboard).toHaveTextContent(JSON.stringify(mockData))
   })
 })

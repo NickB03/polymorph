@@ -17,14 +17,6 @@ import { SuiteHeaderCard } from './suite-header-card'
 import { TrendChartWidget } from './trend-chart-widget'
 import { WhatChangedCard } from './what-changed-card'
 
-function LatestRunDetailsPlaceholder() {
-  return null
-}
-
-function EmptyStatePlaceholder() {
-  return null
-}
-
 export const WIDGET_REGISTRY: Record<
   WidgetTypeId,
   ComponentType<WidgetProps>
@@ -41,9 +33,6 @@ export const WIDGET_REGISTRY: Record<
   'evaluator-comparison-grid':
     EvaluatorComparisonGrid as ComponentType<WidgetProps>,
   'divergence-banner': DivergenceBanner as ComponentType<WidgetProps>,
-  'latest-run-details':
-    LatestRunDetailsPlaceholder as ComponentType<WidgetProps>,
   'what-changed-card': WhatChangedCard as ComponentType<WidgetProps>,
-  'activity-feed': ActivityFeed as ComponentType<WidgetProps>,
-  'empty-state': EmptyStatePlaceholder as ComponentType<WidgetProps>
+  'activity-feed': ActivityFeed as ComponentType<WidgetProps>
 }

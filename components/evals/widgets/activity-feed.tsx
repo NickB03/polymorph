@@ -22,20 +22,11 @@ import type { EvalsDashboardData } from '@/lib/evals/types'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
+import { fmtDeltaPts, percent } from './shared/format'
 import type { WidgetProps } from './shared/widget-props'
 
 type Config = {
   expandedByDefault?: string | null
-}
-
-function percent(v: number) {
-  return `${Math.round(v * 100)}%`
-}
-
-function fmtPts(n: number) {
-  const rounded = Math.round(n * 100)
-  if (rounded === 0) return '0 pts'
-  return `${rounded > 0 ? '+' : ''}${rounded} pts`
 }
 
 function deltaState(delta: number | null): HealthState {
@@ -95,7 +86,7 @@ function FeedRowCard({
           <span
             className={`w-20 text-right text-xs font-medium tabular-nums ${stateColor(state)}`}
           >
-            {row.overallDelta != null ? fmtPts(row.overallDelta) : '—'}
+            {fmtDeltaPts(row.overallDelta) ?? '—'}
           </span>
           {row.snapshot.phoenixUrl ? (
             <a

@@ -13,6 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
+import { percent } from './shared/format'
 import { Sparkline } from './shared/sparkline'
 import type { WidgetProps } from './shared/widget-props'
 import { EvaluatorChipGrid } from './evaluator-chip-grid'
@@ -29,10 +30,6 @@ type Config = {
   showSparkline?: boolean
   showAlarmCount?: boolean
   alarmCount?: number
-}
-
-function percent(v: number) {
-  return `${Math.round(v * 100)}%`
 }
 
 export function SuiteHeaderCard({

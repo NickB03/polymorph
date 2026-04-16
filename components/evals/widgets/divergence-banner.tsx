@@ -3,15 +3,11 @@ import { computeDivergences } from '@/lib/evals/helpers/divergences'
 
 import { Card, CardContent } from '@/components/ui/card'
 
+import { fmtDeltaPts } from './shared/format'
 import type { WidgetProps } from './shared/widget-props'
 
 type Config = {
   topN?: number
-}
-
-function fmtPts(n: number) {
-  const rounded = Math.round(n * 100)
-  return `${rounded > 0 ? '+' : ''}${rounded} pts`
 }
 
 export function DivergenceBanner({ data, config }: WidgetProps<Config>) {
@@ -43,7 +39,7 @@ export function DivergenceBanner({ data, config }: WidgetProps<Config>) {
                   : 'font-medium text-amber-600 dark:text-amber-400'
               }
             >
-              {fmtPts(-d.delta)}
+              {fmtDeltaPts(-d.delta)}
             </span>
           </span>
         ))}

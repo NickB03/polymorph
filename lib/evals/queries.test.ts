@@ -13,6 +13,7 @@ import {
   buildCapabilityDashboardData,
   buildTrafficMonitorDashboardData,
   getEvalsDashboard,
+  getEvalsDashboardWithLayout,
   getPreferredEvalsLayout
 } from './queries'
 
@@ -193,5 +194,91 @@ describe('getPreferredEvalsLayout', () => {
 
     const result = await getPreferredEvalsLayout('user-1')
     expect(result).toBe(DEFAULT_TEMPLATE_ID)
+  })
+})
+
+describe('getEvalsDashboardWithLayout', () => {
+  beforeEach(() => {
+    mockWithRLS.mockReset()
+  })
+
+  it('returns data and layout from a single RLS transaction', async () => {
+    const capRow = sampleRow({
+      id: 'cap-1',
+      experimentName: 'cap-exp',
+      createdAt: new Date('2026-04-14T12:00:00.000Z')
+    })
+    const trafRow = sampleRow({
+      id: 'traf-1',
+      experimentName: 'traf-exp',
+      createdAt: new Date('2026-04-14T13:00:00.000Z')
+    })
+
+    let selectCall = 0
+    const tx = {
+      select: vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => {
+            selectCall++
+            if (selectCall <= 2) {
+              // Suite queries (capability, traffic-monitor)
+              return {
+                orderBy: vi.fn(() => ({
+                  limit: vi.fn(() => (selectCall === 1 ? [capRow] : [trafRow]))
+                }))
+              }
+            }
+            // Preference query
+            return {
+              limit: vi.fn(() => [{ preferredLayout: 'a' }])
+            }
+          })
+        }))
+      }))
+    } as never
+
+    mockWithRLS.mockImplementation(
+      async (_userId: string, cb: (tx: never) => Promise<unknown>) => cb(tx)
+    )
+
+    const result = await getEvalsDashboardWithLayout('user-1')
+
+    expect(mockWithRLS).toHaveBeenCalledTimes(1)
+    expect(result.data.capability.latest?.experimentName).toBe('cap-exp')
+    expect(result.data.trafficMonitor.latest?.experimentName).toBe('traf-exp')
+    expect(result.layout).toBe('a')
+  })
+
+  it('falls back to default layout when no preference exists', async () => {
+    const row = sampleRow({
+      createdAt: new Date('2026-04-14T12:00:00.000Z')
+    })
+
+    let selectCall = 0
+    const tx = {
+      select: vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => {
+            selectCall++
+            if (selectCall <= 2) {
+              return {
+                orderBy: vi.fn(() => ({
+                  limit: vi.fn(() => (selectCall === 1 ? [row] : []))
+                }))
+              }
+            }
+            return { limit: vi.fn(() => []) }
+          })
+        }))
+      }))
+    } as never
+
+    mockWithRLS.mockImplementation(
+      async (_userId: string, cb: (tx: never) => Promise<unknown>) => cb(tx)
+    )
+
+    const result = await getEvalsDashboardWithLayout('user-1')
+
+    expect(result.layout).toBe(DEFAULT_TEMPLATE_ID)
   })
 })

@@ -11,6 +11,7 @@ import {
 
 import { Card, CardContent } from '@/components/ui/card'
 
+import { fmtDeltaPts, percent } from './shared/format'
 import { Sparkline } from './shared/sparkline'
 import type { WidgetProps } from './shared/widget-props'
 
@@ -36,17 +37,6 @@ const METRIC_LABELS: Record<Metric, string> = {
 }
 
 const HOUR = 60 * 60 * 1000
-
-function percent(v: number) {
-  return `${Math.round(v * 100)}%`
-}
-
-function formatDeltaPts(delta: number | null) {
-  if (delta == null) return null
-  const rounded = Math.round(delta * 100)
-  if (rounded === 0) return '0 pts'
-  return `${rounded > 0 ? '+' : ''}${rounded} pts`
-}
 
 export function KpiTile({ data, config, breakpoint }: WidgetProps<Config>) {
   if (breakpoint === 'sm' && config.metric === 'systemHealth') {
@@ -91,15 +81,13 @@ export function KpiTile({ data, config, breakpoint }: WidgetProps<Config>) {
     case 'passRate':
       label = 'Pass Rate'
       value = percent(latest.passRate)
-      delta = formatDeltaPts(
-        previous ? latest.passRate - previous.passRate : null
-      )
+      delta = fmtDeltaPts(previous ? latest.passRate - previous.passRate : null)
       state = healthForScore(latest.passRate, 0.9, 0.8)
       break
     case 'overallScore':
       label = 'Overall Score'
       value = latest.overallScore.toFixed(2)
-      delta = formatDeltaPts(
+      delta = fmtDeltaPts(
         previous ? latest.overallScore - previous.overallScore : null
       )
       state = healthForScore(latest.overallScore, 0.85, 0.7)
@@ -186,7 +174,7 @@ function SystemHealthPill({
     f => f.severity === 'drop' || f.severity === 'critical'
   ).length
   const previous = suite.previous
-  const passDelta = formatDeltaPts(
+  const passDelta = fmtDeltaPts(
     previous ? latest.passRate - previous.passRate : null
   )
   const lastRun = suite.lastUpdated

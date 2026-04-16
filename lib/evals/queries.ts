@@ -116,6 +116,11 @@ export async function getEvalsDashboard(
   })
 }
 
+function parseTemplateId(value: unknown): TemplateId {
+  if (value === 'a' || value === 'b' || value === 'c') return value
+  return DEFAULT_TEMPLATE_ID
+}
+
 export async function getPreferredEvalsLayout(
   userId: string
 ): Promise<TemplateId> {
@@ -126,7 +131,28 @@ export async function getPreferredEvalsLayout(
       .where(eq(userEvalPreferences.userId, userId))
       .limit(1)
   )
-  const value = rows[0]?.preferredLayout
-  if (value === 'a' || value === 'b' || value === 'c') return value
-  return DEFAULT_TEMPLATE_ID
+  return parseTemplateId(rows[0]?.preferredLayout)
+}
+
+export async function getEvalsDashboardWithLayout(
+  userId: string
+): Promise<{ data: EvalsDashboardData; layout: TemplateId }> {
+  return withRLS(userId, async tx => {
+    const [capabilityRows, trafficRows, prefRows] = await Promise.all([
+      selectSuiteRows(tx, 'capability'),
+      selectSuiteRows(tx, 'traffic-monitor'),
+      tx
+        .select({ preferredLayout: userEvalPreferences.preferredLayout })
+        .from(userEvalPreferences)
+        .where(eq(userEvalPreferences.userId, userId))
+        .limit(1)
+    ])
+    return {
+      data: {
+        capability: buildCapabilityDashboardData(capabilityRows),
+        trafficMonitor: buildTrafficMonitorDashboardData(trafficRows)
+      },
+      layout: parseTemplateId(prefRows[0]?.preferredLayout)
+    }
+  })
 }

@@ -32,6 +32,18 @@ export function getEvaluatorLabel(key: string) {
   )
 }
 
+// Display order for evaluator grids. Intentionally differs from the
+// insertion order of EVALUATOR_LABELS (which leads with deterministic checks).
+export const EVALUATOR_DISPLAY_ORDER: Array<keyof typeof EVALUATOR_LABELS> = [
+  'faithfulness',
+  'relevance',
+  'safety',
+  'response_quality',
+  'citation_accuracy',
+  'tool_usage',
+  'deterministic_prechecks'
+]
+
 export function getEvaluatorColor(key: string) {
   return (
     EVALUATOR_COLORS[key as keyof typeof EVALUATOR_COLORS] ?? 'var(--chart-1)'

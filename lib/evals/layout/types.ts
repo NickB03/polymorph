@@ -10,10 +10,8 @@ export type WidgetTypeId =
   | 'evaluator-chip-grid'
   | 'evaluator-comparison-grid'
   | 'divergence-banner'
-  | 'latest-run-details'
   | 'what-changed-card'
   | 'activity-feed'
-  | 'empty-state'
 
 export type TemplateId = 'a' | 'b' | 'c'
 export type BreakpointKey = 'lg' | 'md' | 'sm'

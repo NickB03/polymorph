@@ -1,6 +1,7 @@
 import { Rows3 } from 'lucide-react'
 
 import {
+  EVALUATOR_DISPLAY_ORDER,
   getEvaluatorColor,
   getEvaluatorLabel
 } from '@/lib/evals/evaluator-labels'
@@ -9,23 +10,10 @@ import { stateColor } from '@/lib/evals/helpers/health-state'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
+import { percent } from './shared/format'
 import type { WidgetProps } from './shared/widget-props'
 
-const EVALUATOR_ORDER = [
-  'faithfulness',
-  'relevance',
-  'safety',
-  'response_quality',
-  'citation_accuracy',
-  'tool_usage',
-  'deterministic_prechecks'
-]
-
-function percent(v: number) {
-  return `${Math.round(v * 100)}%`
-}
-
-function fmtPts(n: number) {
+function fmtDeltaShort(n: number) {
   const rounded = Math.round(n * 100)
   if (rounded === 0) return '0'
   return `${rounded > 0 ? '+' : ''}${rounded}`
@@ -75,7 +63,7 @@ export function EvaluatorComparisonGrid({ data }: WidgetProps) {
           <span>Traffic Monitor</span>
           <span className="text-right">Δ</span>
         </div>
-        {EVALUATOR_ORDER.map(key => {
+        {EVALUATOR_DISPLAY_ORDER.map(key => {
           const capValue = cap.evaluatorScores[key] ?? 0
           const trafValue = traf.evaluatorScores[key] ?? 0
           const delta = capValue - trafValue
@@ -131,7 +119,7 @@ export function EvaluatorComparisonGrid({ data }: WidgetProps) {
                       : 'text-muted-foreground'
                 }`}
               >
-                {fmtPts(-delta)}
+                {fmtDeltaShort(-delta)}
               </span>
             </div>
           )

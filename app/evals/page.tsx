@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { isAdminUserId } from '@/lib/auth/is-admin'
-import { getEvalsDashboard, getPreferredEvalsLayout } from '@/lib/evals/queries'
+import { getEvalsDashboardWithLayout } from '@/lib/evals/queries'
 
 import { EvalsDashboardV2 } from '@/components/evals/dashboard-v2/dashboard'
 
@@ -21,10 +21,9 @@ export default async function EvalsPage() {
     return null
   }
 
-  const [data, initialLayout] = await Promise.all([
-    getEvalsDashboard(user.id),
-    getPreferredEvalsLayout(user.id)
-  ])
+  const { data, layout: initialLayout } = await getEvalsDashboardWithLayout(
+    user.id
+  )
 
   return (
     <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
