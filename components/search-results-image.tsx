@@ -81,6 +81,10 @@ const useFilteredImages = (images: SearchResultImage[]) => {
     const normalizedKey = normalizedImages.map(image => image.id).join('|')
 
     if (normalizedImages.length === 0) {
+      // why: the setStates in this effect all synchronise state with an async
+      // external source (the <img> preloading pipeline). React docs explicitly
+      // allow setState-in-effect for external-source subscription.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ status: 'empty', images: [] })
       previousIdsRef.current = normalizedKey
       return
@@ -184,6 +188,13 @@ const useCarouselMetrics = ({
     imageCount > 0 ? Math.min(selectedIndex + 1, imageCount) : 0
   )
 
+  // why: the three setStates below all mirror component state with an
+  // external source — the embla carousel API and the caller-owned
+  // selectedIndex prop. React docs explicitly allow setState-in-effect for
+  // external-source subscriptions, and restructuring these would either
+  // require lifting state into the parent or duplicating clamping logic on
+  // every render.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!api) {
       if (imageCount === 0) {
@@ -226,6 +237,7 @@ const useCarouselMetrics = ({
     const clampedIndex = Math.min(selectedIndex, imageCount - 1)
     api.scrollTo(clampedIndex, false)
   }, [api, selectedIndex, imageCount])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return { current }
 }
