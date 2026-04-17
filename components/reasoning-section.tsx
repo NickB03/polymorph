@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useMemo, useRef } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -38,7 +38,6 @@ export function ReasoningSection({
   // Show a short preview when collapsed; switch to a generic label when expanded
   const HEADER_PREVIEW_CHARS = 120
   const SANITIZE_MARKDOWN_PREVIEW = true
-  const [preview, setPreview] = useState<string | null>(null)
 
   const toPreview = (text: string) => {
     const firstLine = (text || '').split(/\r?\n/)[0] || ''
@@ -51,21 +50,25 @@ export function ReasoningSection({
       .replace(/^#{1,6}\s*/, '') // heading markers at start
   }
 
-  // Lock a preview during streaming to avoid frequent churn; refresh once when done
-  useEffect(() => {
+  // why: lock the first preview we see during streaming to avoid label churn;
+  // switch to the final string once streaming completes. The ref is a pure
+  // memoisation layer — the computed preview is identical whether served from
+  // cache or recomputed — and using state here would flag set-state-in-effect.
+  const streamingPreviewRef = useRef<string | null>(null)
+  /* eslint-disable react-hooks/refs */
+  const preview = useMemo(() => {
     const text = content?.reasoning || ''
-    if (!text) return
-    const prepared = toPreview(text)
-    if (!content.isDone) {
-      // Set once during streaming
-      if (!preview) setPreview(prepared.slice(0, HEADER_PREVIEW_CHARS))
-    } else {
-      // On completion, ensure preview reflects the final string (single update)
-      const finalPreview = prepared.slice(0, HEADER_PREVIEW_CHARS)
-      if (preview !== finalPreview) setPreview(finalPreview)
+    if (!text) return streamingPreviewRef.current
+    const prepared = toPreview(text).slice(0, HEADER_PREVIEW_CHARS)
+    if (content.isDone) {
+      streamingPreviewRef.current = prepared
+      return prepared
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [content.reasoning, content.isDone])
+    if (!streamingPreviewRef.current) streamingPreviewRef.current = prepared
+    return streamingPreviewRef.current
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toPreview is stable, inline
+  }, [content?.reasoning, content?.isDone])
+  /* eslint-enable react-hooks/refs */
 
   const headerLabel = isOpen
     ? 'Thoughts'
