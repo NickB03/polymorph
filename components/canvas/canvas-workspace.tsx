@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  Component,
-  type ErrorInfo,
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState
-} from 'react'
+import { Component, type ErrorInfo, type ReactNode, useState } from 'react'
 
 import {
   Activity,
@@ -194,40 +187,24 @@ export function CanvasWorkspace() {
   const canvas = useCanvas()
   const { state: activityState } = useActivity()
   const isMobile = useIsMobile()
-  const [activeTab, setActiveTab] = useState<ActiveTab>('preview')
+  const [storedActiveTab, setActiveTab] = useState<ActiveTab>('preview')
   const [codeSubTab, setCodeSubTab] = useState<CodeSubTab>('code')
-  const [hasUnseenActivity, setHasUnseenActivity] = useState(false)
-  const previousItemCountRef = useRef(activityState.items.length)
-  const hasActivity = activityState.items.length > 0
+  const [lastSeenActivityCount, setLastSeenActivityCount] = useState(0)
+  const itemCount = activityState.items.length
+  const hasActivity = itemCount > 0
 
-  useEffect(() => {
-    const previousItemCount = previousItemCountRef.current
+  // If the user had picked the activity tab and it disappeared, fall back to
+  // preview at render-time rather than mutating state in an effect.
+  let activeTab: ActiveTab = storedActiveTab
+  if (activeTab === 'activity' && !hasActivity) {
+    activeTab = 'preview'
+  }
 
-    if (activityState.items.length > previousItemCount) {
-      if (activeTab !== 'activity') {
-        setHasUnseenActivity(true)
-      }
-    }
+  const effectiveLastSeen = hasActivity ? lastSeenActivityCount : 0
+  const hasUnseenActivity =
+    hasActivity && activeTab !== 'activity' && itemCount > effectiveLastSeen
 
-    previousItemCountRef.current = activityState.items.length
-  }, [activityState.items.length, activeTab])
-
-  useEffect(() => {
-    if (!hasActivity) {
-      previousItemCountRef.current = 0
-      setHasUnseenActivity(false)
-
-      if (activeTab === 'activity') {
-        setActiveTab('preview')
-      }
-    }
-  }, [activeTab, hasActivity])
-
-  useEffect(() => {
-    if (activeTab === 'activity') {
-      setHasUnseenActivity(false)
-    }
-  }, [activeTab])
+  const markActivitySeen = () => setLastSeenActivityCount(itemCount)
 
   // Loading state
   if (canvas.isLoading) {
@@ -297,7 +274,10 @@ export function CanvasWorkspace() {
               ? 'bg-background shadow-sm text-foreground'
               : 'text-muted-foreground hover:text-foreground'
           )}
-          onClick={() => setActiveTab('activity')}
+          onClick={() => {
+            setActiveTab('activity')
+            markActivitySeen()
+          }}
           aria-label="Activity"
           data-testid="canvas-pill-activity"
         >
@@ -346,7 +326,10 @@ export function CanvasWorkspace() {
                     ? 'bg-background shadow-sm text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id)
+                  if (tab.id === 'activity') markActivitySeen()
+                }}
                 aria-label={tab.label}
                 data-testid={`canvas-mobile-${tab.id}-toggle`}
               >
