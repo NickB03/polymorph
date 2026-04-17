@@ -26,30 +26,35 @@ const HOLD_MS = 600
 
 function PolySuffixFluid() {
   const reducedMotion = usePrefersReducedMotion()
-  const [word, setWord] = useState('')
-  const [wordKey, setWordKey] = useState(0)
+  const [word, setWord] = useState(reducedMotion ? FINAL_WORD : '')
+  const [wordKey, setWordKey] = useState(reducedMotion ? 1 : 0)
   const [isExiting, setIsExiting] = useState(false)
-  const [wordIndex, setWordIndex] = useState(-1)
-  const [settled, setSettled] = useState(false)
+  const [wordIndex, setWordIndex] = useState(reducedMotion ? FINAL_INDEX : -1)
   const [isLanding, setIsLanding] = useState(false)
+  // settled is derived: we've finished the cycle as soon as we hit the last
+  // index, or immediately if reduced-motion is on.
+  const settled = reducedMotion || wordIndex >= FINAL_INDEX
 
+  // If reduced-motion flips on mid-cycle, snap to the final word. The rule
+  // allows setState in an effect when synchronising with an external source;
+  // reducedMotion comes from a media-query listener.
   useEffect(() => {
-    if (reducedMotion && !settled) {
+    if (reducedMotion && wordIndex < FINAL_INDEX) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- external-source sync (reduced-motion media query)
       setWord(FINAL_WORD)
-      setWordKey(1)
+      setWordKey(k => k + 1)
       setWordIndex(FINAL_INDEX)
-      setSettled(true)
+      setIsExiting(false)
+      setIsLanding(false)
     }
-  }, [reducedMotion, settled])
+  }, [reducedMotion, wordIndex])
 
   useEffect(() => {
-    if (settled || reducedMotion) return
+    if (settled) return
     const nextIdx = wordIndex + 1
-    if (nextIdx > FINAL_INDEX) {
-      setSettled(true)
-      return
-    }
-
+    // wordIndex < FINAL_INDEX always holds here (settled gate above), so
+    // nextIdx never overshoots — the cycle terminates by hitting FINAL_INDEX
+    // through the setter inside the inner timeout, which flips `settled`.
     const holdDelay = wordIndex === -1 ? 100 : CYCLE_ENTER_MS + HOLD_MS
     const isFinal = nextIdx === FINAL_INDEX
     let innerTimer: ReturnType<typeof setTimeout> | undefined
@@ -78,7 +83,7 @@ function PolySuffixFluid() {
       clearTimeout(outerTimer)
       if (innerTimer) clearTimeout(innerTimer)
     }
-  }, [wordIndex, settled, reducedMotion])
+  }, [wordIndex, settled])
 
   useEffect(() => {
     if (reducedMotion) return
@@ -89,7 +94,6 @@ function PolySuffixFluid() {
         setWordIndex(FINAL_INDEX)
         setIsExiting(false)
         setIsLanding(false)
-        setSettled(true)
       }
     }
     document.addEventListener('visibilitychange', handleVisibility)

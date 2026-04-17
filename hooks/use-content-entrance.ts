@@ -13,7 +13,11 @@ export function useContentEntrance(delayMs = 0) {
   const [hasEntered, setHasEntered] = useState(false)
 
   useEffect(() => {
-    // Mark as entered on first mount — the animation plays once via CSS
+    // why: intentional two-phase render so CSS sees a class transition from
+    // opacity-0 → animate-content-enter on mount. Setting hasEntered during
+    // render would skip the transition entirely; the React-blessed way to
+    // trigger a one-shot entrance animation is exactly this pattern.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasEntered(true)
   }, [])
 

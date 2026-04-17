@@ -299,7 +299,7 @@ export function OptionList({
   ])
 
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
-  const [activeIndex, setActiveIndex] = useState(() => {
+  const [storedActiveIndex, setActiveIndex] = useState(() => {
     const firstSelected = optionStates.findIndex(
       s => s.isSelected && !s.isDisabled
     )
@@ -308,20 +308,20 @@ export function OptionList({
     return firstEnabled >= 0 ? firstEnabled : 0
   })
 
-  useEffect(() => {
-    if (optionStates.length === 0) return
-    setActiveIndex(prev => {
-      if (
-        prev < 0 ||
-        prev >= optionStates.length ||
-        optionStates[prev].isDisabled
-      ) {
-        const firstEnabled = optionStates.findIndex(s => !s.isDisabled)
-        return firstEnabled >= 0 ? firstEnabled : 0
-      }
-      return prev
-    })
-  }, [optionStates])
+  // Clamp the keyboard-owned activeIndex at render time whenever optionStates
+  // changes (items added/removed/disabled). Previously this happened in an
+  // effect; deriving keeps behaviour identical and drops a setState-in-effect.
+  const activeIndex =
+    optionStates.length === 0
+      ? storedActiveIndex
+      : storedActiveIndex < 0 ||
+          storedActiveIndex >= optionStates.length ||
+          optionStates[storedActiveIndex].isDisabled
+        ? (() => {
+            const firstEnabled = optionStates.findIndex(s => !s.isDisabled)
+            return firstEnabled >= 0 ? firstEnabled : 0
+          })()
+        : storedActiveIndex
 
   const updateSelection = useCallback(
     (next: Set<string>) => {

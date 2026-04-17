@@ -101,6 +101,11 @@ const SidebarProvider = React.forwardRef<
       const cookieState =
         cookieValue !== null ? cookieValue === 'true' : defaultOpen
 
+      // why: SSR/hydration bridge — the server rendered with defaultOpen
+      // because cookies are not read during render; the layout effect reads
+      // the cookie on mount and promotes the real value. External-source
+      // sync (document.cookie) is the allowed setState-in-effect pattern.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       _setOpen(cookieState)
       setIsHydrated(true)
     }, [defaultOpen])

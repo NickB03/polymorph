@@ -66,6 +66,10 @@ export function useAudioVolume(
 
   useEffect(() => {
     if (!mediaStream) {
+      // why: mirror React state with the external AudioAnalyser — resetting
+      // to 0 when the media stream is gone. External-source sync is an
+      // explicitly-allowed setState-in-effect pattern per React docs.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVolume(0)
       volumeRef.current = 0
       return
@@ -265,6 +269,9 @@ export function useMultibandVolume(
   useEffect(() => {
     if (!mediaStream) {
       const emptyBands = new Array(opts.bands).fill(0)
+      // why: external-source sync — reset bands when the media stream is
+      // unmounted. Same rationale as the volume effect above.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFrequencyBands(emptyBands)
       bandsRef.current = emptyBands
       return
@@ -377,6 +384,9 @@ export const useBarAnimator = (
 
   useEffect(() => {
     indexRef.current = 0
+    // why: reset the animation's displayed frame whenever the sequence prop
+    // changes (external source — parent-supplied animation data).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentFrame(sequence[0] || [])
   }, [sequence])
 
@@ -513,6 +523,9 @@ const BarVisualizerComponent = React.forwardRef<
       ) {
         const bands = new Array(barCount).fill(0.2)
         fakeVolumeBandsRef.current = bands
+        // why: state-driven sync — when the visualisation leaves an
+        // "active" state, snap demo bands to the idle baseline.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setFakeVolumeBands(bands)
         return
       }

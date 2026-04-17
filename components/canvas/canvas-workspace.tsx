@@ -5,7 +5,6 @@ import {
   type ErrorInfo,
   type ReactNode,
   useEffect,
-  useRef,
   useState
 } from 'react'
 
@@ -194,40 +193,42 @@ export function CanvasWorkspace() {
   const canvas = useCanvas()
   const { state: activityState } = useActivity()
   const isMobile = useIsMobile()
-  const [activeTab, setActiveTab] = useState<ActiveTab>('preview')
+  const [storedActiveTab, setActiveTab] = useState<ActiveTab>('preview')
   const [codeSubTab, setCodeSubTab] = useState<CodeSubTab>('code')
-  const [hasUnseenActivity, setHasUnseenActivity] = useState(false)
-  const previousItemCountRef = useRef(activityState.items.length)
-  const hasActivity = activityState.items.length > 0
+  const [lastSeenActivityCount, setLastSeenActivityCount] = useState(0)
+  const itemCount = activityState.items.length
+  const hasActivity = itemCount > 0
 
-  useEffect(() => {
-    const previousItemCount = previousItemCountRef.current
+  // If the user had picked the activity tab and it disappeared, fall back to
+  // preview at render-time rather than mutating state in an effect.
+  let activeTab: ActiveTab = storedActiveTab
+  if (activeTab === 'activity' && !hasActivity) {
+    activeTab = 'preview'
+  }
 
-    if (activityState.items.length > previousItemCount) {
-      if (activeTab !== 'activity') {
-        setHasUnseenActivity(true)
-      }
-    }
+  const hasUnseenActivity =
+    hasActivity && activeTab !== 'activity' && itemCount > lastSeenActivityCount
 
-    previousItemCountRef.current = activityState.items.length
-  }, [activityState.items.length, activeTab])
+  const markActivitySeen = () => setLastSeenActivityCount(itemCount)
 
-  useEffect(() => {
-    if (!hasActivity) {
-      previousItemCountRef.current = 0
-      setHasUnseenActivity(false)
-
-      if (activeTab === 'activity') {
-        setActiveTab('preview')
-      }
-    }
-  }, [activeTab, hasActivity])
-
+  // why: keep lastSeenActivityCount in sync with external activity feed.
+  // - While the user is viewing Activity, newly arriving items are already
+  //   seen — promote the stored count so leaving and returning doesn't
+  //   surface a spurious unseen badge.
+  // - When items drop (e.g. new chat / clearActivity), clamp the stored
+  //   count back to the current total so the next real arrival is correctly
+  //   flagged as unseen. External-source sync is the allowed
+  //   setState-in-effect case.
   useEffect(() => {
     if (activeTab === 'activity') {
-      setHasUnseenActivity(false)
+      if (lastSeenActivityCount !== itemCount) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setLastSeenActivityCount(itemCount)
+      }
+    } else if (lastSeenActivityCount > itemCount) {
+      setLastSeenActivityCount(itemCount)
     }
-  }, [activeTab])
+  }, [activeTab, itemCount, lastSeenActivityCount])
 
   // Loading state
   if (canvas.isLoading) {
@@ -297,7 +298,10 @@ export function CanvasWorkspace() {
               ? 'bg-background shadow-sm text-foreground'
               : 'text-muted-foreground hover:text-foreground'
           )}
-          onClick={() => setActiveTab('activity')}
+          onClick={() => {
+            setActiveTab('activity')
+            markActivitySeen()
+          }}
           aria-label="Activity"
           data-testid="canvas-pill-activity"
         >
@@ -346,7 +350,10 @@ export function CanvasWorkspace() {
                     ? 'bg-background shadow-sm text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id)
+                  if (tab.id === 'activity') markActivitySeen()
+                }}
                 aria-label={tab.label}
                 data-testid={`canvas-mobile-${tab.id}-toggle`}
               >

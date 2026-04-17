@@ -23,6 +23,11 @@ export function GuestSignupNudge() {
     localStorage.setItem(SEARCH_COUNT_KEY, String(count))
 
     if (count >= NUDGE_THRESHOLD) {
+      // why: external-source sync — localStorage is the source of truth for
+      // the cumulative guest search count across all nudge instances.
+      // Promoting the threshold crossing to React state from inside an
+      // effect is the allowed setState-in-effect case.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisible(true)
     }
   }, [])

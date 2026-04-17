@@ -118,8 +118,14 @@ export function useVoiceConversation({
     lastError: inputError
   } = useVoiceInput({ onTranscript })
 
-  // Keep ref in sync so onTranscript can call it without circular deps
-  stopListeningRef.current = stopListening
+  // Keep ref in sync so onTranscript can call it without circular deps.
+  // why: stopListening is produced by useVoiceInput (below this hook in
+  // declaration order) but referenced by onTranscript (produced above),
+  // forming a cycle. Writing the ref in an effect lets onTranscript read the
+  // latest stopListening when the speech-recognition runtime invokes it.
+  useEffect(() => {
+    stopListeningRef.current = stopListening
+  }, [stopListening])
 
   const startVoice = useCallback(() => {
     if (!isSupported) return
@@ -249,6 +255,9 @@ export function useVoiceConversation({
       playbackState === 'idle'
     ) {
       if (config.autoListen) {
+        // why: voice state-machine transition driven by the external TTS
+        // player reaching idle — a textbook external-source subscription.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setVoiceState('listening')
         void startListening()
       } else {
@@ -321,6 +330,9 @@ export function useVoiceConversation({
     if (inputError) return
 
     if (config.autoListen) {
+      // why: voice state-machine recovery — after a TTS player error we
+      // resume listening (external-source subscription via playerError).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVoiceState('listening')
       void startListening()
       return

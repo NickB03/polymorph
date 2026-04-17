@@ -19,6 +19,8 @@ import {
 } from './ui/dropdown-menu'
 
 export function SearchModeSelector() {
+  // Deterministic initial state — matches SSR output so hydration is stable.
+  // The cookie-derived value is promoted on mount in the effect below.
   const [value, setValue] = useState<SearchMode>('chat')
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
@@ -32,15 +34,15 @@ export function SearchModeSelector() {
           ? 'research'
           : savedMode
     if (isValidSearchMode(mapped)) {
+      // why: external-source sync — the cookie is the source of truth for
+      // the persisted mode. Promoting its value on mount is the allowed
+      // setState-in-effect case.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValue(mapped)
-      // Overwrite cookie if it had an old value
-      if (mapped !== savedMode) {
-        syncSearchMode(mapped)
-      }
+      if (mapped !== savedMode) syncSearchMode(mapped)
     } else if (savedMode) {
-      // Clean up invalid cookie value
+      // Clean up invalid cookie value; state stays at 'chat'.
       syncSearchMode('chat')
-      setValue('chat')
     }
   }, [])
 

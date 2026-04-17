@@ -27,13 +27,19 @@ export function CanvasCompileProgress({
   hasPreview,
   onAskAiToFix
 }: CanvasCompileProgressProps) {
+  // Reset elapsed time when startedAt changes (React's recommended
+  // "reset state on prop change" pattern — setState during render is
+  // only rendered, not committed, avoiding an extra effect round-trip).
+  const [lastStartedAt, setLastStartedAt] = useState(progress.startedAt)
   const [elapsedTime, setElapsedTime] = useState(() =>
     getElapsedTime(progress.startedAt)
   )
+  if (progress.startedAt !== lastStartedAt) {
+    setLastStartedAt(progress.startedAt)
+    setElapsedTime(getElapsedTime(progress.startedAt))
+  }
 
   useEffect(() => {
-    setElapsedTime(getElapsedTime(progress.startedAt))
-
     if (progress.outcome) {
       return
     }
@@ -49,6 +55,10 @@ export function CanvasCompileProgress({
     { outcome: 'success' | 'failed'; summary: string; at: string } | undefined
   >()
 
+  // why: `choice.at` records the wall-clock moment the compile outcome was
+  // observed — a timestamp read that must happen at commit time, not during
+  // render, so the effect + setState pattern is the correct choice here.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (progress.outcome === 'success') {
       setChoice({
@@ -66,6 +76,7 @@ export function CanvasCompileProgress({
       setChoice(undefined)
     }
   }, [progress.outcome])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return (
     <div

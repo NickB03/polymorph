@@ -38,27 +38,43 @@ export function VideoCarouselDialog({
   const [current, setCurrent] = useState(initialIndex + 1) // Initialize with initialIndex
   const [count, setCount] = useState(0)
   const videoRefs = useRef<(HTMLIFrameElement | null)[]>([])
+  const currentRef = useRef(current)
+
+  // Mirror `current` into a ref so the select handler always sees the latest
+  // value without being re-registered on every change (avoids listener leaks
+  // and stale closures).
+  useEffect(() => {
+    currentRef.current = current
+  }, [current])
 
   // Update the current and count state when the carousel api is available
   useEffect(() => {
-    if (api) {
-      setCount(api.scrollSnapList().length)
-      // Initialize current based on initialIndex
-      setCurrent(api.selectedScrollSnap() + 1)
+    if (!api) return
 
-      api.on('select', () => {
-        const newCurrent = api.selectedScrollSnap() + 1
-        if (current !== undefined && videoRefs.current[current - 1]) {
-          const prevVideo = videoRefs.current[current - 1]
-          prevVideo?.contentWindow?.postMessage(
-            '{"event":"command","func":"pauseVideo","args":""}',
-            '*'
-          )
-        }
-        setCurrent(newCurrent)
-      })
+    // why: external-source subscription — seed count + current from the
+    // embla carousel API when it mounts. React docs explicitly allow
+    // setState-in-effect for external-source sync.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCount(api.scrollSnapList().length)
+    setCurrent(api.selectedScrollSnap() + 1)
+
+    const handleSelect = () => {
+      const newCurrent = api.selectedScrollSnap() + 1
+      const prev = currentRef.current
+      if (prev !== undefined && videoRefs.current[prev - 1]) {
+        videoRefs.current[prev - 1]?.contentWindow?.postMessage(
+          '{"event":"command","func":"pauseVideo","args":""}',
+          '*'
+        )
+      }
+      setCurrent(newCurrent)
     }
-  }, [api, current]) // Keep dependency on current to stop previous video
+
+    api.on('select', handleSelect)
+    return () => {
+      api.off('select', handleSelect)
+    }
+  }, [api])
 
   // Scroll to the initial index when the dialog opens and API is ready
   useEffect(() => {

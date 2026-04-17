@@ -76,6 +76,11 @@ export function Chat({
   // Stable ref for canvas actions so the auto-open effect doesn't depend
   // on the canvas context object (which changes on every state update).
   const canvasRef = useRef(canvas)
+  // why: live-ref pattern — keep the ref in sync with the latest canvas on
+  // every render so effects/event handlers read a current value without
+  // adding canvas itself to their dependency arrays (the canvas object
+  // changes every render).
+  // eslint-disable-next-line react-hooks/refs
   canvasRef.current = canvas
 
   // Mark artifacts as "opened" only after they've successfully loaded.
@@ -185,6 +190,11 @@ export function Chat({
     error
   } = useChat({
     id: chatId, // use the client-generated or provided chatId
+    // why: prepareSendMessagesRequest is invoked at request time (not render),
+    // so reading the latest guest canvas token from a ref is exactly the
+    // intended pattern — the lint rule cannot distinguish the syntactic
+    // render location from the runtime callback invocation.
+    // eslint-disable-next-line react-hooks/refs
     transport: new DefaultChatTransport({
       api: '/api/chat',
       prepareSendMessagesRequest: ({ messages, trigger, messageId }) =>
@@ -352,6 +362,10 @@ export function Chat({
 
     stop()
     stopVoiceRef.current?.()
+    // why: URL-driven chat switch — syncing chatId (and the derived local
+    // state below) from the route param is the one legitimate setState-in-
+    // effect pattern the React docs call out (external-source subscription).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setChatId(providedId)
     setInput('')
     setUploadedFiles([])
@@ -367,7 +381,7 @@ export function Chat({
     syntheticCompileStartRef.current = null
     cv.setGuestCanvasToken(null)
     cv.closeWorkspace()
-  }, [chatId, providedId, stop]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chatId, providedId, stop])
 
   useEffect(() => {
     const handleCanvasAiUpdate = (event: Event) => {
@@ -484,7 +498,7 @@ export function Chat({
         }
       }
     }
-  }, [messages, closeArtifactSidebar, isGuest]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [messages, closeArtifactSidebar, isGuest])
 
   // Detect streaming canvas tool calls and show the progress tracker early.
   // Without this, the tracker only appears during sub-second server-side
@@ -823,13 +837,18 @@ export function Chat({
 
   // Voice conversation loop (Phase 3) — hook is always called (React rules)
   // but UI is only rendered when NEXT_PUBLIC_ENABLE_VOICE=true
-  const voiceConfigRef = useRef(loadVoiceConfig())
+  const voiceConfig = useMemo(() => loadVoiceConfig(), [])
   const voiceConversation = useVoiceConversation({
     sendMessage: msg => sendMessage(msg),
     status,
     messages,
-    config: voiceConfigRef.current
+    config: voiceConfig
   })
+  // why: late-bound callback — handleNewChat (declared above useChat/useVoice)
+  // needs to stop the voice loop, but useVoiceConversation can only be set up
+  // after useChat returns sendMessage. A ref bridges the cycle; writing it in
+  // render is the intentional pattern for exposing the stopVoice handle.
+  // eslint-disable-next-line react-hooks/refs, react-hooks/immutability
   stopVoiceRef.current = voiceConversation.stopVoice
   const voiceEnabled = isVoiceEnabled()
 

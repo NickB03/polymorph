@@ -60,18 +60,18 @@ export function ChatMessages({
   const [userModifiedStates, setUserModifiedStates] = useState<
     Record<string, boolean>
   >({})
-  // Cache citation maps per message to avoid recomputing from all messages during streaming
-  const citationCacheRef = useRef<
-    Record<
+  // Per-message citation cache keyed by chatId. Stored on a ref rather than
+  // state because it is a pure memoisation layer — the computed result is
+  // identical whether served from cache or recomputed — and forcing this
+  // through state/useMemo would either rerun on every sections change (losing
+  // the cache) or require mutating a useMemo'd value (immutability rule).
+  const citationCacheRef = useRef<{
+    chatId: string | undefined
+    cache: Record<
       string,
       Record<string, Record<number, import('@/lib/types').SearchResultItem>>
     >
-  >({})
-  const prevChatIdRef = useRef(chatId)
-  if (prevChatIdRef.current !== chatId) {
-    prevChatIdRef.current = chatId
-    citationCacheRef.current = {}
-  }
+  }>({ chatId, cache: {} })
   const isLoading = isChatLoading(status)
 
   const { open: sidebarOpen } = useSidebar()
@@ -83,13 +83,23 @@ export function ChatMessages({
   )
   const { isResearchMode } = useActivityFeed(allMessages, status, chatId)
 
-  // Extract citation maps from all messages in all sections
+  // Extract citation maps from all messages in all sections.
+  // why: citationCacheRef is a pure memoisation cache — mutating it inside
+  // this useMemo does not affect render output (result is identical cached vs.
+  // recomputed) and the alternative (per-render recompute of every message's
+  // citations during streaming) is measurably slower in long chats.
+  /* eslint-disable react-hooks/refs */
   const allCitationMaps = useMemo(() => {
     const result: Record<
       string,
       Record<number, import('@/lib/types').SearchResultItem>
     > = {}
-    const cache = citationCacheRef.current
+    const store = citationCacheRef.current
+    if (store.chatId !== chatId) {
+      store.chatId = chatId
+      store.cache = {}
+    }
+    const cache = store.cache
     sections.forEach((section, sIdx) => {
       const isLastSection = sIdx === sections.length - 1
       for (const msg of [section.userMessage, ...section.assistantMessages]) {
@@ -107,7 +117,8 @@ export function ChatMessages({
       }
     })
     return result
-  }, [sections, isLoading])
+  }, [sections, isLoading, chatId])
+  /* eslint-enable react-hooks/refs */
 
   if (!sections.length) return null
 
