@@ -2,7 +2,7 @@ import { SearchResultImage, SearchResults } from '@/lib/types'
 import { sanitizeUrl } from '@/lib/utils'
 import { retrySearchOperation } from '@/lib/utils/retry'
 
-import { BaseSearchProvider } from './base'
+import { BaseSearchProvider, SearchTelemetryHook } from './base'
 import { createHttpSearchError } from './errors'
 
 export class TavilySearchProvider extends BaseSearchProvider {
@@ -16,7 +16,8 @@ export class TavilySearchProvider extends BaseSearchProvider {
       type?: 'general' | 'optimized'
       content_types?: Array<'web' | 'video' | 'image' | 'news'>
       includeImages?: boolean
-    }
+    },
+    telemetryHook?: SearchTelemetryHook
   ): Promise<SearchResults> {
     const apiKey = process.env.TAVILY_API_KEY
     this.validateApiKey(apiKey, 'TAVILY')
@@ -65,11 +66,12 @@ export class TavilySearchProvider extends BaseSearchProvider {
 
         return response.json()
       },
-      (error, attempt) => {
+      (error, attempt, delayMs) => {
         console.log(
           `[Tavily] Retry attempt ${attempt}:`,
           error instanceof Error ? error.message : String(error)
         )
+        telemetryHook?.(error, attempt, delayMs)
       }
     )
     const processedImages = includeImageDescriptions

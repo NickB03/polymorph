@@ -5,7 +5,7 @@ import {
 } from '@/lib/types'
 import { retrySearchOperation } from '@/lib/utils/retry'
 
-import { SearchProvider } from './base'
+import { SearchProvider, SearchTelemetryHook } from './base'
 import { createHttpSearchError, SearchProviderError } from './errors'
 
 interface BraveWebResult {
@@ -67,7 +67,8 @@ export class BraveSearchProvider implements SearchProvider {
     options?: {
       type?: 'general' | 'optimized'
       content_types?: Array<'web' | 'video' | 'image' | 'news'>
-    }
+    },
+    telemetryHook?: SearchTelemetryHook
   ): Promise<SearchResults> {
     if (!this.apiKey) {
       throw new SearchProviderError({
@@ -88,15 +89,15 @@ export class BraveSearchProvider implements SearchProvider {
 
     // Execute searches sequentially to avoid burst rate-limit hits
     if (contentTypes.includes('web')) {
-      await this.searchWeb(query, maxResults, results)
+      await this.searchWeb(query, maxResults, results, telemetryHook)
     }
 
     if (contentTypes.includes('video')) {
-      await this.searchVideos(query, maxResults, results)
+      await this.searchVideos(query, maxResults, results, telemetryHook)
     }
 
     if (contentTypes.includes('image')) {
-      await this.searchImages(query, maxResults, results)
+      await this.searchImages(query, maxResults, results, telemetryHook)
     }
 
     // Update total count
@@ -144,15 +145,17 @@ export class BraveSearchProvider implements SearchProvider {
   private async searchWeb(
     query: string,
     maxResults: number,
-    results: SearchResults
+    results: SearchResults,
+    telemetryHook?: SearchTelemetryHook
   ): Promise<void> {
     const data = await retrySearchOperation(
       () => this.fetchBraveApi('web', query, maxResults),
-      (error, attempt) => {
+      (error, attempt, delayMs) => {
         console.log(
           `[Brave/web] Retry attempt ${attempt}:`,
           error instanceof Error ? error.message : String(error)
         )
+        telemetryHook?.(error, attempt, delayMs)
       }
     )
     results.results = (data.web?.results || [])
@@ -167,16 +170,18 @@ export class BraveSearchProvider implements SearchProvider {
   private async searchVideos(
     query: string,
     maxResults: number,
-    results: SearchResults
+    results: SearchResults,
+    telemetryHook?: SearchTelemetryHook
   ): Promise<void> {
     try {
       const data = await retrySearchOperation(
         () => this.fetchBraveApi('videos', query, maxResults),
-        (error, attempt) => {
+        (error, attempt, delayMs) => {
           console.log(
             `[Brave/videos] Retry attempt ${attempt}:`,
             error instanceof Error ? error.message : String(error)
           )
+          telemetryHook?.(error, attempt, delayMs)
         }
       )
 
@@ -204,16 +209,18 @@ export class BraveSearchProvider implements SearchProvider {
   private async searchImages(
     query: string,
     maxResults: number,
-    results: SearchResults
+    results: SearchResults,
+    telemetryHook?: SearchTelemetryHook
   ): Promise<void> {
     try {
       const data = await retrySearchOperation(
         () => this.fetchBraveApi('images', query, maxResults),
-        (error, attempt) => {
+        (error, attempt, delayMs) => {
           console.log(
             `[Brave/images] Retry attempt ${attempt}:`,
             error instanceof Error ? error.message : String(error)
           )
+          telemetryHook?.(error, attempt, delayMs)
         }
       )
       results.images = (data.results || []).slice(0, maxResults).map(

@@ -3,17 +3,11 @@ import localFont from 'next/font/local'
 
 import { Analytics } from '@vercel/analytics/next'
 
-import { isAdminUserId } from '@/lib/auth/is-admin'
-import { createClient } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 import { createAppMetadata } from '@/lib/utils/app-metadata'
 
-import { SidebarProvider } from '@/components/ui/sidebar'
 import { Toaster } from '@/components/ui/sonner'
 
-import AppSidebar from '@/components/app-sidebar'
-import { CanvasRoot } from '@/components/canvas/canvas-root'
-import Header from '@/components/header'
 import { ThemeProvider } from '@/components/theme-provider'
 
 import './globals.css'
@@ -32,25 +26,11 @@ export const viewport: Viewport = {
   viewportFit: 'cover'
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  let user = null
-  let isAdmin = false
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (supabaseUrl && supabaseAnonKey) {
-    const supabase = await createClient()
-    const {
-      data: { user: supabaseUser }
-    } = await supabase.auth.getUser()
-    user = supabaseUser
-    isAdmin = isAdminUserId(supabaseUser?.id)
-  }
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -65,18 +45,10 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider defaultOpen>
-            <AppSidebar hasUser={!!user} />
-            <div className="flex flex-col flex-1 min-w-0">
-              <Header user={user} isAdmin={isAdmin} />
-              <main className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
-                <CanvasRoot>{children}</CanvasRoot>
-              </main>
-            </div>
-          </SidebarProvider>
-          <Toaster />
-          <Analytics />
+          {children}
         </ThemeProvider>
+        <Toaster />
+        <Analytics />
       </body>
     </html>
   )

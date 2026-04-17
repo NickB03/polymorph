@@ -4,7 +4,10 @@ import {
   FirecrawlNewsResult,
   FirecrawlWebResult
 } from '@/lib/firecrawl'
-import { BaseSearchProvider } from '@/lib/tools/search/providers/base'
+import {
+  BaseSearchProvider,
+  SearchTelemetryHook
+} from '@/lib/tools/search/providers/base'
 import {
   createHttpSearchError,
   SearchProviderError
@@ -18,7 +21,13 @@ export class FirecrawlSearchProvider extends BaseSearchProvider {
     maxResults: number = 10,
     searchDepth: 'basic' | 'advanced' = 'basic',
     includeDomains: string[] = [],
-    excludeDomains: string[] = []
+    excludeDomains: string[] = [],
+    _options?: {
+      type?: 'general' | 'optimized'
+      content_types?: Array<'web' | 'video' | 'image' | 'news'>
+      includeImages?: boolean
+    },
+    telemetryHook?: SearchTelemetryHook
   ): Promise<SearchResults> {
     const apiKey = process.env.FIRECRAWL_API_KEY
     this.validateApiKey(apiKey, 'FIRECRAWL')
@@ -65,11 +74,12 @@ export class FirecrawlSearchProvider extends BaseSearchProvider {
           })
         }
       },
-      (error, attempt) => {
+      (error, attempt, delayMs) => {
         console.log(
           `[Firecrawl] Retry attempt ${attempt}:`,
           error instanceof Error ? error.message : String(error)
         )
+        telemetryHook?.(error, attempt, delayMs)
       }
     )
 

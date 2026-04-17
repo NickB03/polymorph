@@ -3,7 +3,7 @@ import Exa from 'exa-js'
 import { SearchResults } from '@/lib/types'
 import { retrySearchOperation } from '@/lib/utils/retry'
 
-import { BaseSearchProvider } from './base'
+import { BaseSearchProvider, SearchTelemetryHook } from './base'
 import { createHttpSearchError, SearchProviderError } from './errors'
 
 export class ExaSearchProvider extends BaseSearchProvider {
@@ -12,7 +12,13 @@ export class ExaSearchProvider extends BaseSearchProvider {
     maxResults: number = 10,
     _searchDepth: 'basic' | 'advanced' = 'basic',
     includeDomains: string[] = [],
-    excludeDomains: string[] = []
+    excludeDomains: string[] = [],
+    _options?: {
+      type?: 'general' | 'optimized'
+      content_types?: Array<'web' | 'video' | 'image' | 'news'>
+      includeImages?: boolean
+    },
+    telemetryHook?: SearchTelemetryHook
   ): Promise<SearchResults> {
     const apiKey = process.env.EXA_API_KEY
     this.validateApiKey(apiKey, 'EXA')
@@ -50,11 +56,12 @@ export class ExaSearchProvider extends BaseSearchProvider {
           })
         }
       },
-      (error, attempt) => {
+      (error, attempt, delayMs) => {
         console.log(
           `[Exa] Retry attempt ${attempt}:`,
           error instanceof Error ? error.message : String(error)
         )
+        telemetryHook?.(error, attempt, delayMs)
       }
     )
 

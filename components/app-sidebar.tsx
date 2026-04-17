@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 
 import { SquarePen } from 'lucide-react'
 
@@ -23,7 +23,6 @@ import { ChatHistorySkeleton } from './sidebar/chat-history-skeleton'
 
 export default function AppSidebar({ hasUser = false }: { hasUser?: boolean }) {
   const router = useRouter()
-  const pathname = usePathname()
   const { setOpenMobile, isMobile } = useSidebar()
 
   const navigateHome = useCallback(
@@ -35,8 +34,6 @@ export default function AppSidebar({ hasUser = false }: { hasUser?: boolean }) {
     },
     [router, isMobile, setOpenMobile]
   )
-
-  if (pathname.startsWith('/auth/')) return null
 
   return (
     <Sidebar side="left" variant="sidebar" collapsible="offcanvas">
