@@ -80,11 +80,20 @@ export function CanvasEditor() {
   const editSequenceRef = useRef(0)
   const requestSequenceRef = useRef(0)
   const pendingSaveRef = useRef(false)
-  const serverRevisionRef = useRef(artifact?.draftRevision ?? 0)
+  // Initialize ref trackers with `null` so react-hooks/immutability doesn't
+  // tie them to the current render's artifact snapshot; the actual values
+  // are written from the sync effect below.
+  const serverRevisionRef = useRef<number | null>(null)
+
+  // Mirror of `localSource` so the debounced save can read the latest value
+  // without a stale closure. Initialised to an empty object (a literal so
+  // react-hooks/immutability stays happy) and then kept in sync via the
+  // effect + handlers below.
+  const localSourceRef = useRef<CanvasSourceFiles>({})
 
   // Sync local source when artifact changes externally (load, AI update, restore)
-  const prevArtifactIdRef = useRef(artifact?.artifactId)
-  const prevDraftRevisionRef = useRef(artifact?.draftRevision)
+  const prevArtifactIdRef = useRef<string | null>(null)
+  const prevDraftRevisionRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (!artifact) return
@@ -107,10 +116,17 @@ export function CanvasEditor() {
     prevDraftRevisionRef.current = artifact.draftRevision
   }, [artifact])
 
+  // Commit-phase sync for `localSourceRef` — covers updates that don't go
+  // through `handleChange`/`handleAddFile` (e.g. server-driven replacement
+  // via `setLocalSource(result.draftSource)` inside `doSave`).
+  useEffect(() => {
+    localSourceRef.current = localSource
+  }, [localSource])
+
   // ── Save logic ────────────────────────────────────────────────────
 
   const doSave = useCallback(
-    async (source: CanvasSourceFiles) => {
+    async function doSaveInner(source: CanvasSourceFiles): Promise<void> {
       if (!artifact || inflightRef.current) {
         pendingSaveRef.current = true
         return
@@ -119,7 +135,7 @@ export function CanvasEditor() {
       inflightRef.current = true
       pendingSaveRef.current = false
       const seqAtRequest = ++requestSequenceRef.current
-      const baseRevision = serverRevisionRef.current
+      const baseRevision = serverRevisionRef.current ?? 0
 
       const result = await canvas.updateDraft(source, baseRevision)
 
@@ -143,21 +159,18 @@ export function CanvasEditor() {
         setLocalSource(result.draftSource)
       }
 
-      // If there's a pending save, schedule it
+      // If there's a pending save, run it. The named function expression
+      // `doSaveInner` lets us recurse without a forward reference to the
+      // outer `doSave` binding.
       if (pendingSaveRef.current) {
         pendingSaveRef.current = false
-        // Use the current local source at this point
         setTimeout(() => {
-          doSave(localSourceRef.current)
+          void doSaveInner(localSourceRef.current)
         }, 0)
       }
     },
     [artifact, canvas]
   )
-
-  // Keep a ref to localSource for the pending save callback
-  const localSourceRef = useRef(localSource)
-  localSourceRef.current = localSource
 
   const scheduleSave = useCallback(
     (source: CanvasSourceFiles) => {
@@ -253,12 +266,16 @@ export function CanvasEditor() {
 
   // ── Render ────────────────────────────────────────────────────────
 
-  // Ensure active file is valid — if the active file was removed, switch to first available
-  useEffect(() => {
-    if (!(activeFile in localSource) && existingFiles.length > 0) {
-      setActiveFile(existingFiles[0])
-    }
-  }, [activeFile, localSource, existingFiles])
+  // If the active file was removed from localSource, fall back to the first
+  // existing file during render rather than via an effect (avoids an extra
+  // commit round-trip and the set-state-in-effect warning).
+  if (
+    !(activeFile in localSource) &&
+    existingFiles.length > 0 &&
+    existingFiles[0] !== activeFile
+  ) {
+    setActiveFile(existingFiles[0])
+  }
 
   if (!artifact) return null
 
