@@ -94,34 +94,36 @@ export function useTickerRotation<T>({
     [clearTimer, finish, isActive, items.length, totalShows]
   )
 
-  advanceRef.current = step => {
-    if (!isActive || items.length === 0 || totalShows === 0) {
-      finish()
-      return
-    }
+  useEffect(() => {
+    advanceRef.current = step => {
+      if (!isActive || items.length === 0 || totalShows === 0) {
+        finish()
+        return
+      }
 
-    if (step === 'enter-to-visible') {
-      setPhase('visible')
-      scheduleStep('visible-to-exit', displayMs)
-      return
-    }
+      if (step === 'enter-to-visible') {
+        setPhase('visible')
+        scheduleStep('visible-to-exit', displayMs)
+        return
+      }
 
-    if (step === 'visible-to-exit') {
-      setPhase('exiting')
-      scheduleStep('exit-to-next', exitMs)
-      return
-    }
+      if (step === 'visible-to-exit') {
+        setPhase('exiting')
+        scheduleStep('exit-to-next', exitMs)
+        return
+      }
 
-    if (shownCountRef.current >= totalShows - 1) {
-      finish()
-      return
-    }
+      if (shownCountRef.current >= totalShows - 1) {
+        finish()
+        return
+      }
 
-    shownCountRef.current += 1
-    setActiveIndex(shownCountRef.current % items.length)
-    setPhase('entering')
-    scheduleStep('enter-to-visible', enterMs)
-  }
+      shownCountRef.current += 1
+      setActiveIndex(shownCountRef.current % items.length)
+      setPhase('entering')
+      scheduleStep('enter-to-visible', enterMs)
+    }
+  })
 
   const pause = useCallback(() => {
     if (!isActive || pausedRef.current || timerRef.current === null) {
@@ -190,6 +192,10 @@ export function useTickerRotation<T>({
     shownCountRef.current = 0
 
     if (!isActive || items.length === 0 || totalShows === 0) {
+      // why: reset the ticker when the driving props (isActive, items,
+      // totalShows) change. External-source sync is the explicit allowed
+      // setState-in-effect case.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveIndex(-1)
       setPhase('idle')
       setIsComplete(true)
@@ -204,7 +210,6 @@ export function useTickerRotation<T>({
     return () => clearTimer()
     // Depend on items.length (not the items reference) so a parent re-render
     // that produces a new array with the same questions doesn't reset the ticker.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clearTimer, enterMs, isActive, items.length, scheduleStep, totalShows])
 
   return {
