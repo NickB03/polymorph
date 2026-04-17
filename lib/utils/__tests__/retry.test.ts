@@ -335,6 +335,11 @@ describe('retrySearchOperation', () => {
   })
 
   it('falls back to default delay when retryAfterMs is undefined', async () => {
+    // Pin jitter to zero so the delay is deterministically the default
+    // initialDelayMs (500). Without this stub the test sits on the 625ms
+    // max-jitter boundary and can flake.
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0)
+
     const errorWithoutRetryAfter = new SearchProviderError({
       provider: 'brave',
       message: 'rate limited',
@@ -350,14 +355,15 @@ describe('retrySearchOperation', () => {
 
     const promise = retrySearchOperation(fn)
 
-    // Default initial delay is 500ms; at 499ms the retry should not have fired
+    // Default initial delay is 500ms with zero jitter.
     await vi.advanceTimersByTimeAsync(499)
     expect(fn).toHaveBeenCalledTimes(1)
 
-    // Advance past 500 + max jitter (25% = 125) = 625 total; 499 + 126 = 625
-    await vi.advanceTimersByTimeAsync(126)
+    await vi.advanceTimersByTimeAsync(1)
     const result = await promise
     expect(result).toBe('ok')
     expect(fn).toHaveBeenCalledTimes(2)
+
+    randomSpy.mockRestore()
   })
 })

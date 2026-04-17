@@ -1,4 +1,4 @@
-import { context, trace } from '@opentelemetry/api'
+import { context, trace, type Tracer } from '@opentelemetry/api'
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks'
 import {
   BasicTracerProvider,
@@ -6,7 +6,16 @@ import {
   ReadableSpan,
   SimpleSpanProcessor
 } from '@opentelemetry/sdk-trace-base'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi
+} from 'vitest'
 
 import { SearchResults } from '@/lib/types'
 
@@ -26,22 +35,13 @@ vi.mock('exa-js', () => ({
 // Telemetry must be wired via `trace.getActiveSpan()`, so we register a
 // real OTel TracerProvider with an in-memory exporter and wrap the search
 // tool execution inside an active span. The assertions then read the
-// recorded span events/attributes from the exporter.
-
-const exporter = new InMemorySpanExporter()
-const provider = new BasicTracerProvider({
-  spanProcessors: [new SimpleSpanProcessor(exporter)]
-})
-// Register an AsyncLocalStorage-backed context manager so that
-// `trace.getActiveSpan()` resolves correctly from any `await`-chained
-// descendant of `tracer.startActiveSpan(...)`.
-const contextManager = new AsyncLocalStorageContextManager()
-contextManager.enable()
-context.setGlobalContextManager(contextManager)
-// Register globally so the production code's `trace.getActiveSpan()`
-// sees our provider.
-trace.setGlobalTracerProvider(provider)
-const tracer = provider.getTracer('test')
+// recorded span events/attributes from the exporter. Setup is scoped to
+// this file's lifecycle so it doesn't leak global OTel state into
+// sibling test files.
+let exporter: InMemorySpanExporter
+let provider: BasicTracerProvider
+let contextManager: AsyncLocalStorageContextManager
+let tracer: Tracer
 
 async function collectCompleteResult(
   iterable: AsyncIterable<unknown>
@@ -88,11 +88,32 @@ vi.stubGlobal('fetch', mockFetch)
 describe('search telemetry (retry + fallback + aggregate)', () => {
   let savedTavilyKey: string | undefined
   let savedBraveKey: string | undefined
+  let savedExaKey: string | undefined
+  let savedFirecrawlKey: string | undefined
   let savedSearchApi: string | undefined
+
+  beforeAll(() => {
+    exporter = new InMemorySpanExporter()
+    provider = new BasicTracerProvider({
+      spanProcessors: [new SimpleSpanProcessor(exporter)]
+    })
+    contextManager = new AsyncLocalStorageContextManager()
+    contextManager.enable()
+    context.setGlobalContextManager(contextManager)
+    trace.setGlobalTracerProvider(provider)
+    tracer = provider.getTracer('test')
+  })
+
+  afterAll(() => {
+    trace.disable()
+    context.disable()
+  })
 
   beforeEach(() => {
     savedTavilyKey = process.env.TAVILY_API_KEY
     savedBraveKey = process.env.BRAVE_SEARCH_API_KEY
+    savedExaKey = process.env.EXA_API_KEY
+    savedFirecrawlKey = process.env.FIRECRAWL_API_KEY
     savedSearchApi = process.env.SEARCH_API
     mockFetch.mockReset()
     mockExaSearchAndContents.mockReset()
@@ -112,6 +133,8 @@ describe('search telemetry (retry + fallback + aggregate)', () => {
   afterEach(() => {
     process.env.TAVILY_API_KEY = savedTavilyKey
     process.env.BRAVE_SEARCH_API_KEY = savedBraveKey
+    process.env.EXA_API_KEY = savedExaKey
+    process.env.FIRECRAWL_API_KEY = savedFirecrawlKey
     process.env.SEARCH_API = savedSearchApi
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
