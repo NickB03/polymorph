@@ -909,7 +909,7 @@ export function EvalsDashboard({ data }: EvalsDashboardProps) {
         </h2>
         <p className="max-w-md text-sm text-muted-foreground">
           Evaluation results will appear here after the next scheduled eval run.
-          Evals run automatically every 6 hours.
+          Evals run automatically once every 24 hours.
         </p>
       </div>
     )
@@ -1079,7 +1079,7 @@ export const metadata: Metadata = {
   title: 'Quality Dashboard'
 }
 
-// Revalidate every 5 minutes (evals run every 6 hours, so this is plenty)
+// Revalidate every 5 minutes (evals run daily, so this is plenty)
 export const revalidate = 300
 
 export default async function EvalsPage() {

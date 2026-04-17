@@ -18,7 +18,7 @@ const COPY: Record<TemplateId, { title: string; body: string }> = {
   },
   c: {
     title: 'Activity feed is quiet',
-    body: "As eval runs land in Postgres, they'll stream into this feed newest-first. The next Traffic Monitor run is scheduled every 6h."
+    body: "As eval runs land in Postgres, they'll stream into this feed newest-first. The next Traffic Monitor run is scheduled daily."
   }
 }
 

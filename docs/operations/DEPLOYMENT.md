@@ -132,10 +132,10 @@ The `services/evals/` directory contains a scheduled evaluation pipeline:
 **Railway deployment:**
 
 - Deploy as a Railway cron service from `services/evals/Dockerfile`
-- Schedule: `0 */6 * * *` (every 6 hours UTC)
+- Schedule: `0 0 * * *` (once every 24 hours at 00:00 UTC)
 - Uses private networking to Phoenix (`PHOENIX_HOST=http://phoenix.railway.internal:6006`)
 
-> **Triggering a cron run manually.** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image and re-registers the schedule — it does **not** execute the container CMD. For an immediate one-off run use the Railway dashboard (`Deployments → ⋯ → Redeploy`), which does run the CMD. Otherwise wait for the next natural tick.
+> **Triggering a cron run manually.** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image and re-registers the schedule — it does **not** execute the container CMD. For an immediate one-off run use the Railway dashboard (`Deployments → ⋯ → Redeploy`), which does run the CMD. Otherwise wait for the next daily tick.
 
 **Required env vars:**
 

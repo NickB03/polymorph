@@ -142,6 +142,13 @@ describe('EvalsDashboardV2', () => {
     }
   )
 
+  it('template B renders the updated live cadence copy', () => {
+    render(<EvalsDashboardV2 data={makeData()} initialLayout="b" />)
+
+    expect(screen.getByText('daily')).toBeInTheDocument()
+    expect(screen.queryByText('every 6h')).not.toBeInTheDocument()
+  })
+
   it('template C expands the row matching the worst drop finding', () => {
     const data = makeData()
     data.trafficMonitor.previous!.evaluatorScores = {
