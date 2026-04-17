@@ -270,7 +270,7 @@ describe('search telemetry (retry + fallback + aggregate)', () => {
             Symbol.asyncIterator
           ]()
           // Drain iterator — any thrown error in the generator surfaces here.
-          // eslint-disable-next-line no-constant-condition
+
           while (true) {
             const step = await iterator.next()
             if (step.done) break

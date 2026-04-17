@@ -38,7 +38,7 @@ export default function AppSidebar({ hasUser = false }: { hasUser?: boolean }) {
   return (
     <Sidebar side="left" variant="sidebar" collapsible="offcanvas">
       <SidebarHeader className="flex flex-row justify-between items-center">
-        <a
+        <Link
           href="/"
           onClick={navigateHome}
           className="flex items-center px-2 py-3"
@@ -46,21 +46,21 @@ export default function AppSidebar({ hasUser = false }: { hasUser?: boolean }) {
           <span className="text-xl font-semibold tracking-tight text-foreground select-none">
             pm
           </span>
-        </a>
+        </Link>
         <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent className="flex flex-col px-2 py-3 h-full">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a
+              <Link
                 href="/"
                 onClick={navigateHome}
                 className="flex items-center gap-2"
               >
                 <SquarePen className="size-4" />
                 <span>New chat</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
