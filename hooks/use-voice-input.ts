@@ -1,6 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore
+} from 'react'
 
 import type { VoiceError } from '@/lib/voice/config'
 
@@ -50,6 +56,20 @@ function getSpeechRecognition(): (new () => SpeechRecognitionInstance) | null {
   return SR || null
 }
 
+// useSyncExternalStore adaptors so the "is speech recognition supported" check
+// never runs during render. The server snapshot matches the pre-hydration
+// snapshot (false), then the subscriber fires once to record the real value.
+function subscribeSpeechSupport(onStoreChange: () => void) {
+  onStoreChange()
+  return () => {}
+}
+function getSpeechSupportSnapshot() {
+  return !!getSpeechRecognition()
+}
+function getSpeechSupportServerSnapshot() {
+  return false
+}
+
 export function useVoiceInput(
   options: UseVoiceInputOptions = {}
 ): UseVoiceInputReturn {
@@ -63,14 +83,20 @@ export function useVoiceInput(
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const listeningSessionRef = useRef(0)
   const onTranscriptRef = useRef(onTranscript)
-  onTranscriptRef.current = onTranscript
-
-  // Defer browser-API detection to an effect so the server and first client
-  // render both produce `false`, avoiding a hydration mismatch.
-  const [isSupported, setIsSupported] = useState(false)
+  // Keep the live onTranscript ref in sync from an effect (writes in effects
+  // are allowed by react-hooks/refs).
   useEffect(() => {
-    setIsSupported(!!getSpeechRecognition())
-  }, [])
+    onTranscriptRef.current = onTranscript
+  }, [onTranscript])
+
+  // Defer browser-API detection to an external-store read so the server and
+  // first client render both return false (avoiding a hydration mismatch);
+  // the subscribe callback fires once on mount to flip to the real value.
+  const isSupported = useSyncExternalStore(
+    subscribeSpeechSupport,
+    getSpeechSupportSnapshot,
+    getSpeechSupportServerSnapshot
+  )
 
   const stopMediaStream = useCallback(() => {
     if (!mediaStreamRef.current) {
