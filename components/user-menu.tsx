@@ -192,7 +192,7 @@ export default function UserMenu({
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Admin</DropdownMenuLabel>
             <DropdownMenuItem asChild>
-              <Link href="/evals">
+              <Link href="/admin/evals">
                 <ChartColumnIncreasing className="mr-2 h-4 w-4" />
                 <span>Evals</span>
               </Link>
