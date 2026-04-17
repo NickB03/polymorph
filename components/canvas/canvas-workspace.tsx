@@ -1,6 +1,12 @@
 'use client'
 
-import { Component, type ErrorInfo, type ReactNode, useState } from 'react'
+import {
+  Component,
+  type ErrorInfo,
+  type ReactNode,
+  useEffect,
+  useState
+} from 'react'
 
 import {
   Activity,
@@ -200,11 +206,29 @@ export function CanvasWorkspace() {
     activeTab = 'preview'
   }
 
-  const effectiveLastSeen = hasActivity ? lastSeenActivityCount : 0
   const hasUnseenActivity =
-    hasActivity && activeTab !== 'activity' && itemCount > effectiveLastSeen
+    hasActivity && activeTab !== 'activity' && itemCount > lastSeenActivityCount
 
   const markActivitySeen = () => setLastSeenActivityCount(itemCount)
+
+  // why: keep lastSeenActivityCount in sync with external activity feed.
+  // - While the user is viewing Activity, newly arriving items are already
+  //   seen — promote the stored count so leaving and returning doesn't
+  //   surface a spurious unseen badge.
+  // - When items drop (e.g. new chat / clearActivity), clamp the stored
+  //   count back to the current total so the next real arrival is correctly
+  //   flagged as unseen. External-source sync is the allowed
+  //   setState-in-effect case.
+  useEffect(() => {
+    if (activeTab === 'activity') {
+      if (lastSeenActivityCount !== itemCount) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setLastSeenActivityCount(itemCount)
+      }
+    } else if (lastSeenActivityCount > itemCount) {
+      setLastSeenActivityCount(itemCount)
+    }
+  }, [activeTab, itemCount, lastSeenActivityCount])
 
   // Loading state
   if (canvas.isLoading) {

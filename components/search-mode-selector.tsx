@@ -18,31 +18,33 @@ import {
   DropdownMenuTrigger
 } from './ui/dropdown-menu'
 
-// Read-and-normalise the search mode cookie once on the client. Declared
-// outside the component so the lazy useState initialiser stays pure from the
-// rule's perspective (no state/ref access during render).
-function readInitialSearchMode(): SearchMode {
-  if (typeof document === 'undefined') return 'chat'
-  const savedMode = getCookie('searchMode')
-  const mapped =
-    savedMode === 'quick'
-      ? 'chat'
-      : savedMode === 'adaptive'
-        ? 'research'
-        : savedMode
-  if (isValidSearchMode(mapped)) {
-    if (mapped !== savedMode) syncSearchMode(mapped)
-    return mapped
-  }
-  if (savedMode) {
-    syncSearchMode('chat')
-  }
-  return 'chat'
-}
-
 export function SearchModeSelector() {
-  const [value, setValue] = useState<SearchMode>(readInitialSearchMode)
+  // Deterministic initial state — matches SSR output so hydration is stable.
+  // The cookie-derived value is promoted on mount in the effect below.
+  const [value, setValue] = useState<SearchMode>('chat')
   const [dropdownOpen, setDropdownOpen] = useState(false)
+
+  useEffect(() => {
+    const savedMode = getCookie('searchMode')
+    // Backward compat: map old values to new ones
+    const mapped =
+      savedMode === 'quick'
+        ? 'chat'
+        : savedMode === 'adaptive'
+          ? 'research'
+          : savedMode
+    if (isValidSearchMode(mapped)) {
+      // why: external-source sync — the cookie is the source of truth for
+      // the persisted mode. Promoting its value on mount is the allowed
+      // setState-in-effect case.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setValue(mapped)
+      if (mapped !== savedMode) syncSearchMode(mapped)
+    } else if (savedMode) {
+      // Clean up invalid cookie value; state stays at 'chat'.
+      syncSearchMode('chat')
+    }
+  }, [])
 
   // Sync local state when cookie is changed programmatically (e.g. research suggestion)
   useEffect(() => {

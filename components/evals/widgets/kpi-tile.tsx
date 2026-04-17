@@ -40,23 +40,30 @@ const METRIC_LABELS: Record<Metric, string> = {
 
 const HOUR = 60 * 60 * 1000
 
-// Subscribe-once store: reads Date.now() only outside of render. Server
-// snapshot is 0 so SSR and first client paint agree on a placeholder; the
-// subscriber fires once on mount to record the real time.
+// Subscribe-once store: reads Date.now() only outside of render and caches
+// it in a module-scoped variable so getSnapshot returns a referentially
+// stable value across React's multiple per-render getSnapshot calls
+// (otherwise React would warn "The result of getSnapshot should be cached
+// to avoid an infinite loop"). Server snapshot is 0 so SSR and first client
+// paint agree on a placeholder; the subscriber fires once on mount to
+// record the real time.
+let cachedNowMs = 0
 function subscribeNow(onStoreChange: () => void) {
+  if (cachedNowMs === 0) {
+    cachedNowMs = Date.now()
+  }
   onStoreChange()
   return () => {}
+}
+function getNowSnapshot() {
+  return cachedNowMs
 }
 function getServerNow() {
   return 0
 }
 
 export function KpiTile({ data, config, breakpoint }: WidgetProps<Config>) {
-  const nowMs = useSyncExternalStore(
-    subscribeNow,
-    () => Date.now(),
-    getServerNow
-  )
+  const nowMs = useSyncExternalStore(subscribeNow, getNowSnapshot, getServerNow)
 
   if (breakpoint === 'sm' && config.metric === 'systemHealth') {
     return <SystemHealthPill data={data} config={config} />

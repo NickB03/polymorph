@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
 import { Bookmark, X } from 'lucide-react'
@@ -9,28 +9,28 @@ const SEARCH_COUNT_KEY = 'polymorph-guest-search-count'
 const NUDGE_DISMISSED_KEY = 'polymorph-guest-nudge-dismissed'
 const NUDGE_THRESHOLD = 5
 
-// Runs once per module load (effectively once per navigation) to bump the
-// guest search count in localStorage. Pulling this out of a useEffect avoids
-// the set-state-in-effect pattern: the component can read the result
-// synchronously via a lazy useState initialiser.
-let bumpedCount: number | null = null
-function bumpSearchCount(): number {
-  if (bumpedCount != null) return bumpedCount
-  if (typeof window === 'undefined') return 0
-  const count = Number(localStorage.getItem(SEARCH_COUNT_KEY) || '0') + 1
-  localStorage.setItem(SEARCH_COUNT_KEY, String(count))
-  bumpedCount = count
-  return count
-}
-function isDismissed(): boolean {
-  if (typeof window === 'undefined') return true
-  return !!localStorage.getItem(NUDGE_DISMISSED_KEY)
-}
-
 export function GuestSignupNudge() {
-  const [visible, setVisible] = useState<boolean>(
-    () => !isDismissed() && bumpSearchCount() >= NUDGE_THRESHOLD
-  )
+  const [visible, setVisible] = useState(false)
+  const hasIncremented = useRef(false)
+
+  useEffect(() => {
+    if (hasIncremented.current) return
+    hasIncremented.current = true
+
+    if (localStorage.getItem(NUDGE_DISMISSED_KEY)) return
+
+    const count = Number(localStorage.getItem(SEARCH_COUNT_KEY) || '0') + 1
+    localStorage.setItem(SEARCH_COUNT_KEY, String(count))
+
+    if (count >= NUDGE_THRESHOLD) {
+      // why: external-source sync — localStorage is the source of truth for
+      // the cumulative guest search count across all nudge instances.
+      // Promoting the threshold crossing to React state from inside an
+      // effect is the allowed setState-in-effect case.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVisible(true)
+    }
+  }, [])
 
   if (!visible) return null
 
