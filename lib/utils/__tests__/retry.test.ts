@@ -311,4 +311,31 @@ describe('retrySearchOperation', () => {
     expect(result).toBe('ok')
     expect(fn).toHaveBeenCalledTimes(2)
   })
+
+  it('falls back to default delay when retryAfterMs is undefined', async () => {
+    const errorWithoutRetryAfter = new SearchProviderError({
+      provider: 'brave',
+      message: 'rate limited',
+      status: 429,
+      retryable: true,
+      retryAfterMs: undefined
+    })
+
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(errorWithoutRetryAfter)
+      .mockResolvedValue('ok')
+
+    const promise = retrySearchOperation(fn)
+
+    // Default initial delay is 500ms; at 499ms the retry should not have fired
+    await vi.advanceTimersByTimeAsync(499)
+    expect(fn).toHaveBeenCalledTimes(1)
+
+    // Advance past 500 + max jitter (25% = 125) = 625 total; 499 + 126 = 625
+    await vi.advanceTimersByTimeAsync(126)
+    const result = await promise
+    expect(result).toBe('ok')
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
 })

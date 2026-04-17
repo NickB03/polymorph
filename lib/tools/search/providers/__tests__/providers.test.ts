@@ -597,6 +597,42 @@ describe('Exa retry behavior', () => {
     expect(result.results[0].title).toBe('Result')
     expect(mockSearchAndContents).toHaveBeenCalledTimes(2)
   })
+
+  it('exhausts retries on persistent 500 and throws SearchProviderError', async () => {
+    vi.useRealTimers()
+
+    const { createHttpSearchError } = await import('../errors')
+    const { retryWithBackoff } = await import('@/lib/utils/retry')
+    const { isRetryableSearchError, getRetryDelayFromSearchError } =
+      await import('../errors')
+
+    const fn = vi.fn().mockImplementation(async () => {
+      throw createHttpSearchError(
+        'exa',
+        500,
+        'Internal Server Error',
+        undefined,
+        'Server error'
+      )
+    })
+
+    try {
+      await retryWithBackoff(fn, {
+        maxRetries: 2,
+        initialDelayMs: 1,
+        maxDelayMs: 1,
+        shouldRetry: error => isRetryableSearchError(error),
+        getRetryDelay: (error, _attempt, defaultDelay) =>
+          getRetryDelayFromSearchError(error) ?? defaultDelay
+      })
+      expect.unreachable('Should have thrown')
+    } catch (error) {
+      expect(error).toBeInstanceOf(SearchProviderError)
+      expect((error as SearchProviderError).status).toBe(500)
+    }
+
+    expect(fn).toHaveBeenCalledTimes(3)
+  })
 })
 
 describe('Firecrawl retry behavior', () => {
@@ -654,6 +690,42 @@ describe('Firecrawl retry behavior', () => {
     expect(result.results).toHaveLength(1)
     expect(result.results[0].title).toBe('Result')
   })
+
+  it('exhausts retries on persistent 500 and throws SearchProviderError', async () => {
+    vi.useRealTimers()
+
+    const { createHttpSearchError } = await import('../errors')
+    const { retryWithBackoff } = await import('@/lib/utils/retry')
+    const { isRetryableSearchError, getRetryDelayFromSearchError } =
+      await import('../errors')
+
+    const fn = vi.fn().mockImplementation(async () => {
+      throw createHttpSearchError(
+        'firecrawl',
+        500,
+        'Internal Server Error',
+        undefined,
+        'Server error'
+      )
+    })
+
+    try {
+      await retryWithBackoff(fn, {
+        maxRetries: 2,
+        initialDelayMs: 1,
+        maxDelayMs: 1,
+        shouldRetry: error => isRetryableSearchError(error),
+        getRetryDelay: (error, _attempt, defaultDelay) =>
+          getRetryDelayFromSearchError(error) ?? defaultDelay
+      })
+      expect.unreachable('Should have thrown')
+    } catch (error) {
+      expect(error).toBeInstanceOf(SearchProviderError)
+      expect((error as SearchProviderError).status).toBe(500)
+    }
+
+    expect(fn).toHaveBeenCalledTimes(3)
+  })
 })
 
 describe('SearXNG retry behavior', () => {
@@ -708,5 +780,41 @@ describe('SearXNG retry behavior', () => {
     expect(result.results).toHaveLength(1)
     expect(result.results[0].title).toBe('Result')
     expect(mockFetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('exhausts retries on persistent 500 and throws SearchProviderError', async () => {
+    vi.useRealTimers()
+
+    const { createHttpSearchError } = await import('../errors')
+    const { retryWithBackoff } = await import('@/lib/utils/retry')
+    const { isRetryableSearchError, getRetryDelayFromSearchError } =
+      await import('../errors')
+
+    const fn = vi.fn().mockImplementation(async () => {
+      throw createHttpSearchError(
+        'searxng',
+        500,
+        'Internal Server Error',
+        undefined,
+        'Server error'
+      )
+    })
+
+    try {
+      await retryWithBackoff(fn, {
+        maxRetries: 2,
+        initialDelayMs: 1,
+        maxDelayMs: 1,
+        shouldRetry: error => isRetryableSearchError(error),
+        getRetryDelay: (error, _attempt, defaultDelay) =>
+          getRetryDelayFromSearchError(error) ?? defaultDelay
+      })
+      expect.unreachable('Should have thrown')
+    } catch (error) {
+      expect(error).toBeInstanceOf(SearchProviderError)
+      expect((error as SearchProviderError).status).toBe(500)
+    }
+
+    expect(fn).toHaveBeenCalledTimes(3)
   })
 })

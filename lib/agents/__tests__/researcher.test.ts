@@ -357,4 +357,77 @@ describe('createResearcher', () => {
     // Each agent got its own wrapped search tool (different object references)
     expect(config1.tools.search).not.toBe(config2.tools.search)
   })
+
+  it('aborts cleanly during pacing cooldown', async () => {
+    vi.useFakeTimers()
+    MockToolLoopAgent.mockClear()
+
+    try {
+      const searchModule = await import('@/lib/tools/search')
+      const mockedCreateSearchTool = vi.mocked(searchModule.createSearchTool)
+      const underlyingExecute = vi.fn().mockResolvedValue({
+        state: 'complete' as const,
+        results: [],
+        images: [],
+        query: 'q',
+        number_of_results: 0
+      })
+      mockedCreateSearchTool.mockReturnValueOnce({
+        name: 'search',
+        description: 'Search the web',
+        inputSchema: {},
+        execute: underlyingExecute
+      } as any)
+
+      createResearcher({
+        model: 'gateway:google/gemini-3-flash',
+        searchMode: 'research'
+      })
+
+      const config = MockToolLoopAgent.mock.calls[0][0] as any
+      const wrappedExecute = config.tools.search.execute
+
+      // First call establishes lastCallTime via Date.now()
+      // Use a non-zero baseline so the `lastCallTime > 0` guard triggers next time.
+      vi.setSystemTime(new Date(1000))
+      const firstController = new AbortController()
+      const firstIter = wrappedExecute(
+        { query: 'first' },
+        { abortSignal: firstController.signal }
+      )
+      // Drain the first async generator to completion
+      // (underlying returns a resolved object, wrapper yields it)
+      while (true) {
+        const step = await firstIter.next()
+        if (step.done) break
+      }
+
+      expect(underlyingExecute).toHaveBeenCalledTimes(1)
+
+      // Advance system time by only 50ms — within the 200ms pacing gap,
+      // so the next call will enter the cooldown wait.
+      vi.setSystemTime(new Date(1050))
+
+      const controller = new AbortController()
+      const secondIter = wrappedExecute(
+        { query: 'second' },
+        { abortSignal: controller.signal }
+      )
+
+      // Kick off the generator; it should enter the setTimeout wait
+      const nextPromise = secondIter.next()
+
+      // Abort during the cooldown; the abort listener resolves the wait,
+      // and the post-wait guard (researcher.ts:68) bails before dispatch.
+      controller.abort()
+
+      const step = await nextPromise
+      expect(step.done).toBe(true)
+
+      // Underlying execute should not have been called a second time
+      expect(underlyingExecute).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
