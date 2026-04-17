@@ -1,3 +1,4 @@
+import { trace } from '@opentelemetry/api'
 import { tool, UIToolInvocation } from 'ai'
 
 import { getSearchSchemaForModel } from '@/lib/schema/search'
@@ -17,6 +18,14 @@ import {
   DEFAULT_PROVIDER,
   SearchProviderType
 } from './search/providers'
+
+const MAX_SPAN_EVENT_MESSAGE_LENGTH = 256
+
+function truncateErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+  if (message.length <= MAX_SPAN_EVENT_MESSAGE_LENGTH) return message
+  return message.slice(0, MAX_SPAN_EVENT_MESSAGE_LENGTH)
+}
 
 const PROVIDER_ENV_KEYS: Partial<Record<SearchProviderType, string>> = {
   brave: 'BRAVE_SEARCH_API_KEY',
@@ -139,9 +148,50 @@ export function createSearchTool(fullModel: string) {
 
       if (context?.abortSignal?.aborted) return
 
+      // Turn-scoped telemetry counters (aggregated onto the active span
+      // after the provider loop completes). All `trace.getActiveSpan()`
+      // calls are optional-chained — when tracing is disabled, these
+      // calls are all no-ops.
+      const providersAttempted: SearchProviderType[] = []
+      let totalRetries = 0
+      let totalFallbacks = 0
+
+      // Retry-attempt telemetry hook shared across providers. Captures
+      // `provider` via closure; per-retry `attempt`/`delayMs` come from
+      // the retry runtime.
+      const makeTelemetryHook = (provider: SearchProviderType) => {
+        return (error: unknown, attempt: number, delayMs: number) => {
+          totalRetries += 1
+          const status =
+            error instanceof SearchProviderError ? error.status : undefined
+          const retryAfterMs =
+            error instanceof SearchProviderError
+              ? error.retryAfterMs
+              : undefined
+          // `retrySearchOperation` uses `maxRetries: 2` under the hood
+          // (initial + 2 retries).
+          const maxAttempts = 3
+          const eventAttrs: Record<string, string | number> = {
+            'search.retry.provider': provider,
+            'search.retry.attempt': attempt,
+            'search.retry.max_attempts': maxAttempts,
+            'search.retry.delay_ms': delayMs,
+            'search.retry.error_message': truncateErrorMessage(error)
+          }
+          if (typeof status === 'number') {
+            eventAttrs['search.retry.status_code'] = status
+          }
+          if (typeof retryAfterMs === 'number') {
+            eventAttrs['search.retry.retry_after_ms'] = retryAfterMs
+          }
+          trace.getActiveSpan()?.addEvent('search.retry', eventAttrs)
+        }
+      }
+
       const executeSearch = async (
         provider: SearchProviderType
       ): Promise<SearchResults> => {
+        const telemetryHook = makeTelemetryHook(provider)
         if (
           provider === 'searxng' &&
           effectiveSearchDepthForAPI === 'advanced'
@@ -168,7 +218,8 @@ export function createSearchTool(fullModel: string) {
               content_types: content_types as Array<
                 'web' | 'video' | 'image' | 'news'
               >
-            }
+            },
+            telemetryHook
           )
         }
         return await searchProvider.search(
@@ -176,7 +227,9 @@ export function createSearchTool(fullModel: string) {
           effectiveMaxResults,
           effectiveSearchDepthForAPI,
           include_domains,
-          exclude_domains
+          exclude_domains,
+          undefined,
+          telemetryHook
         )
       }
 
@@ -191,6 +244,7 @@ export function createSearchTool(fullModel: string) {
       const providerErrors: string[] = []
 
       for (const [index, provider] of searchProviders.entries()) {
+        providersAttempted.push(provider)
         try {
           searchResult = await executeSearch(provider)
           break
@@ -214,6 +268,19 @@ export function createSearchTool(fullModel: string) {
             console.warn(
               `[Search] Provider ${provider} failed (${failureType}${providerError instanceof SearchProviderError ? `, status=${providerError.status}` : ''}): ${providerMessage}. Falling back to ${nextProvider}.`
             )
+            totalFallbacks += 1
+            const fallbackAttrs: Record<string, string | number> = {
+              'search.fallback.from': provider,
+              'search.fallback.to': nextProvider,
+              'search.fallback.reason': failureType
+            }
+            if (
+              providerError instanceof SearchProviderError &&
+              typeof providerError.status === 'number'
+            ) {
+              fallbackAttrs['search.fallback.error_code'] = providerError.status
+            }
+            trace.getActiveSpan()?.addEvent('search.fallback', fallbackAttrs)
             if (isRetryableSearchError(providerError)) {
               await new Promise<void>(resolve => {
                 if (context?.abortSignal?.aborted) {
@@ -242,6 +309,16 @@ export function createSearchTool(fullModel: string) {
       }
 
       if (!searchResult) {
+        // Emit exhausted aggregate telemetry before throwing so Phoenix
+        // still receives the turn summary.
+        trace.getActiveSpan()?.setAttributes({
+          'search.turn.providers_attempted': providersAttempted,
+          'search.turn.total_retries': totalRetries,
+          'search.turn.total_fallbacks': totalFallbacks,
+          'search.turn.final_provider':
+            providersAttempted[providersAttempted.length - 1] ?? '',
+          'search.turn.outcome': 'exhausted'
+        })
         throw new Error(
           formatSearchFailureMessage(
             providerErrors.length > 0
@@ -273,6 +350,16 @@ export function createSearchTool(fullModel: string) {
       } else {
         console.log(`[Search] Completed via ${usedProvider}`)
       }
+
+      // Emit turn-aggregate telemetry on the active span before yielding
+      // the final complete state. No-op when tracing is disabled.
+      trace.getActiveSpan()?.setAttributes({
+        'search.turn.providers_attempted': providersAttempted,
+        'search.turn.total_retries': totalRetries,
+        'search.turn.total_fallbacks': totalFallbacks,
+        'search.turn.final_provider': usedProvider,
+        'search.turn.outcome': 'success'
+      })
 
       // Yield final results with complete state
       yield {

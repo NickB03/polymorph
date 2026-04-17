@@ -46,7 +46,7 @@ describe('retryWithBackoff', () => {
     expect(fn).toHaveBeenCalledTimes(1)
   })
 
-  it('calls onRetry callback with error and attempt number', async () => {
+  it('calls onRetry callback with error, attempt number, and delayMs', async () => {
     const onRetry = vi.fn()
     const error1 = new Error('e1')
     const error2 = new Error('e2')
@@ -59,8 +59,30 @@ describe('retryWithBackoff', () => {
     await retryWithBackoff(fn, { initialDelayMs: 1, onRetry })
 
     expect(onRetry).toHaveBeenCalledTimes(2)
-    expect(onRetry).toHaveBeenCalledWith(error1, 1)
-    expect(onRetry).toHaveBeenCalledWith(error2, 2)
+    // New 3-arg shape: (error, attempt, delayMs). Each invocation must
+    // include a numeric delay > 0 alongside the error + attempt number.
+    expect(onRetry).toHaveBeenNthCalledWith(1, error1, 1, expect.any(Number))
+    expect(onRetry).toHaveBeenNthCalledWith(2, error2, 2, expect.any(Number))
+    const firstDelay = onRetry.mock.calls[0][2]
+    const secondDelay = onRetry.mock.calls[1][2]
+    expect(firstDelay).toBeGreaterThan(0)
+    expect(secondDelay).toBeGreaterThan(0)
+  })
+
+  it('remains backward compatible with 2-arg onRetry callbacks', async () => {
+    // A caller that ignores the 3rd arg still typechecks and is invoked.
+    let calls = 0
+    const onRetry = (_error: unknown, attempt: number) => {
+      expect(attempt).toBeGreaterThan(0)
+      calls += 1
+    }
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('fail'))
+      .mockResolvedValue('ok')
+
+    await retryWithBackoff(fn, { initialDelayMs: 1, onRetry })
+    expect(calls).toBe(1)
   })
 
   it('caps delay at maxDelayMs', async () => {

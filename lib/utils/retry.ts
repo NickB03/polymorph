@@ -10,7 +10,7 @@ export interface RetryOptions {
   initialDelayMs?: number
   maxDelayMs?: number
   backoffMultiplier?: number
-  onRetry?: (error: unknown, attempt: number) => void
+  onRetry?: (error: unknown, attempt: number, delayMs: number) => void
   shouldRetry?: (error: unknown, attempt: number) => boolean
   getRetryDelay?: (
     error: unknown,
@@ -66,7 +66,7 @@ export async function retryWithBackoff<T>(
       }
 
       if (onRetry) {
-        onRetry(error, attempt + 1)
+        onRetry(error, attempt + 1, delay)
       }
 
       // Wait before retrying
@@ -96,7 +96,7 @@ export async function retryDatabaseOperation<T>(
 // Specialized retry for search provider operations
 export async function retrySearchOperation<T>(
   fn: () => Promise<T>,
-  onRetry?: (error: unknown, attempt: number) => void
+  onRetry?: (error: unknown, attempt: number, delayMs: number) => void
 ): Promise<T> {
   return retryWithBackoff(fn, {
     maxRetries: 2,

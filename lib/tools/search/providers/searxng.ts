@@ -6,7 +6,7 @@ import {
 } from '@/lib/types'
 import { retrySearchOperation } from '@/lib/utils/retry'
 
-import { BaseSearchProvider } from './base'
+import { BaseSearchProvider, SearchTelemetryHook } from './base'
 import { createHttpSearchError, SearchProviderError } from './errors'
 
 export class SearXNGSearchProvider extends BaseSearchProvider {
@@ -15,7 +15,13 @@ export class SearXNGSearchProvider extends BaseSearchProvider {
     maxResults: number = 10,
     searchDepth: 'basic' | 'advanced' = 'basic',
     includeDomains: string[] = [],
-    excludeDomains: string[] = []
+    excludeDomains: string[] = [],
+    _options?: {
+      type?: 'general' | 'optimized'
+      content_types?: Array<'web' | 'video' | 'image' | 'news'>
+      includeImages?: boolean
+    },
+    telemetryHook?: SearchTelemetryHook
   ): Promise<SearchResults> {
     const apiUrl = process.env.SEARXNG_API_URL
     this.validateApiUrl(apiUrl, 'SEARXNG')
@@ -66,11 +72,12 @@ export class SearXNGSearchProvider extends BaseSearchProvider {
 
           return response.json()
         },
-        (error, attempt) => {
+        (error, attempt, delayMs) => {
           console.log(
             `[SearXNG] Retry attempt ${attempt}:`,
             error instanceof Error ? error.message : String(error)
           )
+          telemetryHook?.(error, attempt, delayMs)
         }
       )
 
