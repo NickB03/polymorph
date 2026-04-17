@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState
@@ -124,9 +125,12 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
   // Ref mirror of guestCanvasToken so callbacks can read the latest value
   // without depending on it (avoids cascading callback recreation on every
-  // token rotation).
+  // token rotation). Synchronised in an effect because mutating refs during
+  // render is disallowed under react-hooks/refs.
   const guestTokenRef = useRef(guestCanvasToken)
-  guestTokenRef.current = guestCanvasToken
+  useEffect(() => {
+    guestTokenRef.current = guestCanvasToken
+  }, [guestCanvasToken])
 
   // Tracks the artifact ID currently being fetched to prevent concurrent
   // opens of the same artifact (the auto-open effect can fire repeatedly
