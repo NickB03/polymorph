@@ -82,27 +82,34 @@ export function AdminSidebar() {
           <SidebarMenu>
             {ADMIN_NAV_ITEMS.map(item => {
               const active =
-                pathname === item.href || pathname.startsWith(`${item.href}/`)
+                pathname === item.href ||
+                (pathname?.startsWith(`${item.href}/`) ?? false)
               const Icon = item.icon
               return (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={active}
-                    className={cn(
-                      item.disabled && 'pointer-events-none opacity-50'
-                    )}
-                  >
-                    <Link
-                      href={item.disabled ? '#' : item.href}
-                      aria-disabled={item.disabled}
-                      data-active={active ? 'true' : 'false'}
-                      className="flex items-center gap-2"
+                  {item.disabled ? (
+                    <SidebarMenuButton
+                      isActive={active}
+                      disabled
+                      aria-disabled
+                      tabIndex={-1}
+                      className="cursor-default opacity-50"
                     >
                       <Icon className="size-4" />
                       <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
+                    </SidebarMenuButton>
+                  ) : (
+                    <SidebarMenuButton asChild isActive={active}>
+                      <Link
+                        href={item.href}
+                        data-active={active ? 'true' : 'false'}
+                        className="flex items-center gap-2"
+                      >
+                        <Icon className="size-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               )
             })}
