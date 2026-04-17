@@ -49,7 +49,11 @@ export function useActivityFeed(
   const pendingAutoOpen = useRef(false)
   const prevChatId = useRef<string | undefined>(undefined)
   const activityItemsRef = useRef<ActivityItem[]>(state.items)
-  const didChatChange = prevChatId.current !== chatId
+  // chatId at the end of the most recent activity scan. Separate from
+  // prevChatId (owned by the reset effect below) so the scan effect can
+  // detect a chat change from inside its own body — reads are allowed in
+  // effects, but the previous render-time compare flagged react-hooks/refs.
+  const scanChatIdRef = useRef<string | undefined>(undefined)
 
   // Reset on chatId change
   useEffect(() => {
@@ -80,6 +84,9 @@ export function useActivityFeed(
 
   // Scan latest assistant message
   useEffect(() => {
+    const didChatChange = scanChatIdRef.current !== chatId
+    scanChatIdRef.current = chatId
+
     const lastAssistant = messages.findLast(m => m.role === 'assistant')
     if (!lastAssistant) return
 
@@ -221,7 +228,6 @@ export function useActivityFeed(
   }, [
     messages,
     status,
-    didChatChange,
     state.isResearchMode,
     addItem,
     updateItem,
