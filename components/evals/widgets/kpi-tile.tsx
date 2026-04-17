@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react'
+
 import { formatDistanceToNow } from 'date-fns'
 
 import { computeFindings } from '@/lib/evals/helpers/findings'
@@ -38,7 +40,24 @@ const METRIC_LABELS: Record<Metric, string> = {
 
 const HOUR = 60 * 60 * 1000
 
+// Subscribe-once store: reads Date.now() only outside of render. Server
+// snapshot is 0 so SSR and first client paint agree on a placeholder; the
+// subscriber fires once on mount to record the real time.
+function subscribeNow(onStoreChange: () => void) {
+  onStoreChange()
+  return () => {}
+}
+function getServerNow() {
+  return 0
+}
+
 export function KpiTile({ data, config, breakpoint }: WidgetProps<Config>) {
+  const nowMs = useSyncExternalStore(
+    subscribeNow,
+    () => Date.now(),
+    getServerNow
+  )
+
   if (breakpoint === 'sm' && config.metric === 'systemHealth') {
     return <SystemHealthPill data={data} config={config} />
   }
@@ -108,9 +127,13 @@ export function KpiTile({ data, config, breakpoint }: WidgetProps<Config>) {
       if (!iso) {
         value = '—'
         state = 'critical'
+      } else if (nowMs === 0) {
+        // Pre-hydration: show placeholder until useSyncExternalStore commits.
+        value = '—'
+        state = 'healthy'
       } else {
         value = formatDistanceToNow(new Date(iso))
-        const hours = (Date.now() - new Date(iso).getTime()) / HOUR
+        const hours = (nowMs - new Date(iso).getTime()) / HOUR
         state = hours >= 12 ? 'critical' : hours >= 7 ? 'warning' : 'healthy'
       }
       break
