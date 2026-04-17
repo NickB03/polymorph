@@ -1,5 +1,7 @@
 import { SearchResults } from '@/lib/types'
 
+import { SearchProviderError, SearchProviderName } from './errors'
+
 export interface SearchProvider {
   search(
     query: string,
@@ -34,9 +36,11 @@ export abstract class BaseSearchProvider implements SearchProvider {
     providerName: string
   ): asserts key is string {
     if (!key) {
-      throw new Error(
-        `${providerName}_API_KEY is not set in the environment variables`
-      )
+      throw new SearchProviderError({
+        provider: providerName.toLowerCase() as SearchProviderName,
+        message: `${providerName}_API_KEY is not set in the environment variables`,
+        retryable: false
+      })
     }
   }
 
@@ -45,9 +49,11 @@ export abstract class BaseSearchProvider implements SearchProvider {
     providerName: string
   ): void {
     if (!url) {
-      throw new Error(
-        `${providerName}_API_URL is not set in the environment variables`
-      )
+      throw new SearchProviderError({
+        provider: providerName.toLowerCase() as SearchProviderName,
+        message: `${providerName}_API_URL is not set in the environment variables`,
+        retryable: false
+      })
     }
   }
 }
