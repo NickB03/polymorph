@@ -143,7 +143,7 @@ export const TEMPLATE_B: EvalsLayoutTemplate = {
       config: {
         suite: 'trafficMonitor',
         variant: 'column',
-        cadence: 'every 6h',
+        cadence: 'daily',
         showAlarmCount: true
       }
     },

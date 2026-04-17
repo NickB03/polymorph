@@ -193,7 +193,7 @@ export function SuiteHeaderCard({
             <CardTitle className="text-base">{title}</CardTitle>
             <p className="text-xs text-muted-foreground">
               {suiteKey === 'trafficMonitor'
-                ? 'real user chats · sampled every 6h'
+                ? 'real user chats · sampled daily'
                 : 'rehearsed · on-demand'}
             </p>
           </div>
@@ -257,7 +257,7 @@ function SuiteEmptyState({
     variant === 'hero' ? Activity : variant === 'ring' ? Sparkles : BarChart3
   const helper =
     title === 'Traffic Monitor'
-      ? 'Runs land every 6h from the evals cron.'
+      ? 'Runs land daily from the evals cron or on manual trigger.'
       : 'Runs land on demand from the rehearsed suite.'
 
   if (variant === 'rail' || variant === 'ring') {
@@ -308,7 +308,7 @@ function SuiteEmptyState({
             <CardTitle className="text-base">{title}</CardTitle>
             <p className="text-xs text-muted-foreground">
               {title === 'Traffic Monitor'
-                ? 'real user chats · sampled every 6h'
+                ? 'real user chats · sampled daily'
                 : 'rehearsed · on-demand'}
             </p>
           </div>

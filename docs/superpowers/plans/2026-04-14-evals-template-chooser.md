@@ -80,7 +80,7 @@ Single shared widget registered as `WidgetTypeId: 'empty-state'`, rendered full-
 
 - A: _"No health signals yet"_ / _"The evals service hasn't recorded a Traffic Monitor run. Once a run lands, system health, pass rate, and freshness will populate this board."_
 - B: _"Nothing to compare yet"_ / _"This layout shows divergence between capability (rehearsed) and traffic-monitor (real) suites. Run at least one of each to see them side by side."_
-- C: _"Activity feed is quiet"_ / _"As eval runs land in Postgres, they'll stream into this feed newest-first. The next Traffic Monitor run is scheduled every 6h."_
+- C: _"Activity feed is quiet"_ / _"As eval runs land in Postgres, they'll stream into this feed newest-first. The next Traffic Monitor run is scheduled daily."_
 
 See wireframe `kBmYr`. Implementation in Task 26c.
 
@@ -1290,7 +1290,7 @@ const TEMPLATE_B: EvalsLayoutTemplate = {
       config: {
         suite: 'trafficMonitor',
         variant: 'column',
-        cadence: 'every 6h',
+        cadence: 'daily',
         showAlarmCount: true
       }
     },
@@ -1991,7 +1991,7 @@ export function SuiteHeaderCard({ data, config }: WidgetProps<Config>) {
             <CardTitle className="text-base">{title}</CardTitle>
             <p className="text-xs text-muted-foreground">
               {suiteKey === 'trafficMonitor'
-                ? 'real user chats · sampled every 6h'
+                ? 'real user chats · sampled daily'
                 : 'rehearsed · on-demand'}
             </p>
           </div>
@@ -3972,7 +3972,7 @@ const COPY: Record<TemplateId, { title: string; body: string }> = {
   },
   c: {
     title: 'Activity feed is quiet',
-    body: "As eval runs land in Postgres, they'll stream into this feed newest-first. The next Traffic Monitor run is scheduled every 6h."
+    body: "As eval runs land in Postgres, they'll stream into this feed newest-first. The next Traffic Monitor run is scheduled daily."
   }
 }
 

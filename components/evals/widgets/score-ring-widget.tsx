@@ -21,7 +21,7 @@ export function ScoreRingWidget({ data, config }: WidgetProps<Config>) {
     const helper =
       config.suite === 'capability'
         ? 'Runs on demand from the rehearsed suite.'
-        : 'Runs every 6h from the evals cron.'
+        : 'Runs daily from the evals cron or on manual trigger.'
     return (
       <Card className="flex h-full flex-col border-dashed bg-muted/10">
         <CardHeader>
