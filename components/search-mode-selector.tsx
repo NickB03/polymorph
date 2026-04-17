@@ -18,31 +18,31 @@ import {
   DropdownMenuTrigger
 } from './ui/dropdown-menu'
 
-export function SearchModeSelector() {
-  const [value, setValue] = useState<SearchMode>('chat')
-  const [dropdownOpen, setDropdownOpen] = useState(false)
+// Read-and-normalise the search mode cookie once on the client. Declared
+// outside the component so the lazy useState initialiser stays pure from the
+// rule's perspective (no state/ref access during render).
+function readInitialSearchMode(): SearchMode {
+  if (typeof document === 'undefined') return 'chat'
+  const savedMode = getCookie('searchMode')
+  const mapped =
+    savedMode === 'quick'
+      ? 'chat'
+      : savedMode === 'adaptive'
+        ? 'research'
+        : savedMode
+  if (isValidSearchMode(mapped)) {
+    if (mapped !== savedMode) syncSearchMode(mapped)
+    return mapped
+  }
+  if (savedMode) {
+    syncSearchMode('chat')
+  }
+  return 'chat'
+}
 
-  useEffect(() => {
-    const savedMode = getCookie('searchMode')
-    // Backward compat: map old values to new ones
-    const mapped =
-      savedMode === 'quick'
-        ? 'chat'
-        : savedMode === 'adaptive'
-          ? 'research'
-          : savedMode
-    if (isValidSearchMode(mapped)) {
-      setValue(mapped)
-      // Overwrite cookie if it had an old value
-      if (mapped !== savedMode) {
-        syncSearchMode(mapped)
-      }
-    } else if (savedMode) {
-      // Clean up invalid cookie value
-      syncSearchMode('chat')
-      setValue('chat')
-    }
-  }, [])
+export function SearchModeSelector() {
+  const [value, setValue] = useState<SearchMode>(readInitialSearchMode)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   // Sync local state when cookie is changed programmatically (e.g. research suggestion)
   useEffect(() => {
