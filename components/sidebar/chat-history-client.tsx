@@ -46,6 +46,12 @@ export function ChatHistoryClient() {
   }, [])
 
   useEffect(() => {
+    // why: on-mount data fetch — fetchInitialChats synchronously flips
+    // isLoading true before awaiting. This is the canonical "synchronise
+    // React state with an external data source" pattern the React docs
+    // allow; restructuring this would require moving to Suspense/use(),
+    // which is out of scope for this lint pass.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchInitialChats()
   }, [fetchInitialChats])
 
