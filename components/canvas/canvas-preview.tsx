@@ -84,7 +84,6 @@ export function CanvasPreview() {
     setArtifact
   } = canvas
   const iframeRef = useRef<HTMLIFrameElement>(null)
-  const nonceRef = useRef(generateNonce())
   const successClearTimeoutRef = useRef<number | null>(null)
   const artifactId = artifact?.artifactId ?? null
   const pendingArtifactId = pendingWorkspace?.artifactId ?? null
@@ -107,12 +106,13 @@ export function CanvasPreview() {
     return null
   }, [artifactId, compileProgress, pendingArtifactId])
 
-  // Rotate nonce when draftCompiledHtml changes
-  const prevHtmlRef = useRef(artifact?.draftCompiledHtml)
-  if (artifact?.draftCompiledHtml !== prevHtmlRef.current) {
-    prevHtmlRef.current = artifact?.draftCompiledHtml
-    nonceRef.current = generateNonce()
-  }
+  // Rotate nonce when draftCompiledHtml changes — useMemo gives us a stable
+  // value per compiled-HTML version without mutating a ref during render.
+  const nonce = useMemo(
+    () => generateNonce(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- dep is intentional trigger for rotation
+    [artifact?.draftCompiledHtml]
+  )
 
   // ── Post runtime diagnostics to the server ─────────────────────
 
@@ -161,7 +161,7 @@ export function CanvasPreview() {
       type: 'init',
       artifactId: artifact.artifactId,
       revisionId: String(artifact.draftRevision),
-      nonce: nonceRef.current,
+      nonce: nonce,
       parentOrigin: window.location.origin
     }
 
@@ -180,17 +180,15 @@ export function CanvasPreview() {
         successClearTimeoutRef.current = null
       }, 600)
     }
-  }, [activeCompileProgress, artifact, clearCompileProgress])
+  }, [activeCompileProgress, artifact, clearCompileProgress, nonce])
 
   // ── Listen for messages from the iframe ────────────────────────
 
   useEffect(() => {
     if (!artifact) return
 
-    const currentNonce = nonceRef.current
     const currentArtifactId = artifact.artifactId
     const currentDraftRevision = artifact.draftRevision
-    const currentRevision = String(currentDraftRevision)
 
     function handleMessage(event: MessageEvent) {
       const data = event.data as CanvasPreviewEnvelope | undefined
