@@ -450,9 +450,7 @@ export default function EvalsDemoPage() {
               Mock data — design preview
             </span>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Evaluations
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Evaluations</h1>
           <p className="text-sm text-muted-foreground">
             Capability suite and Traffic Monitor at a glance. Switch views,
             filter by suite, and drill into any run.
@@ -481,21 +479,13 @@ export default function EvalsDemoPage() {
             description="Last 7 days of pass rate and overall score."
           />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <TrendCard
-              title="Pass rate"
-              helper="Capability suite"
-              trend="up"
-            />
+            <TrendCard title="Pass rate" helper="Capability suite" trend="up" />
             <TrendCard
               title="Pass rate"
               helper="Traffic Monitor"
               trend="down"
             />
-            <TrendCard
-              title="Overall score"
-              helper="Combined"
-              trend="flat"
-            />
+            <TrendCard title="Overall score" helper="Combined" trend="flat" />
           </div>
         </section>
 
