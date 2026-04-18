@@ -8,6 +8,43 @@ export type SuggestionCategory =
   | 'summarize'
   | 'explain'
 
+export type TrendingSuggestionsSource = 'tavily' | 'brave' | 'exa' | 'default'
+
+export type TrendingSuggestionsFailureReason =
+  | 'no-search-provider-configured'
+  | 'search-provider-failed'
+  | 'context-empty'
+  | 'model-generation-failed'
+
+export interface TrendingSuggestionsMeta {
+  generatedAt: string | null
+  isFallback: boolean
+  failureReason: TrendingSuggestionsFailureReason | null
+}
+
+export interface TrendingSuggestionsPayload {
+  suggestions: Record<SuggestionCategory, string[]>
+  source: TrendingSuggestionsSource
+  meta: TrendingSuggestionsMeta
+}
+
+export type TrendingSuggestionsServeMode =
+  | 'primary-cache'
+  | 'fresh-generated'
+  | 'stale-cache'
+  | 'placeholder'
+
+export interface TrendingSuggestionsResponseMeta extends TrendingSuggestionsMeta {
+  source: TrendingSuggestionsSource | 'cache' | 'default'
+  serveMode: TrendingSuggestionsServeMode
+  servedFrom: TrendingSuggestionsServeMode
+}
+
+export interface TrendingSuggestionsResponse {
+  suggestions: Record<SuggestionCategory, string[]>
+  meta: TrendingSuggestionsResponseMeta
+}
+
 export type SearchResults = {
   images: SearchResultImage[]
   results: SearchResultItem[]

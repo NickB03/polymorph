@@ -53,6 +53,13 @@ Required when `ENABLE_AUTH=true`:
 
 `fetch type="api"` is reserved for PDFs and explicit extraction needs on hard-to-parse pages. Normal HTML article pages should generally be handled by search results or `fetch type="regular"`, which keeps research resilient even when an extractor is rate-limited or quota-limited.
 
+## Suggested prompt freshness
+
+The homepage suggested prompt pills fall back to static defaults unless both of these are true:
+
+- `AI_GATEWAY_API_KEY` is configured for the trending-suggestions model
+- At least one trend-search provider is configured: `BRAVE_SEARCH_API_KEY`, `TAVILY_API_KEY`, or `EXA_API_KEY`
+
 ## AI provider options (Direct)
 
 - `OPENAI_API_KEY`

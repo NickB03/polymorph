@@ -27,6 +27,11 @@ import { GET } from '../route'
 describe('GET /api/suggestions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGenerateTrendingSuggestions.mockReset()
+    mockGetRedis.mockReset()
+    mockRedisGet.mockReset()
+    mockRedisSet.mockReset()
+    mockRedisDel.mockReset()
 
     mockGetRedis.mockReturnValue({
       get: mockRedisGet,
@@ -44,12 +49,22 @@ describe('GET /api/suggestions', () => {
     const response = await GET()
     const json = await response.json()
 
-    expect(json).toEqual(DEFAULT_SUGGESTIONS)
+    expect(json).toEqual({
+      suggestions: DEFAULT_SUGGESTIONS,
+      meta: {
+        source: 'cache',
+        serveMode: 'primary-cache',
+        servedFrom: 'primary-cache',
+        generatedAt: null,
+        isFallback: false,
+        failureReason: null
+      }
+    })
     expect(response.headers.get('x-suggestions-source')).toBe('cache')
     expect(response.headers.get('x-suggestions-serve-mode')).toBe(
       'primary-cache'
     )
-    expect(response.headers.get('cache-control')).toContain('s-maxage=14400')
+    expect(response.headers.get('cache-control')).toContain('s-maxage=1800')
     expect(mockGenerateTrendingSuggestions).not.toHaveBeenCalled()
   })
 
@@ -57,67 +72,127 @@ describe('GET /api/suggestions', () => {
     mockRedisGet.mockResolvedValueOnce(null)
     mockGenerateTrendingSuggestions.mockResolvedValue({
       suggestions: DEFAULT_SUGGESTIONS,
-      source: 'tavily'
+      source: 'tavily',
+      meta: {
+        generatedAt: '2026-04-17T16:00:00.000Z',
+        isFallback: false,
+        failureReason: null
+      }
     })
 
     const response = await GET()
     const json = await response.json()
 
-    expect(json).toEqual(DEFAULT_SUGGESTIONS)
+    expect(json).toEqual({
+      suggestions: DEFAULT_SUGGESTIONS,
+      meta: {
+        source: 'tavily',
+        serveMode: 'fresh-generated',
+        servedFrom: 'fresh-generated',
+        generatedAt: '2026-04-17T16:00:00.000Z',
+        isFallback: false,
+        failureReason: null
+      }
+    })
     expect(response.headers.get('x-suggestions-source')).toBe('tavily')
     expect(response.headers.get('x-suggestions-serve-mode')).toBe(
       'fresh-generated'
     )
-    expect(response.headers.get('x-suggestions-cache-ttl')).toBe('14400')
-    expect(response.headers.get('cache-control')).toContain('s-maxage=14400')
+    expect(response.headers.get('x-suggestions-cache-ttl')).toBe('1800')
+    expect(response.headers.get('cache-control')).toContain('s-maxage=1800')
     expect(response.headers.get('cache-control')).toContain(
-      'stale-while-revalidate=3600'
+      'stale-while-revalidate=300'
     )
     expect(mockRedisSet).toHaveBeenCalledWith(
       'trending:suggestions',
-      DEFAULT_SUGGESTIONS,
-      { ex: 14400 }
+      {
+        suggestions: DEFAULT_SUGGESTIONS,
+        source: 'tavily',
+        meta: {
+          generatedAt: '2026-04-17T16:00:00.000Z',
+          isFallback: false,
+          failureReason: null
+        }
+      },
+      { ex: 1800 }
     )
     expect(mockRedisSet).toHaveBeenCalledWith(
       'trending:suggestions:stale',
-      DEFAULT_SUGGESTIONS,
-      { ex: 604800 }
+      {
+        suggestions: DEFAULT_SUGGESTIONS,
+        source: 'tavily',
+        meta: {
+          generatedAt: '2026-04-17T16:00:00.000Z',
+          isFallback: false,
+          failureReason: null
+        }
+      },
+      { ex: 86400 }
     )
   })
 
-  it('uses stale cache when generation falls back to defaults', async () => {
-    const stale = {
-      ...DEFAULT_SUGGESTIONS,
-      latest: [
-        'stale latest 1',
-        'stale latest 2',
-        'stale latest 3',
-        'stale latest 4'
-      ]
+  it('preserves stale dynamic cache when generation degrades', async () => {
+    const stalePayload = {
+      suggestions: {
+        ...DEFAULT_SUGGESTIONS,
+        latest: [
+          'stale latest 1',
+          'stale latest 2',
+          'stale latest 3',
+          'stale latest 4'
+        ]
+      },
+      source: 'brave',
+      meta: {
+        generatedAt: '2026-04-17T15:00:00.000Z',
+        isFallback: false,
+        failureReason: null
+      }
     }
 
     mockRedisGet.mockImplementation((key: string) => {
       if (key === 'trending:suggestions') return Promise.resolve(null)
-      if (key === 'trending:suggestions:stale') return Promise.resolve(stale)
+      if (key === 'trending:suggestions:stale') {
+        return Promise.resolve(stalePayload)
+      }
       return Promise.resolve(null)
     })
 
     mockGenerateTrendingSuggestions.mockResolvedValue({
       suggestions: DEFAULT_SUGGESTIONS,
-      source: 'default'
+      source: 'default',
+      meta: {
+        generatedAt: null,
+        isFallback: true,
+        failureReason: 'search-provider-failed'
+      }
     })
 
     const response = await GET()
     const json = await response.json()
 
-    expect(json).toEqual(stale)
-    expect(response.headers.get('x-suggestions-source')).toBe('default')
-    expect(response.headers.get('x-suggestions-serve-mode')).toBe('stale-cache')
-    expect(response.headers.get('x-suggestions-cache-ttl')).toBe('900')
-    expect(response.headers.get('cache-control')).toContain('s-maxage=900')
-    expect(mockRedisSet).toHaveBeenCalledWith('trending:suggestions', stale, {
-      ex: 900
+    expect(json).toEqual({
+      suggestions: stalePayload.suggestions,
+      meta: {
+        source: 'brave',
+        serveMode: 'stale-cache',
+        servedFrom: 'stale-cache',
+        generatedAt: '2026-04-17T15:00:00.000Z',
+        isFallback: false,
+        failureReason: null
+      }
     })
+    expect(response.headers.get('x-suggestions-source')).toBe('brave')
+    expect(response.headers.get('x-suggestions-serve-mode')).toBe('stale-cache')
+    expect(response.headers.get('x-suggestions-cache-ttl')).toBe('1800')
+    expect(response.headers.get('cache-control')).toContain('s-maxage=1800')
+    expect(mockRedisSet).toHaveBeenCalledWith(
+      'trending:suggestions',
+      stalePayload,
+      {
+        ex: 1800
+      }
+    )
     expect(mockRedisSet).not.toHaveBeenCalledWith(
       'trending:suggestions:stale',
       expect.anything(),
@@ -125,18 +200,39 @@ describe('GET /api/suggestions', () => {
     )
   })
 
-  it('sets short CDN TTL when all providers fail without Redis', async () => {
-    mockGetRedis.mockReturnValue(null)
+  it('does not cache hardcoded default fallback responses', async () => {
+    mockRedisGet.mockResolvedValueOnce(null)
     mockGenerateTrendingSuggestions.mockResolvedValue({
       suggestions: DEFAULT_SUGGESTIONS,
-      source: 'default'
+      source: 'default',
+      meta: {
+        generatedAt: null,
+        isFallback: true,
+        failureReason: 'no-search-provider-configured'
+      }
     })
 
     const response = await GET()
     const json = await response.json()
 
-    expect(json).toEqual(DEFAULT_SUGGESTIONS)
+    expect(json).toEqual({
+      suggestions: DEFAULT_SUGGESTIONS,
+      meta: {
+        source: 'default',
+        serveMode: 'fresh-generated',
+        servedFrom: 'fresh-generated',
+        generatedAt: null,
+        isFallback: true,
+        failureReason: 'no-search-provider-configured'
+      }
+    })
     expect(response.headers.get('x-suggestions-source')).toBe('default')
-    expect(response.headers.get('cache-control')).toContain('s-maxage=900')
+    expect(response.headers.get('cache-control')).toBe('no-store')
+    expect(response.headers.get('cdn-cache-control')).toBe('no-store')
+    expect(mockRedisSet).not.toHaveBeenCalledWith(
+      'trending:suggestions',
+      expect.anything(),
+      expect.anything()
+    )
   })
 })

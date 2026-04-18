@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi
+} from 'vitest'
 
 import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
 
@@ -41,16 +49,41 @@ vi.mock('@/lib/tools/search/providers/exa', () => ({
 
 import { generateTrendingSuggestions } from '@/lib/agents/generate-trending-suggestions'
 
+const originalSearchProviderEnv = {
+  BRAVE_SEARCH_API_KEY: process.env.BRAVE_SEARCH_API_KEY,
+  TAVILY_API_KEY: process.env.TAVILY_API_KEY,
+  EXA_API_KEY: process.env.EXA_API_KEY
+}
+
 describe('generateTrendingSuggestions', () => {
+  beforeAll(() => {
+    process.env.BRAVE_SEARCH_API_KEY = 'test-brave-key'
+    process.env.TAVILY_API_KEY = 'test-tavily-key'
+    process.env.EXA_API_KEY = 'test-exa-key'
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useRealTimers()
+
+    process.env.BRAVE_SEARCH_API_KEY = 'test-brave-key'
+    process.env.TAVILY_API_KEY = 'test-tavily-key'
+    process.env.EXA_API_KEY = 'test-exa-key'
 
     mockGetTrendingSuggestionsModel.mockReturnValue({
       providerId: 'gateway',
       id: 'google/gemini-3-flash'
     })
     mockGetModel.mockReturnValue('mock-model')
+  })
+
+  afterAll(() => {
+    restoreEnv(
+      'BRAVE_SEARCH_API_KEY',
+      originalSearchProviderEnv.BRAVE_SEARCH_API_KEY
+    )
+    restoreEnv('TAVILY_API_KEY', originalSearchProviderEnv.TAVILY_API_KEY)
+    restoreEnv('EXA_API_KEY', originalSearchProviderEnv.EXA_API_KEY)
   })
 
   it('uses Brave successfully when available', async () => {
@@ -72,6 +105,9 @@ describe('generateTrendingSuggestions', () => {
     const result = await generateTrendingSuggestions()
 
     expect(result.source).toBe('brave')
+    expect(result.meta.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+    expect(result.meta.isFallback).toBe(false)
+    expect(result.meta.failureReason).toBeNull()
     expect(mockBraveSearch).toHaveBeenCalled()
     expect(mockTavilySearch).not.toHaveBeenCalled()
   })
@@ -243,4 +279,39 @@ describe('generateTrendingSuggestions', () => {
     expect(result.suggestions).toEqual(DEFAULT_SUGGESTIONS)
     expect(mockGenerateObject).not.toHaveBeenCalled()
   })
+
+  it('returns an explicit fallback reason when no search providers are configured', async () => {
+    const originalBraveKey = process.env.BRAVE_SEARCH_API_KEY
+    const originalTavilyKey = process.env.TAVILY_API_KEY
+    const originalExaKey = process.env.EXA_API_KEY
+
+    delete process.env.BRAVE_SEARCH_API_KEY
+    delete process.env.TAVILY_API_KEY
+    delete process.env.EXA_API_KEY
+
+    try {
+      const result = await generateTrendingSuggestions()
+
+      expect(result.source).toBe('default')
+      expect(result.meta.generatedAt).toBeNull()
+      expect(result.meta.isFallback).toBe(true)
+      expect(result.meta.failureReason).toBe('no-search-provider-configured')
+    } finally {
+      restoreEnv('BRAVE_SEARCH_API_KEY', originalBraveKey)
+      restoreEnv('TAVILY_API_KEY', originalTavilyKey)
+      restoreEnv('EXA_API_KEY', originalExaKey)
+    }
+  })
 })
+
+function restoreEnv(
+  key: 'BRAVE_SEARCH_API_KEY' | 'TAVILY_API_KEY' | 'EXA_API_KEY',
+  value: string | undefined
+) {
+  if (typeof value === 'undefined') {
+    delete process.env[key]
+    return
+  }
+
+  process.env[key] = value
+}

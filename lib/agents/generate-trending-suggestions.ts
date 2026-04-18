@@ -6,7 +6,12 @@ import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
 import { BraveSearchProvider } from '@/lib/tools/search/providers/brave'
 import { ExaSearchProvider } from '@/lib/tools/search/providers/exa'
 import { TavilySearchProvider } from '@/lib/tools/search/providers/tavily'
-import type { SuggestionCategory } from '@/lib/types'
+import type {
+  SuggestionCategory,
+  TrendingSuggestionsFailureReason,
+  TrendingSuggestionsPayload,
+  TrendingSuggestionsSource
+} from '@/lib/types'
 import { createModelId } from '@/lib/utils'
 import { getModel } from '@/lib/utils/registry'
 
@@ -37,13 +42,6 @@ Rules:
 - "research" and "explain" must NEVER contain political prompts
 - For research, compare, summarize, and explain: prefer evergreen-feeling prompts inspired by trends over ephemeral headline references
 - For latest: do the OPPOSITE — use specific, timely references to actual events from the trending context. Never be vague or generic in this category.`
-
-export type TrendingSuggestionsSource = 'tavily' | 'brave' | 'exa' | 'default'
-
-export type TrendingSuggestionsResult = {
-  suggestions: Record<SuggestionCategory, string[]>
-  source: TrendingSuggestionsSource
-}
 
 const TRENDING_QUERIES = [
   'science technology breakthroughs',
@@ -82,6 +80,28 @@ function buildContext(
       return `- ${title}: ${content}`
     })
     .join('\n')
+}
+
+function hasConfiguredSearchProvider(): boolean {
+  return Boolean(
+    process.env.BRAVE_SEARCH_API_KEY ||
+    process.env.TAVILY_API_KEY ||
+    process.env.EXA_API_KEY
+  )
+}
+
+function buildDefaultResult(
+  failureReason: TrendingSuggestionsFailureReason
+): TrendingSuggestionsPayload {
+  return {
+    suggestions: DEFAULT_SUGGESTIONS,
+    source: 'default',
+    meta: {
+      generatedAt: null,
+      isFallback: true,
+      failureReason
+    }
+  }
 }
 
 async function getTrendingContextFromTavily(): Promise<string> {
@@ -132,7 +152,11 @@ async function getTrendingContextFromBrave(): Promise<string> {
  * Gemini Flash to generate categorized prompt suggestions. Falls back to static
  * defaults on any error.
  */
-export async function generateTrendingSuggestions(): Promise<TrendingSuggestionsResult> {
+export async function generateTrendingSuggestions(): Promise<TrendingSuggestionsPayload> {
+  if (!hasConfiguredSearchProvider()) {
+    return buildDefaultResult('no-search-provider-configured')
+  }
+
   try {
     let context = ''
     let source: TrendingSuggestionsSource = 'default'
@@ -155,37 +179,46 @@ export async function generateTrendingSuggestions(): Promise<TrendingSuggestions
           tavilyError
         )
 
-        context = await getTrendingContextFromExa()
-        source = 'exa'
+        try {
+          context = await getTrendingContextFromExa()
+          source = 'exa'
+        } catch (exaError) {
+          console.error('Failed to generate trending suggestions:', exaError)
+          return buildDefaultResult('search-provider-failed')
+        }
       }
     }
 
     if (!context.trim()) {
-      return {
-        suggestions: DEFAULT_SUGGESTIONS,
-        source: 'default'
-      }
+      return buildDefaultResult('context-empty')
     }
 
-    const suggestionsModel = getTrendingSuggestionsModel()
-    const modelId = createModelId(suggestionsModel)
+    try {
+      const suggestionsModel = getTrendingSuggestionsModel()
+      const modelId = createModelId(suggestionsModel)
 
-    const { object } = await generateObject({
-      model: getModel(modelId),
-      schema: trendingSuggestionsSchema,
-      system: SYSTEM_PROMPT,
-      prompt: `Here are today's trending topics across various domains:\n\n${context}\n\nGenerate diverse, category-appropriate prompt suggestions. Ensure broad domain coverage and limit political content.`
-    })
+      const { object } = await generateObject({
+        model: getModel(modelId),
+        schema: trendingSuggestionsSchema,
+        system: SYSTEM_PROMPT,
+        prompt: `Here are today's trending topics across various domains:\n\n${context}\n\nGenerate diverse, category-appropriate prompt suggestions. Ensure broad domain coverage and limit political content.`
+      })
 
-    return {
-      suggestions: object,
-      source
+      return {
+        suggestions: object,
+        source,
+        meta: {
+          generatedAt: new Date().toISOString(),
+          isFallback: false,
+          failureReason: null
+        }
+      }
+    } catch (modelError) {
+      console.error('Failed to generate trending suggestions:', modelError)
+      return buildDefaultResult('model-generation-failed')
     }
   } catch (error) {
     console.error('Failed to generate trending suggestions:', error)
-    return {
-      suggestions: DEFAULT_SUGGESTIONS,
-      source: 'default'
-    }
+    return buildDefaultResult('search-provider-failed')
   }
 }
