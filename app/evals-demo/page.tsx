@@ -529,7 +529,7 @@ export default function EvalsDemoPage() {
 
         <Separator />
         <footer className="text-xs text-muted-foreground">
-          Demo only · No live data · /admin/evals/demo
+          Demo only · No live data · /evals-demo
         </footer>
       </div>
     </div>
