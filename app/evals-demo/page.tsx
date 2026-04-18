@@ -26,8 +26,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 
-export const dynamic = 'force-dynamic'
-
 type Trend = 'up' | 'down' | 'flat'
 
 interface KpiTile {
