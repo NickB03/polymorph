@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import Textarea from 'react-textarea-autosize'
 
 import { UseChatHelpers } from '@ai-sdk/react'
@@ -108,6 +108,13 @@ export function ChatPanel({
     }, 300)
   }
 
+  const appendInitialQuery = useEffectEvent((initialQuery: string) => {
+    append({
+      role: 'user',
+      content: initialQuery
+    })
+  })
+
   const isToolInvocationInProgress = () => {
     if (!messages.length) return false
 
@@ -126,14 +133,10 @@ export function ChatPanel({
 
   // if query is not empty, submit the query
   useEffect(() => {
-    if (isFirstRender.current && query && query.trim().length > 0) {
-      append({
-        role: 'user',
-        content: query
-      })
-      isFirstRender.current = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!isFirstRender.current || !query || query.trim().length === 0) return
+
+    appendInitialQuery(query)
+    isFirstRender.current = false
   }, [query])
 
   const handleFileRemove = useCallback(

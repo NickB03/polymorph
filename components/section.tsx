@@ -8,7 +8,7 @@ import {
   File,
   FileText,
   Film,
-  Image,
+  Image as ImageIcon,
   MessageCircleMore,
   Repeat2,
   Search
@@ -42,8 +42,7 @@ export const Section: React.FC<SectionProps> = ({
   let type: 'text' | 'badge' = 'text'
   switch (title) {
     case 'Images':
-      // eslint-disable-next-line jsx-a11y/alt-text
-      icon = <Image size={iconSize} className={iconClassName} />
+      icon = <ImageIcon size={iconSize} className={iconClassName} />
       break
     case 'Videos':
       icon = <Film size={iconSize} className={iconClassName} />

@@ -58,7 +58,7 @@ export function CanvasCompileProgress({
   // why: `choice.at` records the wall-clock moment the compile outcome was
   // observed — a timestamp read that must happen at commit time, not during
   // render, so the effect + setState pattern is the correct choice here.
-  /* eslint-disable react-hooks/set-state-in-effect */
+  /* eslint-disable react-hooks/set-state-in-effect -- capture the wall-clock moment each compile outcome is observed */
   useEffect(() => {
     if (progress.outcome === 'success') {
       setChoice({

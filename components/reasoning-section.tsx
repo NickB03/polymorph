@@ -55,7 +55,7 @@ export function ReasoningSection({
   // memoisation layer — the computed preview is identical whether served from
   // cache or recomputed — and using state here would flag set-state-in-effect.
   const streamingPreviewRef = useRef<string | null>(null)
-  /* eslint-disable react-hooks/refs */
+  /* eslint-disable react-hooks/refs -- preserve the first streamed preview in a ref so the collapsed label does not churn while reasoning streams */
   const preview = useMemo(() => {
     const text = content?.reasoning || ''
     if (!text) return streamingPreviewRef.current

@@ -17,7 +17,7 @@ export function useContentEntrance(delayMs = 0) {
     // opacity-0 → animate-content-enter on mount. Setting hasEntered during
     // render would skip the transition entirely; the React-blessed way to
     // trigger a one-shot entrance animation is exactly this pattern.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- trigger the one-shot mount transition after first paint
     setHasEntered(true)
   }, [])
 

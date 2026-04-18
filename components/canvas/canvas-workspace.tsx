@@ -222,7 +222,7 @@ export function CanvasWorkspace() {
   useEffect(() => {
     if (activeTab === 'activity') {
       if (lastSeenActivityCount !== itemCount) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- keep the seen-count synced with the external activity feed while Activity is open
         setLastSeenActivityCount(itemCount)
       }
     } else if (lastSeenActivityCount > itemCount) {

@@ -9,7 +9,7 @@
     "build:canvas-vendor": "bun run scripts/build-canvas-vendor.ts",
     "vercel-build": "bun run build:canvas-vendor && bun run migrate && next build",
     "start": "next start --hostname 0.0.0.0 --port ${PORT:-43100}",
-    "lint": "eslint .",
+    "lint": "eslint . --report-unused-disable-directives",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
