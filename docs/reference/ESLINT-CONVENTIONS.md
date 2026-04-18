@@ -3,11 +3,13 @@
 ## Rule policy
 
 `eslint.config.mjs` inherits many rule levels from `eslint-config-next/core-web-vitals`.
-`tests/eslint-config.test.ts` only guards repo-owned rule changes, and fails if a local
-override downgrades a rule to `warn` or `off` relative to that upstream baseline.
+`tests/eslint-config.test.ts` only guards repo-owned global rule changes, and requires a
+justification in `eslint.config.mjs` when a local override downgrades an upstream rule to
+`warn` or `off`.
 
 If a rule is genuinely wrong for this codebase, disable it at the config level with an
-inline explanation instead of sprinkling file-level disables across the repo.
+inline explanation in `eslint.config.mjs` instead of sprinkling file-level disables across
+the repo.
 
 ## Inline disables
 
@@ -18,6 +20,8 @@ Every `eslint-disable` comment must include a `-- <reason>` trailer:
 ```
 
 Bare directives fail `bun run test` via the guard in `tests/eslint-config.test.ts`.
+The guard scans tracked `*.{js,jsx,ts,tsx,mjs,cjs}` files, including repo-owned config
+files such as `eslint.config.mjs`.
 
 ## When to disable vs refactor
 
