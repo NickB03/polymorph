@@ -54,7 +54,7 @@ export function VideoCarouselDialog({
     // why: external-source subscription — seed count + current from the
     // embla carousel API when it mounts. React docs explicitly allow
     // setState-in-effect for external-source sync.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- seed carousel count from the embla API when it becomes available.
     setCount(api.scrollSnapList().length)
     setCurrent(api.selectedScrollSnap() + 1)
 

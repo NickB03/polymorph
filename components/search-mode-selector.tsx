@@ -37,7 +37,7 @@ export function SearchModeSelector() {
       // why: external-source sync — the cookie is the source of truth for
       // the persisted mode. Promoting its value on mount is the allowed
       // setState-in-effect case.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- promote the persisted cookie mode after mount without changing SSR output
       setValue(mapped)
       if (mapped !== savedMode) syncSearchMode(mapped)
     } else if (savedMode) {

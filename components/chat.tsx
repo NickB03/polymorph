@@ -1,6 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import { useRouter } from 'next/navigation'
 
 import { useChat } from '@ai-sdk/react'
@@ -80,7 +87,7 @@ export function Chat({
   // every render so effects/event handlers read a current value without
   // adding canvas itself to their dependency arrays (the canvas object
   // changes every render).
-  // eslint-disable-next-line react-hooks/refs
+  // eslint-disable-next-line react-hooks/refs -- keep latest canvas actions available without re-subscribing effects to canvas identity churn
   canvasRef.current = canvas
 
   // Mark artifacts as "opened" only after they've successfully loaded.
@@ -145,14 +152,14 @@ export function Chat({
 
   // Initialize guest canvas token from saved messages
   useEffect(() => {
-    if (savedMessages.length > 0) {
-      const token = getLatestGuestCanvasToken(savedMessages)
-      if (token) {
-        guestCanvasTokenRef.current = token
-        canvas.setGuestCanvasToken(token)
-      }
-    }
-  }, [providedId, savedMessages]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (savedMessages.length === 0) return
+
+    const token = getLatestGuestCanvasToken(savedMessages)
+    if (!token) return
+
+    guestCanvasTokenRef.current = token
+    canvasRef.current.setGuestCanvasToken(token)
+  }, [savedMessages])
 
   const autoSendFiredRef = useRef<Set<string>>(new Set())
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -194,7 +201,7 @@ export function Chat({
     // so reading the latest guest canvas token from a ref is exactly the
     // intended pattern — the lint rule cannot distinguish the syntactic
     // render location from the runtime callback invocation.
-    // eslint-disable-next-line react-hooks/refs
+    // eslint-disable-next-line react-hooks/refs -- request-time transport callback must read the latest guest canvas token
     transport: new DefaultChatTransport({
       api: '/api/chat',
       prepareSendMessagesRequest: ({ messages, trigger, messageId }) =>
@@ -365,7 +372,7 @@ export function Chat({
     // why: URL-driven chat switch — syncing chatId (and the derived local
     // state below) from the route param is the one legitimate setState-in-
     // effect pattern the React docs call out (external-source subscription).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- route param changes are an external source and must synchronously reset chat session state
     setChatId(providedId)
     setInput('')
     setUploadedFiles([])
@@ -664,13 +671,17 @@ export function Chat({
     return result
   }, [messages])
 
+  const handleNewChatRequested = useEffectEvent(() => {
+    handleNewChat()
+  })
+
   // Listen for sidebar "New" / logo click to reset chat state
   useEffect(() => {
-    const onNewChatRequested = () => handleNewChat()
+    const onNewChatRequested = () => handleNewChatRequested()
     window.addEventListener('new-chat-requested', onNewChatRequested)
     return () =>
       window.removeEventListener('new-chat-requested', onNewChatRequested)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   // Dispatch custom event when messages change
   useEffect(() => {
@@ -848,7 +859,7 @@ export function Chat({
   // needs to stop the voice loop, but useVoiceConversation can only be set up
   // after useChat returns sendMessage. A ref bridges the cycle; writing it in
   // render is the intentional pattern for exposing the stopVoice handle.
-  // eslint-disable-next-line react-hooks/refs, react-hooks/immutability
+  // eslint-disable-next-line react-hooks/refs, react-hooks/immutability -- expose the latest stopVoice handler to callbacks declared before the voice hook initializes
   stopVoiceRef.current = voiceConversation.stopVoice
   const voiceEnabled = isVoiceEnabled()
 

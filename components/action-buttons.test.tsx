@@ -1,3 +1,5 @@
+import { createElement } from 'react'
+
 import { act, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -5,9 +7,12 @@ import { ActionButtons } from './action-buttons'
 
 vi.mock('next/image', () => ({
   default: (props: Record<string, unknown>) => {
-    const { fill, ...rest } = props
-    // eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element
-    return <img data-fill={fill ? 'true' : undefined} {...rest} />
+    const { fill, alt = '', ...rest } = props
+    return createElement('img', {
+      alt: typeof alt === 'string' ? alt : '',
+      'data-fill': fill ? 'true' : undefined,
+      ...rest
+    })
   }
 }))
 

@@ -105,7 +105,7 @@ const SidebarProvider = React.forwardRef<
       // because cookies are not read during render; the layout effect reads
       // the cookie on mount and promotes the real value. External-source
       // sync (document.cookie) is the allowed setState-in-effect pattern.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate the client cookie value after SSR falls back to defaultOpen
       _setOpen(cookieState)
       setIsHydrated(true)
     }, [defaultOpen])

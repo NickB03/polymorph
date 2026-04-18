@@ -195,7 +195,7 @@ export function useTickerRotation<T>({
       // why: reset the ticker when the driving props (isActive, items,
       // totalShows) change. External-source sync is the explicit allowed
       // setState-in-effect case.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset ticker state when the driving external rotation inputs change
       setActiveIndex(-1)
       setPhase('idle')
       setIsComplete(true)

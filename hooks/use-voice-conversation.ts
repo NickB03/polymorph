@@ -257,7 +257,7 @@ export function useVoiceConversation({
       if (config.autoListen) {
         // why: voice state-machine transition driven by the external TTS
         // player reaching idle — a textbook external-source subscription.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- resume the voice state machine when external playback returns to idle
         setVoiceState('listening')
         void startListening()
       } else {
@@ -332,7 +332,7 @@ export function useVoiceConversation({
     if (config.autoListen) {
       // why: voice state-machine recovery — after a TTS player error we
       // resume listening (external-source subscription via playerError).
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- recover voice mode by restarting listening after an external player error
       setVoiceState('listening')
       void startListening()
       return

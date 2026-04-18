@@ -117,7 +117,7 @@ const Carousel = React.forwardRef<
       // onSelect synchronously calls setCanScrollPrev/Next to seed initial
       // scroll-edge state, which is the explicit-allowed setState-in-effect
       // case for external-source sync.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seed scroll-edge button state from the embla API subscription.
       onSelect(api)
       api.on('reInit', onSelect)
       api.on('select', onSelect)

@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 'use client'
 
 import {
@@ -84,7 +83,7 @@ const useFilteredImages = (images: SearchResultImage[]) => {
       // why: the setStates in this effect all synchronise state with an async
       // external source (the <img> preloading pipeline). React docs explicitly
       // allow setState-in-effect for external-source subscription.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync filtered image state with the browser image-preload lifecycle.
       setState({ status: 'empty', images: [] })
       previousIdsRef.current = normalizedKey
       return
@@ -194,7 +193,7 @@ const useCarouselMetrics = ({
   // external-source subscriptions, and restructuring these would either
   // require lifting state into the parent or duplicating clamping logic on
   // every render.
-  /* eslint-disable react-hooks/set-state-in-effect */
+  /* eslint-disable react-hooks/set-state-in-effect -- sync carousel metrics with the embla API and caller-owned selected index. */
   useEffect(() => {
     if (!api) {
       if (imageCount === 0) {
@@ -314,6 +313,7 @@ export const SearchResultsImageSection: React.FC<
               >
                 <div className="flex-1 h-full">
                   <div className="h-full w-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- search result URLs are arbitrary remotes and need native onError handling. */}
                     <img
                       src={image.url}
                       alt={`Image ${actualIndex + 1}`}
@@ -344,6 +344,7 @@ export const SearchResultsImageSection: React.FC<
                     {filteredImages.map((img, idx) => (
                       <CarouselItem key={img.id}>
                         <div className="p-1 flex items-center justify-center h-full">
+                          {/* eslint-disable-next-line @next/next/no-img-element -- dialog images reuse arbitrary remote result URLs and native onError fallback. */}
                           <img
                             src={img.url}
                             alt={`Image ${idx + 1}`}

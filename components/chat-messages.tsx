@@ -88,7 +88,7 @@ export function ChatMessages({
   // this useMemo does not affect render output (result is identical cached vs.
   // recomputed) and the alternative (per-render recompute of every message's
   // citations during streaming) is measurably slower in long chats.
-  /* eslint-disable react-hooks/refs */
+  /* eslint-disable react-hooks/refs -- mutate the per-chat citation cache inside useMemo without turning cache bookkeeping into render state */
   const allCitationMaps = useMemo(() => {
     const result: Record<
       string,

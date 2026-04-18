@@ -26,7 +26,7 @@ export const AttachmentPreview: React.FC<AttachmentPreviewProps> = ({
         return (
           <div key={index} className="max-w-xs break-words">
             {isImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
+              // eslint-disable-next-line @next/next/no-img-element -- attachment previews use arbitrary remote URLs that are not configured for next/image.
               <img
                 src={att.url}
                 alt={att.name}

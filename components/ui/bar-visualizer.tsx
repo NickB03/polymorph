@@ -69,7 +69,7 @@ export function useAudioVolume(
       // why: mirror React state with the external AudioAnalyser — resetting
       // to 0 when the media stream is gone. External-source sync is an
       // explicitly-allowed setState-in-effect pattern per React docs.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- media stream removal is an external-source change and should immediately zero the displayed volume
       setVolume(0)
       volumeRef.current = 0
       return
@@ -271,7 +271,7 @@ export function useMultibandVolume(
       const emptyBands = new Array(opts.bands).fill(0)
       // why: external-source sync — reset bands when the media stream is
       // unmounted. Same rationale as the volume effect above.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- media stream removal is an external-source change and should immediately zero the displayed bands
       setFrequencyBands(emptyBands)
       bandsRef.current = emptyBands
       return
@@ -386,7 +386,7 @@ export const useBarAnimator = (
     indexRef.current = 0
     // why: reset the animation's displayed frame whenever the sequence prop
     // changes (external source — parent-supplied animation data).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restarting from the first frame keeps sequence changes deterministic
     setCurrentFrame(sequence[0] || [])
   }, [sequence])
 
@@ -525,7 +525,7 @@ const BarVisualizerComponent = React.forwardRef<
         fakeVolumeBandsRef.current = bands
         // why: state-driven sync — when the visualisation leaves an
         // "active" state, snap demo bands to the idle baseline.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- leaving an active demo state should synchronously snap the bars back to the idle baseline
         setFakeVolumeBands(bands)
         return
       }

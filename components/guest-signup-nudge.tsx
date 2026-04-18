@@ -27,7 +27,7 @@ export function GuestSignupNudge() {
       // the cumulative guest search count across all nudge instances.
       // Promoting the threshold crossing to React state from inside an
       // effect is the allowed setState-in-effect case.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reveal the nudge after the persisted localStorage threshold is reached
       setVisible(true)
     }
   }, [])
