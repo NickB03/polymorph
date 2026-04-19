@@ -2,7 +2,6 @@ import { generateObject } from 'ai'
 import { z } from 'zod'
 
 import { getTrendingSuggestionsModel } from '@/lib/config/model-types'
-import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
 import { BraveSearchProvider } from '@/lib/tools/search/providers/brave'
 import { ExaSearchProvider } from '@/lib/tools/search/providers/exa'
 import { TavilySearchProvider } from '@/lib/tools/search/providers/tavily'
@@ -38,11 +37,14 @@ Rules:
 - For research, compare, summarize, and explain: prefer evergreen-feeling prompts inspired by trends over ephemeral headline references
 - For latest: do the OPPOSITE — use specific, timely references to actual events from the trending context. Never be vague or generic in this category.`
 
-export type TrendingSuggestionsSource = 'tavily' | 'brave' | 'exa' | 'default'
+type TrendingContextProvider = {
+  name: 'brave' | 'tavily' | 'exa'
+  fetch: () => Promise<string>
+}
 
 export type TrendingSuggestionsResult = {
   suggestions: Record<SuggestionCategory, string[]>
-  source: TrendingSuggestionsSource
+  source: TrendingContextProvider['name']
 }
 
 const TRENDING_QUERIES = [
@@ -71,9 +73,9 @@ function buildContext(
   return results
     .flat()
     .filter(result => {
-      const url = result.url ?? `${result.title ?? ''}:${result.content ?? ''}`
-      if (!url || seen.has(url)) return false
-      seen.add(url)
+      const key = result.url ?? `${result.title ?? ''}:${result.content ?? ''}`
+      if (!key || seen.has(key)) return false
+      seen.add(key)
       return true
     })
     .map(result => {
@@ -82,6 +84,25 @@ function buildContext(
       return `- ${title}: ${content}`
     })
     .join('\n')
+}
+
+async function getTrendingContextFromBrave(): Promise<string> {
+  const brave = new BraveSearchProvider()
+  const searchResults = []
+
+  for (const [index, query] of TRENDING_QUERIES.entries()) {
+    if (index > 0) {
+      await sleep(BRAVE_REQUEST_INTERVAL_MS)
+    }
+
+    searchResults.push(
+      await brave.search(`trending ${query} this week`, 8, 'basic', [], [], {
+        content_types: ['web']
+      })
+    )
+  }
+
+  return buildContext(searchResults.map(result => result.results))
 }
 
 async function getTrendingContextFromTavily(): Promise<string> {
@@ -108,84 +129,65 @@ async function getTrendingContextFromExa(): Promise<string> {
   return buildContext(searchResults.map(result => result.results))
 }
 
-async function getTrendingContextFromBrave(): Promise<string> {
-  const brave = new BraveSearchProvider()
-  const searchResults = []
+const PROVIDERS: TrendingContextProvider[] = [
+  { name: 'brave', fetch: getTrendingContextFromBrave },
+  { name: 'tavily', fetch: getTrendingContextFromTavily },
+  { name: 'exa', fetch: getTrendingContextFromExa }
+]
 
-  for (const [index, query] of TRENDING_QUERIES.entries()) {
-    if (index > 0) {
-      await sleep(BRAVE_REQUEST_INTERVAL_MS)
+async function getTrendingContext(): Promise<{
+  context: string
+  source: TrendingContextProvider['name']
+}> {
+  const failures: string[] = []
+
+  for (const provider of PROVIDERS) {
+    try {
+      const context = await provider.fetch()
+      if (context.trim()) {
+        return { context, source: provider.name }
+      }
+      failures.push(`${provider.name}: empty results`)
+      console.warn(
+        `[Suggestions] ${provider.name} returned no usable results, trying next provider.`
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      failures.push(`${provider.name}: ${message}`)
+      console.warn(
+        `[Suggestions] ${provider.name} trending fetch failed, trying next provider.`,
+        error
+      )
     }
-
-    searchResults.push(
-      await brave.search(`trending ${query} this week`, 8, 'basic', [], [], {
-        content_types: ['web']
-      })
-    )
   }
 
-  return buildContext(searchResults.map(result => result.results))
+  throw new Error(
+    `All trending providers failed to return usable context: ${failures.join('; ')}`
+  )
 }
 
 /**
- * Fetches trending topics via Brave, with Tavily and Exa as fallbacks, and uses
- * Gemini Flash to generate categorized prompt suggestions. Falls back to static
- * defaults on any error.
+ * Background refresh for the suggestion pills. Tries Brave → Tavily → Exa in
+ * order, using the first provider that returns non-empty context, then issues
+ * one LLM call. Intended to be invoked by the daily cron at
+ * `/api/suggestions/refresh` only — NOT by any user-facing request path.
+ *
+ * Throws if every provider fails so the cron handler can surface the error in
+ * logs / status codes. Does not fall back to static defaults; the read path
+ * already handles a missing dynamic key by serving the rotated static pool.
  */
 export async function generateTrendingSuggestions(): Promise<TrendingSuggestionsResult> {
-  try {
-    let context = ''
-    let source: TrendingSuggestionsSource = 'default'
+  const { context, source } = await getTrendingContext()
 
-    try {
-      context = await getTrendingContextFromBrave()
-      source = 'brave'
-    } catch (braveError) {
-      console.warn(
-        '[Suggestions] Brave trending fetch failed, falling back to Tavily.',
-        braveError
-      )
+  const suggestionsModel = getTrendingSuggestionsModel()
+  const modelId = createModelId(suggestionsModel)
 
-      try {
-        context = await getTrendingContextFromTavily()
-        source = 'tavily'
-      } catch (tavilyError) {
-        console.warn(
-          '[Suggestions] Tavily trending fetch failed, falling back to Exa.',
-          tavilyError
-        )
+  const { object } = await generateObject({
+    model: getModel(modelId),
+    schema: trendingSuggestionsSchema,
+    system: SYSTEM_PROMPT,
+    prompt: `Here are today's trending topics across various domains:\n\n${context}\n\nGenerate diverse, category-appropriate prompt suggestions. Ensure broad domain coverage and limit political content.`
+  })
 
-        context = await getTrendingContextFromExa()
-        source = 'exa'
-      }
-    }
-
-    if (!context.trim()) {
-      return {
-        suggestions: DEFAULT_SUGGESTIONS,
-        source: 'default'
-      }
-    }
-
-    const suggestionsModel = getTrendingSuggestionsModel()
-    const modelId = createModelId(suggestionsModel)
-
-    const { object } = await generateObject({
-      model: getModel(modelId),
-      schema: trendingSuggestionsSchema,
-      system: SYSTEM_PROMPT,
-      prompt: `Here are today's trending topics across various domains:\n\n${context}\n\nGenerate diverse, category-appropriate prompt suggestions. Ensure broad domain coverage and limit political content.`
-    })
-
-    return {
-      suggestions: object,
-      source
-    }
-  } catch (error) {
-    console.error('Failed to generate trending suggestions:', error)
-    return {
-      suggestions: DEFAULT_SUGGESTIONS,
-      source: 'default'
-    }
-  }
+  return { suggestions: object, source }
 }
