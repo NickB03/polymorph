@@ -186,6 +186,17 @@ The researcher agent (`lib/agents/researcher.ts`) exposes different tools depend
 
 **Chat mode** (max 20 steps) uses forced optimized search and includes `displayPlan` for step-by-step guides. **Research mode** (max 50 steps) uses full search and enables `todoWrite` for task management when a writer is available.
 
+### Related: side-effect tools
+
+Display tools are passthrough schemas rendered inline. They sit alongside a distinct category of **side-effect tools** that perform work outside the chat — these are not rendered by the Tool UI registry and are conditionally registered only when the request carries the required context:
+
+| Tool                                                                 | Category         | File                                                            | Registered when                                     |
+| -------------------------------------------------------------------- | ---------------- | --------------------------------------------------------------- | --------------------------------------------------- |
+| `generateImage`                                                      | Image generation | [`lib/tools/generate-image.ts`](../lib/tools/generate-image.ts) | `userId` + `chatId` present (authenticated + guest) |
+| `createCanvasArtifact`, `updateCanvasArtifact`, `readCanvasArtifact` | Canvas artifacts | `lib/tools/canvas-*.ts`                                         | Canvas context provided (one artifact per chat)     |
+
+These tools produce data that drives dedicated non-registry UI (image messages, canvas preview iframes). They are documented further in [Research Agent → Conditional Tools](RESEARCH-AGENT.md#conditional-tools).
+
 ### Shared base fields
 
 All display tool schemas support optional base fields defined in `components/tool-ui/shared/schema.ts`:

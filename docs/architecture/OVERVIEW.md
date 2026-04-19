@@ -40,7 +40,14 @@ This document describes the internal architecture of Polymorph — an AI platfor
 
 ## System Overview
 
-Polymorph is built on Next.js 16 (App Router) with React 19. A single chat API endpoint orchestrates an AI agent that performs multi-step research using tools (search, fetch, display, todo) and streams structured responses back to the browser as Server-Sent Events (SSE). The generative UI layer renders each message part — text, reasoning, tool results, data attachments — using dedicated React components.
+Polymorph is built on Next.js 16 (App Router) with React 19. A single chat API endpoint orchestrates an AI agent that performs multi-step research using tools (search, fetch, display, todo, conditional image-generation and canvas tools) and streams structured responses back to the browser as Server-Sent Events (SSE). The generative UI layer renders each message part — text, reasoning, tool results, data attachments — using dedicated React components.
+
+**Route structure.** The App Router uses two groups to isolate surfaces:
+
+- `app/(chat)/` — default chat shell: `/` (root chat), `/search`, `/search/[id]`, `/demo/question-wizard`.
+- `app/(admin)/` — admin surface gated by `ADMIN_USER_ID` (see `lib/auth/is-admin.ts`): currently `/admin/evals` (template-driven evals dashboard with persisted layout preference).
+- `app/api/` — API routes, including chat, suggestions (+ `refresh` Vercel cron endpoint), evals, uploads, voice synthesis, canvas artifacts, and canvas asset proxying.
+- `app/auth/` — Supabase auth flows (login, sign-up, forgot-password, confirm, update-password, OAuth, error).
 
 ```mermaid
 graph TD
@@ -49,7 +56,7 @@ graph TD
     API["API Routes<br/>/api/chat"]
     Agent["Researcher Agent<br/>(ToolLoopAgent)"]
     AI["AI Providers<br/>(Gateway, OpenAI, Anthropic,<br/>Google, Ollama)"]
-    Search["Search Providers<br/>(Tavily, Brave, Exa,<br/>SearXNG, Firecrawl)"]
+    Search["Search Providers<br/>(Brave, Tavily, Exa,<br/>SearXNG, Firecrawl)"]
     DB["Supabase PostgreSQL<br/>(Drizzle ORM)"]
     Redis["Upstash Redis<br/>(Rate Limiting)"]
     Auth["Supabase Auth"]
@@ -69,14 +76,20 @@ graph TD
 
 **Key source files:**
 
-| Concern                 | File                                                                                                                  |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Chat API endpoint       | [`app/api/chat/route.ts`](../app/api/chat/route.ts)                                                                   |
-| Agent orchestration     | [`lib/agents/researcher.ts`](../lib/agents/researcher.ts)                                                             |
-| Authenticated streaming | [`lib/streaming/create-chat-stream-response.ts`](../lib/streaming/create-chat-stream-response.ts)                     |
-| Guest streaming         | [`lib/streaming/create-ephemeral-chat-stream-response.ts`](../lib/streaming/create-ephemeral-chat-stream-response.ts) |
-| Database schema         | [`lib/db/schema.ts`](../lib/db/schema.ts)                                                                             |
-| Provider registry       | [`lib/utils/registry.ts`](../lib/utils/registry.ts)                                                                   |
+| Concern                  | File                                                                                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chat API endpoint        | [`app/api/chat/route.ts`](../app/api/chat/route.ts)                                                                                          |
+| Suggestions refresh cron | [`app/api/suggestions/refresh/route.ts`](../app/api/suggestions/refresh/route.ts) (Vercel cron, `CRON_SECRET`-gated)                         |
+| Admin surface layout     | [`app/(admin)/layout.tsx`](<../app/(admin)/layout.tsx>) (admin role gate)                                                                    |
+| Evals dashboard          | [`components/evals/dashboard-v2/dashboard.tsx`](../components/evals/dashboard-v2/dashboard.tsx) + widget tree at `components/evals/widgets/` |
+| Evals layout templates   | [`lib/evals/layout/templates.ts`](../lib/evals/layout/templates.ts)                                                                          |
+| Agent orchestration      | [`lib/agents/researcher.ts`](../lib/agents/researcher.ts)                                                                                    |
+| Image generation tool    | [`lib/tools/generate-image.ts`](../lib/tools/generate-image.ts)                                                                              |
+| Authenticated streaming  | [`lib/streaming/create-chat-stream-response.ts`](../lib/streaming/create-chat-stream-response.ts)                                            |
+| Guest streaming          | [`lib/streaming/create-ephemeral-chat-stream-response.ts`](../lib/streaming/create-ephemeral-chat-stream-response.ts)                        |
+| Database schema          | [`lib/db/schema.ts`](../lib/db/schema.ts)                                                                                                    |
+| Provider registry        | [`lib/utils/registry.ts`](../lib/utils/registry.ts)                                                                                          |
+| Admin detection          | [`lib/auth/is-admin.ts`](../lib/auth/is-admin.ts)                                                                                            |
 
 ---
 
@@ -513,7 +526,7 @@ graph TD
     AppSidebar["AppSidebar"]
     Header["Header"]
     Artifact["ArtifactRoot"]
-    Chat["Chat Page<br/>(app/search/[id]/page.tsx)"]
+    Chat["Chat Page<br/>(app/(chat)/search/[id]/page.tsx)"]
     ChatMessages["ChatMessages"]
     Section["ChatSection<br/>{userMessage, assistantMessages}"]
     RenderMsg["RenderMessage"]

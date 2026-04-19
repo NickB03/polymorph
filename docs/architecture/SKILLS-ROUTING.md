@@ -2,6 +2,7 @@
 
 > **Audience:** Architect | Contributor
 > **Prerequisites:** [Architecture Overview](OVERVIEW.md), [Research Agent](RESEARCH-AGENT.md), [Streaming](STREAMING.md)
+> **Status:** Proposal — not yet implemented. The file plan, types, and runtime described below describe a design under consideration, not shipped code.
 
 This document specifies a skills-based routing layer for Polymorph's researcher agent. The goal is to inject domain-specific instructions only when they are relevant to the current request while preserving the current agent pipeline, tool model, and streaming behavior.
 

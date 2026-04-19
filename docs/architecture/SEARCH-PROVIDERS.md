@@ -9,6 +9,7 @@ Polymorph uses a factory pattern to support multiple search backends. Providers 
 
 - [Provider Comparison](#provider-comparison)
 - [Provider Selection Logic](#provider-selection-logic)
+- [Error Handling and Retries](#error-handling-and-retries)
 - [Configuring Providers](#configuring-providers)
   - [Brave (Default)](#brave-default)
   - [Tavily](#tavily)
@@ -26,8 +27,8 @@ Polymorph uses a factory pattern to support multiple search backends. Providers 
 
 | Provider      | Env Variable           | Content Snippets                        | Images                  | Videos                      | Search Depth                   | Domain Filtering     | Self-Hosted |
 | ------------- | ---------------------- | --------------------------------------- | ----------------------- | --------------------------- | ------------------------------ | -------------------- | ----------- |
-| **Tavily**    | `TAVILY_API_KEY`       | Yes (with answers)                      | Yes (with descriptions) | No                          | basic / advanced               | Include + Exclude    | No          |
 | **Brave**     | `BRAVE_SEARCH_API_KEY` | Basic descriptions                      | Yes (thumbnails)        | Yes (thumbnails + duration) | No                             | No                   | No          |
+| **Tavily**    | `TAVILY_API_KEY`       | Yes (with answers)                      | Yes (with descriptions) | No                          | basic / advanced               | Include + Exclude    | No          |
 | **Exa**       | `EXA_API_KEY`          | Yes (highlights)                        | No                      | No                          | Ignored                        | Include + Exclude    | No          |
 | **SearXNG**   | `SEARXNG_API_URL`      | Yes                                     | Yes                     | No                          | basic / advanced               | Include only (site:) | Yes         |
 | **Firecrawl** | `FIRECRAWL_API_KEY`    | Yes (markdown, truncated to 1000 chars) | Yes                     | No                          | basic (web) / advanced (+news) | No                   | No          |
@@ -88,6 +89,47 @@ flowchart TD
 ```
 
 In Chat Mode, the search type is always forced to `optimized` regardless of what the model requests. In Research Mode, the model can freely choose between `optimized` and `general`.
+
+---
+
+## Error Handling and Retries
+
+All providers surface failures through a typed `SearchProviderError` so the search tool can distinguish retryable from terminal errors without string-matching. The retry layer wraps every provider call with jittered exponential backoff.
+
+**Source files:** [`lib/tools/search/providers/errors.ts`](../../lib/tools/search/providers/errors.ts), [`lib/utils/retry.ts`](../../lib/utils/retry.ts)
+
+### `SearchProviderError`
+
+```ts
+class SearchProviderError extends Error {
+  provider: string // 'brave' | 'tavily' | 'exa' | ...
+  status?: number // HTTP status (undefined for non-HTTP failures)
+  retryable: boolean // true for 429 + 5xx and transient network errors
+  retryAfterMs?: number // parsed from Retry-After header (seconds or HTTP-date)
+}
+```
+
+- `createHttpSearchError(provider, response)` — factory used by every provider. Reads `Retry-After` (supports numeric seconds and HTTP-date formats), marks 429 and 5xx as retryable, and returns a typed error.
+- `isRetryableSearchError(err)` — predicate used by the retry helper. Returns `true` for `SearchProviderError` with `retryable === true` and for generic network-class errors.
+- `getRetryDelayFromSearchError(err)` — returns the `retryAfterMs` the server asked for, so the caller can honor it instead of computing backoff.
+
+### Retry policy
+
+Search calls are wrapped by `retrySearchOperation()` in `lib/utils/retry.ts`:
+
+| Setting           | Value                                                 |
+| ----------------- | ----------------------------------------------------- |
+| `maxRetries`      | `2` (3 attempts total)                                |
+| `initialDelayMs`  | `500`                                                 |
+| `maxDelayMs`      | `5000`                                                |
+| Backoff           | Exponential with jitter                               |
+| Retry-After honor | `getRetryDelayFromSearchError` preferred when present |
+
+Terminal errors (4xx other than 429, configuration errors, invalid API keys) skip retries and propagate immediately. The agent surfaces the error to the user via the standard tool-error UI and can try a different query.
+
+### Burst pacing
+
+Providers that impose strict per-second limits (notably Brave) throttle outgoing requests internally rather than relying solely on retries. This keeps trending-suggestion generation and multi-category searches well under published rate limits.
 
 ---
 
