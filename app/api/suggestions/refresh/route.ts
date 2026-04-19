@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { generateTrendingSuggestions } from '@/lib/agents/generate-trending-suggestions'
-import { db } from '@/lib/db'
+import { getPrivilegedDb } from '@/lib/db/admin'
 import { trendingSuggestionsCache } from '@/lib/db/schema'
 import { flushTraces } from '@/lib/utils/telemetry'
 
@@ -27,8 +27,9 @@ export async function GET(request: Request) {
 
   try {
     const { suggestions } = await generateTrendingSuggestions()
+    const privilegedDb = getPrivilegedDb()
 
-    await db
+    await privilegedDb
       .insert(trendingSuggestionsCache)
       .values({ id: 1, suggestions, updatedAt: new Date() })
       .onConflictDoUpdate({

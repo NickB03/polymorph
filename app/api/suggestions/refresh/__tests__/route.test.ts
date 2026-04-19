@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockGenerateTrendingSuggestions = vi.fn()
-const mockSharedInsert = vi.fn(() => {
+const mockSharedInsert = vi.fn((..._args: unknown[]) => {
   throw new Error('shared db must not be used for suggestions refresh')
 })
 const mockPrivilegedOnConflictDoUpdate = vi.fn()
