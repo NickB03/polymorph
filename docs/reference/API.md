@@ -301,7 +301,7 @@ Performs a SearXNG-powered web search with optional deep crawling and relevance 
 **Authentication:** None
 **Dynamic:** `force-dynamic`
 
-> **Note:** This endpoint requires a self-hosted SearXNG instance. It is separate from the primary Tavily/Brave search used by the chat agent tools.
+> **Note:** This endpoint requires a self-hosted SearXNG instance. It is separate from the primary Brave search (and Tavily/Exa fallbacks) used by the chat agent tools.
 
 #### Request Body
 
@@ -362,7 +362,7 @@ Performs a SearXNG-powered web search with optional deep crawling and relevance 
 
 ### GET `/api/suggestions`
 
-Returns trending topic suggestions for the homepage, grouped by category. Results are cached in Redis for 4 hours with stale fallback support.
+Returns trending topic suggestions for the homepage, grouped by category. Reads the `trending_suggestions_cache` Postgres singleton (updated daily by the Vercel cron at `/api/suggestions/refresh`) and blends dynamic suggestions with a static rotation fallback.
 
 **Authentication:** None
 **Dynamic:** `force-dynamic`
@@ -384,6 +384,41 @@ Returns trending topic suggestions for the homepage, grouped by category. Result
 
 - `x-suggestions-source` -- Source of suggestions (`cache`, `tavily`, `brave`, `default`)
 - `x-suggestions-serve-mode` -- How the response was served (`primary-cache`, `fresh-generated`, `stale-cache`)
+
+---
+
+### GET `/api/suggestions/refresh`
+
+Regenerates the trending-suggestions cache. Intended to be called **only** by the Vercel cron declared in `vercel.json` (`0 14 * * *`, 14:00 UTC daily). Not a user-auth endpoint.
+
+**Authentication:** Bearer token — the `Authorization` header must equal `Bearer ${CRON_SECRET}`. Vercel sends this automatically when `CRON_SECRET` is set on the project.
+**Max duration:** 60 seconds (`maxDuration = 60`)
+**Dynamic:** `force-dynamic`
+
+#### Side effects
+
+Calls `generateTrendingSuggestions()` (multi-provider cascade: Brave → Tavily → Exa), then upserts the singleton row (`id = 1`) in `trending_suggestions_cache` via the privileged DB client (`lib/db/admin.ts`, bypasses RLS).
+
+#### Response
+
+**Content-Type:** `application/json`
+
+Success (200):
+
+```json
+{
+  "ok": true,
+  "categories": ["research", "compare", "creative", "technical"]
+}
+```
+
+#### Error Responses
+
+| Status | Body                                                     | Condition                                                          |
+| ------ | -------------------------------------------------------- | ------------------------------------------------------------------ |
+| `401`  | `{ "ok": false, "error": "unauthorized" }`               | Missing or mismatched `Authorization: Bearer <CRON_SECRET>` header |
+| `500`  | `{ "ok": false, "error": "not-configured" }`             | `CRON_SECRET` env var is not set — the route refuses to run        |
+| `500`  | `{ "ok": false, "error": "<message>" }` (or `"unknown"`) | Generation or DB write failed (inspect Vercel function logs)       |
 
 ---
 

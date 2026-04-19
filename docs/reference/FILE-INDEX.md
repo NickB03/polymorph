@@ -68,12 +68,13 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | `tsconfig.json`       | TypeScript configuration with strict mode and `@/` path alias                                                                              |
 | `postcss.config.mjs`  | PostCSS configuration for Tailwind CSS                                                                                                     |
 | `prettier.config.js`  | Prettier configuration (no semicolons, single quotes, no trailing commas)                                                                  |
-| `.eslintrc.json`      | ESLint configuration with import sorting rules                                                                                             |
 | `components.json`     | shadcn/ui configuration for component generation                                                                                           |
 | `docker-compose.yaml` | Docker Compose stack defining Polymorph app and Redis services                                                                             |
 | `Dockerfile`          | Multi-stage Docker build for production deployment                                                                                         |
 | `.gitignore`          | Git ignore rules for node_modules, .next, env files, etc.                                                                                  |
 | `.mcp.json`           | MCP (Model Context Protocol) configuration                                                                                                 |
+| `eslint.config.mjs`   | ESLint 9 flat config (replaces `.eslintrc.json`); Next 16 compatible, import sort rules, shared ignores                                    |
+| `vercel.json`         | Vercel project config; declares the daily cron `GET /api/suggestions/refresh` at `0 14 * * *`                                              |
 | `CLAUDE.md`           | AI coding assistant instructions and project conventions                                                                                   |
 | `GEMINI.md`           | Gemini-specific AI assistant instructions                                                                                                  |
 | `README.md`           | Project overview, setup guide, and feature summary                                                                                         |
@@ -87,12 +88,13 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 
 ## App Routes
 
-### Pages
+The App Router is split into two route groups (`(chat)/` and `(admin)/`) plus non-grouped `api/` and `auth/` trees. Route groups don't affect the URL; they isolate layouts and access-control boundaries.
+
+### Root + shared
 
 | File                      | Purpose                                                                                     |
 | ------------------------- | ------------------------------------------------------------------------------------------- |
 | `app/layout.tsx`          | Root layout with font loading, theme provider, sidebar, header, canvas shell, and analytics |
-| `app/page.tsx`            | Home page; resolves current user and renders the Chat component                             |
 | `app/globals.css`         | Global CSS with Tailwind directives and custom theme variables                              |
 | `app/manifest.ts`         | PWA manifest with app name, icons, and display settings                                     |
 | `app/favicon.ico`         | Browser favicon                                                                             |
@@ -101,13 +103,24 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | `app/opengraph-image.png` | OpenGraph social sharing image                                                              |
 | `app/error.tsx`           | Global error boundary page with retry button                                                |
 
-### Search Routes
+### `(chat)` route group — default shell
 
-| File                       | Purpose                                                                                                      |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `app/search/page.tsx`      | Search page; reads `?q=` query param, generates a chat ID, and renders Chat with initial query               |
-| `app/search/[id]/page.tsx` | Existing chat page; loads chat by ID from database, generates metadata, and renders Chat with saved messages |
-| `app/search/loading.tsx`   | Loading skeleton shown during search page transitions                                                        |
+| File                                       | URL                     | Purpose                                                                                                      |
+| ------------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `app/(chat)/layout.tsx`                    | —                       | Shell layout for the default chat surface                                                                    |
+| `app/(chat)/page.tsx`                      | `/`                     | Home page; resolves current user and renders the Chat component                                              |
+| `app/(chat)/search/page.tsx`               | `/search`               | Search page; reads `?q=` query param, generates a chat ID, and renders Chat with initial query               |
+| `app/(chat)/search/[id]/page.tsx`          | `/search/[id]`          | Existing chat page; loads chat by ID from database, generates metadata, and renders Chat with saved messages |
+| `app/(chat)/search/loading.tsx`            | —                       | Loading skeleton shown during search page transitions                                                        |
+| `app/(chat)/demo/question-wizard/page.tsx` | `/demo/question-wizard` | Demo route for the `displayQuestionWizard` generative UI tool                                                |
+
+### `(admin)` route group — admin surface
+
+| File                                  | URL            | Purpose                                                                                                                         |
+| ------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `app/(admin)/layout.tsx`              | —              | Admin layout: `force-dynamic`, gated by `isAdminUserId(user.id)`; calls `notFound()` unless the session matches `ADMIN_USER_ID` |
+| `app/(admin)/admin/evals/page.tsx`    | `/admin/evals` | Evals dashboard v2 — template-switcher + widget layouts, persisted layout preference                                            |
+| `app/(admin)/admin/evals/loading.tsx` | —              | Loading state for the evals dashboard                                                                                           |
 
 ### Auth Routes
 
@@ -124,16 +137,17 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 
 ### API Routes
 
-| File                                | Purpose                                                                                                                                             |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/chat/route.ts`             | Main chat endpoint (POST, 300s timeout); handles auth, rate limiting, model selection, and delegates to authenticated or ephemeral stream responses |
-| `app/api/chats/route.ts`            | Chat history endpoint (GET); returns paginated list of user chats                                                                                   |
-| `app/api/feedback/route.ts`         | Feedback endpoint (POST); records thumbs up/down scores and updates message metadata                                                                |
-| `app/api/upload/route.ts`           | File upload endpoint (POST); validates file type/size and uploads to Supabase Storage                                                               |
-| `app/api/advanced-search/route.ts`  | SearXNG advanced search endpoint (POST); performs cached deep-crawl searches with relevance scoring                                                 |
-| `app/api/suggestions/route.ts`      | Trending suggestions endpoint; returns generated topic suggestions for the homepage                                                                 |
-| `app/api/voice/synthesize/route.ts` | TTS synthesis endpoint (POST); synthesizes text to speech via OpenAI or ElevenLabs                                                                  |
-| `app/api/health/route.ts`           | Health check endpoint; returns server status and database connectivity for monitoring                                                               |
+| File                                   | Purpose                                                                                                                                             |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/chat/route.ts`                | Main chat endpoint (POST, 300s timeout); handles auth, rate limiting, model selection, and delegates to authenticated or ephemeral stream responses |
+| `app/api/chats/route.ts`               | Chat history endpoint (GET); returns paginated list of user chats                                                                                   |
+| `app/api/feedback/route.ts`            | Feedback endpoint (POST); records thumbs up/down scores and updates message metadata                                                                |
+| `app/api/upload/route.ts`              | File upload endpoint (POST); validates file type/size and uploads to Supabase Storage                                                               |
+| `app/api/advanced-search/route.ts`     | SearXNG advanced search endpoint (POST); performs cached deep-crawl searches with relevance scoring                                                 |
+| `app/api/suggestions/route.ts`         | Trending suggestions endpoint; reads the `trending_suggestions_cache` singleton and blends dynamic suggestions with static rotation                 |
+| `app/api/suggestions/refresh/route.ts` | Vercel cron target (GET, 60s timeout); Bearer-auth via `CRON_SECRET`; regenerates trending suggestions and upserts the singleton cache row          |
+| `app/api/voice/synthesize/route.ts`    | TTS synthesis endpoint (POST); synthesizes text to speech via OpenAI or ElevenLabs                                                                  |
+| `app/api/health/route.ts`              | Health check endpoint; returns server status and database connectivity for monitoring                                                               |
 
 ### Canvas API Routes
 
@@ -290,6 +304,40 @@ Comprehensive index of every file in the Polymorph repository, organized by dire
 | `components/activity/activity-search-item.tsx` | Renders a search event item in the activity feed            |
 | `components/activity/activity-fetch-item.tsx`  | Renders a fetch event item in the activity feed             |
 
+### Admin Components
+
+| File                                      | Purpose                                                                                                 |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `components/admin/admin-sidebar.tsx`      | Admin surface sidebar navigation (evals enabled; feedback / traffic / users / flags / settings stubbed) |
+| `components/admin/admin-sidebar.test.tsx` | Tests for the admin sidebar nav items and active-state highlighting                                     |
+
+### Evals Dashboard Components
+
+| File                                                     | Purpose                                                                                            |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `components/evals/dashboard-v2/dashboard.tsx`            | Top-level evals dashboard: loads suite data + user layout preference, renders via `LayoutRenderer` |
+| `components/evals/dashboard-v2/template-switcher.tsx`    | Template switcher control; persists the user's preferred layout via `setPreferredEvalsLayout`      |
+| `components/evals/dashboard-v2/dashboard.test.tsx`       | Tests for dashboard template selection, widget rendering, and layout persistence                   |
+| `components/evals/widgets/layout-renderer.tsx`           | Renders widgets from a layout template definition against loaded suite data                        |
+| `components/evals/widgets/registry.ts`                   | Widget registry mapping widget type names to React components + prop adapters                      |
+| `components/evals/widgets/page-header.tsx`               | Dashboard page header widget                                                                       |
+| `components/evals/widgets/filter-toolbar.tsx`            | Filter toolbar widget for suite/date-range/evaluator filtering                                     |
+| `components/evals/widgets/kpi-tile.tsx`                  | KPI tile widget showing a single metric with trend sparkline                                       |
+| `components/evals/widgets/score-ring-widget.tsx`         | Score ring widget (pass-rate circular gauge)                                                       |
+| `components/evals/widgets/suite-header-card.tsx`         | Suite header card widget with suite metadata and health state                                      |
+| `components/evals/widgets/trend-chart-widget.tsx`        | Trend line chart widget for a single suite or evaluator                                            |
+| `components/evals/widgets/combined-trend-chart.tsx`      | Combined trend chart showing multiple suites overlaid                                              |
+| `components/evals/widgets/evaluator-bars-widget.tsx`     | Evaluator score bar chart widget                                                                   |
+| `components/evals/widgets/evaluator-chip-grid.tsx`       | Compact chip grid of evaluator scores                                                              |
+| `components/evals/widgets/evaluator-comparison-grid.tsx` | Side-by-side comparison of evaluator scores across two suite runs                                  |
+| `components/evals/widgets/divergence-banner.tsx`         | Banner highlighting notable evaluator divergences                                                  |
+| `components/evals/widgets/activity-feed.tsx`             | Activity feed widget listing recent eval runs                                                      |
+| `components/evals/widgets/what-changed-card.tsx`         | Summary card showing what changed between the latest and previous runs                             |
+| `components/evals/widgets/empty-state.tsx`               | Empty-state placeholder when no eval data is available                                             |
+| `components/evals/widgets/shared/format.ts`              | Shared formatting helpers for widget labels and metrics                                            |
+| `components/evals/widgets/shared/sparkline.tsx`          | Shared inline sparkline component used by KPI tiles                                                |
+| `components/evals/widgets/shared/widget-props.ts`        | Shared widget prop types                                                                           |
+
 ### Voice Components
 
 | File                                     | Purpose                                                     |
@@ -376,6 +424,15 @@ The `components/tool-ui/` directory contains generative UI components rendered b
 | `components/tool-ui/option-list/option-list.tsx` | Interactive option list with single/multi select and submit behavior |
 | `components/tool-ui/option-list/selection.ts`    | Selection state management helpers for option list                   |
 | `components/tool-ui/option-list/schema.ts`       | Zod schema and serialization types for option list data              |
+
+#### Question Wizard Tool
+
+| File                                                     | Purpose                                                                   |
+| -------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `components/tool-ui/question-wizard/index.tsx`           | Barrel export for QuestionWizard component                                |
+| `components/tool-ui/question-wizard/_adapter.tsx`        | Adapter mapping displayQuestionWizard tool output to QuestionWizard props |
+| `components/tool-ui/question-wizard/question-wizard.tsx` | Multi-step interactive wizard component driving `displayQuestionWizard`   |
+| `components/tool-ui/question-wizard/schema.ts`           | Zod schema and serialization types for question-wizard data               |
 
 #### Plan Tool
 
@@ -518,6 +575,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/tools/search/providers/exa.ts`       | Exa search provider; neural search with content extraction                                           |
 | `lib/tools/search/providers/firecrawl.ts` | Firecrawl search provider; web, news, and image search via Firecrawl API                             |
 | `lib/tools/search/providers/searxng.ts`   | SearXNG search provider; self-hosted meta-search engine integration                                  |
+| `lib/tools/search/providers/errors.ts`    | Typed `SearchProviderError` and `createHttpSearchError` (retryable flag, `Retry-After` parsing)      |
 
 ### Streaming
 
@@ -538,23 +596,25 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Database
 
-| File                  | Purpose                                                                                                        |
-| --------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `feedback`, and legacy artifact tables with RLS policies |
-| `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                |
-| `lib/db/relations.ts` | Drizzle relation definitions (chats -> messages -> parts)                                                      |
-| `lib/db/actions.ts`   | Database CRUD operations (create/load/update/delete chats, messages, parts) with RLS enforcement               |
-| `lib/db/constants.ts` | Database constants (query limits, default values)                                                              |
-| `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                        |
-| `lib/db/migrate.ts`   | Standalone migration runner script using Drizzle Kit                                                           |
+| File                  | Purpose                                                                                                                                                                             |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `feedback`, `canvas_artifacts`, `eval_summaries`, `user_eval_preferences`, and `trending_suggestions_cache` with RLS policies |
+| `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                                                                                     |
+| `lib/db/relations.ts` | Drizzle relation definitions (chats -> messages -> parts)                                                                                                                           |
+| `lib/db/actions.ts`   | Database CRUD operations (create/load/update/delete chats, messages, parts) with RLS enforcement                                                                                    |
+| `lib/db/admin.ts`     | Privileged DB client factory (`getPrivilegedDb`) bypassing RLS for cron/service writes (e.g., suggestions refresh)                                                                  |
+| `lib/db/constants.ts` | Database constants (query limits, default values)                                                                                                                                   |
+| `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                                                                                             |
+| `lib/db/migrate.ts`   | Standalone migration runner script using Drizzle Kit                                                                                                                                |
 
 ### Server Actions
 
-| File                           | Purpose                                                                        |
-| ------------------------------ | ------------------------------------------------------------------------------ |
-| `lib/actions/chat.ts`          | Server actions for chat operations with `unstable_cache` and revalidation tags |
-| `lib/actions/feedback.ts`      | Server action to update message feedback score in the database                 |
-| `lib/actions/site-feedback.ts` | Server action to submit site-wide user feedback (sentiment + message)          |
+| File                              | Purpose                                                                                                |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `lib/actions/chat.ts`             | Server actions for chat operations with `unstable_cache` and revalidation tags                         |
+| `lib/actions/feedback.ts`         | Server action to update message feedback score in the database                                         |
+| `lib/actions/site-feedback.ts`    | Server action to submit site-wide user feedback (sentiment + message)                                  |
+| `lib/actions/eval-preferences.ts` | Server action persisting a user's preferred evals dashboard layout (writes to `user_eval_preferences`) |
 
 ### Schema (Zod)
 
@@ -589,9 +649,10 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Auth
 
-| File                           | Purpose                                                                                             |
-| ------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `lib/auth/get-current-user.ts` | Gets current authenticated user from Supabase; supports auth-disabled mode for personal deployments |
+| File                           | Purpose                                                                                                     |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `lib/auth/get-current-user.ts` | Gets current authenticated user from Supabase; supports auth-disabled mode for personal deployments         |
+| `lib/auth/is-admin.ts`         | Admin role check: matches the current Supabase session's user ID against the single `ADMIN_USER_ID` env var |
 
 ### Supabase
 
@@ -681,6 +742,23 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/constants/index.ts`               | Application constants (`CHAT_ID = 'search'`)                                               |
 | `lib/constants/build-templates.ts`     | Build template cards (website, game, dashboard) for canvas artifact creation               |
 | `lib/constants/default-suggestions.ts` | Default prompt suggestions used as instant state and fallback for trending suggestions API |
+
+### Evals (app-side)
+
+Data access + layout models backing the admin `/admin/evals` dashboard. The offline cron that _writes_ these rows lives under `services/evals/`.
+
+| File                                  | Purpose                                                                                                   |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `lib/evals/queries.ts`                | Server-side queries over `eval_summaries` + `user_eval_preferences` (incl. `getEvalsDashboardWithLayout`) |
+| `lib/evals/types.ts`                  | Shared type definitions for eval suites, summaries, and dashboard data shapes                             |
+| `lib/evals/evaluator-labels.ts`       | Human-readable labels for evaluator IDs                                                                   |
+| `lib/evals/layout/templates.ts`       | Dashboard layout templates (A/B/C) — widget composition and data selectors                                |
+| `lib/evals/layout/types.ts`           | Type definitions for layout templates and widget configuration                                            |
+| `lib/evals/helpers/health-state.ts`   | Derives overall suite health state (healthy/watch/regression) from recent runs                            |
+| `lib/evals/helpers/divergences.ts`    | Computes notable evaluator-level divergences between runs                                                 |
+| `lib/evals/helpers/feed.ts`           | Builds the activity-feed widget data from recent eval runs                                                |
+| `lib/evals/helpers/findings.ts`       | Extracts ranked findings/narratives from eval summaries                                                   |
+| `lib/evals/helpers/combined-trend.ts` | Prepares combined-trend chart series across multiple suites                                               |
 
 ### Canvas
 
