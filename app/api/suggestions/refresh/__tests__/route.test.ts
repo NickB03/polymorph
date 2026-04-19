@@ -1,7 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockGenerateTrendingSuggestions = vi.fn()
-const mockOnConflictDoUpdate = vi.fn()
+const mockSharedInsert = vi.fn(() => {
+  throw new Error('shared db must not be used for suggestions refresh')
+})
+const mockPrivilegedOnConflictDoUpdate = vi.fn()
+const mockGetPrivilegedDb = vi.fn(() => ({
+  insert: () => ({
+    values: () => ({
+      onConflictDoUpdate: (...args: unknown[]) =>
+        mockPrivilegedOnConflictDoUpdate(...args)
+    })
+  })
+}))
 
 vi.mock('@/lib/agents/generate-trending-suggestions', () => ({
   generateTrendingSuggestions: (...args: unknown[]) =>
@@ -10,13 +21,12 @@ vi.mock('@/lib/agents/generate-trending-suggestions', () => ({
 
 vi.mock('@/lib/db', () => ({
   db: {
-    insert: () => ({
-      values: () => ({
-        onConflictDoUpdate: (...args: unknown[]) =>
-          mockOnConflictDoUpdate(...args)
-      })
-    })
+    insert: (...args: unknown[]) => mockSharedInsert(...args)
   }
+}))
+
+vi.mock('@/lib/db/admin', () => ({
+  getPrivilegedDb: () => mockGetPrivilegedDb()
 }))
 
 vi.mock('@/lib/utils/telemetry', () => ({
@@ -45,7 +55,7 @@ describe('GET /api/suggestions/refresh', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     process.env.CRON_SECRET = 'test-secret'
-    mockOnConflictDoUpdate.mockResolvedValue({ rowCount: 1 })
+    mockPrivilegedOnConflictDoUpdate.mockResolvedValue({ rowCount: 1 })
   })
 
   afterEach(() => {
@@ -71,10 +81,11 @@ describe('GET /api/suggestions/refresh', () => {
     expect(mockGenerateTrendingSuggestions).not.toHaveBeenCalled()
   })
 
-  it('upserts suggestions on success', async () => {
+  it('upserts suggestions through the privileged DB helper on success', async () => {
     mockGenerateTrendingSuggestions.mockResolvedValue({
       suggestions: SAMPLE_SUGGESTIONS
     })
+    mockPrivilegedOnConflictDoUpdate.mockResolvedValue({ rowCount: 1 })
 
     const response = await GET(makeRequest('Bearer test-secret'))
     const json = await response.json()
@@ -82,7 +93,9 @@ describe('GET /api/suggestions/refresh', () => {
     expect(response.status).toBe(200)
     expect(json.ok).toBe(true)
     expect(mockGenerateTrendingSuggestions).toHaveBeenCalledTimes(1)
-    expect(mockOnConflictDoUpdate).toHaveBeenCalledTimes(1)
+    expect(mockGetPrivilegedDb).toHaveBeenCalledTimes(1)
+    expect(mockPrivilegedOnConflictDoUpdate).toHaveBeenCalledTimes(1)
+    expect(mockSharedInsert).not.toHaveBeenCalled()
   })
 
   it('returns 500 if generation fails', async () => {
@@ -96,16 +109,23 @@ describe('GET /api/suggestions/refresh', () => {
     expect(response.status).toBe(500)
     expect(json.ok).toBe(false)
     expect(json.error).toContain('tavily')
-    expect(mockOnConflictDoUpdate).not.toHaveBeenCalled()
+    expect(mockPrivilegedOnConflictDoUpdate).not.toHaveBeenCalled()
   })
 
-  it('returns 500 if the DB upsert fails', async () => {
+  it('returns 500 if the privileged DB upsert fails', async () => {
     mockGenerateTrendingSuggestions.mockResolvedValue({
       suggestions: SAMPLE_SUGGESTIONS
     })
-    mockOnConflictDoUpdate.mockRejectedValueOnce(new Error('pg dead'))
+    mockPrivilegedOnConflictDoUpdate.mockRejectedValueOnce(
+      new Error('privileged pg dead')
+    )
 
     const response = await GET(makeRequest('Bearer test-secret'))
+    const json = await response.json()
+
     expect(response.status).toBe(500)
+    expect(json.ok).toBe(false)
+    expect(json.error).toContain('privileged pg dead')
+    expect(mockSharedInsert).not.toHaveBeenCalled()
   })
 })
