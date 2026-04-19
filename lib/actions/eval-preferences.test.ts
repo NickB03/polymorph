@@ -69,7 +69,7 @@ describe('setPreferredEvalsLayout', () => {
     const result = await setPreferredEvalsLayout('b')
     expect(result).toEqual({ success: true })
     expect(mockWithRLS).toHaveBeenCalledWith('admin-1', expect.any(Function))
-    expect(mockRevalidatePath).toHaveBeenCalledWith('/evals')
+    expect(mockRevalidatePath).toHaveBeenCalledWith('/admin/evals')
   })
 
   it('catches RLS / DB errors and returns a structured failure', async () => {

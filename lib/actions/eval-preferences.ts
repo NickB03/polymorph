@@ -46,6 +46,6 @@ export async function setPreferredEvalsLayout(
     }
   }
 
-  revalidatePath('/evals')
+  revalidatePath('/admin/evals')
   return { success: true }
 }

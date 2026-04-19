@@ -94,7 +94,7 @@ In Chat Mode, the search type is always forced to `optimized` regardless of what
 
 ## Error Handling and Retries
 
-Provider failures throw a typed `SearchProviderError` (`lib/tools/search/providers/errors.ts`) so callers can branch on `retryable` and `retryAfterMs` without string-matching. Every provider call is wrapped by `retrySearchOperation()` (`lib/utils/retry.ts`) with jittered exponential backoff, honoring `Retry-After` when present. Terminal 4xx (other than 429), config errors, and invalid keys propagate immediately. Brave additionally throttles outgoing requests internally to stay under per-second limits — relevant for multi-category and trending-suggestion bursts.
+Provider failures throw a typed `SearchProviderError` (`lib/tools/search/providers/errors.ts`) so callers can branch on `retryable` and `retryAfterMs` without string-matching. Every provider call is wrapped by `retrySearchOperation()` (`lib/utils/retry.ts`) with jittered exponential backoff, honoring `Retry-After` when present. Terminal 4xx (other than 429), config errors, and invalid keys propagate immediately. When multiple Brave content types are requested, the provider executes them sequentially to reduce burst rate-limit hits; the separate trending-suggestions job adds its own per-query delay in `lib/agents/generate-trending-suggestions.ts`.
 
 ---
 
@@ -136,7 +136,7 @@ BRAVE_SEARCH_API_KEY=BSA...
 
 **Features:**
 
-- Parallel execution of web, video, and image searches when multiple content types requested
+- Sequential execution of web, video, and image searches when multiple content types are requested
 - Video results include thumbnails, duration, publisher, and date
 - Image results include thumbnails with multiple fallback sources
 - Automatically selected for `type="general"` searches when API key is present

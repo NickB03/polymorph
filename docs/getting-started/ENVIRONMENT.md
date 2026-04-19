@@ -7,12 +7,12 @@ This document defines the environment-variable matrix for Polymorph.
 
 ## Required (Day-1 bootstrap)
 
-| Variable               | Required                                                 | Purpose                                                                     |
-| ---------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `DATABASE_URL`         | Yes                                                      | PostgreSQL connection string for Drizzle/Supabase                           |
-| `AI_GATEWAY_API_KEY`   | Yes                                                      | Vercel AI Gateway provider key                                              |
-| `BRAVE_SEARCH_API_KEY` | Yes (recommended) — or another `SEARCH_API` provider key | Primary search provider; default `SEARCH_API=brave` covers web + multimedia |
-| `TAVILY_API_KEY`       | Optional                                                 | Alternative search / extract provider key                                   |
+| Variable               | Required                                                       | Purpose                                                                                    |
+| ---------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`         | Yes                                                            | PostgreSQL connection string for Drizzle/Supabase                                          |
+| `AI_GATEWAY_API_KEY`   | Yes                                                            | Vercel AI Gateway provider key                                                             |
+| `BRAVE_SEARCH_API_KEY` | Recommended if using Brave; otherwise set another provider key | Primary search provider when `SEARCH_API=brave` (default); enables web + multimedia search |
+| `TAVILY_API_KEY`       | Optional                                                       | Alternative search / extract provider key                                                  |
 
 ## Core behavior controls
 

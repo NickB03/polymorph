@@ -32,8 +32,8 @@ Polymorph uses [Supabase Auth](https://supabase.com/docs/guides/auth) for user a
   - `/share/*` — public read-only chat sharing.
   - `/api/chat` — accepts guest traffic when `ENABLE_GUEST_CHAT=true`; otherwise requires an authenticated session. IP-rate-limited for guests.
   - `/api/suggestions/refresh` — **not** user auth. Requires `Authorization: Bearer <CRON_SECRET>`. Intended only for the Vercel daily cron.
-  - `/admin/*` — under the `app/(admin)/` route group. `app/(admin)/layout.tsx` forces dynamic rendering and returns `notFound()` unless `isAdminUserId(user.id)` matches the single configured `ADMIN_USER_ID` env var.
-- Authentication can be disabled for local development with `ENABLE_AUTH=false` (not permitted when `POLYMORPH_CLOUD_DEPLOYMENT=true`).
+  - `/admin/*` — under the `app/(admin)/` route group. `app/(admin)/layout.tsx` redirects unauthenticated requests to `/auth/login`, then returns `notFound()` unless `isAdminUserId(user.id)` matches the single configured `ADMIN_USER_ID` env var.
+- Authentication can be disabled for local development with `ENABLE_AUTH=false` (not permitted when `POLYMORPH_CLOUD_DEPLOYMENT=true`). In that mode `getCurrentUser()` returns `null`, so the admin route group still redirects to `/auth/login` and never grants anonymous admin access.
 
 ### Row-Level Security (RLS)
 

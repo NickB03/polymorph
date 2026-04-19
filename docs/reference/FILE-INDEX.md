@@ -116,11 +116,11 @@ The App Router is split into two route groups (`(chat)/` and `(admin)/`) plus no
 
 ### `(admin)` route group — admin surface
 
-| File                                  | URL            | Purpose                                                                                                                         |
-| ------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `app/(admin)/layout.tsx`              | —              | Admin layout: `force-dynamic`, gated by `isAdminUserId(user.id)`; calls `notFound()` unless the session matches `ADMIN_USER_ID` |
-| `app/(admin)/admin/evals/page.tsx`    | `/admin/evals` | Evals dashboard v2 — template-switcher + widget layouts, persisted layout preference                                            |
-| `app/(admin)/admin/evals/loading.tsx` | —              | Loading state for the evals dashboard                                                                                           |
+| File                                  | URL            | Purpose                                                                                                                                             |
+| ------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/(admin)/layout.tsx`              | —              | Admin layout: `force-dynamic`; redirects unauthenticated users to `/auth/login`, then calls `notFound()` unless the session matches `ADMIN_USER_ID` |
+| `app/(admin)/admin/evals/page.tsx`    | `/admin/evals` | Evals dashboard v2 — template-switcher + widget layouts, persisted layout preference                                                                |
+| `app/(admin)/admin/evals/loading.tsx` | —              | Loading state for the evals dashboard                                                                                                               |
 
 ### Auth Routes
 

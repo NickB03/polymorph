@@ -85,7 +85,7 @@ The admin surface (`/admin/evals`) is gated by a single environment variable:
 ADMIN_USER_ID=[SUPABASE_USER_ID]
 ```
 
-Only a session whose `user.id` matches will render admin routes; everyone else gets `notFound()`. `ENABLE_AUTH=false` disables admin access entirely.
+Only a session whose `user.id` matches will render admin routes. Unauthenticated requests are redirected to `/auth/login`; authenticated non-admin users get `notFound()`. `ENABLE_AUTH=false` still disables admin access entirely.
 
 ## Optional Features
 
