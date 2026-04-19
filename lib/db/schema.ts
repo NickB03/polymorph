@@ -623,3 +623,33 @@ export const userEvalPreferences = pgTable(
 ).enableRLS()
 
 export type UserEvalPreference = InferSelectModel<typeof userEvalPreferences>
+
+// Singleton-row cache for the home-page suggestion-pill dynamic blend.
+// Written once per day by the cron at /api/suggestions/refresh and read by
+// the GET /api/suggestions hot path. The `check` constraint enforces the
+// singleton: only one row can ever exist.
+export const trendingSuggestionsCache = pgTable(
+  'trending_suggestions_cache',
+  {
+    id: integer('id').primaryKey().default(1),
+    suggestions: jsonb('suggestions')
+      .$type<Record<string, string[]>>()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+  },
+  table => [
+    check('trending_suggestions_cache_singleton', sql`${table.id} = 1`),
+    pgPolicy('public_read_trending_suggestions_cache', {
+      as: 'permissive',
+      for: 'select',
+      to: 'public',
+      using: sql`true`
+    })
+  ]
+).enableRLS()
+
+export type TrendingSuggestionsCacheRow = InferSelectModel<
+  typeof trendingSuggestionsCache
+>

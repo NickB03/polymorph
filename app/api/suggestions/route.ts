@@ -1,150 +1,93 @@
 import { NextResponse } from 'next/server'
 
-import { generateTrendingSuggestions } from '@/lib/agents/generate-trending-suggestions'
-import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
-import { getRedis } from '@/lib/rate-limit/redis'
+import { and, eq, gt, sql } from 'drizzle-orm'
+
+import {
+  dayOfEpoch,
+  selectDailySuggestionsFromPool
+} from '@/lib/constants/default-suggestions'
+import { db } from '@/lib/db'
+import { trendingSuggestionsCache } from '@/lib/db/schema'
 import type { SuggestionCategory } from '@/lib/types'
 import { flushTraces } from '@/lib/utils/telemetry'
 
-export const maxDuration = 60
+const CDN_MAX_AGE = 21_600 // 6 hours
+const CDN_SWR_WINDOW = 86_400 // 24 hours
+const BLEND_DYNAMIC_PER_CATEGORY = 2
 
-const CACHE_KEY = 'trending:suggestions'
-const CACHE_TTL = 14400 // 4 hours in seconds
-const FALLBACK_CACHE_TTL = 900 // 15 minutes for static fallback output
-const STALE_CACHE_KEY = 'trending:suggestions:stale'
-const STALE_CACHE_TTL = 604800 // 7 days for last known good dynamic suggestions
-const LOCK_KEY = 'trending:suggestions:lock'
-const LOCK_TTL = 60 // 60 seconds — prevents stale locks if generation crashes
-const LOCK_RETRY_DELAY_MS = 500
-const LOCK_MAX_RETRIES = 6
-
-// Stale-while-revalidate window for CDN edge caching (Vercel)
-const CDN_SWR_WINDOW = 3600 // 1 hour
-
-type SuggestionsResponseSource =
-  | 'cache'
-  | 'tavily'
-  | 'brave'
-  | 'exa'
-  | 'default'
-
-type SuggestionsServeMode = 'primary-cache' | 'fresh-generated' | 'stale-cache'
+type SuggestionsResponseSource = 'dynamic-blend' | 'static-rotation'
 
 function toSuggestionsResponse(
   suggestions: Record<SuggestionCategory, string[]>,
-  source: SuggestionsResponseSource,
-  serveMode: SuggestionsServeMode,
-  ttlSeconds?: number
+  source: SuggestionsResponseSource
 ) {
-  const cdnTtl = source === 'default' ? FALLBACK_CACHE_TTL : CACHE_TTL
-
   const headers = new Headers({
     'x-suggestions-source': source,
-    'x-suggestions-serve-mode': serveMode,
-    'CDN-Cache-Control': `public, s-maxage=${cdnTtl}, stale-while-revalidate=${CDN_SWR_WINDOW}`,
-    'Cache-Control': `public, max-age=0, s-maxage=${cdnTtl}, stale-while-revalidate=${CDN_SWR_WINDOW}`
+    'CDN-Cache-Control': `public, s-maxage=${CDN_MAX_AGE}, stale-while-revalidate=${CDN_SWR_WINDOW}`,
+    'Cache-Control': `public, max-age=0, s-maxage=${CDN_MAX_AGE}, stale-while-revalidate=${CDN_SWR_WINDOW}`
   })
-
-  if (typeof ttlSeconds === 'number') {
-    headers.set('x-suggestions-cache-ttl', String(ttlSeconds))
-  }
-
   return NextResponse.json(suggestions, { headers })
+}
+
+function blend(
+  dynamic: Record<SuggestionCategory, string[]>,
+  rotated: Record<SuggestionCategory, string[]>,
+  dynamicPerCategory: number
+): Record<SuggestionCategory, string[]> {
+  const categories = Object.keys(rotated) as SuggestionCategory[]
+  const out = {} as Record<SuggestionCategory, string[]>
+  for (const category of categories) {
+    const target = rotated[category].length
+    const dynamicSlice = (dynamic[category] ?? []).slice(0, dynamicPerCategory)
+    const staticSlice = rotated[category]
+      .filter(item => !dynamicSlice.includes(item))
+      .slice(0, target - dynamicSlice.length)
+    out[category] = [...dynamicSlice, ...staticSlice]
+  }
+  return out
+}
+
+async function readDynamicCache(): Promise<Record<
+  SuggestionCategory,
+  string[]
+> | null> {
+  const rows = await db
+    .select({ suggestions: trendingSuggestionsCache.suggestions })
+    .from(trendingSuggestionsCache)
+    .where(
+      and(
+        eq(trendingSuggestionsCache.id, 1),
+        gt(trendingSuggestionsCache.updatedAt, sql`now() - interval '25 hours'`)
+      )
+    )
+    .limit(1)
+
+  const suggestions = rows[0]?.suggestions
+  return (suggestions ?? null) as Record<SuggestionCategory, string[]> | null
 }
 
 export async function GET() {
   try {
-    const redis = getRedis()
-    let lockAcquired = false
+    const rotated = selectDailySuggestionsFromPool(dayOfEpoch())
 
-    // Try cache first
-    // Upstash automatically serializes (JSON.stringify) on set and
-    // deserializes (JSON.parse) on get, so we store/retrieve the
-    // object directly — no manual JSON.stringify/parse needed.
-    if (redis) {
-      const cached =
-        await redis.get<Record<SuggestionCategory, string[]>>(CACHE_KEY)
-      if (cached) {
-        return toSuggestionsResponse(cached, 'cache', 'primary-cache')
-      }
-
-      // Cache miss — try to acquire lock so only one request generates
-      const acquired = await redis.set(LOCK_KEY, '1', {
-        ex: LOCK_TTL,
-        nx: true
-      })
-      lockAcquired = Boolean(acquired)
-
-      if (!acquired) {
-        // Another request is generating — wait for it to populate the cache
-        for (let i = 0; i < LOCK_MAX_RETRIES; i++) {
-          await new Promise(r => setTimeout(r, LOCK_RETRY_DELAY_MS))
-          const result =
-            await redis.get<Record<SuggestionCategory, string[]>>(CACHE_KEY)
-          if (result) {
-            return toSuggestionsResponse(result, 'cache', 'primary-cache')
-          }
-        }
-        // Lock holder may have failed — fall through to generate ourselves
-      }
-    }
-
-    // Generate fresh suggestions (either we hold the lock, or Redis is unavailable)
-    const { suggestions, source } = await generateTrendingSuggestions()
-
-    let responseSuggestions = suggestions
-    let serveMode: SuggestionsServeMode = 'fresh-generated'
-
-    if (source === 'default' && redis) {
-      const staleCached =
-        await redis.get<Record<SuggestionCategory, string[]>>(STALE_CACHE_KEY)
-      if (staleCached) {
-        responseSuggestions = staleCached
-        serveMode = 'stale-cache'
-      }
-    }
-
-    // Cache the result and release the lock
-    if (redis) {
-      const effectiveTTL = source === 'default' ? FALLBACK_CACHE_TTL : CACHE_TTL
-
-      await redis.set(CACHE_KEY, responseSuggestions, {
-        ex: effectiveTTL
-      })
-
-      if (source !== 'default') {
-        await redis.set(STALE_CACHE_KEY, responseSuggestions, {
-          ex: STALE_CACHE_TTL
-        })
-      }
-
-      if (lockAcquired) {
-        await redis.del(LOCK_KEY)
-      }
-
-      if (source === 'default') {
-        console.info('[Suggestions] Served fallback/default source.', {
-          serveMode,
-          cacheTtl: effectiveTTL
-        })
-      }
-
-      return toSuggestionsResponse(
-        responseSuggestions,
-        source,
-        serveMode,
-        effectiveTTL
+    let dynamic: Record<SuggestionCategory, string[]> | null = null
+    try {
+      dynamic = await readDynamicCache()
+    } catch (dbError) {
+      console.warn(
+        '[Suggestions] DB read failed; serving pure static rotation.',
+        dbError
       )
     }
 
-    return toSuggestionsResponse(responseSuggestions, source, serveMode)
-  } catch (error) {
-    console.error('Suggestions API error:', error)
-    return toSuggestionsResponse(
-      DEFAULT_SUGGESTIONS,
-      'default',
-      'fresh-generated'
-    )
+    if (dynamic) {
+      return toSuggestionsResponse(
+        blend(dynamic, rotated, BLEND_DYNAMIC_PER_CATEGORY),
+        'dynamic-blend'
+      )
+    }
+
+    return toSuggestionsResponse(rotated, 'static-rotation')
   } finally {
     await flushTraces()
   }

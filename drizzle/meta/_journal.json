@@ -120,6 +120,20 @@
       "when": 1776261517072,
       "tag": "0016_typical_captain_universe",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1776570692560,
+      "tag": "0017_add_trending_suggestions_cache",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1776658100000,
+      "tag": "0018_drop_trending_suggestions_public_write_policy",
+      "breakpoints": true
     }
   ]
 }
