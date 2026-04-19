@@ -47,21 +47,21 @@ export const SUGGESTION_POOL: Record<SuggestionCategory, string[]> = {
   ],
   latest: [
     'Recent Claude and GPT benchmark shifts',
-    'Latest James Webb Telescope discoveries',
-    'Current status of malaria vaccine rollouts',
+    'Webb update on asteroid 2024 YR4',
+    'Malaria vaccine rollout across 25 countries',
     'Recent Moderna mRNA cancer vaccine trial results',
     'Latest fusion energy milestones at Commonwealth Fusion',
-    'Tesla Full Self-Driving real-world performance data',
+    'Waymo robotaxi rollout across 10 U.S. markets',
     'Current state of Waymo autonomous rollout',
     'Recent breakthroughs in CRISPR gene editing trials',
-    'NVIDIA Blackwell supply chain update',
+    'Nvidia H20 export controls latest',
     'How the SpaceX Starship fleet is performing',
     'Latest bird flu outbreak status in US dairy cattle',
     'State of quantum computing milestones in 2026',
-    'Recent Apple Vision Pro adoption data',
-    'Latest moves in the WGA vs AI training lawsuits',
+    'AI chip smuggling case tied to China',
+    'Current AI chip export control enforcement',
     'Gulf hurricane forecast for the 2026 season',
-    'Current AI chip export control enforcement'
+    'U.S. measles outbreak update in 2026'
   ],
   summarize: [
     'Summarize the key findings on neural scaling laws',

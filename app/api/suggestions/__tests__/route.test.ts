@@ -152,4 +152,25 @@ describe('selectDailySuggestionsFromPool', () => {
     expect(result.summarize).toHaveLength(4)
     expect(result.explain).toHaveLength(4)
   })
+
+  it('keeps the latest static pool aligned to current fallback topics', () => {
+    expect(SUGGESTION_POOL.latest).toEqual(
+      expect.arrayContaining([
+        'Waymo robotaxi rollout across 10 U.S. markets',
+        'Webb update on asteroid 2024 YR4',
+        'Nvidia H20 export controls latest',
+        'AI chip smuggling case tied to China',
+        'Malaria vaccine rollout across 25 countries'
+      ])
+    )
+
+    expect(SUGGESTION_POOL.latest).not.toEqual(
+      expect.arrayContaining([
+        'Tesla Full Self-Driving real-world performance data',
+        'NVIDIA Blackwell supply chain update',
+        'Recent Apple Vision Pro adoption data',
+        'Latest moves in the WGA vs AI training lawsuits'
+      ])
+    )
+  })
 })
