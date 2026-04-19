@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 
@@ -12,12 +13,26 @@ const sslConfig =
     : { rejectUnauthorized: false }
 
 let _privilegedDb: ReturnType<typeof drizzle> | null = null
+let _privilegedDbPromise: Promise<ReturnType<typeof drizzle>> | null = null
 
-export function getPrivilegedDb() {
+function assertPrivilegedRole(currentUser: string | undefined) {
+  if (currentUser?.includes('app_user')) {
+    throw new Error(
+      `Privileged database writes require owner credentials, but DATABASE_URL resolved to restricted role "${currentUser}"`
+    )
+  }
+}
+
+export async function getPrivilegedDb() {
   if (_privilegedDb) {
     return _privilegedDb
   }
 
+  if (_privilegedDbPromise) {
+    return _privilegedDbPromise
+  }
+
+  // This helper must bypass RLS. Never fall back to DATABASE_RESTRICTED_URL.
   const connectionString =
     process.env.DATABASE_URL ??
     process.env.POSTGRES_URL ??
@@ -39,9 +54,23 @@ export function getPrivilegedDb() {
     max: 5
   })
 
-  _privilegedDb = drizzle(client, {
+  const privilegedDb = drizzle(client, {
     schema: { ...schema, ...relations }
   })
 
-  return _privilegedDb
+  _privilegedDbPromise = (async () => {
+    try {
+      const result = await privilegedDb.execute<{ current_user: string }>(
+        sql`SELECT current_user`
+      )
+      assertPrivilegedRole(result[0]?.current_user)
+      _privilegedDb = privilegedDb
+      return privilegedDb
+    } catch (error) {
+      _privilegedDbPromise = null
+      throw error
+    }
+  })()
+
+  return _privilegedDbPromise
 }

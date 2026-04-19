@@ -27,14 +27,15 @@ export async function GET(request: Request) {
 
   try {
     const { suggestions } = await generateTrendingSuggestions()
-    const privilegedDb = getPrivilegedDb()
+    const privilegedDb = await getPrivilegedDb()
+    const now = new Date()
 
     await privilegedDb
       .insert(trendingSuggestionsCache)
-      .values({ id: 1, suggestions, updatedAt: new Date() })
+      .values({ id: 1, suggestions, updatedAt: now })
       .onConflictDoUpdate({
         target: trendingSuggestionsCache.id,
-        set: { suggestions, updatedAt: new Date() }
+        set: { suggestions, updatedAt: now }
       })
 
     return NextResponse.json({

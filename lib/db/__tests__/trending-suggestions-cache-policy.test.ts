@@ -20,8 +20,8 @@ describe('trending suggestions cache policies', () => {
       'drizzle/0017_add_trending_suggestions_cache.sql'
     )
 
-    expect(migrationSource).not.toContain(
-      'CREATE POLICY "server_write_trending_suggestions_cache"'
+    expect(migrationSource).not.toMatch(
+      /CREATE POLICY[\s\S]+ON "trending_suggestions_cache"[\s\S]+FOR (ALL|INSERT|UPDATE|DELETE)/i
     )
   })
 
