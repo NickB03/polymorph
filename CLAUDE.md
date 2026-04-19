@@ -27,11 +27,13 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 
 These are load-bearing and not derivable by reading any single file:
 
+- **Route groups.** `app/` is split into `(admin)/` (admin surface, gated by `ADMIN_USER_ID` via `lib/auth/is-admin.ts`) and `(chat)/` (default shell: `/`, `/search`, `/search/[id]`, `/demo/*`). `app/api/` and `app/auth/` live outside groups.
 - **Row-Level Security.** Every user-scoped table in `lib/db/schema.ts` uses RLS keyed on `current_setting('app.current_user_id')`. Server code must set that GUC before querying or rows are invisible.
 - **Canvas is one-artifact-per-chat.** `createCanvasArtifact` / `updateCanvasArtifact` / `readCanvasArtifact` are conditionally registered only when a canvas context is present. Compiled HTML lives in the DB and is served via `iframe.srcdoc`.
 - **Guest canvas tokens** are HMAC-SHA256 signed with `GUEST_CANVAS_SECRET` and rotate on every successful write.
 - **Phoenix tracing enforces HTTPS in production.** `instrumentation.ts` silently disables tracing if the collector endpoint is plain HTTP when any of `VERCEL_ENV=production`, `VERCEL_TARGET_ENV=production`, `RAILWAY_ENVIRONMENT=production`, or `NODE_ENV=production` is set.
-- **Cron triggers:** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image but does **not** run the container CMD. Use the Railway dashboard redeploy button for an immediate one-off run.
+- **Vercel cron:** `vercel.json` runs `GET /api/suggestions/refresh` daily at 14:00 UTC, gated by `CRON_SECRET` Bearer auth; upserts a singleton row in `trending_suggestions_cache` via `lib/db/admin.ts` (privileged DB client).
+- **Railway cron triggers:** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image but does **not** run the container CMD. Use the Railway dashboard redeploy button for an immediate one-off run.
 
 ## Skill invocation policy
 
@@ -98,5 +100,6 @@ Claude should `Read` these only when the current task needs them.
 | Day-2 operations runbook                   | `docs/operations/runbooks/day-2-operations.md` |
 | File index (where things live)             | `docs/reference/FILE-INDEX.md`                 |
 | API reference                              | `docs/reference/API.md`                        |
+| ESLint conventions                         | `docs/reference/ESLINT-CONVENTIONS.md`         |
 | Railway + Phoenix CLI cheat sheet          | `.claude/rules/operations.md`                  |
 | Design / wireframing workflow              | `.claude/rules/design-workflow.md`             |

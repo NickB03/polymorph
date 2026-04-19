@@ -25,10 +25,15 @@ If you discover a security vulnerability, please report it responsibly.
 
 Polymorph uses [Supabase Auth](https://supabase.com/docs/guides/auth) for user authentication.
 
-- Session tokens are refreshed automatically via Next.js middleware (`lib/supabase/middleware.ts`).
-- Unauthenticated requests to protected routes are redirected to `/auth/login`.
-- Public paths (`/`, `/auth`, `/share`, `/api`) are accessible without authentication.
-- Authentication can be disabled for local development with `ENABLE_AUTH=false`.
+- Session tokens are refreshed automatically via Next.js middleware (`proxy.ts` → `lib/supabase/middleware.ts`). The middleware runs on every non-static request and refreshes the session; it is not the layer that protects individual routes.
+- Route-level access control happens in each route's layout/handler, not middleware:
+  - `/` (root chat) — public when `ENABLE_GUEST_CHAT=true` (default); otherwise requires sign-in.
+  - `/auth/*` — always public (login, sign-up, forgot-password, confirm, OAuth, etc.).
+  - `/share/*` — public read-only chat sharing.
+  - `/api/chat` — accepts guest traffic when `ENABLE_GUEST_CHAT=true`; otherwise requires an authenticated session. IP-rate-limited for guests.
+  - `/api/suggestions/refresh` — **not** user auth. Requires `Authorization: Bearer <CRON_SECRET>`. Intended only for the Vercel daily cron.
+  - `/admin/*` — under the `app/(admin)/` route group. `app/(admin)/layout.tsx` forces dynamic rendering and returns `notFound()` unless `isAdminUserId(user.id)` matches the single configured `ADMIN_USER_ID` env var.
+- Authentication can be disabled for local development with `ENABLE_AUTH=false` (not permitted when `POLYMORPH_CLOUD_DEPLOYMENT=true`).
 
 ### Row-Level Security (RLS)
 
@@ -57,6 +62,11 @@ The upload endpoint (`app/api/upload/route.ts`) enforces the following:
 - **Guest chat** -- daily request limits enforced via Upstash Redis when `ENABLE_GUEST_CHAT=true`.
 - **Authenticated users** -- overall chat limits enforced via Upstash Redis in cloud deployments.
 - Rate-limit state is stored in Redis and is not persisted in the primary database.
+
+### Scheduled job secrets
+
+- `CRON_SECRET` protects the Vercel cron endpoint `/api/suggestions/refresh`. The handler rejects any request whose `Authorization` header does not match `Bearer <CRON_SECRET>` (401). Rotate in the Vercel dashboard if leaked.
+- `ADMIN_USER_ID` is a Supabase user ID — not a secret per se, but a gate: only requests whose authenticated session's `user.id` matches this string can access `/admin/*`.
 
 ### Guest Mode Isolation
 
