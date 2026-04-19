@@ -88,11 +88,7 @@ Required when `ENABLE_AUTH=true`:
 
 ## Evals cron (Railway `polymorph-evals`)
 
-See [Deployment → Evals cron service](../operations/DEPLOYMENT.md#evals-cron-service) for the full matrix. Notable knobs used by the offline evaluator:
-
-- `LOOKBACK_HOURS` (default `6`) — how far back the sampler looks for recent chats.
-- `SAMPLE_SIZE` (default `50`) — cap on sampled chats per run.
-- `JUDGE_MODEL`, `JUDGE_API_KEY`, `JUDGE_BASE_URL`, `JUDGE_REASONING_*` — LLM-judge configuration.
+See [Deployment → Evals cron service](../operations/DEPLOYMENT.md#evals-cron-service) for the full env matrix.
 
 ### Tracing (Arize Phoenix)
 

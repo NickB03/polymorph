@@ -313,30 +313,15 @@ The App Router is split into two route groups (`(chat)/` and `(admin)/`) plus no
 
 ### Evals Dashboard Components
 
-| File                                                     | Purpose                                                                                            |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `components/evals/dashboard-v2/dashboard.tsx`            | Top-level evals dashboard: loads suite data + user layout preference, renders via `LayoutRenderer` |
-| `components/evals/dashboard-v2/template-switcher.tsx`    | Template switcher control; persists the user's preferred layout via `setPreferredEvalsLayout`      |
-| `components/evals/dashboard-v2/dashboard.test.tsx`       | Tests for dashboard template selection, widget rendering, and layout persistence                   |
-| `components/evals/widgets/layout-renderer.tsx`           | Renders widgets from a layout template definition against loaded suite data                        |
-| `components/evals/widgets/registry.ts`                   | Widget registry mapping widget type names to React components + prop adapters                      |
-| `components/evals/widgets/page-header.tsx`               | Dashboard page header widget                                                                       |
-| `components/evals/widgets/filter-toolbar.tsx`            | Filter toolbar widget for suite/date-range/evaluator filtering                                     |
-| `components/evals/widgets/kpi-tile.tsx`                  | KPI tile widget showing a single metric with trend sparkline                                       |
-| `components/evals/widgets/score-ring-widget.tsx`         | Score ring widget (pass-rate circular gauge)                                                       |
-| `components/evals/widgets/suite-header-card.tsx`         | Suite header card widget with suite metadata and health state                                      |
-| `components/evals/widgets/trend-chart-widget.tsx`        | Trend line chart widget for a single suite or evaluator                                            |
-| `components/evals/widgets/combined-trend-chart.tsx`      | Combined trend chart showing multiple suites overlaid                                              |
-| `components/evals/widgets/evaluator-bars-widget.tsx`     | Evaluator score bar chart widget                                                                   |
-| `components/evals/widgets/evaluator-chip-grid.tsx`       | Compact chip grid of evaluator scores                                                              |
-| `components/evals/widgets/evaluator-comparison-grid.tsx` | Side-by-side comparison of evaluator scores across two suite runs                                  |
-| `components/evals/widgets/divergence-banner.tsx`         | Banner highlighting notable evaluator divergences                                                  |
-| `components/evals/widgets/activity-feed.tsx`             | Activity feed widget listing recent eval runs                                                      |
-| `components/evals/widgets/what-changed-card.tsx`         | Summary card showing what changed between the latest and previous runs                             |
-| `components/evals/widgets/empty-state.tsx`               | Empty-state placeholder when no eval data is available                                             |
-| `components/evals/widgets/shared/format.ts`              | Shared formatting helpers for widget labels and metrics                                            |
-| `components/evals/widgets/shared/sparkline.tsx`          | Shared inline sparkline component used by KPI tiles                                                |
-| `components/evals/widgets/shared/widget-props.ts`        | Shared widget prop types                                                                           |
+| File                                                  | Purpose                                                                                                                                                |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `components/evals/dashboard-v2/dashboard.tsx`         | Top-level evals dashboard: loads suite data + user layout preference, renders via `LayoutRenderer`                                                     |
+| `components/evals/dashboard-v2/template-switcher.tsx` | Template switcher control; persists the user's preferred layout via `setPreferredEvalsLayout`                                                          |
+| `components/evals/dashboard-v2/dashboard.test.tsx`    | Tests for dashboard template selection, widget rendering, and layout persistence                                                                       |
+| `components/evals/widgets/layout-renderer.tsx`        | Renders widgets from a layout template definition against loaded suite data                                                                            |
+| `components/evals/widgets/registry.ts`                | Widget registry mapping widget type names to React components + prop adapters                                                                          |
+| `components/evals/widgets/*.tsx`                      | Individual widget components (KPI tiles, score rings, trend charts, evaluator bars/grids, activity feed, etc.) — see `registry.ts` for the active list |
+| `components/evals/widgets/shared/`                    | Shared widget utilities: formatters, sparkline, prop types                                                                                             |
 
 ### Voice Components
 

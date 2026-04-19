@@ -23,13 +23,6 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 
 ## Architecture
 
-### App Router route groups
-
-- `app/(chat)/` — default shell. Routes: `/` (root chat), `/search`, `/search/[id]`, `/demo/question-wizard`.
-- `app/(admin)/admin/` — admin surface gated by `ADMIN_USER_ID` via `lib/auth/is-admin.ts` (currently just `/admin/evals`, the template-driven evals dashboard).
-- `app/api/` — API routes (chat, suggestions + `refresh` cron, evals, uploads, voice, canvas artifacts, canvas assets).
-- `app/auth/` — Supabase auth flows.
-
 ### AI Agent Pipeline
 
 The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → tools → streaming response.

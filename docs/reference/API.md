@@ -389,36 +389,7 @@ Returns trending topic suggestions for the homepage, grouped by category. Reads 
 
 ### GET `/api/suggestions/refresh`
 
-Regenerates the trending-suggestions cache. Intended to be called **only** by the Vercel cron declared in `vercel.json` (`0 14 * * *`, 14:00 UTC daily). Not a user-auth endpoint.
-
-**Authentication:** Bearer token — the `Authorization` header must equal `Bearer ${CRON_SECRET}`. Vercel sends this automatically when `CRON_SECRET` is set on the project.
-**Max duration:** 60 seconds (`maxDuration = 60`)
-**Dynamic:** `force-dynamic`
-
-#### Side effects
-
-Calls `generateTrendingSuggestions()` (multi-provider cascade: Brave → Tavily → Exa), then upserts the singleton row (`id = 1`) in `trending_suggestions_cache` via the privileged DB client (`lib/db/admin.ts`, bypasses RLS).
-
-#### Response
-
-**Content-Type:** `application/json`
-
-Success (200):
-
-```json
-{
-  "ok": true,
-  "categories": ["research", "compare", "creative", "technical"]
-}
-```
-
-#### Error Responses
-
-| Status | Body                                                     | Condition                                                          |
-| ------ | -------------------------------------------------------- | ------------------------------------------------------------------ |
-| `401`  | `{ "ok": false, "error": "unauthorized" }`               | Missing or mismatched `Authorization: Bearer <CRON_SECRET>` header |
-| `500`  | `{ "ok": false, "error": "not-configured" }`             | `CRON_SECRET` env var is not set — the route refuses to run        |
-| `500`  | `{ "ok": false, "error": "<message>" }` (or `"unknown"`) | Generation or DB write failed (inspect Vercel function logs)       |
+Vercel-cron-only endpoint that regenerates the `trending_suggestions_cache` singleton via the privileged DB client. Bearer-auth gated by `CRON_SECRET`. Schedule and operational details live in [Deployment → Vercel cron](../operations/DEPLOYMENT.md#vercel-cron--trending-suggestions-refresh); env vars in [Environment → Vercel cron jobs](../getting-started/ENVIRONMENT.md#vercel-cron-jobs).
 
 ---
 
