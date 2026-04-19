@@ -42,6 +42,7 @@ Lookup material for day-to-day development.
 
 - [API Reference](reference/API.md) -- Chat API endpoint, request/response schemas, error codes
 - [File Index](reference/FILE-INDEX.md) -- Every file in the repository with a one-line description
+- [ESLint Conventions](reference/ESLINT-CONVENTIONS.md) -- Flat config layout and the eslint-disable discipline enforced by a test
 
 ## Operations
 

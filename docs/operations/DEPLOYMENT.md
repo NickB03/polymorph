@@ -21,9 +21,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=[YOUR_SUPABASE_ANON_KEY]
 SUPABASE_STORAGE_BUCKET=[YOUR_BUCKET_NAME]
 DATABASE_URL=[PRODUCTION_POSTGRES_URL]
 AI_GATEWAY_API_KEY=[YOUR_VERCEL_GATEWAY_KEY]
-TAVILY_API_KEY=[YOUR_TAVILY_API_KEY]
+BRAVE_SEARCH_API_KEY=[YOUR_BRAVE_SEARCH_KEY]
 NEXT_PUBLIC_APP_URL=[YOUR_PUBLIC_APP_URL]
+CRON_SECRET=[RANDOM_LONG_STRING]
+ADMIN_USER_ID=[SUPABASE_USER_ID_FOR_ADMIN_ACCESS]
 ```
+
+`BRAVE_SEARCH_API_KEY` is the default search provider (`SEARCH_API=brave`). Set `TAVILY_API_KEY`, `EXA_API_KEY`, or another provider key instead if you prefer. `CRON_SECRET` is required for the Vercel cron in the next section. `ADMIN_USER_ID` is optional — required only if you want `/admin/*` routes to resolve for a specific user.
 
 For the current Vercel production alias, set:
 
@@ -39,6 +43,23 @@ NEXT_PUBLIC_POLYMORPH_CLOUD_DEPLOYMENT=true
 UPSTASH_REDIS_REST_URL=[YOUR_UPSTASH_URL]
 UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 ```
+
+## Vercel cron — trending suggestions refresh
+
+`vercel.json` at the repo root declares a single daily cron job:
+
+```json
+{
+  "crons": [{ "path": "/api/suggestions/refresh", "schedule": "0 14 * * *" }]
+}
+```
+
+- **Schedule:** 14:00 UTC daily.
+- **Target:** `GET /api/suggestions/refresh` (`app/api/suggestions/refresh/route.ts`, `maxDuration = 60` seconds).
+- **Auth:** `Authorization: Bearer <CRON_SECRET>`. Vercel sends `CRON_SECRET` automatically when the env var is set in the project — you only need to set it in the dashboard.
+- **Side effect:** regenerates trending suggestions via `generateTrendingSuggestions()` (multi-provider cascade: Brave → Tavily → Exa) and upserts the singleton row in `trending_suggestions_cache` via the privileged DB client (`lib/db/admin.ts`).
+- **Failure modes:** returns `500` with `error: 'not-configured'` if `CRON_SECRET` is absent; `401` on bad auth; `500` on generation failure. Inspect Vercel function logs for the specific error message.
+- **Read path:** `GET /api/suggestions` reads the same table and blends cached suggestions with static rotation. A stale cache (over 25 hours old) is treated as absent and falls back to static suggestions — so a missed cron run is degraded, not broken.
 
 ## Healthcheck expectations
 
