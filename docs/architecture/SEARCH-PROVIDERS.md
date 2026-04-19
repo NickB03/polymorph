@@ -9,6 +9,7 @@ Polymorph uses a factory pattern to support multiple search backends. Providers 
 
 - [Provider Comparison](#provider-comparison)
 - [Provider Selection Logic](#provider-selection-logic)
+- [Error Handling and Retries](#error-handling-and-retries)
 - [Configuring Providers](#configuring-providers)
   - [Brave (Default)](#brave-default)
   - [Tavily](#tavily)
@@ -26,8 +27,8 @@ Polymorph uses a factory pattern to support multiple search backends. Providers 
 
 | Provider      | Env Variable           | Content Snippets                        | Images                  | Videos                      | Search Depth                   | Domain Filtering     | Self-Hosted |
 | ------------- | ---------------------- | --------------------------------------- | ----------------------- | --------------------------- | ------------------------------ | -------------------- | ----------- |
-| **Tavily**    | `TAVILY_API_KEY`       | Yes (with answers)                      | Yes (with descriptions) | No                          | basic / advanced               | Include + Exclude    | No          |
 | **Brave**     | `BRAVE_SEARCH_API_KEY` | Basic descriptions                      | Yes (thumbnails)        | Yes (thumbnails + duration) | No                             | No                   | No          |
+| **Tavily**    | `TAVILY_API_KEY`       | Yes (with answers)                      | Yes (with descriptions) | No                          | basic / advanced               | Include + Exclude    | No          |
 | **Exa**       | `EXA_API_KEY`          | Yes (highlights)                        | No                      | No                          | Ignored                        | Include + Exclude    | No          |
 | **SearXNG**   | `SEARXNG_API_URL`      | Yes                                     | Yes                     | No                          | basic / advanced               | Include only (site:) | Yes         |
 | **Firecrawl** | `FIRECRAWL_API_KEY`    | Yes (markdown, truncated to 1000 chars) | Yes                     | No                          | basic (web) / advanced (+news) | No                   | No          |
@@ -91,6 +92,12 @@ In Chat Mode, the search type is always forced to `optimized` regardless of what
 
 ---
 
+## Error Handling and Retries
+
+Provider failures throw a typed `SearchProviderError` (`lib/tools/search/providers/errors.ts`) so callers can branch on `retryable` and `retryAfterMs` without string-matching. Every provider call is wrapped by `retrySearchOperation()` (`lib/utils/retry.ts`) with jittered exponential backoff, honoring `Retry-After` when present. Terminal 4xx (other than 429), config errors, and invalid keys propagate immediately. When multiple Brave content types are requested, the provider executes them sequentially to reduce burst rate-limit hits; the separate trending-suggestions job adds its own per-query delay in `lib/agents/generate-trending-suggestions.ts`.
+
+---
+
 ## Configuring Providers
 
 ### Tavily
@@ -129,7 +136,7 @@ BRAVE_SEARCH_API_KEY=BSA...
 
 **Features:**
 
-- Parallel execution of web, video, and image searches when multiple content types requested
+- Sequential execution of web, video, and image searches when multiple content types are requested
 - Video results include thumbnails, duration, publisher, and date
 - Image results include thumbnails with multiple fallback sources
 - Automatically selected for `type="general"` searches when API key is present

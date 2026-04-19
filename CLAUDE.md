@@ -31,7 +31,8 @@ These are load-bearing and not derivable by reading any single file:
 - **Canvas is one-artifact-per-chat.** `createCanvasArtifact` / `updateCanvasArtifact` / `readCanvasArtifact` are conditionally registered only when a canvas context is present. Compiled HTML lives in the DB and is served via `iframe.srcdoc`.
 - **Guest canvas tokens** are HMAC-SHA256 signed with `GUEST_CANVAS_SECRET` and rotate on every successful write.
 - **Phoenix tracing enforces HTTPS in production.** `instrumentation.ts` silently disables tracing if the collector endpoint is plain HTTP when any of `VERCEL_ENV=production`, `VERCEL_TARGET_ENV=production`, `RAILWAY_ENVIRONMENT=production`, or `NODE_ENV=production` is set.
-- **Cron triggers:** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image but does **not** run the container CMD. Use the Railway dashboard redeploy button for an immediate one-off run.
+- **Privileged DB client bypasses RLS.** `lib/db/admin.ts` is the only path that may set/upsert rows on user-scoped tables without a session GUC. Used by the Vercel cron at `/api/suggestions/refresh` to write the singleton `trending_suggestions_cache`.
+- **Railway cron triggers:** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image but does **not** run the container CMD. Use the Railway dashboard redeploy button for an immediate one-off run.
 
 ## Skill invocation policy
 
@@ -98,5 +99,6 @@ Claude should `Read` these only when the current task needs them.
 | Day-2 operations runbook                   | `docs/operations/runbooks/day-2-operations.md` |
 | File index (where things live)             | `docs/reference/FILE-INDEX.md`                 |
 | API reference                              | `docs/reference/API.md`                        |
+| ESLint conventions                         | `docs/reference/ESLINT-CONVENTIONS.md`         |
 | Railway + Phoenix CLI cheat sheet          | `.claude/rules/operations.md`                  |
 | Design / wireframing workflow              | `.claude/rules/design-workflow.md`             |

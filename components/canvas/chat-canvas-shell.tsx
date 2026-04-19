@@ -173,19 +173,43 @@ export function ChatCanvasShell({
 
   return (
     <div className="flex-1 min-h-0 min-w-0 h-screen flex">
-      {/* Desktop: Independent resizable panels */}
       <div
         ref={containerRef}
-        className="hidden md:flex flex-1 min-w-0 overflow-hidden"
+        className="relative flex flex-1 min-w-0 overflow-hidden"
       >
-        {/* Chat Panel - Independent container */}
-        <div className="flex-1 min-w-0 flex flex-col">{children}</div>
+        <div
+          className="relative flex flex-1 min-w-0 flex-col"
+          data-testid="mobile-shell"
+        >
+          {/* Keep the chat subtree mounted exactly once. On mobile, hide it
+              with CSS while the workspace overlays on top so refs/state survive. */}
+          <div
+            className={cn(
+              'flex flex-1 min-h-0 min-w-0 flex-col',
+              canvas.isWorkspaceOpen &&
+                'invisible h-0 overflow-hidden md:visible md:h-auto md:overflow-visible'
+            )}
+          >
+            {children}
+            <div className="md:hidden">
+              <InspectorDrawer />
+              <ActivityDrawer />
+            </div>
+          </div>
 
-        {/* Resize Handle */}
+          {/* Mobile: full-screen takeover — workspace overlays chat */}
+          {canvas.isWorkspaceOpen && (
+            <div className="absolute inset-0 md:hidden">
+              <CanvasWorkspace />
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: independent resizable right panel */}
         {activePanel && (
           <div
             className={cn(
-              'w-1 mx-0.5 my-6 hover:bg-border transition-colors duration-200 cursor-col-resize select-none relative',
+              'mx-0.5 my-6 hidden w-1 cursor-col-resize select-none relative transition-colors duration-200 hover:bg-border md:block',
               isResizing && 'bg-border/50'
             )}
             onMouseDown={startResize}
@@ -197,7 +221,7 @@ export function ChatCanvasShell({
         {/* Right Panel - Independent with own animation */}
         <div
           className={cn(
-            'bg-background overflow-hidden',
+            'hidden bg-background overflow-hidden md:block',
             activePanel ? 'opacity-100' : 'w-0 opacity-0 pointer-events-none',
             !isResizing && 'transition-all duration-300 ease-out'
           )}
@@ -220,26 +244,6 @@ export function ChatCanvasShell({
           style={{ zIndex: RESIZE_OVERLAY_Z_INDEX }}
         />
       )}
-
-      {/* Mobile: full-screen takeover — workspace overlays chat */}
-      <div
-        className="md:hidden flex-1 h-full min-w-0 flex flex-col relative"
-        data-testid="mobile-shell"
-      >
-        {/* Chat always stays mounted so its refs (canvasOpenedRef etc.) survive
-            workspace open/close cycles. Hidden via CSS when workspace is active. */}
-        <div
-          className={cn(
-            'flex-1 min-h-0 flex flex-col',
-            canvas.isWorkspaceOpen && 'invisible h-0 overflow-hidden'
-          )}
-        >
-          {children}
-          <InspectorDrawer />
-          <ActivityDrawer />
-        </div>
-        {canvas.isWorkspaceOpen && <CanvasWorkspace />}
-      </div>
     </div>
   )
 }

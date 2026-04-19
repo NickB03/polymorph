@@ -88,6 +88,16 @@ describe('ChatCanvasShell', () => {
     mockCanvasContext.pendingWorkspace = null
   })
 
+  it('renders the shared chat subtree only once', () => {
+    render(
+      <ChatCanvasShell>
+        <div data-testid="chat-content">Chat</div>
+      </ChatCanvasShell>
+    )
+
+    expect(screen.getAllByTestId('chat-content')).toHaveLength(1)
+  })
+
   describe('mobile layout', () => {
     beforeEach(() => {
       mockIsMobile = true

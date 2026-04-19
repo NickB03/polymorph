@@ -301,7 +301,7 @@ Performs a SearXNG-powered web search with optional deep crawling and relevance 
 **Authentication:** None
 **Dynamic:** `force-dynamic`
 
-> **Note:** This endpoint requires a self-hosted SearXNG instance. It is separate from the primary Tavily/Brave search used by the chat agent tools.
+> **Note:** This endpoint requires a self-hosted SearXNG instance. It is separate from the primary Brave search (and Tavily/Exa fallbacks) used by the chat agent tools.
 
 #### Request Body
 
@@ -362,7 +362,7 @@ Performs a SearXNG-powered web search with optional deep crawling and relevance 
 
 ### GET `/api/suggestions`
 
-Returns trending topic suggestions for the homepage, grouped by category. Results are cached in Redis for 4 hours with stale fallback support.
+Returns trending topic suggestions for the homepage, grouped by category. Reads the `trending_suggestions_cache` Postgres singleton (updated daily by the Vercel cron at `/api/suggestions/refresh`) and blends dynamic suggestions with a static rotation fallback.
 
 **Authentication:** None
 **Dynamic:** `force-dynamic`
@@ -384,6 +384,12 @@ Returns trending topic suggestions for the homepage, grouped by category. Result
 
 - `x-suggestions-source` -- Source of suggestions (`cache`, `tavily`, `brave`, `default`)
 - `x-suggestions-serve-mode` -- How the response was served (`primary-cache`, `fresh-generated`, `stale-cache`)
+
+---
+
+### GET `/api/suggestions/refresh`
+
+Vercel-cron-only endpoint that regenerates the `trending_suggestions_cache` singleton via the privileged DB client. Bearer-auth gated by `CRON_SECRET`. Schedule and operational details live in [Deployment → Vercel cron](../operations/DEPLOYMENT.md#vercel-cron--trending-suggestions-refresh); env vars in [Environment → Vercel cron jobs](../getting-started/ENVIRONMENT.md#vercel-cron-jobs).
 
 ---
 

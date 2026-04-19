@@ -7,11 +7,12 @@ This document defines the environment-variable matrix for Polymorph.
 
 ## Required (Day-1 bootstrap)
 
-| Variable             | Required | Purpose                                           |
-| -------------------- | -------- | ------------------------------------------------- |
-| `DATABASE_URL`       | Yes      | PostgreSQL connection string for Drizzle/Supabase |
-| `AI_GATEWAY_API_KEY` | Yes      | Vercel AI Gateway provider key                    |
-| `TAVILY_API_KEY`     | Optional | Secondary search / extract provider key           |
+| Variable               | Required                                                       | Purpose                                                                                    |
+| ---------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`         | Yes                                                            | PostgreSQL connection string for Drizzle/Supabase                                          |
+| `AI_GATEWAY_API_KEY`   | Yes                                                            | Vercel AI Gateway provider key                                                             |
+| `BRAVE_SEARCH_API_KEY` | Recommended if using Brave; otherwise set another provider key | Primary search provider when `SEARCH_API=brave` (default); enables web + multimedia search |
+| `TAVILY_API_KEY`       | Optional                                                       | Alternative search / extract provider key                                                  |
 
 ## Core behavior controls
 
@@ -72,6 +73,22 @@ Required when `ENABLE_AUTH=true`:
 - Guest mode: `ENABLE_GUEST_CHAT` (recommended), `GUEST_CHAT_DAILY_LIMIT`
 - Tracing/observability: see [Tracing (Arize Phoenix)](#tracing-arize-phoenix) below
 - Performance diagnostics: `ENABLE_PERF_LOGGING`
+
+## Admin surface
+
+| Variable        | Required          | Purpose                                                                                                                                                                |
+| --------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ADMIN_USER_ID` | When admin needed | Supabase user ID that gates `app/(admin)/admin/*` routes via `lib/auth/is-admin.ts`. Without this, admin routes return `notFound()`. Ignored when `ENABLE_AUTH=false`. |
+
+## Vercel cron jobs
+
+| Variable      | Required          | Purpose                                                                                                                      |
+| ------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `CRON_SECRET` | In Vercel deploys | Bearer token required by `GET /api/suggestions/refresh` (declared in `vercel.json`, schedule `0 14 * * *`). Reject-on-empty. |
+
+## Evals cron (Railway `polymorph-evals`)
+
+See [Deployment → Evals cron service](../operations/DEPLOYMENT.md#evals-cron-service) for the full env matrix.
 
 ### Tracing (Arize Phoenix)
 

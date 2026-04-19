@@ -2,7 +2,7 @@
 
 > **Audience:** Architect | Contributor
 
-Date: 2026-02-23
+Last updated: 2026-04-19
 
 This document records the foundational architecture decisions for Polymorph.
 
@@ -12,25 +12,40 @@ This document records the foundational architecture decisions for Polymorph.
 - **Local Dev**: Supabase CLI (Docker-based local backend)
 - **Database**: PostgreSQL + Drizzle ORM
 - **Authentication mode**: `ENABLE_AUTH=true` by default; can be disabled with `ENABLE_AUTH=false` (not allowed in cloud deployment mode)
+- **Admin surface**: `ADMIN_USER_ID` env var gates `app/(admin)/admin/*` routes via `lib/auth/is-admin.ts`. Admin pages are route-group-isolated under `app/(admin)/`; the default chat shell lives under `app/(chat)/`.
 
 ## 2) Search and Content Extraction
 
-- **Primary Search**: Tavily (`TAVILY_API_KEY`)
-- **Multimedia Search**: Brave (`BRAVE_SEARCH_API_KEY`)
-- **Additional Providers**: Exa, SearXNG (self-hosted), Firecrawl (selectable via `SEARCH_API` env var)
+- **Primary Search**: Brave (`BRAVE_SEARCH_API_KEY`) — default `SEARCH_API=brave`. Brave covers web, video, and image searches in parallel (multimedia) and is the default for both `optimized` and `general` search types.
+- **Fallback / Alternative Providers**: Tavily (`TAVILY_API_KEY`), Exa (`EXA_API_KEY`), SearXNG (self-hosted, `SEARXNG_API_URL`), Firecrawl (`FIRECRAWL_API_KEY`) — any of which can be selected via `SEARCH_API`.
+- **Error Handling**: Typed `SearchProviderError` with HTTP status, retryable flag, and parsed `Retry-After`. Retries use jittered exponential backoff via `retrySearchOperation()` in `lib/utils/retry.ts`. See [Search Providers → Error Handling and Retries](SEARCH-PROVIDERS.md#error-handling-and-retries).
 - **Extraction**: Tavily Extract (default), Jina Reader (fallback)
 
 ## 3) AI Model Orchestration
 
 - **Primary Interface**: Vercel AI Gateway (`AI_GATEWAY_API_KEY`)
-- **Default Models**: Gemini 3 Flash (Speed), Grok 4.1 Fast Reasoning (Quality)
+- **Default Models**: Gemini 3 Flash (Speed), Grok 4.1 Fast Reasoning (Quality) — see [`config/models/default.json`](../../config/models/default.json)
+- **Image Generation**: `gateway:google/gemini-2.5-flash-image` via the same Gateway interface (see `lib/tools/generate-image.ts`)
 
 ## 4) Storage Strategy
 
 - **Provider**: Supabase Storage
-- **Bucket**: `user-uploads` (Public/RLS-protected)
+- **Bucket**: `user-uploads` (Public/RLS-protected). Generated images upload to `{userId}/chats/{chatId}/generated-{timestamp}.{ext}` via `lib/supabase/server-storage.ts`.
 
 ## 5) Deployment Target
 
-- **Primary**: Vercel
+- **Primary**: Vercel (app, API routes, Vercel cron — see §7)
 - **Secondary**: Docker (containerized app + local Redis)
+- **Ancillary services (Railway)**: Phoenix observability (`phoenix` service, persistent SQLite on volume `phoenix-volume-v8K9`) and the offline evals cron (`polymorph-evals`)
+
+## 6) Observability
+
+- **Selected**: Arize Phoenix (replaced Langfuse). OpenInference semantic conventions via OpenTelemetry.
+- **Project naming convention**: `polymorph-{env}` (e.g., `polymorph-prod`, `polymorph-preview`, `polymorph-local`). Controlled via `PHOENIX_PROJECT_NAME`.
+- **HTTPS enforced in production**: `instrumentation.ts` silently disables tracing if `PHOENIX_COLLECTOR_ENDPOINT` is plain HTTP and the environment is production (`VERCEL_ENV`, `VERCEL_TARGET_ENV`, `RAILWAY_ENVIRONMENT`, or `NODE_ENV` set to `production`).
+- **Persistence**: Phoenix data lives on a Railway volume. Verify via `railway volume list --json`. Without an attached volume, redeploy wipes traces.
+
+## 7) Scheduled Jobs
+
+- **Vercel cron (user-facing refresh tasks)**: `vercel.json` declares `GET /api/suggestions/refresh` at `0 14 * * *` (14:00 UTC daily). Bearer-token auth via `CRON_SECRET`; regenerates the `trending_suggestions_cache` Postgres singleton used by `/api/suggestions`.
+- **Railway cron (offline evals)**: `polymorph-evals` service runs daily at 00:00 UTC. Samples recent chats, runs 7 evaluators (2 deterministic + 5 LLM-judge), pushes results to Phoenix as experiments, and persists summaries to `eval_summaries` for the admin `/admin/evals` dashboard.

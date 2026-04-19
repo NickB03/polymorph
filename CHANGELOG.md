@@ -9,31 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Image generation tool (`generateImage`) with Gemini Flash for inline image creation
-- Image upload as LLM context for all users — multimodal input support
-- `readCanvasArtifact` tool for reading current canvas artifact source without side effects
-- `displayQuestionWizard` display tool for interactive question flows in generative UI
-- Safety evaluator for LLM response safety assessment (`services/evals/src/evaluators/safety.ts`)
-- Citation accuracy evaluator for verifying citation quality (`services/evals/src/evaluators/citation-accuracy.ts`)
-- Tool usage evaluator (deterministic) for validating agent tool selection (`services/evals/src/evaluators/tool-usage.ts`)
-- Traffic monitor eval runner (`services/evals/src/runners/traffic-monitor.ts`)
-- Traffic monitor suite results now persist to `eval_summaries` so the admin `/evals` dashboard renders them
-- Admin `/evals` dashboard renders Capability and Traffic Monitor as parallel suite sections with per-suite ring, latest run, trend chart, and evaluator bars
-- Related questions ticker with auto-rotation (`hooks/use-ticker-rotation.ts`)
-- File validation utilities for upload restrictions (`lib/utils/file-validation.ts`)
-- Supabase server storage helper (`lib/supabase/server-storage.ts`)
-- Inline file URL processing for streaming (`lib/streaming/helpers/inline-file-urls.ts`)
-- `--accent-violet` design token (OKLCH hue ~293) for the Research Agent brand color, with light and dark mode definitions
-- Evaluator factory (`services/evals/src/evaluators/create-evaluator.ts`) eliminating ~60% boilerplate across LLM evaluators
-- Shared `extractVerdict` + `asString` utilities (`services/evals/src/evaluators/extract-verdict.ts`) with word-boundary matching to prevent substring false positives
+- App Router `(admin)/` and `(chat)/` route groups, with admin surface gated by `ADMIN_USER_ID`
+- Template-driven evals dashboard v2 with persisted per-user layout preference
+- Daily Vercel cron at `/api/suggestions/refresh` to refresh trending suggestions (Bearer-auth gated by `CRON_SECRET`)
+- Typed search-provider errors with `Retry-After` honoring and jittered exponential backoff
+- Inline image generation tool (`generateImage`, Gemini 2.5 Flash)
+- Image upload as LLM context (multimodal input) for all users
+- `readCanvasArtifact` tool for reading current canvas source without side effects
+- `displayQuestionWizard` interactive question-flow display tool
+- New evaluators: safety, citation accuracy, deterministic tool usage
+- Traffic Monitor eval runner; results persisted to `eval_summaries` for the `/admin/evals` dashboard
+- Related-questions ticker with auto-rotation; reduced-motion hook
+- File validation utilities and Supabase server storage helper for uploads
+- `--accent-violet` design token for the Research Agent brand color
+- Shared evaluator factory and verdict extractor with word-boundary matching
+- ESLint flat config aligned with Next.js 16 (see [`ESLINT-CONVENTIONS.md`](docs/reference/ESLINT-CONVENTIONS.md))
+- Phoenix project naming convention `polymorph-{env}`
 
 ### Changed
 
-- Default search provider changed from Tavily to Brave
-- Migrated observability from Langfuse to Arize Phoenix with OpenInference tracing
+- Default search provider changed from Tavily to Brave (`SEARCH_API=brave`, required env `BRAVE_SEARCH_API_KEY`)
+- Migrated observability from Langfuse to Arize Phoenix with OpenInference tracing; production deployments must use an HTTPS collector endpoint
 - Renamed `ENABLE_LANGFUSE_TRACING` to `ENABLE_TRACING`
 - Replaced Langfuse environment variables with Phoenix equivalents (`PHOENIX_COLLECTOR_ENDPOINT`, `PHOENIX_PROJECT_NAME`, `PHOENIX_API_KEY`)
 - Updated start script to respect Railway `PORT` environment variable
+- Evals cron cadence messaging aligned with the actual Railway schedule (daily at 00:00 UTC)
 - Canvas artifact system now provides validated React source compilation to persisted single-file HTML with live preview, version history, guest token continuity, and export support
 - Research Agent brand color now uses `text-accent-violet` token instead of `text-tip`
 - Progress tracker celebration glow uses `var(--success)` token via `color-mix()` instead of hardcoded emerald RGBA
@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Safe `JSON.parse` wrapper for citations in evals sampler, matching the existing `parseSearchResults` pattern
 - Evals runners split Phoenix HTTP and Postgres write failures into distinct `PHOENIX UNAVAILABLE` and `DB WRITE FAILED` error labels so DB outages are no longer misdiagnosed as Phoenix downtime
 - Threshold-failure throw in `runJudgedSuite` now survives a DB write outage (threshold check moved before the DB persist)
+- Sampler `tool_data` CTE now references real columns on the `parts` table (eliminates empty tool context in eval samples)
 
 ## [0.1.0] - 2026-02-28
 

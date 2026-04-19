@@ -219,7 +219,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 | `displayPlan`     | Available                                            |
 | `displayChart`    | Available                                            |
 
-**How search wrapping works:** In chat mode, the search tool is wrapped by `wrapSearchToolForChatMode()`, which intercepts every call and forces `type: 'optimized'` regardless of what the LLM requests. This ensures the agent always gets content snippets directly from the search provider (Tavily/Exa) rather than needing to fetch pages separately.
+**How search wrapping works:** In chat mode, the search tool is wrapped by `wrapSearchToolForChatMode()`, which intercepts every call and forces `type: 'optimized'` regardless of what the LLM requests. This ensures the agent always gets content snippets directly from the search provider (Brave by default; Tavily/Exa when selected via `SEARCH_API`) rather than needing to fetch pages separately.
 
 **System prompt behavior:**
 
@@ -355,6 +355,13 @@ All display tools share a common pattern: they accept structured input, validate
 
 **`displayTable` format types:** `text`, `number`, `currency`, `percent`, `date`, `delta`, `boolean`, `link`, `badge`, `status`, `array` — each with type-specific options (e.g., currency code, decimal places, color maps).
 
+### Conditional Tools
+
+Some tools are registered only when the request context provides the capabilities they need. These are not part of the default chat or research tool lists — they are injected on demand at agent-creation time.
+
+- **`generateImage`** (`lib/tools/generate-image.ts`) — Text-to-image generation via `gateway:google/gemini-2.5-flash-image`. Registered when a `userId` + `chatId` context is available (authenticated and guest flows both supply this). Accepts `prompt`, optional `aspectRatio`, and an optional `sourceImageUrl` for image editing. Uploaded images are persisted to Supabase Storage under `{userId}/chats/{chatId}/generated-{timestamp}.{ext}` via `lib/supabase/server-storage.ts`.
+- **`createCanvasArtifact`, `updateCanvasArtifact`, `readCanvasArtifact`** — Canvas authoring tools. Registered when a canvas context is present on the request. Enforce one-artifact-per-chat (see `lib/db/schema.ts` — `canvas_artifacts_chat_id_idx` unique index).
+
 ### Dynamic Tools
 
 **Source:** [`lib/tools/dynamic.ts`](../lib/tools/dynamic.ts)
@@ -474,10 +481,12 @@ interface SearchProvider {
 
 ### Provider Selection Logic
 
-1. For `type='optimized'`: Use the provider from `SEARCH_API` env var (default: `tavily`)
+1. For `type='optimized'`: Use the provider from `SEARCH_API` env var (default: `brave`)
 2. For `type='general'`: Check if `BRAVE_SEARCH_API_KEY` is set
    - If yes: use Brave (multimedia support)
    - If no: fall back to the `SEARCH_API` provider (same as optimized)
+
+For error handling across providers (typed `SearchProviderError`, retry semantics, burst pacing), see [Search Providers → Error Handling and Retries](SEARCH-PROVIDERS.md#error-handling-and-retries).
 
 The search config utility ([`lib/utils/search-config.ts`](../lib/utils/search-config.ts)) dynamically adjusts the agent's system prompt based on which providers are available, including guidance about content types and multimedia support.
 

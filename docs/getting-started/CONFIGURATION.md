@@ -77,6 +77,16 @@ UPSTASH_REDIS_REST_URL=[YOUR_UPSTASH_URL]
 UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 ```
 
+## Admin Access
+
+The admin surface (`/admin/evals`) is gated by a single environment variable:
+
+```bash
+ADMIN_USER_ID=[SUPABASE_USER_ID]
+```
+
+Only a session whose `user.id` matches will render admin routes. Unauthenticated requests are redirected to `/auth/login`; authenticated non-admin users get `notFound()`. `ENABLE_AUTH=false` still disables admin access entirely.
+
 ## Optional Features
 
 - Guest chat: `ENABLE_GUEST_CHAT=true`
@@ -84,5 +94,6 @@ UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 - Phoenix tracing: `ENABLE_TRACING=true`
 - File uploads: `SUPABASE_STORAGE_BUCKET=user-uploads`
 - Perf logging: `ENABLE_PERF_LOGGING=true`
+- Vercel cron (suggestions refresh): `CRON_SECRET=[RANDOM_SECRET]` — required in Vercel deployments; see `vercel.json`
 
 For full variable documentation, see `.env.local.example` and [Environment Reference](ENVIRONMENT.md).
