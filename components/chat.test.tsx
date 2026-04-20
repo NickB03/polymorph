@@ -98,7 +98,8 @@ function makeUseChatReturnValue(messages: UIMessage[] = []) {
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: vi.fn()
-  })
+  }),
+  useParams: () => ({})
 }))
 
 vi.mock('@ai-sdk/react', () => ({
