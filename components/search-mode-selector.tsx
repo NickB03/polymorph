@@ -71,8 +71,14 @@ export function SearchModeSelector() {
     setDropdownOpen(false)
   }
 
-  const selectedMode = SEARCH_MODE_CONFIGS.find(
-    config => config.value === value
+  // Legacy 2-mode selector — filter out the new 'build' UserMode until the
+  // selector is fully replaced (plan Step 4).
+  const visibleConfigs = SEARCH_MODE_CONFIGS.filter(
+    config => config.value !== 'build'
+  )
+  const selectedUserMode = searchModeToUserMode(value)
+  const selectedMode = visibleConfigs.find(
+    config => config.value === selectedUserMode
   )
   const SelectedIcon = selectedMode?.icon
 
@@ -102,13 +108,13 @@ export function SearchModeSelector() {
         className="w-64 max-w-[calc(100vw-2rem)]"
         sideOffset={5}
       >
-        {SEARCH_MODE_CONFIGS.map(config => {
+        {visibleConfigs.map(config => {
           const ModeIcon = config.icon
-          const isSelected = value === config.value
+          const isSelected = selectedUserMode === config.value
           return (
             <DropdownMenuItem
               key={config.value}
-              onClick={() => handleModeSelect(config.value)}
+              onClick={() => handleModeSelect(config.backendMode)}
               className="relative flex flex-col items-start gap-1 py-2 pl-8 pr-2 cursor-pointer focus:outline-none"
             >
               {isSelected && (
