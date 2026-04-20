@@ -355,12 +355,22 @@ function isRenderableCanvasCodeDisplayPart(
     return false
   }
 
-  const toolPart = part as { state?: string; output?: unknown }
+  const toolPart = part as {
+    state?: string
+    output?: unknown
+    toolCallId?: string
+  }
   if (toolPart.state !== 'output-available' || !toolPart.output) {
     return false
   }
 
-  return tryRenderToolUIByName(part.type.substring(5), toolPart.output) !== null
+  return (
+    tryRenderToolUIByName(
+      part.type.substring(5),
+      toolPart.output,
+      toolPart.toolCallId ?? part.type
+    ) !== null
+  )
 }
 
 function shouldSuppressReadCanvasArtifactFallback(

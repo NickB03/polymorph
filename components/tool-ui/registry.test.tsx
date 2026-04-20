@@ -78,7 +78,11 @@ describe('tool UI registry', () => {
   })
 
   it('renders displayCodeBlock output through the code block UI', () => {
-    const node = tryRenderToolUIByName('displayCodeBlock', codeBlockOutput)
+    const node = tryRenderToolUIByName(
+      'displayCodeBlock',
+      codeBlockOutput,
+      'test-part-id'
+    )
 
     render(<>{node}</>)
 
@@ -87,7 +91,11 @@ describe('tool UI registry', () => {
   })
 
   it('renders displayCodeDiff output through the code diff UI', () => {
-    const node = tryRenderToolUIByName('displayCodeDiff', codeDiffOutput)
+    const node = tryRenderToolUIByName(
+      'displayCodeDiff',
+      codeDiffOutput,
+      'test-part-id'
+    )
 
     render(<>{node}</>)
 
