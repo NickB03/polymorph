@@ -25,8 +25,8 @@ import { Button } from './ui/button'
 import { VoiceModeToggle } from './voice/voice-mode-toggle'
 import { ActionButtons } from './action-buttons'
 import { FileUploadButton, readFileAsDataUrl } from './file-upload-button'
+import { ModeSelector } from './mode-selector'
 import { PolymorphWordmark } from './polymorph-wordmark'
-import { SearchModeSelector } from './search-mode-selector'
 import { UploadedFileList } from './uploaded-file-list'
 
 // Constants for timing delays
@@ -410,7 +410,7 @@ export function ChatPanel({
                   )
                 }}
               />
-              <SearchModeSelector />
+              <ModeSelector />
             </div>
             <div className="flex items-center gap-2">
               {voiceEnabled && onStartVoice && onStopVoice && (

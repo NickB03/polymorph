@@ -33,7 +33,13 @@ import { BaseStreamConfig } from './types'
 
 type EphemeralStreamConfig = Pick<
   BaseStreamConfig,
-  'model' | 'abortSignal' | 'searchMode' | 'modelType' | 'trigger'
+  | 'model'
+  | 'abortSignal'
+  | 'searchMode'
+  | 'userMode'
+  | 'intent'
+  | 'modelType'
+  | 'trigger'
 > & {
   messages: UIMessage[]
   chatId?: string
@@ -48,6 +54,8 @@ export async function createEphemeralChatStreamResponse(
     model,
     abortSignal,
     searchMode,
+    userMode,
+    intent,
     modelType,
     chatId,
     trigger,
@@ -131,6 +139,7 @@ export async function createEphemeralChatStreamResponse(
           writer,
           parentTraceId,
           searchMode,
+          intent,
           modelType,
           canvasToolContext,
           ...(chatId
@@ -157,7 +166,7 @@ export async function createEphemeralChatStreamResponse(
               if (part.type === 'start') {
                 return {
                   traceId: parentTraceId,
-                  searchMode,
+                  userMode,
                   modelType,
                   modelId
                 }

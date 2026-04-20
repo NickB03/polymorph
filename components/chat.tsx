@@ -30,7 +30,7 @@ import {
   isToolTypePart
 } from '@/lib/types/dynamic-tools'
 import { isValidModelType } from '@/lib/types/model-type'
-import { isValidSearchMode } from '@/lib/types/search'
+import { isValidUserMode } from '@/lib/types/search'
 import { cn } from '@/lib/utils'
 import { syncModelType } from '@/lib/utils/model-type'
 import { syncSearchMode } from '@/lib/utils/search-mode'
@@ -119,7 +119,7 @@ export function Chat({
       type: 'general',
       message: ''
     })
-    syncSearchMode('chat')
+    syncSearchMode('search')
     syncModelType('speed')
     guestCanvasTokenRef.current = undefined
     canvasOpenedRef.current.clear()
@@ -138,14 +138,14 @@ export function Chat({
       const metadata = lastAssistantMessage?.metadata as
         | UIMessageMetadata
         | undefined
-      if (isValidSearchMode(metadata?.searchMode)) {
-        syncSearchMode(metadata.searchMode)
+      if (isValidUserMode(metadata?.userMode)) {
+        syncSearchMode(metadata.userMode)
       }
       if (isValidModelType(metadata?.modelType)) {
         syncModelType(metadata.modelType)
       }
     } else {
-      syncSearchMode('chat')
+      syncSearchMode('search')
       syncModelType('speed')
     }
   }, [providedId, savedMessages])

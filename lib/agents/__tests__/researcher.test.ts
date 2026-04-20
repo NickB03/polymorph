@@ -119,6 +119,7 @@ describe('createResearcher', () => {
     expect(config.activeTools).toContain('displayTable')
     expect(config.activeTools).toContain('displayChart')
     expect(config.activeTools).toContain('displayCitations')
+    expect(config.activeTools).toContain('displayTimeline')
     // Research mode should NOT include displayPlan
     expect(config.activeTools).not.toContain('displayPlan')
   })
@@ -136,6 +137,7 @@ describe('createResearcher', () => {
     expect(config.activeTools).toContain('displayPlan')
     expect(config.activeTools).toContain('search')
     expect(config.activeTools).toContain('fetch')
+    expect(config.activeTools).toContain('displayTimeline')
     // Chat mode should NOT include todoWrite
     expect(config.activeTools).not.toContain('todoWrite')
   })

@@ -85,7 +85,7 @@ function makeAssistantMessage({
     id: `${chatId}-assistant`,
     role: 'assistant',
     metadata: {
-      searchMode: 'research'
+      userMode: 'research'
     },
     parts: [
       {
@@ -263,7 +263,7 @@ describe('useActivityFeed', () => {
       {
         id: 'chat-1-assistant',
         role: 'assistant',
-        metadata: { searchMode: 'research' },
+        metadata: { userMode: 'research' },
         parts: [
           {
             type: 'tool-search',
@@ -290,7 +290,7 @@ describe('useActivityFeed', () => {
       {
         id: 'chat-1-assistant',
         role: 'assistant',
-        metadata: { searchMode: 'research' },
+        metadata: { userMode: 'research' },
         parts: [
           {
             type: 'tool-search',
@@ -325,7 +325,7 @@ describe('useActivityFeed', () => {
         id: 'chat-1-assistant',
         role: 'assistant',
         metadata: {
-          searchMode: 'research'
+          userMode: 'research'
         },
         parts: [
           {

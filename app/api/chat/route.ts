@@ -7,13 +7,14 @@ import { checkAndEnforceOverallChatLimit } from '@/lib/rate-limit/chat-limits'
 import { checkAndEnforceGuestLimit } from '@/lib/rate-limit/guest-limit'
 import { createChatStreamResponse } from '@/lib/streaming/create-chat-stream-response'
 import { createEphemeralChatStreamResponse } from '@/lib/streaming/create-ephemeral-chat-stream-response'
-import { SearchMode } from '@/lib/types/search'
+import { toIntent, toSearchMode } from '@/lib/types/search'
 import { validateFilePart } from '@/lib/utils/file-validation'
 import { jsonError } from '@/lib/utils/json-error'
 import { selectModel } from '@/lib/utils/model-selection'
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 import { resetAllCounters } from '@/lib/utils/perf-tracking'
 import { isProviderEnabled } from '@/lib/utils/registry'
+import { mapSearchModeCookieValue } from '@/lib/utils/search-mode'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -128,18 +129,13 @@ export async function POST(req: Request) {
 
     const cookieStore = await cookies()
 
-    // Get search mode from cookie (with backward compat for old values)
+    // The `searchMode` cookie stores a UI-facing `UserMode`
+    // ('search' | 'research' | 'build'). Map it to the backend `SearchMode`
+    // plus an optional `intent` prompt-directive hint.
     const rawSearchMode = cookieStore.get('searchMode')?.value
-    const mappedSearchMode =
-      rawSearchMode === 'quick'
-        ? 'chat'
-        : rawSearchMode === 'adaptive'
-          ? 'research'
-          : rawSearchMode
-    const searchMode: SearchMode =
-      mappedSearchMode && ['chat', 'research'].includes(mappedSearchMode)
-        ? (mappedSearchMode as SearchMode)
-        : 'chat'
+    const userMode = mapSearchModeCookieValue(rawSearchMode)
+    const searchMode = toSearchMode(userMode)
+    const intent = toIntent(userMode)
 
     // Select the appropriate model based on model type preference and search mode
     const selectedModel = selectModel({
@@ -225,6 +221,8 @@ export async function POST(req: Request) {
           model: selectedModel,
           abortSignal,
           searchMode,
+          userMode,
+          intent,
           modelType,
           chatId,
           trigger: validatedTrigger,
@@ -240,6 +238,8 @@ export async function POST(req: Request) {
           abortSignal,
           isNewChat,
           searchMode,
+          userMode,
+          intent,
           modelType,
           ...(validatedTrigger === 'tool-result' ? { toolResult } : {})
         })

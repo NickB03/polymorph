@@ -709,6 +709,22 @@ Each part is dispatched via `RenderPart`:
 
 Follow these steps to add a new display tool (e.g., `displayTimeline`):
 
+### Before you start: integration mode for this repo
+
+Polymorph does **not** use `assistant-ui` `Toolkit` wiring for its chat runtime. New Tool UI work should follow the local AI SDK + bespoke renderer path that already exists in the repo.
+
+- Do **not** start with `tool-agent`, `npx shadcn add @tool-ui/...`, or an `assistant-ui` migration unless the user explicitly asks for that.
+- First inspect the existing integration points:
+  - `components/tool-ui/*` for component shape, schema contracts, and adapters
+  - `components/tool-ui/registry.tsx` for output rendering
+  - `components/render-message.tsx` for interactive rendering and `addToolResult` handling
+  - `components/chat.tsx` and `components/chat-request.ts` for request/continuation plumbing
+  - `lib/types/dynamic-tools.ts` and `lib/streaming/helpers/prepare-tool-result-messages.ts` for interactive tool state transitions
+  - `lib/agents/researcher.ts` and any prompt files that must actually cause the model to call the tool
+- Reuse the existing naming pattern (`displayX`, `generateImage`, canvas tools) unless there is a deliberate reason to change the contract.
+- For interactive tools, registry registration is not enough. You usually need explicit handling in `render-message.tsx`, tool-result continuation support, and tests for the exact `tool-*` part shape.
+- For passive display tools, the minimum path is usually: server tool -> component/schema -> registry -> agent activation -> prompt usage/tests.
+
 ### Step 1: Define the server-side tool
 
 Create `lib/tools/display-timeline.ts`:

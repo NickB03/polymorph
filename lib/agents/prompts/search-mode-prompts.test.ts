@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getChatModePrompt, getResearchModePrompt } from './search-mode-prompts'
+import { CHAT_MODE_PROMPT, RESEARCH_MODE_PROMPT } from './search-mode-prompts'
 
 describe('search mode prompts', () => {
   const sharedCanvasAssertions = [
@@ -26,42 +26,49 @@ describe('search mode prompts', () => {
   }
 
   it('keeps displayPlan-only list formatting guidance out of research mode', () => {
-    const prompt = getResearchModePrompt()
-
-    expect(prompt).not.toContain(
+    expect(RESEARCH_MODE_PROMPT).not.toContain(
       'NO numbered step lists — call displayPlan instead'
     )
   })
 
   it('retains displayPlan guidance in chat mode', () => {
-    const prompt = getChatModePrompt()
-
-    expect(prompt).toContain(
+    expect(CHAT_MODE_PROMPT).toContain(
       'NO numbered step lists — call displayPlan instead'
     )
   })
 
   it('shares the canvas artifact guidance in chat mode', () => {
-    expectSharedCanvasRules(getChatModePrompt())
+    expectSharedCanvasRules(CHAT_MODE_PROMPT)
   })
 
   it('shares the canvas artifact guidance in research mode', () => {
-    expectSharedCanvasRules(getResearchModePrompt())
+    expectSharedCanvasRules(RESEARCH_MODE_PROMPT)
   })
 
   it('keeps the one artifact per chat rule intact', () => {
-    expect(getChatModePrompt()).toContain('Only one canvas artifact per chat')
-    expect(getResearchModePrompt()).toContain(
-      'Only one canvas artifact per chat'
-    )
+    expect(CHAT_MODE_PROMPT).toContain('Only one canvas artifact per chat')
+    expect(RESEARCH_MODE_PROMPT).toContain('Only one canvas artifact per chat')
   })
 
   it('keeps the allowed file and import constraints intact', () => {
-    expect(getChatModePrompt()).toContain(
+    expect(CHAT_MODE_PROMPT).toContain(
       '**Allowed packages:** `react`, `react-dom/client`, `lucide-react` (icons), `recharts` (charts), `motion/react` (animation), `date-fns` (date utilities)'
     )
-    expect(getResearchModePrompt()).toContain(
+    expect(RESEARCH_MODE_PROMPT).toContain(
       '**Allowed packages:** `react`, `react-dom/client`, `lucide-react` (icons), `recharts` (charts), `motion/react` (animation), `date-fns` (date utilities)'
     )
   })
+
+  it.each([
+    ['chat', CHAT_MODE_PROMPT],
+    ['research', RESEARCH_MODE_PROMPT]
+  ])(
+    '%s prompt forbids pseudo display tool placeholders and requires prose fallback',
+    (_mode, prompt) => {
+      expect(prompt).toContain('Never write pseudo-tool text such as')
+      expect(prompt).toContain('displayTimeline(...)')
+      expect(prompt).toContain('If you cannot make a real display tool call')
+      expect(prompt).toContain('continue with normal prose')
+    }
+  )
 })

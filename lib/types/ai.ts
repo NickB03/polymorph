@@ -15,7 +15,7 @@ import type {
   CanvasDiagnostic
 } from '@/lib/types/canvas'
 import type { ModelType } from '@/lib/types/model-type'
-import type { SearchMode } from '@/lib/types/search'
+import type { UserMode } from '@/lib/types/search'
 
 // Re-export TodoItem for external use
 export type { TodoItem }
@@ -24,7 +24,7 @@ export type { TodoItem }
 export interface UIMessageMetadata {
   traceId?: string
   feedbackScore?: number | null
-  searchMode?: SearchMode
+  userMode?: UserMode
   modelType?: ModelType
   modelId?: string
   [key: string]: any
