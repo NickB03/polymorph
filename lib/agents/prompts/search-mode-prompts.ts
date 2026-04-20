@@ -84,19 +84,11 @@ You can create and update interactive frontend web artifacts using the tools bel
 - Returns the latest persisted source files, title, status, and draftRevision
 - Call this first, then use the returned files and draftRevision to call updateCanvasArtifact
 
-**displayCodeBlock** — Display one current file inline during artifact inspection:
-- Use only in canvas inspection or update flows after \`readCanvasArtifact\`
-- select the 1 to 2 relevant files, call \`displayCodeBlock\` for each, then continue in prose
-- Keep \`createCanvasArtifact\` unchanged in v1 — this tool is only for inspection
-
-**displayCodeDiff** — Display file changes inline before artifact updates:
-- Use only in canvas update flows
-- After reading current files when needed, call \`displayCodeDiff\` for each changed file, then call \`updateCanvasArtifact\` with the full replacement file set
-- Use full previous and next file contents, not patch strings
-
 **Canvas inspection and update rules:**
-- Successful \`readCanvasArtifact\` responses may be followed by \`displayCodeBlock\` or \`displayCodeDiff\` so the chat shows code UI instead of raw file JSON
-- Outside canvas artifact inspection/update flows, continue using normal prose or fenced code blocks; do not use \`displayCodeBlock\` or \`displayCodeDiff\`
+- Successful \`readCanvasArtifact\` responses are internal working state for inspection/update flows
+- Do not paste full artifact source files or diffs into chat
+- When the user wants to inspect or review the artifact code, point the user to the artifact workspace Code tab
+- Outside canvas artifact inspection/update flows, continue using normal prose or fenced code blocks
 
 **Routing guidance:**
 - Normal build/create requests skip search entirely.

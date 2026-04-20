@@ -17,10 +17,9 @@ describe('search mode prompts', () => {
     'Modify/update requests skip search entirely',
     'Research-then-build requests search first, then build',
     'Factual or current-data artifact requests do a short search phase first, then build',
-    'displayCodeBlock',
-    'displayCodeDiff',
-    'select the 1 to 2 relevant files',
-    'call `displayCodeDiff` for each changed file',
+    'Successful `readCanvasArtifact` responses are internal working state',
+    'Do not paste full artifact source files or diffs into chat',
+    'point the user to the artifact workspace Code tab',
     'Outside canvas artifact inspection/update flows, continue using normal prose or fenced code blocks'
   ] as const
 

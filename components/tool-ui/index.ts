@@ -17,10 +17,6 @@ export type {
   SerializableCitation
 } from './citation'
 export { Citation, CitationList } from './citation'
-export type { CodeBlockProps, SerializableCodeBlock } from './code-block'
-export { CodeBlock } from './code-block'
-export type { CodeDiffProps, SerializableCodeDiff } from './code-diff'
-export { CodeDiff } from './code-diff'
 export type {
   Column,
   DataTableClientProps,

@@ -345,34 +345,6 @@ function getLatestCanvasArtifactStatuses(parts: UIMessage['parts']) {
   return latestStatuses
 }
 
-function isRenderableCanvasCodeDisplayPart(
-  part: NonNullable<UIMessage['parts']>[number]
-) {
-  if (
-    part.type !== 'tool-displayCodeBlock' &&
-    part.type !== 'tool-displayCodeDiff'
-  ) {
-    return false
-  }
-
-  const toolPart = part as {
-    state?: string
-    output?: unknown
-    toolCallId?: string
-  }
-  if (toolPart.state !== 'output-available' || !toolPart.output) {
-    return false
-  }
-
-  return (
-    tryRenderToolUIByName(
-      part.type.substring(5),
-      toolPart.output,
-      toolPart.toolCallId ?? part.type
-    ) !== null
-  )
-}
-
 function shouldSuppressReadCanvasArtifactFallback(
   parts: NonNullable<UIMessage['parts']>,
   index: number
@@ -394,17 +366,7 @@ function shouldSuppressReadCanvasArtifactFallback(
   }
 
   const output = dynamicToolPart.output as { status?: unknown }
-  if (output.status === 'not_found') {
-    return false
-  }
-
-  for (let nextIndex = index + 1; nextIndex < parts.length; nextIndex++) {
-    if (isRenderableCanvasCodeDisplayPart(parts[nextIndex]!)) {
-      return true
-    }
-  }
-
-  return false
+  return output.status !== 'not_found'
 }
 
 interface RenderMessageProps {

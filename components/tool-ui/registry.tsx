@@ -10,10 +10,6 @@ import { Chart } from './chart/chart'
 import { safeParseSerializableChart } from './chart/schema'
 import { CitationList } from './citation/citation-list'
 import { safeParseSerializableCitation } from './citation/schema'
-import { CodeBlock } from './code-block/code-block'
-import { safeParseSerializableCodeBlock } from './code-block/schema'
-import { CodeDiff } from './code-diff/code-diff'
-import { safeParseSerializableCodeDiff } from './code-diff/schema'
 import { DataTable } from './data-table/data-table'
 import { safeParseSerializableDataTable } from './data-table/schema'
 import { GenerateImage } from './generate-image/generate-image'
@@ -91,30 +87,6 @@ const entries: ToolUIEntry[] = [
           <ToolCardMount partId={partId}>
             <Chart {...parsed} />
           </ToolCardMount>
-        </ToolErrorBoundary>
-      )
-    }
-  },
-  {
-    name: 'displayCodeBlock',
-    tryRender: output => {
-      const parsed = safeParseSerializableCodeBlock(output)
-      if (!parsed) return null
-      return (
-        <ToolErrorBoundary toolName="CodeBlock">
-          <CodeBlock {...parsed} />
-        </ToolErrorBoundary>
-      )
-    }
-  },
-  {
-    name: 'displayCodeDiff',
-    tryRender: output => {
-      const parsed = safeParseSerializableCodeDiff(output)
-      if (!parsed) return null
-      return (
-        <ToolErrorBoundary toolName="CodeDiff">
-          <CodeDiff {...parsed} />
         </ToolErrorBoundary>
       )
     }

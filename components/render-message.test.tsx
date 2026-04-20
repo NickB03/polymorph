@@ -655,7 +655,7 @@ describe('RenderMessage', () => {
     )
   })
 
-  it('suppresses a successful readCanvasArtifact fallback when a valid displayCodeBlock follows', () => {
+  it('suppresses successful readCanvasArtifact output in chat', () => {
     const message: UIMessage = {
       id: 'assistant-code-read',
       role: 'assistant',
@@ -677,17 +677,6 @@ describe('RenderMessage', () => {
               'App.tsx': 'export default function App() { return <main /> }'
             }
           }
-        } as any,
-        {
-          type: 'tool-displayCodeBlock',
-          toolCallId: 'tool-code-1',
-          state: 'output-available',
-          output: {
-            id: 'code-block-1',
-            code: 'export default function App() { return <main /> }',
-            language: 'tsx',
-            filename: 'App.tsx'
-          }
         } as any
       ]
     }
@@ -702,7 +691,6 @@ describe('RenderMessage', () => {
       />
     )
 
-    expect(screen.getByTestId('tool-ui-code-block')).toBeInTheDocument()
     expect(screen.queryByTestId('dynamic-tool-display')).not.toBeInTheDocument()
   })
 
@@ -783,7 +771,7 @@ describe('RenderMessage', () => {
     )
   })
 
-  it('suppresses a successful readCanvasArtifact fallback when a valid displayCodeDiff follows', () => {
+  it('keeps readCanvasArtifact not-found payloads visible in chat', () => {
     const message: UIMessage = {
       id: 'assistant-code-diff-read',
       role: 'assistant',
@@ -797,25 +785,13 @@ describe('RenderMessage', () => {
           output: {
             artifactId: 'artifact-1',
             chatId: 'chat-1',
-            title: 'Artifact',
-            status: 'ready',
-            draftRevision: 5,
-            currentVersionId: 'ver-2',
-            files: {
-              'App.tsx': 'export const value = 1'
-            }
-          }
-        } as any,
-        {
-          type: 'tool-displayCodeDiff',
-          toolCallId: 'tool-code-diff-1',
-          state: 'output-available',
-          output: {
-            id: 'code-diff-1',
-            oldCode: 'export const value = 1',
-            newCode: 'export const value = 2',
-            language: 'ts',
-            filename: 'App.tsx'
+            title: '',
+            status: 'not_found',
+            draftRevision: 0,
+            currentVersionId: null,
+            files: {},
+            error: 'Artifact not found',
+            errorCode: 'not-found'
           }
         } as any
       ]
@@ -831,8 +807,7 @@ describe('RenderMessage', () => {
       />
     )
 
-    expect(screen.getByTestId('tool-ui-code-diff')).toBeInTheDocument()
-    expect(screen.queryByTestId('dynamic-tool-display')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dynamic-tool-display')).toBeInTheDocument()
   })
 
   it('shows only the data-canvasArtifact card when failed creates with empty IDs precede a success', () => {
