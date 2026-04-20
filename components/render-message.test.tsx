@@ -25,6 +25,13 @@ vi.mock('./dynamic-tool-display', () => ({
       const rendered =
         part.toolName === 'createCanvasArtifact' ? (
           <div data-testid="canvas-artifact-card" data-source="tool" />
+        ) : part.toolName === 'readCanvasArtifact' ? (
+          <div
+            data-testid="dynamic-tool-display"
+            data-tool-name="readCanvasArtifact"
+          >
+            {JSON.stringify(part.output)}
+          </div>
         ) : null
       return rendered
     }
@@ -120,6 +127,57 @@ vi.mock('./tool-ui/registry', () => ({
       Array.isArray((output as Record<string, unknown>).events)
     ) {
       return <div data-testid="timeline-tool-ui" data-source="tool" />
+    }
+
+    if (
+      toolName === 'displayCodeBlock' &&
+      output &&
+      typeof output === 'object'
+    ) {
+      const data = output as Record<string, unknown>
+      if (
+        typeof data.id === 'string' &&
+        typeof data.code === 'string' &&
+        (!('filename' in data) || typeof data.filename === 'string')
+      ) {
+        return (
+          <div
+            data-testid="tool-ui-code-block"
+            data-tool-ui-id={data.id}
+            data-filename={
+              typeof data.filename === 'string' ? data.filename : undefined
+            }
+          >
+            {data.code}
+          </div>
+        )
+      }
+    }
+
+    if (
+      toolName === 'displayCodeDiff' &&
+      output &&
+      typeof output === 'object'
+    ) {
+      const data = output as Record<string, unknown>
+      if (
+        typeof data.id === 'string' &&
+        typeof data.oldCode === 'string' &&
+        typeof data.newCode === 'string' &&
+        (!('filename' in data) || typeof data.filename === 'string')
+      ) {
+        return (
+          <div
+            data-testid="tool-ui-code-diff"
+            data-tool-ui-id={data.id}
+            data-filename={
+              typeof data.filename === 'string' ? data.filename : undefined
+            }
+          >
+            {`${data.oldCode}=>${data.newCode}`}
+          </div>
+        )
+      }
     }
 
     if (
@@ -597,6 +655,57 @@ describe('RenderMessage', () => {
     )
   })
 
+  it('suppresses a successful readCanvasArtifact fallback when a valid displayCodeBlock follows', () => {
+    const message: UIMessage = {
+      id: 'assistant-code-read',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'dynamic-tool',
+          toolCallId: 'tool-read-1',
+          toolName: 'readCanvasArtifact',
+          state: 'output-available',
+          input: { artifactId: 'artifact-1' },
+          output: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Artifact',
+            status: 'ready',
+            draftRevision: 4,
+            currentVersionId: 'ver-1',
+            files: {
+              'App.tsx': 'export default function App() { return <main /> }'
+            }
+          }
+        } as any,
+        {
+          type: 'tool-displayCodeBlock',
+          toolCallId: 'tool-code-1',
+          state: 'output-available',
+          output: {
+            id: 'code-block-1',
+            code: 'export default function App() { return <main /> }',
+            language: 'tsx',
+            filename: 'App.tsx'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('tool-ui-code-block')).toBeInTheDocument()
+    expect(screen.queryByTestId('dynamic-tool-display')).not.toBeInTheDocument()
+  })
+
   it('extracts valid fenced JSON timeline payloads from assistant text', () => {
     const message: UIMessage = {
       id: 'assistant-timeline-json',
@@ -672,6 +781,58 @@ describe('RenderMessage', () => {
         toolName: 'displayTimeline'
       })
     )
+  })
+
+  it('suppresses a successful readCanvasArtifact fallback when a valid displayCodeDiff follows', () => {
+    const message: UIMessage = {
+      id: 'assistant-code-diff-read',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'dynamic-tool',
+          toolCallId: 'tool-read-2',
+          toolName: 'readCanvasArtifact',
+          state: 'output-available',
+          input: { artifactId: 'artifact-1' },
+          output: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Artifact',
+            status: 'ready',
+            draftRevision: 5,
+            currentVersionId: 'ver-2',
+            files: {
+              'App.tsx': 'export const value = 1'
+            }
+          }
+        } as any,
+        {
+          type: 'tool-displayCodeDiff',
+          toolCallId: 'tool-code-diff-1',
+          state: 'output-available',
+          output: {
+            id: 'code-diff-1',
+            oldCode: 'export const value = 1',
+            newCode: 'export const value = 2',
+            language: 'ts',
+            filename: 'App.tsx'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('tool-ui-code-diff')).toBeInTheDocument()
+    expect(screen.queryByTestId('dynamic-tool-display')).not.toBeInTheDocument()
   })
 
   it('shows only the data-canvasArtifact card when failed creates with empty IDs precede a success', () => {

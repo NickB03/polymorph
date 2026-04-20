@@ -16,7 +16,12 @@ describe('search mode prompts', () => {
     'Normal build/create requests skip search entirely',
     'Modify/update requests skip search entirely',
     'Research-then-build requests search first, then build',
-    'Factual or current-data artifact requests do a short search phase first, then build'
+    'Factual or current-data artifact requests do a short search phase first, then build',
+    'displayCodeBlock',
+    'displayCodeDiff',
+    'select the 1 to 2 relevant files',
+    'call `displayCodeDiff` for each changed file',
+    'Outside canvas artifact inspection/update flows, continue using normal prose or fenced code blocks'
   ] as const
 
   function expectSharedCanvasRules(prompt: string) {

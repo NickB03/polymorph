@@ -23,6 +23,12 @@ vi.mock('@/lib/tools/display-callout', () => ({
 vi.mock('@/lib/tools/display-chart', () => ({
   displayChartTool: { name: 'displayChart' }
 }))
+vi.mock('@/lib/tools/display-code-block', () => ({
+  displayCodeBlockTool: { name: 'displayCodeBlock' }
+}))
+vi.mock('@/lib/tools/display-code-diff', () => ({
+  displayCodeDiffTool: { name: 'displayCodeDiff' }
+}))
 vi.mock('@/lib/tools/display-citations', () => ({
   displayCitationsTool: { name: 'displayCitations' }
 }))
@@ -257,9 +263,13 @@ describe('createResearcher', () => {
     expect(Object.keys(config.tools)).toContain('createCanvasArtifact')
     expect(Object.keys(config.tools)).toContain('updateCanvasArtifact')
     expect(Object.keys(config.tools)).toContain('readCanvasArtifact')
+    expect(Object.keys(config.tools)).toContain('displayCodeBlock')
+    expect(Object.keys(config.tools)).toContain('displayCodeDiff')
     expect(config.activeTools).toContain('createCanvasArtifact')
     expect(config.activeTools).toContain('updateCanvasArtifact')
     expect(config.activeTools).toContain('readCanvasArtifact')
+    expect(config.activeTools).toContain('displayCodeBlock')
+    expect(config.activeTools).toContain('displayCodeDiff')
   })
 
   it('does not register canvas tools when canvasToolContext is absent', () => {
@@ -274,9 +284,13 @@ describe('createResearcher', () => {
     expect(Object.keys(config.tools)).not.toContain('createCanvasArtifact')
     expect(Object.keys(config.tools)).not.toContain('updateCanvasArtifact')
     expect(Object.keys(config.tools)).not.toContain('readCanvasArtifact')
+    expect(Object.keys(config.tools)).not.toContain('displayCodeBlock')
+    expect(Object.keys(config.tools)).not.toContain('displayCodeDiff')
     expect(config.activeTools).not.toContain('createCanvasArtifact')
     expect(config.activeTools).not.toContain('updateCanvasArtifact')
     expect(config.activeTools).not.toContain('readCanvasArtifact')
+    expect(config.activeTools).not.toContain('displayCodeBlock')
+    expect(config.activeTools).not.toContain('displayCodeDiff')
   })
 
   it('registers canvas tools in both chat and research modes', () => {
@@ -293,6 +307,8 @@ describe('createResearcher', () => {
       expect(config.activeTools).toContain('createCanvasArtifact')
       expect(config.activeTools).toContain('updateCanvasArtifact')
       expect(config.activeTools).toContain('readCanvasArtifact')
+      expect(config.activeTools).toContain('displayCodeBlock')
+      expect(config.activeTools).toContain('displayCodeDiff')
     }
   })
 

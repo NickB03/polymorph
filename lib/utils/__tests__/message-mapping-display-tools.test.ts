@@ -16,7 +16,9 @@ const DISPLAY_TOOLS = [
   'displayOptionList',
   'displayCallout',
   'displayChart',
-  'displayTimeline'
+  'displayTimeline',
+  'displayCodeBlock',
+  'displayCodeDiff'
 ]
 
 function makeDisplayToolPart(

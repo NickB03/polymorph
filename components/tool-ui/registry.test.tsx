@@ -12,6 +12,27 @@ const canvasArtifactOutput = {
   currentVersionId: null
 }
 
+const codeBlockOutput = {
+  id: 'code-block-1',
+  code: 'export default function App() {\n  return <main>Hello</main>\n}',
+  language: 'tsx',
+  filename: 'App.tsx',
+  lineNumbers: true,
+  highlightLines: [2],
+  maxCollapsedLines: 12
+}
+
+const codeDiffOutput = {
+  id: 'code-diff-1',
+  oldCode: 'export const title = "Before"\n',
+  newCode: 'export const title = "After"\n',
+  language: 'ts',
+  filename: 'meta.ts',
+  lineNumbers: true,
+  diffStyle: 'side-by-side' as const,
+  maxCollapsedLines: 10
+}
+
 describe('tool UI registry', () => {
   it('renders createCanvasArtifact output through the canvas artifact card', () => {
     const node = tryRenderToolUIByName(
@@ -54,5 +75,24 @@ describe('tool UI registry', () => {
     render(<>{node}</>)
 
     expect(screen.getByTestId('canvas-artifact-card')).toBeInTheDocument()
+  })
+
+  it('renders displayCodeBlock output through the code block UI', () => {
+    const node = tryRenderToolUIByName('displayCodeBlock', codeBlockOutput)
+
+    render(<>{node}</>)
+
+    expect(screen.getByText('App.tsx')).toBeInTheDocument()
+    expect(screen.getByText(/export default function App/)).toBeInTheDocument()
+  })
+
+  it('renders displayCodeDiff output through the code diff UI', () => {
+    const node = tryRenderToolUIByName('displayCodeDiff', codeDiffOutput)
+
+    render(<>{node}</>)
+
+    expect(screen.getByText('meta.ts')).toBeInTheDocument()
+    expect(screen.getByText(/Before/)).toBeInTheDocument()
+    expect(screen.getByText(/After/)).toBeInTheDocument()
   })
 })

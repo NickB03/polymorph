@@ -14,6 +14,8 @@ import { createCanvasArtifactTool } from '../tools/create-canvas-artifact'
 import { displayCalloutTool } from '../tools/display-callout'
 import { displayChartTool } from '../tools/display-chart'
 import { displayCitationsTool } from '../tools/display-citations'
+import { displayCodeBlockTool } from '../tools/display-code-block'
+import { displayCodeDiffTool } from '../tools/display-code-diff'
 import { displayLinkPreviewTool } from '../tools/display-link-preview'
 import { displayOptionListTool } from '../tools/display-option-list'
 import { displayPlanTool } from '../tools/display-plan'
@@ -278,7 +280,9 @@ export function createResearcher({
       ? {
           createCanvasArtifact: createCanvasArtifactTool(canvasToolContext),
           updateCanvasArtifact: updateCanvasArtifactTool(canvasToolContext),
-          readCanvasArtifact: readCanvasArtifactTool(canvasToolContext)
+          readCanvasArtifact: readCanvasArtifactTool(canvasToolContext),
+          displayCodeBlock: displayCodeBlockTool,
+          displayCodeDiff: displayCodeDiffTool
         }
       : {}
 
@@ -286,7 +290,9 @@ export function createResearcher({
       activeToolsList.push(
         'createCanvasArtifact' as keyof ResearcherTools,
         'updateCanvasArtifact' as keyof ResearcherTools,
-        'readCanvasArtifact' as keyof ResearcherTools
+        'readCanvasArtifact' as keyof ResearcherTools,
+        'displayCodeBlock' as keyof ResearcherTools,
+        'displayCodeDiff' as keyof ResearcherTools
       )
     }
 
