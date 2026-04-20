@@ -57,6 +57,7 @@ export async function createChatStreamResponse(
     abortSignal,
     isNewChat,
     searchMode,
+    userMode,
     intent,
     modelType
   } = config
@@ -286,7 +287,7 @@ export async function createChatStreamResponse(
                 if (part.type === 'start') {
                   return {
                     traceId: parentTraceId,
-                    searchMode,
+                    userMode,
                     modelType,
                     modelId: context.modelId
                   }
@@ -341,7 +342,7 @@ export async function createChatStreamResponse(
           userId,
           titlePromise,
           parentTraceId,
-          searchMode,
+          userMode,
           context.modelId,
           context.pendingInitialSave,
           context.pendingInitialUserMessage

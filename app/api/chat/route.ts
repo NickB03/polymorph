@@ -221,6 +221,7 @@ export async function POST(req: Request) {
           model: selectedModel,
           abortSignal,
           searchMode,
+          userMode,
           intent,
           modelType,
           chatId,
@@ -237,6 +238,7 @@ export async function POST(req: Request) {
           abortSignal,
           isNewChat,
           searchMode,
+          userMode,
           intent,
           modelType,
           ...(validatedTrigger === 'tool-result' ? { toolResult } : {})

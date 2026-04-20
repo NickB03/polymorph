@@ -95,7 +95,7 @@ export function useActivityFeed(
     const hasTodoWrite = lastAssistant.parts?.some(
       p => p.type === 'tool-todoWrite'
     )
-    const isResearch = metadata?.searchMode === 'research' || !!hasTodoWrite
+    const isResearch = metadata?.userMode === 'research' || !!hasTodoWrite
 
     const label = isResearch ? 'Report' : 'Quick Search'
     if (isResearch !== state.isResearchMode) {

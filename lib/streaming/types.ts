@@ -2,7 +2,7 @@ import type { UIMessage } from '@/lib/types/ai'
 
 import { ModelType } from '../types/model-type'
 import { Model } from '../types/models'
-import { SearchMode } from '../types/search'
+import { SearchMode, UserMode } from '../types/search'
 
 import type { ToolResultDelta } from './helpers/prepare-tool-result-messages'
 
@@ -16,6 +16,7 @@ export interface BaseStreamConfig {
   abortSignal?: AbortSignal
   isNewChat?: boolean
   searchMode?: SearchMode
+  userMode?: UserMode
   intent?: string
   modelType?: ModelType
   toolResult?: ToolResultDelta

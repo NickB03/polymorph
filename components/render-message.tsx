@@ -204,7 +204,7 @@ function stripPseudoDisplayToolPlaceholders({
           {
             messageId,
             modelId: metadata?.modelId,
-            searchMode: metadata?.searchMode,
+            userMode: metadata?.userMode,
             toolName,
             matchedPattern
           }

@@ -638,7 +638,7 @@ describe('RenderMessage', () => {
       role: 'assistant',
       metadata: {
         modelId: 'gateway:google/gemini-3-flash',
-        searchMode: 'chat'
+        userMode: 'search'
       },
       parts: [
         {
@@ -668,7 +668,7 @@ describe('RenderMessage', () => {
       expect.objectContaining({
         messageId: 'assistant-timeline-placeholder',
         modelId: 'gateway:google/gemini-3-flash',
-        searchMode: 'chat',
+        userMode: 'search',
         toolName: 'displayTimeline'
       })
     )
