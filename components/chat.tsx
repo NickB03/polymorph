@@ -15,6 +15,8 @@ import { DefaultChatTransport } from 'ai'
 import { toast } from 'sonner'
 
 import { generateId } from '@/lib/db/schema'
+import { HydrationAnimationProvider } from '@/lib/motion/hydration-boundary'
+import { collectInitialPartIds } from '@/lib/motion/part-ids'
 import { UploadedFile } from '@/lib/types'
 import type {
   CanvasArtifactData,
@@ -889,122 +891,132 @@ export function Chat({
     toast(voiceConversation.voiceNotice.message)
   }, [voiceConversation.voiceNotice])
 
-  return (
-    <div
-      className={cn(
-        'relative flex h-full min-w-0 flex-1 flex-col transition-all duration-500 ease-out',
-        messages.length === 0
-          ? 'items-center justify-center pt-[10vh] md:pt-[8vh] md:pb-0'
-          : ''
-      )}
-      data-testid="full-chat"
-      onDragOver={dragHandlers.handleDragOver}
-      onDragLeave={dragHandlers.handleDragLeave}
-      onDrop={dragHandlers.handleDrop}
-    >
-      <ChatMessages
-        sections={sections}
-        onQuerySelect={onQuerySelect}
-        status={status}
-        chatId={chatId}
-        isGuest={isGuest}
-        addToolResult={({
-          toolCallId,
-          result
-        }: {
-          toolCallId: string
-          result: any
-        }) => {
-          let toolName = 'unknown'
-          const matchedPart = messages
-            .flatMap(m => m.parts ?? [])
-            .find(
-              p =>
-                (isToolCallPart(p) ||
-                  isToolTypePart(p) ||
-                  isDynamicToolPart(p)) &&
-                p.toolCallId === toolCallId
-            )
-          if (matchedPart) {
-            if (isToolCallPart(matchedPart) || isDynamicToolPart(matchedPart)) {
-              toolName = matchedPart.toolName
-            } else if (isToolTypePart(matchedPart)) {
-              toolName = matchedPart.type.substring(5) // Remove 'tool-' prefix
-            }
-          }
+  const initialPartIds = useMemo(
+    () => collectInitialPartIds(savedMessages),
+    [savedMessages]
+  )
 
-          addToolResult({ tool: toolName, toolCallId, output: result })
-        }}
-        scrollContainerRef={scrollContainerRef}
-        onUpdateMessage={handleUpdateAndReloadMessage}
-        reload={handleReloadFrom}
-        error={error}
-        onCanvasArtifactClick={handleCanvasArtifactClick}
-        onLegacyArtifactClick={handleLegacyArtifactClick}
-      />
-      <ChatPanel
-        chatId={chatId}
-        input={input}
-        handleInputChange={handleInputChange}
-        handleSubmit={onSubmit}
-        status={status}
-        messages={messages}
-        stop={stop}
-        query={query}
-        append={(message: any) => {
-          sendMessage(message)
-        }}
-        showScrollToBottomButton={!isAtBottom}
-        uploadedFiles={uploadedFiles}
-        setUploadedFiles={setUploadedFiles}
-        scrollContainerRef={scrollContainerRef}
-        isGuest={isGuest}
-        {...(voiceEnabled
-          ? {
-              voiceState: voiceConversation.voiceState,
-              isVoiceActive: voiceConversation.isVoiceActive,
-              onStartVoice: voiceConversation.startVoice,
-              onStopVoice: voiceConversation.stopVoice
+  return (
+    <HydrationAnimationProvider initialPartIds={initialPartIds}>
+      <div
+        className={cn(
+          'relative flex h-full min-w-0 flex-1 flex-col transition-all duration-500 ease-out',
+          messages.length === 0
+            ? 'items-center justify-center pt-[10vh] md:pt-[8vh] md:pb-0'
+            : ''
+        )}
+        data-testid="full-chat"
+        onDragOver={dragHandlers.handleDragOver}
+        onDragLeave={dragHandlers.handleDragLeave}
+        onDrop={dragHandlers.handleDrop}
+      >
+        <ChatMessages
+          sections={sections}
+          onQuerySelect={onQuerySelect}
+          status={status}
+          chatId={chatId}
+          isGuest={isGuest}
+          addToolResult={({
+            toolCallId,
+            result
+          }: {
+            toolCallId: string
+            result: any
+          }) => {
+            let toolName = 'unknown'
+            const matchedPart = messages
+              .flatMap(m => m.parts ?? [])
+              .find(
+                p =>
+                  (isToolCallPart(p) ||
+                    isToolTypePart(p) ||
+                    isDynamicToolPart(p)) &&
+                  p.toolCallId === toolCallId
+              )
+            if (matchedPart) {
+              if (
+                isToolCallPart(matchedPart) ||
+                isDynamicToolPart(matchedPart)
+              ) {
+                toolName = matchedPart.toolName
+              } else if (isToolTypePart(matchedPart)) {
+                toolName = matchedPart.type.substring(5) // Remove 'tool-' prefix
+              }
             }
-          : {})}
-      />
-      {voiceEnabled && voiceConversation.isVoiceActive && (
-        <VoiceOrb
-          state={voiceConversation.voiceState}
-          onStop={voiceConversation.stopVoice}
-          interimTranscript={voiceConversation.interimTranscript}
-          mediaStream={voiceConversation.mediaStream}
-          audioElement={voiceConversation.audioElement}
+
+            addToolResult({ tool: toolName, toolCallId, output: result })
+          }}
+          scrollContainerRef={scrollContainerRef}
+          onUpdateMessage={handleUpdateAndReloadMessage}
+          reload={handleReloadFrom}
+          error={error}
+          onCanvasArtifactClick={handleCanvasArtifactClick}
+          onLegacyArtifactClick={handleLegacyArtifactClick}
         />
-      )}
-      <DragOverlay visible={dragHandlers.isDragging} />
-      <ErrorModal
-        open={errorModal.open}
-        onOpenChange={open => setErrorModal(prev => ({ ...prev, open }))}
-        error={errorModal}
-        onRetry={
-          errorModal.type !== 'rate-limit'
-            ? () => {
-                // Retry by regenerating from the last user message.
-                // Using regenerate instead of sendMessage avoids re-adding
-                // the same message object (with its existing ID) as a duplicate.
-                if (messages.length > 0) {
-                  const lastUserMessage = messages.findLast(
-                    m => m.role === 'user'
-                  )
-                  if (lastUserMessage) {
-                    regenerate({ messageId: lastUserMessage.id })
+        <ChatPanel
+          chatId={chatId}
+          input={input}
+          handleInputChange={handleInputChange}
+          handleSubmit={onSubmit}
+          status={status}
+          messages={messages}
+          stop={stop}
+          query={query}
+          append={(message: any) => {
+            sendMessage(message)
+          }}
+          showScrollToBottomButton={!isAtBottom}
+          uploadedFiles={uploadedFiles}
+          setUploadedFiles={setUploadedFiles}
+          scrollContainerRef={scrollContainerRef}
+          isGuest={isGuest}
+          {...(voiceEnabled
+            ? {
+                voiceState: voiceConversation.voiceState,
+                isVoiceActive: voiceConversation.isVoiceActive,
+                onStartVoice: voiceConversation.startVoice,
+                onStopVoice: voiceConversation.stopVoice
+              }
+            : {})}
+        />
+        {voiceEnabled && voiceConversation.isVoiceActive && (
+          <VoiceOrb
+            state={voiceConversation.voiceState}
+            onStop={voiceConversation.stopVoice}
+            interimTranscript={voiceConversation.interimTranscript}
+            mediaStream={voiceConversation.mediaStream}
+            audioElement={voiceConversation.audioElement}
+          />
+        )}
+        <DragOverlay visible={dragHandlers.isDragging} />
+        <ErrorModal
+          open={errorModal.open}
+          onOpenChange={open => setErrorModal(prev => ({ ...prev, open }))}
+          error={errorModal}
+          onRetry={
+            errorModal.type !== 'rate-limit'
+              ? () => {
+                  // Retry by regenerating from the last user message.
+                  // Using regenerate instead of sendMessage avoids re-adding
+                  // the same message object (with its existing ID) as a duplicate.
+                  if (messages.length > 0) {
+                    const lastUserMessage = messages.findLast(
+                      m => m.role === 'user'
+                    )
+                    if (lastUserMessage) {
+                      regenerate({ messageId: lastUserMessage.id })
+                    }
                   }
                 }
-              }
-            : undefined
-        }
-        onAuthClose={() => {
-          // Clear messages and navigate to root
-          setMessages([])
-          router.push('/')
-        }}
-      />
-    </div>
+              : undefined
+          }
+          onAuthClose={() => {
+            // Clear messages and navigate to root
+            setMessages([])
+            router.push('/')
+          }}
+        />
+      </div>
+    </HydrationAnimationProvider>
   )
 }

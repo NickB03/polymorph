@@ -40,7 +40,29 @@ const eslintConfig = [
           ]
         }
       ],
-      'simple-import-sort/exports': 'error'
+      'simple-import-sort/exports': 'error',
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'motion/react',
+              message:
+                'Import motion wrappers from @/components/motion/* or variants from @/lib/motion/* instead of motion/react directly.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    files: [
+      'lib/motion/**/*.{ts,tsx}',
+      'components/motion/**/*.{ts,tsx}',
+      'components/voice/**/*.{ts,tsx}'
+    ],
+    rules: {
+      'no-restricted-imports': 'off'
     }
   }
 ]

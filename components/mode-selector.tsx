@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Ellipsis, X } from 'lucide-react'
 
@@ -13,6 +13,8 @@ import {
   readSearchModeCookie,
   syncSearchMode
 } from '@/lib/utils/search-mode'
+
+import { PillPresence } from '@/components/motion/pill-presence'
 
 import { Button } from './ui/button'
 import {
@@ -56,6 +58,21 @@ export function ModeSelector() {
   // The cookie-derived value is promoted on mount in the effect below.
   const [value, setValue] = useState<UserMode>('search')
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  // Shared ref attached to whichever DropdownMenuTrigger is currently rendered
+  // (pill button when a mode is active, Ellipsis button otherwise). Used to
+  // restore focus after the active pill unmounts on clear — otherwise focus
+  // falls to <body>, breaking keyboard/SR flow.
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const pendingFocusRef = useRef(false)
+
+  // After the X-button unmounts, move focus to the now-rendered Ellipsis
+  // trigger. Runs post-commit so the new button is mounted and focusable.
+  useEffect(() => {
+    if (pendingFocusRef.current && value === 'search') {
+      pendingFocusRef.current = false
+      triggerRef.current?.focus()
+    }
+  }, [value])
 
   useEffect(() => {
     const raw = getCookie('searchMode')
@@ -89,6 +106,9 @@ export function ModeSelector() {
     // Prevent the surrounding Radix Trigger from interpreting this as
     // "open the dropdown."
     e.stopPropagation()
+    // Signal the post-commit effect to restore focus to the Ellipsis trigger
+    // once the active pill (and its X button) has unmounted.
+    pendingFocusRef.current = true
     setValue('search')
     syncSearchMode('search')
   }
@@ -104,6 +124,7 @@ export function ModeSelector() {
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button
+            ref={triggerRef}
             variant="outline"
             size="icon"
             className="rounded-full"
@@ -123,37 +144,40 @@ export function ModeSelector() {
 
   return (
     <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-      <div
-        className={cn(
-          'inline-flex items-center h-11 rounded-full border transition-colors',
-          styles.container
-        )}
-      >
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            aria-label={`Mode: ${activeConfig.label}. Open mode menu`}
-            className={cn(
-              'inline-flex items-center gap-2 h-full pl-3.5 pr-2.5 rounded-l-full text-sm font-medium transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              styles.trigger
-            )}
-          >
-            <Icon className={cn('h-4 w-4 shrink-0', styles.icon)} />
-            <span className={styles.label}>{activeConfig.label}</span>
-          </button>
-        </DropdownMenuTrigger>
-        <button
-          type="button"
-          aria-label={`Clear ${activeConfig.label} mode`}
-          onClick={handleClearActive}
+      <PillPresence activeKey={activeMode}>
+        <div
           className={cn(
-            'inline-flex items-center justify-center h-8 w-8 mr-1 rounded-full transition-colors cursor-pointer ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-            styles.close
+            'inline-flex items-center h-11 rounded-full border transition-colors',
+            styles.container
           )}
         >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
+          <DropdownMenuTrigger asChild>
+            <button
+              ref={triggerRef}
+              type="button"
+              aria-label={`Mode: ${activeConfig.label}. Open mode menu`}
+              className={cn(
+                'inline-flex items-center gap-2 h-full pl-3.5 pr-2.5 rounded-l-full text-sm font-medium transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                styles.trigger
+              )}
+            >
+              <Icon className={cn('h-4 w-4 shrink-0', styles.icon)} />
+              <span className={styles.label}>{activeConfig.label}</span>
+            </button>
+          </DropdownMenuTrigger>
+          <button
+            type="button"
+            aria-label={`Clear ${activeConfig.label} mode`}
+            onClick={handleClearActive}
+            className={cn(
+              'inline-flex items-center justify-center h-8 w-8 mr-1 rounded-full transition-colors cursor-pointer ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+              styles.close
+            )}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </PillPresence>
       <ModeDropdownContent onSelect={handleSelect} />
     </DropdownMenu>
   )

@@ -2,6 +2,8 @@
 
 import type { ReactNode } from 'react'
 
+import { ToolCardMount } from '@/components/motion/tool-card-mount'
+
 import { Callout } from './callout/callout'
 import { safeParseSerializableCallout } from './callout/schema'
 import { Chart } from './chart/chart'
@@ -22,54 +24,76 @@ import { QuestionWizard } from './question-wizard/question-wizard'
 import { safeParseSerializableQuestionWizard } from './question-wizard/schema'
 import { safeParseSerializableTimeline } from './timeline/schema'
 import { Timeline } from './timeline/timeline'
-import { tryRenderCanvasArtifactCard } from './canvas-artifact-card'
+import {
+  CanvasArtifactCard,
+  tryParseCanvasArtifactCardData
+} from './canvas-artifact-card'
 import { ToolErrorBoundary } from './tool-error-boundary'
 
 type ToolUIEntry = {
   name: string
-  tryRender: (output: unknown) => ReactNode | null
+  tryRender: (output: unknown, partId: string) => ReactNode | null
+}
+
+function renderCanvasArtifactInMount(
+  output: unknown,
+  partId: string
+): ReactNode | null {
+  const data = tryParseCanvasArtifactCardData(output)
+  if (!data) return null
+  return (
+    <ToolCardMount partId={partId}>
+      <CanvasArtifactCard data={data} />
+    </ToolCardMount>
+  )
 }
 
 const entries: ToolUIEntry[] = [
   {
     name: 'displayPlan',
-    tryRender: output => {
+    tryRender: (output, partId) => {
       const parsed = safeParseSerializablePlan(output)
       if (!parsed) return null
       return (
         <ToolErrorBoundary toolName="Plan">
-          <Plan {...parsed} />
+          <ToolCardMount partId={partId}>
+            <Plan {...parsed} />
+          </ToolCardMount>
         </ToolErrorBoundary>
       )
     }
   },
   {
     name: 'displayTable',
-    tryRender: output => {
+    tryRender: (output, partId) => {
       const parsed = safeParseSerializableDataTable(output)
       if (!parsed) return null
       return (
         <ToolErrorBoundary toolName="DataTable">
-          <DataTable {...parsed} />
+          <ToolCardMount partId={partId}>
+            <DataTable {...parsed} />
+          </ToolCardMount>
         </ToolErrorBoundary>
       )
     }
   },
   {
     name: 'displayChart',
-    tryRender: output => {
+    tryRender: (output, partId) => {
       const parsed = safeParseSerializableChart(output)
       if (!parsed) return null
       return (
         <ToolErrorBoundary toolName="Chart">
-          <Chart {...parsed} />
+          <ToolCardMount partId={partId}>
+            <Chart {...parsed} />
+          </ToolCardMount>
         </ToolErrorBoundary>
       )
     }
   },
   {
     name: 'displayCitations',
-    tryRender: output => {
+    tryRender: (output, partId) => {
       // Output can be an array of citations or an object with a citations array
       const items = Array.isArray(output)
         ? output
@@ -85,98 +109,112 @@ const entries: ToolUIEntry[] = [
 
       return (
         <ToolErrorBoundary toolName="CitationList">
-          <CitationList
-            id={`citations-${parsed[0]!.id}`}
-            citations={parsed as NonNullable<(typeof parsed)[number]>[]}
-            variant="default"
-          />
+          <ToolCardMount partId={partId}>
+            <CitationList
+              id={`citations-${parsed[0]!.id}`}
+              citations={parsed as NonNullable<(typeof parsed)[number]>[]}
+              variant="default"
+            />
+          </ToolCardMount>
         </ToolErrorBoundary>
       )
     }
   },
   {
     name: 'displayLinkPreview',
-    tryRender: output => {
+    tryRender: (output, partId) => {
       const parsed = safeParseSerializableLinkPreview(output)
       if (!parsed) return null
       return (
         <ToolErrorBoundary toolName="LinkPreview">
-          <LinkPreview {...parsed} />
+          <ToolCardMount partId={partId}>
+            <LinkPreview {...parsed} />
+          </ToolCardMount>
         </ToolErrorBoundary>
       )
     }
   },
   {
     name: 'displayOptionList',
-    tryRender: output => {
+    tryRender: (output, partId) => {
       const parsed = safeParseSerializableOptionList(output)
       if (!parsed) return null
       return (
         <ToolErrorBoundary toolName="OptionList">
-          <OptionList {...parsed} />
+          <ToolCardMount partId={partId}>
+            <OptionList {...parsed} />
+          </ToolCardMount>
         </ToolErrorBoundary>
       )
     }
   },
   {
     name: 'displayQuestionWizard',
-    tryRender: output => {
+    tryRender: (output, partId) => {
       const parsed = safeParseSerializableQuestionWizard(output)
       if (!parsed) return null
       return (
         <ToolErrorBoundary toolName="QuestionWizard">
-          <QuestionWizard {...parsed} />
+          <ToolCardMount partId={partId}>
+            <QuestionWizard {...parsed} />
+          </ToolCardMount>
         </ToolErrorBoundary>
       )
     }
   },
   {
     name: 'displayCallout',
-    tryRender: output => {
+    tryRender: (output, partId) => {
       const parsed = safeParseSerializableCallout(output)
       if (!parsed) return null
       return (
         <ToolErrorBoundary toolName="Callout">
-          <Callout {...parsed} />
+          <ToolCardMount partId={partId}>
+            <Callout {...parsed} />
+          </ToolCardMount>
         </ToolErrorBoundary>
       )
     }
   },
   {
     name: 'displayTimeline',
-    tryRender: output => {
+    tryRender: (output, partId) => {
       const parsed = safeParseSerializableTimeline(output)
       if (!parsed) return null
       return (
         <ToolErrorBoundary toolName="Timeline">
-          <Timeline {...parsed} />
+          <ToolCardMount partId={partId}>
+            <Timeline {...parsed} />
+          </ToolCardMount>
         </ToolErrorBoundary>
       )
     }
   },
   {
     name: 'generateImage',
-    tryRender: output => {
+    tryRender: (output, partId) => {
       const parsed = safeParseSerializableGenerateImage(output)
       if (!parsed) return null
       return (
         <ToolErrorBoundary toolName="GenerateImage">
-          <GenerateImage {...parsed} />
+          <ToolCardMount partId={partId}>
+            <GenerateImage {...parsed} />
+          </ToolCardMount>
         </ToolErrorBoundary>
       )
     }
   },
   {
     name: 'canvasArtifactCard',
-    tryRender: output => tryRenderCanvasArtifactCard(output)
+    tryRender: renderCanvasArtifactInMount
   },
   {
     name: 'createCanvasArtifact',
-    tryRender: output => tryRenderCanvasArtifactCard(output)
+    tryRender: renderCanvasArtifactInMount
   },
   {
     name: 'updateCanvasArtifact',
-    tryRender: output => tryRenderCanvasArtifactCard(output)
+    tryRender: renderCanvasArtifactInMount
   }
 ]
 
@@ -186,26 +224,30 @@ const entries: ToolUIEntry[] = [
  */
 export function tryRenderToolUIByName(
   toolName: string,
-  output: unknown
+  output: unknown,
+  partId: string
 ): ReactNode | null {
   // Try named match first
   const named = entries.find(e => e.name === toolName)
   if (named) {
-    const result = named.tryRender(output)
+    const result = named.tryRender(output, partId)
     if (result) return result
   }
 
   // Fall back to trying all schemas
-  return tryRenderToolUI(output)
+  return tryRenderToolUI(output, partId)
 }
 
 /**
  * Try to render tool output by testing against all registered schemas.
  * Returns the first successful match or null.
  */
-export function tryRenderToolUI(output: unknown): ReactNode | null {
+export function tryRenderToolUI(
+  output: unknown,
+  partId: string
+): ReactNode | null {
   for (const entry of entries) {
-    const result = entry.tryRender(output)
+    const result = entry.tryRender(output, partId)
     if (result) return result
   }
   return null
