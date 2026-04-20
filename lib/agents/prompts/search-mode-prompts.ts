@@ -84,12 +84,6 @@ You can create and update interactive frontend web artifacts using the tools bel
 - Returns the latest persisted source files, title, status, and draftRevision
 - Call this first, then use the returned files and draftRevision to call updateCanvasArtifact
 
-**Canvas inspection and update rules:**
-- Successful \`readCanvasArtifact\` responses are internal working state for inspection/update flows
-- Do not paste full artifact source files or diffs into chat
-- When the user wants to inspect or review the artifact code, point the user to the artifact workspace Code tab
-- Outside canvas artifact inspection/update flows, continue using normal prose or fenced code blocks
-
 **Routing guidance:**
 - Normal build/create requests skip search entirely.
 - Modify/update requests skip search entirely.

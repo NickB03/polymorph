@@ -25,13 +25,6 @@ vi.mock('./dynamic-tool-display', () => ({
       const rendered =
         part.toolName === 'createCanvasArtifact' ? (
           <div data-testid="canvas-artifact-card" data-source="tool" />
-        ) : part.toolName === 'readCanvasArtifact' ? (
-          <div
-            data-testid="dynamic-tool-display"
-            data-tool-name="readCanvasArtifact"
-          >
-            {JSON.stringify(part.output)}
-          </div>
         ) : null
       return rendered
     }
@@ -604,45 +597,6 @@ describe('RenderMessage', () => {
     )
   })
 
-  it('suppresses successful readCanvasArtifact output in chat', () => {
-    const message: UIMessage = {
-      id: 'assistant-code-read',
-      role: 'assistant',
-      parts: [
-        {
-          type: 'dynamic-tool',
-          toolCallId: 'tool-read-1',
-          toolName: 'readCanvasArtifact',
-          state: 'output-available',
-          input: { artifactId: 'artifact-1' },
-          output: {
-            artifactId: 'artifact-1',
-            chatId: 'chat-1',
-            title: 'Artifact',
-            status: 'ready',
-            draftRevision: 4,
-            currentVersionId: 'ver-1',
-            files: {
-              'App.tsx': 'export default function App() { return <main /> }'
-            }
-          }
-        } as any
-      ]
-    }
-
-    render(
-      <RenderMessage
-        message={message}
-        messageId={message.id}
-        getIsOpen={() => false}
-        onOpenChange={() => {}}
-        onQuerySelect={() => {}}
-      />
-    )
-
-    expect(screen.queryByTestId('dynamic-tool-display')).not.toBeInTheDocument()
-  })
-
   it('extracts valid fenced JSON timeline payloads from assistant text', () => {
     const message: UIMessage = {
       id: 'assistant-timeline-json',
@@ -718,45 +672,6 @@ describe('RenderMessage', () => {
         toolName: 'displayTimeline'
       })
     )
-  })
-
-  it('keeps readCanvasArtifact not-found payloads visible in chat', () => {
-    const message: UIMessage = {
-      id: 'assistant-code-diff-read',
-      role: 'assistant',
-      parts: [
-        {
-          type: 'dynamic-tool',
-          toolCallId: 'tool-read-2',
-          toolName: 'readCanvasArtifact',
-          state: 'output-available',
-          input: { artifactId: 'artifact-1' },
-          output: {
-            artifactId: 'artifact-1',
-            chatId: 'chat-1',
-            title: '',
-            status: 'not_found',
-            draftRevision: 0,
-            currentVersionId: null,
-            files: {},
-            error: 'Artifact not found',
-            errorCode: 'not-found'
-          }
-        } as any
-      ]
-    }
-
-    render(
-      <RenderMessage
-        message={message}
-        messageId={message.id}
-        getIsOpen={() => false}
-        onOpenChange={() => {}}
-        onQuerySelect={() => {}}
-      />
-    )
-
-    expect(screen.getByTestId('dynamic-tool-display')).toBeInTheDocument()
   })
 
   it('shows only the data-canvasArtifact card when failed creates with empty IDs precede a success', () => {
