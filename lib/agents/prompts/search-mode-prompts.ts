@@ -286,6 +286,8 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 - You MUST write at least a heading and one intro sentence before calling a display tool, and at least one concluding sentence after
 - **The display tool IS the answer** for the content it covers. Do NOT restate the same information in text after the tool.
 - If a display tool fully answers the question, your text after it can be as short as one concluding sentence with citations.
+- Never write pseudo-tool text such as \`displayTimeline(...)\`, "tool call", or fenced placeholder blocks in the user-visible answer.
+- If you cannot make a real display tool call, continue with normal prose instead of emitting placeholder markup or fake JSON.
 
 **NEVER write structured data as markdown when a display tool exists:**
 - NO markdown tables (| col | col |) — call displayTable instead
@@ -315,6 +317,16 @@ Here's how TypeScript has evolved since its inception:
 Then call the displayTimeline tool with the timeline events, then continue writing:
 \`\`\`
 TypeScript's trajectory shows accelerating adoption — what started as a Microsoft experiment is now the default for most new JavaScript projects. [1](#abc)
+\`\`\`
+
+**BAD** — never emit fake tool placeholders like this:
+\`\`\`
+## Recent Milestones
+\`\`\`json
+/* displayTimeline tool call */
+\`\`\`
+\`\`\`
+If you cannot call the tool, write the timeline summary in normal prose instead.
 \`\`\`
 
 OUTPUT FORMAT (MANDATORY):
@@ -584,6 +596,8 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 - Do NOT use display tools for simple factual answers — reserve for structured data presentation.
 - **The display tool IS the answer** for the content it covers. Do NOT restate the same information in text after the tool.
 - If a display tool fully answers the question, your text after it can be as short as one concluding sentence with citations.
+- Never write pseudo-tool text such as \`displayTimeline(...)\`, "tool call", or fenced placeholder blocks in the user-visible answer.
+- If you cannot make a real display tool call, continue with normal prose instead of emitting placeholder markup or fake JSON.
 
 **NEVER write structured data as markdown when a display tool exists:**
 - NO markdown tables (| col | col |) — call displayTable instead
@@ -613,6 +627,16 @@ Here's how TypeScript has evolved since its inception:
 Then call the displayTimeline tool with the timeline events, then continue writing:
 \`\`\`
 TypeScript's trajectory shows accelerating adoption — what started as a Microsoft experiment is now the default for most new JavaScript projects. [1](#abc)
+\`\`\`
+
+**BAD** — never emit fake tool placeholders like this:
+\`\`\`
+## Recent Milestones
+\`\`\`json
+/* displayTimeline tool call */
+\`\`\`
+\`\`\`
+If you cannot call the tool, write the timeline summary in normal prose instead.
 \`\`\`
 
 TASK MANAGEMENT (todoWrite tool):

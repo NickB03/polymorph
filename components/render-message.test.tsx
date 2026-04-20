@@ -97,8 +97,31 @@ vi.mock('./tool-ui/option-list/schema', () => ({
 }))
 
 vi.mock('./tool-ui/registry', () => ({
-  tryRenderToolUI: () => null,
+  tryRenderToolUI: (output: unknown) => {
+    if (
+      output &&
+      typeof output === 'object' &&
+      typeof (output as Record<string, unknown>).id === 'string' &&
+      typeof (output as Record<string, unknown>).title === 'string' &&
+      Array.isArray((output as Record<string, unknown>).events)
+    ) {
+      return <div data-testid="timeline-tool-ui" data-source="json" />
+    }
+
+    return null
+  },
   tryRenderToolUIByName: (toolName: string, output: unknown) => {
+    if (
+      toolName === 'displayTimeline' &&
+      output &&
+      typeof output === 'object' &&
+      typeof (output as Record<string, unknown>).id === 'string' &&
+      typeof (output as Record<string, unknown>).title === 'string' &&
+      Array.isArray((output as Record<string, unknown>).events)
+    ) {
+      return <div data-testid="timeline-tool-ui" data-source="tool" />
+    }
+
     if (
       (toolName === 'createCanvasArtifact' ||
         toolName === 'updateCanvasArtifact') &&
@@ -528,6 +551,127 @@ describe('RenderMessage', () => {
     expect(researchProcessProps).toMatchObject({
       isLatestMessage: true
     })
+  })
+
+  it('renders displayTimeline tool output inline through the tool UI registry', () => {
+    const message: UIMessage = {
+      id: 'assistant-timeline-tool',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'text',
+          text: '## Recent Milestones\n\nHere is the timeline:'
+        },
+        {
+          type: 'tool-displayTimeline',
+          toolCallId: 'timeline-tool-1',
+          state: 'output-available',
+          output: {
+            id: 'recent-milestones',
+            title: 'Recent Milestones',
+            events: [
+              {
+                id: 'launch',
+                date: '2025',
+                title: 'Launch'
+              }
+            ]
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('timeline-tool-ui')).toHaveAttribute(
+      'data-source',
+      'tool'
+    )
+  })
+
+  it('extracts valid fenced JSON timeline payloads from assistant text', () => {
+    const message: UIMessage = {
+      id: 'assistant-timeline-json',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'text',
+          text: `## Recent Milestones\n\nHere is the timeline:\n\n\`\`\`json
+{"id":"recent-milestones","title":"Recent Milestones","events":[{"id":"launch","date":"2025","title":"Launch"}]}
+\`\`\`\n\nThis trajectory accelerated quickly.`
+        }
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('timeline-tool-ui')).toHaveAttribute(
+      'data-source',
+      'json'
+    )
+    expect(screen.queryByText(/"events"/)).not.toBeInTheDocument()
+  })
+
+  it('suppresses pseudo display tool placeholder blocks and logs debug context', () => {
+    const consoleDebug = vi
+      .spyOn(console, 'debug')
+      .mockImplementation(() => undefined)
+
+    const message: UIMessage = {
+      id: 'assistant-timeline-placeholder',
+      role: 'assistant',
+      metadata: {
+        modelId: 'gateway:google/gemini-3-flash',
+        searchMode: 'chat'
+      },
+      parts: [
+        {
+          type: 'text',
+          text: `## Recent Milestones Timeline\n\nWaymo's growth has accelerated significantly over the past year:\n\n\`\`\`json
+/* displayTimeline tool call */
+\`\`\`\n\nThe rollout continued after these milestones.`
+        }
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(
+      screen.queryByText(/displayTimeline tool call/i)
+    ).not.toBeInTheDocument()
+    expect(consoleDebug).toHaveBeenCalledWith(
+      '[RenderMessage] Suppressed pseudo display tool placeholder',
+      expect.objectContaining({
+        messageId: 'assistant-timeline-placeholder',
+        modelId: 'gateway:google/gemini-3-flash',
+        searchMode: 'chat',
+        toolName: 'displayTimeline'
+      })
+    )
   })
 
   it('shows only the data-canvasArtifact card when failed creates with empty IDs precede a success', () => {

@@ -91,6 +91,19 @@ type TextSegment = { type: 'text'; content: string }
 type ToolUISegment = { type: 'tool-ui'; component: ReactNode; key: string }
 type Segment = TextSegment | ToolUISegment
 
+const PSEUDO_DISPLAY_TOOL_PLACEHOLDER_PATTERNS = [
+  {
+    matchedPattern: 'fenced-comment-placeholder',
+    pattern:
+      /```(?:json|javascript|js|typescript|ts|tsx)?\s*\n\s*\/\*\s*(display[A-Za-z]+)\s+tool call\s*\*\/\s*\n```/g
+  },
+  {
+    matchedPattern: 'fenced-function-placeholder',
+    pattern:
+      /```(?:json|javascript|js|typescript|ts|tsx)?\s*\n\s*(display[A-Za-z]+)\s*\([\s\S]*?\n```/g
+  }
+] as const
+
 /**
  * Scan text for ```json fenced code blocks that match a registered tool UI schema.
  * Returns the original text unchanged if no matches are found.
@@ -132,6 +145,78 @@ function extractToolUIFromText(text: string): Segment[] {
     segments.push({ type: 'text', content: text.slice(lastIndex) })
   }
   return segments
+}
+
+function collectCompletedDisplayToolResults(parts: UIMessage['parts']) {
+  const completedDisplayTools = new Set<string>()
+
+  for (const part of parts || []) {
+    if (
+      part.type?.startsWith?.('tool-display') &&
+      'state' in part &&
+      part.state === 'output-available'
+    ) {
+      completedDisplayTools.add(part.type.substring(5))
+      continue
+    }
+
+    if (
+      part.type === 'dynamic-tool' &&
+      part.state === 'output-available' &&
+      typeof part.toolName === 'string' &&
+      part.toolName.startsWith('display')
+    ) {
+      completedDisplayTools.add(part.toolName)
+    }
+  }
+
+  return completedDisplayTools
+}
+
+function stripPseudoDisplayToolPlaceholders({
+  text,
+  completedDisplayTools,
+  messageId,
+  metadata
+}: {
+  text: string
+  completedDisplayTools: Set<string>
+  messageId: string
+  metadata?: UIMessageMetadata
+}) {
+  let sanitizedText = text
+  let suppressedAny = false
+
+  for (const {
+    pattern,
+    matchedPattern
+  } of PSEUDO_DISPLAY_TOOL_PLACEHOLDER_PATTERNS) {
+    sanitizedText = sanitizedText.replace(
+      pattern,
+      (match, toolName: string) => {
+        if (completedDisplayTools.has(toolName)) {
+          return match
+        }
+
+        suppressedAny = true
+        console.debug(
+          '[RenderMessage] Suppressed pseudo display tool placeholder',
+          {
+            messageId,
+            modelId: metadata?.modelId,
+            searchMode: metadata?.searchMode,
+            toolName,
+            matchedPattern
+          }
+        )
+        return ''
+      }
+    )
+  }
+
+  if (!suppressedAny) return sanitizedText
+
+  return sanitizedText.replace(/\n{3,}/g, '\n\n').trim()
 }
 
 /** Collect image URLs from completed generateImage tool parts for deduplication */
@@ -292,6 +377,8 @@ export function RenderMessage({
   onCanvasArtifactClick,
   onLegacyArtifactClick
 }: RenderMessageProps) {
+  const metadata = message.metadata as UIMessageMetadata | undefined
+
   // Use provided citation maps (from all messages)
   if (message.role === 'user') {
     return (
@@ -336,6 +423,9 @@ export function RenderMessage({
     message.parts
   )
   const generatedImageUrls = collectGeneratedImageUrls(message.parts)
+  const completedDisplayToolResults = collectCompletedDisplayToolResults(
+    message.parts
+  )
 
   // Pre-compute: for each text part, whether there's any visible content after it.
   // Single reverse pass avoids O(n²) slice+some inside the render loop.
@@ -572,10 +662,12 @@ export function RenderMessage({
       const shouldShowActions =
         isLastVisiblePart && (isLatestMessage ? isStreamingComplete : true)
 
-      const textContent = stripDuplicateImageMarkdown(
-        part.text,
-        generatedImageUrls
-      )
+      const textContent = stripPseudoDisplayToolPlaceholders({
+        text: stripDuplicateImageMarkdown(part.text, generatedImageUrls),
+        completedDisplayTools: completedDisplayToolResults,
+        messageId,
+        metadata
+      })
       const segments = extractToolUIFromText(textContent)
       for (let si = 0; si < segments.length; si++) {
         const segment = segments[si]
@@ -606,7 +698,7 @@ export function RenderMessage({
               chatId={chatId}
               showActions={showActionsHere}
               messageId={messageId}
-              metadata={message.metadata as UIMessageMetadata | undefined}
+              metadata={metadata}
               reload={reload}
               status={status}
               citationMaps={citationMaps}
@@ -861,7 +953,6 @@ export function RenderMessage({
   if (!actionsShownInline && lastTextContent.trim()) {
     const isStreamingComplete = status !== 'streaming' && status !== 'submitted'
     const shouldShow = isLatestMessage ? isStreamingComplete : true
-    const metadata = message.metadata as UIMessageMetadata | undefined
     elements.push(
       <MessageActions
         key={`${messageId}-trailing-actions`}
