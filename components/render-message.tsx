@@ -2,6 +2,7 @@ import { Fragment, type ReactNode } from 'react'
 
 import { UseChatHelpers } from '@ai-sdk/react'
 
+import { JSON_BLOCK_REGEX } from '@/lib/motion/part-ids'
 import type { SearchResultItem } from '@/lib/types'
 import type {
   CanvasArtifactData,
@@ -109,13 +110,14 @@ const PSEUDO_DISPLAY_TOOL_PLACEHOLDER_PATTERNS = [
  * Returns the original text unchanged if no matches are found.
  */
 function extractToolUIFromText(text: string, messageId: string): Segment[] {
-  const jsonBlockRegex = /```json\s*\n([\s\S]*?)\n\s*```/g
+  // Reset lastIndex — JSON_BLOCK_REGEX is module-scoped with /g flag.
+  JSON_BLOCK_REGEX.lastIndex = 0
   const segments: Segment[] = []
   let lastIndex = 0
   let match: RegExpExecArray | null
   let toolUIFound = false
 
-  while ((match = jsonBlockRegex.exec(text)) !== null) {
+  while ((match = JSON_BLOCK_REGEX.exec(text)) !== null) {
     try {
       const parsed = JSON.parse(match[1])
       const rendered = tryRenderToolUI(

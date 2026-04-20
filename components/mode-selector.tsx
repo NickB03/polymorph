@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Ellipsis, X } from 'lucide-react'
 
@@ -58,6 +58,21 @@ export function ModeSelector() {
   // The cookie-derived value is promoted on mount in the effect below.
   const [value, setValue] = useState<UserMode>('search')
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  // Shared ref attached to whichever DropdownMenuTrigger is currently rendered
+  // (pill button when a mode is active, Ellipsis button otherwise). Used to
+  // restore focus after the active pill unmounts on clear — otherwise focus
+  // falls to <body>, breaking keyboard/SR flow.
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const pendingFocusRef = useRef(false)
+
+  // After the X-button unmounts, move focus to the now-rendered Ellipsis
+  // trigger. Runs post-commit so the new button is mounted and focusable.
+  useEffect(() => {
+    if (pendingFocusRef.current && value === 'search') {
+      pendingFocusRef.current = false
+      triggerRef.current?.focus()
+    }
+  }, [value])
 
   useEffect(() => {
     const raw = getCookie('searchMode')
@@ -91,6 +106,9 @@ export function ModeSelector() {
     // Prevent the surrounding Radix Trigger from interpreting this as
     // "open the dropdown."
     e.stopPropagation()
+    // Signal the post-commit effect to restore focus to the Ellipsis trigger
+    // once the active pill (and its X button) has unmounted.
+    pendingFocusRef.current = true
     setValue('search')
     syncSearchMode('search')
   }
@@ -106,6 +124,7 @@ export function ModeSelector() {
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button
+            ref={triggerRef}
             variant="outline"
             size="icon"
             className="rounded-full"
@@ -134,6 +153,7 @@ export function ModeSelector() {
         >
           <DropdownMenuTrigger asChild>
             <button
+              ref={triggerRef}
               type="button"
               aria-label={`Mode: ${activeConfig.label}. Open mode menu`}
               className={cn(

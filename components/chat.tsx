@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 
 import { generateId } from '@/lib/db/schema'
 import { HydrationAnimationProvider } from '@/lib/motion/hydration-boundary'
+import { collectInitialPartIds } from '@/lib/motion/part-ids'
 import { UploadedFile } from '@/lib/types'
 import type {
   CanvasArtifactData,
@@ -890,13 +891,10 @@ export function Chat({
     toast(voiceConversation.voiceNotice.message)
   }, [voiceConversation.voiceNotice])
 
-  const initialPartIds: string[] = []
-  for (const msg of savedMessages) {
-    for (const part of msg.parts ?? []) {
-      const p = part as { toolCallId?: unknown }
-      if (typeof p.toolCallId === 'string') initialPartIds.push(p.toolCallId)
-    }
-  }
+  const initialPartIds = useMemo(
+    () => collectInitialPartIds(savedMessages),
+    [savedMessages]
+  )
 
   return (
     <HydrationAnimationProvider initialPartIds={initialPartIds}>

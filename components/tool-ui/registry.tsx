@@ -35,6 +35,19 @@ type ToolUIEntry = {
   tryRender: (output: unknown, partId: string) => ReactNode | null
 }
 
+function renderCanvasArtifactInMount(
+  output: unknown,
+  partId: string
+): ReactNode | null {
+  const data = tryParseCanvasArtifactCardData(output)
+  if (!data) return null
+  return (
+    <ToolCardMount partId={partId}>
+      <CanvasArtifactCard data={data} />
+    </ToolCardMount>
+  )
+}
+
 const entries: ToolUIEntry[] = [
   {
     name: 'displayPlan',
@@ -193,39 +206,15 @@ const entries: ToolUIEntry[] = [
   },
   {
     name: 'canvasArtifactCard',
-    tryRender: (output, partId) => {
-      const data = tryParseCanvasArtifactCardData(output)
-      if (!data) return null
-      return (
-        <ToolCardMount partId={partId}>
-          <CanvasArtifactCard data={data} />
-        </ToolCardMount>
-      )
-    }
+    tryRender: renderCanvasArtifactInMount
   },
   {
     name: 'createCanvasArtifact',
-    tryRender: (output, partId) => {
-      const data = tryParseCanvasArtifactCardData(output)
-      if (!data) return null
-      return (
-        <ToolCardMount partId={partId}>
-          <CanvasArtifactCard data={data} />
-        </ToolCardMount>
-      )
-    }
+    tryRender: renderCanvasArtifactInMount
   },
   {
     name: 'updateCanvasArtifact',
-    tryRender: (output, partId) => {
-      const data = tryParseCanvasArtifactCardData(output)
-      if (!data) return null
-      return (
-        <ToolCardMount partId={partId}>
-          <CanvasArtifactCard data={data} />
-        </ToolCardMount>
-      )
-    }
+    tryRender: renderCanvasArtifactInMount
   }
 ]
 
