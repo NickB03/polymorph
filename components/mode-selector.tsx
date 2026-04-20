@@ -14,6 +14,7 @@ import {
   syncSearchMode
 } from '@/lib/utils/search-mode'
 
+import { Button } from './ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -102,13 +103,15 @@ export function ModeSelector() {
     return (
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
-          <button
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full"
             type="button"
             aria-label="Open mode menu"
-            className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <Ellipsis className="h-4 w-4" />
-          </button>
+            <Ellipsis className="h-5 w-5" />
+          </Button>
         </DropdownMenuTrigger>
         <ModeDropdownContent onSelect={handleSelect} />
       </DropdownMenu>
@@ -122,7 +125,7 @@ export function ModeSelector() {
     <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
       <div
         className={cn(
-          'inline-flex items-center h-8 rounded-full border transition-colors',
+          'inline-flex items-center h-11 rounded-full border transition-colors',
           styles.container
         )}
       >
@@ -131,11 +134,11 @@ export function ModeSelector() {
             type="button"
             aria-label={`Mode: ${activeConfig.label}. Open mode menu`}
             className={cn(
-              'inline-flex items-center gap-1.5 h-full pl-2.5 pr-2 rounded-l-full text-xs font-medium transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              'inline-flex items-center gap-2 h-full pl-3.5 pr-2.5 rounded-l-full text-sm font-medium transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               styles.trigger
             )}
           >
-            <Icon className={cn('h-3.5 w-3.5 shrink-0', styles.icon)} />
+            <Icon className={cn('h-4 w-4 shrink-0', styles.icon)} />
             <span className={styles.label}>{activeConfig.label}</span>
           </button>
         </DropdownMenuTrigger>
@@ -144,11 +147,11 @@ export function ModeSelector() {
           aria-label={`Clear ${activeConfig.label} mode`}
           onClick={handleClearActive}
           className={cn(
-            'inline-flex items-center justify-center h-6 w-6 mr-1 rounded-full transition-colors cursor-pointer ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+            'inline-flex items-center justify-center h-8 w-8 mr-1 rounded-full transition-colors cursor-pointer ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
             styles.close
           )}
         >
-          <X className="h-3 w-3" />
+          <X className="h-4 w-4" />
         </button>
       </div>
       <ModeDropdownContent onSelect={handleSelect} />
