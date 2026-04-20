@@ -360,7 +360,7 @@ function shouldSuppressReadCanvasArtifactFallback(part: DynamicToolPart) {
   }
 
   const output = part.output as { status?: unknown }
-  return output.status !== 'not_found'
+  return output.status === 'ready'
 }
 
 interface RenderMessageProps {
