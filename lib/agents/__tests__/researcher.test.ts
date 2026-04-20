@@ -260,6 +260,8 @@ describe('createResearcher', () => {
     expect(config.activeTools).toContain('createCanvasArtifact')
     expect(config.activeTools).toContain('updateCanvasArtifact')
     expect(config.activeTools).toContain('readCanvasArtifact')
+    expect(config.activeTools).not.toContain('displayCodeBlock')
+    expect(config.activeTools).not.toContain('displayCodeDiff')
   })
 
   it('does not register canvas tools when canvasToolContext is absent', () => {
@@ -277,6 +279,8 @@ describe('createResearcher', () => {
     expect(config.activeTools).not.toContain('createCanvasArtifact')
     expect(config.activeTools).not.toContain('updateCanvasArtifact')
     expect(config.activeTools).not.toContain('readCanvasArtifact')
+    expect(config.activeTools).not.toContain('displayCodeBlock')
+    expect(config.activeTools).not.toContain('displayCodeDiff')
   })
 
   it('registers canvas tools in both chat and research modes', () => {
@@ -293,6 +297,8 @@ describe('createResearcher', () => {
       expect(config.activeTools).toContain('createCanvasArtifact')
       expect(config.activeTools).toContain('updateCanvasArtifact')
       expect(config.activeTools).toContain('readCanvasArtifact')
+      expect(config.activeTools).not.toContain('displayCodeBlock')
+      expect(config.activeTools).not.toContain('displayCodeDiff')
     }
   })
 

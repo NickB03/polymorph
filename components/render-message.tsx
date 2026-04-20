@@ -345,6 +345,24 @@ function getLatestCanvasArtifactStatuses(parts: UIMessage['parts']) {
   return latestStatuses
 }
 
+function shouldSuppressReadCanvasArtifactFallback(part: DynamicToolPart) {
+  if (part.type !== 'dynamic-tool') {
+    return false
+  }
+
+  if (
+    part.toolName !== 'readCanvasArtifact' ||
+    part.state !== 'output-available' ||
+    !part.output ||
+    typeof part.output !== 'object'
+  ) {
+    return false
+  }
+
+  const output = part.output as { status?: unknown }
+  return output.status === 'ready'
+}
+
 interface RenderMessageProps {
   message: UIMessage
   messageId: string
@@ -892,6 +910,9 @@ export function RenderMessage({
     } else if (part.type === 'dynamic-tool') {
       flushBuffer(`seg-${index}`)
       const dynamicToolPart = part as DynamicToolPart
+      if (shouldSuppressReadCanvasArtifactFallback(dynamicToolPart)) {
+        return
+      }
       if (
         (dynamicToolPart.toolName === 'createCanvasArtifact' ||
           dynamicToolPart.toolName === 'updateCanvasArtifact') &&
