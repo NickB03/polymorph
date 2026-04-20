@@ -130,57 +130,6 @@ vi.mock('./tool-ui/registry', () => ({
     }
 
     if (
-      toolName === 'displayCodeBlock' &&
-      output &&
-      typeof output === 'object'
-    ) {
-      const data = output as Record<string, unknown>
-      if (
-        typeof data.id === 'string' &&
-        typeof data.code === 'string' &&
-        (!('filename' in data) || typeof data.filename === 'string')
-      ) {
-        return (
-          <div
-            data-testid="tool-ui-code-block"
-            data-tool-ui-id={data.id}
-            data-filename={
-              typeof data.filename === 'string' ? data.filename : undefined
-            }
-          >
-            {data.code}
-          </div>
-        )
-      }
-    }
-
-    if (
-      toolName === 'displayCodeDiff' &&
-      output &&
-      typeof output === 'object'
-    ) {
-      const data = output as Record<string, unknown>
-      if (
-        typeof data.id === 'string' &&
-        typeof data.oldCode === 'string' &&
-        typeof data.newCode === 'string' &&
-        (!('filename' in data) || typeof data.filename === 'string')
-      ) {
-        return (
-          <div
-            data-testid="tool-ui-code-diff"
-            data-tool-ui-id={data.id}
-            data-filename={
-              typeof data.filename === 'string' ? data.filename : undefined
-            }
-          >
-            {`${data.oldCode}=>${data.newCode}`}
-          </div>
-        )
-      }
-    }
-
-    if (
       (toolName === 'createCanvasArtifact' ||
         toolName === 'updateCanvasArtifact') &&
       output &&

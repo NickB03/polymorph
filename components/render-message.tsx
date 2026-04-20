@@ -345,27 +345,21 @@ function getLatestCanvasArtifactStatuses(parts: UIMessage['parts']) {
   return latestStatuses
 }
 
-function shouldSuppressReadCanvasArtifactFallback(
-  parts: NonNullable<UIMessage['parts']>,
-  index: number
-) {
-  const currentPart = parts[index]
-
-  if (currentPart?.type !== 'dynamic-tool') {
+function shouldSuppressReadCanvasArtifactFallback(part: DynamicToolPart) {
+  if (part.type !== 'dynamic-tool') {
     return false
   }
 
-  const dynamicToolPart = currentPart as DynamicToolPart
   if (
-    dynamicToolPart.toolName !== 'readCanvasArtifact' ||
-    dynamicToolPart.state !== 'output-available' ||
-    !dynamicToolPart.output ||
-    typeof dynamicToolPart.output !== 'object'
+    part.toolName !== 'readCanvasArtifact' ||
+    part.state !== 'output-available' ||
+    !part.output ||
+    typeof part.output !== 'object'
   ) {
     return false
   }
 
-  const output = dynamicToolPart.output as { status?: unknown }
+  const output = part.output as { status?: unknown }
   return output.status !== 'not_found'
 }
 
@@ -916,12 +910,7 @@ export function RenderMessage({
     } else if (part.type === 'dynamic-tool') {
       flushBuffer(`seg-${index}`)
       const dynamicToolPart = part as DynamicToolPart
-      if (
-        shouldSuppressReadCanvasArtifactFallback(
-          renderParts as NonNullable<UIMessage['parts']>,
-          index
-        )
-      ) {
+      if (shouldSuppressReadCanvasArtifactFallback(dynamicToolPart)) {
         return
       }
       if (
