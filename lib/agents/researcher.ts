@@ -31,6 +31,7 @@ import { getModel } from '../utils/registry'
 import { isTracingEnabled } from '../utils/telemetry'
 
 import {
+  ARTIFACT_INTAKE_PROTOCOL,
   CHAT_MODE_PROMPT,
   RESEARCH_MODE_PROMPT
 } from './prompts/search-mode-prompts'
@@ -163,7 +164,6 @@ export function createResearcher({
   writer?: UIMessageStreamWriter
   parentTraceId?: string
   searchMode?: SearchMode
-  // TODO(task-9): prepend ARTIFACT_INTAKE_PROTOCOL when intent === 'build'
   intent?: string
   modelType?: ModelType
   telemetryEnabled?: boolean
@@ -171,11 +171,6 @@ export function createResearcher({
   canvasToolContext?: CanvasToolContext
   imageToolContext?: { userId: string; chatId: string }
 }) {
-  // TODO(task-9): prepend ARTIFACT_INTAKE_PROTOCOL to the system prompt when
-  // `intent === 'build'`. Signature landed here so callers can pass the hint
-  // through now; the prompt-directive wiring arrives in the next commit.
-  void intent
-
   try {
     const currentDate = new Date().toLocaleString()
     const isEvalMode =
@@ -267,6 +262,15 @@ export function createResearcher({
 
     if (canvasToolContext?.currentArtifact) {
       instructions += `\n\nCurrent canvas artifact state:\n- artifactId: ${canvasToolContext.currentArtifact.artifactId}\n- baseRevision: ${canvasToolContext.currentArtifact.draftRevision}\nIf the artifact source code is not in the conversation above, call readCanvasArtifact to fetch the latest source before updating.`
+    }
+
+    // Prepend the artifact intake protocol for build-intent requests so the
+    // model runs the two-step intake flow before calling createCanvasArtifact.
+    // Scoped to the non-eval path: the intake protocol instructs the model to
+    // call displayQuestionWizard, which is stripped from the active tools list
+    // in eval mode (see INTERACTIVE_TOOLS above).
+    if (intent === 'build' && !isEvalMode) {
+      instructions = `${ARTIFACT_INTAKE_PROTOCOL}${instructions}`
     }
 
     // Build canvas tools when context is available
