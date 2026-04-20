@@ -6,7 +6,7 @@ import {
 
 // Search mode system prompts
 
-const ARTIFACT_INTAKE_PROTOCOL = `
+export const ARTIFACT_INTAKE_PROTOCOL = `
 ARTIFACT INTAKE PROTOCOL (before creating canvas artifacts):
 
 When the user asks you to build, create, or make an interactive app/widget/tool/visualization:
