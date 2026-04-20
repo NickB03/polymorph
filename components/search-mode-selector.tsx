@@ -5,10 +5,17 @@ import { useEffect, useState } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 
 import { SEARCH_MODE_CONFIGS } from '@/lib/config/search-modes'
-import { isValidSearchMode, SearchMode } from '@/lib/types/search'
+import { isValidSearchMode, SearchMode, UserMode } from '@/lib/types/search'
 import { cn } from '@/lib/utils'
 import { getCookie } from '@/lib/utils/cookies'
 import { syncSearchMode } from '@/lib/utils/search-mode'
+
+// Temporary adapter — the selector is being replaced in a follow-up task
+// (see plan Step 4). Until then, map the selector's SearchMode vocabulary
+// onto the new UserMode surface expected by `syncSearchMode`.
+function searchModeToUserMode(mode: SearchMode): UserMode {
+  return mode === 'research' ? 'research' : 'search'
+}
 
 import { Button } from './ui/button'
 import {
@@ -39,10 +46,10 @@ export function SearchModeSelector() {
       // setState-in-effect case.
       // eslint-disable-next-line react-hooks/set-state-in-effect -- promote the persisted cookie mode after mount without changing SSR output
       setValue(mapped)
-      if (mapped !== savedMode) syncSearchMode(mapped)
+      if (mapped !== savedMode) syncSearchMode(searchModeToUserMode(mapped))
     } else if (savedMode) {
       // Clean up invalid cookie value; state stays at 'chat'.
-      syncSearchMode('chat')
+      syncSearchMode('search')
     }
   }, [])
 
@@ -60,7 +67,7 @@ export function SearchModeSelector() {
 
   const handleModeSelect = (mode: SearchMode) => {
     setValue(mode)
-    syncSearchMode(mode)
+    syncSearchMode(searchModeToUserMode(mode))
     setDropdownOpen(false)
   }
 

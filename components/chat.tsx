@@ -119,7 +119,7 @@ export function Chat({
       type: 'general',
       message: ''
     })
-    syncSearchMode('chat')
+    syncSearchMode('search')
     syncModelType('speed')
     guestCanvasTokenRef.current = undefined
     canvasOpenedRef.current.clear()
@@ -139,13 +139,15 @@ export function Chat({
         | UIMessageMetadata
         | undefined
       if (isValidSearchMode(metadata?.searchMode)) {
-        syncSearchMode(metadata.searchMode)
+        syncSearchMode(
+          metadata.searchMode === 'research' ? 'research' : 'search'
+        )
       }
       if (isValidModelType(metadata?.modelType)) {
         syncModelType(metadata.modelType)
       }
     } else {
-      syncSearchMode('chat')
+      syncSearchMode('search')
       syncModelType('speed')
     }
   }, [providedId, savedMessages])
