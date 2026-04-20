@@ -47,14 +47,3 @@ export function getSearchModeConfig(
 ): SearchModeConfig | undefined {
   return SEARCH_MODE_CONFIGS.find(config => config.value === mode)
 }
-
-// Transitional helper: look up a config by its backend SearchMode.
-// Used by the legacy selector (which still speaks SearchMode) until it's
-// rewritten in a later task. Returns the first config whose backendMode
-// matches — ambiguous for 'chat' (both Search and Build map to it), so
-// prefer `getSearchModeConfig(userMode)` for new callers.
-export function getConfigByBackendMode(
-  mode: SearchMode
-): SearchModeConfig | undefined {
-  return SEARCH_MODE_CONFIGS.find(config => config.backendMode === mode)
-}
