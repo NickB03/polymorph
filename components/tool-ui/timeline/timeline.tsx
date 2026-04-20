@@ -4,6 +4,8 @@ import { memo } from 'react'
 
 import { Calendar, Flag, Megaphone, Package, Star } from 'lucide-react'
 
+import { StaggerList } from '@/components/motion/stagger-list'
+
 import { cn } from './_adapter'
 import type { TimelineEventCategory, TimelineProps } from './schema'
 
@@ -48,20 +50,20 @@ const categoryConfig: Record<
   }
 }
 
-interface TimelineEventItemProps {
+interface TimelineEventContentProps {
   event: TimelineProps['events'][number]
   isLast: boolean
 }
 
-const TimelineEventItem = memo(function TimelineEventItem({
+const TimelineEventContent = memo(function TimelineEventContent({
   event,
   isLast
-}: TimelineEventItemProps) {
+}: TimelineEventContentProps) {
   const config = categoryConfig[event.category ?? 'default']
   const Icon = config.icon
 
   return (
-    <li className="relative flex gap-4">
+    <>
       {/* Connector line */}
       {!isLast && (
         <div
@@ -102,7 +104,7 @@ const TimelineEventItem = memo(function TimelineEventItem({
           </p>
         )}
       </div>
-    </li>
+    </>
   )
 })
 
@@ -133,15 +135,17 @@ export const Timeline = memo(function Timeline({
         )}
       </div>
 
-      <ol className="space-y-2" aria-label="Timeline events">
-        {events.map((event, index) => (
-          <TimelineEventItem
-            key={event.id}
-            event={event}
-            isLast={index === events.length - 1}
-          />
-        ))}
-      </ol>
+      <StaggerList
+        items={events}
+        getKey={event => event.id}
+        className="space-y-2"
+        ariaLabel="Timeline events"
+        itemClassName="relative flex gap-4"
+      >
+        {(event, _index, isLast) => (
+          <TimelineEventContent event={event} isLast={isLast} />
+        )}
+      </StaggerList>
     </section>
   )
 })

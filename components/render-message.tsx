@@ -108,7 +108,7 @@ const PSEUDO_DISPLAY_TOOL_PLACEHOLDER_PATTERNS = [
  * Scan text for ```json fenced code blocks that match a registered tool UI schema.
  * Returns the original text unchanged if no matches are found.
  */
-function extractToolUIFromText(text: string): Segment[] {
+function extractToolUIFromText(text: string, messageId: string): Segment[] {
   const jsonBlockRegex = /```json\s*\n([\s\S]*?)\n\s*```/g
   const segments: Segment[] = []
   let lastIndex = 0
@@ -118,7 +118,10 @@ function extractToolUIFromText(text: string): Segment[] {
   while ((match = jsonBlockRegex.exec(text)) !== null) {
     try {
       const parsed = JSON.parse(match[1])
-      const rendered = tryRenderToolUI(parsed)
+      const rendered = tryRenderToolUI(
+        parsed,
+        `${messageId}-extract-${match.index}`
+      )
       if (rendered) {
         toolUIFound = true
         if (match.index > lastIndex) {
@@ -601,7 +604,11 @@ export function RenderMessage({
       }
     } else {
       if (toolPart.state === 'output-available' && toolPart.output) {
-        const rendered = tryRenderToolUIByName(toolName, toolPart.output)
+        const rendered = tryRenderToolUIByName(
+          toolName,
+          toolPart.output,
+          toolPart.toolCallId ?? `${messageId}-tool-${partIndex}`
+        )
         return rendered ? (
           <Fragment key={`${messageId}-display-tool-${partIndex}`}>
             {rendered}
@@ -668,7 +675,7 @@ export function RenderMessage({
         messageId,
         metadata
       })
-      const segments = extractToolUIFromText(textContent)
+      const segments = extractToolUIFromText(textContent, messageId)
       for (let si = 0; si < segments.length; si++) {
         const segment = segments[si]
         if (segment.type === 'tool-ui') {

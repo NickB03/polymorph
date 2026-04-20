@@ -68,7 +68,7 @@ export function DynamicToolDisplay({ part }: DynamicToolDisplayProps) {
   // Try rendering via registered Tool UI once (avoids double parse)
   const renderedToolUI =
     part.state === 'output-available'
-      ? tryRenderToolUIByName(part.toolName, part.output)
+      ? tryRenderToolUIByName(part.toolName, part.output, part.toolCallId)
       : null
 
   // For registered tool UIs, render the rich component directly without wrapper

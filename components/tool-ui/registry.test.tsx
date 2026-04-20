@@ -16,7 +16,8 @@ describe('tool UI registry', () => {
   it('renders createCanvasArtifact output through the canvas artifact card', () => {
     const node = tryRenderToolUIByName(
       'createCanvasArtifact',
-      canvasArtifactOutput
+      canvasArtifactOutput,
+      'test-part-id'
     )
 
     render(<>{node}</>)
@@ -31,7 +32,8 @@ describe('tool UI registry', () => {
   it('renders updateCanvasArtifact output through the canvas artifact card', () => {
     const node = tryRenderToolUIByName(
       'updateCanvasArtifact',
-      canvasArtifactOutput
+      canvasArtifactOutput,
+      'test-part-id'
     )
 
     render(<>{node}</>)
@@ -43,7 +45,11 @@ describe('tool UI registry', () => {
   })
 
   it('falls back to matching schemas for unrelated tool names', () => {
-    const node = tryRenderToolUIByName('unknownTool', canvasArtifactOutput)
+    const node = tryRenderToolUIByName(
+      'unknownTool',
+      canvasArtifactOutput,
+      'test-part-id'
+    )
 
     render(<>{node}</>)
 
