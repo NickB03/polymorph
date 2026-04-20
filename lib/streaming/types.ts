@@ -16,6 +16,7 @@ export interface BaseStreamConfig {
   abortSignal?: AbortSignal
   isNewChat?: boolean
   searchMode?: SearchMode
+  intent?: string
   modelType?: ModelType
   toolResult?: ToolResultDelta
 }

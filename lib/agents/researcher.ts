@@ -151,6 +151,7 @@ export function createResearcher({
   writer,
   parentTraceId,
   searchMode = 'research',
+  intent,
   modelType,
   telemetryEnabled,
   experimentalContext,
@@ -162,12 +163,19 @@ export function createResearcher({
   writer?: UIMessageStreamWriter
   parentTraceId?: string
   searchMode?: SearchMode
+  // TODO(task-9): prepend ARTIFACT_INTAKE_PROTOCOL when intent === 'build'
+  intent?: string
   modelType?: ModelType
   telemetryEnabled?: boolean
   experimentalContext?: unknown
   canvasToolContext?: CanvasToolContext
   imageToolContext?: { userId: string; chatId: string }
 }) {
+  // TODO(task-9): prepend ARTIFACT_INTAKE_PROTOCOL to the system prompt when
+  // `intent === 'build'`. Signature landed here so callers can pass the hint
+  // through now; the prompt-directive wiring arrives in the next commit.
+  void intent
+
   try {
     const currentDate = new Date().toLocaleString()
     const isEvalMode =

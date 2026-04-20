@@ -57,6 +57,7 @@ export async function createChatStreamResponse(
     abortSignal,
     isNewChat,
     searchMode,
+    intent,
     modelType
   } = config
 
@@ -205,6 +206,7 @@ export async function createChatStreamResponse(
             writer,
             parentTraceId,
             searchMode,
+            intent,
             modelType,
             canvasToolContext,
             imageToolContext: { userId, chatId }
