@@ -10,17 +10,17 @@
 
 Replace the current per-character opacity typewriter animation with a whole-word slot reel (F3b) that is more fluid, decisive, and premium.
 
-| Property           | Before                                            | After                                                                    |
-| ------------------ | ------------------------------------------------- | ------------------------------------------------------------------------ |
-| Animation style    | Per-character, 70ms stagger, opacity only         | Whole word as single unit (slot reel)                                    |
-| Enter keyframe     | `opacity: 0 → 1`, linear                          | `translateY(52px) → overshoot −1.5px → settle 0`, linear timing function |
-| Exit keyframe      | `opacity: 1 → 0`, linear, reverse stagger         | `translateY(0 → −38px) + opacity`, ease-in                               |
-| Enter duration     | 50ms per char                                     | 440ms total                                                              |
-| Exit duration      | 40ms per char                                     | 190ms total                                                              |
-| Hold between words | ~400ms + char stagger time                        | ~600ms                                                                   |
-| Word list          | `morph, learn, create, discover, research, morph` | `morph, explore, create, discover, research, morph`                      |
-| Font size          | 2.5rem (desktop), 2rem (mobile)                   | Unchanged                                                                |
-| Final word         | "morph" — settles permanently                     | "morph" — settles with one-time opacity pulse (400ms, 100→85→100%)       |
+| Property           | Before                                            | After                                                                                  |
+| ------------------ | ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Animation style    | Per-character, 70ms stagger, opacity only         | Whole word as single unit (slot reel)                                                  |
+| Enter keyframe     | `opacity: 0 → 1`, linear                          | `translateY(52px) → overshoot −1.5px → settle 0`, linear timing function               |
+| Exit keyframe      | `opacity: 1 → 0`, linear, reverse stagger         | `translateY(0 → −38px) + opacity`, ease-in                                             |
+| Enter duration     | 50ms per char                                     | 440ms total                                                                            |
+| Exit duration      | 40ms per char                                     | 190ms total                                                                            |
+| Hold between words | ~400ms + char stagger time                        | ~600ms                                                                                 |
+| Word list          | `morph, learn, create, discover, research, morph` | `morph, explore, create, discover, research, morph`                                    |
+| Font size          | 2.5rem (desktop), 2rem (mobile)                   | Unchanged                                                                              |
+| Final word         | "morph" — settles permanently                     | "morph" — lands with a longer final enter pass (`morphSlotLand`) and then stays static |
 
 ---
 
@@ -69,25 +69,27 @@ Replace the current per-character opacity typewriter animation with a whole-word
 - Duration: `190ms`
 - Easing: `cubic-bezier(0.4, 0, 1, 1)` (ease-in — snappy exit)
 
-### Final settle pulse — `morphSlotSettle`
+### Final landing pass — `morphSlotLand`
 
 ```css
-@keyframes morphSlotSettle {
+@keyframes morphSlotLand {
   0% {
-    opacity: 1;
+    opacity: 0;
+    transform: translateY(52px);
   }
-  40% {
-    opacity: 0.85;
+  45% {
+    opacity: 1;
   }
   100% {
     opacity: 1;
+    transform: none;
   }
 }
 ```
 
-- Duration: `400ms`
-- Easing: `ease-in-out`
-- Fires once after the final "morph" enters. Applied to the slot unit element, not looped.
+- Duration: `760ms`
+- Easing: `cubic-bezier(0.22, 1, 0.36, 1)`
+- Replaces the old pulse idea entirely; the shipped implementation uses a slower final landing pass instead of a post-enter opacity pulse.
 
 ---
 
@@ -102,7 +104,7 @@ The current component renders individual `<span>` elements per character and app
 - The suffix `<span>` wraps a single text-content string (no per-character spans)
 - `overflow: hidden` on the wrapper clips the vertical travel during the slot animation
 - On word change: apply exit animation → swap text → apply enter animation. In React, use the existing `wordKey` increment (already causes remount, resetting CSS animation state) for enter; use `isExiting` state to apply exit animation imperatively via `style` prop before the swap
-- On final word: apply enter animation, then fire the settle pulse via `setTimeout(enterDuration)` inside a `useEffect` that watches `settled`
+- On final word: set `isLanding=true` before swapping to the last `morph`, then render it with `morphSlotLand` instead of `morphSlotIn`
 
 **Preserved layout hacks (do not remove):**
 
@@ -111,7 +113,7 @@ The current component renders individual `<span>` elements per character and app
 
 **State that remains:**
 
-- `word`, `wordKey`, `isExiting`, `wordIndex`, `settled` — same shape
+- `word`, `wordKey`, `isExiting`, `wordIndex`, `isLanding`, `settled` — same shape
 - `usePrefersReducedMotion` — still respected (skip to final word immediately)
 
 **Timing constants to update:**
@@ -139,7 +141,7 @@ const SUFFIX_WORDS = [
 
 ### CSS keyframes (`app/globals.css`)
 
-Replace `morphFluidEnter` / `morphFluidExit` with `morphSlotIn` / `morphSlotOut` / `morphSlotSettle`.
+Replace `morphFluidEnter` / `morphFluidExit` with `morphSlotIn` / `morphSlotOut` / `morphSlotLand`.
 
 ---
 

@@ -24,7 +24,7 @@ This document provides a deep technical reference for the research agent system 
 
 ## Overview
 
-The research agent is the research subsystem of Polymorph. When a user submits a question, the agent autonomously plans a research strategy, executes web searches, fetches page content, tracks progress through tasks, and synthesizes findings into a cited answer with inline generative UI components (tables, charts, geo maps, citations, plans, link previews, option lists, question wizards, callouts, timelines).
+The research agent is the research subsystem of Polymorph. When a user submits a question, the agent autonomously plans a research strategy, executes web searches, fetches page content, tracks progress through tasks, composes geo helper calls when the answer needs a map or route, and synthesizes findings into a cited answer with inline generative UI components (tables, charts, geo maps, citations, plans, link previews, option lists, question wizards, callouts, timelines).
 
 The agent is built on the Vercel AI SDK's `ToolLoopAgent` — a construct that runs an LLM in a loop, allowing it to call tools repeatedly until it decides to produce a final answer or hits a step limit. Two operating modes (chat and research) control the agent's behavior, tool availability, and depth of research.
 
@@ -47,7 +47,7 @@ graph TD
     Agent --> Answer
 ```
 
-**Source file:** [`lib/agents/researcher.ts`](../lib/agents/researcher.ts)
+**Source file:** [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts)
 
 ---
 
@@ -162,7 +162,7 @@ stateDiagram-v2
 
 ### Configuration
 
-The `createResearcher` function in [`lib/agents/researcher.ts`](../lib/agents/researcher.ts) configures the agent with:
+The `createResearcher` function in [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts) configures the agent with:
 
 ```typescript
 const agent = new ToolLoopAgent({
@@ -210,15 +210,16 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 
 **Purpose:** Fast, focused answers. Optimized for simple questions that need 1-3 searches.
 
-| Property          | Value                                                |
-| ----------------- | ---------------------------------------------------- |
-| Max steps         | 20                                                   |
-| Search type       | Forced `optimized` (via `wrapSearchToolForChatMode`) |
-| Target tool calls | ~5                                                   |
-| `todoWrite`       | Not available                                        |
-| `displayPlan`     | Available                                            |
-| `displayChart`    | Available                                            |
-| `displayGeoMap`   | Available                                            |
+| Property          | Value                                                                  |
+| ----------------- | ---------------------------------------------------------------------- |
+| Max steps         | 20                                                                     |
+| Search type       | Forced `optimized` (via `wrapSearchToolForChatMode`)                   |
+| Target tool calls | ~5                                                                     |
+| `todoWrite`       | Not available                                                          |
+| `displayPlan`     | Available                                                              |
+| `displayChart`    | Available                                                              |
+| `displayGeoMap`   | Available                                                              |
+| Geo helpers       | `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage` |
 
 **How search wrapping works:** In chat mode, the search tool is wrapped by `wrapSearchToolForChatMode()`, which intercepts every call and forces `type: 'optimized'` regardless of what the LLM requests. This ensures the agent always gets content snippets directly from the search provider (Brave by default; Tavily/Exa when selected via `SEARCH_API`) rather than needing to fetch pages separately.
 
@@ -230,21 +231,22 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 - Prohibits use of fetch on search results (only on user-provided URLs)
 - Requires all responses to use inline citations `[number](#toolCallId)`
 
-**Active tools:** `search`, `fetch`, `displayPlan`, `displayTable`, `displayChart`, `displayGeoMap`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`
+**Active tools:** `search`, `fetch`, `displayPlan`, `displayTable`, `displayChart`, `displayGeoMap`, `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`
 
 ### Research Mode
 
 **Purpose:** Thorough, multi-step research. For complex queries that need systematic investigation.
 
-| Property          | Value                           |
-| ----------------- | ------------------------------- |
-| Max steps         | 50                              |
-| Search type       | Full (general + optimized)      |
-| Target tool calls | ~20                             |
-| `todoWrite`       | Available (when writer present) |
-| `displayChart`    | Available                       |
-| `displayGeoMap`   | Available                       |
-| `displayPlan`     | Not in `activeTools`            |
+| Property          | Value                                                                  |
+| ----------------- | ---------------------------------------------------------------------- |
+| Max steps         | 50                                                                     |
+| Search type       | Full (general + optimized)                                             |
+| Target tool calls | ~20                                                                    |
+| `todoWrite`       | Available (when writer present)                                        |
+| `displayChart`    | Available                                                              |
+| `displayGeoMap`   | Available                                                              |
+| Geo helpers       | `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage` |
+| `displayPlan`     | Not in `activeTools`                                                   |
 
 **System prompt behavior:**
 
@@ -254,7 +256,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 - Encourages multiple searches from different angles
 - Allows fetching top 2-3 sources for deeper content analysis
 
-**Active tools:** `search`, `fetch`, `displayTable`, `displayChart`, `displayGeoMap`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`, `todoWrite` (conditional)
+**Active tools:** `search`, `fetch`, `displayTable`, `displayChart`, `displayGeoMap`, `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`, `todoWrite` (conditional)
 
 ### Mode Comparison
 
@@ -265,6 +267,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 | Task planning                | No (`todoWrite` unavailable) | Yes (`todoWrite` available)           |
 | `displayPlan`                | Available                    | Not in active tools                   |
 | `displayGeoMap`              | Available                    | Available                             |
+| Geo helper tools             | Available                    | Available                             |
 | Fetch from search results    | Discouraged by prompt        | Encouraged for top sources            |
 | Target efficiency            | ~5 tool calls                | ~20 tool calls                        |
 | Prompt complexity assessment | No                           | Yes (simple/medium/complex)           |
@@ -280,7 +283,7 @@ The agent's tools fall into two categories: **core tools** that perform actual o
 
 #### `search` — Multi-provider web search
 
-**Source:** [`lib/tools/search.ts`](../lib/tools/search.ts)
+**Source:** [`lib/tools/search.ts`](../../lib/tools/search.ts)
 
 Uses the `async *execute` generator pattern to stream intermediate states to the client:
 
@@ -301,7 +304,7 @@ Uses the `async *execute` generator pattern to stream intermediate states to the
 
 #### `fetch` — Web content extraction
 
-**Source:** [`lib/tools/fetch.ts`](../lib/tools/fetch.ts)
+**Source:** [`lib/tools/fetch.ts`](../../lib/tools/fetch.ts)
 
 Also uses the streaming generator pattern. Has two fetch strategies:
 
@@ -321,7 +324,7 @@ Also uses the streaming generator pattern. Has two fetch strategies:
 
 #### `todoWrite` — Research task tracking
 
-**Source:** [`lib/tools/todo.ts`](../lib/tools/todo.ts)
+**Source:** [`lib/tools/todo.ts`](../../lib/tools/todo.ts)
 
 Session-scoped task management. Each `createTodoTools()` call creates an isolated closure with its own todo state.
 
@@ -338,22 +341,35 @@ Session-scoped task management. Each `createTodoTools()` call creates an isolate
 2. UPDATE: Send only changed tasks (unchanged ones are preserved)
 3. FINALIZE: Mark all tasks completed before writing final answer
 
+#### Spatial tools — geocoding, routing, isochrones, and static maps
+
+These helpers are ordinary agent tools, not display tools. They usually compose into a final `displayGeoMap` or `getStaticMapImage` response.
+
+| Tool                | Source                                                                         | Return shape                                                  | Notes                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `geocodeAddress`    | [`lib/tools/geocode-address.ts`](../../lib/tools/geocode-address.ts)           | Ranked candidates with `lat`, `lng`, `placeName`, `placeType` | Use before placing pins when the user gives a place name rather than coordinates.                |
+| `getDirections`     | [`lib/tools/get-directions.ts`](../../lib/tools/get-directions.ts)             | Ordered route points plus duration/distance labels            | Supports `driving`, `walking`, `cycling`; `transit` returns a structured `not_supported` result. |
+| `getIsochrone`      | [`lib/tools/get-isochrone.ts`](../../lib/tools/get-isochrone.ts)               | Polygon ring points                                           | Requires `ORS_API_KEY`; intended for `displayGeoMap.polygons[]`.                                 |
+| `getStaticMapImage` | [`lib/tools/get-static-map-image.ts`](../../lib/tools/get-static-map-image.ts) | Public PNG URL                                                | Use when the user wants a shareable/static image rather than an interactive card.                |
+
+For the end-to-end compose-first flow, see [Geo & Spatial Tools](GEO-TOOLS.md).
+
 ### Display Tools
 
 All display tools share a common pattern: they accept structured input, validate it with Zod schemas, and return the input as output (`execute: async params => params`). The actual rendering happens in the frontend via `components/tool-ui/registry.tsx`.
 
-| Tool                    | Purpose                                     | Key input fields                                                 | Trigger examples                                              |
-| ----------------------- | ------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------- |
-| `displayPlan`           | Step-by-step guides and how-to checklists   | `id`, `title`, `todos[]` with `id`, `label`, `status`            | "how to deploy to AWS", "steps to learn Python"               |
-| `displayTable`          | Sortable data tables with formatted columns | `columns[]` with `key`, `label`, `format`, `data[]`              | "compare React vs Vue", "GPU benchmarks"                      |
-| `displayChart`          | Bar and line chart data visualizations      | `id`, `type`, `data[]`, `xKey`, `series[]` (key, label)          | "show revenue trends", "compare sales by quarter"             |
-| `displayGeoMap`         | Geographic maps with markers and routes     | `id`, `markers[]`, optional `routes[]`, `viewport`               | "map these offices", "plot a travel route"                    |
-| `displayCitations`      | Rich source citation cards                  | `citations[]` with `id`, `href`, `title`, `snippet`              | "best resources for learning Rust"                            |
-| `displayLinkPreview`    | Single featured link card                   | `id`, `href`, `title`, `description`, `image`                    | "where are the React docs"                                    |
-| `displayOptionList`     | Interactive option selector                 | `id`, `options[]` with `id`, `label`, `description`              | "which database should I use"                                 |
-| `displayQuestionWizard` | Multi-step guided question wizards          | `id`, `questions[]` with `id`, `question`, `options`             | "help me choose a framework", "what kind of app do you want?" |
-| `displayCallout`        | Styled callout box for key information      | `id`, `variant`, `title` (optional), `content`                   | "This API was deprecated in v3"                               |
-| `displayTimeline`       | Chronological event timeline                | `id`, `title`, `events[]` with `id`, `date`, `title`, `category` | "history of TypeScript", "timeline of SpaceX launches"        |
+| Tool                    | Purpose                                             | Key input fields                                                                                             | Trigger examples                                                            |
+| ----------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `displayPlan`           | Step-by-step guides and how-to checklists           | `id`, `title`, `todos[]` with `id`, `label`, `status`                                                        | "how to deploy to AWS", "steps to learn Python"                             |
+| `displayTable`          | Sortable data tables with formatted columns         | `columns[]` with `key`, `label`, `format`, `data[]`                                                          | "compare React vs Vue", "GPU benchmarks"                                    |
+| `displayChart`          | Bar and line chart data visualizations              | `id`, `type`, `data[]`, `xKey`, `series[]` (key, label)                                                      | "show revenue trends", "compare sales by quarter"                           |
+| `displayGeoMap`         | Interactive maps with markers, routes, and polygons | `id`, `markers[]`, optional `routes[]`, `polygons[]`, `clustering`, `viewport`, marker `icon`, tooltip modes | "map these offices", "plot a travel route", "show a 20-minute commute area" |
+| `displayCitations`      | Rich source citation cards                          | `citations[]` with `id`, `href`, `title`, `snippet`                                                          | "best resources for learning Rust"                                          |
+| `displayLinkPreview`    | Single featured link card                           | `id`, `href`, `title`, `description`, `image`                                                                | "where are the React docs"                                                  |
+| `displayOptionList`     | Interactive option selector                         | `id`, `options[]` with `id`, `label`, `description`                                                          | "which database should I use"                                               |
+| `displayQuestionWizard` | Multi-step guided question wizards                  | `id`, `questions[]` with `id`, `question`, `options`                                                         | "help me choose a framework", "what kind of app do you want?"               |
+| `displayCallout`        | Styled callout box for key information              | `id`, `variant`, `title` (optional), `content`                                                               | "This API was deprecated in v3"                                             |
+| `displayTimeline`       | Chronological event timeline                        | `id`, `title`, `events[]` with `id`, `date`, `title`, `category`                                             | "history of TypeScript", "timeline of SpaceX launches"                      |
 
 **`displayOptionList`** is unique: it has no `execute` function, so the frontend resolves it via `addToolResult` when the user makes a selection.
 
@@ -368,7 +384,7 @@ Some tools are registered only when the request context provides the capabilitie
 
 ### Dynamic Tools
 
-**Source:** [`lib/tools/dynamic.ts`](../lib/tools/dynamic.ts)
+**Source:** [`lib/tools/dynamic.ts`](../../lib/tools/dynamic.ts)
 
 A factory for creating runtime-defined tools, primarily for MCP (Model Context Protocol) integration:
 
@@ -412,7 +428,7 @@ graph TD
 
 ### Provider Details
 
-All providers implement the `SearchProvider` interface from [`lib/tools/search/providers/base.ts`](../lib/tools/search/providers/base.ts):
+All providers implement the `SearchProvider` interface from [`lib/tools/search/providers/base.ts`](../../lib/tools/search/providers/base.ts):
 
 ```typescript
 interface SearchProvider {
@@ -432,7 +448,7 @@ interface SearchProvider {
 
 #### Tavily
 
-**Source:** [`lib/tools/search/providers/tavily.ts`](../lib/tools/search/providers/tavily.ts)
+**Source:** [`lib/tools/search/providers/tavily.ts`](../../lib/tools/search/providers/tavily.ts)
 
 - **API:** `https://api.tavily.com/search`
 - **Env var:** `TAVILY_API_KEY`
@@ -443,7 +459,7 @@ interface SearchProvider {
 
 #### Brave
 
-**Source:** [`lib/tools/search/providers/brave.ts`](../lib/tools/search/providers/brave.ts)
+**Source:** [`lib/tools/search/providers/brave.ts`](../../lib/tools/search/providers/brave.ts)
 
 - **API:** `https://api.search.brave.com/res/v1/`
 - **Env var:** `BRAVE_SEARCH_API_KEY`
@@ -454,7 +470,7 @@ interface SearchProvider {
 
 #### Exa
 
-**Source:** [`lib/tools/search/providers/exa.ts`](../lib/tools/search/providers/exa.ts)
+**Source:** [`lib/tools/search/providers/exa.ts`](../../lib/tools/search/providers/exa.ts)
 
 - **SDK:** `exa-js` client library
 - **Env var:** `EXA_API_KEY`
@@ -463,7 +479,7 @@ interface SearchProvider {
 
 #### SearXNG
 
-**Source:** [`lib/tools/search/providers/searxng.ts`](../lib/tools/search/providers/searxng.ts)
+**Source:** [`lib/tools/search/providers/searxng.ts`](../../lib/tools/search/providers/searxng.ts)
 
 - **API:** Self-hosted instance at `SEARXNG_API_URL`
 - **Features:** Multi-engine meta-search (Google, Bing, DuckDuckGo, Wikipedia)
@@ -475,7 +491,7 @@ interface SearchProvider {
 
 #### Firecrawl
 
-**Source:** [`lib/tools/search/providers/firecrawl.ts`](../lib/tools/search/providers/firecrawl.ts)
+**Source:** [`lib/tools/search/providers/firecrawl.ts`](../../lib/tools/search/providers/firecrawl.ts)
 
 - **SDK:** Custom `FirecrawlClient`
 - **Env var:** `FIRECRAWL_API_KEY`
@@ -492,7 +508,7 @@ interface SearchProvider {
 
 For error handling across providers (typed `SearchProviderError`, retry semantics, burst pacing), see [Search Providers → Error Handling and Retries](SEARCH-PROVIDERS.md#error-handling-and-retries).
 
-The search config utility ([`lib/utils/search-config.ts`](../lib/utils/search-config.ts)) dynamically adjusts the agent's system prompt based on which providers are available, including guidance about content types and multimedia support.
+The search config utility ([`lib/utils/search-config.ts`](../../lib/utils/search-config.ts)) dynamically adjusts the agent's system prompt based on which providers are available, including guidance about content types and multimedia support.
 
 ---
 
@@ -537,7 +553,7 @@ From `config/models/default.json`:
 
 ### Provider Registry
 
-The provider registry ([`lib/utils/registry.ts`](../lib/utils/registry.ts)) wraps six AI providers via `createProviderRegistry`:
+The provider registry ([`lib/utils/registry.ts`](../../lib/utils/registry.ts)) wraps six AI providers via `createProviderRegistry`:
 
 | Provider ID         | SDK                                | Env var required                                               |
 | ------------------- | ---------------------------------- | -------------------------------------------------------------- |
@@ -560,7 +576,7 @@ The `POLYMORPH_CLOUD_DEPLOYMENT` flag controls config profile selection (uses `c
 
 Before messages are sent to the LLM, they pass through a multi-stage processing pipeline to fit within the model's context window.
 
-**Source:** [`lib/utils/context-window.ts`](../lib/utils/context-window.ts)
+**Source:** [`lib/utils/context-window.ts`](../../lib/utils/context-window.ts)
 
 ### Processing Stages
 
@@ -675,7 +691,7 @@ Beyond the main research agent, two auxiliary LLM calls run as part of the pipel
 
 ### Title Generator
 
-**Source:** [`lib/agents/title-generator.ts`](../lib/agents/title-generator.ts)
+**Source:** [`lib/agents/title-generator.ts`](../../lib/agents/title-generator.ts)
 
 Generates a 3-5 word chat title from the user's first message. Runs in parallel with the main agent stream for new chats only.
 
@@ -686,7 +702,7 @@ Generates a 3-5 word chat title from the user's first message. Runs in parallel 
 
 ### Related Questions Generator
 
-**Source:** [`lib/agents/generate-related-questions.ts`](../lib/agents/generate-related-questions.ts)
+**Source:** [`lib/agents/generate-related-questions.ts`](../../lib/agents/generate-related-questions.ts)
 
 Generates 3 concise follow-up questions after the main agent completes. Streams results incrementally.
 
@@ -722,7 +738,7 @@ export const myTool = tool({
 
 2. Add the tool to the `ResearcherTools` type in [`lib/types/agent.ts`](../../lib/types/agent.ts).
 
-3. Register the tool in `createResearcher` ([`lib/agents/researcher.ts`](../lib/agents/researcher.ts)):
+3. Register the tool in `createResearcher` ([`lib/agents/researcher.ts`](../../lib/agents/researcher.ts)):
 
 ```typescript
 import { myTool } from '../tools/my-tool'
@@ -766,7 +782,7 @@ export const displayMyComponentTool = tool({
 
 ### Modifying System Prompts
 
-Edit [`lib/agents/prompts/search-mode-prompts.ts`](../lib/agents/prompts/search-mode-prompts.ts). The prompts are generated by functions (`getChatModePrompt()` and `getResearchModePrompt()`) that use environment-aware helpers to adjust guidance based on available providers.
+Edit [`lib/agents/prompts/search-mode-prompts.ts`](../../lib/agents/prompts/search-mode-prompts.ts). The prompts are generated by functions (`getChatModePrompt()` and `getResearchModePrompt()`) that use environment-aware helpers to adjust guidance based on available providers.
 
 Key sections in each prompt:
 
@@ -790,7 +806,7 @@ export class MySearchProvider extends BaseSearchProvider {
 }
 ```
 
-2. Add to the factory in [`lib/tools/search/providers/index.ts`](../lib/tools/search/providers/index.ts):
+2. Add to the factory in [`lib/tools/search/providers/index.ts`](../../lib/tools/search/providers/index.ts):
 
 ```typescript
 export type SearchProviderType = /* ... */ | 'my-provider'
@@ -805,10 +821,10 @@ case 'my-provider':
 ### Adding a New AI Provider
 
 1. Install the provider SDK
-2. Add the provider to the registry in [`lib/utils/registry.ts`](../lib/utils/registry.ts)
+2. Add the provider to the registry in [`lib/utils/registry.ts`](../../lib/utils/registry.ts)
 3. Add an `isProviderEnabled` check for the required env var
 4. Add model entries to `config/models/default.json`
-5. Add context window info to [`lib/utils/context-window.ts`](../lib/utils/context-window.ts)
+5. Add context window info to [`lib/utils/context-window.ts`](../../lib/utils/context-window.ts)
 
 ---
 

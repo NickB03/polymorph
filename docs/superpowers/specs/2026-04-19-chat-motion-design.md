@@ -2,22 +2,22 @@
 
 **Date:** 2026-04-19
 **Scope:** Add subtle entrance/exit motion to mode pills, tool UI cards, and timeline events in the chat surface. Research and build modes only (Radix-animated primitives, canvas panel, and message bubbles are explicitly out of scope).
-**Status:** Design approved; ready for implementation planning.
+**Status:** Implemented in the current chat surface.
 
 ---
 
 ## Decision Summary
 
-| Area              | Decision                                                                                                                                                                                                                               |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Scope             | Mode pills (`components/mode-selector.tsx`), all 13 registered tool UI cards (`components/tool-ui/registry.tsx`), and `displayTimeline`'s internal event stagger.                                                                      |
-| Motion vocabulary | Fade + 8px translateY rise, ease-out, 200ms entrance / 140ms exit / 50ms stagger between siblings.                                                                                                                                     |
-| Coverage          | Uniform: every entry in `components/tool-ui/registry.tsx` (9 `display*` outputs, `generateImage`, and 3 canvas-artifact cards — 13 total) gets the same entrance primitive.                                                            |
-| Library           | `motion/react` (Framer Motion v12), already installed (`package.json:81`) and in use by `voice/voice-orb.tsx`.                                                                                                                         |
-| Architecture      | Three shared wrappers (`ToolCardMount`, `PillPresence`, `StaggerList`) backed by a tokens file, a variants file, and a hydration-boundary context. No consumer imports `motion/react` directly (ESLint-enforced).                      |
-| Reduced-motion    | Honor `prefers-reduced-motion: reduce` with true zero-motion — no fade, no translate, no stagger, no exit. `initial={false}` on the hydration path (see SSR handling) prevents any flash without requiring motion. Matches WCAG 2.3.3. |
-| SSR / hydration   | `isNew` prop on `ToolCardMount`, resolved via a client-side `HydrationAnimationProvider` that snapshots initial tool-part IDs once at first render. Streamed / optimistic parts animate; SSR history paints instantly.                 |
-| Out of scope      | Canvas panel (already `transition-all duration-300`), Radix dialogs/sheets/popovers/tooltips, message bubbles, dropdown menus, alert dialogs.                                                                                          |
+| Area              | Decision                                                                                                                                                                                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Scope             | Mode pills (`components/mode-selector.tsx`), all 14 registered tool UI cards (`components/tool-ui/registry.tsx`), and `displayTimeline`'s internal event stagger.                                                                                                                          |
+| Motion vocabulary | Fade + 8px translateY rise, ease-out, 200ms entrance / 140ms exit / 50ms stagger between siblings.                                                                                                                                                                                         |
+| Coverage          | Uniform: every entry in `components/tool-ui/registry.tsx` (10 `display` tools, `generateImage`, and 3 canvas-artifact cards — 14 total) gets the same entrance primitive.                                                                                                                  |
+| Library           | `motion/react` (Framer Motion v12), already installed (`package.json:81`) and in use by `voice/voice-orb.tsx`.                                                                                                                                                                             |
+| Architecture      | Three shared wrappers (`ToolCardMount`, `PillPresence`, `StaggerList`) backed by a tokens file, a variants file, and a hydration-boundary context. Direct `motion/react` imports are blocked for most consumers, with an explicit exception for `components/voice/*`.                      |
+| Reduced-motion    | Honor `prefers-reduced-motion: reduce` with true zero-motion — no fade, no translate, no stagger, no exit. `initial={false}` on the hydration path (see SSR handling) prevents any flash without requiring motion. Matches WCAG 2.3.3.                                                     |
+| SSR / hydration   | `ToolCardMount` takes a stable `partId` prop and derives `isNew` internally via `useIsNewPart(partId)`, backed by a client-side `HydrationAnimationProvider` that snapshots initial tool-part IDs once at first render. Streamed / optimistic parts animate; SSR history paints instantly. |
+| Out of scope      | Canvas panel (already `transition-all duration-300`), Radix dialogs/sheets/popovers/tooltips, message bubbles, dropdown menus, alert dialogs.                                                                                                                                              |
 
 ---
 
@@ -113,7 +113,7 @@ export function useResolvedVariants() {
 }
 ```
 
-The three wrappers consume `useResolvedVariants()` — no consumer branches on `prefers-reduced-motion` directly. An ESLint `no-restricted-imports` rule blocks direct `motion/react` imports outside `lib/motion/*` and `components/motion/*` to enforce this at review time rather than prose.
+The three wrappers consume `useResolvedVariants()` — no consumer branches on `prefers-reduced-motion` directly. An ESLint `no-restricted-imports` rule blocks direct `motion/react` imports outside `lib/motion/*`, `components/motion/*`, and the existing `components/voice/*` exception to enforce this at review time rather than prose.
 
 ---
 
@@ -126,7 +126,7 @@ lib/motion/
   hydration-boundary.tsx  <HydrationAnimationProvider> + useIsNewPart(partId)
 
 components/motion/
-  tool-card-mount.tsx  <ToolCardMount isNew={boolean}>{children}</ToolCardMount>
+  tool-card-mount.tsx  <ToolCardMount partId={string}>{children}</ToolCardMount>  — derives isNew via useIsNewPart(partId)
   pill-presence.tsx    <PillPresence activeKey={mode}>{pillElement}</PillPresence>
   stagger-list.tsx     <StaggerList>{items}</StaggerList>  — handles long-timeline cap logic
 ```
@@ -134,7 +134,7 @@ components/motion/
 **Consumers touched:**
 
 1. `components/chat.tsx` — mount `<HydrationAnimationProvider>` at the chat root, seeded with the set of tool-part IDs present in `initialMessages` at first render. This provider is the single source of truth for `isNew` resolution across the subtree.
-2. `components/tool-ui/registry.tsx` — **13 call-site edits**, one per registered entry. Inside each `tryRender` return, nest a `<ToolCardMount partId={…}>` as a child of the existing `<ToolErrorBoundary>` wrapper (order: `ToolErrorBoundary → ToolCardMount → content`). `ToolCardMount` resolves `isNew` internally via `useIsNewPart(partId)`; call-sites never touch the hydration boundary directly. The three canvas-artifact entries currently use `tryRenderCanvasArtifactCard(output)` as a shorthand — those are adapted either by wrapping the returned element inside `tryRenderCanvasArtifactCard`, or by unfolding each entry inline.
+2. `components/tool-ui/registry.tsx` — **14 call-site edits**, one per registered entry. Inside each `tryRender` return, nest a `<ToolCardMount partId={…}>` as a child of the existing `<ToolErrorBoundary>` wrapper (order: `ToolErrorBoundary → ToolCardMount → content`). `ToolCardMount` resolves `isNew` internally via `useIsNewPart(partId)`; call-sites never touch the hydration boundary directly. The three canvas-artifact entries currently use `tryRenderCanvasArtifactCard(output)` as a shorthand — those are adapted either by wrapping the returned element inside `tryRenderCanvasArtifactCard`, or by unfolding each entry inline.
 3. `components/mode-selector.tsx` — wrap active-pill branch in `<PillPresence>`; keep `transition-colors` for the blue → amber accent shift layered on top of Framer's opacity/translate.
 4. `components/tool-ui/timeline/timeline.tsx` — swap the event `<ol>` root for `<StaggerList>` (note: the current element is `<ol>`, not `<ul>`; preserve ordered-list semantics).
 
@@ -290,7 +290,7 @@ If any of these later prove to need motion work, they get their own spec — not
 **Modified:**
 
 - `components/chat.tsx` — mount `<HydrationAnimationProvider initialPartIds={…}>` at the chat root, seeded from the SSR `initialMessages`.
-- `components/tool-ui/registry.tsx` — 13 call-site edits. Each `tryRender` return nests `<ToolCardMount partId={…}>` inside the existing `<ToolErrorBoundary>`. The three canvas-artifact entries that delegate to `tryRenderCanvasArtifactCard` are adapted either by wrapping inside the helper or by unfolding the entries inline — implementer's choice, verified in code review.
+- `components/tool-ui/registry.tsx` — 14 call-site edits. Each `tryRender` return nests `<ToolCardMount partId={…}>` inside the existing `<ToolErrorBoundary>`. The three canvas-artifact entries that delegate to `tryRenderCanvasArtifactCard` are adapted either by wrapping inside the helper or by unfolding the entries inline — implementer's choice, verified in code review.
 - `components/mode-selector.tsx` — wrap active-pill branch in `<AnimatePresence mode="popLayout">` + `<PillPresence>`. Add focus-management: on mode swap, keep focus on the stable trigger rather than letting it fall to `<body>`.
 - `components/tool-ui/timeline/timeline.tsx` — swap event `<ol>` root for `<StaggerList>` (preserving ordered-list semantics).
 
@@ -300,4 +300,4 @@ If any of these later prove to need motion work, they get their own spec — not
 
 **Enforcement:**
 
-- ESLint `no-restricted-imports`: `motion/react` may only be imported from `lib/motion/*` and `components/motion/*`. Prevents consumers from drifting away from `useResolvedVariants()`.
+- ESLint `no-restricted-imports`: `motion/react` may only be imported from `lib/motion/*`, `components/motion/*`, and the existing `components/voice/*` exception. Prevents new consumers from drifting away from `useResolvedVariants()` while preserving the shipped voice surface.

@@ -40,7 +40,9 @@ This document describes the internal architecture of Polymorph — an AI platfor
 
 ## System Overview
 
-Polymorph is built on Next.js 16 (App Router) with React 19. A single chat API endpoint orchestrates an AI agent that performs multi-step research using tools (search, fetch, display, todo, conditional image-generation and canvas tools) and streams structured responses back to the browser as Server-Sent Events (SSE). The generative UI layer renders each message part — text, reasoning, tool results, data attachments — using dedicated React components.
+Polymorph is built on Next.js 16 (App Router) with React 19. A single chat API endpoint orchestrates an AI agent that performs multi-step research using tools (search, fetch, geo helpers, display, todo, and conditional image-generation/canvas tools) and streams structured responses back to the browser as Server-Sent Events (SSE). The generative UI layer renders each message part — text, reasoning, tool results, data attachments — using dedicated React components.
+
+**User-mode vocabulary.** The UI exposes three modes via `components/mode-selector.tsx`: `search`, `research`, and `build`. On the server, the `searchMode` cookie stores that UI-facing value; `app/api/chat/route.ts` maps `search` and `build` onto backend `searchMode='chat'`, while `build` additionally injects `intent='build'`. `research` maps directly to backend `searchMode='research'`.
 
 **Route structure.** The App Router uses two groups to isolate surfaces:
 
@@ -76,20 +78,20 @@ graph TD
 
 **Key source files:**
 
-| Concern                  | File                                                                                                                                         |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chat API endpoint        | [`app/api/chat/route.ts`](../app/api/chat/route.ts)                                                                                          |
-| Suggestions refresh cron | [`app/api/suggestions/refresh/route.ts`](../app/api/suggestions/refresh/route.ts) (Vercel cron, `CRON_SECRET`-gated)                         |
-| Admin surface layout     | [`app/(admin)/layout.tsx`](<../app/(admin)/layout.tsx>) (admin role gate)                                                                    |
-| Evals dashboard          | [`components/evals/dashboard-v2/dashboard.tsx`](../components/evals/dashboard-v2/dashboard.tsx) + widget tree at `components/evals/widgets/` |
-| Evals layout templates   | [`lib/evals/layout/templates.ts`](../lib/evals/layout/templates.ts)                                                                          |
-| Agent orchestration      | [`lib/agents/researcher.ts`](../lib/agents/researcher.ts)                                                                                    |
-| Image generation tool    | [`lib/tools/generate-image.ts`](../lib/tools/generate-image.ts)                                                                              |
-| Authenticated streaming  | [`lib/streaming/create-chat-stream-response.ts`](../lib/streaming/create-chat-stream-response.ts)                                            |
-| Guest streaming          | [`lib/streaming/create-ephemeral-chat-stream-response.ts`](../lib/streaming/create-ephemeral-chat-stream-response.ts)                        |
-| Database schema          | [`lib/db/schema.ts`](../lib/db/schema.ts)                                                                                                    |
-| Provider registry        | [`lib/utils/registry.ts`](../lib/utils/registry.ts)                                                                                          |
-| Admin detection          | [`lib/auth/is-admin.ts`](../lib/auth/is-admin.ts)                                                                                            |
+| Concern                  | File                                                                                                                                            |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chat API endpoint        | [`app/api/chat/route.ts`](../../app/api/chat/route.ts)                                                                                          |
+| Suggestions refresh cron | [`app/api/suggestions/refresh/route.ts`](../../app/api/suggestions/refresh/route.ts) (Vercel cron, `CRON_SECRET`-gated)                         |
+| Admin surface layout     | [`app/(admin)/layout.tsx`](<../../app/(admin)/layout.tsx>) (admin role gate)                                                                    |
+| Evals dashboard          | [`components/evals/dashboard-v2/dashboard.tsx`](../../components/evals/dashboard-v2/dashboard.tsx) + widget tree at `components/evals/widgets/` |
+| Evals layout templates   | [`lib/evals/layout/templates.ts`](../../lib/evals/layout/templates.ts)                                                                          |
+| Agent orchestration      | [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts)                                                                                    |
+| Image generation tool    | [`lib/tools/generate-image.ts`](../../lib/tools/generate-image.ts)                                                                              |
+| Authenticated streaming  | [`lib/streaming/create-chat-stream-response.ts`](../../lib/streaming/create-chat-stream-response.ts)                                            |
+| Guest streaming          | [`lib/streaming/create-ephemeral-chat-stream-response.ts`](../../lib/streaming/create-ephemeral-chat-stream-response.ts)                        |
+| Database schema          | [`lib/db/schema.ts`](../../lib/db/schema.ts)                                                                                                    |
+| Provider registry        | [`lib/utils/registry.ts`](../../lib/utils/registry.ts)                                                                                          |
+| Admin detection          | [`lib/auth/is-admin.ts`](../../lib/auth/is-admin.ts)                                                                                            |
 
 ---
 
@@ -115,8 +117,8 @@ flowchart TD
     AuthStream["createChatStreamResponse()"]
     PrepareMsg["prepareMessages()<br/>(load/create chat,<br/>handle regeneration)"]
     CreateAgent["createResearcher()<br/>(configure tools + mode)"]
-    ChatMode["Chat Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayGeoMap,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline"]
-    ResearchMode["Research Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayChart,<br/>displayGeoMap,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline, todoWrite"]
+    ChatMode["Chat Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline"]
+    ResearchMode["Research Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayChart,<br/>displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline, todoWrite"]
     AgentStream["agent.stream()<br/>+ smoothStream(word)"]
     Parallel["Parallel operations:<br/>title + related questions<br/>+ persistence"]
     SSE["SSE Response to Client"]
@@ -147,7 +149,7 @@ flowchart TD
     AgentStream --> Parallel --> SSE
 ```
 
-The `createResearcher` function in [`lib/agents/researcher.ts`](../lib/agents/researcher.ts) wraps the Vercel AI SDK's `ToolLoopAgent`. In chat mode, the search tool is wrapped via `wrapSearchToolForChatMode` to force `type: 'optimized'` on every call, and the step limit is 20. In research mode, the agent has access to the `todoWrite` tool (when a stream writer is available) and can run up to 50 steps with full search type support (general + optimized).
+The `createResearcher` function in [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts) wraps the Vercel AI SDK's `ToolLoopAgent`. In chat mode, the search tool is wrapped via `wrapSearchToolForChatMode` to force `type: 'optimized'` on every call, and the step limit is 20. In research mode, the agent has access to the `todoWrite` tool (when a stream writer is available) and can run up to 50 steps with full search type support (general + optimized).
 
 **Request body fields:**
 
@@ -166,7 +168,7 @@ The `createResearcher` function in [`lib/agents/researcher.ts`](../lib/agents/re
 
 ## Tool System
 
-The researcher agent uses two categories of tools: **core tools** that perform actual research operations and **display tools** that generate rich UI components inline in the chat.
+The researcher agent uses three categories of tools: **core tools** that perform actual research operations, **spatial helper tools** that compute map-ready data, and **display tools** that generate rich UI components inline in the chat.
 
 ```mermaid
 graph LR
@@ -176,17 +178,29 @@ graph LR
         todo["todoWrite<br/>Research task tracking"]
     end
 
+    subgraph Geo["Spatial Helpers"]
+        geocode["geocodeAddress<br/>Place → coordinates"]
+        directions["getDirections<br/>Road-following routes"]
+        isochrone["getIsochrone<br/>Reachability polygons"]
+        staticMap["getStaticMapImage<br/>Shareable PNG URL"]
+    end
+
     subgraph Display["Display Tools"]
         plan["displayPlan<br/>Step-by-step guides"]
         table["displayTable<br/>Sortable data tables"]
         chart["displayChart<br/>Data visualizations"]
-        geoMap["displayGeoMap<br/>Geographic visualizations"]
+        geoMap["displayGeoMap<br/>Interactive geo maps"]
         citations["displayCitations<br/>Rich source lists"]
         linkPreview["displayLinkPreview<br/>Link preview cards"]
         optionList["displayOptionList<br/>Interactive option lists"]
         questionWizard["displayQuestionWizard<br/>Structured question flows"]
         callout["displayCallout<br/>Styled callout boxes"]
         timeline["displayTimeline<br/>Chronological timelines"]
+    end
+
+    subgraph MapServices["Map Services"]
+        maptiler["MapTiler"]
+        ors["OpenRouteService"]
     end
 
     subgraph SearchProviders["Search Providers"]
@@ -205,6 +219,10 @@ graph LR
 
     search --> SearchProviders
     fetch --> FetchStrategies
+    geocode --> maptiler
+    directions --> maptiler
+    staticMap --> maptiler
+    isochrone --> ors
 ```
 
 ### Tool Availability by Mode
@@ -217,6 +235,10 @@ graph LR
 | `displayTable`          |              Yes               |               Yes               |
 | `displayChart`          |              Yes               |               Yes               |
 | `displayGeoMap`         |              Yes               |               Yes               |
+| `geocodeAddress`        |              Yes               |               Yes               |
+| `getDirections`         |              Yes               |               Yes               |
+| `getIsochrone`          |              Yes               |               Yes               |
+| `getStaticMapImage`     |              Yes               |               Yes               |
 | `displayCitations`      |              Yes               |               Yes               |
 | `displayLinkPreview`    |              Yes               |               Yes               |
 | `displayOptionList`     |              Yes               |               Yes               |
@@ -235,11 +257,15 @@ graph LR
 
 - **fetch** (`lib/tools/fetch.ts`): Also uses streaming generator. Has two modes: `regular` (direct HTTP fetch with HTML parsing, 50k char limit, 10s timeout) and `api` (Jina Reader or Tavily Extract for JavaScript-rendered pages and PDFs).
 
+- **Spatial helpers** (`lib/tools/geocode-address.ts`, `lib/tools/get-directions.ts`, `lib/tools/get-isochrone.ts`, `lib/tools/get-static-map-image.ts`): Compose-first geo utilities. `geocodeAddress` resolves place names into coordinates before mapping, `getDirections` returns route points plus duration/distance labels, `getIsochrone` returns polygon points for reachability overlays, and `getStaticMapImage` returns a public PNG URL when the user needs a shareable image rather than an interactive card.
+
 - **todoWrite** (`lib/tools/todo.ts`): Session-scoped task tracking. Uses content-based merge logic — sending a todo with the same content as an existing one updates it rather than creating a duplicate. Returns `completedCount` and `totalCount` for progress tracking.
 
 - **Display tools** (`lib/tools/display-*.ts`): All display tools simply return their input as output (`execute: async params => params`). They exist to structure data for the frontend — the actual rendering happens in `components/tool-ui/registry.tsx`.
 
-**Source files:** [`lib/tools/`](../lib/tools/), [`lib/tools/search/providers/`](../lib/tools/search/providers/)
+For the full spatial flow and renderer contract, see [Geo & Spatial Tools](GEO-TOOLS.md).
+
+**Source files:** [`lib/tools/`](../../lib/tools/), [`lib/tools/search/providers/`](../../lib/tools/search/providers/)
 
 ---
 
@@ -333,7 +359,7 @@ sequenceDiagram
 | Smooth streaming   |       Yes       |            Yes            |
 | Context pruning    |       Yes       |            Yes            |
 
-**Source files:** [`lib/streaming/create-chat-stream-response.ts`](../lib/streaming/create-chat-stream-response.ts), [`lib/streaming/create-ephemeral-chat-stream-response.ts`](../lib/streaming/create-ephemeral-chat-stream-response.ts), [`lib/streaming/helpers/`](../lib/streaming/helpers/)
+**Source files:** [`lib/streaming/create-chat-stream-response.ts`](../../lib/streaming/create-chat-stream-response.ts), [`lib/streaming/create-ephemeral-chat-stream-response.ts`](../../lib/streaming/create-ephemeral-chat-stream-response.ts), [`lib/streaming/helpers/`](../../lib/streaming/helpers/)
 
 ---
 
@@ -459,7 +485,7 @@ erDiagram
 | feedback           | `feedback_user_id_idx`                          | Feedback by user                 |
 | feedback           | `feedback_created_at_idx`                       | Feedback by recency              |
 
-**Source file:** [`lib/db/schema.ts`](../lib/db/schema.ts)
+**Source file:** [`lib/db/schema.ts`](../../lib/db/schema.ts)
 
 ---
 
@@ -513,7 +539,7 @@ The middleware cookie bridge is critical: it creates a Supabase server client th
 
 The `getUser` call in middleware uses `Promise.race` with a 5-second timeout to avoid blocking on slow Supabase responses. If the timeout fires, the user is treated as unauthenticated.
 
-**Source files:** [`lib/supabase/client.ts`](../lib/supabase/client.ts), [`lib/supabase/server.ts`](../lib/supabase/server.ts), [`lib/supabase/middleware.ts`](../lib/supabase/middleware.ts)
+**Source files:** [`lib/supabase/client.ts`](../../lib/supabase/client.ts), [`lib/supabase/server.ts`](../../lib/supabase/server.ts), [`lib/supabase/middleware.ts`](../../lib/supabase/middleware.ts)
 
 ---
 
@@ -573,7 +599,7 @@ graph TD
 
 ### Rendering strategy
 
-The `RenderMessage` component in [`components/render-message.tsx`](../components/render-message.tsx) processes assistant message parts sequentially:
+The `RenderMessage` component in [`components/render-message.tsx`](../../components/render-message.tsx) processes assistant message parts sequentially:
 
 1. **Buffer non-text parts** (reasoning, tool results, data) into a temporary array
 2. **When a text part arrives**, flush the buffer as a `ResearchProcessSection` (with `hasSubsequentText=true`), then render the text as an `AnswerSection`
@@ -592,7 +618,7 @@ The `ChatMessages` component manages open/close state for tool results:
 - **Reasoning**: auto-collapses when followed by more content
 - User clicks override all defaults
 
-**Source files:** [`app/layout.tsx`](../app/layout.tsx), [`components/chat-messages.tsx`](../components/chat-messages.tsx), [`components/render-message.tsx`](../components/render-message.tsx)
+**Source files:** [`app/layout.tsx`](../../app/layout.tsx), [`components/chat-messages.tsx`](../../components/chat-messages.tsx), [`components/render-message.tsx`](../../components/render-message.tsx)
 
 ---
 
@@ -647,7 +673,7 @@ flowchart TD
 
 ### Default model configuration
 
-From [`config/models/default.json`](../config/models/default.json):
+From [`config/models/default.json`](../../config/models/default.json):
 
 | Mode              | Type    | Model                         | Provider |
 | ----------------- | ------- | ----------------------------- | -------- |
@@ -659,7 +685,7 @@ From [`config/models/default.json`](../config/models/default.json):
 
 **Cloud deployment behavior:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag controls config profile selection (uses `cloud.json` instead of `default.json`), rate limiting enforcement, and analytics event tracking.
 
-**Source files:** [`lib/utils/model-selection.ts`](../lib/utils/model-selection.ts), [`lib/utils/registry.ts`](../lib/utils/registry.ts), [`lib/config/model-types.ts`](../lib/config/model-types.ts), [`config/models/default.json`](../config/models/default.json)
+**Source files:** [`lib/utils/model-selection.ts`](../../lib/utils/model-selection.ts), [`lib/utils/registry.ts`](../../lib/utils/registry.ts), [`lib/config/model-types.ts`](../../lib/config/model-types.ts), [`config/models/default.json`](../../config/models/default.json)
 
 ---
 
@@ -778,7 +804,7 @@ The `current_setting('app.current_user_id', true)` call uses `true` as the secon
 - `chats_id_user_id_idx` — composite index on `(id, user_id)` for fast ownership checks from messages/parts
 - `messages_chat_id_idx` — supports the `EXISTS` subquery from the parts table
 
-**Source file:** [`lib/db/schema.ts`](../lib/db/schema.ts)
+**Source file:** [`lib/db/schema.ts`](../../lib/db/schema.ts)
 
 ---
 

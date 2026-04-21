@@ -16,8 +16,10 @@
 
 ## Features
 
+- **Three conversation modes** — Search, Research, and Build share one chat surface with intent-aware prompting
 - **Multi-step research agent** — searches the web, reasons across sources, and synthesizes answers
-- **Generative UI** — tables, charts, timelines, citations, callouts, and link previews render inline
+- **Generative UI** — tables, charts, geo maps, timelines, citations, callouts, and link previews render inline
+- **Geo intelligence** — interactive maps, real directions, reachability polygons, and static map images
 - **Canvas artifacts** — generates and previews single-file React apps with live editing
 - **Multi-provider AI** — Gemini and Grok via Vercel AI Gateway, plus GPT, Claude, and Ollama via direct provider keys
 - **Voice mode** — speech input and text-to-speech playback
@@ -33,7 +35,8 @@ graph LR
         direction TB
         Orchestrator["Tool Loop Orchestrator"]
         Reasoning["Multi-step Reasoning"]
-        Orchestrator --> Reasoning
+        Modes["Search / Research / Build"]
+        Orchestrator --> Reasoning --> Modes
     end
 
     subgraph Providers["AI Providers"]
@@ -53,15 +56,28 @@ graph LR
         Exa["Exa"]
     end
 
+    subgraph Geo["Spatial Tools"]
+        Geocode["geocodeAddress"]
+        Directions["getDirections"]
+        Isochrone["getIsochrone"]
+        StaticMap["getStaticMapImage<br/>Public URL"]
+    end
+
+    subgraph MapServices["Map Services"]
+        MapTiler["MapTiler"]
+        ORS["OpenRouteService"]
+    end
+
     subgraph Response["Streaming Response"]
         direction TB
         GenUI["Generative UI"]
         Tables["Tables"]
         Charts["Charts"]
+        GeoMaps["Geo Maps"]
         Timelines["Timelines"]
         Citations["Citations"]
         Canvas["Canvas Artifacts"]
-        GenUI --> Tables & Charts & Timelines & Citations & Canvas
+        GenUI --> Tables & Charts & GeoMaps & Timelines & Citations & Canvas
     end
 
     subgraph Data["Persistence"]
@@ -72,6 +88,8 @@ graph LR
     User --> Agent
     Agent --> Providers
     Agent --> Search
+    Agent --> Geo
+    Geo --> MapServices
     Agent --> Response
     Agent --> Data
 ```
@@ -85,6 +103,8 @@ bun run migrate
 bun dev                             # http://localhost:43100
 ```
 
+Add `NEXT_PUBLIC_MAPTILER_API_KEY`, `MAPTILER_API_KEY`, and optionally `ORS_API_KEY` if you want the geo-map, directions, static-map, and isochrone features locally.
+
 See the [full Quickstart Guide](docs/getting-started/QUICKSTART.md) for detailed setup including local Supabase, auth configuration, and a guided first search.
 
 ## Documentation
@@ -92,6 +112,7 @@ See the [full Quickstart Guide](docs/getting-started/QUICKSTART.md) for detailed
 [Browse all documentation →](docs/README.md)
 
 - [Architecture Overview](docs/architecture/OVERVIEW.md) — system design, data flow, tech stack
+- [Geo & Spatial Tools](docs/architecture/GEO-TOOLS.md) — geocoding, directions, isochrones, static maps, and `displayGeoMap`
 - [Environment Reference](docs/getting-started/ENVIRONMENT.md) — all environment variables
 - [Deployment Guide](docs/operations/DEPLOYMENT.md) — Vercel deployment and production config
 - [Contributing Guide](CONTRIBUTING.md) — development workflow and quality gates

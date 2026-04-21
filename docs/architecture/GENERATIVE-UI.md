@@ -122,18 +122,18 @@ Display tools do not perform any computation. They serve as a structured output 
 
 ### Tool definitions
 
-| Tool                    | File                                   | Description                          | Has `execute`? |
-| ----------------------- | -------------------------------------- | ------------------------------------ | :------------: |
-| `displayPlan`           | `lib/tools/display-plan.ts`            | Step-by-step guides with status      |      Yes       |
-| `displayTable`          | `lib/tools/display-table.ts`           | Sortable data tables with formatting |      Yes       |
-| `displayChart`          | `lib/tools/display-chart.ts`           | Bar and line chart visualizations    |      Yes       |
-| `displayGeoMap`         | `lib/tools/display-geo-map.ts`         | Leaflet-based geo map visualizations |      Yes       |
-| `displayCitations`      | `lib/tools/display-citations.ts`       | Rich source citation lists           |      Yes       |
-| `displayLinkPreview`    | `lib/tools/display-link-preview.ts`    | Link preview cards                   |      Yes       |
-| `displayOptionList`     | `lib/tools/display-option-list.ts`     | Interactive option lists             |       No       |
-| `displayQuestionWizard` | `lib/tools/display-question-wizard.ts` | Multi-step guided question flows     |      Yes       |
-| `displayCallout`        | `lib/tools/display-callout.ts`         | Styled callout boxes                 |      Yes       |
-| `displayTimeline`       | `lib/tools/display-timeline.ts`        | Chronological event timelines        |      Yes       |
+| Tool                    | File                                   | Description                                                           | Has `execute`? |
+| ----------------------- | -------------------------------------- | --------------------------------------------------------------------- | :------------: |
+| `displayPlan`           | `lib/tools/display-plan.ts`            | Step-by-step guides with status                                       |      Yes       |
+| `displayTable`          | `lib/tools/display-table.ts`           | Sortable data tables with formatting                                  |      Yes       |
+| `displayChart`          | `lib/tools/display-chart.ts`           | Bar and line chart visualizations                                     |      Yes       |
+| `displayGeoMap`         | `lib/tools/display-geo-map.ts`         | Leaflet-based geo maps with markers, routes, polygons, and clustering |      Yes       |
+| `displayCitations`      | `lib/tools/display-citations.ts`       | Rich source citation lists                                            |      Yes       |
+| `displayLinkPreview`    | `lib/tools/display-link-preview.ts`    | Link preview cards                                                    |      Yes       |
+| `displayOptionList`     | `lib/tools/display-option-list.ts`     | Interactive option lists                                              |       No       |
+| `displayQuestionWizard` | `lib/tools/display-question-wizard.ts` | Multi-step guided question flows                                      |      Yes       |
+| `displayCallout`        | `lib/tools/display-callout.ts`         | Styled callout boxes                                                  |      Yes       |
+| `displayTimeline`       | `lib/tools/display-timeline.ts`        | Chronological event timelines                                         |      Yes       |
 
 All tools with `execute` use the same passthrough pattern:
 
@@ -165,7 +165,7 @@ const FormatSchema = z.discriminatedUnion('kind', [
 
 This allows the AI to specify exactly how each column should be formatted — currencies, percentages, status badges, links — and the DataTable component renders them accordingly.
 
-**Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../lib/tools/display-chart.ts), [`lib/tools/display-geo-map.ts`](../lib/tools/display-geo-map.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts), [`lib/tools/display-question-wizard.ts`](../lib/tools/display-question-wizard.ts), [`lib/tools/display-callout.ts`](../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../lib/tools/display-timeline.ts)
+**Source files:** [`lib/tools/display-plan.ts`](../../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../../lib/tools/display-chart.ts), [`lib/tools/display-geo-map.ts`](../../lib/tools/display-geo-map.ts), [`lib/tools/display-citations.ts`](../../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../../lib/tools/display-option-list.ts), [`lib/tools/display-question-wizard.ts`](../../lib/tools/display-question-wizard.ts), [`lib/tools/display-callout.ts`](../../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../../lib/tools/display-timeline.ts)
 
 ### Mode-specific tool availability
 
@@ -188,6 +188,18 @@ The researcher agent (`lib/agents/researcher.ts`) exposes different tools depend
 | `todoWrite`             |    No     | Yes (when writer available) |
 
 **Chat mode** (max 20 steps) uses forced optimized search and includes `displayPlan` for step-by-step guides. **Research mode** (max 50 steps) uses full search and enables `todoWrite` for task management when a writer is available.
+
+### Geo-map rendering contract
+
+`displayGeoMap` is the renderer-facing half of the spatial toolchain: it receives a structured payload (`markers[]`, `routes[]`, `polygons[]`, etc.) and renders an interactive map. The helper tools `geocodeAddress`, `getDirections`, and `getIsochrone` prepare data that composes into that payload. `getStaticMapImage` is a parallel output mode — it returns a static PNG URL rather than a `displayGeoMap` payload, so use it when the answer should be a shareable image instead of an interactive card.
+
+- `markers[]` supports default dots, emoji markers, and image-backed icons.
+- `routes[]` supports labels, descriptions, hover/always tooltips, stroke colors, dash patterns, opacity, and weight.
+- `polygons[]` supports filled regions such as isochrones and boundary overlays.
+- `clustering` lets dense point sets collapse into cluster markers.
+- `viewport` supports both fit-based framing and explicit center/zoom control.
+
+See [Geo & Spatial Tools](GEO-TOOLS.md) for the full compose-first flow.
 
 ### Related: side-effect tools
 
@@ -228,6 +240,14 @@ Currently supported on `OptionList` and extensible to other components via the s
 
 The registry (`components/tool-ui/registry.tsx`) is the central mapping between tool names and their React component renderers. It exports three functions:
 
+All rendered tool cards now pass through a small motion shell:
+
+- `ToolCardMount` wraps registered tool cards and only animates genuinely new parts.
+- `HydrationAnimationProvider` in `components/chat.tsx` snapshots the initial tool-part IDs so SSR history paints immediately without replaying entrance motion.
+- `StaggerList` is used by `displayTimeline` to stagger long event lists with a capped delay.
+
+The mode pill animation lives next to the chat surface in `components/mode-selector.tsx` via `PillPresence`, but it uses the same `lib/motion/*` token and variant layer.
+
 ### `tryRenderToolUIByName(toolName, output)`
 
 Primary lookup. First tries a direct name match, then falls back to schema probing.
@@ -267,7 +287,7 @@ const entries: ToolUIEntry[] = [
 
 The `tryRender` pattern ensures that invalid or corrupted tool output gracefully returns `null` instead of crashing the UI.
 
-**Source file:** [`components/tool-ui/registry.tsx`](../components/tool-ui/registry.tsx)
+**Source file:** [`components/tool-ui/registry.tsx`](../../components/tool-ui/registry.tsx)
 
 ---
 
@@ -353,7 +373,7 @@ All tool UI schemas share common base fields from `components/tool-ui/shared/sch
 | `ToolUIReceiptSchema` | Outcome metadata (success/partial/failed/cancelled) |
 | `ActionSchema`        | Button action definition with variant and shortcut  |
 
-**Source files:** [`components/tool-ui/shared/schema.ts`](../components/tool-ui/shared/schema.ts), [`components/tool-ui/shared/contract.ts`](../components/tool-ui/shared/contract.ts), `components/tool-ui/*/schema.ts`
+**Source files:** [`components/tool-ui/shared/schema.ts`](../../components/tool-ui/shared/schema.ts), [`components/tool-ui/shared/contract.ts`](../../components/tool-ui/shared/contract.ts), `components/tool-ui/*/schema.ts`
 
 ---
 
@@ -450,7 +470,7 @@ This guard is intentionally conservative: text parts with substantive content (f
 - Inline citations via custom `<Citing>` link component
 - Citation maps that resolve `[n](#toolCallId)` references to actual URLs
 
-**Source files:** [`components/render-message.tsx`](../components/render-message.tsx), [`components/answer-section.tsx`](../components/answer-section.tsx), [`components/message.tsx`](../components/message.tsx)
+**Source files:** [`components/render-message.tsx`](../../components/render-message.tsx), [`components/answer-section.tsx`](../../components/answer-section.tsx), [`components/message.tsx`](../../components/message.tsx)
 
 ---
 
@@ -632,7 +652,7 @@ sequenceDiagram
     Render->>OL: Render receipt mode (read-only confirmation)
 ```
 
-**Source files:** [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts), [`components/tool-ui/option-list/option-list.tsx`](../components/tool-ui/option-list/option-list.tsx)
+**Source files:** [`lib/tools/display-option-list.ts`](../../lib/tools/display-option-list.ts), [`components/tool-ui/option-list/option-list.tsx`](../../components/tool-ui/option-list/option-list.tsx)
 
 ---
 
@@ -660,7 +680,7 @@ The `DynamicToolDisplay` component (`components/dynamic-tool-display.tsx`) handl
 - `output-available` — green dot, "Complete"
 - `output-error` — red dot, "Failed" with error text
 
-**Source file:** [`components/dynamic-tool-display.tsx`](../components/dynamic-tool-display.tsx)
+**Source file:** [`components/dynamic-tool-display.tsx`](../../components/dynamic-tool-display.tsx)
 
 ---
 
@@ -674,7 +694,7 @@ The inspector uses a resizable split-pane layout provided by `ChatCanvasShell`:
 - **Mobile:** full-width drawer overlay via `InspectorDrawer`
 - **Mutual exclusion** with sidebar: opening the inspector closes the sidebar and vice versa
 
-**Source files:** [`components/canvas/chat-canvas-shell.tsx`](../components/canvas/chat-canvas-shell.tsx), [`components/canvas/canvas-context.tsx`](../components/canvas/canvas-context.tsx)
+**Source files:** [`components/canvas/chat-canvas-shell.tsx`](../../components/canvas/chat-canvas-shell.tsx), [`components/canvas/canvas-context.tsx`](../../components/canvas/canvas-context.tsx)
 
 ---
 
@@ -704,7 +724,7 @@ Each part is dispatched via `RenderPart`:
 | `tool-*`    | `ToolSection`      | Collapsible tool result                     |
 | `data-*`    | `DataSection`      | Data display (related questions, etc.)      |
 
-**Source file:** [`components/research-process-section.tsx`](../components/research-process-section.tsx)
+**Source file:** [`components/research-process-section.tsx`](../../components/research-process-section.tsx)
 
 ---
 

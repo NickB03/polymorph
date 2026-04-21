@@ -29,6 +29,7 @@ Tutorials and setup guides for new developers.
 Deep dives into how Polymorph works internally.
 
 - [Architecture Overview](architecture/OVERVIEW.md) -- System design, data flow, and component relationships
+- [Geo & Spatial Tools](architecture/GEO-TOOLS.md) -- Compose-first geocoding, directions, isochrones, static maps, and `displayGeoMap`
 - [Research Agent](architecture/RESEARCH-AGENT.md) -- ToolLoopAgent orchestration, search modes, and tool pipeline
 - [Generative UI](architecture/GENERATIVE-UI.md) -- Display tools, message parts, and rich interactive components
 - [Streaming](architecture/STREAMING.md) -- SSE response creation and message part streaming
