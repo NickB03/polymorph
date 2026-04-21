@@ -52,6 +52,8 @@ skills-lock.json
 # Local agent/skill workspace artifacts
 /.agent/
 /.agents/
+/.augment/
+/.kiro/
 /.playwright-mcp/
 /skills/
 /.impeccable.md
