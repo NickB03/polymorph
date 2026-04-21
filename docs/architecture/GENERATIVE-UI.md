@@ -191,7 +191,7 @@ The researcher agent (`lib/agents/researcher.ts`) exposes different tools depend
 
 ### Geo-map rendering contract
 
-`displayGeoMap` is the renderer-facing half of the spatial toolchain. The helper tools (`geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`) prepare data; the generative UI layer renders only the final map payload.
+`displayGeoMap` is the renderer-facing half of the spatial toolchain: it receives a structured payload (`markers[]`, `routes[]`, `polygons[]`, etc.) and renders an interactive map. The helper tools `geocodeAddress`, `getDirections`, and `getIsochrone` prepare data that composes into that payload. `getStaticMapImage` is a parallel output mode — it returns a static PNG URL rather than a `displayGeoMap` payload, so use it when the answer should be a shareable image instead of an interactive card.
 
 - `markers[]` supports default dots, emoji markers, and image-backed icons.
 - `routes[]` supports labels, descriptions, hover/always tooltips, stroke colors, dash patterns, opacity, and weight.

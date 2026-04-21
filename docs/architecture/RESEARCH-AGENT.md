@@ -345,12 +345,12 @@ Session-scoped task management. Each `createTodoTools()` call creates an isolate
 
 These helpers are ordinary agent tools, not display tools. They usually compose into a final `displayGeoMap` or `getStaticMapImage` response.
 
-| Tool                | Source                                                                      | Return shape                                                  | Notes                                                                                            |
-| ------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `geocodeAddress`    | [`lib/tools/geocode-address.ts`](../lib/tools/geocode-address.ts)           | Ranked candidates with `lat`, `lng`, `placeName`, `placeType` | Use before placing pins when the user gives a place name rather than coordinates.                |
-| `getDirections`     | [`lib/tools/get-directions.ts`](../lib/tools/get-directions.ts)             | Ordered route points plus duration/distance labels            | Supports `driving`, `walking`, `cycling`; `transit` returns a structured `not_supported` result. |
-| `getIsochrone`      | [`lib/tools/get-isochrone.ts`](../lib/tools/get-isochrone.ts)               | Polygon ring points                                           | Requires `ORS_API_KEY`; intended for `displayGeoMap.polygons[]`.                                 |
-| `getStaticMapImage` | [`lib/tools/get-static-map-image.ts`](../lib/tools/get-static-map-image.ts) | Public PNG URL                                                | Use when the user wants a shareable/static image rather than an interactive card.                |
+| Tool                | Source                                                                         | Return shape                                                  | Notes                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `geocodeAddress`    | [`lib/tools/geocode-address.ts`](../../lib/tools/geocode-address.ts)           | Ranked candidates with `lat`, `lng`, `placeName`, `placeType` | Use before placing pins when the user gives a place name rather than coordinates.                |
+| `getDirections`     | [`lib/tools/get-directions.ts`](../../lib/tools/get-directions.ts)             | Ordered route points plus duration/distance labels            | Supports `driving`, `walking`, `cycling`; `transit` returns a structured `not_supported` result. |
+| `getIsochrone`      | [`lib/tools/get-isochrone.ts`](../../lib/tools/get-isochrone.ts)               | Polygon ring points                                           | Requires `ORS_API_KEY`; intended for `displayGeoMap.polygons[]`.                                 |
+| `getStaticMapImage` | [`lib/tools/get-static-map-image.ts`](../../lib/tools/get-static-map-image.ts) | Public PNG URL                                                | Use when the user wants a shareable/static image rather than an interactive card.                |
 
 For the end-to-end compose-first flow, see [Geo & Spatial Tools](GEO-TOOLS.md).
 

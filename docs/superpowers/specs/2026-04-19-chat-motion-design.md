@@ -8,16 +8,16 @@
 
 ## Decision Summary
 
-| Area              | Decision                                                                                                                                                                                                                                                              |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Scope             | Mode pills (`components/mode-selector.tsx`), all 14 registered tool UI cards (`components/tool-ui/registry.tsx`), and `displayTimeline`'s internal event stagger.                                                                                                     |
-| Motion vocabulary | Fade + 8px translateY rise, ease-out, 200ms entrance / 140ms exit / 50ms stagger between siblings.                                                                                                                                                                    |
-| Coverage          | Uniform: every entry in `components/tool-ui/registry.tsx` (10 `display` tools, `generateImage`, and 3 canvas-artifact cards — 14 total) gets the same entrance primitive.                                                                                             |
-| Library           | `motion/react` (Framer Motion v12), already installed (`package.json:81`) and in use by `voice/voice-orb.tsx`.                                                                                                                                                        |
-| Architecture      | Three shared wrappers (`ToolCardMount`, `PillPresence`, `StaggerList`) backed by a tokens file, a variants file, and a hydration-boundary context. Direct `motion/react` imports are blocked for most consumers, with an explicit exception for `components/voice/*`. |
-| Reduced-motion    | Honor `prefers-reduced-motion: reduce` with true zero-motion — no fade, no translate, no stagger, no exit. `initial={false}` on the hydration path (see SSR handling) prevents any flash without requiring motion. Matches WCAG 2.3.3.                                |
-| SSR / hydration   | `isNew` prop on `ToolCardMount`, resolved via a client-side `HydrationAnimationProvider` that snapshots initial tool-part IDs once at first render. Streamed / optimistic parts animate; SSR history paints instantly.                                                |
-| Out of scope      | Canvas panel (already `transition-all duration-300`), Radix dialogs/sheets/popovers/tooltips, message bubbles, dropdown menus, alert dialogs.                                                                                                                         |
+| Area              | Decision                                                                                                                                                                                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Scope             | Mode pills (`components/mode-selector.tsx`), all 14 registered tool UI cards (`components/tool-ui/registry.tsx`), and `displayTimeline`'s internal event stagger.                                                                                                                          |
+| Motion vocabulary | Fade + 8px translateY rise, ease-out, 200ms entrance / 140ms exit / 50ms stagger between siblings.                                                                                                                                                                                         |
+| Coverage          | Uniform: every entry in `components/tool-ui/registry.tsx` (10 `display` tools, `generateImage`, and 3 canvas-artifact cards — 14 total) gets the same entrance primitive.                                                                                                                  |
+| Library           | `motion/react` (Framer Motion v12), already installed (`package.json:81`) and in use by `voice/voice-orb.tsx`.                                                                                                                                                                             |
+| Architecture      | Three shared wrappers (`ToolCardMount`, `PillPresence`, `StaggerList`) backed by a tokens file, a variants file, and a hydration-boundary context. Direct `motion/react` imports are blocked for most consumers, with an explicit exception for `components/voice/*`.                      |
+| Reduced-motion    | Honor `prefers-reduced-motion: reduce` with true zero-motion — no fade, no translate, no stagger, no exit. `initial={false}` on the hydration path (see SSR handling) prevents any flash without requiring motion. Matches WCAG 2.3.3.                                                     |
+| SSR / hydration   | `ToolCardMount` takes a stable `partId` prop and derives `isNew` internally via `useIsNewPart(partId)`, backed by a client-side `HydrationAnimationProvider` that snapshots initial tool-part IDs once at first render. Streamed / optimistic parts animate; SSR history paints instantly. |
+| Out of scope      | Canvas panel (already `transition-all duration-300`), Radix dialogs/sheets/popovers/tooltips, message bubbles, dropdown menus, alert dialogs.                                                                                                                                              |
 
 ---
 
@@ -126,7 +126,7 @@ lib/motion/
   hydration-boundary.tsx  <HydrationAnimationProvider> + useIsNewPart(partId)
 
 components/motion/
-  tool-card-mount.tsx  <ToolCardMount isNew={boolean}>{children}</ToolCardMount>
+  tool-card-mount.tsx  <ToolCardMount partId={string}>{children}</ToolCardMount>  — derives isNew via useIsNewPart(partId)
   pill-presence.tsx    <PillPresence activeKey={mode}>{pillElement}</PillPresence>
   stagger-list.tsx     <StaggerList>{items}</StaggerList>  — handles long-timeline cap logic
 ```
