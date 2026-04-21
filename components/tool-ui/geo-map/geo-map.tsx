@@ -55,9 +55,7 @@ function getDocumentTheme(): 'light' | 'dark' | null {
 }
 
 function useInheritedTheme(): 'light' | 'dark' {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return getDocumentTheme() ?? getSystemTheme()
-  })
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -65,6 +63,8 @@ function useInheritedTheme(): 'light' | 'dark' {
     }
 
     const update = () => setTheme(getDocumentTheme() ?? getSystemTheme())
+
+    update()
 
     const mql = window.matchMedia?.('(prefers-color-scheme: dark)')
     mql?.addEventListener('change', update)

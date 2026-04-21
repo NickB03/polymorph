@@ -643,7 +643,7 @@ export const GeoMapEngine = memo(function GeoMapEngine({
       zoom={initialView.zoom}
       zoomControl={false}
       className="h-full w-full"
-      scrollWheelZoom
+      scrollWheelZoom={false}
     >
       <TileLayer attribution={tileAttribution} url={tileUrl} />
       {showZoomControl && <ZoomControl position="topright" />}

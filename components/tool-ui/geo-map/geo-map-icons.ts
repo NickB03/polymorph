@@ -31,8 +31,8 @@ function createEmojiIcon(
   leafletRuntime: LeafletIconRuntime
 ): DivIcon {
   const size = icon.size ?? 24
-  const background = icon.bgColor ?? 'var(--card)'
-  const border = icon.borderColor ?? 'var(--border)'
+  const background = escapeHtml(icon.bgColor ?? 'var(--card)')
+  const border = escapeHtml(icon.borderColor ?? 'var(--border)')
 
   return leafletRuntime.divIcon({
     className: '',
@@ -63,7 +63,7 @@ function createImageIcon(
   const width = icon.width ?? 28
   const height = icon.height ?? 28
   const borderRadius = icon.borderRadius ?? Math.min(width, height) / 2
-  const border = icon.borderColor ?? 'var(--border)'
+  const border = escapeHtml(icon.borderColor ?? 'var(--border)')
 
   return leafletRuntime.divIcon({
     className: '',
