@@ -76,9 +76,10 @@ Required when `ENABLE_AUTH=true`:
 
 ## Map tiles (geo-map Tool UI)
 
-| Variable                       | Required    | Purpose                                                                                                                                                                                                                                                                                          |
-| ------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `NEXT_PUBLIC_MAPTILER_API_KEY` | Recommended | MapTiler API key for `streets-v2` (light) and `streets-v2-dark` basemaps in the `display-geo-map` Tool UI. Free tier: 100K tile loads/month, commercial use permitted. Sign up at https://www.maptiler.com/cloud. When unset, the map falls back to CARTO Voyager (light only, no dark basemap). |
+| Variable                       | Required    | Purpose                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_MAPTILER_API_KEY` | Recommended | **Client-side MapTiler key** for `streets-v2` (light) and `streets-v2-dark` basemaps — reaches the browser. Lock this key's "allowed origins" in the MapTiler dashboard to production + localhost. Free tier: 100K tile loads/month, commercial use permitted. When unset, the map falls back to CARTO Voyager (light only).                          |
+| `MAPTILER_API_KEY`             | Recommended | **Server-only MapTiler key** for `getDirections`, `geocodeAddress`, `getStaticMapImage` tools. Generate a second key in the MapTiler dashboard with no origin restriction. When unset, server tools fall back to `NEXT_PUBLIC_MAPTILER_API_KEY`, but keeping a separate server-only key gives defense in depth if the public key's origin-lock fails. |
 
 ## Admin surface
 
