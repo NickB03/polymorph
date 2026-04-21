@@ -1,7 +1,7 @@
 # Documentation Accuracy Audit Plan
 
 > Date: 2026-04-21
-> Repo: `/Users/nick/Projects/vana-v2`
+> Repo: repository root
 > Goal: validate durable GitHub-visible docs against the current source code and config, then patch only verified drift.
 
 ## Scope

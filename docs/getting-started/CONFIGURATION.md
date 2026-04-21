@@ -7,10 +7,11 @@ This guide covers application configuration for Polymorph, including required st
 
 ## Baseline Bootstrap
 
-The app boots with a database connection alone:
+For local Supabase or Docker, the app boots with these database settings:
 
 ```bash
 DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres
+DATABASE_SSL_DISABLED=true
 ```
 
 For the shipped default experience, add the provider keys used by the current model and search config:
@@ -19,8 +20,6 @@ For the shipped default experience, add the provider keys used by the current mo
 AI_GATEWAY_API_KEY=[YOUR_VERCEL_GATEWAY_KEY]
 BRAVE_SEARCH_API_KEY=[YOUR_BRAVE_SEARCH_KEY]
 ```
-
-`DATABASE_SSL_DISABLED=true` is recommended for local Supabase or Docker, where PostgreSQL does not use SSL.
 
 ## Authentication Modes
 

@@ -113,15 +113,33 @@ function DataTableProvider<T extends object = RowData>({
     [rawColumns]
   )
 
+  const isSortableVisibleColumnKey = React.useCallback(
+    (key: ColumnKey<T> | undefined): key is ColumnKey<T> =>
+      !!key && columns.some(col => col.key === key && col.sortable !== false),
+    [columns]
+  )
+
+  const resolvedDefaultSortBy = isSortableVisibleColumnKey(defaultSort?.by)
+    ? defaultSort.by
+    : undefined
+
   const [internalSortBy, setInternalSortBy] = React.useState<
     ColumnKey<T> | undefined
-  >(defaultSort?.by)
+  >(resolvedDefaultSortBy)
   const [internalSortDirection, setInternalSortDirection] = React.useState<
     'asc' | 'desc' | undefined
-  >(defaultSort?.direction)
+  >(resolvedDefaultSortBy ? defaultSort?.direction : undefined)
 
-  const sortBy = controlledSort?.by ?? internalSortBy
-  const sortDirection = controlledSort?.direction ?? internalSortDirection
+  const resolvedInternalSortBy = isSortableVisibleColumnKey(internalSortBy)
+    ? internalSortBy
+    : undefined
+  const resolvedInternalSortDirection = resolvedInternalSortBy
+    ? internalSortDirection
+    : undefined
+
+  const sortBy = controlledSort?.by ?? resolvedInternalSortBy
+  const sortDirection =
+    controlledSort?.direction ?? resolvedInternalSortDirection
 
   const data = React.useMemo(() => {
     if (!sortBy || !sortDirection) return rawData
