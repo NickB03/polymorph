@@ -33,7 +33,7 @@ Polymorph uses a factory pattern to support multiple search backends. Providers 
 | **SearXNG**   | `SEARXNG_API_URL`      | Yes                                     | Yes                     | No                          | basic / advanced               | Include only (site:) | Yes         |
 | **Firecrawl** | `FIRECRAWL_API_KEY`    | Yes (markdown, truncated to 1000 chars) | Yes                     | No                          | basic (web) / advanced (+news) | No                   | No          |
 
-**Recommended setup:** Brave as the primary (default) provider. Tavily, Exa, and other providers serve as automatic fallbacks or alternatives.
+**Recommended setup:** Brave as the primary (default) provider with Tavily and Exa as automatic fallbacks. SearXNG and Firecrawl are selectable alternatives, not part of the default fallback chain unless `SEARCH_API` is set to one of them.
 
 ---
 

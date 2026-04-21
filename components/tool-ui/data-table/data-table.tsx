@@ -91,7 +91,7 @@ type DataTableProviderProps<T extends object = RowData> = Pick<
 }
 
 function DataTableProvider<T extends object = RowData>({
-  columns,
+  columns: rawColumns,
   data: rawData,
   rowIdKey,
   defaultSort,
@@ -103,6 +103,15 @@ function DataTableProvider<T extends object = RowData>({
 }: DataTableProviderProps<T>) {
   // Default locale avoids SSR/client formatting mismatches.
   const resolvedLocale = locale ?? DEFAULT_LOCALE
+
+  // Drop columns marked hidden so every downstream consumer (table, cards,
+  // colgroup, sort announcement, accessibility text) sees only visible cols.
+  // Helper columns referenced by a sibling link column's hrefKey stay in row
+  // data but never render.
+  const columns = React.useMemo(
+    () => rawColumns.filter(col => !col.hidden),
+    [rawColumns]
+  )
 
   const [internalSortBy, setInternalSortBy] = React.useState<
     ColumnKey<T> | undefined

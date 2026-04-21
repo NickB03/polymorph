@@ -80,6 +80,12 @@ export interface Column<
   priority?: 'primary' | 'secondary' | 'tertiary'
   /** Completely hide column on mobile viewports */
   hideOnMobile?: boolean
+  /**
+   * Completely hide column from the rendered table on all viewports.
+   * Use for helper columns whose values feed a sibling link column via
+   * `format: { kind: 'link', hrefKey: '<this-column-key>' }`.
+   */
+  hidden?: boolean
   /** Formatting configuration for cell values */
   format?: FormatFor<T[K]>
 }

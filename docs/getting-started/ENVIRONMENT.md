@@ -7,29 +7,29 @@ This document defines the environment-variable matrix for Polymorph.
 
 ## Required (Day-1 bootstrap)
 
-| Variable               | Required                                                       | Purpose                                                                                    |
-| ---------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`         | Yes                                                            | PostgreSQL connection string for Drizzle/Supabase                                          |
-| `AI_GATEWAY_API_KEY`   | Yes                                                            | Vercel AI Gateway provider key                                                             |
-| `BRAVE_SEARCH_API_KEY` | Recommended if using Brave; otherwise set another provider key | Primary search provider when `SEARCH_API=brave` (default); enables web + multimedia search |
-| `TAVILY_API_KEY`       | Optional                                                       | Alternative search / extract provider key                                                  |
+| Variable               | Required                        | Purpose                                                                                    |
+| ---------------------- | ------------------------------- | ------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`         | Yes                             | PostgreSQL connection string for Drizzle/Supabase; `POSTGRES_URL` is also accepted         |
+| `AI_GATEWAY_API_KEY`   | Required for the default models | Vercel AI Gateway provider key                                                             |
+| `BRAVE_SEARCH_API_KEY` | Required for the default search | Primary search provider when `SEARCH_API=brave` (default); enables web + multimedia search |
+| `TAVILY_API_KEY`       | Optional                        | Alternative search / extract provider key                                                  |
 
 ## Core behavior controls
 
-| Variable              | Default                               | Purpose                                                        |
-| --------------------- | ------------------------------------- | -------------------------------------------------------------- |
-| `ENABLE_AUTH`         | `true`                                | Toggle auth required mode                                      |
-| `ANONYMOUS_USER_ID`   | `anonymous-user`                      | Shared local user id when auth is disabled                     |
-| `NEXT_PUBLIC_APP_URL` | `http://localhost:43100` in local dev | Metadata base URL and canonical links. Required in production. |
+| Variable                | Default                               | Purpose                                                        |
+| ----------------------- | ------------------------------------- | -------------------------------------------------------------- |
+| `ENABLE_AUTH`           | `true`                                | Toggle auth required mode                                      |
+| `ANONYMOUS_USER_ID`     | `anonymous-user`                      | Shared local user id when auth is disabled                     |
+| `DATABASE_SSL_DISABLED` | `false`                               | Disable SSL for local Supabase / Docker PostgreSQL             |
+| `NEXT_PUBLIC_APP_URL`   | `http://localhost:43100` in local dev | Metadata base URL and canonical links. Required in production. |
 
 ## Cloud deployment controls
 
-| Variable                                 | Required in cloud       | Purpose                                    |
-| ---------------------------------------- | ----------------------- | ------------------------------------------ |
-| `POLYMORPH_CLOUD_DEPLOYMENT`             | Yes                     | Enables cloud-mode guardrails and behavior |
-| `NEXT_PUBLIC_POLYMORPH_CLOUD_DEPLOYMENT` | Recommended             | Hides client-only controls in cloud mode   |
-| `UPSTASH_REDIS_REST_URL`                 | Yes (if limits enabled) | Redis endpoint for limits                  |
-| `UPSTASH_REDIS_REST_TOKEN`               | Yes (if limits enabled) | Redis credential                           |
+| Variable                     | Required in cloud                     | Purpose                                    |
+| ---------------------------- | ------------------------------------- | ------------------------------------------ |
+| `POLYMORPH_CLOUD_DEPLOYMENT` | Yes                                   | Enables cloud-mode guardrails and behavior |
+| `UPSTASH_REDIS_REST_URL`     | Yes, if you want chat limits enforced | Redis endpoint for limits                  |
+| `UPSTASH_REDIS_REST_TOKEN`   | Yes, if you want chat limits enforced | Redis credential                           |
 
 ## Authentication (Supabase)
 
@@ -141,8 +141,12 @@ Set these in the Vercel dashboard under **Settings → Environment Variables** f
    - **Note:** This project uses a custom port range (**4432x**) to avoid conflicts with other Supabase projects.
 3. Fill required variables in `.env.local`:
    - `DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres`
+   - `AI_GATEWAY_API_KEY=[YOUR_VERCEL_GATEWAY_KEY]`
+   - `BRAVE_SEARCH_API_KEY=[YOUR_BRAVE_SEARCH_KEY]` (or another `SEARCH_API` provider)
    - `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:44321`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY=[YOUR_SUPABASE_ANON_KEY]`
    - `DATABASE_SSL_DISABLED=true` (Required for local DB)
+   - If you want anonymous local access instead of Supabase Auth, set `ENABLE_GUEST_CHAT=true` and skip the Supabase keys above.
 4. **Docker Networking:** If running the app via Docker, the container must use `host.docker.internal:44322` for the database URL (this is pre-configured in `docker-compose.yaml`).
 5. `bun run migrate`
 6. `bun dev`
@@ -151,13 +155,15 @@ Set these in the Vercel dashboard under **Settings → Environment Variables** f
 
 ### Guest Chat (`ENABLE_GUEST_CHAT`)
 
-Guest mode is the recommended default experience. It lets unauthenticated users search immediately without signing in — reducing friction and letting users experience the product before creating an account.
+Guest mode lets unauthenticated users search immediately without signing in — reducing friction and letting users experience the product before creating an account.
 
-- Set `ENABLE_GUEST_CHAT=true` (recommended) to allow unauthenticated users to search.
-- Set `ENABLE_GUEST_CHAT=false` to require sign-in before any search.
-- Guest sessions are ephemeral: chats are not persisted, and guests are limited to speed-mode models.
-- `GUEST_CHAT_DAILY_LIMIT` (default: `10`) caps daily searches per IP. Requires Redis (`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`) when running in cloud mode. When the limit is reached, a friendly 429 response encourages account creation.
+- Set `ENABLE_GUEST_CHAT=true` to allow unauthenticated users to search.
+- Leave it unset or set it to `false` to require sign-in before any search.
+- Guest sessions are ephemeral: chats are not persisted, and the UI defaults guests to speed-mode models.
+- `GUEST_CHAT_DAILY_LIMIT` (default: `10`) caps daily searches per IP. It is enforced only in cloud mode when Redis is configured; otherwise the app allows requests without applying the guest limit.
 
 ### Cloud Mode (`POLYMORPH_CLOUD_DEPLOYMENT`)
 
-- Enabling this mode locally requires `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to be configured, or the app will fail to initialize rate limiting and search caching.
+- Enabling this mode turns on the cloud-only code paths used for analytics and rate limiting.
+- If `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are present, guest and authenticated chat limits are enforced through Redis.
+- If Redis is missing or unreachable, the app still boots and the limit checks fall back to allow-all / in-memory behavior.

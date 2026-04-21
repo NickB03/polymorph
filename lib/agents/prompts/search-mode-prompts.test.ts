@@ -33,7 +33,7 @@ describe('search mode prompts', () => {
 
   it('retains displayPlan guidance in chat mode', () => {
     expect(CHAT_MODE_PROMPT).toContain(
-      'NO numbered step lists — call displayPlan instead'
+      'NO numbered step lists for how-to content — call displayPlan instead'
     )
   })
 

@@ -31,7 +31,7 @@ The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → too
   - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayGeoMap, displayCitations, displayLinkPreview, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline]` + canvas artifact tools
   - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayGeoMap, displayCitations, displayLinkPreview, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline, todoWrite]` + canvas artifact tools
 - **Canvas artifact tools** (conditional): `createCanvasArtifact`, `updateCanvasArtifact`, `readCanvasArtifact` — generate, iterate, and read React SPA artifacts compiled server-side via esbuild + Tailwind CSS v4
-- **Image generation** (conditional): `generateImage` — generates images via Gemini Flash when image context is available
+- **Image generation** (conditional): `generateImage` — generates images via Gemini 2.5 Flash Image when image context is available
 - **Tools** (`lib/tools/`): `search` (Brave primary, Tavily fallback, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todoWrite` (task management), `dynamic` (MCP/runtime-defined tools)
 - **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Gemini 3 Flash (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway
 - **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
@@ -60,7 +60,7 @@ Supabase Auth with three client patterns:
 - `lib/supabase/client.ts` — browser client
 - `lib/supabase/server.ts` — server-side client (cookies-based)
 - `lib/supabase/middleware.ts` — session refresh in middleware
-- **Guest mode** (default): `ENABLE_GUEST_CHAT=true` lets unauthenticated users search immediately. Guest chats are ephemeral (not persisted), use speed-mode models only, and are rate-limited per IP via Upstash Redis.
+- **Guest mode** (default): `ENABLE_GUEST_CHAT=true` lets unauthenticated users search immediately. Guest chats are ephemeral (not persisted), default to speed-mode models, and are rate-limited per IP via Upstash Redis in cloud deployments.
 
 ### Canvas Artifacts
 

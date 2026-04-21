@@ -23,9 +23,12 @@ npx supabase start
 
 ```bash
 DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres
+DATABASE_SSL_DISABLED=true
 AI_GATEWAY_API_KEY=your_vercel_gateway_key
 BRAVE_SEARCH_API_KEY=your_brave_key
 ```
+
+If you want to chat anonymously in local Docker, either configure Supabase Auth (`NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`) or set `ENABLE_GUEST_CHAT=true`.
 
 4. Start services:
 

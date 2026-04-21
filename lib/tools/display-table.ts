@@ -28,6 +28,12 @@ const ColumnSchema = z.object({
   label: z.string().describe('Column header label'),
   sortable: z.boolean().optional().describe('Whether column is sortable'),
   align: z.enum(['left', 'right', 'center']).optional(),
+  hidden: z
+    .boolean()
+    .optional()
+    .describe(
+      'Hide this column from the rendered table. Use for helper columns whose values are referenced by a sibling link column via format.hrefKey.'
+    ),
   format: FormatSchema.optional().describe('Value formatting configuration')
 })
 

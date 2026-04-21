@@ -885,27 +885,27 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 
 ## Documentation
 
-| File                                           | Purpose                                                                                                                                   |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/README.md`                               | Documentation index and navigation table                                                                                                  |
-| `docs/getting-started/QUICKSTART.md`           | End-to-end setup guide from clone to first search                                                                                         |
-| `docs/getting-started/ENVIRONMENT.md`          | Complete environment variable reference                                                                                                   |
-| `docs/getting-started/CONFIGURATION.md`        | Configuration guide for models, search providers, and feature flags                                                                       |
-| `docs/architecture/OVERVIEW.md`                | System architecture with diagrams for agent pipeline, streaming, DB schema, and UI component tree                                         |
-| `docs/architecture/GEO-TOOLS.md`               | Spatial tooling overview covering geocoding, directions, isochrones, static maps, and `displayGeoMap`                                     |
-| `docs/architecture/RESEARCH-AGENT.md`          | Research agent deep technical reference; ToolLoopAgent pattern, search modes, tool system, model selection, and context window management |
-| `docs/architecture/SKILLS-ROUTING.md`          | Skills-routing architecture spec; deterministic skill selection, prompt enrichment, validation strategy, and non-prod rollout             |
-| `docs/architecture/GENERATIVE-UI.md`           | Generative UI system architecture; display tools, Tool UI registry, adapter pattern, schema validation, and adding new tools              |
-| `docs/architecture/STREAMING.md`               | Streaming architecture and SSE protocol documentation                                                                                     |
-| `docs/architecture/MODEL-CONFIGURATION.md`     | Guide for configuring AI model profiles (default, cloud, Ollama)                                                                          |
-| `docs/architecture/SEARCH-PROVIDERS.md`        | Search provider setup guide (Tavily, Brave, Exa, Firecrawl, SearXNG)                                                                      |
-| `docs/architecture/DECISIONS.md`               | Architectural decision records (ADRs)                                                                                                     |
-| `docs/reference/API.md`                        | API endpoint reference for all REST endpoints (chat, chats, upload, feedback, search, suggestions, voice, health)                         |
-| `docs/reference/FILE-INDEX.md`                 | This file; every file in the repository with a one-line description                                                                       |
-| `docs/operations/DEPLOYMENT.md`                | Deployment guide for Vercel, Docker, and self-hosted setups                                                                               |
-| `docs/operations/DOCKER.md`                    | Docker-specific setup and configuration instructions                                                                                      |
-| `docs/operations/TROUBLESHOOTING.md`           | Common issues and debugging guide                                                                                                         |
-| `docs/operations/runbooks/day-2-operations.md` | Operational runbook for monitoring, maintenance, and incident response                                                                    |
+| File                                           | Purpose                                                                                                                                                                           |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/README.md`                               | Documentation index and navigation table                                                                                                                                          |
+| `docs/getting-started/QUICKSTART.md`           | End-to-end setup guide from clone to first search                                                                                                                                 |
+| `docs/getting-started/ENVIRONMENT.md`          | Complete environment variable reference                                                                                                                                           |
+| `docs/getting-started/CONFIGURATION.md`        | Configuration guide for models, search providers, and feature flags                                                                                                               |
+| `docs/architecture/OVERVIEW.md`                | System architecture with diagrams for agent pipeline, streaming, DB schema, and UI component tree                                                                                 |
+| `docs/architecture/GEO-TOOLS.md`               | Spatial tooling overview covering geocoding, directions, isochrones, static maps, and `displayGeoMap`                                                                             |
+| `docs/architecture/RESEARCH-AGENT.md`          | Research agent deep technical reference; ToolLoopAgent pattern, search modes, tool system, model selection, and context window management                                         |
+| `docs/architecture/SKILLS-ROUTING.md`          | Skills-routing architecture spec; deterministic skill selection, prompt enrichment, validation strategy, and non-prod rollout                                                     |
+| `docs/architecture/GENERATIVE-UI.md`           | Generative UI system architecture; display tools, Tool UI registry, adapter pattern, schema validation, and adding new tools                                                      |
+| `docs/architecture/STREAMING.md`               | Streaming architecture and SSE protocol documentation                                                                                                                             |
+| `docs/architecture/MODEL-CONFIGURATION.md`     | Guide for configuring AI model profiles (default, cloud, Ollama)                                                                                                                  |
+| `docs/architecture/SEARCH-PROVIDERS.md`        | Search provider setup guide (Tavily, Brave, Exa, Firecrawl, SearXNG)                                                                                                              |
+| `docs/architecture/DECISIONS.md`               | Architectural decision records (ADRs)                                                                                                                                             |
+| `docs/reference/API.md`                        | API endpoint reference for chat, chats, upload, feedback, advanced search, suggestions, voice, health, canvas artifacts, image proxy, evals, rate limiting, and error conventions |
+| `docs/reference/FILE-INDEX.md`                 | This file; every file in the repository with a one-line description                                                                                                               |
+| `docs/operations/DEPLOYMENT.md`                | Deployment guide for Vercel, Docker, and self-hosted setups                                                                                                                       |
+| `docs/operations/DOCKER.md`                    | Docker-specific setup and configuration instructions                                                                                                                              |
+| `docs/operations/TROUBLESHOOTING.md`           | Common issues and debugging guide                                                                                                                                                 |
+| `docs/operations/runbooks/day-2-operations.md` | Operational runbook for monitoring, maintenance, and incident response                                                                                                            |
 
 ---
 

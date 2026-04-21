@@ -16,10 +16,10 @@ This document records the foundational architecture decisions for Polymorph.
 
 ## 2) Search and Content Extraction
 
-- **Primary Search**: Brave (`BRAVE_SEARCH_API_KEY`) — default `SEARCH_API=brave`. Brave covers web, video, and image searches in parallel (multimedia) and is the default for both `optimized` and `general` search types.
-- **Fallback / Alternative Providers**: Tavily (`TAVILY_API_KEY`), Exa (`EXA_API_KEY`), SearXNG (self-hosted, `SEARXNG_API_URL`), Firecrawl (`FIRECRAWL_API_KEY`) — any of which can be selected via `SEARCH_API`.
+- **Primary Search**: Brave (`BRAVE_SEARCH_API_KEY`) — default `SEARCH_API=brave` for optimized searches, and the dedicated general-search provider when its key is present. When Brave is not available for `type="general"`, the search tool falls back to the optimized provider chain.
+- **Fallback / Alternative Providers**: Tavily (`TAVILY_API_KEY`), Exa (`EXA_API_KEY`), SearXNG (self-hosted, `SEARXNG_API_URL`), Firecrawl (`FIRECRAWL_API_KEY`) — any of which can be selected via `SEARCH_API`; the default optimized chain is Brave -> Tavily -> Exa.
 - **Error Handling**: Typed `SearchProviderError` with HTTP status, retryable flag, and parsed `Retry-After`. Retries use jittered exponential backoff via `retrySearchOperation()` in `lib/utils/retry.ts`. See [Search Providers → Error Handling and Retries](SEARCH-PROVIDERS.md#error-handling-and-retries).
-- **Extraction**: Tavily Extract (default), Jina Reader (fallback)
+- **Extraction**: Jina Reader (`JINA_API_KEY`) when available, otherwise Tavily Extract. Recoverable extractor failures can fall back to regular HTML fetches for non-PDF URLs.
 
 ## 3) AI Model Orchestration
 

@@ -25,7 +25,7 @@ Model selection sits between the chat API route (`app/api/chat/route.ts`) and th
 - **Search mode** (`chat` or `research`) — controls the agent's tool budget and research depth
 - **Model type** (`speed` or `quality`) — controls the cost/capability trade-off
 
-The resolved model is passed to the researcher agent, which uses it for all LLM calls during the tool loop. The selection logic lives in `lib/utils/model-selection.ts` and reads configuration from JSON files in `config/models/`.
+The resolved model is passed to the researcher agent, which uses it for all LLM calls during the tool loop. The selection logic lives in `lib/utils/model-selection.ts` and reads configuration from JSON files in `config/models/`. The same config file also supplies the `relatedQuestions` model used after answers and the `trendingSuggestions` model used by `/api/suggestions/refresh`.
 
 ```
 User preferences (cookies)
@@ -73,6 +73,9 @@ Model configurations live in `config/models/` as JSON files. Each file follows t
     },
     "relatedQuestions": {
       /* Model */
+    },
+    "trendingSuggestions": {
+      /* Model */
     }
   }
 }
@@ -97,7 +100,7 @@ The config maps two dimensions to a model:
 - **Search Mode** (`chat` | `research`): Controls the agent's research strategy
 - **Model Type** (`speed` | `quality`): Controls the model's capability tier
 
-This creates a 2x2 matrix of possible model assignments. A separate `relatedQuestions` model handles post-response question generation.
+This creates a 2x2 matrix of possible model assignments. Separate `relatedQuestions` and `trendingSuggestions` models handle post-response question generation and suggestions refresh, respectively.
 
 **Source:** `lib/types/models.ts` (Model interface), `lib/types/model-type.ts` (ModelType), `lib/types/search.ts` (SearchMode)
 
@@ -105,12 +108,12 @@ This creates a 2x2 matrix of possible model assignments. A separate `relatedQues
 
 ## Configuration Profiles
 
-Two profiles exist, selected by the `POLYMORPH_CLOUD_DEPLOYMENT` environment variable:
+Two profiles exist, selected by the cloud deployment flag (`POLYMORPH_CLOUD_DEPLOYMENT` or the legacy `VANA_CLOUD_DEPLOYMENT` alias):
 
-| Profile   | File                         | Selected When                     |
-| --------- | ---------------------------- | --------------------------------- |
-| `default` | `config/models/default.json` | Default (self-hosted)             |
-| `cloud`   | `config/models/cloud.json`   | `POLYMORPH_CLOUD_DEPLOYMENT=true` |
+| Profile   | File                         | Selected When                                                     |
+| --------- | ---------------------------- | ----------------------------------------------------------------- |
+| `default` | `config/models/default.json` | Default (self-hosted)                                             |
+| `cloud`   | `config/models/cloud.json`   | `POLYMORPH_CLOUD_DEPLOYMENT=true` or `VANA_CLOUD_DEPLOYMENT=true` |
 
 The config loader at `lib/config/load-models-config.ts`:
 
@@ -151,7 +154,7 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
 
 5. **Fallback** — If no candidate succeeds (all providers disabled, or config loading fails), return the hardcoded `DEFAULT_MODEL` (Gemini 3 Flash via Gateway).
 
-**Cloud deployment:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag selects the `cloud.json` config profile instead of `default.json`. It does not force a specific model type.
+**Cloud deployment:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag selects the `cloud.json` config profile instead of `default.json`. The legacy `VANA_CLOUD_DEPLOYMENT` alias is also accepted. This does not force a specific model type.
 
 ### Full resolution order
 
@@ -194,13 +197,14 @@ The `getModel(modelString)` function takes a `providerId:modelId` string and ret
 
 The current default configuration (`config/models/default.json`):
 
-| Mode              | Type    | Model                   | Provider |
-| ----------------- | ------- | ----------------------- | -------- |
-| Chat              | Speed   | Gemini 3 Flash          | Gateway  |
-| Chat              | Quality | Grok 4.1 Fast Reasoning | Gateway  |
-| Research          | Speed   | Gemini 3 Flash          | Gateway  |
-| Research          | Quality | Grok 4.1 Fast Reasoning | Gateway  |
-| Related Questions | -       | Gemini 3 Flash          | Gateway  |
+| Mode                 | Type    | Model                   | Provider |
+| -------------------- | ------- | ----------------------- | -------- |
+| Chat                 | Speed   | Gemini 3 Flash          | Gateway  |
+| Chat                 | Quality | Grok 4.1 Fast Reasoning | Gateway  |
+| Research             | Speed   | Gemini 3 Flash          | Gateway  |
+| Research             | Quality | Grok 4.1 Fast Reasoning | Gateway  |
+| Related Questions    | -       | Gemini 3 Flash          | Gateway  |
+| Trending Suggestions | -       | Gemini 3 Flash          | Gateway  |
 
 The hardcoded `DEFAULT_MODEL` fallback (used when all config models fail):
 
@@ -252,7 +256,7 @@ After changing a model, verify it works in both search modes:
 1. Set the `modelType` cookie to match your config entry (`speed` or `quality`)
 2. Set the `searchMode` cookie to `chat`, send a message, and check the server logs for the expected model ID
 3. Repeat with `searchMode=research`
-4. If targeting `cloud.json`, test with `POLYMORPH_CLOUD_DEPLOYMENT=true`
+4. If targeting `cloud.json`, test with `POLYMORPH_CLOUD_DEPLOYMENT=true` or `VANA_CLOUD_DEPLOYMENT=true`
 
 ### Adding Provider Options
 

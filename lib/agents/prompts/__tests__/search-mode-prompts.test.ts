@@ -28,3 +28,92 @@ describe('search-mode-prompts', () => {
     })
   }
 })
+
+describe('Issue 1 — displayPlan gating', () => {
+  it('CHAT_MODE_PROMPT forbids fabricated "getting started" checklists', () => {
+    expect(CHAT_MODE_PROMPT).toContain(
+      'DO NOT invent a "getting started" or "next steps" checklist they did not ask for'
+    )
+    expect(CHAT_MODE_PROMPT).toContain('the recommendations ARE the answer')
+  })
+
+  it('CHAT_MODE_PROMPT restricts the "no numbered lists" rule to how-to content', () => {
+    expect(CHAT_MODE_PROMPT).toContain(
+      'NO numbered step lists for how-to content'
+    )
+    expect(CHAT_MODE_PROMPT).toContain(
+      "only when the user's query matches the displayPlan TRIGGER above"
+    )
+  })
+
+  it('RESEARCH_MODE_PROMPT blocks fabricated checklists on research answers', () => {
+    expect(RESEARCH_MODE_PROMPT).toContain(
+      'Never fabricate an unrequested "how to get started" or "next steps" checklist'
+    )
+    expect(RESEARCH_MODE_PROMPT).toContain(
+      'the research findings ARE the answer'
+    )
+  })
+})
+
+describe('Issue 2 — displayGeoMap placement for location-centric queries', () => {
+  it('CHAT_MODE_PROMPT tells model to render map early for location queries', () => {
+    expect(CHAT_MODE_PROMPT).toContain('PLACEMENT (location-centric queries)')
+    expect(CHAT_MODE_PROMPT).toContain('render the map EARLY')
+    expect(CHAT_MODE_PROMPT).toContain(
+      'Supporting tables and prose go AFTER the map, not before'
+    )
+  })
+
+  it('RESEARCH_MODE_PROMPT has the same placement rule', () => {
+    expect(RESEARCH_MODE_PROMPT).toContain(
+      'PLACEMENT (location-centric queries)'
+    )
+    expect(RESEARCH_MODE_PROMPT).toContain('render the map EARLY')
+    expect(RESEARCH_MODE_PROMPT).toContain(
+      'Supporting tables and prose go AFTER the map, not before'
+    )
+  })
+})
+
+describe('Issue 3 — displayTable link guidance', () => {
+  it('CHAT_MODE_PROMPT teaches the link format with a worked example', () => {
+    expect(CHAT_MODE_PROMPT).toContain('LINK ENTITY CELLS')
+    expect(CHAT_MODE_PROMPT).toContain(
+      'format: { kind: "link", hrefKey: "url", external: true }'
+    )
+    expect(CHAT_MODE_PROMPT).toContain('martial-arts-schools')
+    expect(CHAT_MODE_PROMPT).toContain('hidden: true')
+  })
+
+  it('RESEARCH_MODE_PROMPT teaches the link format with a worked example', () => {
+    expect(RESEARCH_MODE_PROMPT).toContain('LINK ENTITY CELLS')
+    expect(RESEARCH_MODE_PROMPT).toContain(
+      'format: { kind: "link", hrefKey: "url", external: true }'
+    )
+    expect(RESEARCH_MODE_PROMPT).toContain('martial-arts-schools')
+    expect(RESEARCH_MODE_PROMPT).toContain('hidden: true')
+  })
+})
+
+describe('Issue 4 — follow-up context handling', () => {
+  const DISTINCT_PHRASES = [
+    'FOLLOW-UP CONTEXT HANDLING',
+    'Refinement signals',
+    'do any of them',
+    'REUSE prior tool results',
+    'Do NOT re-emit the prior section heading',
+    'Do NOT re-render the prior displayTable unless a column materially changed',
+    'Do NOT re-render the prior displayGeoMap unless the marker set changed'
+  ]
+
+  for (const phrase of DISTINCT_PHRASES) {
+    it(`CHAT_MODE_PROMPT contains follow-up rule phrase: "${phrase}"`, () => {
+      expect(CHAT_MODE_PROMPT).toContain(phrase)
+    })
+
+    it(`RESEARCH_MODE_PROMPT contains follow-up rule phrase: "${phrase}"`, () => {
+      expect(RESEARCH_MODE_PROMPT).toContain(phrase)
+    })
+  }
+})

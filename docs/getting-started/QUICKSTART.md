@@ -45,34 +45,30 @@ The first run downloads Docker images and may take a few minutes.
 cp .env.local.example .env.local
 ```
 
-Open `.env.local` and set the two required variables:
+Open `.env.local` and set the variables for the default local path:
 
 ```bash
 # Database -- local Supabase PostgreSQL
 DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres
 DATABASE_SSL_DISABLED=true
 
-# AI -- Vercel AI Gateway (powers all LLM calls)
+# AI -- Vercel AI Gateway (powers the default shipped models)
 AI_GATEWAY_API_KEY=your_vercel_gateway_key
-```
-
-For web search, add at least one search provider key (Brave recommended):
-
-```bash
 # Search -- Brave (default primary search provider)
 BRAVE_SEARCH_API_KEY=your_brave_key
 # Or use Tavily as an alternative:
 # TAVILY_API_KEY=your_tavily_key
-```
-
-For Supabase Auth (recommended), also set:
-
-```bash
+# Auth -- either configure Supabase or enable guest chat for local use
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:44321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from `npx supabase status`>
+
+# Or, for a local-only anonymous path:
+ENABLE_GUEST_CHAT=true
 ```
 
 See [Environment Reference](ENVIRONMENT.md) for the full variable matrix.
+
+Use the Supabase values if you want signed-in auth locally. If you prefer anonymous local testing, you can skip those auth keys and keep only `ENABLE_GUEST_CHAT=true`.
 
 ## 4. Run Migrations
 
@@ -96,7 +92,7 @@ Open [http://localhost:43100](http://localhost:43100). You should see the Polymo
 2. Watch the research agent work -- it searches the web, fetches content, and streams a rich answer
 3. Notice the generative UI components: citations, link previews, and structured sections
 
-If you have `ENABLE_GUEST_CHAT=true` (the default), you can search without signing in.
+If you have `ENABLE_GUEST_CHAT=true`, you can search without signing in.
 
 ## What Just Happened?
 
@@ -127,6 +123,6 @@ Check if ports 44321-44323 are in use: `lsof -i :44321 -i :44322 -i :44323`. Sto
 Make sure `DATABASE_SSL_DISABLED=true` is set in `.env.local`. The local Supabase instance doesn't use SSL.
 
 **App starts but searches fail:**
-Verify your search provider key (`BRAVE_SEARCH_API_KEY` or `TAVILY_API_KEY`) is set correctly. Check the terminal for error messages.
+Verify the configured search provider key is set correctly (`BRAVE_SEARCH_API_KEY`, `TAVILY_API_KEY`, `EXA_API_KEY`, or the provider selected in `SEARCH_API`). Check the terminal for error messages.
 
 For more solutions, see [Troubleshooting](../operations/TROUBLESHOOTING.md).

@@ -30,10 +30,10 @@ Polymorph uses [Supabase Auth](https://supabase.com/docs/guides/auth) for user a
   - `/` (root chat) — public when `ENABLE_GUEST_CHAT=true` (default); otherwise requires sign-in.
   - `/auth/*` — always public (login, sign-up, forgot-password, confirm, OAuth, etc.).
   - `/share/*` — public read-only chat sharing.
-  - `/api/chat` — accepts guest traffic when `ENABLE_GUEST_CHAT=true`; otherwise requires an authenticated session. IP-rate-limited for guests.
+  - `/api/chat` — accepts guest traffic when `ENABLE_GUEST_CHAT=true`; otherwise requires an authenticated session. IP-rate-limited for guests in cloud deployments.
   - `/api/suggestions/refresh` — **not** user auth. Requires `Authorization: Bearer <CRON_SECRET>`. Intended only for the Vercel daily cron.
   - `/admin/*` — under the `app/(admin)/` route group. `app/(admin)/layout.tsx` redirects unauthenticated requests to `/auth/login`, then returns `notFound()` unless `isAdminUserId(user.id)` matches the single configured `ADMIN_USER_ID` env var.
-- Authentication can be disabled for local development with `ENABLE_AUTH=false` (not permitted when `POLYMORPH_CLOUD_DEPLOYMENT=true`). In that mode `getCurrentUser()` returns `null`, so the admin route group still redirects to `/auth/login` and never grants anonymous admin access.
+- Authentication can be disabled for local development with `ENABLE_AUTH=false` (not permitted when `POLYMORPH_CLOUD_DEPLOYMENT=true`). In that mode API handlers use an anonymous user ID, but the admin route group still requires a Supabase session and a matching `ADMIN_USER_ID`; anonymous requests never gain admin access.
 
 ### Row-Level Security (RLS)
 
@@ -54,12 +54,12 @@ The upload endpoint (`app/api/upload/route.ts`) enforces the following:
 
 - **Authentication required** -- only logged-in users can upload files.
 - **Maximum file size** -- 5 MB.
-- **Allowed MIME types** -- `image/jpeg`, `image/png`, `application/pdf`.
+- **Allowed MIME types** -- `image/png`, `image/jpeg`, `image/gif`, `image/webp`, `application/pdf`, `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
 - Files are stored in a Supabase Storage bucket scoped per user.
 
 ### Rate Limiting
 
-- **Guest chat** -- daily request limits enforced via Upstash Redis when `ENABLE_GUEST_CHAT=true`.
+- **Guest chat** -- daily request limits enforced via Upstash Redis in cloud deployments when `ENABLE_GUEST_CHAT=true`.
 - **Authenticated users** -- overall chat limits enforced via Upstash Redis in cloud deployments.
 - Rate-limit state is stored in Redis and is not persisted in the primary database.
 
@@ -71,7 +71,7 @@ The upload endpoint (`app/api/upload/route.ts`) enforces the following:
 ### Guest Mode Isolation
 
 - Guest sessions are ephemeral and are not persisted to the database.
-- Guest users are forced to the `speed` model type and cannot select `quality` models.
+- Guest sessions default to the `speed` model type.
 - Guest chat requires `ENABLE_GUEST_CHAT=true`; otherwise, unauthenticated requests receive `401 Unauthorized`.
 
 ### Canvas Artifact Isolation

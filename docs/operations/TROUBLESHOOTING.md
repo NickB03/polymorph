@@ -60,7 +60,7 @@ This is required for local development with Supabase CLI because the local Postg
 
 ### "Provider not enabled" Error
 
-**Symptoms:** HTTP 404 response from `/api/chat` with body `Selected provider is not enabled <providerId>`.
+**Symptoms:** HTTP 404 response from `/api/chat` with body `Provider not enabled: <providerId>`.
 
 This happens when the selected AI model's provider has no API key configured. The `isProviderEnabled()` function in `lib/utils/registry.ts` checks for the appropriate key:
 
@@ -232,7 +232,7 @@ SEARCH_API=searxng
 
 1. **Missing search API key.** `BRAVE_SEARCH_API_KEY` is the primary key for the default provider.
 2. **Wrong `SEARCH_API` value.** If set to a provider that is not configured, searches will fail. Valid values: `brave` (default), `tavily`, `exa`, `firecrawl`, `searxng`.
-3. **Provider fallback.** If the primary provider fails, there is no automatic fallback. The error is thrown to the AI agent, which may retry or report the failure.
+3. **Provider fallback.** The search layer automatically tries configured providers in order. For the default Brave path, the fallback chain is Brave → Tavily → Exa. If all configured providers fail, inspect the chained error messages in the terminal.
 
 **Fix:** Check that `BRAVE_SEARCH_API_KEY` is set. If using an alternative provider, ensure the corresponding API key and `SEARCH_API` variable are correctly configured. See [Search Providers](../architecture/SEARCH-PROVIDERS.md) for provider setup details.
 
