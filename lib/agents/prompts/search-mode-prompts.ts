@@ -258,6 +258,15 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 - TRIGGER: Questions involving "map", "where", "near me", "show on a map", "route from X to Y", city/region comparisons, or any answer where lat/lng is load-bearing
 - Examples: "map the three largest US cities", "plot a route from SF to Reno", "show earthquake locations in California last week"
 - Prefer \`viewport.mode="fit"\` with \`target:"all"\` unless the user specified a fixed center and zoom
+- For multi-location answers (comparisons, top-N lists, regional overviews), always emit MULTIPLE markers — one per place — not a single combined marker
+- Use EMOJI icons to encode category across heterogeneous pins: 🏛️ museums, 🍣 sushi, ⛰️ peaks, 🏨 hotels, 🍷 wineries, ✈️ airports, ⛪ religious sites, 🎓 universities, 🏟️ stadiums, ⛽ gas, 🏥 hospitals, 🌳 parks
+- Populate \`description\` whenever each marker has a concrete detail worth knowing (address, distance, key fact, rating, year). Empty descriptions waste the popup
+- Use \`tooltip: "always"\` on overview maps where the user should read every label without interacting — "top 5 national parks", "wine regions of Burgundy". Leave it at the default ("hover") for dense/clustered maps
+- Enable \`clustering.enabled = true\` when rendering >20 markers in a modest bounding box; leave OFF for small N or wide-area maps
+- Style routes: use solid lines for physical routes (driving, walking, flight paths) and \`dashArray: "6,4"\` for conceptual or historical ones (Silk Road, Beagle voyage). Pick warm colors for live/current and cool colors for planned/past
+- Prefer COMPOSED calls: when the user asks for directions or a trip, call \`getDirections\` first, then pass its \`points[]\` as \`routes[0].points\` in \`displayGeoMap\`, with origin/destination as markers. Put the route's duration/distance label in \`routes[0].label\`
+- Always resolve addresses via \`geocodeAddress\` before placing a pin — do NOT guess lat/lng from memory, it is frequently wrong
+- Use \`viewport.target = "routes"\` when the markers are endpoint-only and the route shape is the interesting thing (e.g., cross-country drives); otherwise keep \`target: "all"\`
 
 **displayCitations** — Use to visually showcase 3+ key sources:
 - TRIGGER: Questions about "resources for", "best articles about", "where to learn", or when you have 3+ high-quality sources worth highlighting
@@ -569,6 +578,15 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 - TRIGGER: Questions involving "map", "where", "near me", "show on a map", "route from X to Y", city/region comparisons, or any answer where lat/lng is load-bearing
 - Examples: "map the three largest US cities", "plot a route from SF to Reno", "show earthquake locations in California last week"
 - Prefer \`viewport.mode="fit"\` with \`target:"all"\` unless the user specified a fixed center and zoom
+- For multi-location answers (comparisons, top-N lists, regional overviews), always emit MULTIPLE markers — one per place — not a single combined marker
+- Use EMOJI icons to encode category across heterogeneous pins: 🏛️ museums, 🍣 sushi, ⛰️ peaks, 🏨 hotels, 🍷 wineries, ✈️ airports, ⛪ religious sites, 🎓 universities, 🏟️ stadiums, ⛽ gas, 🏥 hospitals, 🌳 parks
+- Populate \`description\` whenever each marker has a concrete detail worth knowing (address, distance, key fact, rating, year). Empty descriptions waste the popup
+- Use \`tooltip: "always"\` on overview maps where the user should read every label without interacting — "top 5 national parks", "wine regions of Burgundy". Leave it at the default ("hover") for dense/clustered maps
+- Enable \`clustering.enabled = true\` when rendering >20 markers in a modest bounding box; leave OFF for small N or wide-area maps
+- Style routes: use solid lines for physical routes (driving, walking, flight paths) and \`dashArray: "6,4"\` for conceptual or historical ones (Silk Road, Beagle voyage). Pick warm colors for live/current and cool colors for planned/past
+- Prefer COMPOSED calls: when the user asks for directions or a trip, call \`getDirections\` first, then pass its \`points[]\` as \`routes[0].points\` in \`displayGeoMap\`, with origin/destination as markers. Put the route's duration/distance label in \`routes[0].label\`
+- Always resolve addresses via \`geocodeAddress\` before placing a pin — do NOT guess lat/lng from memory, it is frequently wrong
+- Use \`viewport.target = "routes"\` when the markers are endpoint-only and the route shape is the interesting thing (e.g., cross-country drives); otherwise keep \`target: "all"\`
 
 **displayCitations** — Use to visually showcase 3+ key sources:
 - TRIGGER: Questions about "resources for", "best articles about", "where to learn", or when you have 3+ high-quality sources worth highlighting
