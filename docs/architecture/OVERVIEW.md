@@ -15,7 +15,7 @@ This document describes the internal architecture of Polymorph — an AI platfor
 | Database  | PostgreSQL via Supabase + Drizzle ORM                                                                                             |
 | Auth      | Supabase Auth                                                                                                                     |
 | AI        | Vercel AI SDK + AI Gateway                                                                                                        |
-| Search    | Brave (primary), Tavily (fallback), Exa, SearXNG, Firecrawl                                                                       |
+| Search    | Brave (default), Tavily/Exa fallbacks, optional SearXNG/Firecrawl providers                                                       |
 | Artifacts | Canvas artifact compiler + workspace (single-file HTML preview/export)                                                            |
 | Styling   | Tailwind CSS v4 + shadcn/ui                                                                                                       |
 | Testing   | Vitest                                                                                                                            |
@@ -58,7 +58,7 @@ graph TD
     API["API Routes<br/>/api/chat"]
     Agent["Researcher Agent<br/>(ToolLoopAgent)"]
     AI["AI Providers<br/>(Gateway, OpenAI, Anthropic,<br/>Google, Ollama)"]
-    Search["Search Providers<br/>(Brave, Tavily, Exa,<br/>SearXNG, Firecrawl)"]
+    Search["Search Providers<br/>(Brave default,<br/>Tavily/Exa fallbacks,<br/>optional SearXNG/Firecrawl)"]
     DB["Supabase PostgreSQL<br/>(Drizzle ORM)"]
     Redis["Upstash Redis<br/>(Rate Limiting)"]
     Auth["Supabase Auth"]
@@ -75,6 +75,8 @@ graph TD
     Agent -.->|"Telemetry"| Phoenix
     Auth -->|"Session Cookies"| Browser
 ```
+
+The default chat-agent search path is Brave with Tavily and Exa fallbacks. SearXNG and Firecrawl are implemented as opt-in providers selected via `SEARCH_API`; they are not part of the default high-level search chain unless explicitly configured.
 
 **Key source files:**
 
@@ -97,7 +99,7 @@ graph TD
 
 ## Agent Pipeline
 
-Every chat request follows a single path through the API route into the streaming infrastructure. The route authenticates the user (or validates guest access), selects a model, and delegates to either the authenticated or ephemeral stream handler. Guest requests are forced onto the speed model tier even if the `modelType` cookie is set to `quality`.
+Every chat request follows a single path through the API route into the streaming infrastructure. The route authenticates the user (or validates guest access), selects a model, and delegates to either the authenticated or ephemeral stream handler. New guest sessions default to the `speed` model tier in the UI, but the backend does not currently hard-reject a guest `quality` cookie.
 
 ```mermaid
 flowchart TD
@@ -206,9 +208,9 @@ graph LR
     subgraph SearchProviders["Search Providers"]
         brave["Brave (default)"]
         tavily["Tavily (fallback)"]
-        exa["Exa"]
-        searxng["SearXNG"]
-        firecrawl["Firecrawl"]
+        exa["Exa (fallback)"]
+        searxng["SearXNG (opt-in)"]
+        firecrawl["Firecrawl (opt-in)"]
     end
 
     subgraph FetchStrategies["Fetch Strategies"]

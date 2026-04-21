@@ -29,11 +29,11 @@ graph LR
 
 Polymorph uses **Supabase Auth** with cookie-based sessions. The middleware (`lib/supabase/middleware.ts`) refreshes the session on every request using `@supabase/ssr`.
 
-| Mode              | Behavior                                                                                                                      |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **Authenticated** | Supabase JWT stored in HTTP-only cookies. User ID extracted via `supabase.auth.getUser()`.                                    |
-| **Guest**         | Allowed when `ENABLE_GUEST_CHAT=true`. Identified by IP address. Limited feature set (speed model only, no persistence).      |
-| **Auth Disabled** | When `ENABLE_AUTH=false` (non-cloud only). All requests use a shared anonymous user ID. For personal/Docker deployments only. |
+| Mode              | Behavior                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Authenticated** | Supabase JWT stored in HTTP-only cookies. User ID extracted via `supabase.auth.getUser()`.                                                  |
+| **Guest**         | Allowed when `ENABLE_GUEST_CHAT=true`. Identified by IP address. Chats are ephemeral (not persisted) and default to the `speed` model tier. |
+| **Auth Disabled** | When `ENABLE_AUTH=false` (non-cloud only). All requests use a shared anonymous user ID. For personal/Docker deployments only.               |
 
 Unauthenticated requests to protected endpoints receive a `401 Unauthorized` response.
 
@@ -53,8 +53,8 @@ The primary chat endpoint. Accepts a user message and returns a Server-Sent Even
 
 ```typescript
 {
-  message: string              // Required for trigger="submit-message"
-  messages?: Message[]         // Full message history (used for guest/ephemeral chats)
+  message: UIMessage           // Required for trigger="submit-message"
+  messages?: UIMessage[]       // Full message history (used for guest/ephemeral chats)
   chatId: string               // Chat session identifier
   trigger: string              // "submit-message" | "regenerate-message" | "tool-result"
   messageId?: string           // Required for trigger="regenerate-message"
@@ -67,23 +67,23 @@ The primary chat endpoint. Accepts a user message and returns a Server-Sent Even
 }
 ```
 
-| Field              | Type        | Required    | Description                                                                                                                   |
-| ------------------ | ----------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `message`          | `string`    | Conditional | The user's message text. Required when `trigger` is `"submit-message"`.                                                       |
-| `messages`         | `Message[]` | No          | Full conversation history. Used for guest/ephemeral streaming.                                                                |
-| `chatId`           | `string`    | Yes         | Unique identifier for the chat session.                                                                                       |
-| `trigger`          | `string`    | Yes         | Action type: `"submit-message"`, `"regenerate-message"`, or `"tool-result"` for interactive tool continuations.               |
-| `messageId`        | `string`    | Conditional | ID of the message to regenerate. Required when `trigger` is `"regenerate-message"`.                                           |
-| `isNewChat`        | `boolean`   | No          | Indicates a new chat session. Affects analytics tracking.                                                                     |
-| `toolResult`       | `object`    | Conditional | Tool result payload with `toolCallId` and `output`. Required when `trigger` is `"tool-result"`.                               |
-| `guestCanvasToken` | `string`    | No          | HMAC-SHA256 signed token for guest canvas artifact continuity. Passed through to canvas tools for guest session verification. |
+| Field              | Type          | Required    | Description                                                                                                                   |
+| ------------------ | ------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `message`          | `UIMessage`   | Conditional | The current message object. Required when `trigger` is `"submit-message"`; usually present for regenerate requests.           |
+| `messages`         | `UIMessage[]` | No          | Full conversation history. Used for guest/ephemeral streaming.                                                                |
+| `chatId`           | `string`      | Yes         | Unique identifier for the chat session.                                                                                       |
+| `trigger`          | `string`      | Yes         | Action type: `"submit-message"`, `"regenerate-message"`, or `"tool-result"` for interactive tool continuations.               |
+| `messageId`        | `string`      | Conditional | ID of the message to regenerate. Required when `trigger` is `"regenerate-message"`.                                           |
+| `isNewChat`        | `boolean`     | No          | Indicates a new chat session. Affects analytics tracking.                                                                     |
+| `toolResult`       | `object`      | Conditional | Tool result payload with `toolCallId` and `output`. Required when `trigger` is `"tool-result"`.                               |
+| `guestCanvasToken` | `string`      | No          | HMAC-SHA256 signed token for guest canvas artifact continuity. Passed through to canvas tools for guest session verification. |
 
 #### Cookies Read
 
-| Cookie       | Values                 | Default   | Description                                                                           |
-| ------------ | ---------------------- | --------- | ------------------------------------------------------------------------------------- |
-| `searchMode` | `"chat"`, `"research"` | `"chat"`  | Controls the research agent mode. Chat uses max 20 steps; research uses max 50 steps. |
-| `modelType`  | `"speed"`, `"quality"` | `"speed"` | Model selection preference. Guests and cloud deployments are forced to `"speed"`.     |
+| Cookie       | Values                 | Default   | Description                                                                                                               |
+| ------------ | ---------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `searchMode` | `"chat"`, `"research"` | `"chat"`  | Controls the research agent mode. Chat uses max 20 steps; research uses max 50 steps.                                     |
+| `modelType`  | `"speed"`, `"quality"` | `"speed"` | Model selection preference. The route honors a valid cookie value and otherwise falls back to the configured model order. |
 
 #### Response
 
@@ -96,10 +96,10 @@ The response is a streaming SSE connection. Message parts (text, search results,
 | Status                      | Condition                                                                                                                                  |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `400 Bad Request`           | Missing `message` for submit trigger, missing `messageId` for regenerate trigger, or missing/invalid `toolResult` for tool-result trigger. |
-| `401 Unauthorized`          | No authenticated user and guest mode is disabled. Also returned when guest rate limit is exceeded (prompts sign-in).                       |
+| `401 Unauthorized`          | No authenticated user and guest mode is disabled.                                                                                          |
 | `403 Forbidden`             | Request originated from a `/share/` page. Chat API is blocked on share pages.                                                              |
 | `404 Not Found`             | Selected AI provider is not enabled in the registry.                                                                                       |
-| `429 Too Many Requests`     | Authenticated user exceeded daily chat limit (cloud deployments only).                                                                     |
+| `429 Too Many Requests`     | Authenticated user exceeded daily chat limit or guest rate limit exceeded in cloud deployments.                                            |
 | `500 Internal Server Error` | Unexpected server error during processing.                                                                                                 |
 
 #### Example
@@ -187,7 +187,7 @@ curl "http://localhost:43100/api/chats?offset=0&limit=10" \
 
 ### POST `/api/upload`
 
-Uploads a file (image or PDF) to Supabase Storage, scoped to a specific chat.
+Uploads a file (image, PDF, or Word document) to Supabase Storage, scoped to a specific chat.
 
 **Authentication:** Required
 
@@ -202,10 +202,10 @@ Uploads a file (image or PDF) to Supabase Storage, scoped to a specific chat.
 
 #### Constraints
 
-| Constraint         | Value                                        |
-| ------------------ | -------------------------------------------- |
-| Max file size      | 5 MB                                         |
-| Allowed MIME types | `image/jpeg`, `image/png`, `application/pdf` |
+| Constraint         | Value                                                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Max file size      | 5 MB                                                                                                                                                                     |
+| Allowed MIME types | `image/jpeg`, `image/png`, `image/gif`, `image/webp`, `application/pdf`, `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
 
 #### Response
 
@@ -249,9 +249,9 @@ curl -X POST http://localhost:43100/api/upload \
 
 ### POST `/api/feedback`
 
-Records user feedback (thumbs up/down) on an AI response. Updates the message metadata in the database when a user context is available.
+Records user feedback (thumbs up/down) on an AI response. If `messageId` is provided, the route updates the message metadata; database update failures are logged and do not fail the request.
 
-**Authentication:** Optional (feedback is recorded even without auth, but database update requires a user context for RLS)
+**Authentication:** Optional (if Supabase auth is configured, the current user is passed through for RLS)
 **Dynamic:** `force-dynamic`
 
 #### Request Body
@@ -259,26 +259,24 @@ Records user feedback (thumbs up/down) on an AI response. Updates the message me
 ```typescript
 {
   score: 1 | -1            // 1 = positive (thumbs up), -1 = negative (thumbs down)
-  messageId?: string       // Database message ID to update metadata
+  messageId?: string       // Optional database message ID to update metadata
 }
 ```
 
-| Field       | Type      | Required | Description                                                                  |
-| ----------- | --------- | -------- | ---------------------------------------------------------------------------- |
-| `score`     | `1 \| -1` | Yes      | Feedback score. Must be exactly `1` or `-1`.                                 |
-| `messageId` | `string`  | No       | If provided, updates the message's `metadata.feedbackScore` in the database. |
+| Field       | Type      | Required | Description                                                    |
+| ----------- | --------- | -------- | -------------------------------------------------------------- |
+| `score`     | `1 \| -1` | Yes      | Feedback score. Must be exactly `1` or `-1`.                   |
+| `messageId` | `string`  | No       | Optional message ID whose `metadata.feedbackScore` is updated. |
 
 #### Response
 
 **Content-Type:** `text/plain`
 
-| Status | Body                                   | Condition                                   |
-| ------ | -------------------------------------- | ------------------------------------------- |
-| `200`  | `"Feedback tracking is not enabled"`   | Tracing is not configured (graceful no-op). |
-| `200`  | `"Feedback recorded successfully"`     | Feedback recorded and saved to DB.          |
-| `400`  | `"traceId is required"`                | Missing `traceId` field.                    |
-| `400`  | `"score must be 1 (good) or -1 (bad)"` | Invalid score value.                        |
-| `500`  | `"Error recording feedback"`           | Unexpected error during processing.         |
+| Status | Body                                   | Condition                                                                 |
+| ------ | -------------------------------------- | ------------------------------------------------------------------------- |
+| `200`  | `"Feedback recorded successfully"`     | Feedback accepted; message metadata updated when `messageId` is provided. |
+| `400`  | `"score must be 1 (good) or -1 (bad)"` | Invalid score value.                                                      |
+| `500`  | `"Error recording feedback"`           | Unexpected error during processing.                                       |
 
 #### Example
 
@@ -286,7 +284,6 @@ Records user feedback (thumbs up/down) on an AI response. Updates the message me
 curl -X POST http://localhost:43100/api/feedback \
   -H "Content-Type: application/json" \
   -d '{
-    "traceId": "trace-abc123",
     "score": 1,
     "messageId": "msg-xyz789"
   }'
@@ -488,7 +485,7 @@ Canvas artifact endpoints manage the lifecycle of canvas artifacts (one per chat
 
 ### GET `/api/canvas-artifacts/[artifactId]`
 
-Loads the full canvas artifact state including current draft source, compiled HTML, version history, and runtime diagnostics.
+Loads the full canvas artifact state including current draft source, compiled draft HTML, diagnostics, version history, and current version metadata.
 
 **Authentication:** Required (Supabase session or guest canvas token via `?guestCanvasToken=` query param)
 **Dynamic:** `force-dynamic`
@@ -497,7 +494,7 @@ Loads the full canvas artifact state including current draft source, compiled HT
 
 **Content-Type:** `application/json`
 
-Returns the full artifact state object with `id`, `chatId`, `title`, `draftSource`, `compiledHtml`, `draftRevision`, `versions`, `runtimeDiagnostics`, and timestamps.
+Returns the full artifact state object with `artifactId`, `chatId`, `title`, `status`, `draftSource`, `draftCompiledHtml`, `draftDiagnostics`, `draftRevision`, `currentVersionId`, `versions`, and `updatedAt`.
 
 #### Error Responses
 
@@ -663,10 +660,12 @@ Persists runtime diagnostics (errors, warnings) captured from the preview iframe
 {
   draftRevision: number         // Revision the diagnostics apply to
   diagnostics: Array<{          // Array of diagnostic entries
-    level: string
+    severity: 'error' | 'warning' | 'info'
     message: string
-    source?: string
-    timestamp?: string
+    file?: string
+    line?: number
+    column?: number
+    details?: Record<string, unknown>
   }>
   guestCanvasToken?: string     // Guest access token (if not authenticated)
 }
@@ -696,7 +695,7 @@ Returns the updated artifact state. For guest requests, includes a rotated `gues
 
 Serves the compiled HTML for inline embedding or preview. Returns the artifact's compiled HTML as an HTML response suitable for `iframe.srcdoc` or direct viewing.
 
-**Authentication:** None required (public access for embedding)
+**Authentication:** Required (Supabase session or guest canvas token via `?guestCanvasToken=` query param)
 **Dynamic:** `force-dynamic`
 
 #### Response
@@ -707,10 +706,12 @@ Returns the compiled HTML for the canvas artifact, rendered inline (not as a dow
 
 #### Error Responses
 
-| Status | Condition                |
-| ------ | ------------------------ |
-| `404`  | Artifact not found.      |
-| `500`  | Unexpected server error. |
+| Status | Condition                                                    |
+| ------ | ------------------------------------------------------------ |
+| `401`  | No authenticated user and no guest token provided.           |
+| `403`  | Guest token is invalid, expired, or does not match artifact. |
+| `404`  | Artifact not found.                                          |
+| `500`  | Unexpected server error.                                     |
 
 ---
 
@@ -810,14 +811,15 @@ When the guest limit is exceeded, the response is:
 
 ```json
 {
-  "error": "Please sign in to continue.",
+  "code": "GUEST_LIMIT",
+  "error": "You’ve reached your daily search limit. Create a free account for unlimited access, or come back tomorrow.",
   "remaining": 0,
   "resetAt": 1706745600000,
   "limit": 10
 }
 ```
 
-**Status:** `401 Unauthorized`
+**Status:** `429 Too Many Requests`
 **Headers:**
 
 - `X-RateLimit-Limit` -- Daily limit
@@ -860,18 +862,18 @@ When not in cloud deployment mode (or when Upstash Redis is not configured), all
 
 All API endpoints follow consistent error patterns:
 
-| Status | Meaning                                                          |
-| ------ | ---------------------------------------------------------------- |
-| `200`  | Success.                                                         |
-| `400`  | Bad request -- missing or invalid parameters.                    |
-| `401`  | Unauthorized -- authentication required or guest limit exceeded. |
-| `403`  | Forbidden -- action not allowed in the current context.          |
-| `404`  | Not found -- requested resource or provider does not exist.      |
-| `429`  | Too many requests -- rate limit exceeded (authenticated users).  |
-| `500`  | Internal server error -- unexpected failure.                     |
+| Status | Meaning                                                     |
+| ------ | ----------------------------------------------------------- |
+| `200`  | Success.                                                    |
+| `400`  | Bad request -- missing or invalid parameters.               |
+| `401`  | Unauthorized -- authentication required.                    |
+| `403`  | Forbidden -- action not allowed in the current context.     |
+| `404`  | Not found -- requested resource or provider does not exist. |
+| `429`  | Too many requests -- rate limit exceeded.                   |
+| `500`  | Internal server error -- unexpected failure.                |
 
 Error bodies vary by endpoint:
 
-- **Chat and feedback endpoints** return plain text error messages.
+- **Chat endpoints** return JSON error bodies; feedback returns plain text responses.
 - **Upload and chats endpoints** return JSON with an `error` field.
 - **Rate limit responses** return JSON with `error`, `remaining`, `resetAt`, and `limit` fields plus `X-RateLimit-*` headers.

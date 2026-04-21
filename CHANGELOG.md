@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Template-driven evals dashboard v2 with persisted per-user layout preference
 - Daily Vercel cron at `/api/suggestions/refresh` to refresh trending suggestions (Bearer-auth gated by `CRON_SECRET`)
 - Typed search-provider errors with `Retry-After` honoring and jittered exponential backoff
-- Inline image generation tool (`generateImage`, Gemini 2.5 Flash)
+- Inline image generation tool (`generateImage`, Gemini 2.5 Flash Image)
 - Image upload as LLM context (multimodal input) for all users
 - `readCanvasArtifact` tool for reading current canvas source without side effects
 - `displayQuestionWizard` interactive question-flow display tool

@@ -116,7 +116,7 @@ Display tools transition quickly through these states since their `execute` func
 
 ## Display Tools (Server)
 
-Display tools are defined in `lib/tools/display-*.ts`. Each is a Vercel AI SDK `tool()` with a Zod input schema and a passthrough execute function.
+Display tools are defined in `lib/tools/display-*.ts`. Each is a Vercel AI SDK `tool()` with a Zod input schema; most use a passthrough execute function, while `displayOptionList` is frontend-resolved and does not define `execute`.
 
 Display tools do not perform any computation. They serve as a structured output channel for the AI agent. The agent fills in the schema, and the frontend renders it.
 

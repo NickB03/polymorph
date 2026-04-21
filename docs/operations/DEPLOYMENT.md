@@ -39,10 +39,11 @@ If cloud controls are enabled:
 
 ```bash
 POLYMORPH_CLOUD_DEPLOYMENT=true
-NEXT_PUBLIC_POLYMORPH_CLOUD_DEPLOYMENT=true
 UPSTASH_REDIS_REST_URL=[YOUR_UPSTASH_URL]
 UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 ```
+
+`UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are only needed if you want chat limits enforced in cloud mode. If they are absent, the app still boots and the limit checks fall back to allow-all behavior.
 
 For geo maps, routing, and static map images, also set:
 

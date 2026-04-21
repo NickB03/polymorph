@@ -398,7 +398,7 @@ Dynamic tools use `z.object({}).passthrough()` as their input schema, accepting 
 
 ## Search Providers
 
-The search tool delegates to one of five search providers, selected by the `SEARCH_API` environment variable. A factory pattern (`createSearchProvider`) instantiates the appropriate provider.
+The search tool delegates to a provider implementation selected by the `SEARCH_API` environment variable. The default runtime path is Brave with Tavily and Exa fallbacks; SearXNG and Firecrawl are opt-in alternatives rather than part of the default chain. A factory pattern (`createSearchProvider`) instantiates the appropriate provider.
 
 ```mermaid
 graph TD
@@ -413,9 +413,9 @@ graph TD
     subgraph Providers["Provider Implementations"]
         Brave["BraveSearchProvider<br/>(default)"]
         Tavily["TavilySearchProvider<br/>(fallback)"]
-        Exa["ExaSearchProvider"]
-        SearXNG["SearXNGSearchProvider<br/>(self-hosted)"]
-        Firecrawl["FirecrawlSearchProvider"]
+        Exa["ExaSearchProvider<br/>(fallback)"]
+        SearXNG["SearXNGSearchProvider<br/>(opt-in, self-hosted)"]
+        Firecrawl["FirecrawlSearchProvider<br/>(opt-in)"]
     end
 
     SearchTool --> TypeCheck
@@ -505,6 +505,8 @@ interface SearchProvider {
 2. For `type='general'`: Check if `BRAVE_SEARCH_API_KEY` is set
    - If yes: use Brave (multimedia support)
    - If no: fall back to the `SEARCH_API` provider (same as optimized)
+3. The default fallback chain is `brave -> tavily -> exa`
+4. `searxng` and `firecrawl` are only used when explicitly selected via `SEARCH_API`
 
 For error handling across providers (typed `SearchProviderError`, retry semantics, burst pacing), see [Search Providers → Error Handling and Retries](SEARCH-PROVIDERS.md#error-handling-and-retries).
 

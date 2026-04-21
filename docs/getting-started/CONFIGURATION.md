@@ -5,23 +5,22 @@
 
 This guide covers application configuration for Polymorph, including required startup variables and optional capabilities.
 
-## Required Day-1 Configuration
+## Baseline Bootstrap
 
-Polymorph requires the following environment variables to run:
+The app boots with a database connection alone:
 
 ```bash
 DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres
-DATABASE_SSL_DISABLED=true
-AI_GATEWAY_API_KEY=[YOUR_VERCEL_GATEWAY_KEY]
 ```
 
-For web search, add at least one provider key:
+For the shipped default experience, add the provider keys used by the current model and search config:
 
 ```bash
+AI_GATEWAY_API_KEY=[YOUR_VERCEL_GATEWAY_KEY]
 BRAVE_SEARCH_API_KEY=[YOUR_BRAVE_SEARCH_KEY]
 ```
 
-These defaults are optimized for a fast local bootstrap with Vercel AI Gateway + Brave Search.
+`DATABASE_SSL_DISABLED=true` is recommended for local Supabase or Docker, where PostgreSQL does not use SSL.
 
 ## Authentication Modes
 
@@ -89,6 +88,11 @@ For managed cloud mode, enable:
 
 ```bash
 POLYMORPH_CLOUD_DEPLOYMENT=true
+```
+
+If you want chat rate limits enforced in cloud mode, also configure:
+
+```bash
 UPSTASH_REDIS_REST_URL=[YOUR_UPSTASH_URL]
 UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 ```

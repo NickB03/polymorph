@@ -29,9 +29,11 @@ graph LR
 
     subgraph Search["Web Search"]
         direction TB
-        Brave["Brave"]
-        Tavily["Tavily"]
-        Exa["Exa"]
+        Brave["Brave (default)"]
+        Tavily["Tavily (fallback)"]
+        Exa["Exa (fallback)"]
+        SearXNG["SearXNG (opt-in)"]
+        Firecrawl["Firecrawl (opt-in)"]
     end
 
     subgraph Geo["Spatial Tools"]

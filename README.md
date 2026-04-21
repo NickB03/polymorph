@@ -21,9 +21,9 @@
 - **Generative UI** — tables, charts, geo maps, timelines, citations, callouts, and link previews render inline
 - **Geo intelligence** — interactive maps, real directions, reachability polygons, and static map images
 - **Canvas artifacts** — generates and previews single-file React apps with live editing
-- **Multi-provider AI** — Gemini and Grok via Vercel AI Gateway, plus GPT, Claude, and Ollama via direct provider keys
+- **Multi-provider AI** — Gemini and Grok via Vercel AI Gateway, plus direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers
 - **Voice mode** — speech input and text-to-speech playback
-- **Guest access** — instant search without sign-up, rate-limited per IP
+- **Guest access** — instant search without sign-up, rate-limited per IP in cloud deployments
 
 ## Architecture
 
@@ -42,12 +42,9 @@ graph LR
     subgraph Providers["AI Providers"]
         direction TB
         Gateway["Vercel AI Gateway"]
-        Gemini["Gemini"]
-        Grok["Grok"]
-        Gateway --> Gemini & Grok
-        GPT["GPT (direct)"]
-        Claude["Claude (direct)"]
-        Ollama["Ollama (local)"]
+        GatewayModels["Gemini 3 Flash / Grok 4.1 Fast Reasoning"]
+        Direct["OpenAI / Anthropic / Google / OpenAI-compatible / Ollama"]
+        Gateway --> GatewayModels
     end
 
     subgraph Search["Web Search"]
