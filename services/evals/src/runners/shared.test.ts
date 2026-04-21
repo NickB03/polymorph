@@ -6,7 +6,7 @@ const mockCreateOpenRouter = vi.hoisted(() => vi.fn(() => mockProvider))
 const mockConfig = vi.hoisted(() => ({
   phoenixHost: 'http://phoenix',
   phoenixPublicUrl: 'https://phoenix.example.com',
-  judgeModel: 'google/gemini-2.5-flash',
+  judgeModel: 'google/gemini-3.1-flash-lite-preview',
   judgeBaseUrl: 'https://openrouter.ai/api/v1',
   judgeApiKey: 'openrouter-key',
   judgeReasoningEnabled: true,
@@ -288,7 +288,9 @@ describe('createJudgeModel', () => {
       apiKey: 'openrouter-key',
       baseURL: 'https://openrouter.ai/api/v1'
     })
-    expect(mockProvider).toHaveBeenCalledWith('google/gemini-2.5-flash')
+    expect(mockProvider).toHaveBeenCalledWith(
+      'google/gemini-3.1-flash-lite-preview'
+    )
     expect(model).toEqual({ id: 'judge-model' })
   })
 
@@ -300,12 +302,15 @@ describe('createJudgeModel', () => {
 
     const model = createJudgeModel()
 
-    expect(mockProvider).toHaveBeenCalledWith('google/gemini-2.5-flash', {
-      reasoning: {
-        enabled: true,
-        max_tokens: 2048
+    expect(mockProvider).toHaveBeenCalledWith(
+      'google/gemini-3.1-flash-lite-preview',
+      {
+        reasoning: {
+          enabled: true,
+          max_tokens: 2048
+        }
       }
-    })
+    )
     expect(model).toEqual({ id: 'judge-model' })
   })
 
@@ -316,7 +321,9 @@ describe('createJudgeModel', () => {
 
     const model = createJudgeModel()
 
-    expect(mockProvider).toHaveBeenCalledWith('google/gemini-2.5-flash')
+    expect(mockProvider).toHaveBeenCalledWith(
+      'google/gemini-3.1-flash-lite-preview'
+    )
     expect(model).toEqual({ id: 'judge-model' })
   })
 })

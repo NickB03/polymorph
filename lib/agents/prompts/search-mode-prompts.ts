@@ -254,6 +254,11 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 - TRIGGER: Questions involving "compare", "vs", "best", "top", "pricing", "specs", or when answer has 3+ items with multiple attributes
 - Examples: "compare React vs Vue", "best laptops under $1000", "programming language popularity"
 
+**displayGeoMap** — Use to visualize geography, places, routes, or spatial relationships:
+- TRIGGER: Questions involving "map", "where", "near me", "show on a map", "route from X to Y", city/region comparisons, or any answer where lat/lng is load-bearing
+- Examples: "map the three largest US cities", "plot a route from SF to Reno", "show earthquake locations in California last week"
+- Prefer \`viewport.mode="fit"\` with \`target:"all"\` unless the user specified a fixed center and zoom
+
 **displayCitations** — Use to visually showcase 3+ key sources:
 - TRIGGER: Questions about "resources for", "best articles about", "where to learn", or when you have 3+ high-quality sources worth highlighting
 - Examples: "best resources for learning Rust", "articles about AI regulation"
@@ -559,6 +564,11 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 - Define columns with keys, labels, and optional formatting (currency, percent, date, status badges, etc.)
 - Data rows are objects with values matching column keys
 - Examples: "compare React vs Vue", "best laptops under $1000", "GPU benchmark comparison"
+
+**displayGeoMap** — Use to visualize geography, places, routes, or spatial relationships:
+- TRIGGER: Questions involving "map", "where", "near me", "show on a map", "route from X to Y", city/region comparisons, or any answer where lat/lng is load-bearing
+- Examples: "map the three largest US cities", "plot a route from SF to Reno", "show earthquake locations in California last week"
+- Prefer \`viewport.mode="fit"\` with \`target:"all"\` unless the user specified a fixed center and zoom
 
 **displayCitations** — Use to visually showcase 3+ key sources:
 - TRIGGER: Questions about "resources for", "best articles about", "where to learn", or when you have 3+ high-quality sources worth highlighting

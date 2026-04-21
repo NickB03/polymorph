@@ -7,7 +7,7 @@ import {
   mapUIMessagePartsToDBParts
 } from '../message-mapping'
 
-// All 8 display tools that exist today
+// All 9 display tools that exist today
 const DISPLAY_TOOLS = [
   'displayPlan',
   'displayTable',
@@ -16,6 +16,7 @@ const DISPLAY_TOOLS = [
   'displayOptionList',
   'displayCallout',
   'displayChart',
+  'displayGeoMap',
   'displayTimeline'
 ]
 

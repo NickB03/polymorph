@@ -92,6 +92,12 @@ const user = {
 } as const
 
 describe('UserMenu', () => {
+  it('uses a stable trigger id for SSR hydration', () => {
+    render(<UserMenu user={user as never} isAdmin={false} />)
+
+    expect(document.getElementById('user-menu-trigger')).toBeInTheDocument()
+  })
+
   it('shows the admin section for the admin user', () => {
     render(<UserMenu user={user as never} isAdmin />)
 

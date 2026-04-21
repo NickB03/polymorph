@@ -19,7 +19,7 @@ describe('createConfig', () => {
     expect(config.evalRunMode).toBe('capability')
   })
 
-  it('defaults judgeModel to google/gemini-2.5-flash', async () => {
+  it('defaults judgeModel to google/gemini-3.1-flash-lite-preview', async () => {
     vi.stubEnv('DATABASE_URL', 'postgresql://db')
     vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
     vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
@@ -29,7 +29,22 @@ describe('createConfig', () => {
     const { createConfig } = await import('./config')
     const config = createConfig()
 
-    expect(config.judgeModel).toBe('google/gemini-2.5-flash')
+    expect(config.judgeModel).toBe('google/gemini-3.1-flash-lite-preview')
+  })
+
+  it('defaults traffic-monitor settings for low-volume usage', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+
+    const { createConfig } = await import('./config')
+    const config = createConfig()
+
+    expect(config.sampleSize).toBe(10)
+    expect(config.lookbackHours).toBe(48)
+    expect(config.caseConcurrency).toBe(1)
   })
 
   it('parses eval runner settings and defaults', async () => {

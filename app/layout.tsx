@@ -11,6 +11,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 
 import './globals.css'
+import 'leaflet/dist/leaflet.css'
 
 const fontSans = localFont({
   src: './fonts/inter-latin-variable.woff2',

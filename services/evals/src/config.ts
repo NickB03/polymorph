@@ -130,8 +130,8 @@ export function createConfig(
     phoenixPublicUrl: env.PHOENIX_PUBLIC_URL?.trim() || phoenixHost,
     phoenixApiKey: required(env, 'PHOENIX_API_KEY'),
     ...createJudgeConfig(env),
-    sampleSize: validInt(env.SAMPLE_SIZE, 50),
-    lookbackHours: validInt(env.LOOKBACK_HOURS, 6),
+    sampleSize: validInt(env.SAMPLE_SIZE, 10),
+    lookbackHours: validInt(env.LOOKBACK_HOURS, 48),
     databaseSslDisabled: env.DATABASE_SSL_DISABLED === 'true',
     evalRunMode,
     evalRunnerUrl,
@@ -145,7 +145,7 @@ export function createConfig(
     smokeCaseCount: validInt(env.SMOKE_CASE_COUNT, 1),
     smokeTimeoutMs: validInt(env.SMOKE_TIMEOUT_MS, 300_000),
     scoreThreshold: validFloat(env.SCORE_THRESHOLD, 0.8),
-    caseConcurrency: validInt(env.EVAL_CASE_CONCURRENCY, 3),
+    caseConcurrency: validInt(env.EVAL_CASE_CONCURRENCY, 1),
     dbPoolMax: validInt(env.EVAL_DB_POOL_MAX, 5),
     excludeFromThreshold: env.EVAL_EXCLUDE_FROM_THRESHOLD
       ? env.EVAL_EXCLUDE_FROM_THRESHOLD.split(',').map(s => s.trim())

@@ -1,5 +1,11 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('./geo-map/geo-map', () => ({
+  GeoMap: (props: { id: string }) => (
+    <div data-testid="geo-map" data-id={props.id} />
+  )
+}))
 
 import { tryRenderToolUIByName } from './registry'
 
@@ -12,7 +18,38 @@ const canvasArtifactOutput = {
   currentVersionId: null
 }
 
+const geoMapOutput = {
+  id: 'test-map',
+  markers: [
+    { id: 'a', lat: 34.0522, lng: -118.2437, label: 'LA' },
+    { id: 'b', lat: 37.7749, lng: -122.4194, label: 'SF' }
+  ],
+  viewport: { mode: 'fit' as const, target: 'all' as const }
+}
+
 describe('tool UI registry', () => {
+  it('renders displayGeoMap output through the geo map component', () => {
+    const node = tryRenderToolUIByName(
+      'displayGeoMap',
+      geoMapOutput,
+      'test-part-id'
+    )
+
+    render(<>{node}</>)
+
+    expect(screen.getByTestId('geo-map')).toHaveAttribute('data-id', 'test-map')
+  })
+
+  it('returns null for invalid displayGeoMap output', () => {
+    const node = tryRenderToolUIByName(
+      'displayGeoMap',
+      { id: 'missing-markers' },
+      'test-part-id'
+    )
+
+    expect(node).toBeNull()
+  })
+
   it('renders createCanvasArtifact output through the canvas artifact card', () => {
     const node = tryRenderToolUIByName(
       'createCanvasArtifact',

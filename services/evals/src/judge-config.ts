@@ -48,7 +48,7 @@ export function createJudgeConfig(
   env: NodeJS.ProcessEnv = process.env
 ): JudgeConfig {
   return {
-    judgeModel: env.JUDGE_MODEL ?? 'google/gemini-2.5-flash',
+    judgeModel: env.JUDGE_MODEL ?? 'google/gemini-3.1-flash-lite-preview',
     judgeBaseUrl: env.JUDGE_BASE_URL?.trim() || 'https://openrouter.ai/api/v1',
     judgeApiKey: env.JUDGE_API_KEY?.trim(),
     judgeReasoningEnabled: validBool(env.JUDGE_REASONING_ENABLED, true),
