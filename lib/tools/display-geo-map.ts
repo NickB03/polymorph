@@ -64,6 +64,25 @@ const GeoMapRouteSchema = z.object({
   dashArray: z.string().optional()
 })
 
+const GeoMapPolygonSchema = z.object({
+  id: z.string().min(1).optional(),
+  points: z
+    .array(GeoMapRoutePointSchema)
+    .min(3)
+    .describe(
+      'Ordered lat/lng vertices of the polygon ring (at least three points). Do not repeat the first point — the ring closes automatically.'
+    ),
+  label: z.string().optional(),
+  description: z.string().optional(),
+  tooltip: z.enum(['none', 'hover', 'always']).optional(),
+  fillColor: z.string().optional(),
+  fillOpacity: z.number().min(0).max(1).optional(),
+  borderColor: z.string().optional(),
+  borderOpacity: z.number().min(0).max(1).optional(),
+  borderWeight: z.number().min(0).max(12).optional(),
+  borderDashArray: z.string().optional()
+})
+
 const GeoMapClusteringSchema = z.object({
   enabled: z.boolean().optional(),
   radius: z.number().min(20).max(120).optional(),
@@ -98,6 +117,12 @@ export const DisplayGeoMapSchema = z
       .array(GeoMapRouteSchema)
       .optional()
       .describe('Optional polylines connecting waypoints'),
+    polygons: z
+      .array(GeoMapPolygonSchema)
+      .optional()
+      .describe(
+        'Optional filled polygons — isochrones, regions, city boundaries, etc.'
+      ),
     clustering: GeoMapClusteringSchema.optional(),
     viewport: GeoMapViewportSchema.optional(),
     showZoomControl: z.boolean().optional(),
@@ -130,6 +155,20 @@ export const DisplayGeoMapSchema = z
         return
       }
       seenRouteIds.add(route.id)
+    })
+
+    const seenPolygonIds = new Set<string>()
+    value.polygons?.forEach((polygon, index) => {
+      if (!polygon.id) return
+      if (seenPolygonIds.has(polygon.id)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['polygons', index, 'id'],
+          message: `Duplicate polygon id "${polygon.id}".`
+        })
+        return
+      }
+      seenPolygonIds.add(polygon.id)
     })
   })
 

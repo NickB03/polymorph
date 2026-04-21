@@ -162,4 +162,61 @@ describe('SerializableGeoMapSchema', () => {
       })
     ).toThrow(/zoom/i)
   })
+
+  it('accepts valid polygons', () => {
+    const result = safeParseSerializableGeoMap({
+      ...validGeoMapPayload,
+      polygons: [
+        {
+          points: [
+            { lat: 0, lng: 0 },
+            { lat: 1, lng: 1 },
+            { lat: 0, lng: 1 }
+          ],
+          fillColor: '#2563EB'
+        }
+      ]
+    })
+    expect(result).not.toBeNull()
+  })
+
+  it('rejects polygons with fewer than 3 points', () => {
+    const result = safeParseSerializableGeoMap({
+      ...validGeoMapPayload,
+      polygons: [
+        {
+          points: [
+            { lat: 0, lng: 0 },
+            { lat: 1, lng: 1 }
+          ]
+        }
+      ]
+    })
+    expect(result).toBeNull()
+  })
+
+  it('rejects duplicate polygon ids', () => {
+    const result = safeParseSerializableGeoMap({
+      ...validGeoMapPayload,
+      polygons: [
+        {
+          id: 'a',
+          points: [
+            { lat: 0, lng: 0 },
+            { lat: 1, lng: 1 },
+            { lat: 2, lng: 2 }
+          ]
+        },
+        {
+          id: 'a',
+          points: [
+            { lat: 3, lng: 3 },
+            { lat: 4, lng: 4 },
+            { lat: 5, lng: 5 }
+          ]
+        }
+      ]
+    })
+    expect(result).toBeNull()
+  })
 })
