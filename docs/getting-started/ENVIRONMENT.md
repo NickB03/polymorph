@@ -74,6 +74,12 @@ Required when `ENABLE_AUTH=true`:
 - Tracing/observability: see [Tracing (Arize Phoenix)](#tracing-arize-phoenix) below
 - Performance diagnostics: `ENABLE_PERF_LOGGING`
 
+## Map tiles (geo-map Tool UI)
+
+| Variable                       | Required    | Purpose                                                                                                                                                                                                                                                                                          |
+| ------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_MAPTILER_API_KEY` | Recommended | MapTiler API key for `streets-v2` (light) and `streets-v2-dark` basemaps in the `display-geo-map` Tool UI. Free tier: 100K tile loads/month, commercial use permitted. Sign up at https://www.maptiler.com/cloud. When unset, the map falls back to CARTO Voyager (light only, no dark basemap). |
+
 ## Admin surface
 
 | Variable        | Required          | Purpose                                                                                                                                                                |
@@ -89,6 +95,7 @@ Required when `ENABLE_AUTH=true`:
 ## Evals cron (Railway `polymorph-evals`)
 
 See [Deployment → Evals cron service](../operations/DEPLOYMENT.md#evals-cron-service) for the full env matrix.
+The current repo baseline is `google/gemini-3.1-flash-lite-preview` with `LOOKBACK_HOURS=48`, `SAMPLE_SIZE=10`, and `EVAL_CASE_CONCURRENCY=1`; the live cron cadence itself is managed in Railway.
 
 ### Tracing (Arize Phoenix)
 

@@ -14,6 +14,8 @@ import { DataTable } from './data-table/data-table'
 import { safeParseSerializableDataTable } from './data-table/schema'
 import { GenerateImage } from './generate-image/generate-image'
 import { safeParseSerializableGenerateImage } from './generate-image/schema'
+import { GeoMap } from './geo-map/geo-map'
+import { safeParseSerializableGeoMap } from './geo-map/schema'
 import { LinkPreview } from './link-preview/link-preview'
 import { safeParseSerializableLinkPreview } from './link-preview/schema'
 import { OptionList } from './option-list/option-list'
@@ -86,6 +88,20 @@ const entries: ToolUIEntry[] = [
         <ToolErrorBoundary toolName="Chart">
           <ToolCardMount partId={partId}>
             <Chart {...parsed} />
+          </ToolCardMount>
+        </ToolErrorBoundary>
+      )
+    }
+  },
+  {
+    name: 'displayGeoMap',
+    tryRender: (output, partId) => {
+      const parsed = safeParseSerializableGeoMap(output)
+      if (!parsed) return null
+      return (
+        <ToolErrorBoundary toolName="GeoMap">
+          <ToolCardMount partId={partId}>
+            <GeoMap {...parsed} />
           </ToolCardMount>
         </ToolErrorBoundary>
       )

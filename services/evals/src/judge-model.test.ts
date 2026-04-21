@@ -8,7 +8,7 @@ describe('judge credential validation', () => {
       validateJudgeCredentials({
         JUDGE_API_KEY: '',
         JUDGE_BASE_URL: 'https://openrouter.ai/api/v1',
-        JUDGE_MODEL: 'google/gemini-2.5-flash'
+        JUDGE_MODEL: 'google/gemini-3.1-flash-lite-preview'
       } as NodeJS.ProcessEnv)
     ).toThrow('JUDGE_API_KEY is required')
   })
@@ -27,7 +27,7 @@ describe('judge credential validation', () => {
       validateJudgeCredentials({
         JUDGE_API_KEY: 'test-key',
         JUDGE_BASE_URL: 'https://openrouter.ai/api/v1',
-        JUDGE_MODEL: 'google/gemini-2.5-flash'
+        JUDGE_MODEL: 'google/gemini-3.1-flash-lite-preview'
       } as NodeJS.ProcessEnv)
     ).not.toThrow()
   })

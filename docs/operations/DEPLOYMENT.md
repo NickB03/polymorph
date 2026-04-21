@@ -153,10 +153,19 @@ The `services/evals/` directory contains a scheduled evaluation pipeline:
 **Railway deployment:**
 
 - Deploy as a Railway cron service from `services/evals/Dockerfile`
-- Schedule: `0 0 * * *` (once every 24 hours at 00:00 UTC)
+- Schedule: set the Railway cron to an every-48-hours cadence for the personal-project baseline. This schedule is managed in Railway, not in git.
 - Uses private networking to Phoenix (`PHOENIX_HOST=http://phoenix.railway.internal:6006`)
 
-> **Triggering a cron run manually.** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image and re-registers the schedule — it does **not** execute the container CMD. For an immediate one-off run use the Railway dashboard (`Deployments → ⋯ → Redeploy`), which does run the CMD. Otherwise wait for the next daily tick.
+> **Triggering a cron run manually.** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image and re-registers the schedule — it does **not** execute the container CMD. For an immediate one-off run use the Railway dashboard (`Deployments → ⋯ → Redeploy`), which does run the CMD. Otherwise wait for the next scheduled tick.
+
+**Cost-sensitive baseline defaults:**
+
+- Judge model: `google/gemini-3.1-flash-lite-preview`
+- Traffic monitor lookback: `48` hours
+- Traffic monitor sample cap: `10` chats
+- Eval concurrency: `1`
+
+These defaults are tuned for low-volume personal-project traffic. If you widen the lookback beyond the cron cadence, the sampler can rescore the same chats on multiple runs because it samples from the current window and does not track previously evaluated chat IDs.
 
 **Required env vars:**
 
@@ -168,11 +177,12 @@ The `services/evals/` directory contains a scheduled evaluation pipeline:
 | `JUDGE_API_KEY`              | OpenRouter API key for the judge model (preferred)                 |
 | `OPENROUTER_API_KEY`         | Fallback; read by the OpenRouter SDK when `JUDGE_API_KEY` is unset |
 | `JUDGE_BASE_URL`             | `https://openrouter.ai/api/v1`                                     |
-| `JUDGE_MODEL`                | `google/gemini-2.5-flash` (default)                                |
+| `JUDGE_MODEL`                | `google/gemini-3.1-flash-lite-preview` (default)                   |
 | `JUDGE_REASONING_ENABLED`    | `true` (default)                                                   |
 | `JUDGE_REASONING_MAX_TOKENS` | `1024` (default, positive integer)                                 |
-| `SAMPLE_SIZE`                | `50` (default)                                                     |
-| `LOOKBACK_HOURS`             | `6` (default)                                                      |
+| `SAMPLE_SIZE`                | `10` (default)                                                     |
+| `LOOKBACK_HOURS`             | `48` (default)                                                     |
+| `EVAL_CASE_CONCURRENCY`      | `1` (default)                                                      |
 
 ### Rotating Phoenix API keys
 

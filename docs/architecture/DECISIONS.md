@@ -48,4 +48,4 @@ This document records the foundational architecture decisions for Polymorph.
 ## 7) Scheduled Jobs
 
 - **Vercel cron (user-facing refresh tasks)**: `vercel.json` declares `GET /api/suggestions/refresh` at `0 14 * * *` (14:00 UTC daily). Bearer-token auth via `CRON_SECRET`; regenerates the `trending_suggestions_cache` Postgres singleton used by `/api/suggestions`.
-- **Railway cron (offline evals)**: `polymorph-evals` service runs daily at 00:00 UTC. Samples recent chats, runs 7 evaluators (2 deterministic + 5 LLM-judge), pushes results to Phoenix as experiments, and persists summaries to `eval_summaries` for the admin `/admin/evals` dashboard.
+- **Railway cron (offline evals)**: `polymorph-evals` is intended to run on an every-48-hours cadence for the personal-project baseline. The exact live schedule is managed in Railway rather than this repo. The repo defaults use `google/gemini-3.1-flash-lite-preview`, `LOOKBACK_HOURS=48`, `SAMPLE_SIZE=10`, and `EVAL_CASE_CONCURRENCY=1`, then push results to Phoenix as experiments and persist summaries to `eval_summaries` for the admin `/admin/evals` dashboard.

@@ -10,6 +10,7 @@ import type { createCanvasArtifactTool } from '../tools/create-canvas-artifact'
 import type { displayCalloutTool } from '../tools/display-callout'
 import type { displayChartTool } from '../tools/display-chart'
 import type { displayCitationsTool } from '../tools/display-citations'
+import type { displayGeoMapTool } from '../tools/display-geo-map'
 import type { displayLinkPreviewTool } from '../tools/display-link-preview'
 import type { displayOptionListTool } from '../tools/display-option-list'
 import type { displayPlanTool } from '../tools/display-plan'
@@ -30,6 +31,7 @@ export type ResearcherTools = {
   displayPlan: typeof displayPlanTool
   displayTable: typeof displayTableTool
   displayChart: typeof displayChartTool
+  displayGeoMap: typeof displayGeoMapTool
   displayCitations: typeof displayCitationsTool
   displayLinkPreview: typeof displayLinkPreviewTool
   displayOptionList: typeof displayOptionListTool
@@ -66,6 +68,9 @@ export type DisplayTableToolInvocation = UIToolInvocation<
 >
 export type DisplayChartToolInvocation = UIToolInvocation<
   ResearcherTools['displayChart']
+>
+export type DisplayGeoMapToolInvocation = UIToolInvocation<
+  ResearcherTools['displayGeoMap']
 >
 export type DisplayCitationsToolInvocation = UIToolInvocation<
   ResearcherTools['displayCitations']
@@ -106,6 +111,7 @@ export type ResearcherToolInvocation =
   | DisplayPlanToolInvocation
   | DisplayTableToolInvocation
   | DisplayChartToolInvocation
+  | DisplayGeoMapToolInvocation
   | DisplayCitationsToolInvocation
   | DisplayLinkPreviewToolInvocation
   | DisplayOptionListToolInvocation

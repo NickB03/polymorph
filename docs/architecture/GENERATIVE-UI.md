@@ -26,7 +26,7 @@ This document describes the generative UI system in Polymorph — how AI tool in
 
 ## Overview
 
-The generative UI system lets the AI agent produce structured data that renders as rich UI components (tables, charts, citations, plans, link previews, option lists, callouts, timelines) directly inside the chat conversation. The system is built around three core ideas:
+The generative UI system lets the AI agent produce structured data that renders as rich UI components (tables, charts, geo maps, citations, plans, link previews, option lists, question wizards, callouts, timelines) directly inside the chat conversation. The system is built around three core ideas:
 
 1. **Display tools** — server-side AI tool definitions that accept structured input and pass it through as output (`execute: async params => params`). They exist purely to give the AI a schema to emit structured data.
 
@@ -127,6 +127,7 @@ Display tools do not perform any computation. They serve as a structured output 
 | `displayPlan`           | `lib/tools/display-plan.ts`            | Step-by-step guides with status      |      Yes       |
 | `displayTable`          | `lib/tools/display-table.ts`           | Sortable data tables with formatting |      Yes       |
 | `displayChart`          | `lib/tools/display-chart.ts`           | Bar and line chart visualizations    |      Yes       |
+| `displayGeoMap`         | `lib/tools/display-geo-map.ts`         | Leaflet-based geo map visualizations |      Yes       |
 | `displayCitations`      | `lib/tools/display-citations.ts`       | Rich source citation lists           |      Yes       |
 | `displayLinkPreview`    | `lib/tools/display-link-preview.ts`    | Link preview cards                   |      Yes       |
 | `displayOptionList`     | `lib/tools/display-option-list.ts`     | Interactive option lists             |       No       |
@@ -164,25 +165,27 @@ const FormatSchema = z.discriminatedUnion('kind', [
 
 This allows the AI to specify exactly how each column should be formatted — currencies, percentages, status badges, links — and the DataTable component renders them accordingly.
 
-**Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../lib/tools/display-chart.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts), [`lib/tools/display-callout.ts`](../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../lib/tools/display-timeline.ts)
+**Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../lib/tools/display-chart.ts), [`lib/tools/display-geo-map.ts`](../lib/tools/display-geo-map.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts), [`lib/tools/display-question-wizard.ts`](../lib/tools/display-question-wizard.ts), [`lib/tools/display-callout.ts`](../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../lib/tools/display-timeline.ts)
 
 ### Mode-specific tool availability
 
 The researcher agent (`lib/agents/researcher.ts`) exposes different tools depending on the search mode:
 
-| Tool                 | Chat Mode |        Research Mode        |
-| -------------------- | :-------: | :-------------------------: |
-| `search`             |    Yes    |             Yes             |
-| `fetch`              |    Yes    |             Yes             |
-| `displayPlan`        |    Yes    |             No              |
-| `displayTable`       |    Yes    |             Yes             |
-| `displayChart`       |    Yes    |             Yes             |
-| `displayCitations`   |    Yes    |             Yes             |
-| `displayLinkPreview` |    Yes    |             Yes             |
-| `displayOptionList`  |    Yes    |             Yes             |
-| `displayCallout`     |    Yes    |             Yes             |
-| `displayTimeline`    |    Yes    |             Yes             |
-| `todoWrite`          |    No     | Yes (when writer available) |
+| Tool                    | Chat Mode |        Research Mode        |
+| ----------------------- | :-------: | :-------------------------: |
+| `search`                |    Yes    |             Yes             |
+| `fetch`                 |    Yes    |             Yes             |
+| `displayPlan`           |    Yes    |             No              |
+| `displayTable`          |    Yes    |             Yes             |
+| `displayChart`          |    Yes    |             Yes             |
+| `displayGeoMap`         |    Yes    |             Yes             |
+| `displayCitations`      |    Yes    |             Yes             |
+| `displayLinkPreview`    |    Yes    |             Yes             |
+| `displayOptionList`     |    Yes    |             Yes             |
+| `displayQuestionWizard` |    Yes    |             Yes             |
+| `displayCallout`        |    Yes    |             Yes             |
+| `displayTimeline`       |    Yes    |             Yes             |
+| `todoWrite`             |    No     | Yes (when writer available) |
 
 **Chat mode** (max 20 steps) uses forced optimized search and includes `displayPlan` for step-by-step guides. **Research mode** (max 50 steps) uses full search and enables `todoWrite` for task management when a writer is available.
 
@@ -258,7 +261,7 @@ const entries: ToolUIEntry[] = [
       return <Plan {...parsed} />
     }
   },
-  // ... displayTable, displayChart, displayCitations, displayLinkPreview, displayOptionList, displayCallout, displayTimeline
+  // ... displayTable, displayChart, displayGeoMap, displayCitations, displayLinkPreview, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline
 ]
 ```
 

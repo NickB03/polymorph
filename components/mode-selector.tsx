@@ -53,6 +53,8 @@ const ACTIVE_PILL_CLASSES: Record<
   }
 }
 
+const MODE_SELECTOR_TRIGGER_ID = 'mode-selector-trigger'
+
 export function ModeSelector() {
   // Deterministic initial state — matches SSR output so hydration is stable.
   // The cookie-derived value is promoted on mount in the effect below.
@@ -125,6 +127,7 @@ export function ModeSelector() {
         <DropdownMenuTrigger asChild>
           <Button
             ref={triggerRef}
+            id={MODE_SELECTOR_TRIGGER_ID}
             variant="outline"
             size="icon"
             className="rounded-full"
@@ -154,6 +157,7 @@ export function ModeSelector() {
           <DropdownMenuTrigger asChild>
             <button
               ref={triggerRef}
+              id={MODE_SELECTOR_TRIGGER_ID}
               type="button"
               aria-label={`Mode: ${activeConfig.label}. Open mode menu`}
               className={cn(

@@ -14,6 +14,7 @@ import { createCanvasArtifactTool } from '../tools/create-canvas-artifact'
 import { displayCalloutTool } from '../tools/display-callout'
 import { displayChartTool } from '../tools/display-chart'
 import { displayCitationsTool } from '../tools/display-citations'
+import { displayGeoMapTool } from '../tools/display-geo-map'
 import { displayLinkPreviewTool } from '../tools/display-link-preview'
 import { displayOptionListTool } from '../tools/display-option-list'
 import { displayPlanTool } from '../tools/display-plan'
@@ -204,6 +205,7 @@ export function createResearcher({
           'displayPlan',
           'displayTable',
           'displayChart',
+          'displayGeoMap',
           'displayCitations',
           'displayLinkPreview',
           'displayOptionList',
@@ -226,6 +228,7 @@ export function createResearcher({
           'fetch',
           'displayTable',
           'displayChart',
+          'displayGeoMap',
           'displayCitations',
           'displayLinkPreview',
           'displayOptionList',
@@ -308,6 +311,7 @@ export function createResearcher({
       displayPlan: displayPlanTool,
       displayTable: displayTableTool,
       displayChart: displayChartTool,
+      displayGeoMap: displayGeoMapTool,
       displayCitations: displayCitationsTool,
       displayLinkPreview: displayLinkPreviewTool,
       displayOptionList: displayOptionListTool,

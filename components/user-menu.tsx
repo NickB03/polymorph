@@ -53,6 +53,8 @@ interface UserMenuProps {
   onFeedbackClick?: () => void
 }
 
+const USER_MENU_TRIGGER_ID = 'user-menu-trigger'
+
 export default function UserMenu({
   user,
   isAdmin,
@@ -111,7 +113,12 @@ export default function UserMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative rounded-full">
+        <Button
+          id={USER_MENU_TRIGGER_ID}
+          variant="ghost"
+          size="icon"
+          className="relative rounded-full"
+        >
           <Avatar className="h-6 w-6">
             <AvatarImage src={avatarUrl} alt={userName} />
             <AvatarFallback>{getInitials(userName, user.email)}</AvatarFallback>
