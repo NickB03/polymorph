@@ -99,9 +99,9 @@ const PSEUDO_DISPLAY_TOOL_PLACEHOLDER_PATTERNS = [
       /```(?:json|javascript|js|typescript|ts|tsx)?\s*\n\s*\/\*\s*(display[A-Za-z]+)\s+tool call\s*\*\/\s*\n```/g
   },
   {
-    matchedPattern: 'fenced-function-placeholder',
+    matchedPattern: 'fenced-tool-code-function-placeholder',
     pattern:
-      /```(?:json|javascript|js|typescript|ts|tsx)?\s*\n\s*(display[A-Za-z]+)\s*\([\s\S]*?\n```/g
+      /```(?:json|javascript|js|typescript|ts|tsx)?\s*\n\s*(?:\/\*\s*tool_code\s*\*\/\s*\n\s*)?(display[A-Za-z]+)\s*\([\s\S]*?\n```/g
   }
 ] as const
 
@@ -199,10 +199,6 @@ function stripPseudoDisplayToolPlaceholders({
     sanitizedText = sanitizedText.replace(
       pattern,
       (match, toolName: string) => {
-        if (completedDisplayTools.has(toolName)) {
-          return match
-        }
-
         suppressedAny = true
         console.debug(
           '[RenderMessage] Suppressed pseudo display tool placeholder',
@@ -211,7 +207,8 @@ function stripPseudoDisplayToolPlaceholders({
             modelId: metadata?.modelId,
             userMode: metadata?.userMode,
             toolName,
-            matchedPattern
+            matchedPattern,
+            hadCompletedDisplayTool: completedDisplayTools.has(toolName)
           }
         )
         return ''
