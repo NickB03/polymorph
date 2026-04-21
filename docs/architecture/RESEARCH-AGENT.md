@@ -24,7 +24,7 @@ This document provides a deep technical reference for the research agent system 
 
 ## Overview
 
-The research agent is the research subsystem of Polymorph. When a user submits a question, the agent autonomously plans a research strategy, executes web searches, fetches page content, tracks progress through tasks, and synthesizes findings into a cited answer with inline generative UI components (tables, charts, geo maps, citations, plans, link previews, option lists, question wizards, callouts, timelines).
+The research agent is the research subsystem of Polymorph. When a user submits a question, the agent autonomously plans a research strategy, executes web searches, fetches page content, tracks progress through tasks, composes geo helper calls when the answer needs a map or route, and synthesizes findings into a cited answer with inline generative UI components (tables, charts, geo maps, citations, plans, link previews, option lists, question wizards, callouts, timelines).
 
 The agent is built on the Vercel AI SDK's `ToolLoopAgent` — a construct that runs an LLM in a loop, allowing it to call tools repeatedly until it decides to produce a final answer or hits a step limit. Two operating modes (chat and research) control the agent's behavior, tool availability, and depth of research.
 
@@ -210,15 +210,16 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 
 **Purpose:** Fast, focused answers. Optimized for simple questions that need 1-3 searches.
 
-| Property          | Value                                                |
-| ----------------- | ---------------------------------------------------- |
-| Max steps         | 20                                                   |
-| Search type       | Forced `optimized` (via `wrapSearchToolForChatMode`) |
-| Target tool calls | ~5                                                   |
-| `todoWrite`       | Not available                                        |
-| `displayPlan`     | Available                                            |
-| `displayChart`    | Available                                            |
-| `displayGeoMap`   | Available                                            |
+| Property          | Value                                                                  |
+| ----------------- | ---------------------------------------------------------------------- |
+| Max steps         | 20                                                                     |
+| Search type       | Forced `optimized` (via `wrapSearchToolForChatMode`)                   |
+| Target tool calls | ~5                                                                     |
+| `todoWrite`       | Not available                                                          |
+| `displayPlan`     | Available                                                              |
+| `displayChart`    | Available                                                              |
+| `displayGeoMap`   | Available                                                              |
+| Geo helpers       | `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage` |
 
 **How search wrapping works:** In chat mode, the search tool is wrapped by `wrapSearchToolForChatMode()`, which intercepts every call and forces `type: 'optimized'` regardless of what the LLM requests. This ensures the agent always gets content snippets directly from the search provider (Brave by default; Tavily/Exa when selected via `SEARCH_API`) rather than needing to fetch pages separately.
 
@@ -230,21 +231,22 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 - Prohibits use of fetch on search results (only on user-provided URLs)
 - Requires all responses to use inline citations `[number](#toolCallId)`
 
-**Active tools:** `search`, `fetch`, `displayPlan`, `displayTable`, `displayChart`, `displayGeoMap`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`
+**Active tools:** `search`, `fetch`, `displayPlan`, `displayTable`, `displayChart`, `displayGeoMap`, `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`
 
 ### Research Mode
 
 **Purpose:** Thorough, multi-step research. For complex queries that need systematic investigation.
 
-| Property          | Value                           |
-| ----------------- | ------------------------------- |
-| Max steps         | 50                              |
-| Search type       | Full (general + optimized)      |
-| Target tool calls | ~20                             |
-| `todoWrite`       | Available (when writer present) |
-| `displayChart`    | Available                       |
-| `displayGeoMap`   | Available                       |
-| `displayPlan`     | Not in `activeTools`            |
+| Property          | Value                                                                  |
+| ----------------- | ---------------------------------------------------------------------- |
+| Max steps         | 50                                                                     |
+| Search type       | Full (general + optimized)                                             |
+| Target tool calls | ~20                                                                    |
+| `todoWrite`       | Available (when writer present)                                        |
+| `displayChart`    | Available                                                              |
+| `displayGeoMap`   | Available                                                              |
+| Geo helpers       | `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage` |
+| `displayPlan`     | Not in `activeTools`                                                   |
 
 **System prompt behavior:**
 
@@ -254,7 +256,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 - Encourages multiple searches from different angles
 - Allows fetching top 2-3 sources for deeper content analysis
 
-**Active tools:** `search`, `fetch`, `displayTable`, `displayChart`, `displayGeoMap`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`, `todoWrite` (conditional)
+**Active tools:** `search`, `fetch`, `displayTable`, `displayChart`, `displayGeoMap`, `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`, `todoWrite` (conditional)
 
 ### Mode Comparison
 
@@ -265,6 +267,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 | Task planning                | No (`todoWrite` unavailable) | Yes (`todoWrite` available)           |
 | `displayPlan`                | Available                    | Not in active tools                   |
 | `displayGeoMap`              | Available                    | Available                             |
+| Geo helper tools             | Available                    | Available                             |
 | Fetch from search results    | Discouraged by prompt        | Encouraged for top sources            |
 | Target efficiency            | ~5 tool calls                | ~20 tool calls                        |
 | Prompt complexity assessment | No                           | Yes (simple/medium/complex)           |
@@ -338,22 +341,35 @@ Session-scoped task management. Each `createTodoTools()` call creates an isolate
 2. UPDATE: Send only changed tasks (unchanged ones are preserved)
 3. FINALIZE: Mark all tasks completed before writing final answer
 
+#### Spatial tools — geocoding, routing, isochrones, and static maps
+
+These helpers are ordinary agent tools, not display tools. They usually compose into a final `displayGeoMap` or `getStaticMapImage` response.
+
+| Tool                | Source                                                                      | Return shape                                                  | Notes                                                                                            |
+| ------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `geocodeAddress`    | [`lib/tools/geocode-address.ts`](../lib/tools/geocode-address.ts)           | Ranked candidates with `lat`, `lng`, `placeName`, `placeType` | Use before placing pins when the user gives a place name rather than coordinates.                |
+| `getDirections`     | [`lib/tools/get-directions.ts`](../lib/tools/get-directions.ts)             | Ordered route points plus duration/distance labels            | Supports `driving`, `walking`, `cycling`; `transit` returns a structured `not_supported` result. |
+| `getIsochrone`      | [`lib/tools/get-isochrone.ts`](../lib/tools/get-isochrone.ts)               | Polygon ring points                                           | Requires `ORS_API_KEY`; intended for `displayGeoMap.polygons[]`.                                 |
+| `getStaticMapImage` | [`lib/tools/get-static-map-image.ts`](../lib/tools/get-static-map-image.ts) | Public PNG URL                                                | Use when the user wants a shareable/static image rather than an interactive card.                |
+
+For the end-to-end compose-first flow, see [Geo & Spatial Tools](GEO-TOOLS.md).
+
 ### Display Tools
 
 All display tools share a common pattern: they accept structured input, validate it with Zod schemas, and return the input as output (`execute: async params => params`). The actual rendering happens in the frontend via `components/tool-ui/registry.tsx`.
 
-| Tool                    | Purpose                                     | Key input fields                                                 | Trigger examples                                              |
-| ----------------------- | ------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------- |
-| `displayPlan`           | Step-by-step guides and how-to checklists   | `id`, `title`, `todos[]` with `id`, `label`, `status`            | "how to deploy to AWS", "steps to learn Python"               |
-| `displayTable`          | Sortable data tables with formatted columns | `columns[]` with `key`, `label`, `format`, `data[]`              | "compare React vs Vue", "GPU benchmarks"                      |
-| `displayChart`          | Bar and line chart data visualizations      | `id`, `type`, `data[]`, `xKey`, `series[]` (key, label)          | "show revenue trends", "compare sales by quarter"             |
-| `displayGeoMap`         | Geographic maps with markers and routes     | `id`, `markers[]`, optional `routes[]`, `viewport`               | "map these offices", "plot a travel route"                    |
-| `displayCitations`      | Rich source citation cards                  | `citations[]` with `id`, `href`, `title`, `snippet`              | "best resources for learning Rust"                            |
-| `displayLinkPreview`    | Single featured link card                   | `id`, `href`, `title`, `description`, `image`                    | "where are the React docs"                                    |
-| `displayOptionList`     | Interactive option selector                 | `id`, `options[]` with `id`, `label`, `description`              | "which database should I use"                                 |
-| `displayQuestionWizard` | Multi-step guided question wizards          | `id`, `questions[]` with `id`, `question`, `options`             | "help me choose a framework", "what kind of app do you want?" |
-| `displayCallout`        | Styled callout box for key information      | `id`, `variant`, `title` (optional), `content`                   | "This API was deprecated in v3"                               |
-| `displayTimeline`       | Chronological event timeline                | `id`, `title`, `events[]` with `id`, `date`, `title`, `category` | "history of TypeScript", "timeline of SpaceX launches"        |
+| Tool                    | Purpose                                             | Key input fields                                                                                             | Trigger examples                                                            |
+| ----------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `displayPlan`           | Step-by-step guides and how-to checklists           | `id`, `title`, `todos[]` with `id`, `label`, `status`                                                        | "how to deploy to AWS", "steps to learn Python"                             |
+| `displayTable`          | Sortable data tables with formatted columns         | `columns[]` with `key`, `label`, `format`, `data[]`                                                          | "compare React vs Vue", "GPU benchmarks"                                    |
+| `displayChart`          | Bar and line chart data visualizations              | `id`, `type`, `data[]`, `xKey`, `series[]` (key, label)                                                      | "show revenue trends", "compare sales by quarter"                           |
+| `displayGeoMap`         | Interactive maps with markers, routes, and polygons | `id`, `markers[]`, optional `routes[]`, `polygons[]`, `clustering`, `viewport`, marker `icon`, tooltip modes | "map these offices", "plot a travel route", "show a 20-minute commute area" |
+| `displayCitations`      | Rich source citation cards                          | `citations[]` with `id`, `href`, `title`, `snippet`                                                          | "best resources for learning Rust"                                          |
+| `displayLinkPreview`    | Single featured link card                           | `id`, `href`, `title`, `description`, `image`                                                                | "where are the React docs"                                                  |
+| `displayOptionList`     | Interactive option selector                         | `id`, `options[]` with `id`, `label`, `description`                                                          | "which database should I use"                                               |
+| `displayQuestionWizard` | Multi-step guided question wizards                  | `id`, `questions[]` with `id`, `question`, `options`                                                         | "help me choose a framework", "what kind of app do you want?"               |
+| `displayCallout`        | Styled callout box for key information              | `id`, `variant`, `title` (optional), `content`                                                               | "This API was deprecated in v3"                                             |
+| `displayTimeline`       | Chronological event timeline                        | `id`, `title`, `events[]` with `id`, `date`, `title`, `category`                                             | "history of TypeScript", "timeline of SpaceX launches"                      |
 
 **`displayOptionList`** is unique: it has no `execute` function, so the frontend resolves it via `addToolResult` when the user makes a selection.
 

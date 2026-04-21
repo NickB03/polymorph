@@ -2,22 +2,22 @@
 
 **Date:** 2026-04-19
 **Scope:** Add subtle entrance/exit motion to mode pills, tool UI cards, and timeline events in the chat surface. Research and build modes only (Radix-animated primitives, canvas panel, and message bubbles are explicitly out of scope).
-**Status:** Design approved; ready for implementation planning.
+**Status:** Implemented in the current chat surface.
 
 ---
 
 ## Decision Summary
 
-| Area              | Decision                                                                                                                                                                                                                               |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Scope             | Mode pills (`components/mode-selector.tsx`), all 13 registered tool UI cards (`components/tool-ui/registry.tsx`), and `displayTimeline`'s internal event stagger.                                                                      |
-| Motion vocabulary | Fade + 8px translateY rise, ease-out, 200ms entrance / 140ms exit / 50ms stagger between siblings.                                                                                                                                     |
-| Coverage          | Uniform: every entry in `components/tool-ui/registry.tsx` (9 `display*` outputs, `generateImage`, and 3 canvas-artifact cards — 13 total) gets the same entrance primitive.                                                            |
-| Library           | `motion/react` (Framer Motion v12), already installed (`package.json:81`) and in use by `voice/voice-orb.tsx`.                                                                                                                         |
-| Architecture      | Three shared wrappers (`ToolCardMount`, `PillPresence`, `StaggerList`) backed by a tokens file, a variants file, and a hydration-boundary context. No consumer imports `motion/react` directly (ESLint-enforced).                      |
-| Reduced-motion    | Honor `prefers-reduced-motion: reduce` with true zero-motion — no fade, no translate, no stagger, no exit. `initial={false}` on the hydration path (see SSR handling) prevents any flash without requiring motion. Matches WCAG 2.3.3. |
-| SSR / hydration   | `isNew` prop on `ToolCardMount`, resolved via a client-side `HydrationAnimationProvider` that snapshots initial tool-part IDs once at first render. Streamed / optimistic parts animate; SSR history paints instantly.                 |
-| Out of scope      | Canvas panel (already `transition-all duration-300`), Radix dialogs/sheets/popovers/tooltips, message bubbles, dropdown menus, alert dialogs.                                                                                          |
+| Area              | Decision                                                                                                                                                                                                                                                              |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scope             | Mode pills (`components/mode-selector.tsx`), all 13 registered tool UI cards (`components/tool-ui/registry.tsx`), and `displayTimeline`'s internal event stagger.                                                                                                     |
+| Motion vocabulary | Fade + 8px translateY rise, ease-out, 200ms entrance / 140ms exit / 50ms stagger between siblings.                                                                                                                                                                    |
+| Coverage          | Uniform: every entry in `components/tool-ui/registry.tsx` (9 `display*` outputs, `generateImage`, and 3 canvas-artifact cards — 13 total) gets the same entrance primitive.                                                                                           |
+| Library           | `motion/react` (Framer Motion v12), already installed (`package.json:81`) and in use by `voice/voice-orb.tsx`.                                                                                                                                                        |
+| Architecture      | Three shared wrappers (`ToolCardMount`, `PillPresence`, `StaggerList`) backed by a tokens file, a variants file, and a hydration-boundary context. Direct `motion/react` imports are blocked for most consumers, with an explicit exception for `components/voice/*`. |
+| Reduced-motion    | Honor `prefers-reduced-motion: reduce` with true zero-motion — no fade, no translate, no stagger, no exit. `initial={false}` on the hydration path (see SSR handling) prevents any flash without requiring motion. Matches WCAG 2.3.3.                                |
+| SSR / hydration   | `isNew` prop on `ToolCardMount`, resolved via a client-side `HydrationAnimationProvider` that snapshots initial tool-part IDs once at first render. Streamed / optimistic parts animate; SSR history paints instantly.                                                |
+| Out of scope      | Canvas panel (already `transition-all duration-300`), Radix dialogs/sheets/popovers/tooltips, message bubbles, dropdown menus, alert dialogs.                                                                                                                         |
 
 ---
 
@@ -113,7 +113,7 @@ export function useResolvedVariants() {
 }
 ```
 
-The three wrappers consume `useResolvedVariants()` — no consumer branches on `prefers-reduced-motion` directly. An ESLint `no-restricted-imports` rule blocks direct `motion/react` imports outside `lib/motion/*` and `components/motion/*` to enforce this at review time rather than prose.
+The three wrappers consume `useResolvedVariants()` — no consumer branches on `prefers-reduced-motion` directly. An ESLint `no-restricted-imports` rule blocks direct `motion/react` imports outside `lib/motion/*`, `components/motion/*`, and the existing `components/voice/*` exception to enforce this at review time rather than prose.
 
 ---
 
@@ -300,4 +300,4 @@ If any of these later prove to need motion work, they get their own spec — not
 
 **Enforcement:**
 
-- ESLint `no-restricted-imports`: `motion/react` may only be imported from `lib/motion/*` and `components/motion/*`. Prevents consumers from drifting away from `useResolvedVariants()`.
+- ESLint `no-restricted-imports`: `motion/react` may only be imported from `lib/motion/*`, `components/motion/*`, and the existing `components/voice/*` exception. Prevents new consumers from drifting away from `useResolvedVariants()` while preserving the shipped voice surface.

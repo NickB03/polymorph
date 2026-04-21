@@ -10,7 +10,8 @@ graph LR
         direction TB
         Orchestrator["Tool Loop\nOrchestrator"]
         Reasoning["Multi-step\nReasoning"]
-        Orchestrator --> Reasoning
+        Modes["Search / Research /\nBuild"]
+        Orchestrator --> Reasoning --> Modes
     end
 
     subgraph Providers["AI Providers"]
@@ -33,16 +34,34 @@ graph LR
         Exa["Exa"]
     end
 
+    subgraph Geo["Spatial Tools"]
+        direction TB
+        Geocode["geocodeAddress"]
+        Directions["getDirections"]
+        Isochrone["getIsochrone"]
+        StaticMap["getStaticMapImage"]
+    end
+
+    subgraph MapServices["Map Services"]
+        direction TB
+        MapTiler["MapTiler"]
+        ORS["OpenRouteService"]
+    end
+
     subgraph Response["Streaming Response"]
         direction TB
         GenUI["Generative UI"]
         Tables["Tables"]
         Charts["Charts"]
+        GeoMaps["Geo Maps"]
+        StaticMaps["Static Maps"]
         Timelines["Timelines"]
         Citations["Citations"]
         Canvas["Canvas Artifacts"]
         GenUI --> Tables
         GenUI --> Charts
+        GenUI --> GeoMaps
+        GenUI --> StaticMaps
         GenUI --> Timelines
         GenUI --> Citations
         GenUI --> Canvas
@@ -57,6 +76,8 @@ graph LR
     User -->|query| Agent
     Agent -->|model calls| Providers
     Agent -->|search + fetch| Search
+    Agent -->|geo helpers| Geo
+    Geo -->|tiles, routes, static maps| MapServices
     Agent -->|SSE stream| Response
     Agent -->|persist| Data
     Response -->|render| User

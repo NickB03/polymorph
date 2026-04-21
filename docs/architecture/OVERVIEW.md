@@ -40,7 +40,9 @@ This document describes the internal architecture of Polymorph — an AI platfor
 
 ## System Overview
 
-Polymorph is built on Next.js 16 (App Router) with React 19. A single chat API endpoint orchestrates an AI agent that performs multi-step research using tools (search, fetch, display, todo, conditional image-generation and canvas tools) and streams structured responses back to the browser as Server-Sent Events (SSE). The generative UI layer renders each message part — text, reasoning, tool results, data attachments — using dedicated React components.
+Polymorph is built on Next.js 16 (App Router) with React 19. A single chat API endpoint orchestrates an AI agent that performs multi-step research using tools (search, fetch, geo helpers, display, todo, and conditional image-generation/canvas tools) and streams structured responses back to the browser as Server-Sent Events (SSE). The generative UI layer renders each message part — text, reasoning, tool results, data attachments — using dedicated React components.
+
+**User-mode vocabulary.** The UI exposes three modes via `components/mode-selector.tsx`: `search`, `research`, and `build`. On the server, the `searchMode` cookie stores that UI-facing value; `app/api/chat/route.ts` maps `search` and `build` onto backend `searchMode='chat'`, while `build` additionally injects `intent='build'`. `research` maps directly to backend `searchMode='research'`.
 
 **Route structure.** The App Router uses two groups to isolate surfaces:
 
@@ -115,8 +117,8 @@ flowchart TD
     AuthStream["createChatStreamResponse()"]
     PrepareMsg["prepareMessages()<br/>(load/create chat,<br/>handle regeneration)"]
     CreateAgent["createResearcher()<br/>(configure tools + mode)"]
-    ChatMode["Chat Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayGeoMap,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline"]
-    ResearchMode["Research Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayChart,<br/>displayGeoMap,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline, todoWrite"]
+    ChatMode["Chat Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline"]
+    ResearchMode["Research Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayChart,<br/>displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline, todoWrite"]
     AgentStream["agent.stream()<br/>+ smoothStream(word)"]
     Parallel["Parallel operations:<br/>title + related questions<br/>+ persistence"]
     SSE["SSE Response to Client"]
@@ -166,7 +168,7 @@ The `createResearcher` function in [`lib/agents/researcher.ts`](../lib/agents/re
 
 ## Tool System
 
-The researcher agent uses two categories of tools: **core tools** that perform actual research operations and **display tools** that generate rich UI components inline in the chat.
+The researcher agent uses three categories of tools: **core tools** that perform actual research operations, **spatial helper tools** that compute map-ready data, and **display tools** that generate rich UI components inline in the chat.
 
 ```mermaid
 graph LR
@@ -176,17 +178,29 @@ graph LR
         todo["todoWrite<br/>Research task tracking"]
     end
 
+    subgraph Geo["Spatial Helpers"]
+        geocode["geocodeAddress<br/>Place → coordinates"]
+        directions["getDirections<br/>Road-following routes"]
+        isochrone["getIsochrone<br/>Reachability polygons"]
+        staticMap["getStaticMapImage<br/>Shareable PNG URL"]
+    end
+
     subgraph Display["Display Tools"]
         plan["displayPlan<br/>Step-by-step guides"]
         table["displayTable<br/>Sortable data tables"]
         chart["displayChart<br/>Data visualizations"]
-        geoMap["displayGeoMap<br/>Geographic visualizations"]
+        geoMap["displayGeoMap<br/>Interactive geo maps"]
         citations["displayCitations<br/>Rich source lists"]
         linkPreview["displayLinkPreview<br/>Link preview cards"]
         optionList["displayOptionList<br/>Interactive option lists"]
         questionWizard["displayQuestionWizard<br/>Structured question flows"]
         callout["displayCallout<br/>Styled callout boxes"]
         timeline["displayTimeline<br/>Chronological timelines"]
+    end
+
+    subgraph MapServices["Map Services"]
+        maptiler["MapTiler"]
+        ors["OpenRouteService"]
     end
 
     subgraph SearchProviders["Search Providers"]
@@ -205,6 +219,10 @@ graph LR
 
     search --> SearchProviders
     fetch --> FetchStrategies
+    geocode --> maptiler
+    directions --> maptiler
+    staticMap --> maptiler
+    isochrone --> ors
 ```
 
 ### Tool Availability by Mode
@@ -217,6 +235,10 @@ graph LR
 | `displayTable`          |              Yes               |               Yes               |
 | `displayChart`          |              Yes               |               Yes               |
 | `displayGeoMap`         |              Yes               |               Yes               |
+| `geocodeAddress`        |              Yes               |               Yes               |
+| `getDirections`         |              Yes               |               Yes               |
+| `getIsochrone`          |              Yes               |               Yes               |
+| `getStaticMapImage`     |              Yes               |               Yes               |
 | `displayCitations`      |              Yes               |               Yes               |
 | `displayLinkPreview`    |              Yes               |               Yes               |
 | `displayOptionList`     |              Yes               |               Yes               |
@@ -235,9 +257,13 @@ graph LR
 
 - **fetch** (`lib/tools/fetch.ts`): Also uses streaming generator. Has two modes: `regular` (direct HTTP fetch with HTML parsing, 50k char limit, 10s timeout) and `api` (Jina Reader or Tavily Extract for JavaScript-rendered pages and PDFs).
 
+- **Spatial helpers** (`lib/tools/geocode-address.ts`, `lib/tools/get-directions.ts`, `lib/tools/get-isochrone.ts`, `lib/tools/get-static-map-image.ts`): Compose-first geo utilities. `geocodeAddress` resolves place names into coordinates before mapping, `getDirections` returns route points plus duration/distance labels, `getIsochrone` returns polygon points for reachability overlays, and `getStaticMapImage` returns a public PNG URL when the user needs a shareable image rather than an interactive card.
+
 - **todoWrite** (`lib/tools/todo.ts`): Session-scoped task tracking. Uses content-based merge logic — sending a todo with the same content as an existing one updates it rather than creating a duplicate. Returns `completedCount` and `totalCount` for progress tracking.
 
 - **Display tools** (`lib/tools/display-*.ts`): All display tools simply return their input as output (`execute: async params => params`). They exist to structure data for the frontend — the actual rendering happens in `components/tool-ui/registry.tsx`.
+
+For the full spatial flow and renderer contract, see [Geo & Spatial Tools](GEO-TOOLS.md).
 
 **Source files:** [`lib/tools/`](../lib/tools/), [`lib/tools/search/providers/`](../lib/tools/search/providers/)
 

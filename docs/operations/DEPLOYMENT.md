@@ -44,6 +44,18 @@ UPSTASH_REDIS_REST_URL=[YOUR_UPSTASH_URL]
 UPSTASH_REDIS_REST_TOKEN=[YOUR_UPSTASH_TOKEN]
 ```
 
+For geo maps, routing, and static map images, also set:
+
+```bash
+NEXT_PUBLIC_MAPTILER_API_KEY=[YOUR_CLIENT_MAPTILER_KEY]
+MAPTILER_API_KEY=[YOUR_SERVER_MAPTILER_KEY]
+ORS_API_KEY=[YOUR_OPENROUTESERVICE_KEY]
+```
+
+- `NEXT_PUBLIC_MAPTILER_API_KEY` serves client-side tiles for `displayGeoMap`.
+- `MAPTILER_API_KEY` serves `geocodeAddress`, `getDirections`, and `getStaticMapImage`.
+- `ORS_API_KEY` enables `getIsochrone`; without it the tool returns a structured error instead of a polygon.
+
 ## Vercel cron — trending suggestions refresh
 
 `vercel.json` at the repo root declares a single daily cron job:

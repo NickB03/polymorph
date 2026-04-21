@@ -122,18 +122,18 @@ Display tools do not perform any computation. They serve as a structured output 
 
 ### Tool definitions
 
-| Tool                    | File                                   | Description                          | Has `execute`? |
-| ----------------------- | -------------------------------------- | ------------------------------------ | :------------: |
-| `displayPlan`           | `lib/tools/display-plan.ts`            | Step-by-step guides with status      |      Yes       |
-| `displayTable`          | `lib/tools/display-table.ts`           | Sortable data tables with formatting |      Yes       |
-| `displayChart`          | `lib/tools/display-chart.ts`           | Bar and line chart visualizations    |      Yes       |
-| `displayGeoMap`         | `lib/tools/display-geo-map.ts`         | Leaflet-based geo map visualizations |      Yes       |
-| `displayCitations`      | `lib/tools/display-citations.ts`       | Rich source citation lists           |      Yes       |
-| `displayLinkPreview`    | `lib/tools/display-link-preview.ts`    | Link preview cards                   |      Yes       |
-| `displayOptionList`     | `lib/tools/display-option-list.ts`     | Interactive option lists             |       No       |
-| `displayQuestionWizard` | `lib/tools/display-question-wizard.ts` | Multi-step guided question flows     |      Yes       |
-| `displayCallout`        | `lib/tools/display-callout.ts`         | Styled callout boxes                 |      Yes       |
-| `displayTimeline`       | `lib/tools/display-timeline.ts`        | Chronological event timelines        |      Yes       |
+| Tool                    | File                                   | Description                                                           | Has `execute`? |
+| ----------------------- | -------------------------------------- | --------------------------------------------------------------------- | :------------: |
+| `displayPlan`           | `lib/tools/display-plan.ts`            | Step-by-step guides with status                                       |      Yes       |
+| `displayTable`          | `lib/tools/display-table.ts`           | Sortable data tables with formatting                                  |      Yes       |
+| `displayChart`          | `lib/tools/display-chart.ts`           | Bar and line chart visualizations                                     |      Yes       |
+| `displayGeoMap`         | `lib/tools/display-geo-map.ts`         | Leaflet-based geo maps with markers, routes, polygons, and clustering |      Yes       |
+| `displayCitations`      | `lib/tools/display-citations.ts`       | Rich source citation lists                                            |      Yes       |
+| `displayLinkPreview`    | `lib/tools/display-link-preview.ts`    | Link preview cards                                                    |      Yes       |
+| `displayOptionList`     | `lib/tools/display-option-list.ts`     | Interactive option lists                                              |       No       |
+| `displayQuestionWizard` | `lib/tools/display-question-wizard.ts` | Multi-step guided question flows                                      |      Yes       |
+| `displayCallout`        | `lib/tools/display-callout.ts`         | Styled callout boxes                                                  |      Yes       |
+| `displayTimeline`       | `lib/tools/display-timeline.ts`        | Chronological event timelines                                         |      Yes       |
 
 All tools with `execute` use the same passthrough pattern:
 
@@ -189,6 +189,18 @@ The researcher agent (`lib/agents/researcher.ts`) exposes different tools depend
 
 **Chat mode** (max 20 steps) uses forced optimized search and includes `displayPlan` for step-by-step guides. **Research mode** (max 50 steps) uses full search and enables `todoWrite` for task management when a writer is available.
 
+### Geo-map rendering contract
+
+`displayGeoMap` is the renderer-facing half of the spatial toolchain. The helper tools (`geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`) prepare data; the generative UI layer renders only the final map payload.
+
+- `markers[]` supports default dots, emoji markers, and image-backed icons.
+- `routes[]` supports labels, descriptions, hover/always tooltips, stroke colors, dash patterns, opacity, and weight.
+- `polygons[]` supports filled regions such as isochrones and boundary overlays.
+- `clustering` lets dense point sets collapse into cluster markers.
+- `viewport` supports both fit-based framing and explicit center/zoom control.
+
+See [Geo & Spatial Tools](GEO-TOOLS.md) for the full compose-first flow.
+
 ### Related: side-effect tools
 
 Display tools are passthrough schemas rendered inline. A separate category of conditionally registered tools (`generateImage`, canvas artifact tools) performs work outside the chat and renders through dedicated UI rather than the Tool UI registry. See [Research Agent → Conditional Tools](RESEARCH-AGENT.md#conditional-tools).
@@ -227,6 +239,14 @@ Currently supported on `OptionList` and extensible to other components via the s
 ## Tool UI Registry
 
 The registry (`components/tool-ui/registry.tsx`) is the central mapping between tool names and their React component renderers. It exports three functions:
+
+All rendered tool cards now pass through a small motion shell:
+
+- `ToolCardMount` wraps registered tool cards and only animates genuinely new parts.
+- `HydrationAnimationProvider` in `components/chat.tsx` snapshots the initial tool-part IDs so SSR history paints immediately without replaying entrance motion.
+- `StaggerList` is used by `displayTimeline` to stagger long event lists with a capped delay.
+
+The mode pill animation lives next to the chat surface in `components/mode-selector.tsx` via `PillPresence`, but it uses the same `lib/motion/*` token and variant layer.
 
 ### `tryRenderToolUIByName(toolName, output)`
 

@@ -1,6 +1,8 @@
 # Geo Map
 
-Implementation for the "geo-map" Tool UI surface.
+Implementation for the `displayGeoMap` Tool UI surface.
+
+The renderer supports markers, styled routes, filled polygons, clustering, fit-target control, and light/dark basemaps.
 
 ## Files
 
@@ -12,13 +14,16 @@ Implementation for the "geo-map" Tool UI surface.
 - icon construction helpers: components/tool-ui/geo-map/geo-map-icons.ts
 - popup/tooltip overlay renderer: components/tool-ui/geo-map/geo-map-overlays.tsx
 
-## Companion assets
+## Companion docs
 
-- Docs page: app/docs/geo-map/content.mdx
-- Preset payload: lib/presets/geo-map.ts
+- architecture walkthrough: docs/architecture/GEO-TOOLS.md
+- generative UI contract: docs/architecture/GENERATIVE-UI.md
+- agent/tool orchestration: docs/architecture/RESEARCH-AGENT.md
 
 ## Quick check
 
 Run this after edits:
 
-pnpm test
+```bash
+bun run test -- lib/tools/__tests__/display-geo-map.test.ts components/tool-ui/geo-map/__tests__/schema.test.ts components/tool-ui/geo-map/__tests__/schema-mirror.test.ts
+```
