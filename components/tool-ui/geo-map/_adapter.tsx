@@ -3,6 +3,7 @@ export {
   CircleMarker,
   MapContainer,
   Marker,
+  Polygon,
   Polyline,
   Popup,
   TileLayer,
