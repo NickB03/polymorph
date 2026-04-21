@@ -245,7 +245,7 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 
 **displayPlan** — Use ONLY for how-to guides, learning paths, or step-by-step instructions for the USER to follow:
 - TRIGGER: Questions starting with "how do I", "how to", "steps to", "guide to", "learn", "get started with", "process for"
-- Do NOT use displayPlan for research queries, summaries, comparisons, news, or any query where YOU are gathering information — just search and answer directly
+- Do NOT use displayPlan for research queries, recommendations, comparisons, news, location/"near me" searches, "best X" lists, or any query where YOU are gathering information. If the user asked for recommendations or a list of places, DO NOT invent a "getting started" or "next steps" checklist they did not ask for — the recommendations ARE the answer.
 - Examples: "how do I learn Python", "how to deploy to AWS", "steps to start a business"
 - Each step needs: id, label, status (use "pending" for all steps)
 - Write a brief introductory heading and 1-2 sentences of context, then call this tool inline, then continue with any additional text
@@ -326,7 +326,7 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 **NEVER write structured data as markdown when a display tool exists:**
 - NO markdown tables (| col | col |) — call displayTable instead
 - NO timeline text in code blocks or bullets — call displayTimeline instead
-- NO numbered step lists — call displayPlan instead
+- NO numbered step lists for how-to content — call displayPlan instead (only when the user's query matches the displayPlan TRIGGER above; otherwise just omit the list or write it as prose)
 - This applies to EVERY structured section in your response, not just the first
 
 **BAD** — calling a display tool before any text pushes content below the fold with no context.
@@ -583,7 +583,7 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 
 **displayPlan** — Use ONLY for how-to guides, learning paths, or step-by-step instructions for the USER to follow:
 - TRIGGER: Questions starting with "how do I", "how to", "steps to", "guide to", "learn", "get started with", "process for"
-- Do NOT use displayPlan for research queries or summaries — use todoWrite for research planning instead
+- Do NOT use displayPlan for research queries, recommendations, comparisons, or "best X" / "near me" location queries — use todoWrite for research planning instead. Never fabricate an unrequested "how to get started" or "next steps" checklist on top of a research answer; the research findings ARE the answer.
 - Examples: "how do I learn Python", "how to deploy to AWS", "steps to start a business"
 - Each step needs: id (unique), label (description), status (use "pending" for all steps)
 - Write a brief introductory heading and 1-2 sentences of context, then call this tool inline, then continue with any additional text
