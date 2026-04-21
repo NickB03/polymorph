@@ -65,8 +65,8 @@ MAPTILER_API_KEY=[YOUR_SERVER_MAPTILER_KEY]
 ORS_API_KEY=[YOUR_OPENROUTESERVICE_KEY]
 ```
 
-- `NEXT_PUBLIC_MAPTILER_API_KEY` powers client-side basemap tiles for `displayGeoMap`.
-- `MAPTILER_API_KEY` powers server-side geocoding, routing, and static map URLs.
+- `NEXT_PUBLIC_MAPTILER_API_KEY` powers client-side basemap tiles for `displayGeoMap` and the public static map URLs returned by `getStaticMapImage`.
+- `MAPTILER_API_KEY` powers server-side geocoding, routing, and other server-only MapTiler calls.
 - `ORS_API_KEY` powers `getIsochrone` reachability polygons.
 
 Without these keys, the UI still loads, but geo features degrade: client maps fall back to CARTO Voyager, and `getIsochrone` returns a structured error instead of polygon data.

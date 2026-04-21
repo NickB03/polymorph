@@ -39,7 +39,7 @@ graph LR
         Geocode["geocodeAddress"]
         Directions["getDirections"]
         Isochrone["getIsochrone"]
-        StaticMap["getStaticMapImage"]
+        StaticMap["getStaticMapImage<br/>Public URL"]
     end
 
     subgraph MapServices["Map Services"]
@@ -54,14 +54,12 @@ graph LR
         Tables["Tables"]
         Charts["Charts"]
         GeoMaps["Geo Maps"]
-        StaticMaps["Static Maps"]
         Timelines["Timelines"]
         Citations["Citations"]
         Canvas["Canvas Artifacts"]
         GenUI --> Tables
         GenUI --> Charts
         GenUI --> GeoMaps
-        GenUI --> StaticMaps
         GenUI --> Timelines
         GenUI --> Citations
         GenUI --> Canvas

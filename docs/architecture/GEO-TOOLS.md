@@ -90,8 +90,8 @@ Use `getStaticMapImage` when the user explicitly wants:
 
 The geo surface depends on three environment variables documented in [Environment Reference](../getting-started/ENVIRONMENT.md#map-tiles-geo-map-tool-ui):
 
-- `NEXT_PUBLIC_MAPTILER_API_KEY` for client-side tiles.
-- `MAPTILER_API_KEY` for server-side geocoding, directions, and static map URLs.
+- `NEXT_PUBLIC_MAPTILER_API_KEY` for client-side tiles and the public static map URLs returned by `getStaticMapImage`.
+- `MAPTILER_API_KEY` for server-side geocoding, directions, and other server-only MapTiler calls.
 - `ORS_API_KEY` for isochrones.
 
 The app degrades gracefully when some keys are absent: client maps fall back to CARTO Voyager, and `getIsochrone` returns a structured error if `ORS_API_KEY` is not set.

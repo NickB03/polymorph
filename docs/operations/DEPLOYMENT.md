@@ -52,8 +52,8 @@ MAPTILER_API_KEY=[YOUR_SERVER_MAPTILER_KEY]
 ORS_API_KEY=[YOUR_OPENROUTESERVICE_KEY]
 ```
 
-- `NEXT_PUBLIC_MAPTILER_API_KEY` serves client-side tiles for `displayGeoMap`.
-- `MAPTILER_API_KEY` serves `geocodeAddress`, `getDirections`, and `getStaticMapImage`.
+- `NEXT_PUBLIC_MAPTILER_API_KEY` serves client-side tiles for `displayGeoMap` and the public static map URLs returned by `getStaticMapImage`.
+- `MAPTILER_API_KEY` serves `geocodeAddress`, `getDirections`, and other server-only MapTiler calls.
 - `ORS_API_KEY` enables `getIsochrone`; without it the tool returns a structured error instead of a polygon.
 
 ## Vercel cron — trending suggestions refresh
