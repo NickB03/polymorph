@@ -96,6 +96,55 @@ const parityCases = [
         }
       ]
     }
+  },
+  {
+    name: 'polygon',
+    expected: true,
+    payload: {
+      id: 'polygon',
+      markers: [{ id: 'center', lat: 37.75, lng: -122.3 }],
+      polygons: [
+        {
+          id: 'iso-30',
+          points: [
+            { lat: 37.7, lng: -122.4 },
+            { lat: 37.8, lng: -122.3 },
+            { lat: 37.7, lng: -122.2 }
+          ],
+          label: '30-minute drive',
+          fillColor: '#2563EB',
+          fillOpacity: 0.2,
+          borderColor: '#2563EB',
+          borderWeight: 2
+        }
+      ]
+    }
+  },
+  {
+    name: 'duplicate-polygon-ids',
+    expected: false,
+    payload: {
+      id: 'dup-polygons',
+      markers: [{ id: 'a', lat: 0, lng: 0 }],
+      polygons: [
+        {
+          id: 'dup',
+          points: [
+            { lat: 0, lng: 0 },
+            { lat: 1, lng: 1 },
+            { lat: 2, lng: 2 }
+          ]
+        },
+        {
+          id: 'dup',
+          points: [
+            { lat: 3, lng: 3 },
+            { lat: 4, lng: 4 },
+            { lat: 5, lng: 5 }
+          ]
+        }
+      ]
+    }
   }
 ] as const
 

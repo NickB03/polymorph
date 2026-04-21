@@ -674,6 +674,74 @@ describe('RenderMessage', () => {
     )
   })
 
+  it('suppresses tool_code display placeholders even when a real tool result exists', () => {
+    const consoleDebug = vi
+      .spyOn(console, 'debug')
+      .mockImplementation(() => undefined)
+
+    const message: UIMessage = {
+      id: 'assistant-timeline-tool-code',
+      role: 'assistant',
+      metadata: {
+        modelId: 'gateway:google/gemini-3-flash',
+        userMode: 'search'
+      },
+      parts: [
+        {
+          type: 'text',
+          text: `## Recent Milestones Timeline\n\nWaymo's growth accelerated quickly:\n\n\`\`\`json
+/* tool_code */
+displayTimeline({
+  id: "recent-milestones",
+  title: "Recent Milestones",
+  events: [{ id: "launch", date: "2025", title: "Launch" }]
+})
+\`\`\`\n\nThe rollout continued after these milestones.`
+        },
+        {
+          type: 'tool-displayTimeline',
+          toolCallId: 'timeline-tool-1',
+          state: 'output-available',
+          output: {
+            id: 'recent-milestones',
+            title: 'Recent Milestones',
+            events: [
+              {
+                id: 'launch',
+                date: '2025',
+                title: 'Launch'
+              }
+            ]
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.queryByText(/displayTimeline\(/i)).not.toBeInTheDocument()
+    expect(screen.getByTestId('timeline-tool-ui')).toHaveAttribute(
+      'data-source',
+      'tool'
+    )
+    expect(consoleDebug).toHaveBeenCalledWith(
+      '[RenderMessage] Suppressed pseudo display tool placeholder',
+      expect.objectContaining({
+        messageId: 'assistant-timeline-tool-code',
+        toolName: 'displayTimeline',
+        hadCompletedDisplayTool: true
+      })
+    )
+  })
+
   it('shows only the data-canvasArtifact card when failed creates with empty IDs precede a success', () => {
     const message: UIMessage = {
       id: 'assistant-1',

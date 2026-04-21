@@ -47,6 +47,18 @@ vi.mock('@/lib/tools/display-timeline', () => ({
 vi.mock('@/lib/tools/fetch', () => ({
   fetchTool: { name: 'fetch' }
 }))
+vi.mock('@/lib/tools/get-directions', () => ({
+  getDirectionsTool: { name: 'getDirections' }
+}))
+vi.mock('@/lib/tools/geocode-address', () => ({
+  geocodeAddressTool: { name: 'geocodeAddress' }
+}))
+vi.mock('@/lib/tools/get-isochrone', () => ({
+  getIsochroneTool: { name: 'getIsochrone' }
+}))
+vi.mock('@/lib/tools/get-static-map-image', () => ({
+  getStaticMapImageTool: { name: 'getStaticMapImage' }
+}))
 vi.mock('@/lib/tools/search', () => ({
   createSearchTool: vi.fn().mockReturnValue({
     name: 'search',
@@ -122,9 +134,17 @@ describe('createResearcher', () => {
     expect(config.activeTools).toContain('displayTable')
     expect(config.activeTools).toContain('displayChart')
     expect(config.activeTools).toContain('displayGeoMap')
+    expect(config.activeTools).toContain('getDirections')
+    expect(config.activeTools).toContain('geocodeAddress')
+    expect(config.activeTools).toContain('getIsochrone')
+    expect(config.activeTools).toContain('getStaticMapImage')
     expect(config.activeTools).toContain('displayCitations')
     expect(config.activeTools).toContain('displayTimeline')
     expect(Object.keys(config.tools)).toContain('displayGeoMap')
+    expect(Object.keys(config.tools)).toContain('getDirections')
+    expect(Object.keys(config.tools)).toContain('geocodeAddress')
+    expect(Object.keys(config.tools)).toContain('getIsochrone')
+    expect(Object.keys(config.tools)).toContain('getStaticMapImage')
     // Research mode should NOT include displayPlan
     expect(config.activeTools).not.toContain('displayPlan')
   })
@@ -143,6 +163,10 @@ describe('createResearcher', () => {
     expect(config.activeTools).toContain('search')
     expect(config.activeTools).toContain('fetch')
     expect(config.activeTools).toContain('displayGeoMap')
+    expect(config.activeTools).toContain('getDirections')
+    expect(config.activeTools).toContain('geocodeAddress')
+    expect(config.activeTools).toContain('getIsochrone')
+    expect(config.activeTools).toContain('getStaticMapImage')
     expect(config.activeTools).toContain('displayTimeline')
     expect(Object.keys(config.tools)).toContain('displayGeoMap')
     // Chat mode should NOT include todoWrite

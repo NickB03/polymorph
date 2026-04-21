@@ -23,6 +23,10 @@ import { displayTableTool } from '../tools/display-table'
 import { displayTimelineTool } from '../tools/display-timeline'
 import { fetchTool } from '../tools/fetch'
 import { createGenerateImageTool } from '../tools/generate-image'
+import { geocodeAddressTool } from '../tools/geocode-address'
+import { getDirectionsTool } from '../tools/get-directions'
+import { getIsochroneTool } from '../tools/get-isochrone'
+import { getStaticMapImageTool } from '../tools/get-static-map-image'
 import { readCanvasArtifactTool } from '../tools/read-canvas-artifact'
 import { createSearchTool } from '../tools/search'
 import { createTodoTools } from '../tools/todo'
@@ -206,6 +210,10 @@ export function createResearcher({
           'displayTable',
           'displayChart',
           'displayGeoMap',
+          'getDirections',
+          'geocodeAddress',
+          'getIsochrone',
+          'getStaticMapImage',
           'displayCitations',
           'displayLinkPreview',
           'displayOptionList',
@@ -229,6 +237,10 @@ export function createResearcher({
           'displayTable',
           'displayChart',
           'displayGeoMap',
+          'getDirections',
+          'geocodeAddress',
+          'getIsochrone',
+          'getStaticMapImage',
           'displayCitations',
           'displayLinkPreview',
           'displayOptionList',
@@ -312,6 +324,10 @@ export function createResearcher({
       displayTable: displayTableTool,
       displayChart: displayChartTool,
       displayGeoMap: displayGeoMapTool,
+      getDirections: getDirectionsTool,
+      geocodeAddress: geocodeAddressTool,
+      getIsochrone: getIsochroneTool,
+      getStaticMapImage: getStaticMapImageTool,
       displayCitations: displayCitationsTool,
       displayLinkPreview: displayLinkPreviewTool,
       displayOptionList: displayOptionListTool,

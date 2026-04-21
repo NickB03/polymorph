@@ -9,6 +9,7 @@ import {
   CircleMarker,
   MapContainer,
   Marker,
+  Polygon,
   Polyline,
   TileLayer,
   useMap,
@@ -21,6 +22,7 @@ import type {
   GeoMapClustering,
   GeoMapFitTarget,
   GeoMapMarker,
+  GeoMapPolygon,
   GeoMapRoute,
   GeoMapViewport
 } from './schema'
@@ -28,7 +30,13 @@ import type {
 const ROUTE_DEFAULT_COLOR = 'var(--primary)'
 const ROUTE_DEFAULT_WEIGHT = 3
 const ROUTE_DEFAULT_OPACITY = 0.85
+const POLYGON_DEFAULT_BORDER_COLOR = 'var(--primary)'
+const POLYGON_DEFAULT_FILL_COLOR = 'var(--primary)'
+const POLYGON_DEFAULT_BORDER_WEIGHT = 2
+const POLYGON_DEFAULT_BORDER_OPACITY = 0.8
+const POLYGON_DEFAULT_FILL_OPACITY = 0.15
 const EMPTY_ROUTES: GeoMapRoute[] = []
+const EMPTY_POLYGONS: GeoMapPolygon[] = []
 
 const CLUSTER_RADIUS_DEFAULT = 60
 const CLUSTER_MAX_ZOOM_DEFAULT = 16
@@ -126,6 +134,7 @@ function readViewportState(map: LeafletMap): MapViewportState {
 export function collectFitPoints(
   markers: GeoMapMarker[],
   routes: GeoMapRoute[],
+  polygons: GeoMapPolygon[],
   target: GeoMapFitTarget
 ): GeoMapLatLng[] {
   const markerPoints =
@@ -140,26 +149,38 @@ export function collectFitPoints(
         )
       : []
 
-  return [...markerPoints, ...routePoints]
+  const polygonPoints =
+    target === 'all'
+      ? polygons.flatMap(polygon =>
+          polygon.points.map(point => [point.lat, point.lng] as GeoMapLatLng)
+        )
+      : []
+
+  return [...markerPoints, ...routePoints, ...polygonPoints]
 }
 
 export function resolveFitPointsWithFallback(
   markers: GeoMapMarker[],
   routes: GeoMapRoute[],
+  polygons: GeoMapPolygon[],
   target: GeoMapFitTarget
 ): GeoMapLatLng[] {
-  const selected = collectFitPoints(markers, routes, target)
+  const selected = collectFitPoints(markers, routes, polygons, target)
   if (selected.length > 0) {
     return selected
   }
 
   if (target !== 'markers') {
-    return collectFitPoints(markers, routes, 'markers')
+    return collectFitPoints(markers, routes, polygons, 'markers')
   }
 
   return []
 }
 
+// Currently only cluster bbox queries split across the antimeridian (see
+// getClustersForDatelineAwareBbox). Routes and polygons that wrap the dateline
+// will render as a globe-spanning band — not a concern for typical US/EU use
+// cases, but revisit if adding global isochrones or trans-Pacific routes.
 export function splitDatelineBbox(bbox: GeoMapBbox): GeoMapBbox[] {
   const [west, south, east, north] = bbox
 
@@ -247,6 +268,7 @@ export function toSafeExpansionZoom(
 function resolveInitialView(
   markers: GeoMapMarker[],
   routes: GeoMapRoute[],
+  polygons: GeoMapPolygon[],
   viewport: GeoMapViewport | undefined
 ): { center: [number, number]; zoom: number } {
   if (viewport?.mode === 'center') {
@@ -257,7 +279,12 @@ function resolveInitialView(
   }
 
   const fitTarget = viewport?.target ?? 'all'
-  const fitPoints = resolveFitPointsWithFallback(markers, routes, fitTarget)
+  const fitPoints = resolveFitPointsWithFallback(
+    markers,
+    routes,
+    polygons,
+    fitTarget
+  )
 
   if (fitPoints.length === 1) {
     return {
@@ -274,11 +301,13 @@ function resolveInitialView(
 function ViewportController({
   markers,
   routes,
+  polygons,
   viewport,
   leafletRuntime
 }: {
   markers: GeoMapMarker[]
   routes: GeoMapRoute[]
+  polygons: GeoMapPolygon[]
   viewport: GeoMapViewport | undefined
   leafletRuntime: LeafletRuntime
 }) {
@@ -302,7 +331,12 @@ function ViewportController({
     }
 
     const fitTarget = viewport?.target ?? 'all'
-    const fitPoints = resolveFitPointsWithFallback(markers, routes, fitTarget)
+    const fitPoints = resolveFitPointsWithFallback(
+      markers,
+      routes,
+      polygons,
+      fitTarget
+    )
     if (fitPoints.length === 0) {
       return
     }
@@ -335,7 +369,7 @@ function ViewportController({
       maxZoom,
       padding: [padding, padding]
     })
-  }, [leafletRuntime, map, markers, routes, viewport])
+  }, [leafletRuntime, map, markers, polygons, routes, viewport])
 
   return null
 }
@@ -380,6 +414,7 @@ export const GeoMapEngine = memo(function GeoMapEngine({
   id,
   markers,
   routes,
+  polygons,
   clustering,
   viewport,
   showZoomControl,
@@ -395,6 +430,7 @@ export const GeoMapEngine = memo(function GeoMapEngine({
   id: string
   markers: GeoMapMarker[]
   routes?: GeoMapRoute[]
+  polygons?: GeoMapPolygon[]
   clustering?: GeoMapClustering
   viewport?: GeoMapViewport
   showZoomControl: boolean
@@ -408,6 +444,7 @@ export const GeoMapEngine = memo(function GeoMapEngine({
   onReadyChange?: (isReady: boolean) => void
 }) {
   const resolvedRoutes = routes ?? EMPTY_ROUTES
+  const resolvedPolygons = polygons ?? EMPTY_POLYGONS
   const [leafletRuntime, setLeafletRuntime] = useState<LeafletRuntime | null>(
     null
   )
@@ -478,8 +515,9 @@ export const GeoMapEngine = memo(function GeoMapEngine({
   }, [mapInstance])
 
   const initialView = useMemo(
-    () => resolveInitialView(markers, resolvedRoutes, viewport),
-    [markers, resolvedRoutes, viewport]
+    () =>
+      resolveInitialView(markers, resolvedRoutes, resolvedPolygons, viewport),
+    [markers, resolvedRoutes, resolvedPolygons, viewport]
   )
 
   const markerById = useMemo(() => {
@@ -655,6 +693,7 @@ export const GeoMapEngine = memo(function GeoMapEngine({
         leafletRuntime={leafletRuntime}
         markers={markers}
         routes={resolvedRoutes}
+        polygons={resolvedPolygons}
         viewport={viewport}
       />
 
@@ -690,6 +729,40 @@ export const GeoMapEngine = memo(function GeoMapEngine({
               popupClassName={popupClassName}
             />
           </Polyline>
+        )
+      })}
+
+      {resolvedPolygons.map((polygon, polygonIndex) => {
+        const polygonKey = polygon.id ?? `${id}-polygon-${polygonIndex}`
+        const positions = polygon.points.map(point => [
+          point.lat,
+          point.lng
+        ]) as [number, number][]
+        const tooltipMode = polygon.tooltip ?? 'hover'
+        const tooltipContent = polygon.label ?? polygon.description
+
+        return (
+          <Polygon
+            key={polygonKey}
+            positions={positions}
+            pathOptions={{
+              color: polygon.borderColor ?? POLYGON_DEFAULT_BORDER_COLOR,
+              weight: polygon.borderWeight ?? POLYGON_DEFAULT_BORDER_WEIGHT,
+              opacity: polygon.borderOpacity ?? POLYGON_DEFAULT_BORDER_OPACITY,
+              dashArray: polygon.borderDashArray,
+              fillColor: polygon.fillColor ?? POLYGON_DEFAULT_FILL_COLOR,
+              fillOpacity: polygon.fillOpacity ?? POLYGON_DEFAULT_FILL_OPACITY
+            }}
+          >
+            <GeoMapOverlays
+              tooltipMode={tooltipMode}
+              tooltipContent={tooltipContent}
+              label={polygon.label}
+              description={polygon.description}
+              tooltipClassName={tooltipClassName}
+              popupClassName={popupClassName}
+            />
+          </Polygon>
         )
       })}
 

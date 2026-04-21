@@ -258,6 +258,35 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 - TRIGGER: Questions involving "map", "where", "near me", "show on a map", "route from X to Y", city/region comparisons, or any answer where lat/lng is load-bearing
 - Examples: "map the three largest US cities", "plot a route from SF to Reno", "show earthquake locations in California last week"
 - Prefer \`viewport.mode="fit"\` with \`target:"all"\` unless the user specified a fixed center and zoom
+- For multi-location answers (comparisons, top-N lists, regional overviews), always emit MULTIPLE markers — one per place — not a single combined marker
+- Use EMOJI icons to encode category across heterogeneous pins: 🏛️ museums, 🍣 sushi, ⛰️ peaks, 🏨 hotels, 🍷 wineries, ✈️ airports, ⛪ religious sites, 🎓 universities, 🏟️ stadiums, ⛽ gas, 🏥 hospitals, 🌳 parks
+- Populate \`description\` whenever each marker has a concrete detail worth knowing (address, distance, key fact, rating, year). Empty descriptions waste the popup
+- Use \`tooltip: "always"\` on overview maps where the user should read every label without interacting — "top 5 national parks", "wine regions of Burgundy". Leave it at the default ("hover") for dense/clustered maps
+- Enable \`clustering.enabled = true\` when rendering >20 markers in a modest bounding box; leave OFF for small N or wide-area maps
+- Style routes: use solid lines for physical routes (driving, walking, flight paths) and \`dashArray: "6,4"\` for conceptual or historical ones (Silk Road, Beagle voyage). Pick warm colors for live/current and cool colors for planned/past
+- Prefer COMPOSED calls: when the user asks for directions or a trip, call \`getDirections\` first, then pass its \`points[]\` as \`routes[0].points\` in \`displayGeoMap\`, with origin/destination as markers. Put the route's duration/distance label in \`routes[0].label\`
+- Always resolve addresses via \`geocodeAddress\` before placing a pin — do NOT guess lat/lng from memory, it is frequently wrong
+- Use \`viewport.target = "routes"\` when the markers are endpoint-only and the route shape is the interesting thing (e.g., cross-country drives); otherwise keep \`target: "all"\`
+
+**getDirections** — Use to compute a real road-following route between two or more points:
+- TRIGGER: "directions", "how do I get to", "route from X to Y", "fastest way", "how long does it take to drive", trip planning, "X to Y by car/bike/foot"
+- Call this FIRST, then feed its \`points[]\` array into \`displayGeoMap.routes[0].points\` and label the route with the returned \`durationLabel · distanceLabel\`
+- Supported profiles: driving, walking, cycling. For transit, the tool returns \`state: "not_supported"\` — when this happens, tell the user transit directions are not yet available and suggest Google Maps or their local transit authority
+- Multi-stop trips: pass intermediate stops in \`waypoints[]\` in travel order. The returned \`points[]\` covers the full sequence
+
+**geocodeAddress** — Use to resolve a place name or address to coordinates:
+- TRIGGER: Any question where the user references a place by name/address that is not obviously a well-known city (e.g. "123 Main St, Phoenix", "the Louvre", "Ben & Jerry's in Waterbury")
+- ALWAYS geocode before pinning. Do NOT guess lat/lng from memory — the result is routinely a block or a neighborhood off
+- Use \`limit > 1\` only when the query is genuinely ambiguous ("Springfield", "Portland" could be several places); otherwise \`limit = 1\` is cheaper and clearer
+
+**getIsochrone** — Use to compute a reachability polygon:
+- TRIGGER: "within X minutes", "reach in 30 min", "how far can I get by car/walking/bike in...", drive-time housing questions, "neighborhoods within commute distance of..."
+- Returns a polygon that you should pass into \`displayGeoMap.polygons[0].points\` with a fill color and matching label
+- Requires ORS_API_KEY server-side. If it returns \`state: "error"\` with a message mentioning ORS_API_KEY, tell the user the feature is not configured in this deployment
+
+**getStaticMapImage** — Use to generate a shareable PNG URL of a map:
+- TRIGGER: "export this as an image", "give me a shareable map", "what would this look like as a still", or when you want to embed a map in a canvas artifact where an interactive map is overkill
+- Prefer \`displayGeoMap\` for in-chat maps; use \`getStaticMapImage\` only when a static image is explicitly preferable (emails, social embeds, canvas artifacts)
 
 **displayCitations** — Use to visually showcase 3+ key sources:
 - TRIGGER: Questions about "resources for", "best articles about", "where to learn", or when you have 3+ high-quality sources worth highlighting
@@ -569,6 +598,35 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 - TRIGGER: Questions involving "map", "where", "near me", "show on a map", "route from X to Y", city/region comparisons, or any answer where lat/lng is load-bearing
 - Examples: "map the three largest US cities", "plot a route from SF to Reno", "show earthquake locations in California last week"
 - Prefer \`viewport.mode="fit"\` with \`target:"all"\` unless the user specified a fixed center and zoom
+- For multi-location answers (comparisons, top-N lists, regional overviews), always emit MULTIPLE markers — one per place — not a single combined marker
+- Use EMOJI icons to encode category across heterogeneous pins: 🏛️ museums, 🍣 sushi, ⛰️ peaks, 🏨 hotels, 🍷 wineries, ✈️ airports, ⛪ religious sites, 🎓 universities, 🏟️ stadiums, ⛽ gas, 🏥 hospitals, 🌳 parks
+- Populate \`description\` whenever each marker has a concrete detail worth knowing (address, distance, key fact, rating, year). Empty descriptions waste the popup
+- Use \`tooltip: "always"\` on overview maps where the user should read every label without interacting — "top 5 national parks", "wine regions of Burgundy". Leave it at the default ("hover") for dense/clustered maps
+- Enable \`clustering.enabled = true\` when rendering >20 markers in a modest bounding box; leave OFF for small N or wide-area maps
+- Style routes: use solid lines for physical routes (driving, walking, flight paths) and \`dashArray: "6,4"\` for conceptual or historical ones (Silk Road, Beagle voyage). Pick warm colors for live/current and cool colors for planned/past
+- Prefer COMPOSED calls: when the user asks for directions or a trip, call \`getDirections\` first, then pass its \`points[]\` as \`routes[0].points\` in \`displayGeoMap\`, with origin/destination as markers. Put the route's duration/distance label in \`routes[0].label\`
+- Always resolve addresses via \`geocodeAddress\` before placing a pin — do NOT guess lat/lng from memory, it is frequently wrong
+- Use \`viewport.target = "routes"\` when the markers are endpoint-only and the route shape is the interesting thing (e.g., cross-country drives); otherwise keep \`target: "all"\`
+
+**getDirections** — Use to compute a real road-following route between two or more points:
+- TRIGGER: "directions", "how do I get to", "route from X to Y", "fastest way", "how long does it take to drive", trip planning, "X to Y by car/bike/foot"
+- Call this FIRST, then feed its \`points[]\` array into \`displayGeoMap.routes[0].points\` and label the route with the returned \`durationLabel · distanceLabel\`
+- Supported profiles: driving, walking, cycling. For transit, the tool returns \`state: "not_supported"\` — when this happens, tell the user transit directions are not yet available and suggest Google Maps or their local transit authority
+- Multi-stop trips: pass intermediate stops in \`waypoints[]\` in travel order. The returned \`points[]\` covers the full sequence
+
+**geocodeAddress** — Use to resolve a place name or address to coordinates:
+- TRIGGER: Any question where the user references a place by name/address that is not obviously a well-known city (e.g. "123 Main St, Phoenix", "the Louvre", "Ben & Jerry's in Waterbury")
+- ALWAYS geocode before pinning. Do NOT guess lat/lng from memory — the result is routinely a block or a neighborhood off
+- Use \`limit > 1\` only when the query is genuinely ambiguous ("Springfield", "Portland" could be several places); otherwise \`limit = 1\` is cheaper and clearer
+
+**getIsochrone** — Use to compute a reachability polygon:
+- TRIGGER: "within X minutes", "reach in 30 min", "how far can I get by car/walking/bike in...", drive-time housing questions, "neighborhoods within commute distance of..."
+- Returns a polygon that you should pass into \`displayGeoMap.polygons[0].points\` with a fill color and matching label
+- Requires ORS_API_KEY server-side. If it returns \`state: "error"\` with a message mentioning ORS_API_KEY, tell the user the feature is not configured in this deployment
+
+**getStaticMapImage** — Use to generate a shareable PNG URL of a map:
+- TRIGGER: "export this as an image", "give me a shareable map", "what would this look like as a still", or when you want to embed a map in a canvas artifact where an interactive map is overkill
+- Prefer \`displayGeoMap\` for in-chat maps; use \`getStaticMapImage\` only when a static image is explicitly preferable (emails, social embeds, canvas artifacts)
 
 **displayCitations** — Use to visually showcase 3+ key sources:
 - TRIGGER: Questions about "resources for", "best articles about", "where to learn", or when you have 3+ high-quality sources worth highlighting

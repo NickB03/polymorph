@@ -100,6 +100,7 @@ export const GeoMap = memo(function GeoMap({
   description,
   markers,
   routes,
+  polygons,
   clustering,
   viewport,
   showZoomControl = true,
@@ -141,6 +142,7 @@ export const GeoMap = memo(function GeoMap({
           id={id}
           markers={markers}
           routes={routes}
+          polygons={polygons}
           clustering={clustering}
           viewport={viewport}
           showZoomControl={showZoomControl}

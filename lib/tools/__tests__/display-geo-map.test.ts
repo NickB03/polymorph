@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
-import { displayGeoMapTool } from '../display-geo-map'
+import { DisplayGeoMapSchema, displayGeoMapTool } from '../display-geo-map'
 
 const schema = displayGeoMapTool.inputSchema as z.ZodTypeAny
 
@@ -152,5 +152,26 @@ describe('displayGeoMapTool input schema', () => {
     await expect(displayGeoMapTool.execute(payload, {} as never)).resolves.toBe(
       payload
     )
+  })
+})
+
+describe('DisplayGeoMapSchema .describe() annotations', () => {
+  // z.toJSONSchema surfaces .describe() calls as `description` fields on the
+  // generated JSON Schema — that is the shape the model sees in the tool spec.
+  const jsonSchema = JSON.stringify(z.toJSONSchema(DisplayGeoMapSchema))
+
+  it('documents non-obvious marker fields', () => {
+    expect(jsonSchema).toContain('category color coding')
+    expect(jsonSchema).toContain("'always' forces the label")
+    expect(jsonSchema).toContain('Emoji character')
+  })
+
+  it('documents clustering guidance', () => {
+    expect(jsonSchema).toContain('>20 markers')
+  })
+
+  it('documents route styling fields', () => {
+    expect(jsonSchema).toContain('dashArray')
+    expect(jsonSchema).toContain('6,4')
   })
 })

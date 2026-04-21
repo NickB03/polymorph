@@ -81,6 +81,22 @@ export const GeoMapRouteSchema = z.object({
 
 export type GeoMapRoute = z.infer<typeof GeoMapRouteSchema>
 
+export const GeoMapPolygonSchema = z.object({
+  id: z.string().min(1).optional(),
+  points: z.array(GeoMapRoutePointSchema).min(3),
+  label: z.string().optional(),
+  description: z.string().optional(),
+  tooltip: z.enum(['none', 'hover', 'always']).optional(),
+  fillColor: z.string().optional(),
+  fillOpacity: z.number().min(0).max(1).optional(),
+  borderColor: z.string().optional(),
+  borderOpacity: z.number().min(0).max(1).optional(),
+  borderWeight: z.number().min(0).max(12).optional(),
+  borderDashArray: z.string().optional()
+})
+
+export type GeoMapPolygon = z.infer<typeof GeoMapPolygonSchema>
+
 export const GeoMapClusteringSchema = z.object({
   enabled: z.boolean().optional(),
   radius: z.number().min(20).max(120).optional(),
@@ -125,6 +141,7 @@ export const GeoMapPropsSchema = z
     description: z.string().optional(),
     markers: z.array(GeoMapMarkerSchema).min(1),
     routes: z.array(GeoMapRouteSchema).optional(),
+    polygons: z.array(GeoMapPolygonSchema).optional(),
     clustering: GeoMapClusteringSchema.optional(),
     viewport: GeoMapViewportSchema.optional(),
     showZoomControl: z.boolean().optional(),
@@ -166,6 +183,24 @@ export const GeoMapPropsSchema = z
       }
 
       seenRouteIds.add(route.id)
+    })
+
+    const seenPolygonIds = new Set<string>()
+    value.polygons?.forEach((polygon, index) => {
+      if (!polygon.id) {
+        return
+      }
+
+      if (seenPolygonIds.has(polygon.id)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['polygons', index, 'id'],
+          message: `Duplicate polygon id "${polygon.id}".`
+        })
+        return
+      }
+
+      seenPolygonIds.add(polygon.id)
     })
   })
 
