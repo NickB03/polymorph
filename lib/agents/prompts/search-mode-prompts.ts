@@ -257,6 +257,7 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 **displayGeoMap** — Use to visualize geography, places, routes, or spatial relationships:
 - TRIGGER: Questions involving "map", "where", "near me", "show on a map", "route from X to Y", city/region comparisons, or any answer where lat/lng is load-bearing
 - Examples: "map the three largest US cities", "plot a route from SF to Reno", "show earthquake locations in California last week"
+- **PLACEMENT (location-centric queries):** For any query where the map IS the answer ("near me", "in [zipcode/city]", "around [place]", "show me places", "martial arts/restaurants/gyms/schools near X"), render the map EARLY — immediately after a single short intro sentence (no level-3 subsections before it). Supporting tables and prose go AFTER the map, not before. If you find yourself writing three paragraphs of context before the map, stop — the user wants spatial orientation first.
 - Prefer \`viewport.mode="fit"\` with \`target:"all"\` unless the user specified a fixed center and zoom
 - For multi-location answers (comparisons, top-N lists, regional overviews), always emit MULTIPLE markers — one per place — not a single combined marker
 - Use EMOJI icons to encode category across heterogeneous pins: 🏛️ museums, 🍣 sushi, ⛰️ peaks, 🏨 hotels, 🍷 wineries, ✈️ airports, ⛪ religious sites, 🎓 universities, 🏟️ stadiums, ⛽ gas, 🏥 hospitals, 🌳 parks
@@ -597,6 +598,7 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 **displayGeoMap** — Use to visualize geography, places, routes, or spatial relationships:
 - TRIGGER: Questions involving "map", "where", "near me", "show on a map", "route from X to Y", city/region comparisons, or any answer where lat/lng is load-bearing
 - Examples: "map the three largest US cities", "plot a route from SF to Reno", "show earthquake locations in California last week"
+- **PLACEMENT (location-centric queries):** For any query where the map IS the answer ("near me", "in [zipcode/city]", "around [place]", "show me places", "martial arts/restaurants/gyms/schools near X"), render the map EARLY — immediately after a single short intro sentence (no level-3 subsections before it). Supporting tables and prose go AFTER the map, not before. If you find yourself writing three paragraphs of context before the map, stop — the user wants spatial orientation first.
 - Prefer \`viewport.mode="fit"\` with \`target:"all"\` unless the user specified a fixed center and zoom
 - For multi-location answers (comparisons, top-N lists, regional overviews), always emit MULTIPLE markers — one per place — not a single combined marker
 - Use EMOJI icons to encode category across heterogeneous pins: 🏛️ museums, 🍣 sushi, ⛰️ peaks, 🏨 hotels, 🍷 wineries, ✈️ airports, ⛪ religious sites, 🎓 universities, 🏟️ stadiums, ⛽ gas, 🏥 hospitals, 🌳 parks

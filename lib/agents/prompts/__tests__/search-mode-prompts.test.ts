@@ -55,3 +55,23 @@ describe('Issue 1 — displayPlan gating', () => {
     )
   })
 })
+
+describe('Issue 2 — displayGeoMap placement for location-centric queries', () => {
+  it('CHAT_MODE_PROMPT tells model to render map early for location queries', () => {
+    expect(CHAT_MODE_PROMPT).toContain('PLACEMENT (location-centric queries)')
+    expect(CHAT_MODE_PROMPT).toContain('render the map EARLY')
+    expect(CHAT_MODE_PROMPT).toContain(
+      'Supporting tables and prose go AFTER the map, not before'
+    )
+  })
+
+  it('RESEARCH_MODE_PROMPT has the same placement rule', () => {
+    expect(RESEARCH_MODE_PROMPT).toContain(
+      'PLACEMENT (location-centric queries)'
+    )
+    expect(RESEARCH_MODE_PROMPT).toContain('render the map EARLY')
+    expect(RESEARCH_MODE_PROMPT).toContain(
+      'Supporting tables and prose go AFTER the map, not before'
+    )
+  })
+})
