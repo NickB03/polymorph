@@ -95,3 +95,25 @@ describe('Issue 3 — displayTable link guidance', () => {
     expect(RESEARCH_MODE_PROMPT).toContain('hidden: true')
   })
 })
+
+describe('Issue 4 — follow-up context handling', () => {
+  const DISTINCT_PHRASES = [
+    'FOLLOW-UP CONTEXT HANDLING',
+    'Refinement signals',
+    'do any of them',
+    'REUSE prior tool results',
+    'Do NOT re-emit the prior section heading',
+    'Do NOT re-render the prior displayTable unless a column materially changed',
+    'Do NOT re-render the prior displayGeoMap unless the marker set changed'
+  ]
+
+  for (const phrase of DISTINCT_PHRASES) {
+    it(`CHAT_MODE_PROMPT contains follow-up rule phrase: "${phrase}"`, () => {
+      expect(CHAT_MODE_PROMPT).toContain(phrase)
+    })
+
+    it(`RESEARCH_MODE_PROMPT contains follow-up rule phrase: "${phrase}"`, () => {
+      expect(RESEARCH_MODE_PROMPT).toContain(phrase)
+    })
+  }
+})
