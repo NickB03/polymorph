@@ -78,6 +78,7 @@ A hypothesis is not a conclusion. Before declaring a root cause found or a fix c
 - **Verify, then fix.** Confirm the problem exists where you think it does before writing a fix. Write a failing test or a log statement that proves the bug if you can.
 - **State your evidence.** When reporting a root cause, include `file:line`, the actual value, or the error message. "This is likely because…" is a hypothesis — label it as one and then verify.
 - **Don't trust your own prior analysis.** Re-check before acting on earlier session conclusions; state may have changed.
+- **External review claims are hypotheses, not facts.** Comments from CodeRabbit (or any PR-review bot) and recommendations from peer-review subagents are unverified opinions written from limited context. Before relaying or acting on one: open the cited code, confirm the claim still applies to the current state, and judge whether the recommendation is correct _for this codebase_. Many automated comments are stale, irrelevant, or wrong — surfacing them uncritically wastes the user's time and degrades the codebase. Same bar as your own analysis: cite `file:line` and the evidence, or label it a hypothesis.
 
 The bar: _could you point a skeptical reviewer to the exact evidence?_ If not, keep investigating.
 
@@ -94,9 +95,12 @@ Claude should `Read` these only when the current task needs them.
 | Model configuration                        | `docs/architecture/MODEL-CONFIGURATION.md`     |
 | Search providers                           | `docs/architecture/SEARCH-PROVIDERS.md`        |
 | Architecture decisions                     | `docs/architecture/DECISIONS.md`               |
+| Required config & env variables            | `docs/getting-started/CONFIGURATION.md`        |
 | Environment variables                      | `docs/getting-started/ENVIRONMENT.md`          |
 | Quickstart                                 | `docs/getting-started/QUICKSTART.md`           |
 | Deployment + Phoenix persistence procedure | `docs/operations/DEPLOYMENT.md`                |
+| Troubleshooting (setup & deploy failures)  | `docs/operations/TROUBLESHOOTING.md`           |
+| Docker / self-host                         | `docs/operations/DOCKER.md`                    |
 | Day-2 operations runbook                   | `docs/operations/runbooks/day-2-operations.md` |
 | File index (where things live)             | `docs/reference/FILE-INDEX.md`                 |
 | API reference                              | `docs/reference/API.md`                        |
