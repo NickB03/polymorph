@@ -19,6 +19,10 @@ import type { displayTableTool } from '../tools/display-table'
 import type { displayTimelineTool } from '../tools/display-timeline'
 import type { fetchTool } from '../tools/fetch'
 import type { createGenerateImageTool } from '../tools/generate-image'
+import type { geocodeAddressTool } from '../tools/geocode-address'
+import type { getDirectionsTool } from '../tools/get-directions'
+import type { getIsochroneTool } from '../tools/get-isochrone'
+import type { getStaticMapImageTool } from '../tools/get-static-map-image'
 import type { readCanvasArtifactTool } from '../tools/read-canvas-artifact'
 import type { createSearchTool } from '../tools/search'
 import type { createTodoTools } from '../tools/todo'
@@ -32,6 +36,10 @@ export type ResearcherTools = {
   displayTable: typeof displayTableTool
   displayChart: typeof displayChartTool
   displayGeoMap: typeof displayGeoMapTool
+  getDirections: typeof getDirectionsTool
+  geocodeAddress: typeof geocodeAddressTool
+  getIsochrone: typeof getIsochroneTool
+  getStaticMapImage: typeof getStaticMapImageTool
   displayCitations: typeof displayCitationsTool
   displayLinkPreview: typeof displayLinkPreviewTool
   displayOptionList: typeof displayOptionListTool
@@ -71,6 +79,18 @@ export type DisplayChartToolInvocation = UIToolInvocation<
 >
 export type DisplayGeoMapToolInvocation = UIToolInvocation<
   ResearcherTools['displayGeoMap']
+>
+export type GetDirectionsToolInvocation = UIToolInvocation<
+  ResearcherTools['getDirections']
+>
+export type GeocodeAddressToolInvocation = UIToolInvocation<
+  ResearcherTools['geocodeAddress']
+>
+export type GetIsochroneToolInvocation = UIToolInvocation<
+  ResearcherTools['getIsochrone']
+>
+export type GetStaticMapImageToolInvocation = UIToolInvocation<
+  ResearcherTools['getStaticMapImage']
 >
 export type DisplayCitationsToolInvocation = UIToolInvocation<
   ResearcherTools['displayCitations']
@@ -112,6 +132,10 @@ export type ResearcherToolInvocation =
   | DisplayTableToolInvocation
   | DisplayChartToolInvocation
   | DisplayGeoMapToolInvocation
+  | GetDirectionsToolInvocation
+  | GeocodeAddressToolInvocation
+  | GetIsochroneToolInvocation
+  | GetStaticMapImageToolInvocation
   | DisplayCitationsToolInvocation
   | DisplayLinkPreviewToolInvocation
   | DisplayOptionListToolInvocation
