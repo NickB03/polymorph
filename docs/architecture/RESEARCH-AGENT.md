@@ -47,7 +47,7 @@ graph TD
     Agent --> Answer
 ```
 
-**Source file:** [`lib/agents/researcher.ts`](../lib/agents/researcher.ts)
+**Source file:** [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts)
 
 ---
 
@@ -162,7 +162,7 @@ stateDiagram-v2
 
 ### Configuration
 
-The `createResearcher` function in [`lib/agents/researcher.ts`](../lib/agents/researcher.ts) configures the agent with:
+The `createResearcher` function in [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts) configures the agent with:
 
 ```typescript
 const agent = new ToolLoopAgent({
@@ -283,7 +283,7 @@ The agent's tools fall into two categories: **core tools** that perform actual o
 
 #### `search` — Multi-provider web search
 
-**Source:** [`lib/tools/search.ts`](../lib/tools/search.ts)
+**Source:** [`lib/tools/search.ts`](../../lib/tools/search.ts)
 
 Uses the `async *execute` generator pattern to stream intermediate states to the client:
 
@@ -304,7 +304,7 @@ Uses the `async *execute` generator pattern to stream intermediate states to the
 
 #### `fetch` — Web content extraction
 
-**Source:** [`lib/tools/fetch.ts`](../lib/tools/fetch.ts)
+**Source:** [`lib/tools/fetch.ts`](../../lib/tools/fetch.ts)
 
 Also uses the streaming generator pattern. Has two fetch strategies:
 
@@ -324,7 +324,7 @@ Also uses the streaming generator pattern. Has two fetch strategies:
 
 #### `todoWrite` — Research task tracking
 
-**Source:** [`lib/tools/todo.ts`](../lib/tools/todo.ts)
+**Source:** [`lib/tools/todo.ts`](../../lib/tools/todo.ts)
 
 Session-scoped task management. Each `createTodoTools()` call creates an isolated closure with its own todo state.
 
@@ -384,7 +384,7 @@ Some tools are registered only when the request context provides the capabilitie
 
 ### Dynamic Tools
 
-**Source:** [`lib/tools/dynamic.ts`](../lib/tools/dynamic.ts)
+**Source:** [`lib/tools/dynamic.ts`](../../lib/tools/dynamic.ts)
 
 A factory for creating runtime-defined tools, primarily for MCP (Model Context Protocol) integration:
 
@@ -428,7 +428,7 @@ graph TD
 
 ### Provider Details
 
-All providers implement the `SearchProvider` interface from [`lib/tools/search/providers/base.ts`](../lib/tools/search/providers/base.ts):
+All providers implement the `SearchProvider` interface from [`lib/tools/search/providers/base.ts`](../../lib/tools/search/providers/base.ts):
 
 ```typescript
 interface SearchProvider {
@@ -448,7 +448,7 @@ interface SearchProvider {
 
 #### Tavily
 
-**Source:** [`lib/tools/search/providers/tavily.ts`](../lib/tools/search/providers/tavily.ts)
+**Source:** [`lib/tools/search/providers/tavily.ts`](../../lib/tools/search/providers/tavily.ts)
 
 - **API:** `https://api.tavily.com/search`
 - **Env var:** `TAVILY_API_KEY`
@@ -459,7 +459,7 @@ interface SearchProvider {
 
 #### Brave
 
-**Source:** [`lib/tools/search/providers/brave.ts`](../lib/tools/search/providers/brave.ts)
+**Source:** [`lib/tools/search/providers/brave.ts`](../../lib/tools/search/providers/brave.ts)
 
 - **API:** `https://api.search.brave.com/res/v1/`
 - **Env var:** `BRAVE_SEARCH_API_KEY`
@@ -470,7 +470,7 @@ interface SearchProvider {
 
 #### Exa
 
-**Source:** [`lib/tools/search/providers/exa.ts`](../lib/tools/search/providers/exa.ts)
+**Source:** [`lib/tools/search/providers/exa.ts`](../../lib/tools/search/providers/exa.ts)
 
 - **SDK:** `exa-js` client library
 - **Env var:** `EXA_API_KEY`
@@ -479,7 +479,7 @@ interface SearchProvider {
 
 #### SearXNG
 
-**Source:** [`lib/tools/search/providers/searxng.ts`](../lib/tools/search/providers/searxng.ts)
+**Source:** [`lib/tools/search/providers/searxng.ts`](../../lib/tools/search/providers/searxng.ts)
 
 - **API:** Self-hosted instance at `SEARXNG_API_URL`
 - **Features:** Multi-engine meta-search (Google, Bing, DuckDuckGo, Wikipedia)
@@ -491,7 +491,7 @@ interface SearchProvider {
 
 #### Firecrawl
 
-**Source:** [`lib/tools/search/providers/firecrawl.ts`](../lib/tools/search/providers/firecrawl.ts)
+**Source:** [`lib/tools/search/providers/firecrawl.ts`](../../lib/tools/search/providers/firecrawl.ts)
 
 - **SDK:** Custom `FirecrawlClient`
 - **Env var:** `FIRECRAWL_API_KEY`
@@ -508,7 +508,7 @@ interface SearchProvider {
 
 For error handling across providers (typed `SearchProviderError`, retry semantics, burst pacing), see [Search Providers → Error Handling and Retries](SEARCH-PROVIDERS.md#error-handling-and-retries).
 
-The search config utility ([`lib/utils/search-config.ts`](../lib/utils/search-config.ts)) dynamically adjusts the agent's system prompt based on which providers are available, including guidance about content types and multimedia support.
+The search config utility ([`lib/utils/search-config.ts`](../../lib/utils/search-config.ts)) dynamically adjusts the agent's system prompt based on which providers are available, including guidance about content types and multimedia support.
 
 ---
 
@@ -553,7 +553,7 @@ From `config/models/default.json`:
 
 ### Provider Registry
 
-The provider registry ([`lib/utils/registry.ts`](../lib/utils/registry.ts)) wraps six AI providers via `createProviderRegistry`:
+The provider registry ([`lib/utils/registry.ts`](../../lib/utils/registry.ts)) wraps six AI providers via `createProviderRegistry`:
 
 | Provider ID         | SDK                                | Env var required                                               |
 | ------------------- | ---------------------------------- | -------------------------------------------------------------- |
@@ -576,7 +576,7 @@ The `POLYMORPH_CLOUD_DEPLOYMENT` flag controls config profile selection (uses `c
 
 Before messages are sent to the LLM, they pass through a multi-stage processing pipeline to fit within the model's context window.
 
-**Source:** [`lib/utils/context-window.ts`](../lib/utils/context-window.ts)
+**Source:** [`lib/utils/context-window.ts`](../../lib/utils/context-window.ts)
 
 ### Processing Stages
 
@@ -691,7 +691,7 @@ Beyond the main research agent, two auxiliary LLM calls run as part of the pipel
 
 ### Title Generator
 
-**Source:** [`lib/agents/title-generator.ts`](../lib/agents/title-generator.ts)
+**Source:** [`lib/agents/title-generator.ts`](../../lib/agents/title-generator.ts)
 
 Generates a 3-5 word chat title from the user's first message. Runs in parallel with the main agent stream for new chats only.
 
@@ -702,7 +702,7 @@ Generates a 3-5 word chat title from the user's first message. Runs in parallel 
 
 ### Related Questions Generator
 
-**Source:** [`lib/agents/generate-related-questions.ts`](../lib/agents/generate-related-questions.ts)
+**Source:** [`lib/agents/generate-related-questions.ts`](../../lib/agents/generate-related-questions.ts)
 
 Generates 3 concise follow-up questions after the main agent completes. Streams results incrementally.
 
@@ -738,7 +738,7 @@ export const myTool = tool({
 
 2. Add the tool to the `ResearcherTools` type in [`lib/types/agent.ts`](../../lib/types/agent.ts).
 
-3. Register the tool in `createResearcher` ([`lib/agents/researcher.ts`](../lib/agents/researcher.ts)):
+3. Register the tool in `createResearcher` ([`lib/agents/researcher.ts`](../../lib/agents/researcher.ts)):
 
 ```typescript
 import { myTool } from '../tools/my-tool'
@@ -782,7 +782,7 @@ export const displayMyComponentTool = tool({
 
 ### Modifying System Prompts
 
-Edit [`lib/agents/prompts/search-mode-prompts.ts`](../lib/agents/prompts/search-mode-prompts.ts). The prompts are generated by functions (`getChatModePrompt()` and `getResearchModePrompt()`) that use environment-aware helpers to adjust guidance based on available providers.
+Edit [`lib/agents/prompts/search-mode-prompts.ts`](../../lib/agents/prompts/search-mode-prompts.ts). The prompts are generated by functions (`getChatModePrompt()` and `getResearchModePrompt()`) that use environment-aware helpers to adjust guidance based on available providers.
 
 Key sections in each prompt:
 
@@ -806,7 +806,7 @@ export class MySearchProvider extends BaseSearchProvider {
 }
 ```
 
-2. Add to the factory in [`lib/tools/search/providers/index.ts`](../lib/tools/search/providers/index.ts):
+2. Add to the factory in [`lib/tools/search/providers/index.ts`](../../lib/tools/search/providers/index.ts):
 
 ```typescript
 export type SearchProviderType = /* ... */ | 'my-provider'
@@ -821,10 +821,10 @@ case 'my-provider':
 ### Adding a New AI Provider
 
 1. Install the provider SDK
-2. Add the provider to the registry in [`lib/utils/registry.ts`](../lib/utils/registry.ts)
+2. Add the provider to the registry in [`lib/utils/registry.ts`](../../lib/utils/registry.ts)
 3. Add an `isProviderEnabled` check for the required env var
 4. Add model entries to `config/models/default.json`
-5. Add context window info to [`lib/utils/context-window.ts`](../lib/utils/context-window.ts)
+5. Add context window info to [`lib/utils/context-window.ts`](../../lib/utils/context-window.ts)
 
 ---
 

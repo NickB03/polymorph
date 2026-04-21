@@ -78,20 +78,20 @@ graph TD
 
 **Key source files:**
 
-| Concern                  | File                                                                                                                                         |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chat API endpoint        | [`app/api/chat/route.ts`](../app/api/chat/route.ts)                                                                                          |
-| Suggestions refresh cron | [`app/api/suggestions/refresh/route.ts`](../app/api/suggestions/refresh/route.ts) (Vercel cron, `CRON_SECRET`-gated)                         |
-| Admin surface layout     | [`app/(admin)/layout.tsx`](<../app/(admin)/layout.tsx>) (admin role gate)                                                                    |
-| Evals dashboard          | [`components/evals/dashboard-v2/dashboard.tsx`](../components/evals/dashboard-v2/dashboard.tsx) + widget tree at `components/evals/widgets/` |
-| Evals layout templates   | [`lib/evals/layout/templates.ts`](../lib/evals/layout/templates.ts)                                                                          |
-| Agent orchestration      | [`lib/agents/researcher.ts`](../lib/agents/researcher.ts)                                                                                    |
-| Image generation tool    | [`lib/tools/generate-image.ts`](../lib/tools/generate-image.ts)                                                                              |
-| Authenticated streaming  | [`lib/streaming/create-chat-stream-response.ts`](../lib/streaming/create-chat-stream-response.ts)                                            |
-| Guest streaming          | [`lib/streaming/create-ephemeral-chat-stream-response.ts`](../lib/streaming/create-ephemeral-chat-stream-response.ts)                        |
-| Database schema          | [`lib/db/schema.ts`](../lib/db/schema.ts)                                                                                                    |
-| Provider registry        | [`lib/utils/registry.ts`](../lib/utils/registry.ts)                                                                                          |
-| Admin detection          | [`lib/auth/is-admin.ts`](../lib/auth/is-admin.ts)                                                                                            |
+| Concern                  | File                                                                                                                                            |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chat API endpoint        | [`app/api/chat/route.ts`](../../app/api/chat/route.ts)                                                                                          |
+| Suggestions refresh cron | [`app/api/suggestions/refresh/route.ts`](../../app/api/suggestions/refresh/route.ts) (Vercel cron, `CRON_SECRET`-gated)                         |
+| Admin surface layout     | [`app/(admin)/layout.tsx`](<../../app/(admin)/layout.tsx>) (admin role gate)                                                                    |
+| Evals dashboard          | [`components/evals/dashboard-v2/dashboard.tsx`](../../components/evals/dashboard-v2/dashboard.tsx) + widget tree at `components/evals/widgets/` |
+| Evals layout templates   | [`lib/evals/layout/templates.ts`](../../lib/evals/layout/templates.ts)                                                                          |
+| Agent orchestration      | [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts)                                                                                    |
+| Image generation tool    | [`lib/tools/generate-image.ts`](../../lib/tools/generate-image.ts)                                                                              |
+| Authenticated streaming  | [`lib/streaming/create-chat-stream-response.ts`](../../lib/streaming/create-chat-stream-response.ts)                                            |
+| Guest streaming          | [`lib/streaming/create-ephemeral-chat-stream-response.ts`](../../lib/streaming/create-ephemeral-chat-stream-response.ts)                        |
+| Database schema          | [`lib/db/schema.ts`](../../lib/db/schema.ts)                                                                                                    |
+| Provider registry        | [`lib/utils/registry.ts`](../../lib/utils/registry.ts)                                                                                          |
+| Admin detection          | [`lib/auth/is-admin.ts`](../../lib/auth/is-admin.ts)                                                                                            |
 
 ---
 
@@ -149,7 +149,7 @@ flowchart TD
     AgentStream --> Parallel --> SSE
 ```
 
-The `createResearcher` function in [`lib/agents/researcher.ts`](../lib/agents/researcher.ts) wraps the Vercel AI SDK's `ToolLoopAgent`. In chat mode, the search tool is wrapped via `wrapSearchToolForChatMode` to force `type: 'optimized'` on every call, and the step limit is 20. In research mode, the agent has access to the `todoWrite` tool (when a stream writer is available) and can run up to 50 steps with full search type support (general + optimized).
+The `createResearcher` function in [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts) wraps the Vercel AI SDK's `ToolLoopAgent`. In chat mode, the search tool is wrapped via `wrapSearchToolForChatMode` to force `type: 'optimized'` on every call, and the step limit is 20. In research mode, the agent has access to the `todoWrite` tool (when a stream writer is available) and can run up to 50 steps with full search type support (general + optimized).
 
 **Request body fields:**
 
@@ -265,7 +265,7 @@ graph LR
 
 For the full spatial flow and renderer contract, see [Geo & Spatial Tools](GEO-TOOLS.md).
 
-**Source files:** [`lib/tools/`](../lib/tools/), [`lib/tools/search/providers/`](../lib/tools/search/providers/)
+**Source files:** [`lib/tools/`](../../lib/tools/), [`lib/tools/search/providers/`](../../lib/tools/search/providers/)
 
 ---
 
@@ -359,7 +359,7 @@ sequenceDiagram
 | Smooth streaming   |       Yes       |            Yes            |
 | Context pruning    |       Yes       |            Yes            |
 
-**Source files:** [`lib/streaming/create-chat-stream-response.ts`](../lib/streaming/create-chat-stream-response.ts), [`lib/streaming/create-ephemeral-chat-stream-response.ts`](../lib/streaming/create-ephemeral-chat-stream-response.ts), [`lib/streaming/helpers/`](../lib/streaming/helpers/)
+**Source files:** [`lib/streaming/create-chat-stream-response.ts`](../../lib/streaming/create-chat-stream-response.ts), [`lib/streaming/create-ephemeral-chat-stream-response.ts`](../../lib/streaming/create-ephemeral-chat-stream-response.ts), [`lib/streaming/helpers/`](../../lib/streaming/helpers/)
 
 ---
 
@@ -485,7 +485,7 @@ erDiagram
 | feedback           | `feedback_user_id_idx`                          | Feedback by user                 |
 | feedback           | `feedback_created_at_idx`                       | Feedback by recency              |
 
-**Source file:** [`lib/db/schema.ts`](../lib/db/schema.ts)
+**Source file:** [`lib/db/schema.ts`](../../lib/db/schema.ts)
 
 ---
 
@@ -539,7 +539,7 @@ The middleware cookie bridge is critical: it creates a Supabase server client th
 
 The `getUser` call in middleware uses `Promise.race` with a 5-second timeout to avoid blocking on slow Supabase responses. If the timeout fires, the user is treated as unauthenticated.
 
-**Source files:** [`lib/supabase/client.ts`](../lib/supabase/client.ts), [`lib/supabase/server.ts`](../lib/supabase/server.ts), [`lib/supabase/middleware.ts`](../lib/supabase/middleware.ts)
+**Source files:** [`lib/supabase/client.ts`](../../lib/supabase/client.ts), [`lib/supabase/server.ts`](../../lib/supabase/server.ts), [`lib/supabase/middleware.ts`](../../lib/supabase/middleware.ts)
 
 ---
 
@@ -599,7 +599,7 @@ graph TD
 
 ### Rendering strategy
 
-The `RenderMessage` component in [`components/render-message.tsx`](../components/render-message.tsx) processes assistant message parts sequentially:
+The `RenderMessage` component in [`components/render-message.tsx`](../../components/render-message.tsx) processes assistant message parts sequentially:
 
 1. **Buffer non-text parts** (reasoning, tool results, data) into a temporary array
 2. **When a text part arrives**, flush the buffer as a `ResearchProcessSection` (with `hasSubsequentText=true`), then render the text as an `AnswerSection`
@@ -618,7 +618,7 @@ The `ChatMessages` component manages open/close state for tool results:
 - **Reasoning**: auto-collapses when followed by more content
 - User clicks override all defaults
 
-**Source files:** [`app/layout.tsx`](../app/layout.tsx), [`components/chat-messages.tsx`](../components/chat-messages.tsx), [`components/render-message.tsx`](../components/render-message.tsx)
+**Source files:** [`app/layout.tsx`](../../app/layout.tsx), [`components/chat-messages.tsx`](../../components/chat-messages.tsx), [`components/render-message.tsx`](../../components/render-message.tsx)
 
 ---
 
@@ -673,7 +673,7 @@ flowchart TD
 
 ### Default model configuration
 
-From [`config/models/default.json`](../config/models/default.json):
+From [`config/models/default.json`](../../config/models/default.json):
 
 | Mode              | Type    | Model                         | Provider |
 | ----------------- | ------- | ----------------------------- | -------- |
@@ -685,7 +685,7 @@ From [`config/models/default.json`](../config/models/default.json):
 
 **Cloud deployment behavior:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag controls config profile selection (uses `cloud.json` instead of `default.json`), rate limiting enforcement, and analytics event tracking.
 
-**Source files:** [`lib/utils/model-selection.ts`](../lib/utils/model-selection.ts), [`lib/utils/registry.ts`](../lib/utils/registry.ts), [`lib/config/model-types.ts`](../lib/config/model-types.ts), [`config/models/default.json`](../config/models/default.json)
+**Source files:** [`lib/utils/model-selection.ts`](../../lib/utils/model-selection.ts), [`lib/utils/registry.ts`](../../lib/utils/registry.ts), [`lib/config/model-types.ts`](../../lib/config/model-types.ts), [`config/models/default.json`](../../config/models/default.json)
 
 ---
 
@@ -804,7 +804,7 @@ The `current_setting('app.current_user_id', true)` call uses `true` as the secon
 - `chats_id_user_id_idx` — composite index on `(id, user_id)` for fast ownership checks from messages/parts
 - `messages_chat_id_idx` — supports the `EXISTS` subquery from the parts table
 
-**Source file:** [`lib/db/schema.ts`](../lib/db/schema.ts)
+**Source file:** [`lib/db/schema.ts`](../../lib/db/schema.ts)
 
 ---
 

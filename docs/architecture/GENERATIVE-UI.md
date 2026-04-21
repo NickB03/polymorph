@@ -165,7 +165,7 @@ const FormatSchema = z.discriminatedUnion('kind', [
 
 This allows the AI to specify exactly how each column should be formatted — currencies, percentages, status badges, links — and the DataTable component renders them accordingly.
 
-**Source files:** [`lib/tools/display-plan.ts`](../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../lib/tools/display-chart.ts), [`lib/tools/display-geo-map.ts`](../lib/tools/display-geo-map.ts), [`lib/tools/display-citations.ts`](../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts), [`lib/tools/display-question-wizard.ts`](../lib/tools/display-question-wizard.ts), [`lib/tools/display-callout.ts`](../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../lib/tools/display-timeline.ts)
+**Source files:** [`lib/tools/display-plan.ts`](../../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../../lib/tools/display-chart.ts), [`lib/tools/display-geo-map.ts`](../../lib/tools/display-geo-map.ts), [`lib/tools/display-citations.ts`](../../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../../lib/tools/display-option-list.ts), [`lib/tools/display-question-wizard.ts`](../../lib/tools/display-question-wizard.ts), [`lib/tools/display-callout.ts`](../../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../../lib/tools/display-timeline.ts)
 
 ### Mode-specific tool availability
 
@@ -287,7 +287,7 @@ const entries: ToolUIEntry[] = [
 
 The `tryRender` pattern ensures that invalid or corrupted tool output gracefully returns `null` instead of crashing the UI.
 
-**Source file:** [`components/tool-ui/registry.tsx`](../components/tool-ui/registry.tsx)
+**Source file:** [`components/tool-ui/registry.tsx`](../../components/tool-ui/registry.tsx)
 
 ---
 
@@ -373,7 +373,7 @@ All tool UI schemas share common base fields from `components/tool-ui/shared/sch
 | `ToolUIReceiptSchema` | Outcome metadata (success/partial/failed/cancelled) |
 | `ActionSchema`        | Button action definition with variant and shortcut  |
 
-**Source files:** [`components/tool-ui/shared/schema.ts`](../components/tool-ui/shared/schema.ts), [`components/tool-ui/shared/contract.ts`](../components/tool-ui/shared/contract.ts), `components/tool-ui/*/schema.ts`
+**Source files:** [`components/tool-ui/shared/schema.ts`](../../components/tool-ui/shared/schema.ts), [`components/tool-ui/shared/contract.ts`](../../components/tool-ui/shared/contract.ts), `components/tool-ui/*/schema.ts`
 
 ---
 
@@ -470,7 +470,7 @@ This guard is intentionally conservative: text parts with substantive content (f
 - Inline citations via custom `<Citing>` link component
 - Citation maps that resolve `[n](#toolCallId)` references to actual URLs
 
-**Source files:** [`components/render-message.tsx`](../components/render-message.tsx), [`components/answer-section.tsx`](../components/answer-section.tsx), [`components/message.tsx`](../components/message.tsx)
+**Source files:** [`components/render-message.tsx`](../../components/render-message.tsx), [`components/answer-section.tsx`](../../components/answer-section.tsx), [`components/message.tsx`](../../components/message.tsx)
 
 ---
 
@@ -652,7 +652,7 @@ sequenceDiagram
     Render->>OL: Render receipt mode (read-only confirmation)
 ```
 
-**Source files:** [`lib/tools/display-option-list.ts`](../lib/tools/display-option-list.ts), [`components/tool-ui/option-list/option-list.tsx`](../components/tool-ui/option-list/option-list.tsx)
+**Source files:** [`lib/tools/display-option-list.ts`](../../lib/tools/display-option-list.ts), [`components/tool-ui/option-list/option-list.tsx`](../../components/tool-ui/option-list/option-list.tsx)
 
 ---
 
@@ -680,7 +680,7 @@ The `DynamicToolDisplay` component (`components/dynamic-tool-display.tsx`) handl
 - `output-available` — green dot, "Complete"
 - `output-error` — red dot, "Failed" with error text
 
-**Source file:** [`components/dynamic-tool-display.tsx`](../components/dynamic-tool-display.tsx)
+**Source file:** [`components/dynamic-tool-display.tsx`](../../components/dynamic-tool-display.tsx)
 
 ---
 
@@ -694,7 +694,7 @@ The inspector uses a resizable split-pane layout provided by `ChatCanvasShell`:
 - **Mobile:** full-width drawer overlay via `InspectorDrawer`
 - **Mutual exclusion** with sidebar: opening the inspector closes the sidebar and vice versa
 
-**Source files:** [`components/canvas/chat-canvas-shell.tsx`](../components/canvas/chat-canvas-shell.tsx), [`components/canvas/canvas-context.tsx`](../components/canvas/canvas-context.tsx)
+**Source files:** [`components/canvas/chat-canvas-shell.tsx`](../../components/canvas/chat-canvas-shell.tsx), [`components/canvas/canvas-context.tsx`](../../components/canvas/canvas-context.tsx)
 
 ---
 
@@ -724,7 +724,7 @@ Each part is dispatched via `RenderPart`:
 | `tool-*`    | `ToolSection`      | Collapsible tool result                     |
 | `data-*`    | `DataSection`      | Data display (related questions, etc.)      |
 
-**Source file:** [`components/research-process-section.tsx`](../components/research-process-section.tsx)
+**Source file:** [`components/research-process-section.tsx`](../../components/research-process-section.tsx)
 
 ---
 
