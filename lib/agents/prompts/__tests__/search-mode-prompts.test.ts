@@ -75,3 +75,23 @@ describe('Issue 2 — displayGeoMap placement for location-centric queries', () 
     )
   })
 })
+
+describe('Issue 3 — displayTable link guidance', () => {
+  it('CHAT_MODE_PROMPT teaches the link format with a worked example', () => {
+    expect(CHAT_MODE_PROMPT).toContain('LINK ENTITY CELLS')
+    expect(CHAT_MODE_PROMPT).toContain(
+      'format: { kind: "link", hrefKey: "url", external: true }'
+    )
+    expect(CHAT_MODE_PROMPT).toContain('martial-arts-schools')
+    expect(CHAT_MODE_PROMPT).toContain('hidden: true')
+  })
+
+  it('RESEARCH_MODE_PROMPT teaches the link format with a worked example', () => {
+    expect(RESEARCH_MODE_PROMPT).toContain('LINK ENTITY CELLS')
+    expect(RESEARCH_MODE_PROMPT).toContain(
+      'format: { kind: "link", hrefKey: "url", external: true }'
+    )
+    expect(RESEARCH_MODE_PROMPT).toContain('martial-arts-schools')
+    expect(RESEARCH_MODE_PROMPT).toContain('hidden: true')
+  })
+})

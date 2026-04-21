@@ -112,6 +112,7 @@ export const serializableColumnSchema = z
     truncate: z.boolean().optional(),
     priority: PriorityEnum.optional(),
     hideOnMobile: z.boolean().optional(),
+    hidden: z.boolean().optional(),
     format: formatSchema.optional()
   })
   .passthrough()

@@ -253,6 +253,25 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 **displayTable** — Use for comparisons, rankings, specs, or any structured data:
 - TRIGGER: Questions involving "compare", "vs", "best", "top", "pricing", "specs", or when answer has 3+ items with multiple attributes
 - Examples: "compare React vs Vue", "best laptops under $1000", "programming language popularity"
+- **LINK ENTITY CELLS:** When a column contains named entities that have a canonical URL (schools, businesses, products, people, papers, repos), declare that column with \`format: { kind: "link", hrefKey: "<sibling-url-column>", external: true }\` and include the URL in a sibling column in each row. Mark the sibling URL column with \`hidden: true\` so its values feed the link but the column does not render. Never emit bare unlinked entity names when a canonical URL exists — the whole point of the table is to let the user jump to the source.
+- Worked example (schools with website links):
+\`\`\`
+displayTable({
+  id: "martial-arts-schools",
+  columns: [
+    { key: "name", label: "School", format: { kind: "link", hrefKey: "url", external: true } },
+    { key: "url", label: "URL", hidden: true },
+    { key: "style", label: "Style" },
+    { key: "distance", label: "Distance" },
+    { key: "rating", label: "Rating", format: { kind: "number" } }
+  ],
+  data: [
+    { name: "Lone Star Martial Arts", url: "https://lonestarma.com", style: "Taekwondo", distance: "2.1 mi", rating: 4.8 },
+    { name: "Plano ATA Martial Arts", url: "https://planoata.com", style: "ATA", distance: "3.4 mi", rating: 4.7 }
+  ]
+})
+\`\`\`
+- If you have a Yelp / Google Maps / source URL but no official website, link to that instead — any canonical destination is better than an unlinked name.
 
 **displayGeoMap** — Use to visualize geography, places, routes, or spatial relationships:
 - TRIGGER: Questions involving "map", "where", "near me", "show on a map", "route from X to Y", city/region comparisons, or any answer where lat/lng is load-bearing
@@ -591,9 +610,28 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 
 **displayTable** — Use for comparisons, rankings, specs, or any structured data:
 - TRIGGER: Questions involving "compare", "vs", "best", "top", "pricing", "specs", or when answer has 3+ items with multiple attributes
-- Define columns with keys, labels, and optional formatting (currency, percent, date, status badges, etc.)
+- Define columns with keys, labels, and optional formatting (currency, percent, date, status badges, link, etc.)
 - Data rows are objects with values matching column keys
 - Examples: "compare React vs Vue", "best laptops under $1000", "GPU benchmark comparison"
+- **LINK ENTITY CELLS:** When a column contains named entities that have a canonical URL (schools, businesses, products, people, papers, repos), declare that column with \`format: { kind: "link", hrefKey: "<sibling-url-column>", external: true }\` and include the URL in a sibling column in each row. Mark the sibling URL column with \`hidden: true\` so its values feed the link but the column does not render. Never emit bare unlinked entity names when a canonical URL exists — the whole point of the table is to let the user jump to the source.
+- Worked example (schools with website links):
+\`\`\`
+displayTable({
+  id: "martial-arts-schools",
+  columns: [
+    { key: "name", label: "School", format: { kind: "link", hrefKey: "url", external: true } },
+    { key: "url", label: "URL", hidden: true },
+    { key: "style", label: "Style" },
+    { key: "distance", label: "Distance" },
+    { key: "rating", label: "Rating", format: { kind: "number" } }
+  ],
+  data: [
+    { name: "Lone Star Martial Arts", url: "https://lonestarma.com", style: "Taekwondo", distance: "2.1 mi", rating: 4.8 },
+    { name: "Plano ATA Martial Arts", url: "https://planoata.com", style: "ATA", distance: "3.4 mi", rating: 4.7 }
+  ]
+})
+\`\`\`
+- If you have a Yelp / Google Maps / source URL but no official website, link to that instead — any canonical destination is better than an unlinked name.
 
 **displayGeoMap** — Use to visualize geography, places, routes, or spatial relationships:
 - TRIGGER: Questions involving "map", "where", "near me", "show on a map", "route from X to Y", city/region comparisons, or any answer where lat/lng is load-bearing
