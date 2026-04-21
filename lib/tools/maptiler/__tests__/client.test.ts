@@ -86,4 +86,98 @@ describe('maptiler client', () => {
     const { fetchMapTilerJson, MapTilerApiError } = await importFresh()
     await expect(fetchMapTilerJson('/x')).rejects.toThrow(MapTilerApiError)
   })
+
+  describe('buildPublicMapTilerUrl', () => {
+    it('uses only NEXT_PUBLIC_MAPTILER_API_KEY even when server key is set', async () => {
+      process.env.MAPTILER_API_KEY = 'server-secret'
+      process.env.NEXT_PUBLIC_MAPTILER_API_KEY = 'public-ok'
+      const { buildPublicMapTilerUrl } = await importFresh()
+      const url = buildPublicMapTilerUrl('/x')
+      expect(url).toContain('key=public-ok')
+      expect(url).not.toContain('server-secret')
+    })
+
+    it('throws MapTilerConfigError when NEXT_PUBLIC_MAPTILER_API_KEY is missing', async () => {
+      delete process.env.NEXT_PUBLIC_MAPTILER_API_KEY
+      process.env.MAPTILER_API_KEY = 'server-only'
+      const { buildPublicMapTilerUrl, MapTilerConfigError } =
+        await importFresh()
+      expect(() => buildPublicMapTilerUrl('/x')).toThrow(MapTilerConfigError)
+    })
+  })
+
+  describe('scrubMapTilerKeys', () => {
+    it('redacts key query params', async () => {
+      const { scrubMapTilerKeys } = await importFresh()
+      expect(
+        scrubMapTilerKeys(
+          'GET https://api.maptiler.com/x?a=1&key=abc123 -> 500'
+        )
+      ).toBe('GET https://api.maptiler.com/x?a=1&key=[redacted] -> 500')
+    })
+
+    it('redacts keys in MapTilerApiError body and message', async () => {
+      process.env.NEXT_PUBLIC_MAPTILER_API_KEY = 'k'
+      const { MapTilerApiError } = await importFresh()
+      const error = new MapTilerApiError(
+        500,
+        'upstream error fetching ?key=leaky123 from /geocoding'
+      )
+      expect(error.message).toContain('key=[redacted]')
+      expect(error.message).not.toContain('leaky123')
+      expect(error.body).not.toContain('leaky123')
+    })
+  })
+
+  describe('retry behavior', () => {
+    it('retries once on 503 then returns 200', async () => {
+      process.env.NEXT_PUBLIC_MAPTILER_API_KEY = 'k'
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 503,
+          text: () => Promise.resolve('unavailable')
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ ok: true })
+        })
+      const { fetchMapTilerJson } = await importFresh()
+      const result = await fetchMapTilerJson('/x')
+      expect(result).toEqual({ ok: true })
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not retry on 4xx (other than 429)', async () => {
+      process.env.NEXT_PUBLIC_MAPTILER_API_KEY = 'k'
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 403,
+        text: () => Promise.resolve('forbidden')
+      })
+      const { fetchMapTilerJson } = await importFresh()
+      await expect(fetchMapTilerJson('/x')).rejects.toThrow()
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('retries on 429', async () => {
+      process.env.NEXT_PUBLIC_MAPTILER_API_KEY = 'k'
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 429,
+          text: () => Promise.resolve('rate limited')
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ ok: true })
+        })
+      const { fetchMapTilerJson } = await importFresh()
+      const result = await fetchMapTilerJson('/x')
+      expect(result).toEqual({ ok: true })
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+  })
 })

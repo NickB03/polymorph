@@ -89,7 +89,13 @@ describe('getDirectionsTool', () => {
             {
               duration: 10,
               distance: 100,
-              geometry: { type: 'LineString', coordinates: [[0, 0]] }
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [0, 0],
+                  [1, 1]
+                ]
+              }
             }
           ]
         })
@@ -118,7 +124,13 @@ describe('getDirectionsTool', () => {
             {
               duration: 1,
               distance: 1,
-              geometry: { type: 'LineString', coordinates: [[0, 0]] }
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [0, 0],
+                  [1, 1]
+                ]
+              }
             }
           ]
         })
@@ -183,6 +195,31 @@ describe('getDirectionsTool', () => {
     expect(result).toMatchObject({ state: 'error' })
   })
 
+  it('returns error when route geometry has fewer than 2 coordinates', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          routes: [
+            {
+              duration: 5,
+              distance: 5,
+              geometry: { type: 'LineString', coordinates: [[0, 0]] }
+            }
+          ]
+        })
+    })
+
+    const result = await execute({
+      origin: { lat: 0, lng: 0 },
+      destination: { lat: 1, lng: 1 },
+      profile: 'driving'
+    })
+
+    expect(result).toMatchObject({ state: 'error' })
+  })
+
   it('formats duration labels below 60 seconds as seconds', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
@@ -193,7 +230,13 @@ describe('getDirectionsTool', () => {
             {
               duration: 45,
               distance: 50,
-              geometry: { type: 'LineString', coordinates: [[0, 0]] }
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [0, 0],
+                  [0.001, 0.001]
+                ]
+              }
             }
           ]
         })
@@ -218,7 +261,13 @@ describe('getDirectionsTool', () => {
             {
               duration: 60,
               distance: 50,
-              geometry: { type: 'LineString', coordinates: [[0, 0]] }
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [0, 0],
+                  [0.001, 0.001]
+                ]
+              }
             }
           ]
         })

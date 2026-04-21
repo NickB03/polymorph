@@ -28,6 +28,10 @@ const GetDirectionsInputSchema = z.object({
 })
 
 type DirectionsInput = z.infer<typeof GetDirectionsInputSchema>
+type RoutableProfile = 'driving' | 'walking' | 'cycling'
+type RoutableDirectionsInput = Omit<DirectionsInput, 'profile'> & {
+  profile: RoutableProfile
+}
 
 type MapTilerRouteResponse = {
   routes?: Array<{
@@ -85,7 +89,7 @@ function buildCoordsPath(points: Point[]): string {
 }
 
 async function fetchRoute(
-  input: DirectionsInput
+  input: RoutableDirectionsInput
 ): Promise<GetDirectionsResult> {
   const coords = buildCoordsPath([
     input.origin,
@@ -97,11 +101,13 @@ async function fetchRoute(
   try {
     const response = await fetchMapTilerJson<MapTilerRouteResponse>(path)
     const route = response.routes?.[0]
+    const coordinates = route?.geometry?.coordinates
     if (
       !route ||
       typeof route.duration !== 'number' ||
       typeof route.distance !== 'number' ||
-      !route.geometry?.coordinates?.length
+      !coordinates ||
+      coordinates.length < 2
     ) {
       return {
         state: 'error',
@@ -109,14 +115,14 @@ async function fetchRoute(
       }
     }
 
-    const points: Point[] = route.geometry.coordinates.map(([lng, lat]) => ({
+    const points: Point[] = coordinates.map(([lng, lat]) => ({
       lat,
       lng
     }))
 
     return {
       state: 'success',
-      profile: input.profile as 'driving' | 'walking' | 'cycling',
+      profile: input.profile,
       duration: route.duration,
       distance: route.distance,
       durationLabel: formatDurationLabel(route.duration),
@@ -139,7 +145,8 @@ export const getDirectionsTool = tool({
     'Compute a real road-following route between two or more points. Supports driving, walking, and cycling via MapTiler. Returns duration, distance, human-readable labels, and an ordered list of lat/lng points suitable for displayGeoMap routes[]. For public transit use the transit profile — it returns a structured NOT_SUPPORTED result that you should acknowledge to the user.',
   inputSchema: GetDirectionsInputSchema,
   execute: async (input): Promise<GetDirectionsResult> => {
-    if (input.profile === 'transit') {
+    const { profile } = input
+    if (profile === 'transit') {
       return {
         state: 'not_supported',
         profile: 'transit',
@@ -147,6 +154,6 @@ export const getDirectionsTool = tool({
           'Public transit routing is not yet available in this product. For transit directions, suggest the user open Google Maps or their local transit authority (e.g. MTA, BART, TfL) for real-time schedules and routes.'
       }
     }
-    return fetchRoute(input)
+    return fetchRoute({ ...input, profile })
   }
 })

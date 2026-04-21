@@ -1,7 +1,7 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 
-import { buildMapTilerUrl, MapTilerConfigError } from './maptiler/client'
+import { buildPublicMapTilerUrl, MapTilerConfigError } from './maptiler/client'
 
 const MAX_DIMENSION = 2048
 
@@ -33,13 +33,17 @@ const GetStaticMapImageInputSchema = z.object({
     .int()
     .min(32)
     .max(MAX_DIMENSION)
-    .describe('Image width in pixels (max 2048).'),
+    .describe(
+      'Image width in pixels (32–2048). Typical values: 800 for inline/social, 1200 for hero images. Do not request 2048 unless the user needs a wall-sized export — larger images cost more MapTiler tile-equivalents.'
+    ),
   height: z
     .number()
     .int()
     .min(32)
     .max(MAX_DIMENSION)
-    .describe('Image height in pixels (max 2048).'),
+    .describe(
+      'Image height in pixels (32–2048). Typical values: 600 for inline/social, 800 for hero images. Do not request 2048 unless the user needs a wall-sized export.'
+    ),
   theme: z
     .enum(['light', 'dark'])
     .optional()
@@ -84,7 +88,7 @@ export const getStaticMapImageTool = tool({
     }
 
     try {
-      const imageUrl = buildMapTilerUrl(pathParts.join(''))
+      const imageUrl = buildPublicMapTilerUrl(pathParts.join(''))
       return { state: 'success', imageUrl }
     } catch (error) {
       if (error instanceof MapTilerConfigError) {

@@ -91,6 +91,39 @@ describe('getStaticMapImageTool', () => {
     expect(result).toMatchObject({ state: 'error' })
   })
 
+  it('uses public key even when server key is also set', async () => {
+    process.env.MAPTILER_API_KEY = 'server-secret'
+    process.env.NEXT_PUBLIC_MAPTILER_API_KEY = 'public-ok'
+
+    const result = await execute({
+      center: { lat: 0, lng: 0 },
+      zoom: 10,
+      width: 400,
+      height: 300
+    })
+
+    const imageUrl = (result as { imageUrl: string }).imageUrl
+    expect(imageUrl).toContain('key=public-ok')
+    expect(imageUrl).not.toContain('server-secret')
+  })
+
+  it('returns error when only the server key is set', async () => {
+    delete process.env.NEXT_PUBLIC_MAPTILER_API_KEY
+    process.env.MAPTILER_API_KEY = 'server-secret'
+
+    const result = await execute({
+      center: { lat: 0, lng: 0 },
+      zoom: 10,
+      width: 400,
+      height: 300
+    })
+
+    expect(result).toMatchObject({ state: 'error' })
+    expect((result as { message: string }).message).toContain(
+      'NEXT_PUBLIC_MAPTILER_API_KEY'
+    )
+  })
+
   it('clamps width and height to MapTiler max (2048)', async () => {
     const result = await execute({
       center: { lat: 0, lng: 0 },

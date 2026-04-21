@@ -177,6 +177,10 @@ export function resolveFitPointsWithFallback(
   return []
 }
 
+// Currently only cluster bbox queries split across the antimeridian (see
+// getClustersForDatelineAwareBbox). Routes and polygons that wrap the dateline
+// will render as a globe-spanning band — not a concern for typical US/EU use
+// cases, but revisit if adding global isochrones or trans-Pacific routes.
 export function splitDatelineBbox(bbox: GeoMapBbox): GeoMapBbox[] {
   const [west, south, east, north] = bbox
 

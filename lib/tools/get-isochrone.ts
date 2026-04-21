@@ -1,6 +1,8 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 
+import { fetchWithRetry } from './fetch-with-retry'
+
 const ORS_BASE_URL = 'https://api.openrouteservice.org'
 
 const PROFILE_MAP = {
@@ -67,7 +69,7 @@ export const getIsochroneTool = tool({
     const url = `${ORS_BASE_URL}/v2/isochrones/${orsProfile}`
 
     try {
-      const response = await fetch(url, {
+      const response = await fetchWithRetry(url, {
         method: 'POST',
         headers: {
           Authorization: apiKey,
