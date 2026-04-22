@@ -236,15 +236,16 @@ function collectGeneratedImageUrls(parts: UIMessage['parts']): Set<string> {
   return urls
 }
 
+const MARKDOWN_IMAGE_REGEX = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)\n?/g
+
 /** Remove markdown image syntax that references already-rendered generated images */
 function stripDuplicateImageMarkdown(
   text: string,
   generatedImageUrls: Set<string>
 ): string {
   if (generatedImageUrls.size === 0) return text
-  return text.replace(
-    /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)\n?/g,
-    (match, url) => (generatedImageUrls.has(url) ? '' : match)
+  return text.replace(MARKDOWN_IMAGE_REGEX, (match, url) =>
+    generatedImageUrls.has(url) ? '' : match
   )
 }
 
