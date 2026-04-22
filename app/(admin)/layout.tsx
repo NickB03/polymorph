@@ -5,6 +5,7 @@ import { isAdminUserId } from '@/lib/auth/is-admin'
 
 import { SidebarProvider } from '@/components/ui/sidebar'
 
+import { AdminShellTrigger } from '@/components/admin/admin-shell-trigger'
 import { AdminSidebar } from '@/components/admin/admin-sidebar'
 
 export const dynamic = 'force-dynamic'
@@ -30,6 +31,7 @@ export default async function AdminLayout({
     <SidebarProvider defaultOpen>
       <AdminSidebar />
       <div className="flex flex-col flex-1 min-w-0">
+        <AdminShellTrigger />
         <main className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
           {children}
         </main>

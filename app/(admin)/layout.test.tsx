@@ -27,7 +27,9 @@ vi.mock('@/components/admin/admin-sidebar', () => ({
 vi.mock('@/components/ui/sidebar', () => ({
   SidebarProvider: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="sidebar-provider">{children}</div>
-  )
+  ),
+  SidebarTrigger: () => <button data-testid="sidebar-trigger" />,
+  useSidebar: () => ({ open: false, isMobile: false })
 }))
 
 describe('(admin) layout', () => {
