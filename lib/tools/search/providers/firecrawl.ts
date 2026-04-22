@@ -13,6 +13,7 @@ import {
   SearchProviderError
 } from '@/lib/tools/search/providers/errors'
 import { SearchResults } from '@/lib/types'
+import { getErrorMessage } from '@/lib/utils/error'
 import { retrySearchOperation } from '@/lib/utils/retry'
 
 export class FirecrawlSearchProvider extends BaseSearchProvider {
@@ -77,7 +78,7 @@ export class FirecrawlSearchProvider extends BaseSearchProvider {
       (error, attempt, delayMs) => {
         console.log(
           `[Firecrawl] Retry attempt ${attempt}:`,
-          error instanceof Error ? error.message : String(error)
+          getErrorMessage(error)
         )
         telemetryHook?.(error, attempt, delayMs)
       }

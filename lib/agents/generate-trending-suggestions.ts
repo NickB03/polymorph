@@ -7,6 +7,7 @@ import { ExaSearchProvider } from '@/lib/tools/search/providers/exa'
 import { TavilySearchProvider } from '@/lib/tools/search/providers/tavily'
 import type { SuggestionCategory } from '@/lib/types'
 import { createModelId } from '@/lib/utils'
+import { getErrorMessage } from '@/lib/utils/error'
 import { getModel } from '@/lib/utils/registry'
 
 const trendingSuggestionsSchema = z.object({
@@ -152,7 +153,7 @@ async function getTrendingContext(): Promise<{
         `[Suggestions] ${provider.name} returned no usable results, trying next provider.`
       )
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
+      const message = getErrorMessage(error)
       failures.push(`${provider.name}: ${message}`)
       console.warn(
         `[Suggestions] ${provider.name} trending fetch failed, trying next provider.`,

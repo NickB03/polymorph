@@ -1,6 +1,7 @@
 import Exa from 'exa-js'
 
 import { SearchResults } from '@/lib/types'
+import { getErrorMessage } from '@/lib/utils/error'
 import { retrySearchOperation } from '@/lib/utils/retry'
 
 import { BaseSearchProvider, SearchTelemetryHook } from './base'
@@ -57,10 +58,7 @@ export class ExaSearchProvider extends BaseSearchProvider {
         }
       },
       (error, attempt, delayMs) => {
-        console.log(
-          `[Exa] Retry attempt ${attempt}:`,
-          error instanceof Error ? error.message : String(error)
-        )
+        console.log(`[Exa] Retry attempt ${attempt}:`, getErrorMessage(error))
         telemetryHook?.(error, attempt, delayMs)
       }
     )

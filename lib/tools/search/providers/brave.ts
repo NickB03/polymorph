@@ -3,6 +3,7 @@ import {
   SearchResults,
   SerperSearchResultItem
 } from '@/lib/types'
+import { getErrorMessage } from '@/lib/utils/error'
 import { retrySearchOperation } from '@/lib/utils/retry'
 
 import { SearchProvider, SearchTelemetryHook } from './base'
@@ -153,7 +154,7 @@ export class BraveSearchProvider implements SearchProvider {
       (error, attempt, delayMs) => {
         console.log(
           `[Brave/web] Retry attempt ${attempt}:`,
-          error instanceof Error ? error.message : String(error)
+          getErrorMessage(error)
         )
         telemetryHook?.(error, attempt, delayMs)
       }
@@ -179,7 +180,7 @@ export class BraveSearchProvider implements SearchProvider {
         (error, attempt, delayMs) => {
           console.log(
             `[Brave/videos] Retry attempt ${attempt}:`,
-            error instanceof Error ? error.message : String(error)
+            getErrorMessage(error)
           )
           telemetryHook?.(error, attempt, delayMs)
         }
@@ -218,7 +219,7 @@ export class BraveSearchProvider implements SearchProvider {
         (error, attempt, delayMs) => {
           console.log(
             `[Brave/images] Retry attempt ${attempt}:`,
-            error instanceof Error ? error.message : String(error)
+            getErrorMessage(error)
           )
           telemetryHook?.(error, attempt, delayMs)
         }

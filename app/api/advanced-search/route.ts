@@ -4,6 +4,7 @@ import {
   advancedSearchSchema,
   runAdvancedSearch
 } from '@/lib/tools/search/advanced-search'
+import { getErrorMessage } from '@/lib/utils/error'
 
 export async function POST(request: Request) {
   let body: unknown
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         message: 'Internal Server Error',
-        error: error instanceof Error ? error.message : String(error),
+        error: getErrorMessage(error),
         query: parseResult.data.query,
         results: [],
         images: [],

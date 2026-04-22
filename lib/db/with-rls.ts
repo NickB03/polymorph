@@ -1,5 +1,7 @@
 import { sql } from 'drizzle-orm'
 
+import { getErrorMessage } from '@/lib/utils/error'
+
 import { db } from '.'
 
 // Type for transaction or database instance
@@ -54,7 +56,7 @@ export async function withRLS<T>(
     })
   } catch (error) {
     // Check for RLS policy violations
-    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorMessage = getErrorMessage(error)
     if (
       errorMessage.includes('new row violates row-level security policy') ||
       errorMessage.includes('row-level security policy')

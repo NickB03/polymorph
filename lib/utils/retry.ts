@@ -5,6 +5,8 @@ import {
   isRetryableSearchError
 } from '@/lib/tools/search/providers/errors'
 
+import { getErrorMessage } from './error'
+
 export interface RetryOptions {
   maxRetries?: number
   initialDelayMs?: number
@@ -87,7 +89,7 @@ export async function retryDatabaseOperation<T>(
     initialDelayMs: 200,
     maxDelayMs: 2000,
     onRetry: (error, attempt) => {
-      const message = error instanceof Error ? error.message : String(error)
+      const message = getErrorMessage(error)
       console.log(`Retrying ${operationName} (attempt ${attempt}):`, message)
     }
   })
