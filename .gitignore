@@ -61,3 +61,7 @@ skills-lock.json
 /skills/
 /.impeccable.md
 /.claude/skills/
+
+# README demo source assets — only the .gif and .png variants ship in the repo
+docs/assets/demos/*.mp4
+docs/assets/demos/*-poster.png
