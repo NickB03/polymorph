@@ -16,7 +16,7 @@
 
 <!-- prettier-ignore -->
 <video autoplay muted loop playsinline
-       src="TODO_HERO_USER_ATTACHMENTS_URL"
+       src="https://github.com/user-attachments/assets/971cf3e7-ff1d-43db-b1c2-e04b55f00891"
        poster="docs/assets/demos/hero-poster.png"
        width="880"></video>
 
@@ -29,7 +29,7 @@
     <td width="33%" align="center">
       <!-- prettier-ignore -->
       <video autoplay muted loop playsinline
-             src="TODO_RESEARCH_USER_ATTACHMENTS_URL"
+             src="https://github.com/user-attachments/assets/776b3829-68db-4f71-baf7-8a6779112b58"
              poster="docs/assets/demos/research-poster.png"
              width="100%"></video>
       <br/><b>Research mode</b><br/>
@@ -38,7 +38,7 @@
     <td width="33%" align="center">
       <!-- prettier-ignore -->
       <video autoplay muted loop playsinline
-             src="TODO_GEO_USER_ATTACHMENTS_URL"
+             src="https://github.com/user-attachments/assets/5ea8cd1f-f27c-4f72-85c6-86183c493513"
              poster="docs/assets/demos/geo-poster.png"
              width="100%"></video>
       <br/><b>Geo intelligence</b><br/>
@@ -47,7 +47,7 @@
     <td width="33%" align="center">
       <!-- prettier-ignore -->
       <video autoplay muted loop playsinline
-             src="TODO_CANVAS_USER_ATTACHMENTS_URL"
+             src="https://github.com/user-attachments/assets/4ffaeb86-c5b8-4bc2-bfd9-a5c5b2bdbe3a"
              poster="docs/assets/demos/canvas-poster.png"
              width="100%"></video>
       <br/><b>Canvas artifacts</b><br/>
