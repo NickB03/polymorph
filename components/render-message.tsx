@@ -390,10 +390,40 @@ export function RenderMessage({
     latestPersistedCanvasArtifactPartIndexes,
     latestCanvasArtifactStatuses,
     generatedImageUrls,
-    completedDisplayToolResults
+    completedDisplayToolResults,
+    toolUISegmentsByPartIndex
   } = useMemo(() => {
     const todoScan = scanTodoWriteParts(message.parts)
     const renderParts = normalizeRenderableParts(message.parts)
+    const generatedImageUrls = collectGeneratedImageUrls(message.parts)
+    const completedDisplayToolResults = collectCompletedDisplayToolResults(
+      message.parts
+    )
+
+    // Pre-compute tool-UI segments for each text part. Avoids re-running
+    // extractToolUIFromText (which JSON.parses fenced blocks) on every token
+    // during streaming.
+    const toolUISegmentsByPartIndex = new Map<number, Segment[]>()
+    for (let i = 0; i < renderParts.length; i++) {
+      const part = renderParts[i]
+      if (
+        part.type === 'text' &&
+        typeof (part as { text?: string }).text === 'string'
+      ) {
+        const rawText = (part as { text: string }).text
+        const transformed = stripPseudoDisplayToolPlaceholders({
+          text: stripDuplicateImageMarkdown(rawText, generatedImageUrls),
+          completedDisplayTools: completedDisplayToolResults,
+          messageId,
+          metadata
+        })
+        toolUISegmentsByPartIndex.set(
+          i,
+          extractToolUIFromText(transformed, messageId)
+        )
+      }
+    }
+
     return {
       todoScan,
       renderParts,
@@ -402,12 +432,11 @@ export function RenderMessage({
       latestCanvasArtifactStatuses: getLatestCanvasArtifactStatuses(
         message.parts
       ),
-      generatedImageUrls: collectGeneratedImageUrls(message.parts),
-      completedDisplayToolResults: collectCompletedDisplayToolResults(
-        message.parts
-      )
+      generatedImageUrls,
+      completedDisplayToolResults,
+      toolUISegmentsByPartIndex
     }
-  }, [message.parts])
+  }, [message.parts, messageId, metadata])
 
   // Use provided citation maps (from all messages)
   if (message.role === 'user') {
@@ -682,13 +711,7 @@ export function RenderMessage({
       const shouldShowActions =
         isLastVisiblePart && (isLatestMessage ? isStreamingComplete : true)
 
-      const textContent = stripPseudoDisplayToolPlaceholders({
-        text: stripDuplicateImageMarkdown(part.text, generatedImageUrls),
-        completedDisplayTools: completedDisplayToolResults,
-        messageId,
-        metadata
-      })
-      const segments = extractToolUIFromText(textContent, messageId)
+      const segments = toolUISegmentsByPartIndex.get(index) ?? []
       for (let si = 0; si < segments.length; si++) {
         const segment = segments[si]
         if (segment.type === 'tool-ui') {
