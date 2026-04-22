@@ -52,7 +52,6 @@ export function LoginForm({
         error: error?.message
       })
       if (error) throw error
-      // Redirect back to the originally requested page after auth.
       console.log('[login] success, redirecting...')
       router.push(next)
       router.refresh()
@@ -70,7 +69,7 @@ export function LoginForm({
 
     try {
       const supabase = createClient()
-      const redirectTo = new URL('/auth/oauth', location.origin)
+      const redirectTo = new URL('/auth/oauth', window.location.origin)
       redirectTo.searchParams.set('next', next)
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
