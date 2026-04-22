@@ -159,7 +159,7 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
       parseFailures++
       console.warn(
         `[evals] Skipping chat ${row.chat_id} due to parse error:`,
-        err instanceof Error ? err.message : err
+        getErrorMessage(err)
       )
     }
   }
