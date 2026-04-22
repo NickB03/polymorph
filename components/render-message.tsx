@@ -436,11 +436,7 @@ export function RenderMessage({
       completedDisplayToolResults,
       toolUISegmentsByPartIndex
     }
-    // metadata is intentionally omitted: it's only read by a console.debug
-    // inside stripPseudoDisplayToolPlaceholders and doesn't affect cached
-    // output. Including it would force needless recomputes when the AI SDK
-    // reconstructs message metadata after persistence.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- metadata is only read by a console.debug inside stripPseudoDisplayToolPlaceholders and does not affect the cached output; including it would force needless recomputes when the AI SDK reconstructs message metadata after persistence.
   }, [message.parts, messageId])
 
   // Use provided citation maps (from all messages)
