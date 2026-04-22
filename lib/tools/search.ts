@@ -8,6 +8,7 @@ import {
   SearchProviderError
 } from '@/lib/tools/search/providers/errors'
 import { SearchResultItem, SearchResults } from '@/lib/types'
+import { getErrorMessage } from '@/lib/utils/error'
 import {
   getGeneralSearchProviderType,
   getSearchToolDescription
@@ -22,7 +23,7 @@ import {
 const MAX_SPAN_EVENT_MESSAGE_LENGTH = 256
 
 function truncateErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error)
+  const message = getErrorMessage(error)
   if (message.length <= MAX_SPAN_EVENT_MESSAGE_LENGTH) return message
   return message.slice(0, MAX_SPAN_EVENT_MESSAGE_LENGTH)
 }

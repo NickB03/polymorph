@@ -1,5 +1,6 @@
 import { SearchResultImage, SearchResults } from '@/lib/types'
 import { sanitizeUrl } from '@/lib/utils'
+import { getErrorMessage } from '@/lib/utils/error'
 import { retrySearchOperation } from '@/lib/utils/retry'
 
 import { BaseSearchProvider, SearchTelemetryHook } from './base'
@@ -69,7 +70,7 @@ export class TavilySearchProvider extends BaseSearchProvider {
       (error, attempt, delayMs) => {
         console.log(
           `[Tavily] Retry attempt ${attempt}:`,
-          error instanceof Error ? error.message : String(error)
+          getErrorMessage(error)
         )
         telemetryHook?.(error, attempt, delayMs)
       }

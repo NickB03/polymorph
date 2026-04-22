@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, type ReactNode, useMemo } from 'react'
 
 import { UseChatHelpers } from '@ai-sdk/react'
 
@@ -236,15 +236,16 @@ function collectGeneratedImageUrls(parts: UIMessage['parts']): Set<string> {
   return urls
 }
 
+const MARKDOWN_IMAGE_REGEX = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)\n?/g
+
 /** Remove markdown image syntax that references already-rendered generated images */
 function stripDuplicateImageMarkdown(
   text: string,
   generatedImageUrls: Set<string>
 ): string {
   if (generatedImageUrls.size === 0) return text
-  return text.replace(
-    /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)\n?/g,
-    (match, url) => (generatedImageUrls.has(url) ? '' : match)
+  return text.replace(MARKDOWN_IMAGE_REGEX, (match, url) =>
+    generatedImageUrls.has(url) ? '' : match
   )
 }
 
@@ -381,6 +382,63 @@ export function RenderMessage({
 }: RenderMessageProps) {
   const metadata = message.metadata as UIMessageMetadata | undefined
 
+  // Single pass over message.parts — hoisted above the user-message early
+  // return so the hook runs unconditionally (rules of hooks).
+  const {
+    todoScan,
+    renderParts,
+    latestPersistedCanvasArtifactPartIndexes,
+    latestCanvasArtifactStatuses,
+    generatedImageUrls,
+    completedDisplayToolResults,
+    toolUISegmentsByPartIndex
+  } = useMemo(() => {
+    const todoScan = scanTodoWriteParts(message.parts)
+    const renderParts = normalizeRenderableParts(message.parts)
+    const generatedImageUrls = collectGeneratedImageUrls(message.parts)
+    const completedDisplayToolResults = collectCompletedDisplayToolResults(
+      message.parts
+    )
+
+    // Pre-compute tool-UI segments for each text part. Avoids re-running
+    // extractToolUIFromText (which JSON.parses fenced blocks) on every token
+    // during streaming.
+    const toolUISegmentsByPartIndex = new Map<number, Segment[]>()
+    for (let i = 0; i < renderParts.length; i++) {
+      const part = renderParts[i]
+      if (
+        part.type === 'text' &&
+        typeof (part as { text?: string }).text === 'string'
+      ) {
+        const rawText = (part as { text: string }).text
+        const transformed = stripPseudoDisplayToolPlaceholders({
+          text: stripDuplicateImageMarkdown(rawText, generatedImageUrls),
+          completedDisplayTools: completedDisplayToolResults,
+          messageId,
+          metadata
+        })
+        toolUISegmentsByPartIndex.set(
+          i,
+          extractToolUIFromText(transformed, messageId)
+        )
+      }
+    }
+
+    return {
+      todoScan,
+      renderParts,
+      latestPersistedCanvasArtifactPartIndexes:
+        getLatestPersistedCanvasArtifactPartIndexes(renderParts),
+      latestCanvasArtifactStatuses: getLatestCanvasArtifactStatuses(
+        message.parts
+      ),
+      generatedImageUrls,
+      completedDisplayToolResults,
+      toolUISegmentsByPartIndex
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- metadata is only read by a console.debug inside stripPseudoDisplayToolPlaceholders and does not affect the cached output; including it would force needless recomputes when the AI SDK reconstructs message metadata after persistence.
+  }, [message.parts, messageId])
+
   // Use provided citation maps (from all messages)
   if (message.role === 'user') {
     return (
@@ -414,20 +472,6 @@ export function RenderMessage({
       </>
     )
   }
-
-  // Pre-scan: identify todoWrite parts for the Research Plan component.
-  // Single pass collects the first index, latest resolved output, and state flags.
-  const todoScan = scanTodoWriteParts(message.parts)
-  const renderParts = normalizeRenderableParts(message.parts)
-  const latestPersistedCanvasArtifactPartIndexes =
-    getLatestPersistedCanvasArtifactPartIndexes(renderParts)
-  const latestCanvasArtifactStatuses = getLatestCanvasArtifactStatuses(
-    message.parts
-  )
-  const generatedImageUrls = collectGeneratedImageUrls(message.parts)
-  const completedDisplayToolResults = collectCompletedDisplayToolResults(
-    message.parts
-  )
 
   // Pre-compute: for each text part, whether there's any visible content after it.
   // Single reverse pass avoids O(n²) slice+some inside the render loop.
@@ -668,13 +712,7 @@ export function RenderMessage({
       const shouldShowActions =
         isLastVisiblePart && (isLatestMessage ? isStreamingComplete : true)
 
-      const textContent = stripPseudoDisplayToolPlaceholders({
-        text: stripDuplicateImageMarkdown(part.text, generatedImageUrls),
-        completedDisplayTools: completedDisplayToolResults,
-        messageId,
-        metadata
-      })
-      const segments = extractToolUIFromText(textContent, messageId)
+      const segments = toolUISegmentsByPartIndex.get(index) ?? []
       for (let si = 0; si < segments.length; si++) {
         const segment = segments[si]
         if (segment.type === 'tool-ui') {

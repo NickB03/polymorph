@@ -4,6 +4,7 @@ import {
   SearXNGResponse,
   SearXNGResult
 } from '@/lib/types'
+import { getErrorMessage } from '@/lib/utils/error'
 import { retrySearchOperation } from '@/lib/utils/retry'
 
 import { BaseSearchProvider, SearchTelemetryHook } from './base'
@@ -75,7 +76,7 @@ export class SearXNGSearchProvider extends BaseSearchProvider {
         (error, attempt, delayMs) => {
           console.log(
             `[SearXNG] Retry attempt ${attempt}:`,
-            error instanceof Error ? error.message : String(error)
+            getErrorMessage(error)
           )
           telemetryHook?.(error, attempt, delayMs)
         }

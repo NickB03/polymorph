@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import { uploadFileToSupabase } from '@/lib/supabase/storage'
+import { getErrorMessage } from '@/lib/utils/error'
 import {
   ALLOWED_UPLOAD_TYPES,
   MAX_UPLOAD_SIZE_BYTES
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, file: result }, { status: 200 })
   } catch (err: unknown) {
     console.error('Upload Error:', err)
-    const message = err instanceof Error ? err.message : String(err)
+    const message = getErrorMessage(err)
     return NextResponse.json(
       { error: 'Upload failed', message },
       { status: 500 }

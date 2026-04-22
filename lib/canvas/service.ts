@@ -28,6 +28,7 @@ import type {
   CanvasSourceFiles,
   CanvasVersionCreatedBy
 } from '@/lib/types/canvas'
+import { getErrorMessage } from '@/lib/utils/error'
 
 // ── Result types ─────────────────────────────────────────────────────
 
@@ -151,7 +152,7 @@ function logCompileFailure(input: {
 }
 
 function isUniqueConstraintError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error)
+  const message = getErrorMessage(error)
   return (
     message.includes('unique') ||
     message.includes('duplicate') ||
@@ -380,7 +381,7 @@ export async function createCanvasArtifactFromSource(input: {
     })
   } catch (err: unknown) {
     // Handle unique constraint violation (race condition on duplicate create)
-    const message = err instanceof Error ? err.message : String(err)
+    const message = getErrorMessage(err)
     if (
       message.includes('unique') ||
       message.includes('duplicate') ||

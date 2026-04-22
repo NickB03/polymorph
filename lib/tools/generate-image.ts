@@ -2,6 +2,7 @@ import { generateText, tool } from 'ai'
 import { z } from 'zod'
 
 import { uploadGeneratedImage } from '@/lib/supabase/server-storage'
+import { getErrorMessage } from '@/lib/utils/error'
 import { getModel } from '@/lib/utils/registry'
 
 const IMAGE_MODEL = 'gateway:google/gemini-2.5-flash-image'
@@ -106,9 +107,7 @@ export function createGenerateImageTool(context: ImageToolContext) {
       } catch (err) {
         console.error('[generateImage] Failed:', err)
         return {
-          error:
-            'Image generation failed: ' +
-            (err instanceof Error ? err.message : String(err))
+          error: 'Image generation failed: ' + getErrorMessage(err)
         }
       }
     },

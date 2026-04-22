@@ -1,3 +1,4 @@
+import { getErrorMessage } from '../error'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
@@ -124,9 +125,7 @@ async function validateLLMEvaluator(
       )
     } catch (error) {
       counts.fn++
-      console.log(
-        `  [ERROR] ${example.id}: ${error instanceof Error ? error.message : String(error)}`
-      )
+      console.log(`  [ERROR] ${example.id}: ${getErrorMessage(error)}`)
     }
   }
 
@@ -171,7 +170,7 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
     console.log(
       '\n[WARN] Could not create judge model — skipping LLM evaluators.'
     )
-    console.log(`  ${error instanceof Error ? error.message : String(error)}`)
+    console.log(`  ${getErrorMessage(error)}`)
     return results
   }
 

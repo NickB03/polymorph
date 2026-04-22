@@ -2,12 +2,13 @@ import { sql } from 'drizzle-orm'
 
 import { config } from './config'
 import { db } from './db'
+import { getErrorMessage } from './error'
 import { withRetry } from './retry'
 
 export class SamplerParseError extends Error {
   constructor(field: string, chatId: string, cause: unknown) {
     super(
-      `SamplerParseError: Failed to parse ${field} for chat ${chatId}: ${cause instanceof Error ? cause.message : String(cause)}`
+      `SamplerParseError: Failed to parse ${field} for chat ${chatId}: ${getErrorMessage(cause)}`
     )
     this.name = 'SamplerParseError'
   }

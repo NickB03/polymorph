@@ -15,6 +15,7 @@ import { loadCanvasArtifactState } from '@/lib/canvas/service'
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
+import { getErrorMessage } from '@/lib/utils/error'
 import { jsonError } from '@/lib/utils/json-error'
 import {
   flushTraces,
@@ -204,7 +205,7 @@ export async function createEphemeralChatStreamResponse(
       }
     },
     onError: (error: unknown) => {
-      return error instanceof Error ? error.message : String(error)
+      return getErrorMessage(error)
     },
     onFinish: async () => {
       await flushTraces()

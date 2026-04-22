@@ -97,7 +97,10 @@ export async function POST(req: Request) {
     const isSharePage = referer?.includes('/share/')
 
     const authStart = performance.now()
-    const userId = await getCurrentUserId()
+    const [userId, cookieStore] = await Promise.all([
+      getCurrentUserId(),
+      cookies()
+    ])
     perfTime('Auth completed', authStart)
 
     if (isSharePage) {
@@ -126,8 +129,6 @@ export async function POST(req: Request) {
       const guestLimitResponse = await checkAndEnforceGuestLimit(ip)
       if (guestLimitResponse) return guestLimitResponse
     }
-
-    const cookieStore = await cookies()
 
     // The `searchMode` cookie stores a UI-facing `UserMode`
     // ('search' | 'research' | 'build'). Map it to the backend `SearchMode`

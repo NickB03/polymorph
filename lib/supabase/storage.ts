@@ -1,3 +1,5 @@
+import { getErrorMessage } from '@/lib/utils/error'
+
 import { createClient } from './server'
 
 export const SUPABASE_STORAGE_BUCKET =
@@ -40,7 +42,7 @@ export async function uploadFileToSupabase(
     }
   } catch (error: unknown) {
     console.error('Supabase Upload Error:', error)
-    const message = error instanceof Error ? error.message : String(error)
+    const message = getErrorMessage(error)
     throw new Error('Upload failed: ' + message)
   }
 }

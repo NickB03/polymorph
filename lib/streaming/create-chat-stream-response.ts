@@ -15,6 +15,7 @@ import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import { loadCanvasArtifactByChatId } from '@/lib/db/actions'
 import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
+import { getErrorMessage } from '@/lib/utils/error'
 import { jsonError } from '@/lib/utils/json-error'
 import {
   flushTraces,
@@ -329,7 +330,7 @@ export async function createChatStreamResponse(
     },
     onError: (error: unknown) => {
       // console.error('Stream error:', error)
-      return error instanceof Error ? error.message : String(error)
+      return getErrorMessage(error)
     },
     onFinish: async ({ responseMessage, isAborted }) => {
       if (isAborted || !responseMessage) return

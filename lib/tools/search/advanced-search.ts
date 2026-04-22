@@ -11,6 +11,7 @@ import {
   SearXNGResult,
   SearXNGSearchResults
 } from '@/lib/types'
+import { getErrorMessage } from '@/lib/utils/error'
 
 const SEARXNG_MAX_RESULTS = Math.max(
   10,
@@ -500,7 +501,7 @@ async function fetchHtmlWithTimeout(
     ])
   } catch (error) {
     console.error(`Error fetching ${url}:`, error)
-    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorMessage = getErrorMessage(error)
     return `<html><body>Error fetching content: ${errorMessage}</body></html>`
   }
 }
