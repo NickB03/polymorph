@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, type ReactNode, useMemo } from 'react'
 
 import { UseChatHelpers } from '@ai-sdk/react'
 
@@ -382,6 +382,33 @@ export function RenderMessage({
 }: RenderMessageProps) {
   const metadata = message.metadata as UIMessageMetadata | undefined
 
+  // Single pass over message.parts — hoisted above the user-message early
+  // return so the hook runs unconditionally (rules of hooks).
+  const {
+    todoScan,
+    renderParts,
+    latestPersistedCanvasArtifactPartIndexes,
+    latestCanvasArtifactStatuses,
+    generatedImageUrls,
+    completedDisplayToolResults
+  } = useMemo(() => {
+    const todoScan = scanTodoWriteParts(message.parts)
+    const renderParts = normalizeRenderableParts(message.parts)
+    return {
+      todoScan,
+      renderParts,
+      latestPersistedCanvasArtifactPartIndexes:
+        getLatestPersistedCanvasArtifactPartIndexes(renderParts),
+      latestCanvasArtifactStatuses: getLatestCanvasArtifactStatuses(
+        message.parts
+      ),
+      generatedImageUrls: collectGeneratedImageUrls(message.parts),
+      completedDisplayToolResults: collectCompletedDisplayToolResults(
+        message.parts
+      )
+    }
+  }, [message.parts])
+
   // Use provided citation maps (from all messages)
   if (message.role === 'user') {
     return (
@@ -415,20 +442,6 @@ export function RenderMessage({
       </>
     )
   }
-
-  // Pre-scan: identify todoWrite parts for the Research Plan component.
-  // Single pass collects the first index, latest resolved output, and state flags.
-  const todoScan = scanTodoWriteParts(message.parts)
-  const renderParts = normalizeRenderableParts(message.parts)
-  const latestPersistedCanvasArtifactPartIndexes =
-    getLatestPersistedCanvasArtifactPartIndexes(renderParts)
-  const latestCanvasArtifactStatuses = getLatestCanvasArtifactStatuses(
-    message.parts
-  )
-  const generatedImageUrls = collectGeneratedImageUrls(message.parts)
-  const completedDisplayToolResults = collectCompletedDisplayToolResults(
-    message.parts
-  )
 
   // Pre-compute: for each text part, whether there's any visible content after it.
   // Single reverse pass avoids O(n²) slice+some inside the render loop.
