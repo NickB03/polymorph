@@ -39,6 +39,9 @@ next-env.d.ts
 # temporary files
 .tmp/
 
+# Raw demo-video masters (commit only derived clips in docs/assets/demos/)
+/demo-video/
+
 # archived files
 .archive/
 
