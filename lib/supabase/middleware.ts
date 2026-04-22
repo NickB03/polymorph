@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from 'next/server'
 
 import { type CookieOptions, createServerClient } from '@supabase/ssr'
 
+import { getSafeRedirectPath } from '@/lib/auth/redirect-path'
+
 const PUBLIC_EXACT_PATHS = new Set(['/'])
 const PUBLIC_PREFIX_PATHS = ['/auth', '/share', '/api']
 
@@ -83,7 +85,10 @@ export async function updateSession(request: NextRequest) {
   if (!user && !isPublicPath(pathname)) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
+    const next = getSafeRedirectPath(`${pathname}${request.nextUrl.search}`)
     url.pathname = '/auth/login'
+    url.search = ''
+    url.searchParams.set('next', next)
     return NextResponse.redirect(url)
   }
 
