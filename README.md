@@ -12,20 +12,26 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 
+<br><br>
+<img src="docs/assets/social-preview.png" alt="Polymorph" width="880">
+
 </div>
 
 ## Features
 
-- **Three conversation modes** — Search, Research, and Build share one chat surface with intent-aware prompting
+- **Canvas artifacts** — generates and previews single-file React apps with live editing
 - **Multi-step research agent** — searches the web, reasons across sources, and synthesizes answers
 - **Generative UI** — tables, charts, geo maps, timelines, citations, callouts, and link previews render inline
+- **Three conversation modes** — Search, Research, and Build share one chat surface with intent-aware prompting
 - **Geo intelligence** — interactive maps, real directions, reachability polygons, and static map images
-- **Canvas artifacts** — generates and previews single-file React apps with live editing
 - **Multi-provider AI** — Gemini and Grok via Vercel AI Gateway, plus direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers
 - **Voice mode** — speech input and text-to-speech playback
 - **Guest access** — instant search without sign-up, rate-limited per IP in cloud deployments
 
 ## Architecture
+
+<details>
+<summary>View architecture diagram</summary>
 
 ```mermaid
 graph LR
@@ -60,11 +66,6 @@ graph LR
         StaticMap["getStaticMapImage<br/>Public URL"]
     end
 
-    subgraph MapServices["Map Services"]
-        MapTiler["MapTiler"]
-        ORS["OpenRouteService"]
-    end
-
     subgraph Response["Streaming Response"]
         direction TB
         GenUI["Generative UI"]
@@ -86,10 +87,11 @@ graph LR
     Agent --> Providers
     Agent --> Search
     Agent --> Geo
-    Geo --> MapServices
     Agent --> Response
     Agent --> Data
 ```
+
+</details>
 
 ## Quickstart
 
@@ -99,8 +101,6 @@ cp .env.local.example .env.local   # then set DATABASE_URL, AI_GATEWAY_API_KEY, 
 bun run migrate
 bun dev                             # http://localhost:43100
 ```
-
-Add `NEXT_PUBLIC_MAPTILER_API_KEY`, `MAPTILER_API_KEY`, and optionally `ORS_API_KEY` if you want the geo-map, directions, static-map, and isochrone features locally.
 
 See the [full Quickstart Guide](docs/getting-started/QUICKSTART.md) for detailed setup including local Supabase, auth configuration, and a guided first search.
 
