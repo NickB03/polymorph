@@ -13,9 +13,50 @@
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 
 <br><br>
-<img src="docs/assets/social-preview.png" alt="Polymorph" width="880">
+
+<!-- prettier-ignore -->
+<video autoplay muted loop playsinline
+       src="https://github.com/user-attachments/assets/971cf3e7-ff1d-43db-b1c2-e04b55f00891"
+       poster="docs/assets/demos/hero-poster.png"
+       width="880">Polymorph Canvas demo — describe a UI and watch it build live.</video>
+
+<p><sub>Describe a UI. Watch it build.</sub></p>
 
 </div>
+
+## See it in action
+
+<table>
+  <tr>
+    <td width="33%" align="center">
+      <!-- prettier-ignore -->
+      <video autoplay muted loop playsinline
+             src="https://github.com/user-attachments/assets/8d5c9d85-c36d-44e1-acf1-e54aa8887799"
+             poster="docs/assets/demos/research-poster.png"
+             width="100%">Polymorph research mode demo.</video>
+      <br/><b>Research mode</b><br/>
+      <sub>Parallel web queries, synthesized answer</sub>
+    </td>
+    <td width="33%" align="center">
+      <!-- prettier-ignore -->
+      <video autoplay muted loop playsinline
+             src="https://github.com/user-attachments/assets/5ea8cd1f-f27c-4f72-85c6-86183c493513"
+             poster="docs/assets/demos/geo-poster.png"
+             width="100%">Polymorph geo intelligence demo.</video>
+      <br/><b>Geo intelligence</b><br/>
+      <sub>Interactive maps + data tables inline</sub>
+    </td>
+    <td width="33%" align="center">
+      <!-- prettier-ignore -->
+      <video autoplay muted loop playsinline
+             src="https://github.com/user-attachments/assets/4ffaeb86-c5b8-4bc2-bfd9-a5c5b2bdbe3a"
+             poster="docs/assets/demos/canvas-poster.png"
+             width="100%">Polymorph Canvas artifact demo.</video>
+      <br/><b>Canvas artifacts</b><br/>
+      <sub>Describe a UI, watch it compile live</sub>
+    </td>
+  </tr>
+</table>
 
 ## Features
 
@@ -27,6 +68,28 @@
 - **Multi-provider AI** — Gemini and Grok via Vercel AI Gateway, plus direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers
 - **Voice mode** — speech input and text-to-speech playback
 - **Guest access** — instant search without sign-up, rate-limited per IP in cloud deployments
+
+## Quickstart
+
+```bash
+bun install
+cp .env.local.example .env.local   # then set DATABASE_URL, AI_GATEWAY_API_KEY, BRAVE_SEARCH_API_KEY
+bun run migrate
+bun dev                             # http://localhost:43100
+```
+
+See the [full Quickstart Guide](docs/getting-started/QUICKSTART.md) for detailed setup including local Supabase, auth configuration, and a guided first search.
+
+## Documentation
+
+[Browse all documentation →](docs/README.md)
+
+- [Architecture Overview](docs/architecture/OVERVIEW.md) — system design, data flow, tech stack
+- [Geo & Spatial Tools](docs/architecture/GEO-TOOLS.md) — geocoding, directions, isochrones, static maps, and `displayGeoMap`
+- [Environment Reference](docs/getting-started/ENVIRONMENT.md) — all environment variables
+- [Deployment Guide](docs/operations/DEPLOYMENT.md) — Vercel deployment and production config
+- [Contributing Guide](CONTRIBUTING.md) — development workflow and quality gates
+- [API Reference](docs/reference/API.md) — chat API endpoint and schemas
 
 ## Architecture
 
@@ -92,28 +155,6 @@ graph LR
 ```
 
 </details>
-
-## Quickstart
-
-```bash
-bun install
-cp .env.local.example .env.local   # then set DATABASE_URL, AI_GATEWAY_API_KEY, BRAVE_SEARCH_API_KEY
-bun run migrate
-bun dev                             # http://localhost:43100
-```
-
-See the [full Quickstart Guide](docs/getting-started/QUICKSTART.md) for detailed setup including local Supabase, auth configuration, and a guided first search.
-
-## Documentation
-
-[Browse all documentation →](docs/README.md)
-
-- [Architecture Overview](docs/architecture/OVERVIEW.md) — system design, data flow, tech stack
-- [Geo & Spatial Tools](docs/architecture/GEO-TOOLS.md) — geocoding, directions, isochrones, static maps, and `displayGeoMap`
-- [Environment Reference](docs/getting-started/ENVIRONMENT.md) — all environment variables
-- [Deployment Guide](docs/operations/DEPLOYMENT.md) — Vercel deployment and production config
-- [Contributing Guide](CONTRIBUTING.md) — development workflow and quality gates
-- [API Reference](docs/reference/API.md) — chat API endpoint and schemas
 
 ## Attribution
 
