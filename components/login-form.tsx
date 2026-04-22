@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
+import { getSafeRedirectPath } from '@/lib/auth/redirect-path'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/index'
 
@@ -30,6 +31,8 @@ export function LoginForm({
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = getSafeRedirectPath(searchParams.get('next'))
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,9 +52,8 @@ export function LoginForm({
         error: error?.message
       })
       if (error) throw error
-      // Redirect to root and refresh to ensure server components get updated session
       console.log('[login] success, redirecting...')
-      router.push('/')
+      router.push(next)
       router.refresh()
     } catch (error: unknown) {
       console.error('[login] caught error:', error)
@@ -67,10 +69,12 @@ export function LoginForm({
 
     try {
       const supabase = createClient()
+      const redirectTo = new URL('/auth/oauth', window.location.origin)
+      redirectTo.searchParams.set('next', next)
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${location.origin}/auth/oauth`
+          redirectTo: redirectTo.toString()
         }
       })
       if (error) throw error
