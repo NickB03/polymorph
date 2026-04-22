@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Apply six surgical, high-confidence simplifications identified by a project-level simplify audit: extract two error-handling utilities to eliminate 20+ duplicates, move a render-path regex to module scope, collapse four redundant `message.parts` scans per render into a single memoized pass, memoize `extractToolUIFromText`, and parallelize independent work in the chat API route.
+**Goal:** Apply six surgical, high-confidence simplifications identified by a project-level simplify audit: extract two error-handling utilities to eliminate 23 duplicates, move a render-path regex to module scope, collapse six redundant `message.parts` scans per render into a single memoized pass, memoize `extractToolUIFromText`, and parallelize independent work in the chat API route.
 
 **Architecture:** Pure refactors — no behavioral changes, no new features. New utilities in `lib/utils/` and `lib/tools/search/providers/`. Render-path changes localized to `components/render-message.tsx`. Chat-route change is a single `Promise.all`. Each task is independently revertible and committed separately.
 
@@ -36,9 +36,9 @@ The Polymorph codebase (`/Users/nick/Projects/vana-v2`) is an AI chat app with s
 
 ### Modified files
 
-- `components/render-message.tsx` — move regex to module scope; consolidate 4 scans into one memoized pass; memoize `extractToolUIFromText` usage
+- `components/render-message.tsx` — move regex to module scope; consolidate 6 scans into one memoized pass; memoize `extractToolUIFromText` usage
 - `app/api/chat/route.ts` — parallelize `cookies()` and `getCurrentUserId()`
-- Error-utility callers (migrate to `getErrorMessage`): `lib/agents/generate-trending-suggestions.ts`, `lib/db/with-rls.ts`, `lib/tools/search.ts`, `lib/tools/search/advanced-search.ts`, `app/api/advanced-search/route.ts`, `lib/streaming/create-chat-stream-response.ts`, `lib/streaming/create-ephemeral-chat-stream-response.ts`, `lib/tools/search/providers/tavily.ts`, `lib/tools/search/providers/brave.ts`, `lib/tools/search/providers/exa.ts`, `lib/tools/search/providers/searxng.ts`, `lib/tools/search/providers/firecrawl.ts`, `lib/supabase/storage.ts`, `lib/canvas/service.ts`, `lib/utils/retry.ts`, `services/evals/src/golden/validate.ts`
+- Error-utility callers (migrate to `getErrorMessage`): `lib/agents/generate-trending-suggestions.ts`, `lib/db/with-rls.ts`, `lib/tools/search.ts`, `lib/tools/search/advanced-search.ts`, `app/api/advanced-search/route.ts`, `app/api/upload/route.ts`, `lib/streaming/create-chat-stream-response.ts`, `lib/streaming/create-ephemeral-chat-stream-response.ts`, `lib/tools/search/providers/tavily.ts`, `lib/tools/search/providers/brave.ts`, `lib/tools/search/providers/exa.ts`, `lib/tools/search/providers/searxng.ts`, `lib/tools/search/providers/firecrawl.ts`, `lib/tools/generate-image.ts`, `lib/supabase/storage.ts`, `lib/canvas/service.ts`, `lib/utils/retry.ts`, `services/evals/src/golden/validate.ts`, `services/evals/src/sampler.ts`
 - HTTP-error-utility callers (migrate to `extractHttpErrorInfo`): `lib/tools/search/providers/exa.ts`, `lib/tools/search/providers/firecrawl.ts`
 
 ---
@@ -118,7 +118,12 @@ Expected: both pass with no new warnings.
 
 ```bash
 git add lib/utils/error.ts lib/utils/__tests__/error.test.ts
-git commit -m "refactor(utils): add getErrorMessage helper for unknown-error stringification"
+git commit -m "$(cat <<'EOF'
+refactor(utils): add getErrorMessage helper for unknown-error stringification
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ---
@@ -129,27 +134,32 @@ git commit -m "refactor(utils): add getErrorMessage helper for unknown-error str
 
 **Files (modify, one `.ts`/`.tsx` per subtask for clean reviewable diffs — batching all into one commit is fine since the change is mechanical):**
 
+Variable name is `error` unless noted otherwise — the same pattern appears with `err` and `cause` in a handful of files:
+
 - `lib/agents/generate-trending-suggestions.ts:155`
 - `lib/db/with-rls.ts:57`
 - `lib/tools/search.ts:25`
 - `lib/tools/search/advanced-search.ts:503`
 - `app/api/advanced-search/route.ts:51`
+- `app/api/upload/route.ts:48` — uses `err`
 - `lib/streaming/create-chat-stream-response.ts:332`
 - `lib/streaming/create-ephemeral-chat-stream-response.ts:207`
 - `lib/tools/search/providers/tavily.ts:72`
 - `lib/tools/search/providers/brave.ts:156, 182, 221`
-- `lib/tools/search/providers/exa.ts:62` (also appears at line 52 inside `new SearchProviderError(...)`)
+- `lib/tools/search/providers/exa.ts:62` (note line 52 inside `new SearchProviderError(...)` uses a custom fallback string and is NOT migrated — see Task 4.1 note)
 - `lib/tools/search/providers/searxng.ts:78`
-- `lib/tools/search/providers/firecrawl.ts:80` (and line 69)
+- `lib/tools/search/providers/firecrawl.ts:80` (and line 69 inside `new SearchProviderError(...)` which uses a custom fallback — do NOT migrate line 69, same reasoning as exa)
+- `lib/tools/generate-image.ts:111` — uses `err`, appears inside a string concatenation
 - `lib/supabase/storage.ts:43`
-- `lib/canvas/service.ts:154`
+- `lib/canvas/service.ts:154` (variable `error`) and `383` (variable `err`, race-handler)
 - `lib/utils/retry.ts:90`
 - `services/evals/src/golden/validate.ts:128, 174`
+- `services/evals/src/sampler.ts:10` — uses `cause`, inside a backtick template literal
 
 - [ ] **Step 2.1: Grep for every occurrence of the pattern**
 
-Run: `rg -n 'error instanceof Error \? error\.message : String\(error\)' --glob '!node_modules' --glob '!docs' --glob '!**/*.md'`
-Expected: list of ~20 lines matching the callers above. Confirm the list matches before proceeding.
+Run: `rg -nP '(\w+) instanceof Error \? \1\.message : String\(\1\)' --glob '!node_modules' --glob '!docs' --glob '!**/*.md'`
+Expected: list of 23 lines matching the callers above. The `-P` flag is required — ripgrep's default regex engine does not support backreferences, so without `-P` this grep errors out. The backreference `\1` ensures both sides of the ternary use the same variable name, which is what catches the `err` and `cause` variants in addition to `error`. Confirm the list matches before proceeding.
 
 - [ ] **Step 2.2: For each file, replace the inline pattern with `getErrorMessage(error)`**
 
@@ -170,12 +180,14 @@ const errorMessage = getErrorMessage(error)
 
 Apply equivalent transforms to every file listed above. For multi-occurrence files (`brave.ts`, `validate.ts`), replace each occurrence. Keep every other line — including surrounding log strings and interpolation — unchanged.
 
-For `services/evals/src/golden/validate.ts`: this file lives in a separate service. Use the same `@/lib/utils/error` import if and only if path mapping is configured; otherwise use a relative import. Check `services/evals/tsconfig.json` — if `paths` does not include `@/*`, use a relative path like `../../../../lib/utils/error` **or** duplicate the utility inside `services/evals/src/utils/error.ts` (choose relative import — it's simpler and services/evals already does this for sibling utilities).
+For `services/evals/src/golden/validate.ts` and `services/evals/src/sampler.ts`: these live in a separate service. `services/evals/tsconfig.json` has **no** `paths` alias (verified during audit), so use a relative import: `import { getErrorMessage } from '../../../../lib/utils/error'`. For `sampler.ts` the pattern is inside a backtick template literal; replace `${cause instanceof Error ? cause.message : String(cause)}` with `${getErrorMessage(cause)}`.
+
+For `lib/tools/generate-image.ts:111`: the pattern sits inside a string concatenation (`'Image generation failed: ' + (err instanceof Error ? err.message : String(err))`). Replace with `'Image generation failed: ' + getErrorMessage(err)`.
 
 - [ ] **Step 2.3: Re-run the grep to confirm zero matches remain**
 
-Run: `rg -n 'error instanceof Error \? error\.message : String\(error\)' --glob '!node_modules' --glob '!docs' --glob '!**/*.md'`
-Expected: no matches. (If any matches remain, migrate them or note why they intentionally differ — e.g. they embed additional conditionals.)
+Run: `rg -nP '(\w+) instanceof Error \? \1\.message : String\(\1\)' --glob '!node_modules' --glob '!docs' --glob '!**/*.md'`
+Expected: no matches. (If any matches remain, migrate them or note why they intentionally differ — e.g. they embed additional conditionals or use a custom fallback string like `'Exa search failed'`.)
 
 - [ ] **Step 2.4: Lint + typecheck + test**
 
@@ -186,7 +198,12 @@ Expected: all pass. No existing test should change behavior.
 
 ```bash
 git add -A
-git commit -m "refactor: replace inline error-stringification with getErrorMessage"
+git commit -m "$(cat <<'EOF'
+refactor: replace inline error-stringification with getErrorMessage
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ---
@@ -319,7 +336,12 @@ Expected: both pass.
 
 ```bash
 git add lib/tools/search/providers/error-utils.ts lib/tools/search/providers/__tests__/error-utils.test.ts
-git commit -m "refactor(search): add extractHttpErrorInfo helper for provider error shapes"
+git commit -m "$(cat <<'EOF'
+refactor(search): add extractHttpErrorInfo helper for provider error shapes
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ---
@@ -445,8 +467,8 @@ import { extractHttpErrorInfo } from './error-utils'
 
 - [ ] **Step 4.3: Confirm no other provider uses `(error as any)?.status`**
 
-Run: `rg -n '\(error as any\)\?\.' lib/tools/search/providers`
-Expected: zero matches after the above edits. If there are additional matches (e.g. in `tavily.ts`, `brave.ts`, `searxng.ts`), migrate them too using the same pattern.
+Run: `rg -n '\(error as any\)\?\.' lib/tools/search/providers --glob '!**/__tests__/**'`
+Expected: zero matches after the above edits. The `__tests__/` exclusion is intentional: `lib/tools/search/providers/__tests__/providers.test.ts:574` contains `(error as any)?.status` inside a mock that simulates a raw HTTP error shape — leave it as-is since migrating it would not exercise the new helper. If additional non-test matches appear (e.g. in `tavily.ts`, `brave.ts`, `searxng.ts`), migrate them too using the same pattern.
 
 - [ ] **Step 4.4: Lint + typecheck + test**
 
@@ -457,7 +479,12 @@ Expected: all pass.
 
 ```bash
 git add lib/tools/search/providers
-git commit -m "refactor(search): use extractHttpErrorInfo in exa and firecrawl providers"
+git commit -m "$(cat <<'EOF'
+refactor(search): use extractHttpErrorInfo in exa and firecrawl providers
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ---
@@ -472,7 +499,7 @@ git commit -m "refactor(search): use extractHttpErrorInfo in exa and firecrawl p
 
 - [ ] **Step 5.1: Hoist the regex**
 
-Before (`components/render-message.tsx:239-249`):
+Before (`components/render-message.tsx:240-249` — the JSDoc comment on line 239 stays where it is, the function definition begins at line 240):
 
 ```tsx
 /** Remove markdown image syntax that references already-rendered generated images */
@@ -516,14 +543,19 @@ Expected: all pass (the existing render-message tests should continue to pass �
 
 ```bash
 git add components/render-message.tsx
-git commit -m "perf(render-message): hoist markdown image regex to module scope"
+git commit -m "$(cat <<'EOF'
+perf(render-message): hoist markdown image regex to module scope
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ---
 
-## Task 6: Consolidate four `message.parts` scans into one memoized pass
+## Task 6: Consolidate six `message.parts` scans into one memoized pass
 
-**Why:** `components/render-message.tsx:421-430` calls `normalizeRenderableParts`, `getLatestPersistedCanvasArtifactPartIndexes`, `getLatestCanvasArtifactStatuses`, `collectGeneratedImageUrls`, and `collectCompletedDisplayToolResults` — five separate traversals of `message.parts` on every render. During streaming, `RenderMessage` re-runs per token. This combines them into a single `useMemo` keyed on `message.parts`.
+**Why:** `components/render-message.tsx:420-430` calls `scanTodoWriteParts`, `normalizeRenderableParts`, `getLatestPersistedCanvasArtifactPartIndexes`, `getLatestCanvasArtifactStatuses`, `collectGeneratedImageUrls`, and `collectCompletedDisplayToolResults` — six separate traversals of `message.parts` on every render. During streaming, `RenderMessage` re-runs per token. This combines them into a single `useMemo` keyed on `message.parts`.
 
 **Files:**
 
@@ -635,35 +667,50 @@ Expected: all pass. If any test fails, read the failure — it most likely indic
 
 ```bash
 git add components/render-message.tsx
-git commit -m "perf(render-message): memoize message.parts scans into single pass"
+git commit -m "$(cat <<'EOF'
+perf(render-message): memoize message.parts scans into single pass
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ---
 
-## Task 7: Memoize `extractToolUIFromText` call sites
+## Task 7: Memoize `extractToolUIFromText` + its upstream text transforms
 
-**Why:** `extractToolUIFromText` (defined at `components/render-message.tsx:112`) runs `JSON.parse` on every fenced code block on every render. During streaming, each text part rerenders multiple times as tokens accumulate. Memoizing by `(messageId, text)` reuses prior parses when a text hasn't changed.
+**Why:** `extractToolUIFromText` (defined at `components/render-message.tsx:112`) runs `JSON.parse` on every fenced code block on every render. During streaming, `RenderMessage` re-renders on every token. Memoizing the extraction — and its two upstream string transforms — lets repeat renders reuse prior work.
 
-**Approach:** Because `extractToolUIFromText` is called inside `RenderMessage`'s render loop over `renderParts` (not at the top), the natural memoization strategy is a **per-render map** keyed by text content, computed via `useMemo` alongside the scans added in Task 6. Returned segments are inert (ReactNodes), so caching them across renders is safe.
+**Actual call-site shape (verified during audit):** there is exactly **one** call site, at `components/render-message.tsx:677`, and the `text` argument is double-transformed:
+
+```tsx
+const textContent = stripPseudoDisplayToolPlaceholders({
+  text: stripDuplicateImageMarkdown(part.text, generatedImageUrls),
+  completedDisplayTools: completedDisplayToolResults,
+  messageId,
+  metadata
+})
+const segments = extractToolUIFromText(textContent, messageId)
+```
+
+Both transforms depend on values already derived inside the Task-6 memo (`generatedImageUrls`, `completedDisplayToolResults`), plus `messageId` and `metadata`. That makes the cleanest place to cache results the same `useMemo` added in Task 6 — keyed by **part index**, not text content, since the loop already has the index and the transformed string isn't needed outside the memo.
 
 **Files:**
 
 - Modify: `components/render-message.tsx`
 
-- [ ] **Step 7.1: Grep to locate each `extractToolUIFromText(` invocation**
+- [ ] **Step 7.1: Grep to confirm call-site count**
 
 Run: `rg -n 'extractToolUIFromText\(' components/render-message.tsx`
-Expected: at least one match inside the render body. Record the line numbers.
+Expected: exactly one invocation inside the render body (plus the definition at line 112). If the grep returns more than one invocation, the call-site topology has changed since the audit — stop and re-plan this task before proceeding.
 
-- [ ] **Step 7.2: Inspect each call site and the surrounding `text` binding**
+- [ ] **Step 7.2: Confirm metadata identity stability**
 
-Read: `components/render-message.tsx:<line>` with ~10 lines of context for each match. Each call looks like `extractToolUIFromText(textContent, messageId)` where `textContent` is a string derived from a `part`.
+Read `components/render-message.tsx:382–384` and any upstream callers of `RenderMessage` to confirm that `message.metadata` does **not** mutate identity on every streamed token. If it does, the Task-7 memo will thrash and buy nothing. If metadata is stable per message (the expected case), proceed. If it isn't, narrow the memo deps to `[message.parts, messageId]` and accept that a metadata update will force one recompute.
 
-- [ ] **Step 7.3: Extend the Task-6 `useMemo` to precompute text-segment results**
+- [ ] **Step 7.3: Fold extraction into the Task-6 `useMemo`**
 
-Augment the Task-6 memo body: before returning, iterate `renderParts`, identify every part whose renderer calls `extractToolUIFromText`, and precompute a `Map<string, Segment[]>` keyed by the text value. Then inside the render loop, replace each `extractToolUIFromText(textContent, messageId)` with `toolUISegmentsByText.get(textContent) ?? [{ type: 'text', content: textContent }]`.
-
-Concrete edit — expand the memoized return from Task 6:
+Expand the Task-6 memo body to precompute per-part-index segments using the **same** double-transform used at the call site. Key by part index (a `number`, never clashes between parts). The memo's return value gains one field, `toolUISegmentsByPartIndex`:
 
 ```tsx
 const {
@@ -673,21 +720,33 @@ const {
   latestCanvasArtifactStatuses,
   generatedImageUrls,
   completedDisplayToolResults,
-  toolUISegmentsByText
+  toolUISegmentsByPartIndex
 } = useMemo(() => {
   const todoScan = scanTodoWriteParts(message.parts)
   const renderParts = normalizeRenderableParts(message.parts)
+  const generatedImageUrls = collectGeneratedImageUrls(message.parts)
+  const completedDisplayToolResults = collectCompletedDisplayToolResults(
+    message.parts
+  )
 
-  const toolUISegmentsByText = new Map<string, Segment[]>()
-  for (const part of renderParts) {
+  const toolUISegmentsByPartIndex = new Map<number, Segment[]>()
+  for (let i = 0; i < renderParts.length; i++) {
+    const part = renderParts[i]
     if (
       part.type === 'text' &&
       typeof (part as { text?: string }).text === 'string'
     ) {
-      const text = (part as { text: string }).text
-      if (!toolUISegmentsByText.has(text)) {
-        toolUISegmentsByText.set(text, extractToolUIFromText(text, messageId))
-      }
+      const rawText = (part as { text: string }).text
+      const transformed = stripPseudoDisplayToolPlaceholders({
+        text: stripDuplicateImageMarkdown(rawText, generatedImageUrls),
+        completedDisplayTools: completedDisplayToolResults,
+        messageId,
+        metadata
+      })
+      toolUISegmentsByPartIndex.set(
+        i,
+        extractToolUIFromText(transformed, messageId)
+      )
     }
   }
 
@@ -699,59 +758,50 @@ const {
     latestCanvasArtifactStatuses: getLatestCanvasArtifactStatuses(
       message.parts
     ),
-    generatedImageUrls: collectGeneratedImageUrls(message.parts),
-    completedDisplayToolResults: collectCompletedDisplayToolResults(
-      message.parts
-    ),
-    toolUISegmentsByText
+    generatedImageUrls,
+    completedDisplayToolResults,
+    toolUISegmentsByPartIndex
   }
-}, [message.parts, messageId])
+}, [message.parts, messageId, metadata])
 ```
 
-Then, at each call site inside the render body, replace:
+At the render-loop call site (line 677), replace the manual compute block:
 
 ```tsx
+const textContent = stripPseudoDisplayToolPlaceholders({
+  text: stripDuplicateImageMarkdown(part.text, generatedImageUrls),
+  completedDisplayTools: completedDisplayToolResults,
+  messageId,
+  metadata
+})
 const segments = extractToolUIFromText(textContent, messageId)
 ```
 
-with:
+with a lookup keyed by the current `partIndex` (or whatever loop variable exposes the `renderParts` index — read 20 lines of context around line 677 to identify the right name):
 
 ```tsx
-const segments = toolUISegmentsByText.get(textContent) ?? [
-  { type: 'text', content: textContent }
-]
+const segments = toolUISegmentsByPartIndex.get(partIndex) ?? []
 ```
 
-**Edge case:** if the code path computes `textContent` via any transform before passing to `extractToolUIFromText` (e.g. applies `stripDuplicateImageMarkdown` first), the memo must do the same transform before storing. Trace the call site carefully — a mismatch between "the text we stored" and "the text we look up" would silently fall back to the `{ type: 'text', content: textContent }` branch and lose tool-UI extraction. If the transform differs per-part, abandon the map-lookup approach and instead just wrap `extractToolUIFromText` in a locally-scoped memo:
+The `?? []` fallback is defensive: the loop only executes for text parts with a string `text` field, so the map is always hydrated for those indices. If the loop iterates all `renderParts` (including non-text parts), add a `part.type === 'text'` guard before reading `segments`, since non-text parts won't have an entry in the map.
 
-```tsx
-const extractCache = useRef(new Map<string, Segment[]>())
-// Reset cache when message.parts identity changes:
-useEffect(() => {
-  extractCache.current = new Map()
-}, [message.parts])
-
-// At call site:
-const cacheKey = textContent
-let segments = extractCache.current.get(cacheKey)
-if (!segments) {
-  segments = extractToolUIFromText(textContent, messageId)
-  extractCache.current.set(cacheKey, segments)
-}
-```
-
-Pick whichever is simpler given the actual call-site transforms found in Step 7.2. **Default to the `useMemo` map approach** (simpler, no stale-cache concerns). Fall back to the ref-cache only if there's a transform that differs from what the memo body can precompute.
+**Critical:** the transforms inside the memo must match the original call site **byte-for-byte**. `stripPseudoDisplayToolPlaceholders` takes `text`, `completedDisplayTools`, `messageId`, `metadata` as a named object. Double-check the signature before writing the memo — if any field is missing or renamed, tool-UI extraction will silently fall back to a segment-less result and the bug will only surface when a user pastes a fenced tool-UI block.
 
 - [ ] **Step 7.4: Lint + typecheck + test**
 
 Run: `bun lint && bun typecheck && bun run test -- components/render-message.test.tsx`
-Expected: all pass. The tests exercise multiple tool-UI extraction scenarios (see `components/render-message.test.tsx:667+`); these must continue to pass.
+Expected: all pass. The tests exercise tool-UI extraction scenarios in `components/render-message.test.tsx` (1040 lines); if any fail, diff the memo's transform invocation against the original call site.
 
 - [ ] **Step 7.5: Commit**
 
 ```bash
 git add components/render-message.tsx
-git commit -m "perf(render-message): memoize extractToolUIFromText results by text"
+git commit -m "$(cat <<'EOF'
+perf(render-message): memoize extractToolUIFromText and its upstream transforms
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ---
@@ -836,7 +886,12 @@ Expected: all pass. Run the full suite because the chat route has integration te
 
 ```bash
 git add app/api/chat/route.ts
-git commit -m "perf(chat-route): parallelize auth and cookie store loads"
+git commit -m "$(cat <<'EOF'
+perf(chat-route): parallelize auth and cookie store loads
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ---
@@ -853,11 +908,11 @@ Expected: all pass with zero new warnings or errors.
 Run:
 
 ```bash
-rg -n 'error instanceof Error \? error\.message : String\(error\)' --glob '!node_modules' --glob '!docs' --glob '!**/*.md'
-rg -n '\(error as any\)\?\.status' lib/tools/search/providers
+rg -nP '(\w+) instanceof Error \? \1\.message : String\(\1\)' --glob '!node_modules' --glob '!docs' --glob '!**/*.md'
+rg -n '\(error as any\)\?\.status' lib/tools/search/providers --glob '!**/__tests__/**'
 ```
 
-Expected: the first produces zero matches; the second produces zero matches.
+Expected: the first produces zero matches — the `-P` flag enables PCRE2 since the default ripgrep engine doesn't support backreferences. The backreference `\1` catches `err`/`cause`/`error` variants. The second grep produces zero matches (test-mock at `providers.test.ts:574` is intentionally excluded).
 
 - [ ] **Step 9.3: Confirm commits are clean**
 
