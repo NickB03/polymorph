@@ -5,6 +5,7 @@ import { getErrorMessage } from '@/lib/utils/error'
 import { retrySearchOperation } from '@/lib/utils/retry'
 
 import { BaseSearchProvider, SearchTelemetryHook } from './base'
+import { extractHttpErrorInfo } from './error-utils'
 import { createHttpSearchError, SearchProviderError } from './errors'
 
 export class ExaSearchProvider extends BaseSearchProvider {
@@ -38,13 +39,13 @@ export class ExaSearchProvider extends BaseSearchProvider {
           if (error instanceof SearchProviderError) {
             throw error
           }
-          const status = (error as any)?.status
+          const { status, statusText, retryAfter } = extractHttpErrorInfo(error)
           if (typeof status === 'number') {
             throw createHttpSearchError(
               'exa',
               status,
-              (error as any)?.statusText ?? String(error),
-              (error as any)?.headers?.get?.('retry-after'),
+              statusText ?? String(error),
+              retryAfter,
               error
             )
           }

@@ -8,6 +8,7 @@ import {
   BaseSearchProvider,
   SearchTelemetryHook
 } from '@/lib/tools/search/providers/base'
+import { extractHttpErrorInfo } from '@/lib/tools/search/providers/error-utils'
 import {
   createHttpSearchError,
   SearchProviderError
@@ -54,13 +55,13 @@ export class FirecrawlSearchProvider extends BaseSearchProvider {
           if (error instanceof SearchProviderError) {
             throw error
           }
-          const status = (error as any)?.statusCode ?? (error as any)?.status
+          const { status, statusText, retryAfter } = extractHttpErrorInfo(error)
           if (typeof status === 'number') {
             throw createHttpSearchError(
               'firecrawl',
               status,
-              (error as any)?.statusText ?? String(error),
-              undefined,
+              statusText ?? String(error),
+              retryAfter,
               error
             )
           }
