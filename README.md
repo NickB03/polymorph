@@ -14,33 +14,25 @@
 
 <br><br>
 
-<img src="docs/assets/demos/hero.png" alt="Polymorph — AI platform for research, creation, and exploration" width="880">
+<img src="docs/assets/demos/canvas.gif" alt="Polymorph Canvas: describe a UI and watch it compile live" width="880">
 
-<p><sub>Ask anything. Research, compare, summarize, explain, or build.</sub></p>
+<p><sub>Describe a UI. Watch it compile live.</sub></p>
 
 </div>
 
 ## See it in action
 
-<table>
-  <tr>
-    <td width="33%" align="center">
-      <img src="docs/assets/demos/research.gif" alt="Polymorph research mode demo" width="100%">
-      <br/><b>Research mode</b><br/>
-      <sub>Parallel web queries, synthesized answer</sub>
-    </td>
-    <td width="33%" align="center">
-      <img src="docs/assets/demos/geo.gif" alt="Polymorph geo intelligence demo" width="100%">
-      <br/><b>Geo intelligence</b><br/>
-      <sub>Interactive maps + data tables inline</sub>
-    </td>
-    <td width="33%" align="center">
-      <img src="docs/assets/demos/canvas.gif" alt="Polymorph Canvas artifact demo" width="100%">
-      <br/><b>Canvas artifacts</b><br/>
-      <sub>Describe a UI, watch it compile live</sub>
-    </td>
-  </tr>
-</table>
+### Multi-step research agent
+
+Parallel web queries with reasoning across sources, synthesized into a sourced answer with inline citations.
+
+<img src="docs/assets/demos/research.gif" alt="Polymorph research mode: parallel web queries and synthesized answer" width="880">
+
+### Geo intelligence
+
+Real maps, directions, and reachability polygons rendered inline in the conversation — not links to a third-party site.
+
+<img src="docs/assets/demos/geo.gif" alt="Polymorph geo intelligence: interactive maps and data tables inline" width="880">
 
 ## Features
 
