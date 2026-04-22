@@ -436,7 +436,12 @@ export function RenderMessage({
       completedDisplayToolResults,
       toolUISegmentsByPartIndex
     }
-  }, [message.parts, messageId, metadata])
+    // metadata is intentionally omitted: it's only read by a console.debug
+    // inside stripPseudoDisplayToolPlaceholders and doesn't affect cached
+    // output. Including it would force needless recomputes when the AI SDK
+    // reconstructs message metadata after persistence.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [message.parts, messageId])
 
   // Use provided citation maps (from all messages)
   if (message.role === 'user') {
