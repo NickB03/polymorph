@@ -380,13 +380,7 @@ export async function createCanvasArtifactFromSource(input: {
       status: 'ready'
     })
   } catch (err: unknown) {
-    // Handle unique constraint violation (race condition on duplicate create)
-    const message = getErrorMessage(err)
-    if (
-      message.includes('unique') ||
-      message.includes('duplicate') ||
-      message.includes('23505')
-    ) {
+    if (isUniqueConstraintError(err)) {
       return {
         ok: false,
         error: 'This chat already has a canvas artifact',
