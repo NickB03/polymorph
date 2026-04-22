@@ -29,7 +29,7 @@
     <td width="33%" align="center">
       <!-- prettier-ignore -->
       <video autoplay muted loop playsinline
-             src="https://github.com/user-attachments/assets/776b3829-68db-4f71-baf7-8a6779112b58"
+             src="https://github.com/user-attachments/assets/8d5c9d85-c36d-44e1-acf1-e54aa8887799"
              poster="docs/assets/demos/research-poster.png"
              width="100%"></video>
       <br/><b>Research mode</b><br/>
