@@ -18,7 +18,9 @@
 <video autoplay muted loop playsinline
        src="https://github.com/user-attachments/assets/971cf3e7-ff1d-43db-b1c2-e04b55f00891"
        poster="docs/assets/demos/hero-poster.png"
-       width="880"></video>
+       width="880">Polymorph Canvas demo — describe a UI and watch it build live.</video>
+
+<p><sub>Describe a UI. Watch it build.</sub></p>
 
 </div>
 
@@ -31,7 +33,7 @@
       <video autoplay muted loop playsinline
              src="https://github.com/user-attachments/assets/8d5c9d85-c36d-44e1-acf1-e54aa8887799"
              poster="docs/assets/demos/research-poster.png"
-             width="100%"></video>
+             width="100%">Polymorph research mode demo.</video>
       <br/><b>Research mode</b><br/>
       <sub>Parallel web queries, synthesized answer</sub>
     </td>
@@ -40,7 +42,7 @@
       <video autoplay muted loop playsinline
              src="https://github.com/user-attachments/assets/5ea8cd1f-f27c-4f72-85c6-86183c493513"
              poster="docs/assets/demos/geo-poster.png"
-             width="100%"></video>
+             width="100%">Polymorph geo intelligence demo.</video>
       <br/><b>Geo intelligence</b><br/>
       <sub>Interactive maps + data tables inline</sub>
     </td>
@@ -49,7 +51,7 @@
       <video autoplay muted loop playsinline
              src="https://github.com/user-attachments/assets/4ffaeb86-c5b8-4bc2-bfd9-a5c5b2bdbe3a"
              poster="docs/assets/demos/canvas-poster.png"
-             width="100%"></video>
+             width="100%">Polymorph Canvas artifact demo.</video>
       <br/><b>Canvas artifacts</b><br/>
       <sub>Describe a UI, watch it compile live</sub>
     </td>
