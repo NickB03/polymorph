@@ -40,9 +40,11 @@ export function computeFindings(data: EvalsDashboardData): Finding[] {
     const latest = trafficMonitor.latest
     const previous = trafficMonitor.previous
     for (const key of Object.keys(latest.evaluatorScores)) {
-      const deltaBps = toBps(
-        latest.evaluatorScores[key] - (previous.evaluatorScores[key] ?? 0)
-      )
+      const previousScore = previous.evaluatorScores[key]
+      // Skip evaluators that are new in `latest` — we cannot compute a real
+      // delta without a baseline, and coercing missing to 0 fabricates drops.
+      if (previousScore == null) continue
+      const deltaBps = toBps(latest.evaluatorScores[key] - previousScore)
       if (Math.abs(deltaBps) >= DELTA_THRESHOLD_BPS) {
         findings.push({
           severity: deltaBps < 0 ? 'drop' : 'improvement',
@@ -57,9 +59,11 @@ export function computeFindings(data: EvalsDashboardData): Finding[] {
     const latest = capability.latest
     const previous = capability.previous
     for (const key of Object.keys(latest.evaluatorScores)) {
-      const deltaBps = toBps(
-        latest.evaluatorScores[key] - (previous.evaluatorScores[key] ?? 0)
-      )
+      const previousScore = previous.evaluatorScores[key]
+      // Skip evaluators that are new in `latest` — we cannot compute a real
+      // delta without a baseline, and coercing missing to 0 fabricates drops.
+      if (previousScore == null) continue
+      const deltaBps = toBps(latest.evaluatorScores[key] - previousScore)
       if (Math.abs(deltaBps) >= DELTA_THRESHOLD_BPS) {
         findings.push({
           severity: deltaBps < 0 ? 'drop' : 'improvement',
