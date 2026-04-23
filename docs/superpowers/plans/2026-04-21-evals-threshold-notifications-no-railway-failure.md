@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` or equivalent repo-grounded workflow. Steps use checkbox syntax for tracking.
 
-**Goal:** Change the scheduled `services/evals` run so a completed eval job that lands below the score threshold is recorded as a completed run with warnings, not a Railway failure. Preserve hard failures for truly incomplete runs, and surface threshold breaches through persisted status, logs, and the admin eval dashboard.
+**Goal:** Change the scheduled `services/evals` run so a completed eval job that lands below the score threshold is recorded as a completed run with warnings, not a Railway failure. Preserve the existing thrown failure paths, and surface threshold breaches through persisted status, logs, and the admin eval dashboard.
 
 ## Current Verified State
 
@@ -11,37 +11,47 @@
 - `services/evals/src/runners/traffic-monitor.ts` already uses the desired behavioral shape: it persists the summary, logs a warning on threshold breach, and does not throw.
 - `services/evals/src/eval-summary.ts` and `lib/db/schema.ts` already persist `capability`, `regression`, and `traffic-monitor` rows in `eval_summaries`.
 - `lib/evals/queries.ts` and `lib/evals/types.ts` only load and expose `capability` and `traffic-monitor` in the admin dashboard. `regression` is stored but hidden from the current UI.
+- `services/evals/src/orchestrator.ts` already runs suites sequentially. In `all` mode it dispatches `capability`, `regression`, `traffic-monitor`, then `smoke`.
+- `services/evals/src/golden/validate.ts` already exists as a separate strict-fail quality gate for manual validation workflows.
 - There is no existing eval-specific outbound alerting path and no end-user notification system for this flow. The only verified durable operator surface today is persisted eval state plus the admin `/admin/evals` UI.
 
 ## Desired Behavior
 
-- A run that reaches threshold evaluation and persistence is considered **completed**.
-- A threshold miss is considered **degraded** or **alert-worthy**, not an execution failure.
-- Railway should only see a failed process when the eval run is genuinely incomplete or untrustworthy:
-  - missing/invalid config
-  - no cases could be executed
-  - eval runner / judge / dataset creation failed before a result could be recorded
-  - summary persistence failed and we choose to treat the run as unrecorded
+- A judged run that successfully records its experiment and successfully persists its summary is considered **completed** even when it lands below threshold.
+- A threshold miss is considered **degraded** or **alert-worthy**, not a Railway execution failure.
+- This plan is intentionally narrow:
+  - it reclassifies the post-persistence threshold breach path
+  - it does **not** broaden into a full rewrite of existing Phoenix-unavailable / dashboard-stale fallback behavior
+  - it does **not** add a new strict-fail runtime toggle when `bun run validate` already covers that use case
 - Operators should get an explicit signal when a suite lands below threshold:
-  - persisted threshold-breach metadata in `eval_summaries`
+  - persisted threshold metadata in `eval_summaries`
   - clear warning logs in the eval service
   - persistent UI visibility in `/admin/evals`
+- The DB migration for new threshold columns must land before the writer change is deployed or before the next eval cron run.
+- Legacy `eval_summaries` rows should remain `NULL` / unknown for the new threshold fields rather than being backfilled heuristically.
 
 ## Architecture
 
-- Replace "throw on threshold breach" with a structured suite outcome object that distinguishes:
-  - `passed`
+- Adopt the existing `traffic-monitor` semantics for judged suites:
+  - after successful experiment creation and successful summary persistence, a threshold breach emits a warning and returns normally
+  - thrown errors remain reserved for already-fatal execution paths
+- Do **not** add an orchestrator-wide `SuiteRunResult` / status taxonomy for this fix. `runConfiguredModes()` can remain sequential dispatch.
+- Persist threshold metadata directly in `eval_summaries`:
+  - `threshold_bps`
   - `threshold_breached`
-  - `incomplete`
-- Keep process exit codes tied to `incomplete`, not `threshold_breached`.
-- Persist enough metadata per run to render historical alerts accurately even if the configured threshold changes later.
-- Use repo-native alerting only: persist threshold metadata, emit structured warnings in service logs, and surface the same state in the eval dashboard.
+  - `failed_evaluators`
+- Keep the admin dashboard model focused on the two visible suites (`capability` and `trafficMonitor`).
+- Add a separate, narrow `latestThresholdBreach` payload for the page/dashboard shell so regression can trigger a banner without widening every widget into a three-suite contract.
+- Drive dashboard findings from persisted threshold metadata instead of the current hardcoded traffic-only `80%` floor so the banner and existing alarm surfaces stay aligned.
+- Render the alert banner above `LayoutRenderer`, not as a layout widget, so alerts remain visible even when the grid falls back to the empty state.
 
 ## Out of Scope
 
 - Reworking Phoenix scoring semantics
 - Adding user-by-user notification preferences
 - Building a notification delivery system
+- Adding a service-runtime `EVAL_EXIT_ON_THRESHOLD_BREACH` toggle
+- Refactoring the dashboard into full regression widgets / feeds / trends
 - Changing the evaluator prompts or corpus to make the score pass
 
 ---
@@ -50,123 +60,134 @@
 
 **New files:**
 
-- `lib/evals/helpers/alerts.ts`
-  - Small helper layer that converts latest persisted runs into dashboard alert rows
 - `components/evals/widgets/alert-banner.tsx`
-  - Top-level dashboard callout for the newest threshold-breached suite
+  - Top-level dashboard callout for the newest persisted threshold breach
+
+**Generated files:**
+
+- `drizzle/<next>_*.sql`
+  - Migration that adds nullable threshold metadata columns to `eval_summaries`
+- `drizzle/meta/*`
+  - Generated Drizzle metadata for the migration above
 
 **Modified files:**
 
 - `services/evals/src/runners/shared.ts`
-  - Stop treating threshold breach as a fatal exception
-  - Return a structured suite result
-- `services/evals/src/runners/regression.ts`
-  - Propagate the new suite result contract
-- `services/evals/src/runners/capability.ts`
-  - Propagate the new suite result contract
+  - Stop throwing after summary persistence when judged suites miss threshold
+  - Pass threshold metadata into summary persistence
 - `services/evals/src/runners/traffic-monitor.ts`
-  - Align return shape with judged suites so the orchestrator can aggregate outcomes consistently
-- `services/evals/src/orchestrator.ts`
-  - Aggregate suite outcomes and decide whether the overall run should exit zero or non-zero
-- `services/evals/src/index.ts`
-  - Fail only on incomplete run classes, not threshold breaches
+  - Persist threshold metadata and align warning payload shape
 - `services/evals/src/eval-summary.ts`
-  - Persist threshold metadata and failing evaluator names
-- `services/evals/src/types.ts`
-  - Add suite outcome / alert metadata types
+  - Persist and upsert threshold metadata
 - `lib/db/schema.ts`
-  - Extend `eval_summaries` with threshold metadata
+  - Extend `eval_summaries` with nullable threshold metadata
 - `lib/evals/types.ts`
-  - Add regression and alert-facing summary fields to dashboard data
+  - Extend summary snapshots with threshold fields
+  - Add a narrow alert payload type for the dashboard shell
 - `lib/evals/queries.ts`
-  - Load regression summaries and expose alert-relevant fields
+  - Return threshold metadata on visible suite snapshots
+  - Derive `latestThresholdBreach` from the latest row per suite, including regression
 - `lib/evals/helpers/findings.ts`
-  - Include regression threshold breaches in findings
-- `lib/evals/helpers/feed.ts`
-  - Optionally add regression rows if we want the feed to show all persisted suites
+  - Replace the hardcoded traffic-only threshold rule with persisted threshold metadata
 - `components/evals/dashboard-v2/dashboard.tsx`
-  - Render a banner or top-of-page callout when the latest persisted run breached threshold
+  - Render the alert banner above the layout grid
 - `app/(admin)/admin/evals/page.tsx`
-  - Pass the expanded dashboard data through unchanged
+  - Pass the alert payload through to the dashboard shell
 - `services/evals/src/runners/shared.test.ts`
 - `services/evals/src/runners/traffic-monitor.test.ts`
 - `services/evals/src/eval-summary.test.ts`
-- `lib/evals/*.test.ts`
-  - Update coverage for the new contract and dashboard visibility
+- `lib/evals/queries.test.ts`
+- `lib/evals/helpers/__tests__/findings.test.ts`
+- `components/evals/dashboard-v2/dashboard.test.tsx`
+  - Update coverage for the migration-backed metadata and banner behavior
+
+**Files that should stay unchanged in this phase:**
+
+- `lib/evals/helpers/feed.ts`
+- `lib/evals/helpers/combined-trend.ts`
+- `lib/evals/layout/types.ts`
+- `lib/evals/layout/templates.ts`
+- `components/evals/widgets/registry.ts`
+- existing two-suite comparison widgets such as `evaluator-comparison-grid.tsx`
 
 ---
 
-## Task 1: Separate Threshold Breach From Execution Failure
+## Task 1: Adopt Non-Fatal Threshold Handling For Judged Suites
 
 **Files:**
 
 - Modify: `services/evals/src/runners/shared.ts`
-- Modify: `services/evals/src/runners/capability.ts`
-- Modify: `services/evals/src/runners/regression.ts`
-- Modify: `services/evals/src/runners/traffic-monitor.ts`
-- Modify: `services/evals/src/orchestrator.ts`
-- Modify: `services/evals/src/index.ts`
-- Modify: `services/evals/src/types.ts`
+- Modify: `services/evals/src/runners/shared.test.ts`
 
-Introduce a suite-level result object instead of using thrown threshold errors as control flow.
+Adopt the existing `traffic-monitor` behavior for judged suites instead of introducing a new orchestrator-wide status model.
 
-- [ ] Add a `SuiteRunResult` type with fields similar to:
-  - `suite`
-  - `status: 'passed' | 'threshold_breached'`
-  - `passRate`
-  - `threshold`
-  - `failedEvaluators`
-  - `experimentName`
-  - `datasetName`
-  - `phoenixUrl`
-  - `totalCases`
-- [ ] Keep throwing for truly incomplete conditions:
-  - all cases failed before we had a usable experiment
-  - Phoenix/dataset creation failed before recording
-  - required config validation failed
-  - DB persistence failed if we decide "not recorded" means incomplete
-- [ ] Change `runJudgedSuite()` so a threshold breach returns `status: 'threshold_breached'` instead of throwing.
-- [ ] Change `runTrafficMonitorSuite()` to return the same structured result shape for consistency.
-- [ ] Change `runConfiguredModes()` to return all suite results and determine an overall run status from them.
-- [ ] Keep `main()` / `index.ts` exit-zero when every executed suite is `passed` or `threshold_breached`.
+- [ ] Remove the post-persistence `thresholdError` throw from `runJudgedSuite()`.
+- [ ] Keep already-fatal paths unchanged in this pass:
+  - config validation failures
+  - "all eval cases failed" aborts
+  - other currently uncaught runtime errors
+- [ ] Do **not** introduce `SuiteRunResult`, `incomplete` status taxonomies, or orchestrator aggregation for this fix.
+- [ ] Keep `all` mode on the existing sequential path:
+  - `capability`
+  - `regression`
+  - `traffic-monitor`
+  - `smoke`
+- [ ] Explicitly preserve the current smoke semantics:
+  - smoke remains best-effort
+  - smoke does not participate in threshold alert state
+  - threshold-breached judged suites must not prevent later suites from running in `all` mode
 
 **Why this is necessary:**
 
 - Today, judged suites finish their real work, persist the result, and then convert a quality miss into a process crash. That makes Railway report the wrong failure class.
 
-## Task 2: Persist Historical Threshold Metadata
+## Task 2: Persist Historical Threshold Metadata Safely
 
 **Files:**
 
 - Modify: `lib/db/schema.ts`
+- Create: `drizzle/<next>_*.sql`
+- Commit: `drizzle/meta/*`
 - Modify: `services/evals/src/eval-summary.ts`
-- Modify: `services/evals/src/types.ts`
+- Modify: `services/evals/src/runners/shared.ts`
+- Modify: `services/evals/src/runners/traffic-monitor.ts`
 - Modify: `services/evals/src/eval-summary.test.ts`
+- Modify: `services/evals/src/runners/shared.test.ts`
+- Modify: `services/evals/src/runners/traffic-monitor.test.ts`
 
-The dashboard should not have to guess whether a run was below threshold by comparing `passRate` against today's env var.
+The dashboard should not have to guess whether a run was below threshold by comparing `passRate` against today's env var, and the repo must include the actual migration artifacts required to make the writer change safe.
 
 - [ ] Add columns to `eval_summaries`:
   - `threshold_bps`
   - `threshold_breached`
   - `failed_evaluators` as `jsonb`
-- [ ] Persist the evaluated threshold and the concrete evaluator names that failed for that run.
+- [ ] Make the new columns nullable in the initial migration because legacy rows cannot be reconstructed exactly.
+- [ ] If adding a range check for `threshold_bps`, allow `NULL` and only enforce `0..10000` when populated.
+- [ ] Persist the evaluated threshold and the concrete evaluator names that failed for each new run.
 - [ ] Keep `pass_rate_bps` as the recorded score outcome; do not overload it with status.
-- [ ] Update the upsert clause so reruns keep the threshold metadata in sync.
+- [ ] Update the insert and `ON CONFLICT (experiment_name) DO UPDATE` clauses so reruns keep threshold metadata in sync.
+- [ ] Do **not** backfill guessed values for historical rows:
+  - existing rows should remain `NULL` / unknown for the new threshold fields
+  - `failed_evaluators` cannot be reconstructed from stored evaluator averages
+- [ ] Apply the DB migration before deploying the writer change or allowing the next eval cron run.
+- [ ] Call out explicitly that `services/evals` does not run migrations on startup.
 
 **Why this is necessary:**
 
 - Thresholds are env-configurable. If `SCORE_THRESHOLD` changes later, historical rows still need to reflect the threshold that was used at evaluation time.
 - The current table does not preserve `failedEvaluators`, so the UI cannot explain why a run breached without reparsing transient logs.
+- The current plan was missing the actual Drizzle migration artifacts and rollout sequencing required to make the write path safe.
 
-## Task 3: Add Repo-Native Alerting
+## Task 3: Emit Consistent Non-Fatal Threshold Warnings
 
 **Files:**
 
 - Modify: `services/evals/src/runners/shared.ts`
 - Modify: `services/evals/src/runners/traffic-monitor.ts`
-- Modify tests near `services/evals/src/runners/*.test.ts`
+- Modify: `services/evals/src/runners/shared.test.ts`
+- Modify: `services/evals/src/runners/traffic-monitor.test.ts`
 
-- [ ] Emit a clear structured warning whenever a suite returns `threshold_breached`.
+- [ ] Emit a clear warning whenever a suite records `threshold_breached = true`.
 - [ ] Include:
   - suite name
   - pass rate
@@ -178,95 +199,97 @@ The dashboard should not have to guess whether a run was below threshold by comp
 - [ ] Keep the warning path non-fatal:
   - no throw after persistence succeeds
   - warning remains visible in Railway logs
-  - warning does not flip the overall run back into a Railway failure
+  - warning does not flip the run back into a Railway failure
+- [ ] Keep the existing Phoenix-unavailable / dashboard-stale logging paths unchanged in this pass.
 
 **Why this is necessary:**
 
-- If Railway no longer shows a red failed deployment for threshold misses, the run still needs a repo-native operator signal that exists today.
+- If Railway no longer shows a red failed deployment for threshold misses, the run still needs an explicit repo-native operator signal.
 
-## Task 4: Surface Threshold Breaches In `/admin/evals`
+## Task 4: Surface Threshold Breaches In `/admin/evals` Without Widening The Dashboard Model
 
 **Files:**
 
 - Modify: `lib/evals/types.ts`
 - Modify: `lib/evals/queries.ts`
-- Create: `lib/evals/helpers/alerts.ts`
 - Modify: `lib/evals/helpers/findings.ts`
-- Optionally modify: `lib/evals/helpers/feed.ts`
 - Create: `components/evals/widgets/alert-banner.tsx`
 - Modify: `components/evals/dashboard-v2/dashboard.tsx`
+- Modify: `app/(admin)/admin/evals/page.tsx`
+- Modify: `app/(admin)/admin/evals/page.test.tsx`
+- Modify: `lib/evals/queries.test.ts`
+- Modify: `lib/evals/helpers/__tests__/findings.test.ts`
+- Modify: `components/evals/dashboard-v2/dashboard.test.tsx`
 
-The dashboard already exists and is the natural durable surface for these warnings, but it currently hides regression runs entirely.
+The dashboard already exists and is the natural durable surface for these warnings, but the current widget system is intentionally two-suite-only. The minimal fix is to add a narrow alert payload, not a full regression dashboard section.
 
-- [ ] Extend `EvalsDashboardData` to include `regression`.
-- [ ] Return the latest and previous regression summaries from `getEvalsDashboard()` and `getEvalsDashboardWithLayout()`.
-- [ ] Add a top-of-page alert banner that activates when the newest run in any suite has `threshold_breached = true`.
+- [ ] Keep the visible dashboard suite contract limited to `capability` and `trafficMonitor`.
+- [ ] Add threshold metadata to the existing visible suite snapshots:
+  - `thresholdBps`
+  - `thresholdBreached`
+  - `failedEvaluators`
+- [ ] Add a separate `latestThresholdBreach` payload for the page/dashboard shell.
+- [ ] Derive `latestThresholdBreach` from the latest persisted row per suite, including the latest `regression` row, without exposing a full `regression` dashboard section.
+- [ ] Add a top-of-page alert banner that activates when `latestThresholdBreach` is present.
 - [ ] Show the exact suite, pass rate, threshold, failing evaluators, and Phoenix link.
-- [ ] Extend findings/feed logic so the dashboard can call out regression breaches, not just traffic monitor drift.
+- [ ] Render the banner in `EvalsDashboardV2` above `LayoutRenderer`, not as a layout widget.
+- [ ] Update `computeFindings()` to use persisted threshold metadata instead of the current hardcoded traffic-only `80%` floor.
+- [ ] Leave the following unchanged in this phase:
+  - `feed.ts`
+  - `combined-trend.ts`
+  - layout templates
+  - widget registry
+  - existing two-suite comparison widgets
 
 **Why this is necessary:**
 
 - The requested replacement for Railway failure should be a real, existing surface. In this repo that means the admin eval dashboard, not a new notification delivery system.
-- Regression is already persisted in the database, so the missing work is mostly query/type/UI wiring, not new storage.
+- A full `regression` dashboard section would create unnecessary fanout across templates, widgets, feeds, trends, and tests for a problem that only needs alert visibility.
 
-## Task 5: Preserve An Opt-In Hard-Fail Mode For Manual Or CI Use
-
-**Files:**
-
-- Modify: `services/evals/src/config.ts`
-- Modify: `services/evals/src/runners/shared.ts`
-- Modify: `services/evals/src/runners/traffic-monitor.ts`
-- Modify tests
-
-We should avoid hard-coding "threshold breaches never fail the process" if local or CI workflows still want strict failure semantics.
-
-- [ ] Add a boolean config such as `EVAL_EXIT_ON_THRESHOLD_BREACH` defaulting to `false`.
-- [ ] In Railway, leave it unset so completed-but-below-threshold runs exit zero.
-- [ ] In local or CI contexts, allow setting it to `true` if someone explicitly wants shell failure semantics.
-- [ ] Keep notifier and persistence behavior identical in both modes so the signal path is consistent.
-
-**Why this is necessary:**
-
-- It keeps the Railway fix narrow while preserving flexibility for stricter environments.
-
-## Task 6: Verification
+## Task 5: Verification
 
 **Services/evals tests:**
 
-- [ ] `bun run test -- src/runners/shared.test.ts src/runners/traffic-monitor.test.ts src/eval-summary.test.ts src/config.test.ts src/index.test.ts`
+- [ ] `bun run test -- src/runners/shared.test.ts src/runners/traffic-monitor.test.ts src/eval-summary.test.ts`
 
 **App-side tests:**
 
-- [ ] Add targeted tests for `lib/evals/queries.ts` and any new alert helper
+- [ ] Add targeted tests for `lib/evals/queries.ts`
+- [ ] Update `lib/evals/helpers/__tests__/findings.test.ts` so findings align with persisted threshold metadata instead of the hardcoded `80%` floor
 - [ ] Add a focused render test for the new dashboard banner
 
 **Manual verification:**
 
+- [ ] Apply the DB migration before running the updated writer locally or on a deployed environment
 - [ ] Run a forced threshold-breach fixture locally and verify:
-  - process exits zero when `EVAL_EXIT_ON_THRESHOLD_BREACH=false`
+  - judged suites exit zero after successful summary persistence
   - summary row records `threshold_breached=true`
+  - summary row records `threshold_bps` and `failed_evaluators`
   - structured warning appears in logs
   - `/admin/evals` shows the alert banner and links to Phoenix
-- [ ] Re-run with `EVAL_EXIT_ON_THRESHOLD_BREACH=true` and verify the process exits non-zero without changing persisted metadata or notification behavior
+- [ ] Run `EVAL_RUN_MODE=all` and verify threshold-breached judged suites do not prevent later suites from running
+- [ ] Confirm regression-only breaches still surface through the top-of-page banner even though regression is not a full dashboard suite
+- [ ] Confirm legacy rows with `NULL` threshold metadata do not break the dashboard or produce invented breach history
 
 ---
 
 ## Recommended Implementation Order
 
-1. Implement `SuiteRunResult` and stop throwing on threshold breaches.
-2. Persist threshold metadata in `eval_summaries`.
-3. Add structured warning logs.
-4. Expose regression and alerts in the dashboard.
-5. Add the optional hard-fail toggle.
-6. Run package-local tests and one forced-breach manual verification.
+1. Add the schema change and generated Drizzle migration artifacts.
+2. Update `persistEvalSummary()` and both suite writers to record threshold metadata.
+3. Stop throwing on post-persistence threshold breaches in judged suites.
+4. Align warning logs.
+5. Add the narrow dashboard alert payload and banner.
+6. Update targeted tests and run one forced-breach manual verification.
+7. Follow up separately by updating deployment docs once the implementation lands.
 
 ## Recommendation
 
 Prefer the smallest coherent version of this plan:
 
 - adopt the `traffic-monitor` warning model for judged suites
-- persist explicit threshold metadata
-- emit structured threshold-breach warnings in logs
-- add regression-aware alert visibility to `/admin/evals`
+- add the missing migration and rollout sequencing for threshold metadata
+- emit explicit threshold-breach warnings in logs
+- surface the newest breach in `/admin/evals` through a narrow banner payload, not a full regression dashboard refactor
 
-That keeps Railway green for completed runs, preserves operator awareness through existing repo surfaces, and avoids inventing a notification system that does not exist.
+That keeps Railway green for completed runs, preserves operator awareness through existing repo surfaces, avoids migration footguns, and avoids widening the dashboard beyond what this fix actually needs.
