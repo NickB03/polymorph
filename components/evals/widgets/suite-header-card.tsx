@@ -1,7 +1,7 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { Activity, BarChart3, Sparkles } from 'lucide-react'
+import { Activity, BarChart3 } from 'lucide-react'
 
 import type { HealthState } from '@/lib/evals/helpers/health-state'
 import {
@@ -19,7 +19,7 @@ import type { WidgetProps } from './shared/widget-props'
 import { EvaluatorChipGrid } from './evaluator-chip-grid'
 import { TrendChartInner } from './trend-chart-widget'
 
-type Variant = 'hero' | 'column' | 'rail' | 'ring'
+type Variant = 'hero' | 'column' | 'rail'
 
 type Config = {
   suite: 'capability' | 'trafficMonitor'
@@ -84,44 +84,6 @@ export function SuiteHeaderCard({
               })}
             </p>
           ) : null}
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (config.variant === 'ring') {
-    return (
-      <Card className="h-full">
-        <CardContent className="flex items-center gap-4 p-5">
-          <div
-            className={`flex h-20 w-20 items-center justify-center rounded-full border-4 ${
-              state === 'healthy'
-                ? 'border-emerald-500/60'
-                : state === 'warning'
-                  ? 'border-amber-500/60'
-                  : 'border-rose-500/60'
-            }`}
-          >
-            <span className="text-lg font-semibold tabular-nums">
-              {percent(latest.overallScore)}
-            </span>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-semibold">{title}</p>
-            <p className="text-xs text-muted-foreground">
-              pass {percent(latest.passRate)}
-              {delta != null
-                ? ` · ${delta > 0 ? '+' : ''}${Math.round(delta * 100)} pts`
-                : null}
-            </p>
-            {suite.lastUpdated ? (
-              <p className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(suite.lastUpdated), {
-                  addSuffix: true
-                })}
-              </p>
-            ) : null}
-          </div>
         </CardContent>
       </Card>
     )
@@ -253,14 +215,13 @@ function SuiteEmptyState({
   title: string
   variant: Variant
 }) {
-  const Icon =
-    variant === 'hero' ? Activity : variant === 'ring' ? Sparkles : BarChart3
+  const Icon = variant === 'hero' ? Activity : BarChart3
   const helper =
     title === 'Traffic Monitor'
       ? 'Runs land daily from the evals cron or on manual trigger.'
       : 'Runs land on demand from the rehearsed suite.'
 
-  if (variant === 'rail' || variant === 'ring') {
+  if (variant === 'rail') {
     return (
       <Card className="flex h-full flex-col border-dashed bg-muted/10">
         <CardHeader className="flex-row items-start justify-between space-y-0">
