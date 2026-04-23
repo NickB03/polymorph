@@ -1,5 +1,4 @@
 import type { CanvasArtifactStatusData, UIMessage } from '@/lib/types/ai'
-import { isInteractiveToolPart } from '@/lib/types/dynamic-tools'
 
 /**
  * Search messages for the most recent `data-canvasArtifactStatus` part
@@ -32,7 +31,7 @@ export function buildChatRequestBody({
   trigger,
   messageId,
   chatId,
-  isGuest,
+  isGuest: _isGuest,
   savedMessagesCount,
   guestCanvasToken
 }: {
@@ -50,43 +49,12 @@ export function buildChatRequestBody({
       ? messages.find(message => message.id === messageId)
       : undefined
 
-  const isToolResultContinuation =
-    trigger === 'submit-message' && lastMessage?.role === 'assistant'
-
-  if (isToolResultContinuation) {
-    // Use findLast to get the most recently resolved interactive tool part.
-    // When multiple displayOptionList calls are resolved sequentially,
-    // the first one is already persisted — we need the latest one.
-    const resolvedPart = lastMessage?.parts?.findLast(
-      part =>
-        isInteractiveToolPart(part) &&
-        'state' in part &&
-        part.state === 'output-available' &&
-        'output' in part
-    ) as { toolCallId: string; output: unknown } | undefined
-
-    if (resolvedPart && resolvedPart.output !== undefined) {
-      return {
-        body: {
-          trigger: 'tool-result' as const,
-          chatId,
-          toolResult: {
-            toolCallId: resolvedPart.toolCallId,
-            output: resolvedPart.output
-          },
-          ...(isGuest ? { messages } : {}),
-          ...(guestCanvasToken ? { guestCanvasToken } : {})
-        }
-      }
-    }
-  }
-
   return {
     body: {
       trigger,
       chatId,
       messageId,
-      ...(isGuest ? { messages } : {}),
+      messages,
       ...(guestCanvasToken ? { guestCanvasToken } : {}),
       message:
         trigger === 'regenerate-message' && messageToRegenerate?.role === 'user'

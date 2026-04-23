@@ -272,6 +272,7 @@ describe('prepareMessages', () => {
         chatId,
         role: 'user',
         metadata: {},
+        uiMessage: null,
         createdAt: new Date(),
         updatedAt: new Date()
       })
@@ -417,6 +418,7 @@ describe('prepareMessages', () => {
           chatId,
           role: 'user',
           metadata: {},
+          uiMessage: null,
           createdAt: new Date(),
           updatedAt: null
         }
@@ -473,6 +475,7 @@ describe('prepareMessages', () => {
         chatId,
         role: 'user',
         metadata: {},
+        uiMessage: null,
         createdAt: new Date(),
         updatedAt: null
       })
@@ -496,6 +499,93 @@ describe('prepareMessages', () => {
       expect(result).toHaveLength(2)
       expect(result[0].id).toBe('msg-1')
       expect(result[1].id).toBe('msg-2')
+    })
+
+    it('persists the updated assistant message when client messages contain tool outputs', async () => {
+      const existingChat: Chat & { messages: UIMessage[] } = {
+        id: chatId,
+        title: 'Existing Chat',
+        userId,
+        visibility: 'private',
+        createdAt: new Date(),
+        messages: [
+          {
+            id: 'msg-1',
+            role: 'user',
+            parts: [{ type: 'text', text: 'Need your preference' }]
+          },
+          {
+            id: 'msg-2',
+            role: 'assistant',
+            parts: [
+              {
+                type: 'tool-displayOptionList',
+                toolCallId: 'tool-1',
+                state: 'input-available',
+                input: {
+                  id: 'theme',
+                  options: [
+                    { id: 'dark', label: 'Dark' },
+                    { id: 'light', label: 'Light' }
+                  ]
+                }
+              } as any
+            ]
+          }
+        ]
+      }
+
+      const updatedAssistant: UIMessage = {
+        id: 'msg-2',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool-displayOptionList',
+            toolCallId: 'tool-1',
+            state: 'output-available',
+            input: {
+              id: 'theme',
+              options: [
+                { id: 'dark', label: 'Dark' },
+                { id: 'light', label: 'Light' }
+              ]
+            },
+            output: 'dark'
+          } as any
+        ]
+      }
+
+      vi.mocked(upsertMessage).mockResolvedValue({
+        id: 'msg-2',
+        chatId,
+        role: 'assistant',
+        metadata: {},
+        uiMessage: null,
+        createdAt: new Date(),
+        updatedAt: null
+      })
+
+      const context: StreamContext = {
+        chatId,
+        userId,
+        modelId: 'gpt-4',
+        trigger: 'submit-message',
+        messageId: undefined,
+        initialChat: existingChat,
+        isNewChat: false
+      }
+
+      const result = await prepareMessages(context, null, [
+        existingChat.messages[0]!,
+        updatedAssistant
+      ])
+
+      expect(upsertMessage).toHaveBeenCalledWith(
+        chatId,
+        updatedAssistant,
+        userId
+      )
+      expect(result[result.length - 1]).toEqual(updatedAssistant)
     })
   })
 })

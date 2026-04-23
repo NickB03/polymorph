@@ -9,6 +9,7 @@ import {
 } from 'ai'
 import { randomUUID } from 'crypto'
 
+import { createChatValidationContract } from '@/lib/agents/chat/message-contract'
 import { researcher } from '@/lib/agents/researcher'
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
@@ -49,6 +50,7 @@ export async function createChatStreamResponse(
 ): Promise<Response> {
   const {
     message,
+    messages: requestMessages,
     toolResult,
     model,
     chatId,
@@ -116,6 +118,8 @@ export async function createChatStreamResponse(
     isNewChat
   }
 
+  const validationContract = createChatValidationContract(context.modelId)
+
   // Declare titlePromise in outer scope for onFinish access
   let titlePromise: Promise<string> | undefined
 
@@ -148,7 +152,9 @@ export async function createChatStreamResponse(
 
   // Create the stream
   const stream = createUIMessageStream<UIMessage>({
-    ...(prefetchedMessages ? { originalMessages: prefetchedMessages } : {}),
+    ...(prefetchedMessages || requestMessages
+      ? { originalMessages: prefetchedMessages || requestMessages }
+      : {}),
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
       await withOtelSession({ sessionId: chatId, userId }, async () => {
         try {
@@ -164,9 +170,16 @@ export async function createChatStreamResponse(
             perfLog(
               `prepareMessages - Invoked: trigger=${trigger}, isNewChat=${isNewChat}`
             )
-            messagesToModel = await prepareMessages(context, message)
+            messagesToModel = await prepareMessages(
+              context,
+              message,
+              requestMessages
+            )
           }
           perfTime('prepareMessages completed (stream)', prepareStart)
+
+          const validatedMessages =
+            await validationContract.validate(messagesToModel)
 
           // Build canvas tool context: load current artifact if one exists.
           // Wrap in try/catch so a DB failure (e.g. missing table, permission
@@ -219,8 +232,8 @@ export async function createChatStreamResponse(
           // See: https://github.com/vercel/ai/issues/11036
           const isOpenAI = context.modelId.startsWith('openai:')
           const messagesToConvert = isOpenAI
-            ? stripReasoningParts(messagesToModel)
-            : messagesToModel
+            ? stripReasoningParts(validatedMessages)
+            : validatedMessages
 
           // Convert to model messages and apply context window management
           let modelMessages = await convertToModelMessages(messagesToConvert)
@@ -250,8 +263,12 @@ export async function createChatStreamResponse(
           }
 
           // Start title generation in parallel if it's a new chat
-          if (!initialChat && message) {
-            const userContent = getTextFromParts(message.parts)
+          const lastUserMessageForTitle = [...validatedMessages]
+            .reverse()
+            .find(entry => entry.role === 'user')
+
+          if (!initialChat && lastUserMessageForTitle) {
+            const userContent = getTextFromParts(lastUserMessageForTitle.parts)
             titlePromise = generateChatTitle({
               userMessageContent: userContent,
               modelId: context.modelId,
@@ -307,7 +324,6 @@ export async function createChatStreamResponse(
             responseMessages &&
             responseMessages.length > 0
           ) {
-            // Find the last user message
             const lastUserMessage = [...modelMessages]
               .reverse()
               .find(msg => msg.role === 'user')

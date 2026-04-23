@@ -678,12 +678,14 @@ export function mapUIMessageToDBMessage(
   id: string
   chatId: string
   role: string
+  uiMessage: UIMessage
   metadata?: UIMessageMetadata | null
 } {
   return {
     id: message.id,
     chatId: message.chatId,
     role: message.role,
+    uiMessage: message,
     metadata: message.metadata || null
   }
 }
@@ -695,26 +697,42 @@ export function buildUIMessageFromDB(
   dbMessage: {
     id: string
     role: string
+    uiMessage?: UIMessage | null
     metadata?: UIMessageMetadata | null
     createdAt?: Date | string
   },
   dbParts: DBMessagePartSelect[]
 ): UIMessage {
-  // Merge metadata from DB with createdAt
-  const metadata: UIMessageMetadata = {
+  const createdAt =
+    dbMessage.createdAt instanceof Date
+      ? dbMessage.createdAt
+      : dbMessage.createdAt
+        ? new Date(dbMessage.createdAt)
+        : undefined
+
+  const mergedMetadata: UIMessageMetadata = {
+    ...(dbMessage.uiMessage?.metadata || {}),
     ...(dbMessage.metadata || {}),
-    ...(dbMessage.createdAt && {
-      createdAt:
-        dbMessage.createdAt instanceof Date
-          ? dbMessage.createdAt
-          : new Date(dbMessage.createdAt)
-    })
+    ...(createdAt ? { createdAt } : {})
+  }
+
+  if (dbMessage.uiMessage) {
+    return {
+      ...dbMessage.uiMessage,
+      id: dbMessage.uiMessage.id || dbMessage.id,
+      role: (dbMessage.uiMessage.role || dbMessage.role) as
+        | 'user'
+        | 'assistant',
+      metadata:
+        Object.keys(mergedMetadata).length > 0 ? mergedMetadata : undefined
+    }
   }
 
   return {
     id: dbMessage.id,
     role: dbMessage.role as 'user' | 'assistant',
     parts: dbParts.map(mapDBPartToUIMessagePart) as UIMessage['parts'],
-    metadata: Object.keys(metadata).length > 0 ? metadata : undefined
+    metadata:
+      Object.keys(mergedMetadata).length > 0 ? mergedMetadata : undefined
   }
 }

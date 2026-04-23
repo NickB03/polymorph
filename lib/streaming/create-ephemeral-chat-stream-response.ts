@@ -9,6 +9,7 @@ import {
 } from 'ai'
 import { randomUUID } from 'crypto'
 
+import { createChatValidationContract } from '@/lib/agents/chat/message-contract'
 import { researcher } from '@/lib/agents/researcher'
 import { verifyGuestCanvasToken } from '@/lib/canvas/guest-token'
 import { loadCanvasArtifactState } from '@/lib/canvas/service'
@@ -63,6 +64,7 @@ export async function createEphemeralChatStreamResponse(
     guestCanvasToken
   } = config
   const modelId = createModelId(model)
+  const validationContract = createChatValidationContract(modelId)
 
   if (!messages || messages.length === 0) {
     return jsonError('BAD_REQUEST', 'messages are required', 400)
@@ -81,9 +83,10 @@ export async function createEphemeralChatStreamResponse(
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
       const executeBody = async () => {
         const isOpenAI = modelId.startsWith('openai:')
+        const validatedMessages = await validationContract.validate(messages)
         const messagesToConvert = isOpenAI
-          ? stripReasoningParts(messages)
-          : messages
+          ? stripReasoningParts(validatedMessages)
+          : validatedMessages
 
         let modelMessages = await convertToModelMessages(messagesToConvert)
 

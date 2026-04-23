@@ -14,7 +14,8 @@ import type { StreamContext } from './types'
 
 export async function prepareMessages(
   context: StreamContext,
-  message: UIMessage | null
+  message: UIMessage | null,
+  requestMessages?: UIMessage[]
 ): Promise<UIMessage[]> {
   const { chatId, userId, trigger, messageId, initialChat, isNewChat } = context
   const startTime = performance.now()
@@ -73,6 +74,74 @@ export async function prepareMessages(
       )
     }
   } else {
+    if (requestMessages && requestMessages.length > 0) {
+      const normalizedMessages = requestMessages.map((entry, index) => {
+        if (entry.id) return entry
+        return {
+          ...entry,
+          id:
+            index === requestMessages.length - 1
+              ? message?.id || generateId()
+              : generateId()
+        }
+      })
+
+      const lastMessage = normalizedMessages[normalizedMessages.length - 1]
+
+      if (isNewChat) {
+        if (lastMessage?.role !== 'user') {
+          throw new Error(
+            'New chat submissions must end with a user message before streaming'
+          )
+        }
+
+        const createStart = performance.now()
+        const persistencePromise = createChatWithFirstMessage(
+          chatId,
+          lastMessage,
+          userId,
+          DEFAULT_CHAT_TITLE
+        )
+          .then(result => {
+            perfTime('createChatWithFirstMessage completed', createStart)
+            perfTime('prepareMessages - Total', startTime)
+            return result
+          })
+          .catch(error => {
+            console.error('Error creating chat with first message:', error)
+            throw error
+          })
+
+        context.pendingInitialSave = persistencePromise
+        context.pendingInitialUserMessage = lastMessage
+
+        perfTime('prepareMessages - Total (using client messages)', startTime)
+        return normalizedMessages
+      }
+
+      if (!initialChat) {
+        const createStart = performance.now()
+        await createChat(chatId, DEFAULT_CHAT_TITLE, userId)
+        perfTime('createChat completed', createStart)
+      }
+
+      if (!lastMessage) {
+        throw new Error('No messages provided')
+      }
+
+      const persistableLastMessage = {
+        ...lastMessage,
+        id: lastMessage.id || generateId()
+      }
+
+      const upsertStart = performance.now()
+      await upsertMessage(chatId, persistableLastMessage, userId)
+      perfTime('upsertMessage completed', upsertStart)
+
+      perfTime('prepareMessages - Total (using client messages)', startTime)
+      return normalizedMessages
+    }
+
     // Handle normal message submission
     if (!message) {
       throw new Error('No message provided')

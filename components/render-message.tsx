@@ -22,20 +22,15 @@ import {
 } from './tool-ui/canvas-artifact-card'
 import { GenerateImage } from './tool-ui/generate-image'
 import { safeParseSerializableGenerateImage } from './tool-ui/generate-image/schema'
-import { OptionList } from './tool-ui/option-list/option-list'
-import type { OptionListSelection } from './tool-ui/option-list/schema'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
 import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
-import { QuestionWizard } from './tool-ui/question-wizard/question-wizard'
-import type { WizardResult } from './tool-ui/question-wizard/schema'
-import { safeParseSerializableQuestionWizard } from './tool-ui/question-wizard/schema'
-import { tryRenderToolUI, tryRenderToolUIByName } from './tool-ui/registry'
+import { tryRenderToolUI } from './tool-ui/registry'
+import { renderToolPart } from './tool-ui/tool-part-registry'
 import { AnswerSection } from './answer-section'
 import { DynamicToolDisplay } from './dynamic-tool-display'
 import { MessageActions } from './message-actions'
 import { ResearchPlan } from './research-plan'
 import ResearchProcessSection from './research-process-section'
-import { ResearchStatusLine } from './research-status-line'
 import { UserFileSection } from './user-file-section'
 import { UserTextSection } from './user-text-section'
 
@@ -532,160 +527,15 @@ export function RenderMessage({
     displayPart: any,
     partIndex: number
   ): React.ReactNode => {
-    const toolName = displayPart.type.substring(5) // Remove 'tool-' prefix
-    const toolPart = displayPart as {
-      state?: string
-      input?: unknown
-      output?: unknown
-      toolCallId?: string
-    }
-
-    // In research mode, suppress citations and link previews (rendered in activity sidebar)
-    if (
-      isResearchMode &&
-      (toolName === 'displayCitations' || toolName === 'displayLinkPreview')
-    ) {
-      return (
-        <span
-          key={`${messageId}-display-tool-${partIndex}`}
-          className="sr-only"
-        >
-          Citations available in research activity panel
-        </span>
-      )
-    }
-
-    if (toolName === 'displayOptionList') {
-      if (toolPart.state === 'output-available') {
-        const parsed = safeParseSerializableOptionList(toolPart.input)
-        if (parsed) {
-          // Research depth → compact status line instead of receipt card
-          if (parsed.id === 'research-depth') {
-            const selectedOption = parsed.options.find(
-              opt => opt.id === toolPart.output
-            )
-            return (
-              <ResearchStatusLine
-                key={`${messageId}-display-tool-${partIndex}`}
-                selectedLabel={selectedOption?.label ?? 'Research'}
-                isStreaming={isLatestMessage && isChatLoading(status)}
-              />
-            )
-          }
-          // Non-depth option lists keep their receipt card
-          return (
-            <OptionList
-              key={`${messageId}-display-tool-${partIndex}`}
-              {...parsed}
-              choice={toolPart.output as OptionListSelection}
-            />
-          )
-        }
-      } else if (toolPart.state === 'input-available') {
-        const parsed = safeParseSerializableOptionList(toolPart.input)
-        if (parsed) {
-          return (
-            <OptionList
-              key={`${messageId}-display-tool-${partIndex}`}
-              {...parsed}
-              onAction={(actionId, selection) => {
-                if (toolPart.toolCallId) {
-                  addToolResult?.({
-                    toolCallId: toolPart.toolCallId,
-                    result: selection
-                  })
-                }
-              }}
-            />
-          )
-        }
-      } else {
-        return (
-          <div
-            key={`${messageId}-display-tool-${partIndex}`}
-            className="h-24 animate-pulse rounded-lg bg-muted"
-          />
-        )
-      }
-    } else if (toolName === 'displayQuestionWizard') {
-      if (toolPart.state === 'output-available') {
-        const parsed = safeParseSerializableQuestionWizard(toolPart.input)
-        if (parsed) {
-          return (
-            <QuestionWizard
-              key={`${messageId}-display-tool-${partIndex}`}
-              {...parsed}
-              choice={toolPart.output as WizardResult}
-            />
-          )
-        }
-      } else if (toolPart.state === 'input-available') {
-        const parsed = safeParseSerializableQuestionWizard(toolPart.input)
-        if (parsed) {
-          return (
-            <QuestionWizard
-              key={`${messageId}-display-tool-${partIndex}`}
-              {...parsed}
-              onAction={(_actionId, selection) => {
-                if (toolPart.toolCallId) {
-                  addToolResult?.({
-                    toolCallId: toolPart.toolCallId,
-                    result: selection
-                  })
-                }
-              }}
-            />
-          )
-        }
-      } else {
-        return (
-          <div
-            key={`${messageId}-display-tool-${partIndex}`}
-            className="h-24 animate-pulse rounded-lg bg-muted"
-          />
-        )
-      }
-    } else {
-      if (toolPart.state === 'output-available' && toolPart.output) {
-        const rendered = tryRenderToolUIByName(
-          toolName,
-          toolPart.output,
-          toolPart.toolCallId ?? `${messageId}-tool-${partIndex}`
-        )
-        return rendered ? (
-          <Fragment key={`${messageId}-display-tool-${partIndex}`}>
-            {rendered}
-          </Fragment>
-        ) : (
-          <div
-            key={`${messageId}-display-tool-${partIndex}`}
-            className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground"
-          >
-            {toolName} output could not be rendered
-          </div>
-        )
-      } else if (toolPart.state === 'output-error') {
-        return (
-          <div
-            key={`${messageId}-display-tool-${partIndex}`}
-            className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground"
-          >
-            {toolName} output could not be rendered
-          </div>
-        )
-      } else if (
-        toolPart.state === 'input-streaming' ||
-        toolPart.state === 'input-available'
-      ) {
-        return (
-          <div
-            key={`${messageId}-display-tool-${partIndex}`}
-            className="h-24 animate-pulse rounded-lg bg-muted"
-          />
-        )
-      }
-    }
-    return null
+    return renderToolPart({
+      toolName: displayPart.type.substring(5),
+      toolPart: displayPart,
+      messageId,
+      partIndex,
+      isResearchMode,
+      status,
+      addToolResult
+    })
   }
 
   renderParts.forEach((part, index) => {
