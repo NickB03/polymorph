@@ -1,6 +1,5 @@
 export type WidgetTypeId =
   | 'page-header'
-  | 'filter-toolbar'
   | 'kpi-tile'
   | 'suite-header-card'
   | 'score-ring'
