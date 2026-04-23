@@ -29,6 +29,7 @@ export interface EvalsConfig {
   smokeCaseCount: number
   smokeTimeoutMs: number
   scoreThreshold: number
+  exitOnThresholdBreach: boolean
   caseConcurrency: number
   dbPoolMax: number
   excludeFromThreshold: string[]
@@ -145,6 +146,7 @@ export function createConfig(
     smokeCaseCount: validInt(env.SMOKE_CASE_COUNT, 1),
     smokeTimeoutMs: validInt(env.SMOKE_TIMEOUT_MS, 300_000),
     scoreThreshold: validFloat(env.SCORE_THRESHOLD, 0.8),
+    exitOnThresholdBreach: validBool(env.EVAL_EXIT_ON_THRESHOLD_BREACH, false),
     caseConcurrency: validInt(env.EVAL_CASE_CONCURRENCY, 1),
     dbPoolMax: validInt(env.EVAL_DB_POOL_MAX, 5),
     excludeFromThreshold: env.EVAL_EXCLUDE_FROM_THRESHOLD

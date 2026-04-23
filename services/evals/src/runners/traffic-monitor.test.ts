@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockConfig = vi.hoisted(() => ({
   scoreThreshold: 0.8,
+  exitOnThresholdBreach: false,
   excludeFromThreshold: ['safety']
 }))
 
@@ -23,6 +24,30 @@ const mockCheckExperimentThresholds = vi.hoisted(() =>
 )
 const mockPersistEvalSummary = vi.hoisted(() => vi.fn())
 const mockDbExecute = vi.hoisted(() => vi.fn())
+const mockBuildSuiteRunResult = vi.hoisted(() =>
+  vi.fn(
+    ({
+      suite,
+      thresholds,
+      threshold,
+      experimentName,
+      datasetName,
+      phoenixUrl,
+      totalCases
+    }) => ({
+      suite,
+      status: thresholds.passed ? 'passed' : 'threshold_breached',
+      passRate: thresholds.passRate,
+      threshold,
+      failedEvaluators: thresholds.failedEvaluators,
+      experimentName,
+      datasetName,
+      phoenixUrl,
+      totalCases
+    })
+  )
+)
+const mockLogThresholdBreachWarning = vi.hoisted(() => vi.fn())
 
 vi.mock('../config', () => ({
   config: mockConfig
@@ -37,10 +62,12 @@ vi.mock('./shared', () => ({
   buildExperimentEvaluators: mockBuildExperimentEvaluators,
   buildExperimentTask: mockBuildExperimentTask,
   buildPublicExperimentUrl: vi.fn(() => 'https://phoenix.example.com/exp'),
+  buildSuiteRunResult: mockBuildSuiteRunResult,
   buildTimestampedDatasetName: mockBuildTimestampedDatasetName,
   checkExperimentThresholds: mockCheckExperimentThresholds,
   createDatasetAndExperiment: mockCreateDatasetAndExperiment,
-  createJudgeModel: mockCreateJudgeModel
+  createJudgeModel: mockCreateJudgeModel,
+  logThresholdBreachWarning: mockLogThresholdBreachWarning
 }))
 
 vi.mock('../eval-summary', () => ({
@@ -140,7 +167,7 @@ describe('runTrafficMonitorSuite', () => {
     mockCreateDatasetAndExperiment.mockResolvedValueOnce(datasetResult)
 
     const { runTrafficMonitorSuite } = await import('./traffic-monitor')
-    await expect(runTrafficMonitorSuite()).resolves.toBeUndefined()
+    const result = await runTrafficMonitorSuite()
 
     expect(mockPersistEvalSummary).toHaveBeenCalledTimes(1)
     expect(mockPersistEvalSummary).toHaveBeenCalledWith(
@@ -149,13 +176,17 @@ describe('runTrafficMonitorSuite', () => {
         suite: 'traffic-monitor',
         experimentName: datasetResult.experimentName,
         datasetName: datasetResult.datasetName,
+        threshold: 0.8,
+        thresholdBreached: false,
+        failedEvaluators: [],
         totalCases: 1,
         phoenixUrl: 'https://phoenix.example.com/exp'
       })
     )
+    expect(result?.status).toBe('passed')
   })
 
-  it('logs PHOENIX UNAVAILABLE when createDatasetAndExperiment throws and does not call persist', async () => {
+  it('throws when createDatasetAndExperiment cannot record to Phoenix', async () => {
     mockSampleRecentChats.mockResolvedValueOnce([sampleChat])
     mockBuildDatasetExamples.mockReturnValueOnce([
       { input: {}, output: {}, metadata: {} }
@@ -167,7 +198,9 @@ describe('runTrafficMonitorSuite', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const { runTrafficMonitorSuite } = await import('./traffic-monitor')
-    await expect(runTrafficMonitorSuite()).resolves.toBeUndefined()
+    await expect(runTrafficMonitorSuite()).rejects.toThrow(
+      'experiment could not be recorded to Phoenix'
+    )
 
     expect(errorSpy).toHaveBeenCalledWith(
       '[evals] PHOENIX UNAVAILABLE - could not record traffic-monitor experiment results'
@@ -189,7 +222,9 @@ describe('runTrafficMonitorSuite', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const { runTrafficMonitorSuite } = await import('./traffic-monitor')
-    await expect(runTrafficMonitorSuite()).resolves.toBeUndefined()
+    await expect(runTrafficMonitorSuite()).rejects.toThrow(
+      'eval summary could not be persisted'
+    )
 
     expect(errorSpy).toHaveBeenCalledWith(
       '[evals] DB WRITE FAILED - could not persist traffic-monitor eval summary'
@@ -214,22 +249,25 @@ describe('runTrafficMonitorSuite', () => {
       failedEvaluators: ['faithfulness', 'relevance']
     })
 
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
     const { runTrafficMonitorSuite } = await import('./traffic-monitor')
-    await expect(runTrafficMonitorSuite()).resolves.toBeUndefined()
+    const result = await runTrafficMonitorSuite()
 
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Traffic monitor scores below threshold')
+    expect(result?.status).toBe('threshold_breached')
+    expect(mockLogThresholdBreachWarning).toHaveBeenCalledWith(
+      expect.objectContaining({
+        suite: 'traffic-monitor',
+        status: 'threshold_breached'
+      })
     )
-    warnSpy.mockRestore()
   })
 
-  it('exits cleanly when no chats are sampled and does not call persist', async () => {
+  it('fails when no chats are sampled so the run is treated as incomplete', async () => {
     mockSampleRecentChats.mockResolvedValueOnce([])
 
     const { runTrafficMonitorSuite } = await import('./traffic-monitor')
-    await expect(runTrafficMonitorSuite()).resolves.toBeUndefined()
+    await expect(runTrafficMonitorSuite()).rejects.toThrow(
+      'No chats found in lookback window for traffic-monitor run'
+    )
 
     expect(mockCreateDatasetAndExperiment).not.toHaveBeenCalled()
     expect(mockPersistEvalSummary).not.toHaveBeenCalled()

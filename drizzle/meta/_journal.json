@@ -134,6 +134,13 @@
       "when": 1776658100000,
       "tag": "0018_drop_trending_suggestions_public_write_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1776821400000,
+      "tag": "0019_evals_threshold_alerts",
+      "breakpoints": true
     }
   ]
 }

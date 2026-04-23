@@ -10,6 +10,8 @@ import type {
   EvalsDashboardData,
   EvalSummaryRow,
   EvalSummarySnapshot,
+  PersistedDashboardSuite,
+  RegressionDashboardData,
   TrafficMonitorDashboardData
 } from './types'
 
@@ -25,9 +27,13 @@ function computeOverallScore(evaluatorScores: Record<string, number>) {
 function toSnapshot(row: EvalSummaryRow): EvalSummarySnapshot {
   return {
     id: row.id,
+    suite: row.suite,
     experimentName: row.experimentName,
     datasetName: row.datasetName,
     passRate: row.passRateBps / 10000,
+    threshold: row.thresholdBps == null ? null : row.thresholdBps / 10000,
+    thresholdBreached: row.thresholdBreached,
+    failedEvaluators: row.failedEvaluators,
     overallScore: computeOverallScore(row.evaluatorScores),
     evaluatorScores: row.evaluatorScores,
     totalCases: row.totalCases,
@@ -61,8 +67,9 @@ export function buildCapabilityDashboardData(
 }
 
 export const buildTrafficMonitorDashboardData = buildCapabilityDashboardData
+export const buildRegressionDashboardData = buildCapabilityDashboardData
 
-type SuiteValue = 'capability' | 'regression' | 'traffic-monitor'
+type SuiteValue = PersistedDashboardSuite
 
 async function selectSuiteRows(
   tx: TxInstance,
@@ -71,9 +78,13 @@ async function selectSuiteRows(
   return tx
     .select({
       id: evalSummaries.id,
+      suite: evalSummaries.suite,
       experimentName: evalSummaries.experimentName,
       datasetName: evalSummaries.datasetName,
       passRateBps: evalSummaries.passRateBps,
+      thresholdBps: evalSummaries.thresholdBps,
+      thresholdBreached: evalSummaries.thresholdBreached,
+      failedEvaluators: evalSummaries.failedEvaluators,
       evaluatorScores: evalSummaries.evaluatorScores,
       totalCases: evalSummaries.totalCases,
       phoenixUrl: evalSummaries.phoenixUrl,
@@ -101,16 +112,27 @@ export async function getTrafficMonitorDashboard(
   })
 }
 
+export async function getRegressionDashboard(
+  userId: string
+): Promise<RegressionDashboardData> {
+  return withRLS(userId, async tx => {
+    const rows = await selectSuiteRows(tx, 'regression')
+    return buildRegressionDashboardData(rows)
+  })
+}
+
 export async function getEvalsDashboard(
   userId: string
 ): Promise<EvalsDashboardData> {
   return withRLS(userId, async tx => {
-    const [capabilityRows, trafficRows] = await Promise.all([
+    const [capabilityRows, regressionRows, trafficRows] = await Promise.all([
       selectSuiteRows(tx, 'capability'),
+      selectSuiteRows(tx, 'regression'),
       selectSuiteRows(tx, 'traffic-monitor')
     ])
     return {
       capability: buildCapabilityDashboardData(capabilityRows),
+      regression: buildRegressionDashboardData(regressionRows),
       trafficMonitor: buildTrafficMonitorDashboardData(trafficRows)
     }
   })
@@ -138,18 +160,21 @@ export async function getEvalsDashboardWithLayout(
   userId: string
 ): Promise<{ data: EvalsDashboardData; layout: TemplateId }> {
   return withRLS(userId, async tx => {
-    const [capabilityRows, trafficRows, prefRows] = await Promise.all([
-      selectSuiteRows(tx, 'capability'),
-      selectSuiteRows(tx, 'traffic-monitor'),
-      tx
-        .select({ preferredLayout: userEvalPreferences.preferredLayout })
-        .from(userEvalPreferences)
-        .where(eq(userEvalPreferences.userId, userId))
-        .limit(1)
-    ])
+    const [capabilityRows, regressionRows, trafficRows, prefRows] =
+      await Promise.all([
+        selectSuiteRows(tx, 'capability'),
+        selectSuiteRows(tx, 'regression'),
+        selectSuiteRows(tx, 'traffic-monitor'),
+        tx
+          .select({ preferredLayout: userEvalPreferences.preferredLayout })
+          .from(userEvalPreferences)
+          .where(eq(userEvalPreferences.userId, userId))
+          .limit(1)
+      ])
     return {
       data: {
         capability: buildCapabilityDashboardData(capabilityRows),
+        regression: buildRegressionDashboardData(regressionRows),
         trafficMonitor: buildTrafficMonitorDashboardData(trafficRows)
       },
       layout: parseTemplateId(prefRows[0]?.preferredLayout)

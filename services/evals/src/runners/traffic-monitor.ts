@@ -16,10 +16,12 @@ import {
   buildExperimentEvaluators,
   buildExperimentTask,
   buildPublicExperimentUrl,
+  buildSuiteRunResult,
   buildTimestampedDatasetName,
   checkExperimentThresholds,
   createDatasetAndExperiment,
-  createJudgeModel
+  createJudgeModel,
+  logThresholdBreachWarning
 } from './shared'
 
 export function formatContext(sample: ChatSample): string {
@@ -31,8 +33,9 @@ export async function runTrafficMonitorSuite() {
   const samples = await sampleRecentChats()
 
   if (samples.length === 0) {
-    console.log('[evals] No chats found in lookback window. Exiting.')
-    return
+    throw new Error(
+      '[evals] No chats found in lookback window for traffic-monitor run'
+    )
   }
 
   console.log(`[evals] Sampled ${samples.length} chats`)
@@ -101,10 +104,9 @@ export async function runTrafficMonitorSuite() {
     console.error(
       `[evals] Error: ${error instanceof Error ? error.message : error}`
     )
-    console.log(
-      `[evals] traffic-monitor completed ${samples.length} samples (results NOT recorded to Phoenix)`
+    throw new Error(
+      '[evals] traffic-monitor experiment could not be recorded to Phoenix'
     )
-    return
   }
 
   console.log(`[evals] Traffic monitor dataset: ${datasetName}`)
@@ -122,6 +124,16 @@ export async function runTrafficMonitorSuite() {
     `[evals] Traffic monitor pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
   )
 
+  const result = buildSuiteRunResult({
+    suite: 'traffic-monitor',
+    thresholds,
+    threshold: config.scoreThreshold,
+    experimentName,
+    datasetName,
+    phoenixUrl,
+    totalCases: examples.length
+  })
+
   try {
     await persistEvalSummary(
       { execute: db.execute.bind(db) },
@@ -129,9 +141,12 @@ export async function runTrafficMonitorSuite() {
         suite: 'traffic-monitor',
         experimentName,
         datasetName,
-        passRate: thresholds.passRate,
+        passRate: result.passRate,
+        threshold: result.threshold,
+        thresholdBreached: result.status === 'threshold_breached',
+        failedEvaluators: result.failedEvaluators,
         experiment,
-        totalCases: examples.length,
+        totalCases: result.totalCases,
         phoenixUrl
       }
     )
@@ -142,15 +157,14 @@ export async function runTrafficMonitorSuite() {
     console.error(
       `[evals] Error: ${error instanceof Error ? error.message : error}`
     )
-    console.log(
-      `[evals] traffic-monitor experiment succeeded in Phoenix at ${phoenixUrl} but dashboard will be stale`
+    throw new Error(
+      '[evals] traffic-monitor eval summary could not be persisted'
     )
-    return
   }
 
-  if (!thresholds.passed) {
-    console.warn(
-      `[evals] Traffic monitor scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(config.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
-    )
+  if (result.status === 'threshold_breached') {
+    logThresholdBreachWarning(result)
   }
+
+  return result
 }

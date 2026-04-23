@@ -11,9 +11,13 @@ function snap(
 ): EvalSummarySnapshot {
   return {
     id: dbId,
+    suite: 'capability',
     experimentName: dbId,
     datasetName: 'ds',
     passRate: 0.9,
+    threshold: 0.8,
+    thresholdBreached: false,
+    failedEvaluators: [],
     overallScore,
     evaluatorScores: {},
     totalCases: 10,
@@ -31,9 +35,21 @@ describe('buildFeed', () => {
         trend: [],
         lastUpdated: null
       },
+      regression: {
+        latest: null,
+        previous: null,
+        trend: [],
+        lastUpdated: null
+      },
       trafficMonitor: {
-        latest: snap('db-cuid-traf-latest', '2026-04-14T09:00:00Z', 0.77),
-        previous: snap('db-cuid-traf-prev', '2026-04-14T03:00:00Z', 0.79),
+        latest: {
+          ...snap('db-cuid-traf-latest', '2026-04-14T09:00:00Z', 0.77),
+          suite: 'traffic-monitor'
+        },
+        previous: {
+          ...snap('db-cuid-traf-prev', '2026-04-14T03:00:00Z', 0.79),
+          suite: 'traffic-monitor'
+        },
         trend: [],
         lastUpdated: null
       }
@@ -66,6 +82,12 @@ describe('buildFeed', () => {
         trend: [],
         lastUpdated: null
       },
+      regression: {
+        latest: null,
+        previous: null,
+        trend: [],
+        lastUpdated: null
+      },
       trafficMonitor: {
         latest: null,
         previous: null,
@@ -86,6 +108,12 @@ describe('buildFeed', () => {
         trend: [],
         lastUpdated: null
       },
+      regression: {
+        latest: null,
+        previous: null,
+        trend: [],
+        lastUpdated: null
+      },
       trafficMonitor: {
         latest: null,
         previous: null,
@@ -102,6 +130,12 @@ describe('buildFeed', () => {
     const data: EvalsDashboardData = {
       capability: {
         latest: latestSnap,
+        previous: null,
+        trend: [],
+        lastUpdated: null
+      },
+      regression: {
+        latest: null,
         previous: null,
         trend: [],
         lastUpdated: null

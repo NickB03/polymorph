@@ -53,6 +53,9 @@ describe('persistEvalSummary', () => {
       experimentName: 'exp-1',
       datasetName: 'dataset-1',
       passRate: 0.875,
+      threshold: 0.8,
+      thresholdBreached: false,
+      failedEvaluators: [],
       experiment: {
         id: 'exp-1',
         evaluationRuns: [
@@ -90,6 +93,9 @@ describe('persistEvalSummary traffic-monitor support', () => {
       experimentName: 'traffic-exp-1',
       datasetName: 'traffic-dataset-1',
       passRate: 0.91,
+      threshold: 0.8,
+      thresholdBreached: true,
+      failedEvaluators: ['faithfulness'],
       experiment: {
         id: 'traffic-exp-1',
         evaluationRuns: [

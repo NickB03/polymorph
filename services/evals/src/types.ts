@@ -6,6 +6,20 @@ export type EvalSuite =
 
 export type PersistedEvalSuite = Exclude<EvalSuite, 'smoke'>
 
+export type SuiteRunStatus = 'passed' | 'threshold_breached'
+
+export interface SuiteRunResult {
+  suite: PersistedEvalSuite
+  status: SuiteRunStatus
+  passRate: number
+  threshold: number
+  failedEvaluators: string[]
+  experimentName: string
+  datasetName: string
+  phoenixUrl: string | null
+  totalCases: number
+}
+
 export type EvalRunMode =
   | 'capability'
   | 'regression'

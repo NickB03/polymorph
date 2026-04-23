@@ -14,6 +14,7 @@ const mockConfig = vi.hoisted(() => ({
   evalRunnerUrl: 'http://localhost:3000',
   evalRunnerSecret: 'test-secret',
   scoreThreshold: 0.8,
+  exitOnThresholdBreach: false,
   caseConcurrency: 3,
   dbPoolMax: 5,
   excludeFromThreshold: ['safety']
@@ -591,13 +592,23 @@ describe('runJudgedSuite', () => {
       .mockResolvedValueOnce(makeRunResult('c2'))
 
     const { runJudgedSuite } = await import('./shared')
-    await expect(runJudgedSuite('capability')).resolves.toBeUndefined()
+    const result = await runJudgedSuite('capability')
 
     expect(mockGetCasesForEvaluation).toHaveBeenCalledWith('capability')
     expect(mockRunEvalCase).toHaveBeenCalledTimes(2)
     expect(mockCreateOrGetDataset).toHaveBeenCalledTimes(1)
     expect(mockRunExperiment).toHaveBeenCalledTimes(1)
     expect(mockPersistEvalSummary).toHaveBeenCalledTimes(1)
+    expect(result.status).toBe('passed')
+    expect(result.failedEvaluators).toEqual([])
+    expect(mockPersistEvalSummary).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        threshold: 0.8,
+        thresholdBreached: false,
+        failedEvaluators: []
+      })
+    )
   })
 
   it('throws when all cases fail', async () => {
@@ -632,18 +643,19 @@ describe('runJudgedSuite', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     const { runJudgedSuite } = await import('./shared')
-    await expect(runJudgedSuite('regression')).resolves.toBeUndefined()
+    const result = await runJudgedSuite('regression')
 
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('1/3 regression cases failed')
     )
     expect(mockCreateOrGetDataset).toHaveBeenCalledTimes(1)
     expect(mockRunExperiment).toHaveBeenCalledTimes(1)
+    expect(result.status).toBe('passed')
 
     warnSpy.mockRestore()
   })
 
-  it('throws when experiment thresholds are not met', async () => {
+  it('returns a threshold_breached result and logs a structured warning when experiment thresholds are not met', async () => {
     const cases = [makeCaseSpec('c1', 'capability')]
     mockGetCasesForEvaluation.mockReturnValue(cases)
     mockRunEvalCase.mockResolvedValueOnce(makeRunResult('c1'))
@@ -664,11 +676,20 @@ describe('runJudgedSuite', () => {
         { name: 'quality', error: null, result: { score: 0.9, label: 'good' } }
       ]
     })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     const { runJudgedSuite } = await import('./shared')
-    await expect(runJudgedSuite('capability')).rejects.toThrow(
-      'capability scores below threshold'
+    const result = await runJudgedSuite('capability')
+
+    expect(result.status).toBe('threshold_breached')
+    expect(result.failedEvaluators).toEqual(['faithfulness', 'relevance'])
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('THRESHOLD BREACH')
     )
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"suite":"capability"')
+    )
+    warnSpy.mockRestore()
   })
 
   it('works with the regression suite value', async () => {
@@ -677,12 +698,13 @@ describe('runJudgedSuite', () => {
     mockRunEvalCase.mockResolvedValueOnce(makeRunResult('r1'))
 
     const { runJudgedSuite } = await import('./shared')
-    await expect(runJudgedSuite('regression')).resolves.toBeUndefined()
+    const result = await runJudgedSuite('regression')
 
     expect(mockGetCasesForEvaluation).toHaveBeenCalledWith('regression')
+    expect(result.suite).toBe('regression')
   })
 
-  it('does not throw when Phoenix is unavailable after local cases succeed', async () => {
+  it('throws when Phoenix is unavailable after local cases succeed', async () => {
     const cases = [makeCaseSpec('c1', 'capability')]
     mockGetCasesForEvaluation.mockReturnValue(cases)
     mockRunEvalCase.mockResolvedValueOnce(makeRunResult('c1'))
@@ -691,7 +713,9 @@ describe('runJudgedSuite', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const { runJudgedSuite } = await import('./shared')
-    await expect(runJudgedSuite('capability')).resolves.toBeUndefined()
+    await expect(runJudgedSuite('capability')).rejects.toThrow(
+      'experiment could not be recorded to Phoenix'
+    )
 
     expect(errorSpy).toHaveBeenCalledWith(
       '[evals] PHOENIX UNAVAILABLE - could not record capability experiment results'
@@ -711,7 +735,9 @@ describe('runJudgedSuite', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const { runJudgedSuite } = await import('./shared')
-    await expect(runJudgedSuite('capability')).resolves.toBeUndefined()
+    await expect(runJudgedSuite('capability')).rejects.toThrow(
+      'eval summary could not be persisted'
+    )
 
     expect(errorSpy).toHaveBeenCalledWith(
       '[evals] DB WRITE FAILED - could not persist capability eval summary'
@@ -722,7 +748,7 @@ describe('runJudgedSuite', () => {
     errorSpy.mockRestore()
   })
 
-  it('still throws the threshold failure when scores are below threshold and the DB write also fails', async () => {
+  it('treats threshold-breached runs with failed persistence as incomplete', async () => {
     const cases = [makeCaseSpec('c1', 'capability')]
     mockGetCasesForEvaluation.mockReturnValue(cases)
     mockRunEvalCase.mockResolvedValueOnce(makeRunResult('c1'))
@@ -743,7 +769,7 @@ describe('runJudgedSuite', () => {
     const { runJudgedSuite } = await import('./shared')
 
     await expect(runJudgedSuite('capability')).rejects.toThrow(
-      'capability scores below threshold'
+      'eval summary could not be persisted'
     )
   })
 })

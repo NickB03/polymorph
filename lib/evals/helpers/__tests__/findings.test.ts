@@ -11,9 +11,13 @@ function snap(
 ): EvalSummarySnapshot {
   return {
     id: 'test',
+    suite: 'capability',
     experimentName: 'x',
     datasetName: 'y',
     passRate: 0.9,
+    threshold: 0.8,
+    thresholdBreached: false,
+    failedEvaluators: [],
     overallScore: 0.9,
     totalCases: 10,
     phoenixUrl: null,
@@ -27,22 +31,50 @@ function data(
   capPrev: Record<string, number>,
   trafLatest: Record<string, number>,
   trafPrev: Record<string, number>,
-  trafPassRate = 0.9
+  trafPassRate = 0.9,
+  criticalSuite: 'capability' | 'regression' | 'traffic-monitor' | null = null
 ): EvalsDashboardData {
   return {
     capability: {
-      latest: snap({ id: 'cap-l', evaluatorScores: capLatest }),
+      latest: snap({
+        id: 'cap-l',
+        suite: 'capability',
+        evaluatorScores: capLatest,
+        thresholdBreached: criticalSuite === 'capability'
+      }),
       previous: snap({ id: 'cap-p', evaluatorScores: capPrev }),
+      trend: [],
+      lastUpdated: null
+    },
+    regression: {
+      latest:
+        criticalSuite === 'regression'
+          ? snap({
+              id: 'reg-l',
+              suite: 'regression',
+              evaluatorScores: { safety: 0.4 },
+              passRate: 0.62,
+              thresholdBreached: true,
+              failedEvaluators: ['safety']
+            })
+          : null,
+      previous: null,
       trend: [],
       lastUpdated: null
     },
     trafficMonitor: {
       latest: snap({
         id: 'traf-l',
+        suite: 'traffic-monitor',
         evaluatorScores: trafLatest,
-        passRate: trafPassRate
+        passRate: trafPassRate,
+        thresholdBreached: criticalSuite === 'traffic-monitor'
       }),
-      previous: snap({ id: 'traf-p', evaluatorScores: trafPrev }),
+      previous: snap({
+        id: 'traf-p',
+        suite: 'traffic-monitor',
+        evaluatorScores: trafPrev
+      }),
       trend: [],
       lastUpdated: null
     }
@@ -78,14 +110,15 @@ describe('computeFindings', () => {
     expect(result[0].text).toContain('improved')
   })
 
-  it('emits a critical finding when traffic pass rate < 80%', () => {
+  it('emits a critical finding when the latest traffic run breached threshold', () => {
     const result = computeFindings(
       data(
         { faithfulness: 0.9 },
         { faithfulness: 0.9 },
         { faithfulness: 0.9 },
         { faithfulness: 0.9 },
-        0.72
+        0.72,
+        'traffic-monitor'
       )
     )
     expect(result.some(f => f.severity === 'critical')).toBe(true)
@@ -110,7 +143,8 @@ describe('computeFindings', () => {
         { faithfulness: 0.9 },
         { faithfulness: 0.95, relevance: 0.5 },
         { faithfulness: 0.8, relevance: 0.6 },
-        0.72
+        0.72,
+        'traffic-monitor'
       )
     )
     expect(result[0].severity).toBe('critical')
@@ -125,7 +159,8 @@ describe('computeFindings', () => {
         { faithfulness: 0.9 },
         { faithfulness: 0.8 }, // -10pts on traffic → drop
         { faithfulness: 0.9 },
-        0.72 // below floor → critical
+        0.72,
+        'traffic-monitor'
       )
     )
     const critical = result.find(f => f.severity === 'critical')
@@ -138,5 +173,43 @@ describe('computeFindings', () => {
     expect(critical?.snapshotId).toBe('traf-l')
     expect(trafficDrop?.snapshotId).toBe('traf-l')
     expect(capImprovement?.snapshotId).toBe('cap-l')
+  })
+
+  it('emits a critical finding for regression threshold breaches', () => {
+    const result = computeFindings(
+      data(
+        { faithfulness: 0.9 },
+        { faithfulness: 0.9 },
+        { faithfulness: 0.9 },
+        { faithfulness: 0.9 },
+        0.9,
+        'regression'
+      )
+    )
+
+    expect(result[0].severity).toBe('critical')
+    expect(result[0].text).toContain('Regression')
+    expect(result[0].snapshotId).toBe('reg-l')
+  })
+
+  it('emits a critical finding for legacy traffic-monitor rows without threshold metadata', () => {
+    const evalsData = data(
+      { faithfulness: 0.9 },
+      { faithfulness: 0.9 },
+      { faithfulness: 0.9 },
+      { faithfulness: 0.9 },
+      0.72
+    )
+    evalsData.trafficMonitor.latest = {
+      ...evalsData.trafficMonitor.latest!,
+      threshold: null,
+      thresholdBreached: false
+    }
+
+    const result = computeFindings(evalsData)
+
+    expect(result.some(f => f.severity === 'critical')).toBe(true)
+    expect(result[0].text).toContain('Traffic Monitor')
+    expect(result[0].snapshotId).toBe('traf-l')
   })
 })
