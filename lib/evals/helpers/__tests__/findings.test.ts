@@ -191,4 +191,25 @@ describe('computeFindings', () => {
     expect(result[0].text).toContain('Regression')
     expect(result[0].snapshotId).toBe('reg-l')
   })
+
+  it('emits a critical finding for legacy traffic-monitor rows without threshold metadata', () => {
+    const evalsData = data(
+      { faithfulness: 0.9 },
+      { faithfulness: 0.9 },
+      { faithfulness: 0.9 },
+      { faithfulness: 0.9 },
+      0.72
+    )
+    evalsData.trafficMonitor.latest = {
+      ...evalsData.trafficMonitor.latest!,
+      threshold: null,
+      thresholdBreached: false
+    }
+
+    const result = computeFindings(evalsData)
+
+    expect(result.some(f => f.severity === 'critical')).toBe(true)
+    expect(result[0].text).toContain('Traffic Monitor')
+    expect(result[0].snapshotId).toBe('traf-l')
+  })
 })

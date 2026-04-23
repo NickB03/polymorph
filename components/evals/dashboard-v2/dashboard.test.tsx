@@ -178,6 +178,15 @@ describe('EvalsDashboardV2', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps the empty state when only regression data exists', () => {
+    const data = makeEmptyData()
+    data.regression.latest = makeSnapshot('regression')
+
+    render(<EvalsDashboardV2 data={data} initialLayout="a" />)
+
+    expect(screen.getByTestId('evals-empty-state-bypass')).toBeInTheDocument()
+  })
+
   it('template C expands the row matching the worst drop finding', () => {
     const data = makeData()
     data.trafficMonitor.previous!.evaluatorScores = {

@@ -7,7 +7,8 @@ import { buildThresholdAlerts, getLatestThresholdAlert } from '../alerts'
 function snapshot(
   suite: EvalSummarySnapshot['suite'],
   createdAt: string,
-  thresholdBreached: boolean
+  thresholdBreached: boolean,
+  overrides: Partial<EvalSummarySnapshot> = {}
 ): EvalSummarySnapshot {
   return {
     id: `${suite}-${createdAt}`,
@@ -22,7 +23,8 @@ function snapshot(
     evaluatorScores: { faithfulness: 0.8 },
     totalCases: 10,
     phoenixUrl: null,
-    createdAt
+    createdAt,
+    ...overrides
   }
 }
 
@@ -64,5 +66,38 @@ describe('buildThresholdAlerts', () => {
 
     expect(alert?.suite).toBe('regression')
     expect(alert?.suiteLabel).toBe('Regression')
+  })
+
+  it('falls back to the legacy traffic-monitor threshold when metadata is missing', () => {
+    const alerts = buildThresholdAlerts({
+      capability: {
+        latest: null,
+        previous: null,
+        trend: [],
+        lastUpdated: null
+      },
+      regression: {
+        latest: null,
+        previous: null,
+        trend: [],
+        lastUpdated: null
+      },
+      trafficMonitor: {
+        latest: snapshot('traffic-monitor', '2026-04-14T11:00:00Z', false, {
+          passRate: 0.72,
+          threshold: null
+        }),
+        previous: null,
+        trend: [],
+        lastUpdated: null
+      }
+    })
+
+    expect(alerts).toHaveLength(1)
+    expect(alerts[0]).toMatchObject({
+      suite: 'traffic-monitor',
+      threshold: 0.8,
+      passRate: 0.72
+    })
   })
 })
