@@ -235,6 +235,56 @@ describe('runTrafficMonitorSuite', () => {
     errorSpy.mockRestore()
   })
 
+  it('logs THRESHOLD BREACH warning even when persistence fails, then throws the DB-write error', async () => {
+    mockSampleRecentChats.mockResolvedValueOnce([sampleChat])
+    mockBuildDatasetExamples.mockReturnValueOnce([
+      { input: {}, output: {}, metadata: {} }
+    ])
+    mockCreateDatasetAndExperiment.mockResolvedValueOnce(datasetResult)
+    mockCheckExperimentThresholds.mockReturnValueOnce({
+      passed: false,
+      passRate: 0.1,
+      totalEvaluations: 1,
+      passedEvaluations: 0,
+      failedEvaluators: ['faithfulness']
+    })
+    mockPersistEvalSummary.mockRejectedValueOnce(
+      new Error('connection refused')
+    )
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
+
+    await expect(runTrafficMonitorSuite()).rejects.toThrow(
+      'traffic-monitor eval summary could not be persisted'
+    )
+
+    // Ordering assertion: logThresholdBreachWarning must be invoked BEFORE
+    // the DB WRITE FAILED error is logged. If persistence runs first and
+    // throws, the current (buggy) ordering skips the breach warning entirely.
+    expect(mockLogThresholdBreachWarning).toHaveBeenCalledWith(
+      expect.objectContaining({
+        suite: 'traffic-monitor',
+        status: 'threshold_breached'
+      })
+    )
+    const breachCallOrder =
+      mockLogThresholdBreachWarning.mock.invocationCallOrder[0]
+
+    const dbErrorIdx = errorSpy.mock.calls.findIndex(call =>
+      String(call[0]).startsWith(
+        '[evals] DB WRITE FAILED - could not persist traffic-monitor eval summary'
+      )
+    )
+    expect(dbErrorIdx).toBeGreaterThanOrEqual(0)
+    const dbErrorCallOrder = errorSpy.mock.invocationCallOrder[dbErrorIdx]
+
+    expect(dbErrorCallOrder).toBeGreaterThan(breachCallOrder)
+
+    errorSpy.mockRestore()
+  })
+
   it('warns but does not throw when traffic-monitor scores are below threshold', async () => {
     mockSampleRecentChats.mockResolvedValueOnce([sampleChat])
     mockBuildDatasetExamples.mockReturnValueOnce([
