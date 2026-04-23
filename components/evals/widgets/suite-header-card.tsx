@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from 'date-fns'
 import { Activity, BarChart3 } from 'lucide-react'
 
+import { computeFindings } from '@/lib/evals/helpers/findings'
 import type { HealthState } from '@/lib/evals/helpers/health-state'
 import {
   healthForScore,
@@ -29,7 +30,6 @@ type Config = {
   showChips?: boolean
   showSparkline?: boolean
   showAlarmCount?: boolean
-  alarmCount?: number
 }
 
 export function SuiteHeaderCard({
@@ -51,6 +51,14 @@ export function SuiteHeaderCard({
     suiteKey === 'capability' ? 0.9 : 0.85,
     suiteKey === 'capability' ? 0.75 : 0.7
   )
+  const alarmCount = config.showAlarmCount
+    ? computeFindings(data).filter(
+        f =>
+          f.severity !== 'improvement' &&
+          (f.snapshotId === latest.id ||
+            f.snapshotId === (suite.previous?.id ?? ''))
+      ).length
+    : 0
 
   if (config.variant === 'rail') {
     return (
@@ -100,11 +108,9 @@ export function SuiteHeaderCard({
                 {config.cadence}
               </Badge>
             ) : null}
-            {config.showAlarmCount &&
-            config.alarmCount &&
-            config.alarmCount > 0 ? (
+            {alarmCount > 0 ? (
               <Badge variant="destructive" className="ml-auto">
-                {config.alarmCount} alarm{config.alarmCount > 1 ? 's' : ''}
+                {alarmCount} alarm{alarmCount > 1 ? 's' : ''}
               </Badge>
             ) : null}
           </div>

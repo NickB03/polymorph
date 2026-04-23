@@ -218,6 +218,26 @@ describe('EvalsDashboardV2', () => {
     expect(expanded[0].getAttribute('data-feed-row-id')).toBe('traf-latest')
   })
 
+  it('renders an alarm-count badge on the traffic-monitor suite header when findings exist', () => {
+    // Scenario: traffic-monitor latest has a ≥5pt drop on response_quality vs
+    // previous. computeFindings emits one 'drop' finding attached to latest.id.
+    // TEMPLATE_B's traf-header sets showAlarmCount: true, so the badge should
+    // self-wire and render "1 alarm".
+    const data = makeData()
+    data.trafficMonitor.previous!.evaluatorScores = {
+      ...data.trafficMonitor.previous!.evaluatorScores,
+      response_quality: 0.92
+    }
+    data.trafficMonitor.latest!.evaluatorScores = {
+      ...data.trafficMonitor.latest!.evaluatorScores,
+      response_quality: 0.8
+    }
+
+    render(<EvalsDashboardV2 data={data} initialLayout="b" />)
+
+    expect(screen.getByText(/1 alarm/i)).toBeInTheDocument()
+  })
+
   it('getTemplate returns a template for every template id', () => {
     for (const id of ['a', 'b', 'c'] as const) {
       const tpl = getTemplate(id)
