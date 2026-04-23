@@ -4,7 +4,6 @@ export type WidgetTypeId =
   | 'kpi-tile'
   | 'suite-header-card'
   | 'score-ring'
-  | 'trend-chart'
   | 'combined-trend-chart'
   | 'evaluator-bars'
   | 'evaluator-chip-grid'

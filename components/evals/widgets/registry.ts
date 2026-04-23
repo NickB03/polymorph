@@ -14,7 +14,6 @@ import { KpiTile } from './kpi-tile'
 import { PageHeader } from './page-header'
 import { ScoreRingWidget } from './score-ring-widget'
 import { SuiteHeaderCard } from './suite-header-card'
-import { TrendChartWidget } from './trend-chart-widget'
 import { WhatChangedCard } from './what-changed-card'
 
 export const WIDGET_REGISTRY: Record<
@@ -26,7 +25,6 @@ export const WIDGET_REGISTRY: Record<
   'kpi-tile': KpiTile as ComponentType<WidgetProps>,
   'suite-header-card': SuiteHeaderCard as ComponentType<WidgetProps>,
   'score-ring': ScoreRingWidget as ComponentType<WidgetProps>,
-  'trend-chart': TrendChartWidget as ComponentType<WidgetProps>,
   'combined-trend-chart': CombinedTrendChart as ComponentType<WidgetProps>,
   'evaluator-bars': EvaluatorBarsWidget as ComponentType<WidgetProps>,
   'evaluator-chip-grid': EvaluatorChipGrid as ComponentType<WidgetProps>,
