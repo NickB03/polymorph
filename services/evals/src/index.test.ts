@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ChatSample } from './sampler'
 
 const mockCloseDb = vi.fn(async () => {})
-const mockRunConfiguredModes = vi.fn(async () => {})
+const mockRunConfiguredModes = vi.fn(
+  async () => [] as Array<import('./types').SuiteRunResult>
+)
 
 const fixtureSample: ChatSample = {
   chatId: 'chat-wiring',
@@ -199,10 +201,36 @@ describe('main lifecycle', () => {
   it('runs configured modes and closes the db afterward', async () => {
     const { main } = await import('./index')
 
-    await main()
+    const result = await main()
 
     expect(mockRunConfiguredModes).toHaveBeenCalledTimes(1)
     expect(mockCloseDb).toHaveBeenCalledTimes(1)
+    expect(result).toEqual([])
+  })
+
+  it('logs when a run completes with threshold breach alerts', async () => {
+    mockRunConfiguredModes.mockResolvedValueOnce([
+      {
+        suite: 'capability',
+        status: 'threshold_breached',
+        passRate: 0.72,
+        threshold: 0.8,
+        failedEvaluators: ['faithfulness'],
+        experimentName: 'exp-1',
+        datasetName: 'ds-1',
+        phoenixUrl: null,
+        totalCases: 12
+      }
+    ] satisfies Array<import('./types').SuiteRunResult>)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const { main } = await import('./index')
+    await main()
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[evals] Completed with 1 threshold breach alert(s)'
+    )
+    warnSpy.mockRestore()
   })
 
   it('formatContext is importable from the source module', async () => {

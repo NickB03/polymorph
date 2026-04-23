@@ -30,7 +30,12 @@ import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { createJudgeModel } from '../judge-model'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
 import { withRetry } from '../retry'
-import type { EvalCase, EvalDatasetExample, EvalRunResult } from '../types'
+import type {
+  EvalCase,
+  EvalDatasetExample,
+  EvalRunResult,
+  SuiteRunResult
+} from '../types'
 
 export { createJudgeModel } from '../judge-model'
 
@@ -137,10 +142,9 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     console.error(
       `[evals] Error: ${error instanceof Error ? error.message : error}`
     )
-    console.log(
-      `[evals] ${suite} completed ${succeeded.length}/${cases.length} cases successfully (results NOT recorded to Phoenix)`
+    throw new Error(
+      `[evals] ${suite} experiment could not be recorded to Phoenix`
     )
-    return
   }
 
   console.log(`[evals] ${suite} dataset: ${datasetName}`)
@@ -158,11 +162,15 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     `[evals] ${suite} pass rate: ${(thresholds.passRate * 100).toFixed(1)}% (${thresholds.passedEvaluations}/${thresholds.totalEvaluations})`
   )
 
-  const thresholdError = thresholds.passed
-    ? null
-    : new Error(
-        `[evals] ${suite} scores below threshold: ${(thresholds.passRate * 100).toFixed(1)}% < ${(runtimeConfig.scoreThreshold * 100).toFixed(1)}% (failing evaluators: ${thresholds.failedEvaluators.join(', ')})`
-      )
+  const result = buildSuiteRunResult({
+    suite,
+    thresholds,
+    threshold: runtimeConfig.scoreThreshold,
+    experimentName,
+    datasetName,
+    phoenixUrl,
+    totalCases: examples.length
+  })
 
   try {
     await persistEvalSummary(
@@ -171,9 +179,12 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
         suite,
         experimentName,
         datasetName,
-        passRate: thresholds.passRate,
+        passRate: result.passRate,
+        threshold: result.threshold,
+        thresholdBreached: result.status === 'threshold_breached',
+        failedEvaluators: result.failedEvaluators,
         experiment,
-        totalCases: examples.length,
+        totalCases: result.totalCases,
         phoenixUrl
       }
     )
@@ -184,18 +195,14 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     console.error(
       `[evals] Error: ${error instanceof Error ? error.message : error}`
     )
-    console.log(
-      `[evals] ${suite} experiment succeeded in Phoenix at ${phoenixUrl} but dashboard will be stale`
-    )
-    if (thresholdError) {
-      throw thresholdError
-    }
-    return
+    throw new Error(`[evals] ${suite} eval summary could not be persisted`)
   }
 
-  if (thresholdError) {
-    throw thresholdError
+  if (result.status === 'threshold_breached') {
+    logThresholdBreachWarning(result)
   }
+
+  return result
 }
 
 export function buildTimestampedExperimentName(suite: string): string {
@@ -378,6 +385,48 @@ export interface ThresholdResult {
   totalEvaluations: number
   passedEvaluations: number
   failedEvaluators: string[]
+}
+
+export function buildSuiteRunResult(params: {
+  suite: SuiteRunResult['suite']
+  thresholds: ThresholdResult
+  threshold: number
+  experimentName: string
+  datasetName: string
+  phoenixUrl: string | null
+  totalCases: number
+}): SuiteRunResult {
+  return {
+    suite: params.suite,
+    status: params.thresholds.passed ? 'passed' : 'threshold_breached',
+    passRate: params.thresholds.passRate,
+    threshold: params.threshold,
+    failedEvaluators: params.thresholds.failedEvaluators,
+    experimentName: params.experimentName,
+    datasetName: params.datasetName,
+    phoenixUrl: params.phoenixUrl,
+    totalCases: params.totalCases
+  }
+}
+
+export function logThresholdBreachWarning(result: SuiteRunResult) {
+  if (result.status !== 'threshold_breached') {
+    return
+  }
+
+  console.warn(
+    `[evals] THRESHOLD BREACH ${JSON.stringify({
+      suite: result.suite,
+      passRate: result.passRate,
+      threshold: result.threshold,
+      failedEvaluators: result.failedEvaluators,
+      experimentName: result.experimentName,
+      datasetName: result.datasetName,
+      phoenixUrl: result.phoenixUrl,
+      totalCases: result.totalCases,
+      timestamp: new Date().toISOString()
+    })}`
+  )
 }
 
 export function checkExperimentThresholds(

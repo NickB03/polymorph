@@ -37,12 +37,16 @@ beforeAll(() => {
   })
 })
 
-function makeSnapshot(suite: 'capability' | 'trafficMonitor') {
+function makeSnapshot(suite: 'capability' | 'regression' | 'traffic-monitor') {
   return {
     id: `db-cuid-${suite}`,
+    suite,
     experimentName: `exp-${suite}`,
     datasetName: `ds-${suite}`,
     passRate: 0.88,
+    threshold: 0.8,
+    thresholdBreached: false,
+    failedEvaluators: [],
     overallScore: 0.9,
     evaluatorScores: {
       faithfulness: 0.92,
@@ -77,14 +81,20 @@ function makeData(): EvalsDashboardData {
       ],
       lastUpdated: '2026-04-14T10:00:00Z'
     },
+    regression: {
+      latest: null,
+      previous: null,
+      trend: [],
+      lastUpdated: null
+    },
     trafficMonitor: {
       latest: {
-        ...makeSnapshot('trafficMonitor'),
+        ...makeSnapshot('traffic-monitor'),
         overallScore: 0.82,
         createdAt: '2026-04-14T12:00:00Z'
       },
       previous: {
-        ...makeSnapshot('trafficMonitor'),
+        ...makeSnapshot('traffic-monitor'),
         id: 'traf-prev',
         overallScore: 0.84,
         createdAt: '2026-04-14T06:00:00Z'
@@ -102,6 +112,7 @@ function makeData(): EvalsDashboardData {
 function makeEmptyData(): EvalsDashboardData {
   return {
     capability: { latest: null, previous: null, trend: [], lastUpdated: null },
+    regression: { latest: null, previous: null, trend: [], lastUpdated: null },
     trafficMonitor: {
       latest: null,
       previous: null,
@@ -147,6 +158,24 @@ describe('EvalsDashboardV2', () => {
 
     expect(screen.getByText('daily')).toBeInTheDocument()
     expect(screen.queryByText('every 6h')).not.toBeInTheDocument()
+  })
+
+  it('renders a top-level alert banner for the newest threshold breach', () => {
+    const data = makeData()
+    data.regression.latest = {
+      ...makeSnapshot('regression'),
+      thresholdBreached: true,
+      failedEvaluators: ['faithfulness'],
+      passRate: 0.63,
+      createdAt: '2026-04-14T13:00:00Z'
+    }
+
+    render(<EvalsDashboardV2 data={data} initialLayout="a" />)
+
+    expect(screen.getByTestId('eval-alert-banner')).toBeInTheDocument()
+    expect(
+      screen.getByText('Regression fell below its recorded threshold.')
+    ).toBeInTheDocument()
   })
 
   it('template C expands the row matching the worst drop finding', () => {

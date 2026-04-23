@@ -21,9 +21,13 @@ const sampleRow = (
   overrides: Partial<EvalSummaryRow> = {}
 ): EvalSummaryRow => ({
   id: 'summary-1',
+  suite: 'capability',
   experimentName: 'exp-1',
   datasetName: 'dataset-1',
   passRateBps: 9100,
+  thresholdBps: 8000,
+  thresholdBreached: false,
+  failedEvaluators: [],
   evaluatorScores: { faithfulness: 0.9, relevance: 0.8 },
   totalCases: 20,
   phoenixUrl: 'https://phoenix.example.com/1',
@@ -49,6 +53,7 @@ describe('buildCapabilityDashboardData', () => {
 
     expect(data.latest?.experimentName).toBe('exp-2')
     expect(data.latest?.passRate).toBe(0.87)
+    expect(data.latest?.threshold).toBe(0.8)
     expect(data.previous?.experimentName).toBe('exp-1')
     expect(data.trend.map(point => point.createdAt)).toEqual([
       '2026-04-09T12:00:00.000Z',
@@ -61,6 +66,7 @@ describe('buildCapabilityDashboardData', () => {
     const data = buildCapabilityDashboardData([
       sampleRow({
         passRateBps: 5000,
+        thresholdBps: null,
         evaluatorScores: {},
         phoenixUrl: null
       })
@@ -110,13 +116,22 @@ describe('getEvalsDashboard', () => {
     })
     const trafficRow = sampleRow({
       id: 'tm-1',
+      suite: 'traffic-monitor',
       experimentName: 'tm-exp-1',
       passRateBps: 8800,
       createdAt: new Date('2026-04-13T12:00:00.000Z')
     })
+    const regressionRow = sampleRow({
+      id: 'reg-1',
+      suite: 'regression',
+      experimentName: 'reg-exp-1',
+      passRateBps: 8600,
+      createdAt: new Date('2026-04-13T06:00:00.000Z')
+    })
 
     const rowsBySuite: Record<string, EvalSummaryRow[]> = {
       capability: [capabilityRow],
+      regression: [regressionRow],
       'traffic-monitor': [trafficRow]
     }
 
@@ -130,7 +145,9 @@ describe('getEvalsDashboard', () => {
     const select = vi.fn(() => ({
       from: vi.fn(() => ({
         where: vi.fn(() => {
-          const suite = callIndex++ === 0 ? 'capability' : 'traffic-monitor'
+          const suite = ['capability', 'regression', 'traffic-monitor'][
+            callIndex++
+          ]
           return buildChain(suite)
         })
       }))
@@ -148,6 +165,7 @@ describe('getEvalsDashboard', () => {
     expect(mockWithRLS).toHaveBeenCalledTimes(1)
     expect(mockWithRLS).toHaveBeenCalledWith('user-1', expect.any(Function))
     expect(data.capability.latest?.experimentName).toBe('cap-exp-1')
+    expect(data.regression.latest?.experimentName).toBe('reg-exp-1')
     expect(data.trafficMonitor.latest?.experimentName).toBe('tm-exp-1')
   })
 })
@@ -210,8 +228,15 @@ describe('getEvalsDashboardWithLayout', () => {
     })
     const trafRow = sampleRow({
       id: 'traf-1',
+      suite: 'traffic-monitor',
       experimentName: 'traf-exp',
       createdAt: new Date('2026-04-14T13:00:00.000Z')
+    })
+    const regRow = sampleRow({
+      id: 'reg-1',
+      suite: 'regression',
+      experimentName: 'reg-exp',
+      createdAt: new Date('2026-04-14T12:30:00.000Z')
     })
 
     let selectCall = 0
@@ -220,11 +245,17 @@ describe('getEvalsDashboardWithLayout', () => {
         from: vi.fn(() => ({
           where: vi.fn(() => {
             selectCall++
-            if (selectCall <= 2) {
-              // Suite queries (capability, traffic-monitor)
+            if (selectCall <= 3) {
+              // Suite queries (capability, regression, traffic-monitor)
               return {
                 orderBy: vi.fn(() => ({
-                  limit: vi.fn(() => (selectCall === 1 ? [capRow] : [trafRow]))
+                  limit: vi.fn(() =>
+                    selectCall === 1
+                      ? [capRow]
+                      : selectCall === 2
+                        ? [regRow]
+                        : [trafRow]
+                  )
                 }))
               }
             }
@@ -245,6 +276,7 @@ describe('getEvalsDashboardWithLayout', () => {
 
     expect(mockWithRLS).toHaveBeenCalledTimes(1)
     expect(result.data.capability.latest?.experimentName).toBe('cap-exp')
+    expect(result.data.regression.latest?.experimentName).toBe('reg-exp')
     expect(result.data.trafficMonitor.latest?.experimentName).toBe('traf-exp')
     expect(result.layout).toBe('a')
   })
@@ -260,7 +292,7 @@ describe('getEvalsDashboardWithLayout', () => {
         from: vi.fn(() => ({
           where: vi.fn(() => {
             selectCall++
-            if (selectCall <= 2) {
+            if (selectCall <= 3) {
               return {
                 orderBy: vi.fn(() => ({
                   limit: vi.fn(() => (selectCall === 1 ? [row] : []))

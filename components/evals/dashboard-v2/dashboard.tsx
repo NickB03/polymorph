@@ -9,6 +9,7 @@ import { getTemplate } from '@/lib/evals/layout/templates'
 import type { TemplateId } from '@/lib/evals/layout/types'
 import type { EvalsDashboardData } from '@/lib/evals/types'
 
+import { AlertBanner } from '@/components/evals/widgets/alert-banner'
 import { LayoutRenderer } from '@/components/evals/widgets/layout-renderer'
 
 import { TemplateSwitcher } from './template-switcher'
@@ -46,6 +47,7 @@ export function EvalsDashboardV2({
 
   return (
     <div className="space-y-6">
+      <AlertBanner data={data} />
       <div className="flex items-center justify-end">
         <TemplateSwitcher
           value={optimisticLayoutId}

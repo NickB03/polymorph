@@ -7,6 +7,7 @@ import { buildCombinedTrend } from '../combined-trend'
 function emptySnapshot(): EvalsDashboardData {
   return {
     capability: { latest: null, previous: null, trend: [], lastUpdated: null },
+    regression: { latest: null, previous: null, trend: [], lastUpdated: null },
     trafficMonitor: {
       latest: null,
       previous: null,

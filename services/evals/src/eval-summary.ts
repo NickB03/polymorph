@@ -47,6 +47,9 @@ export async function persistEvalSummary(
     experimentName: string
     datasetName: string
     passRate: number
+    threshold: number
+    thresholdBreached: boolean
+    failedEvaluators: string[]
     experiment: RanExperiment
     totalCases: number
     phoenixUrl: string | null
@@ -63,6 +66,9 @@ export async function persistEvalSummary(
       experiment_name,
       dataset_name,
       pass_rate_bps,
+      threshold_bps,
+      threshold_breached,
+      failed_evaluators,
       evaluator_scores,
       total_cases,
       phoenix_url
@@ -73,12 +79,18 @@ export async function persistEvalSummary(
       ${params.experimentName},
       ${params.datasetName},
       ${clampPassRateBps(params.passRate)},
+      ${clampPassRateBps(params.threshold)},
+      ${params.thresholdBreached},
+      CAST(${JSON.stringify(params.failedEvaluators)} AS jsonb),
       CAST(${JSON.stringify(evaluatorScores)} AS jsonb),
       ${params.totalCases},
       ${params.phoenixUrl}
     )
     ON CONFLICT (experiment_name) DO UPDATE SET
       pass_rate_bps = EXCLUDED.pass_rate_bps,
+      threshold_bps = EXCLUDED.threshold_bps,
+      threshold_breached = EXCLUDED.threshold_breached,
+      failed_evaluators = EXCLUDED.failed_evaluators,
       evaluator_scores = EXCLUDED.evaluator_scores,
       total_cases = EXCLUDED.total_cases,
       phoenix_url = EXCLUDED.phoenix_url

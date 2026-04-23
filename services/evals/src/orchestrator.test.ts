@@ -1,0 +1,124 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mockConfig = vi.hoisted(() => ({
+  evalRunMode: 'all',
+  exitOnThresholdBreach: false
+}))
+
+const mockRunCapabilitySuite = vi.hoisted(() => vi.fn())
+const mockRunRegressionSuite = vi.hoisted(() => vi.fn())
+const mockRunTrafficMonitorSuite = vi.hoisted(() => vi.fn())
+const mockRunSmokeSuite = vi.hoisted(() => vi.fn())
+
+vi.mock('./config', () => ({
+  config: mockConfig
+}))
+
+vi.mock('./runners/capability', () => ({
+  runCapabilitySuite: mockRunCapabilitySuite
+}))
+
+vi.mock('./runners/regression', () => ({
+  runRegressionSuite: mockRunRegressionSuite
+}))
+
+vi.mock('./runners/traffic-monitor', () => ({
+  runTrafficMonitorSuite: mockRunTrafficMonitorSuite
+}))
+
+vi.mock('./runners/smoke', () => ({
+  runSmokeSuite: mockRunSmokeSuite
+}))
+
+describe('runConfiguredModes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockConfig.evalRunMode = 'all'
+    mockConfig.exitOnThresholdBreach = false
+    mockRunCapabilitySuite.mockResolvedValue({
+      suite: 'capability',
+      status: 'passed',
+      passRate: 0.91,
+      threshold: 0.8,
+      failedEvaluators: [],
+      experimentName: 'cap-exp',
+      datasetName: 'cap-ds',
+      phoenixUrl: null,
+      totalCases: 12
+    })
+    mockRunRegressionSuite.mockResolvedValue({
+      suite: 'regression',
+      status: 'passed',
+      passRate: 0.89,
+      threshold: 0.8,
+      failedEvaluators: [],
+      experimentName: 'reg-exp',
+      datasetName: 'reg-ds',
+      phoenixUrl: null,
+      totalCases: 8
+    })
+    mockRunTrafficMonitorSuite.mockResolvedValue({
+      suite: 'traffic-monitor',
+      status: 'passed',
+      passRate: 0.87,
+      threshold: 0.8,
+      failedEvaluators: [],
+      experimentName: 'traf-exp',
+      datasetName: 'traf-ds',
+      phoenixUrl: null,
+      totalCases: 20
+    })
+    mockRunSmokeSuite.mockResolvedValue(undefined)
+  })
+
+  it('returns suite results for persisted eval modes and still runs smoke', async () => {
+    const { runConfiguredModes } = await import('./orchestrator')
+
+    const results = await runConfiguredModes()
+
+    expect(results).toHaveLength(3)
+    expect(results.map(result => result.suite)).toEqual([
+      'capability',
+      'regression',
+      'traffic-monitor'
+    ])
+    expect(mockRunSmokeSuite).toHaveBeenCalledTimes(1)
+  })
+
+  it('throws after aggregation when exitOnThresholdBreach is enabled', async () => {
+    mockConfig.exitOnThresholdBreach = true
+    mockRunTrafficMonitorSuite.mockResolvedValueOnce({
+      suite: 'traffic-monitor',
+      status: 'threshold_breached',
+      passRate: 0.71,
+      threshold: 0.8,
+      failedEvaluators: ['faithfulness'],
+      experimentName: 'traf-exp',
+      datasetName: 'traf-ds',
+      phoenixUrl: null,
+      totalCases: 20
+    })
+
+    const { runConfiguredModes } = await import('./orchestrator')
+
+    await expect(runConfiguredModes()).rejects.toThrow(
+      'Threshold breach exit requested'
+    )
+    expect(mockRunSmokeSuite).toHaveBeenCalledTimes(1)
+  })
+
+  it('fails when traffic-monitor produces no samples', async () => {
+    mockConfig.evalRunMode = 'traffic-monitor'
+    mockRunTrafficMonitorSuite.mockRejectedValueOnce(
+      new Error(
+        '[evals] No chats found in lookback window for traffic-monitor run'
+      )
+    )
+
+    const { runConfiguredModes } = await import('./orchestrator')
+
+    await expect(runConfiguredModes()).rejects.toThrow(
+      'No chats found in lookback window for traffic-monitor run'
+    )
+  })
+})

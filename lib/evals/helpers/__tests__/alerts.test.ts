@@ -1,0 +1,68 @@
+import { describe, expect, it } from 'vitest'
+
+import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
+
+import { buildThresholdAlerts, getLatestThresholdAlert } from '../alerts'
+
+function snapshot(
+  suite: EvalSummarySnapshot['suite'],
+  createdAt: string,
+  thresholdBreached: boolean
+): EvalSummarySnapshot {
+  return {
+    id: `${suite}-${createdAt}`,
+    suite,
+    experimentName: `exp-${suite}`,
+    datasetName: `ds-${suite}`,
+    passRate: thresholdBreached ? 0.7 : 0.91,
+    threshold: 0.8,
+    thresholdBreached,
+    failedEvaluators: thresholdBreached ? ['faithfulness'] : [],
+    overallScore: 0.8,
+    evaluatorScores: { faithfulness: 0.8 },
+    totalCases: 10,
+    phoenixUrl: null,
+    createdAt
+  }
+}
+
+function data(): EvalsDashboardData {
+  return {
+    capability: {
+      latest: snapshot('capability', '2026-04-14T08:00:00Z', false),
+      previous: null,
+      trend: [],
+      lastUpdated: null
+    },
+    regression: {
+      latest: snapshot('regression', '2026-04-14T10:00:00Z', true),
+      previous: null,
+      trend: [],
+      lastUpdated: null
+    },
+    trafficMonitor: {
+      latest: snapshot('traffic-monitor', '2026-04-14T09:00:00Z', true),
+      previous: null,
+      trend: [],
+      lastUpdated: null
+    }
+  }
+}
+
+describe('buildThresholdAlerts', () => {
+  it('returns only threshold-breached latest runs newest-first', () => {
+    const alerts = buildThresholdAlerts(data())
+
+    expect(alerts.map(alert => alert.suite)).toEqual([
+      'regression',
+      'traffic-monitor'
+    ])
+  })
+
+  it('returns the newest alert for the banner helper', () => {
+    const alert = getLatestThresholdAlert(data())
+
+    expect(alert?.suite).toBe('regression')
+    expect(alert?.suiteLabel).toBe('Regression')
+  })
+})

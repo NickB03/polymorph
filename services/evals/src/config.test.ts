@@ -175,6 +175,33 @@ describe('createConfig', () => {
     expect(config.scoreThreshold).toBe(0.6)
   })
 
+  it('defaults EVAL_EXIT_ON_THRESHOLD_BREACH to false', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+
+    const { createConfig } = await import('./config')
+    const config = createConfig()
+
+    expect(config.exitOnThresholdBreach).toBe(false)
+  })
+
+  it('parses EVAL_EXIT_ON_THRESHOLD_BREACH from env', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+    vi.stubEnv('EVAL_EXIT_ON_THRESHOLD_BREACH', 'true')
+
+    const { createConfig } = await import('./config')
+    const config = createConfig()
+
+    expect(config.exitOnThresholdBreach).toBe(true)
+  })
+
   it('requires app auth settings for smoke mode', async () => {
     vi.stubEnv('DATABASE_URL', 'postgresql://db')
     vi.stubEnv('PHOENIX_HOST', 'http://phoenix')

@@ -1,6 +1,7 @@
 import { createId } from '@paralleldrive/cuid2'
 import { InferSelectModel, sql } from 'drizzle-orm'
 import {
+  boolean,
   check,
   index,
   integer,
@@ -571,6 +572,12 @@ export const evalSummaries = pgTable(
     experimentName: text('experiment_name').notNull(),
     datasetName: text('dataset_name').notNull(),
     passRateBps: integer('pass_rate_bps').notNull(),
+    thresholdBps: integer('threshold_bps'),
+    thresholdBreached: boolean('threshold_breached').notNull().default(false),
+    failedEvaluators: jsonb('failed_evaluators')
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     evaluatorScores: jsonb('evaluator_scores')
       .$type<Record<string, number>>()
       .notNull(),
@@ -587,6 +594,10 @@ export const evalSummaries = pgTable(
     check(
       'eval_summaries_pass_rate_bps_range',
       sql`${table.passRateBps} >= 0 AND ${table.passRateBps} <= 10000`
+    ),
+    check(
+      'eval_summaries_threshold_bps_range',
+      sql`${table.thresholdBps} IS NULL OR (${table.thresholdBps} >= 0 AND ${table.thresholdBps} <= 10000)`
     ),
     pgPolicy('authenticated_read_eval_summaries', {
       as: 'permissive',

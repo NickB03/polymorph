@@ -53,7 +53,11 @@ export function LayoutRenderer({
 }) {
   const bp = useBreakpoint()
 
-  if (data.capability.latest === null && data.trafficMonitor.latest === null) {
+  if (
+    data.capability.latest === null &&
+    data.regression.latest === null &&
+    data.trafficMonitor.latest === null
+  ) {
     return (
       <div data-testid="evals-empty-state-bypass" className="py-8">
         <EvalsEmptyState templateId={template.id} />
