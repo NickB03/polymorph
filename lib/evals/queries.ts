@@ -15,13 +15,16 @@ import type {
   TrafficMonitorDashboardData
 } from './types'
 
-function computeOverallScore(evaluatorScores: Record<string, number>) {
-  const values = Object.values(evaluatorScores)
-  if (values.length === 0) {
+function computeOverallScore(evaluatorScores: Record<string, number>): number {
+  const scored = Object.values(evaluatorScores).filter(
+    (value): value is number =>
+      typeof value === 'number' && !Number.isNaN(value)
+  )
+  if (scored.length === 0) {
     return 0
   }
 
-  return values.reduce((total, value) => total + value, 0) / values.length
+  return scored.reduce((total, value) => total + value, 0) / scored.length
 }
 
 function toSnapshot(row: EvalSummaryRow): EvalSummarySnapshot {

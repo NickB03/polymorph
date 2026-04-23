@@ -74,6 +74,59 @@ describe('buildCapabilityDashboardData', () => {
 
     expect(data.latest?.overallScore).toBe(0)
   })
+
+  it('excludes null evaluator scores from the mean instead of coercing to zero', () => {
+    const row: EvalSummaryRow = {
+      id: 'row-null',
+      suite: 'capability',
+      experimentName: 'exp-null',
+      datasetName: 'ds-null',
+      passRateBps: 9000,
+      thresholdBps: 8000,
+      thresholdBreached: false,
+      failedEvaluators: [],
+      // faithfulness legitimately returned null (e.g. expectsRefusal case).
+      // Historical bug: null was averaged as 0, dragging the mean from 0.9 to 0.6.
+      evaluatorScores: {
+        prechecks: 0.9,
+        relevance: 0.9,
+        response_quality: 0.9,
+        safety: 0.9,
+        faithfulness: null as unknown as number
+      },
+      totalCases: 1,
+      phoenixUrl: null,
+      createdAt: new Date('2026-04-22T00:00:00Z')
+    }
+
+    const data = buildCapabilityDashboardData([row])
+
+    // 4 real scores, all 0.9 → mean is 0.9, not (0.9*4 + 0)/5 = 0.72.
+    expect(data.latest?.overallScore).toBeCloseTo(0.9, 5)
+  })
+
+  it('returns 0 when every evaluator score is null', () => {
+    const row: EvalSummaryRow = {
+      id: 'row-all-null',
+      suite: 'capability',
+      experimentName: 'exp-all-null',
+      datasetName: 'ds-all-null',
+      passRateBps: 0,
+      thresholdBps: 8000,
+      thresholdBreached: true,
+      failedEvaluators: ['faithfulness'],
+      evaluatorScores: {
+        faithfulness: null as unknown as number
+      },
+      totalCases: 1,
+      phoenixUrl: null,
+      createdAt: new Date('2026-04-22T00:00:00Z')
+    }
+
+    const data = buildCapabilityDashboardData([row])
+
+    expect(data.latest?.overallScore).toBe(0)
+  })
 })
 
 describe('buildTrafficMonitorDashboardData', () => {
