@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockWriter = {
+  write: vi.fn(),
   merge: vi.fn()
 }
-const mockResearcher = vi.fn()
+const mockAgentStream = vi.fn()
 const mockVerifyGuestCanvasToken = vi.fn()
 
 vi.mock('ai', async importOriginal => {
@@ -40,8 +41,16 @@ vi.mock('@/lib/canvas/service', () => ({
 import { loadCanvasArtifactState } from '@/lib/canvas/service'
 import { createEphemeralChatStreamResponse } from '@/lib/streaming/create-ephemeral-chat-stream-response'
 
+vi.mock('@/lib/agents/chat/registry', () => ({
+  createChatAgent: vi.fn(() => {
+    throw new Error('stream primitive must use the injected agentFactory')
+  })
+}))
+
 vi.mock('@/lib/agents/researcher', () => ({
-  researcher: (...args: unknown[]) => mockResearcher(...args)
+  researcher: vi.fn(() => {
+    throw new Error('stream primitive must not construct researcher directly')
+  })
 }))
 
 vi.mock('@/lib/canvas/guest-token', () => ({
@@ -56,15 +65,14 @@ function makeModel() {
 describe('createEphemeralChatStreamResponse', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockAgentStream.mockResolvedValue({
+      toUIMessageStream: vi.fn(() => ({})),
+      response: Promise.resolve({ messages: [] })
+    })
   })
 
-  it('passes guest image tool context into the researcher', async () => {
-    mockResearcher.mockReturnValue({
-      stream: vi.fn().mockResolvedValue({
-        toUIMessageStream: vi.fn(() => ({})),
-        response: Promise.resolve({ messages: [] })
-      })
-    })
+  it('uses the injected agent factory with guest image context', async () => {
+    const agentFactory = vi.fn(() => ({ stream: mockAgentStream }) as any)
 
     await createEphemeralChatStreamResponse({
       messages: [
@@ -79,12 +87,15 @@ describe('createEphemeralChatStreamResponse', () => {
       searchMode: 'chat',
       modelType: 'speed',
       chatId: 'guest-chat-1',
-      trigger: 'submit-message'
+      trigger: 'submit-message',
+      agentFactory
     })
 
     await vi.waitFor(() => {
-      expect(mockResearcher).toHaveBeenCalledWith(
+      expect(agentFactory).toHaveBeenCalledWith(
         expect.objectContaining({
+          modelId: 'openai:gpt-4o-mini',
+          writer: mockWriter,
           imageToolContext: {
             userId: 'guest',
             chatId: 'guest-chat-1'
@@ -92,10 +103,11 @@ describe('createEphemeralChatStreamResponse', () => {
         })
       )
     })
-    expect(mockResearcher).toHaveBeenCalledTimes(1)
+    expect(agentFactory).toHaveBeenCalledTimes(1)
+    expect(mockAgentStream).toHaveBeenCalledTimes(1)
   })
 
-  it('hydrates guest currentArtifact before constructing the researcher', async () => {
+  it('hydrates guest currentArtifact before invoking the injected agent factory', async () => {
     mockVerifyGuestCanvasToken.mockResolvedValue({
       chatId: 'chat-1',
       artifactId: 'art-1',
@@ -116,12 +128,7 @@ describe('createEphemeralChatStreamResponse', () => {
       versions: [],
       updatedAt: '2026-03-21T00:00:00Z'
     })
-    mockResearcher.mockReturnValue({
-      stream: vi.fn().mockResolvedValue({
-        toUIMessageStream: vi.fn(() => ({})),
-        response: Promise.resolve({ messages: [] })
-      })
-    })
+    const agentFactory = vi.fn(() => ({ stream: mockAgentStream }) as any)
 
     await createEphemeralChatStreamResponse({
       messages: [
@@ -137,7 +144,8 @@ describe('createEphemeralChatStreamResponse', () => {
       modelType: 'speed',
       chatId: 'chat-1',
       guestCanvasToken: 'valid-token',
-      trigger: 'tool-result'
+      trigger: 'tool-result',
+      agentFactory
     })
 
     await vi.waitFor(() => {
@@ -146,8 +154,10 @@ describe('createEphemeralChatStreamResponse', () => {
         artifactId: 'art-1'
       })
     })
-    expect(mockResearcher).toHaveBeenCalledWith(
+    expect(agentFactory).toHaveBeenCalledWith(
       expect.objectContaining({
+        modelId: 'openai:gpt-4o-mini',
+        writer: mockWriter,
         canvasToolContext: expect.objectContaining({
           chatId: 'chat-1',
           userId: 'guest',
@@ -162,7 +172,8 @@ describe('createEphemeralChatStreamResponse', () => {
     )
     expect(mockVerifyGuestCanvasToken).toHaveBeenCalledTimes(1)
     expect(loadCanvasArtifactState).toHaveBeenCalledTimes(1)
-    expect(mockResearcher).toHaveBeenCalledTimes(1)
+    expect(agentFactory).toHaveBeenCalledTimes(1)
+    expect(mockAgentStream).toHaveBeenCalledTimes(1)
   })
 
   it('returns 400 when messages are missing', async () => {
@@ -171,7 +182,8 @@ describe('createEphemeralChatStreamResponse', () => {
       model: makeModel(),
       abortSignal: new AbortController().signal,
       searchMode: 'chat',
-      modelType: 'speed'
+      modelType: 'speed',
+      agentFactory: vi.fn()
     })
 
     expect(response.status).toBe(400)
@@ -188,7 +200,8 @@ describe('createEphemeralChatStreamResponse', () => {
       model: makeModel(),
       abortSignal: new AbortController().signal,
       searchMode: 'chat',
-      modelType: 'speed'
+      modelType: 'speed',
+      agentFactory: vi.fn()
     })
 
     expect(response.status).toBe(400)
@@ -202,7 +215,8 @@ describe('createEphemeralChatStreamResponse', () => {
       searchMode: 'chat',
       modelType: 'speed',
       chatId: 'ghost-chat-id',
-      trigger: 'tool-result'
+      trigger: 'tool-result',
+      agentFactory: vi.fn()
     })
 
     expect(response.status).toBe(400)
@@ -217,7 +231,8 @@ describe('createEphemeralChatStreamResponse', () => {
       abortSignal: new AbortController().signal,
       searchMode: 'chat',
       modelType: 'speed',
-      trigger: 'submit-message'
+      trigger: 'submit-message',
+      agentFactory: vi.fn()
     })
 
     expect(response.status).toBe(400)

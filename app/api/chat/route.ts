@@ -1,12 +1,11 @@
 import { cookies } from 'next/headers'
 
 import { loadChat } from '@/lib/actions/chat'
+import { handleChatAgentRoute } from '@/lib/agents/chat/route-handler'
 import { calculateConversationTurn, trackChatEvent } from '@/lib/analytics'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import { checkAndEnforceOverallChatLimit } from '@/lib/rate-limit/chat-limits'
 import { checkAndEnforceGuestLimit } from '@/lib/rate-limit/guest-limit'
-import { createChatStreamResponse } from '@/lib/streaming/create-chat-stream-response'
-import { createEphemeralChatStreamResponse } from '@/lib/streaming/create-ephemeral-chat-stream-response'
 import { toIntent, toSearchMode } from '@/lib/types/search'
 import { validateFilePart } from '@/lib/utils/file-validation'
 import { jsonError } from '@/lib/utils/json-error'
@@ -223,37 +222,41 @@ export async function POST(req: Request) {
       }
     }
 
-    const response = isGuest
-      ? await createEphemeralChatStreamResponse({
-          messages: normalizedMessages ?? [],
-          model: selectedModel,
-          abortSignal,
-          searchMode,
-          userMode,
-          intent,
-          modelType,
-          chatId,
-          trigger: validatedTrigger,
-          guestCanvasToken
-        })
-      : await createChatStreamResponse({
-          message: validatedTrigger === 'tool-result' ? null : message,
-          messages: Array.isArray(normalizedMessages)
-            ? normalizedMessages
-            : undefined,
-          model: selectedModel,
-          chatId,
-          userId: userId, // userId is guaranteed to be non-null after authentication check above
-          trigger: validatedTrigger,
-          messageId,
-          abortSignal,
-          isNewChat,
-          searchMode,
-          userMode,
-          intent,
-          modelType,
-          ...(validatedTrigger === 'tool-result' ? { toolResult } : {})
-        })
+    const response = await handleChatAgentRoute(
+      isGuest
+        ? {
+            isGuest: true,
+            messages: normalizedMessages ?? [],
+            model: selectedModel,
+            abortSignal,
+            searchMode,
+            userMode,
+            intent,
+            modelType,
+            chatId,
+            trigger: validatedTrigger,
+            guestCanvasToken
+          }
+        : {
+            isGuest: false,
+            message: validatedTrigger === 'tool-result' ? null : message,
+            messages: Array.isArray(normalizedMessages)
+              ? normalizedMessages
+              : undefined,
+            model: selectedModel,
+            chatId,
+            userId: userId, // userId is guaranteed to be non-null after authentication check above
+            trigger: validatedTrigger,
+            messageId,
+            abortSignal,
+            isNewChat,
+            searchMode,
+            userMode,
+            intent,
+            modelType,
+            ...(validatedTrigger === 'tool-result' ? { toolResult } : {})
+          }
+    )
 
     perfTime('createChatStreamResponse resolved', streamStart)
 

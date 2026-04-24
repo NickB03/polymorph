@@ -32,16 +32,10 @@ vi.mock('@/lib/rate-limit/guest-limit', () => ({
   checkAndEnforceGuestLimit: vi.fn().mockResolvedValue(null)
 }))
 
-vi.mock('@/lib/streaming/create-chat-stream-response', () => ({
-  createChatStreamResponse: vi
+vi.mock('@/lib/agents/chat/route-handler', () => ({
+  handleChatAgentRoute: vi
     .fn()
     .mockResolvedValue(new Response('stream', { status: 200 }))
-}))
-
-vi.mock('@/lib/streaming/create-ephemeral-chat-stream-response', () => ({
-  createEphemeralChatStreamResponse: vi
-    .fn()
-    .mockResolvedValue(new Response('ephemeral-stream', { status: 200 }))
 }))
 
 vi.mock('@/lib/utils/model-selection', () => ({
@@ -71,9 +65,8 @@ vi.mock('@/lib/utils/json-error', () => ({
   )
 }))
 
+import { handleChatAgentRoute } from '@/lib/agents/chat/route-handler'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
-import { createChatStreamResponse } from '@/lib/streaming/create-chat-stream-response'
-import { createEphemeralChatStreamResponse } from '@/lib/streaming/create-ephemeral-chat-stream-response'
 import { isProviderEnabled } from '@/lib/utils/registry'
 
 import { POST } from '@/app/api/chat/route'
@@ -94,14 +87,9 @@ describe('POST /api/chat', () => {
     vi.mocked(isProviderEnabled).mockReset()
     vi.mocked(isProviderEnabled).mockReturnValue(true)
 
-    vi.mocked(createChatStreamResponse).mockReset()
-    vi.mocked(createChatStreamResponse).mockResolvedValue(
+    vi.mocked(handleChatAgentRoute).mockReset()
+    vi.mocked(handleChatAgentRoute).mockResolvedValue(
       new Response('stream', { status: 200 })
-    )
-
-    vi.mocked(createEphemeralChatStreamResponse).mockReset()
-    vi.mocked(createEphemeralChatStreamResponse).mockResolvedValue(
-      new Response('ephemeral-stream', { status: 200 })
     )
   })
 
@@ -199,7 +187,7 @@ describe('POST /api/chat', () => {
     expect(res.status).toBe(404)
   })
 
-  it('calls createChatStreamResponse for authenticated users', async () => {
+  it('delegates authenticated users to the chat agent route handler after validation', async () => {
     const req = createRequest({
       message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
       messages: [{ role: 'user', parts: [{ type: 'text', text: 'hello' }] }],
@@ -210,8 +198,9 @@ describe('POST /api/chat', () => {
 
     const res = await POST(req)
     expect(res.status).toBe(200)
-    expect(createChatStreamResponse).toHaveBeenCalledWith(
+    expect(handleChatAgentRoute).toHaveBeenCalledWith(
       expect.objectContaining({
+        isGuest: false,
         chatId: 'c1',
         userId: 'user-123',
         trigger: 'submit-message',
@@ -220,7 +209,7 @@ describe('POST /api/chat', () => {
     )
   })
 
-  it('calls createEphemeralChatStreamResponse for guest users', async () => {
+  it('delegates guest users to the chat agent route handler after validation', async () => {
     vi.mocked(getCurrentUserId).mockResolvedValueOnce(
       undefined as unknown as string
     )
@@ -240,7 +229,15 @@ describe('POST /api/chat', () => {
 
     const res = await POST(req)
     expect(res.status).toBe(200)
-    expect(createEphemeralChatStreamResponse).toHaveBeenCalled()
+    expect(handleChatAgentRoute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isGuest: true,
+        chatId: 'c1',
+        trigger: 'submit-message',
+        searchMode: 'chat',
+        userMode: 'search'
+      })
+    )
 
     delete process.env.ENABLE_GUEST_CHAT
   })
@@ -273,8 +270,9 @@ describe('POST /api/chat', () => {
 
     const res = await POST(req)
     expect(res.status).toBe(200)
-    expect(createChatStreamResponse).toHaveBeenCalledWith(
+    expect(handleChatAgentRoute).toHaveBeenCalledWith(
       expect.objectContaining({
+        isGuest: false,
         message: null,
         trigger: 'tool-result',
         toolResult: { toolCallId: 'tc-1', output: 'result data' }
@@ -418,7 +416,13 @@ describe('POST /api/chat', () => {
 
       const res = await POST(req)
       expect(res.status).toBe(200)
-      expect(createEphemeralChatStreamResponse).toHaveBeenCalled()
+      expect(handleChatAgentRoute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isGuest: true,
+          chatId: 'c1',
+          trigger: 'submit-message'
+        })
+      )
 
       delete process.env.ENABLE_GUEST_CHAT
     })
@@ -515,7 +519,7 @@ describe('POST /api/chat', () => {
   })
 
   it('returns 500 on unexpected errors thrown from streaming', async () => {
-    vi.mocked(createChatStreamResponse).mockRejectedValueOnce(
+    vi.mocked(handleChatAgentRoute).mockRejectedValueOnce(
       new Error('Some unexpected streaming error')
     )
 

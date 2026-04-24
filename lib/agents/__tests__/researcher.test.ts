@@ -1,4 +1,4 @@
-import { ToolLoopAgent } from 'ai'
+import { stepCountIs, ToolLoopAgent } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 
 // Mock all tool imports
@@ -79,6 +79,7 @@ vi.mock('@/lib/utils/telemetry', () => ({
   isTracingEnabled: vi.fn().mockReturnValue(false)
 }))
 vi.mock('@/lib/agents/prompts/search-mode-prompts', () => ({
+  ARTIFACT_INTAKE_PROTOCOL: 'Artifact intake protocol',
   CHAT_MODE_PROMPT: 'Chat mode system prompt',
   RESEARCH_MODE_PROMPT: 'Research mode system prompt'
 }))
@@ -147,6 +148,7 @@ describe('createResearcher', () => {
     expect(Object.keys(config.tools)).toContain('getStaticMapImage')
     // Research mode should NOT include displayPlan
     expect(config.activeTools).not.toContain('displayPlan')
+    expect(vi.mocked(stepCountIs).mock.calls.at(-1)?.[0]).toBe(50)
   })
 
   it('configures chat mode with correct tools and step limit', () => {
@@ -171,6 +173,26 @@ describe('createResearcher', () => {
     expect(Object.keys(config.tools)).toContain('displayGeoMap')
     // Chat mode should NOT include todoWrite
     expect(config.activeTools).not.toContain('todoWrite')
+    expect(vi.mocked(stepCountIs).mock.calls.at(-1)?.[0]).toBe(20)
+  })
+
+  it('routes build intent through chat tools with the artifact intake prefix', () => {
+    MockToolLoopAgent.mockClear()
+
+    createResearcher({
+      model: 'gateway:google/gemini-3-flash',
+      searchMode: 'chat',
+      intent: 'build'
+    })
+
+    const config = MockToolLoopAgent.mock.calls[0][0] as any
+    expect(config.activeTools).toContain('displayPlan')
+    expect(config.activeTools).not.toContain('todoWrite')
+    expect(config.instructions).toContain('Artifact intake protocol')
+    expect(
+      config.instructions.indexOf('Artifact intake protocol')
+    ).toBeLessThan(config.instructions.indexOf('Chat mode system prompt'))
+    expect(vi.mocked(stepCountIs).mock.calls.at(-1)?.[0]).toBe(20)
   })
 
   it('includes todoWrite in research mode when writer is provided', () => {
