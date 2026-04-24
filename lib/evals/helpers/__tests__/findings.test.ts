@@ -136,6 +136,23 @@ describe('computeFindings', () => {
     expect(result).toEqual([])
   })
 
+  it('does not fabricate a finding when an evaluator exists in latest but not previous', () => {
+    // Scenario: capability latest has a NEW evaluator key that previous lacks.
+    // Under the bug, (previous[key] ?? 0) makes that a phantom +85pt improvement.
+    // After the fix, evaluators missing from previous are skipped, so the only
+    // key with a defined delta (faithfulness) has zero delta and no finding fires.
+    const result = computeFindings(
+      data(
+        { faithfulness: 0.9, citation_accuracy: 0.85 }, // cap latest
+        { faithfulness: 0.9 }, // cap previous — no citation_accuracy
+        { faithfulness: 0.9 }, // traf latest
+        { faithfulness: 0.9 } // traf previous
+      )
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
   it('sorts by severity: critical > drop > improvement', () => {
     const result = computeFindings(
       data(

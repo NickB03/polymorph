@@ -134,6 +134,10 @@ export async function runTrafficMonitorSuite() {
     totalCases: examples.length
   })
 
+  if (result.status === 'threshold_breached') {
+    logThresholdBreachWarning(result)
+  }
+
   try {
     await persistEvalSummary(
       { execute: db.execute.bind(db) },
@@ -160,10 +164,6 @@ export async function runTrafficMonitorSuite() {
     throw new Error(
       '[evals] traffic-monitor eval summary could not be persisted'
     )
-  }
-
-  if (result.status === 'threshold_breached') {
-    logThresholdBreachWarning(result)
   }
 
   return result

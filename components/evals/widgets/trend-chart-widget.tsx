@@ -5,14 +5,11 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
 import type { EvalTrendPoint } from '@/lib/evals/types'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent
 } from '@/components/ui/chart'
-
-import type { WidgetProps } from './shared/widget-props'
 
 const chartConfig = {
   overallScore: {
@@ -78,25 +75,5 @@ export function TrendChartInner({
         />
       </AreaChart>
     </ChartContainer>
-  )
-}
-
-type Config = {
-  suite: 'capability' | 'trafficMonitor'
-  title?: string
-  height?: number
-}
-
-export function TrendChartWidget({ data, config }: WidgetProps<Config>) {
-  const trend = data[config.suite].trend
-  return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle className="text-lg">{config.title ?? 'Trend'}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <TrendChartInner trend={trend} height={config.height} />
-      </CardContent>
-    </Card>
   )
 }

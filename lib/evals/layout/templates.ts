@@ -199,7 +199,6 @@ export const TEMPLATE_C: EvalsLayoutTemplate = {
         subtitle: 'what changed in the last 24 hours'
       }
     },
-    { id: 'filters', type: 'filter-toolbar', config: {} },
     { id: 'ring-cap', type: 'score-ring', config: { suite: 'capability' } },
     {
       id: 'ring-traf',
@@ -219,8 +218,7 @@ export const TEMPLATE_C: EvalsLayoutTemplate = {
   ],
   layouts: {
     lg: [
-      { i: 'header', x: 0, y: 0, w: 8, h: 1, static: true },
-      { i: 'filters', x: 8, y: 0, w: 4, h: 1, static: true },
+      { i: 'header', x: 0, y: 0, w: 12, h: 1, static: true },
       { i: 'ring-cap', x: 0, y: 1, w: 6, h: 6 },
       { i: 'ring-traf', x: 6, y: 1, w: 6, h: 6 },
       { i: 'what-changed', x: 0, y: 7, w: 12, h: 4 },
@@ -228,15 +226,13 @@ export const TEMPLATE_C: EvalsLayoutTemplate = {
     ],
     md: [
       { i: 'header', x: 0, y: 0, w: 12, h: 1, static: true },
-      { i: 'filters', x: 0, y: 1, w: 12, h: 1, static: true },
-      { i: 'ring-cap', x: 0, y: 2, w: 6, h: 6 },
-      { i: 'ring-traf', x: 6, y: 2, w: 6, h: 6 },
-      { i: 'what-changed', x: 0, y: 8, w: 12, h: 4 },
-      { i: 'feed', x: 0, y: 12, w: 12, h: 10 }
+      { i: 'ring-cap', x: 0, y: 1, w: 6, h: 6 },
+      { i: 'ring-traf', x: 6, y: 1, w: 6, h: 6 },
+      { i: 'what-changed', x: 0, y: 7, w: 12, h: 4 },
+      { i: 'feed', x: 0, y: 11, w: 12, h: 10 }
     ],
     sm: toStacked([
       { i: 'header', h: 1, static: true },
-      { i: 'filters', h: 1, static: true },
       { i: 'ring-cap', h: 6 },
       { i: 'ring-traf', h: 6 },
       { i: 'what-changed', h: 4 },

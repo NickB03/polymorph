@@ -172,6 +172,10 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     totalCases: examples.length
   })
 
+  if (result.status === 'threshold_breached') {
+    logThresholdBreachWarning(result)
+  }
+
   try {
     await persistEvalSummary(
       { execute: db.execute.bind(db) },
@@ -196,10 +200,6 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
       `[evals] Error: ${error instanceof Error ? error.message : error}`
     )
     throw new Error(`[evals] ${suite} eval summary could not be persisted`)
-  }
-
-  if (result.status === 'threshold_breached') {
-    logThresholdBreachWarning(result)
   }
 
   return result

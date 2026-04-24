@@ -1,10 +1,8 @@
 export type WidgetTypeId =
   | 'page-header'
-  | 'filter-toolbar'
   | 'kpi-tile'
   | 'suite-header-card'
   | 'score-ring'
-  | 'trend-chart'
   | 'combined-trend-chart'
   | 'evaluator-bars'
   | 'evaluator-chip-grid'

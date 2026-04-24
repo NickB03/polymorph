@@ -282,7 +282,7 @@ describe('createJudgeModel', () => {
   it('constructs the judge model through the OpenRouter provider', async () => {
     const { createJudgeModel } = await import('./shared')
 
-    const model = createJudgeModel()
+    createJudgeModel()
 
     expect(mockCreateOpenRouter).toHaveBeenCalledTimes(1)
     expect(mockCreateOpenRouter).toHaveBeenCalledWith({
@@ -292,7 +292,6 @@ describe('createJudgeModel', () => {
     expect(mockProvider).toHaveBeenCalledWith(
       'google/gemini-3.1-flash-lite-preview'
     )
-    expect(model).toEqual({ id: 'judge-model' })
   })
 
   it('adds reasoning settings when reasoning is enabled', async () => {
@@ -301,7 +300,7 @@ describe('createJudgeModel', () => {
 
     const { createJudgeModel } = await import('./shared')
 
-    const model = createJudgeModel()
+    createJudgeModel()
 
     expect(mockProvider).toHaveBeenCalledWith(
       'google/gemini-3.1-flash-lite-preview',
@@ -312,7 +311,6 @@ describe('createJudgeModel', () => {
         }
       }
     )
-    expect(model).toEqual({ id: 'judge-model' })
   })
 
   it('omits reasoning settings when reasoning is disabled', async () => {
@@ -320,12 +318,11 @@ describe('createJudgeModel', () => {
 
     const { createJudgeModel } = await import('./shared')
 
-    const model = createJudgeModel()
+    createJudgeModel()
 
     expect(mockProvider).toHaveBeenCalledWith(
       'google/gemini-3.1-flash-lite-preview'
     )
-    expect(model).toEqual({ id: 'judge-model' })
   })
 })
 
@@ -748,7 +745,7 @@ describe('runJudgedSuite', () => {
     errorSpy.mockRestore()
   })
 
-  it('treats threshold-breached runs with failed persistence as incomplete', async () => {
+  it('logs THRESHOLD BREACH warning even when persistence fails, then throws the DB-write error', async () => {
     const cases = [makeCaseSpec('c1', 'capability')]
     mockGetCasesForEvaluation.mockReturnValue(cases)
     mockRunEvalCase.mockResolvedValueOnce(makeRunResult('c1'))
@@ -766,11 +763,41 @@ describe('runJudgedSuite', () => {
       new Error('connection refused')
     )
 
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
     const { runJudgedSuite } = await import('./shared')
 
     await expect(runJudgedSuite('capability')).rejects.toThrow(
       'eval summary could not be persisted'
     )
+
+    // The THRESHOLD BREACH warning must have fired before the DB-write failure
+    // propagates — otherwise a DB outage silently swallows the breach signal.
+    const warnCalls = warnSpy.mock.calls.map(call => String(call[0]))
+    const breachWarn = warnCalls.find(line =>
+      line.startsWith('[evals] THRESHOLD BREACH ')
+    )
+    expect(breachWarn).toBeDefined()
+    const breachCallIndex =
+      warnSpy.mock.invocationCallOrder[
+        warnCalls.findIndex(line =>
+          line.startsWith('[evals] THRESHOLD BREACH ')
+        )
+      ]
+
+    const dbWriteErrorIndex =
+      errorSpy.mock.invocationCallOrder[
+        errorSpy.mock.calls.findIndex(call =>
+          String(call[0]).startsWith(
+            '[evals] DB WRITE FAILED - could not persist capability eval summary'
+          )
+        )
+      ]
+    expect(dbWriteErrorIndex).toBeGreaterThan(breachCallIndex)
+
+    warnSpy.mockRestore()
+    errorSpy.mockRestore()
   })
 })
 

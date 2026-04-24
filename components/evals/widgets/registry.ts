@@ -9,12 +9,10 @@ import { DivergenceBanner } from './divergence-banner'
 import { EvaluatorBarsWidget } from './evaluator-bars-widget'
 import { EvaluatorChipGrid } from './evaluator-chip-grid'
 import { EvaluatorComparisonGrid } from './evaluator-comparison-grid'
-import { FilterToolbar } from './filter-toolbar'
 import { KpiTile } from './kpi-tile'
 import { PageHeader } from './page-header'
 import { ScoreRingWidget } from './score-ring-widget'
 import { SuiteHeaderCard } from './suite-header-card'
-import { TrendChartWidget } from './trend-chart-widget'
 import { WhatChangedCard } from './what-changed-card'
 
 export const WIDGET_REGISTRY: Record<
@@ -22,11 +20,9 @@ export const WIDGET_REGISTRY: Record<
   ComponentType<WidgetProps>
 > = {
   'page-header': PageHeader as ComponentType<WidgetProps>,
-  'filter-toolbar': FilterToolbar as ComponentType<WidgetProps>,
   'kpi-tile': KpiTile as ComponentType<WidgetProps>,
   'suite-header-card': SuiteHeaderCard as ComponentType<WidgetProps>,
   'score-ring': ScoreRingWidget as ComponentType<WidgetProps>,
-  'trend-chart': TrendChartWidget as ComponentType<WidgetProps>,
   'combined-trend-chart': CombinedTrendChart as ComponentType<WidgetProps>,
   'evaluator-bars': EvaluatorBarsWidget as ComponentType<WidgetProps>,
   'evaluator-chip-grid': EvaluatorChipGrid as ComponentType<WidgetProps>,
