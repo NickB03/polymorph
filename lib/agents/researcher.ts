@@ -7,7 +7,8 @@ import {
 
 import {
   type ChatAgentTools,
-  createChatAgentTools} from '@/lib/agents/chat/toolset'
+  createChatAgentTools
+} from '@/lib/agents/chat/toolset'
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import { type ModelType } from '@/lib/types/model-type'
 import { type Model } from '@/lib/types/models'

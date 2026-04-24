@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import type { UIMessage } from '@/lib/types/ai'
 
-import { type ChatAgentTools,createChatAgentValidationTools } from './toolset'
+import { type ChatAgentTools, createChatAgentValidationTools } from './toolset'
 
 const chatMessageMetadataSchema = z
   .object({
@@ -15,6 +15,7 @@ const chatMessageMetadataSchema = z
     createdAt: z.union([z.string(), z.date()]).optional()
   })
   .passthrough()
+  .optional()
 
 const relatedQuestionsDataSchema = z
   .object({

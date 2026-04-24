@@ -9,7 +9,8 @@ import type { SearchMode } from '@/lib/types/search'
 import {
   type ChatAgentTools,
   createChatAgentTools,
-  createChatAgentValidationTools} from './toolset'
+  createChatAgentValidationTools
+} from './toolset'
 
 export type ChatAgent = ToolLoopAgent<never, ChatAgentTools, never>
 
