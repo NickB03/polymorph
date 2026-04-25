@@ -183,7 +183,7 @@ describe('runConfiguredModes', () => {
     ).toEqual(persistedResult)
   })
 
-  it('preserves all DB-write failures via Error.cause when more than one suite fails to persist', async () => {
+  it('throws AggregateError preserving every persist failure when more than one suite fails', async () => {
     const { EvalSummaryPersistError } = await import('./error')
     mockConfig.evalRunMode = 'all'
     mockConfig.exitOnThresholdBreach = false
@@ -226,9 +226,14 @@ describe('runConfiguredModes', () => {
       caught = error
     })
 
-    expect(caught).toBeInstanceOf(EvalSummaryPersistError)
-    // The first error is rethrown; subsequent errors live on `cause`.
-    expect((caught as { cause?: unknown }).cause).toBe(persistErrB)
+    expect(caught).toBeInstanceOf(AggregateError)
+    expect((caught as AggregateError).errors).toEqual([
+      persistErrA,
+      persistErrB
+    ])
+    expect((caught as Error).message).toMatch(
+      /2 eval summary persistence failures/
+    )
   })
 
   it('attaches persistErrors as cause on the threshold-breach throw when both occur', async () => {
@@ -265,5 +270,59 @@ describe('runConfiguredModes', () => {
     )
     // The DB error is preserved on `cause` so it's not silently dropped.
     expect((caught as { cause?: unknown }).cause).toBe(persistErr)
+  })
+
+  it('attaches an AggregateError as cause when threshold breach collides with multiple persist failures', async () => {
+    const { EvalSummaryPersistError } = await import('./error')
+    mockConfig.evalRunMode = 'all'
+    mockConfig.exitOnThresholdBreach = true
+
+    const persistErrA = new EvalSummaryPersistError(
+      '[evals] capability eval summary could not be persisted',
+      {
+        suite: 'capability',
+        status: 'passed',
+        passRate: 0.91,
+        threshold: 0.8,
+        failedEvaluators: [],
+        experimentName: 'cap-x',
+        datasetName: 'cap-y',
+        phoenixUrl: null,
+        totalCases: 5
+      }
+    )
+    const persistErrB = new EvalSummaryPersistError(
+      '[evals] traffic-monitor eval summary could not be persisted',
+      {
+        suite: 'traffic-monitor',
+        status: 'threshold_breached',
+        passRate: 0.7,
+        threshold: 0.85,
+        failedEvaluators: ['faithfulness'],
+        experimentName: 'traf-x',
+        datasetName: 'traf-y',
+        phoenixUrl: null,
+        totalCases: 10
+      }
+    )
+    mockRunCapabilitySuite.mockRejectedValueOnce(persistErrA)
+    mockRunTrafficMonitorSuite.mockRejectedValueOnce(persistErrB)
+
+    const { runConfiguredModes } = await import('./orchestrator')
+
+    let caught: unknown
+    await runConfiguredModes().catch(error => {
+      caught = error
+    })
+
+    // The breach message wins as the primary throw (operator-actionable signal).
+    expect((caught as Error).message).toMatch(
+      /Threshold breach exit requested.*traffic-monitor/
+    )
+    // Both persist errors are preserved together via AggregateError on cause —
+    // not just the first. This is the cause-chain promise the log message makes.
+    const cause = (caught as { cause?: unknown }).cause
+    expect(cause).toBeInstanceOf(AggregateError)
+    expect((cause as AggregateError).errors).toEqual([persistErrA, persistErrB])
   })
 })

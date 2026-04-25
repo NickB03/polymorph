@@ -26,6 +26,23 @@ function formatThresholdBreachExitMessage(results: SuiteRunResult[]) {
   return `[evals] Threshold breach exit requested: ${summaries.join('; ')}`
 }
 
+// Collapse N persist errors into a single value safe to use as Error.cause or to
+// throw directly: undefined when there are none, the lone error when there is
+// exactly one, or an AggregateError preserving every entry when there are more.
+// AggregateError is the standard JS construct for "multiple errors that all
+// caused this," so callers can enumerate via `.errors` instead of walking a
+// hand-built cause chain.
+function buildPersistCause(
+  persistErrors: EvalSummaryPersistError[]
+): EvalSummaryPersistError | AggregateError | undefined {
+  if (persistErrors.length === 0) return undefined
+  if (persistErrors.length === 1) return persistErrors[0]
+  return new AggregateError(
+    persistErrors,
+    `[evals] ${persistErrors.length} eval summary persistence failures`
+  )
+}
+
 export async function runConfiguredModes(): Promise<SuiteRunResult[]> {
   const results: SuiteRunResult[] = []
   const persistErrors: EvalSummaryPersistError[] = []
@@ -72,29 +89,25 @@ export async function runConfiguredModes(): Promise<SuiteRunResult[]> {
   ) {
     if (persistErrors.length > 0) {
       console.error(
-        `[evals] Threshold breach AND ${persistErrors.length} DB-write failure(s) — see cause chain`
+        `[evals] Threshold breach AND ${persistErrors.length} DB-write failure(s) attached as cause`
       )
     }
     throw new Error(formatThresholdBreachExitMessage(results), {
-      cause: persistErrors[0]
+      cause: buildPersistCause(persistErrors)
     })
   }
 
-  if (persistErrors.length > 0) {
-    if (persistErrors.length > 1) {
-      console.error(
-        `[evals] ${persistErrors.length} DB-write failures occurred; first is thrown, rest on cause chain`
-      )
-      // Chain subsequent errors onto the first via cause.
-      let head: Error = persistErrors[0]
-      for (let i = 1; i < persistErrors.length; i++) {
-        const next: Error = persistErrors[i]
-        ;(next as Error & { cause?: unknown }).cause = undefined
-        ;(head as Error & { cause?: unknown }).cause = next
-        head = next
-      }
-    }
+  if (persistErrors.length === 1) {
     throw persistErrors[0]
+  }
+  if (persistErrors.length > 1) {
+    console.error(
+      `[evals] ${persistErrors.length} DB-write failures occurred; throwing AggregateError`
+    )
+    throw new AggregateError(
+      persistErrors,
+      `[evals] ${persistErrors.length} eval summary persistence failures`
+    )
   }
 
   return results
