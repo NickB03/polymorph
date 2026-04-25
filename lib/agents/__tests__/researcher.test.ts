@@ -65,7 +65,7 @@ vi.mock('@/lib/tools/display-table', () => ({
 vi.mock('@/lib/tools/display-timeline', () => ({
   displayTimelineTool: { name: 'displayTimeline' }
 }))
-vi.mock('@/lib/tools/fetch', () => ({
+vi.mock('@/lib/tools/fetch/server', () => ({
   fetchTool: { name: 'fetch' }
 }))
 vi.mock('@/lib/tools/get-directions', () => ({
@@ -83,7 +83,7 @@ vi.mock('@/lib/tools/get-static-map-image', () => ({
 vi.mock('@/lib/tools/generate-image/server', () => ({
   serverTool: vi.fn().mockReturnValue({ name: 'generateImage' })
 }))
-vi.mock('@/lib/tools/search', () => ({
+vi.mock('@/lib/tools/search/server', () => ({
   createSearchTool: vi.fn().mockReturnValue({
     name: 'search',
     description: 'Search the web',
@@ -442,7 +442,7 @@ describe('createResearcher', () => {
     MockToolLoopAgent.mockClear()
 
     try {
-      const searchModule = await import('@/lib/tools/search')
+      const searchModule = await import('@/lib/tools/search/server')
       const mockedCreateSearchTool = vi.mocked(searchModule.createSearchTool)
       const underlyingExecute = vi.fn().mockResolvedValue({
         state: 'complete' as const,

@@ -6,8 +6,8 @@ import type {
   UITools as AIUITools
 } from 'ai'
 
-import { fetchTool } from '@/lib/tools/fetch'
-import { searchTool } from '@/lib/tools/search'
+import { fetchTool } from '@/lib/tools/fetch/server'
+import { searchTool } from '@/lib/tools/search/server'
 import { createTodoTools, type TodoItem } from '@/lib/tools/todo'
 import type {
   CanvasArtifactStatus,

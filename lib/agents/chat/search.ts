@@ -1,7 +1,7 @@
 import { tool } from 'ai'
 
 import { CHAT_MODE_PROMPT } from '@/lib/agents/prompts/search-mode-prompts'
-import { createSearchTool } from '@/lib/tools/search'
+import { createSearchTool } from '@/lib/tools/search/server'
 
 import {
   type ChatAgentDefinition,

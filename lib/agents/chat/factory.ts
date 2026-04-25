@@ -1,7 +1,7 @@
 import { stepCountIs, ToolLoopAgent, type UIMessageStreamWriter } from 'ai'
 
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
-import { createSearchTool } from '@/lib/tools/search'
+import { createSearchTool } from '@/lib/tools/search/server'
 import type { ModelType } from '@/lib/types/model-type'
 import type { Model } from '@/lib/types/models'
 import type { SearchMode, UserMode } from '@/lib/types/search'

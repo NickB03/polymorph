@@ -95,14 +95,27 @@ function mockChatSelect(chatRows: unknown[]) {
   const where = vi.fn(() => ({ limit }))
   const from = vi.fn(() => ({ where }))
 
-  dbMocks.tx.select.mockReturnValue({ from })
+  dbMocks.tx.select.mockReturnValueOnce({ from })
 
   return { from, limit, where }
 }
 
+function mockPartsSelect(partRows: unknown[]) {
+  const orderBy = vi.fn().mockResolvedValue(partRows)
+  const where = vi.fn(() => ({ orderBy }))
+  const from = vi.fn(() => ({ where }))
+
+  dbMocks.tx.select.mockReturnValueOnce({ from })
+
+  return { from, orderBy, where }
+}
+
 describe('canonical chat UIMessage loading', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    dbMocks.tx.delete.mockReset()
+    dbMocks.tx.insert.mockReset()
+    dbMocks.tx.query.messages.findMany.mockReset()
+    dbMocks.tx.select.mockReset()
   })
 
   it('buildUIMessageFromDB prefers row uiMessage parts over legacy parts', () => {
@@ -164,6 +177,88 @@ describe('canonical chat UIMessage loading', () => {
     expect(chat?.messages[0]?.parts).toEqual([
       { type: 'text', text: 'canonical payload' }
     ])
+  })
+
+  it('loadChatWithMessages does not query compatibility parts when every row has uiMessage', async () => {
+    mockChatSelect([
+      {
+        id: 'chat-1',
+        title: 'Canonical chat',
+        userId: 'user-1',
+        visibility: 'private'
+      }
+    ])
+    dbMocks.tx.query.messages.findMany.mockResolvedValue([
+      {
+        id: 'msg-1',
+        role: 'assistant',
+        createdAt: new Date('2026-04-24T12:00:00.000Z'),
+        metadata: null,
+        uiMessage: {
+          id: 'msg-1',
+          role: 'assistant',
+          parts: [{ type: 'text', text: 'canonical payload' }]
+        }
+      }
+    ])
+
+    const chat = await loadChatWithMessages('chat-1', 'user-1')
+
+    expect(chat?.messages[0]?.parts).toEqual([
+      { type: 'text', text: 'canonical payload' }
+    ])
+    expect(dbMocks.tx.select).toHaveBeenCalledTimes(1)
+    expect(dbMocks.tx.query.messages.findMany).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        with: expect.anything()
+      })
+    )
+  })
+
+  it('loadChatWithMessages queries compatibility parts only for legacy rows', async () => {
+    mockChatSelect([
+      {
+        id: 'chat-1',
+        title: 'Mixed chat',
+        userId: 'user-1',
+        visibility: 'private'
+      }
+    ])
+    mockPartsSelect([
+      makeTextPart({
+        id: 'part-legacy',
+        messageId: 'msg-legacy',
+        text_text: 'legacy payload'
+      })
+    ])
+    dbMocks.tx.query.messages.findMany.mockResolvedValue([
+      {
+        id: 'msg-canonical',
+        role: 'assistant',
+        createdAt: new Date('2026-04-24T12:00:00.000Z'),
+        metadata: null,
+        uiMessage: {
+          id: 'msg-canonical',
+          role: 'assistant',
+          parts: [{ type: 'text', text: 'canonical payload' }]
+        }
+      },
+      {
+        id: 'msg-legacy',
+        role: 'assistant',
+        createdAt: new Date('2026-04-24T12:01:00.000Z'),
+        metadata: null,
+        uiMessage: null
+      }
+    ])
+
+    const chat = await loadChatWithMessages('chat-1', 'user-1')
+
+    expect(chat?.messages.map(message => message.parts)).toEqual([
+      [{ type: 'text', text: 'canonical payload' }],
+      [{ type: 'text', text: 'legacy payload' }]
+    ])
+    expect(dbMocks.tx.select).toHaveBeenCalledTimes(2)
   })
 
   it('loadChatWithMessages merges uiMessage metadata, row metadata, and createdAt', async () => {

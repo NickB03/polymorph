@@ -4,7 +4,7 @@ vi.mock('@/lib/agents/chat/factory', () => ({
   createConfiguredChatAgent: vi.fn()
 }))
 
-vi.mock('@/lib/tools/search', () => ({
+vi.mock('@/lib/tools/search/server', () => ({
   createSearchTool: vi.fn()
 }))
 

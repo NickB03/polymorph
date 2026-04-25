@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/canvas/service', () => ({
@@ -12,6 +13,16 @@ vi.mock('@/lib/canvas/guest-token', () => ({
 }))
 
 const modules = [
+  [
+    'fetch',
+    () => import('@/lib/tools/fetch'),
+    () => import('@/lib/tools/fetch/index')
+  ],
+  [
+    'search',
+    () => import('@/lib/tools/search'),
+    () => import('@/lib/tools/search/index')
+  ],
   [
     'display-option-list',
     () => import('@/lib/tools/display-option-list'),
@@ -54,6 +65,8 @@ const modules = [
   ]
 ] as const
 
+const compatibilityFiles = ['lib/tools/fetch.ts', 'lib/tools/search.ts']
+
 function expectModuleContract(mod: unknown) {
   expect(mod).toEqual(
     expect.objectContaining({
@@ -81,6 +94,16 @@ describe('migrated tool module contracts', () => {
       const mod = await loadFolder()
 
       expectModuleContract(mod)
+    }
+  )
+
+  it.each(compatibilityFiles)(
+    '%s remains a pure compatibility re-export',
+    filePath => {
+      const source = readFileSync(filePath, 'utf8')
+
+      expect(source).not.toMatch(/\bfunction\b|\basync\b|\bconst\b|tool\(/)
+      expect(source.trim()).toMatch(/^export /)
     }
   )
 })

@@ -63,7 +63,7 @@ vi.mock('ai', () => ({
   tool: toolWiringMocks.tool
 }))
 
-vi.mock('@/lib/tools/search', () => ({
+vi.mock('@/lib/tools/search/server', () => ({
   createSearchTool: toolWiringMocks.createSearchTool
 }))
 
@@ -119,7 +119,7 @@ vi.mock('@/lib/tools/display-timeline', () => ({
   displayTimelineTool: toolWiringMocks.staticTool
 }))
 
-vi.mock('@/lib/tools/fetch', () => ({
+vi.mock('@/lib/tools/fetch/server', () => ({
   fetchTool: toolWiringMocks.staticTool
 }))
 
