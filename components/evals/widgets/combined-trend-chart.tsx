@@ -2,13 +2,15 @@
 
 import { format } from 'date-fns'
 import { LineChart as LineChartIcon } from 'lucide-react'
-import { CartesianGrid, Legend, Line, LineChart, XAxis, YAxis } from 'recharts'
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 
 import { buildCombinedTrend } from '@/lib/evals/helpers/combined-trend'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent
 } from '@/components/ui/chart'
@@ -83,7 +85,7 @@ export function CombinedTrendChart({ data, config }: WidgetProps<Config>) {
                 />
               }
             />
-            <Legend />
+            <ChartLegend content={<ChartLegendContent />} />
             <Line
               type="monotone"
               dataKey="capability"
