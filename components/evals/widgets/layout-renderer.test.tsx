@@ -61,6 +61,14 @@ function snapshot(
 }
 
 describe('LayoutRenderer', () => {
+  it('exposes canRender via the per-entry registry shape', async () => {
+    const { WIDGET_REGISTRY } = await import('./registry')
+    const entry = WIDGET_REGISTRY['divergence-banner']
+    expect(entry).toHaveProperty('Component')
+    expect(entry).toHaveProperty('canRender')
+    expect(typeof entry.canRender).toBe('function')
+  })
+
   it('does not render a grid slot for a widget whose canRender returns false', () => {
     const template = {
       id: 'b' as const,

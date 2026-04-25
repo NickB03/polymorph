@@ -10,7 +10,7 @@ import type {
 import type { EvalsDashboardData } from '@/lib/evals/types'
 
 import { EvalsEmptyState } from './empty-state'
-import { WIDGET_CAN_RENDER, WIDGET_REGISTRY } from './registry'
+import { WIDGET_REGISTRY } from './registry'
 
 const ROW_HEIGHT_PX = 64
 const ROW_GAP_PX = 16
@@ -75,9 +75,9 @@ export function LayoutRenderer({
       {template.items.map(item => {
         const pos = positionById.get(item.id)
         if (!pos) return null
-        const canRender = WIDGET_CAN_RENDER[item.type]
-        if (canRender && !canRender(data)) return null
-        const Component = WIDGET_REGISTRY[item.type]
+        const entry = WIDGET_REGISTRY[item.type]
+        if (entry.canRender && !entry.canRender(data)) return null
+        const { Component } = entry
         return (
           <div
             key={item.id}

@@ -10,7 +10,7 @@ import {
 } from '@/lib/evals/layout/templates'
 import type { EvalsDashboardData } from '@/lib/evals/types'
 
-import { WIDGET_CAN_RENDER } from '@/components/evals/widgets/registry'
+import { WIDGET_REGISTRY } from '@/components/evals/widgets/registry'
 
 import { EvalsDashboardV2 } from './dashboard'
 
@@ -148,8 +148,8 @@ describe('EvalsDashboardV2', () => {
       for (const item of template.items) {
         if (!positionIds.has(item.id)) continue
         // Widgets may opt out of rendering via canRender — skip those.
-        const canRender = WIDGET_CAN_RENDER[item.type]
-        if (canRender && !canRender(data)) continue
+        const entry = WIDGET_REGISTRY[item.type]
+        if (entry.canRender && !entry.canRender(data)) continue
         const wrapper = document.querySelector(`[data-widget-id="${item.id}"]`)
         expect(
           wrapper,
