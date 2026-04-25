@@ -114,9 +114,14 @@ const cases: readonly WidgetCase[] = [
     { suite: 'capability' } as unknown as WidgetProps['config']
   ],
   [
+    // expandedByDefault must point at a feed row whose evaluatorScores contains a
+    // null entry — otherwise the row stays collapsed and the H2 filter at
+    // activity-feed.tsx:110-111 never renders. With cap-latest expanded,
+    // a regression that drops the .filter would surface "0%" via percent(null)
+    // → Math.round(null * 100) === 0, which the shared regex catches.
     'ActivityFeed',
     ActivityFeed as unknown as ComponentType<WidgetProps>,
-    {} as WidgetProps['config']
+    { expandedByDefault: 'cap-latest' } as unknown as WidgetProps['config']
   ]
 ]
 
