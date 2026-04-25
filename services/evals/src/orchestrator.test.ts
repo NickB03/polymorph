@@ -121,4 +121,59 @@ describe('runConfiguredModes', () => {
       'No chats found in lookback window for traffic-monitor run'
     )
   })
+
+  it('exits via threshold-breach message even when DB write fails during the same suite', async () => {
+    const { EvalSummaryPersistError } = await import('./error')
+    mockConfig.evalRunMode = 'all'
+    mockConfig.exitOnThresholdBreach = true
+    mockRunTrafficMonitorSuite.mockRejectedValueOnce(
+      new EvalSummaryPersistError(
+        '[evals] traffic-monitor eval summary could not be persisted',
+        {
+          suite: 'traffic-monitor',
+          status: 'threshold_breached',
+          passRate: 0.7,
+          threshold: 0.85,
+          failedEvaluators: ['faithfulness'],
+          experimentName: 'traf-exp-x',
+          datasetName: 'traf-ds-x',
+          phoenixUrl: null,
+          totalCases: 10
+        }
+      )
+    )
+
+    const { runConfiguredModes } = await import('./orchestrator')
+
+    await expect(runConfiguredModes()).rejects.toThrow(
+      /Threshold breach exit requested.*traffic-monitor/
+    )
+  })
+
+  it('rethrows DB-write failure after no-breach run completes', async () => {
+    const { EvalSummaryPersistError } = await import('./error')
+    mockConfig.evalRunMode = 'traffic-monitor'
+    mockRunTrafficMonitorSuite.mockRejectedValueOnce(
+      new EvalSummaryPersistError(
+        '[evals] traffic-monitor eval summary could not be persisted',
+        {
+          suite: 'traffic-monitor',
+          status: 'passed',
+          passRate: 0.91,
+          threshold: 0.8,
+          failedEvaluators: [],
+          experimentName: 'traf-exp-y',
+          datasetName: 'traf-ds-y',
+          phoenixUrl: null,
+          totalCases: 10
+        }
+      )
+    )
+
+    const { runConfiguredModes } = await import('./orchestrator')
+
+    await expect(runConfiguredModes()).rejects.toThrow(
+      'eval summary could not be persisted'
+    )
+  })
 })

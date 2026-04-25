@@ -15,6 +15,7 @@ import type { LanguageModel } from 'ai'
 import { createConfig } from '../config'
 import { getCasesForEvaluation, getCorpusVersion } from '../corpus'
 import { db } from '../db'
+import { EvalSummaryPersistError } from '../error'
 import {
   extractPromptFromConversation,
   formatEvalContext
@@ -199,7 +200,10 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     console.error(
       `[evals] Error: ${error instanceof Error ? error.message : error}`
     )
-    throw new Error(`[evals] ${suite} eval summary could not be persisted`)
+    throw new EvalSummaryPersistError(
+      `[evals] ${suite} eval summary could not be persisted`,
+      result
+    )
   }
 
   return result

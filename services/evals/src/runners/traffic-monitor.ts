@@ -1,5 +1,6 @@
 import { config } from '../config'
 import { db } from '../db'
+import { EvalSummaryPersistError } from '../error'
 import { formatEvalContext } from '../eval-output'
 import { persistEvalSummary } from '../eval-summary'
 import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
@@ -161,8 +162,9 @@ export async function runTrafficMonitorSuite() {
     console.error(
       `[evals] Error: ${error instanceof Error ? error.message : error}`
     )
-    throw new Error(
-      '[evals] traffic-monitor eval summary could not be persisted'
+    throw new EvalSummaryPersistError(
+      '[evals] traffic-monitor eval summary could not be persisted',
+      result
     )
   }
 

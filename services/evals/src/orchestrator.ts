@@ -3,6 +3,7 @@ import { runRegressionSuite } from './runners/regression'
 import { runSmokeSuite } from './runners/smoke'
 import { runTrafficMonitorSuite } from './runners/traffic-monitor'
 import { config } from './config'
+import { EvalSummaryPersistError } from './error'
 import type { SuiteRunResult } from './types'
 
 function maybeAddResult(
@@ -27,24 +28,40 @@ function formatThresholdBreachExitMessage(results: SuiteRunResult[]) {
 
 export async function runConfiguredModes(): Promise<SuiteRunResult[]> {
   const results: SuiteRunResult[] = []
+  const persistErrors: EvalSummaryPersistError[] = []
+
+  async function runAndRecord(
+    runner: () => Promise<SuiteRunResult | null | undefined>
+  ) {
+    try {
+      maybeAddResult(results, await runner())
+    } catch (error) {
+      if (error instanceof EvalSummaryPersistError) {
+        results.push(error.result)
+        persistErrors.push(error)
+        return
+      }
+      throw error
+    }
+  }
 
   switch (config.evalRunMode) {
     case 'capability':
-      maybeAddResult(results, await runCapabilitySuite())
+      await runAndRecord(runCapabilitySuite)
       break
     case 'regression':
-      maybeAddResult(results, await runRegressionSuite())
+      await runAndRecord(runRegressionSuite)
       break
     case 'traffic-monitor':
-      maybeAddResult(results, await runTrafficMonitorSuite())
+      await runAndRecord(runTrafficMonitorSuite)
       break
     case 'smoke':
       await runSmokeSuite()
       break
     case 'all':
-      maybeAddResult(results, await runCapabilitySuite())
-      maybeAddResult(results, await runRegressionSuite())
-      maybeAddResult(results, await runTrafficMonitorSuite())
+      await runAndRecord(runCapabilitySuite)
+      await runAndRecord(runRegressionSuite)
+      await runAndRecord(runTrafficMonitorSuite)
       await runSmokeSuite()
       break
   }
@@ -54,6 +71,10 @@ export async function runConfiguredModes(): Promise<SuiteRunResult[]> {
     results.some(result => result.status === 'threshold_breached')
   ) {
     throw new Error(formatThresholdBreachExitMessage(results))
+  }
+
+  if (persistErrors.length > 0) {
+    throw persistErrors[0]
   }
 
   return results
