@@ -150,30 +150,36 @@ describe('runConfiguredModes', () => {
     )
   })
 
-  it('rethrows DB-write failure after no-breach run completes', async () => {
+  it('rethrows DB-write failure as EvalSummaryPersistError when no breach occurs', async () => {
     const { EvalSummaryPersistError } = await import('./error')
     mockConfig.evalRunMode = 'traffic-monitor'
+    const persistedResult = {
+      suite: 'traffic-monitor' as const,
+      status: 'passed' as const,
+      passRate: 0.91,
+      threshold: 0.8,
+      failedEvaluators: [],
+      experimentName: 'traf-exp-y',
+      datasetName: 'traf-ds-y',
+      phoenixUrl: null,
+      totalCases: 10
+    }
     mockRunTrafficMonitorSuite.mockRejectedValueOnce(
       new EvalSummaryPersistError(
         '[evals] traffic-monitor eval summary could not be persisted',
-        {
-          suite: 'traffic-monitor',
-          status: 'passed',
-          passRate: 0.91,
-          threshold: 0.8,
-          failedEvaluators: [],
-          experimentName: 'traf-exp-y',
-          datasetName: 'traf-ds-y',
-          phoenixUrl: null,
-          totalCases: 10
-        }
+        persistedResult
       )
     )
 
     const { runConfiguredModes } = await import('./orchestrator')
 
-    await expect(runConfiguredModes()).rejects.toThrow(
-      'eval summary could not be persisted'
-    )
+    let caught: unknown
+    await runConfiguredModes().catch(error => {
+      caught = error
+    })
+    expect(caught).toBeInstanceOf(EvalSummaryPersistError)
+    expect(
+      (caught as InstanceType<typeof EvalSummaryPersistError>).result
+    ).toEqual(persistedResult)
   })
 })
