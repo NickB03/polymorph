@@ -1,5 +1,6 @@
 import { getEvaluatorLabel } from '@/lib/evals/evaluator-labels'
 import { computeDivergences } from '@/lib/evals/helpers/divergences'
+import type { EvalsDashboardData } from '@/lib/evals/types'
 
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -45,5 +46,14 @@ export function DivergenceBanner({ data, config }: WidgetProps<Config>) {
         ))}
       </CardContent>
     </Card>
+  )
+}
+
+export function canRenderDivergenceBanner(data: EvalsDashboardData): boolean {
+  const cap = data.capability.latest
+  const traf = data.trafficMonitor.latest
+  if (!cap || !traf) return false
+  return (
+    computeDivergences(cap.evaluatorScores, traf.evaluatorScores).length > 0
   )
 }

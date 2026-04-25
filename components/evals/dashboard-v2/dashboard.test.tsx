@@ -10,6 +10,8 @@ import {
 } from '@/lib/evals/layout/templates'
 import type { EvalsDashboardData } from '@/lib/evals/types'
 
+import { WIDGET_CAN_RENDER } from '@/components/evals/widgets/registry'
+
 import { EvalsDashboardV2 } from './dashboard'
 
 vi.mock('@/lib/actions/eval-preferences', () => ({
@@ -139,11 +141,15 @@ describe('EvalsDashboardV2', () => {
   ] as const)(
     'mounts every widget instance declared in template %s',
     (id, template) => {
-      render(<EvalsDashboardV2 data={makeData()} initialLayout={id} />)
+      const data = makeData()
+      render(<EvalsDashboardV2 data={data} initialLayout={id} />)
       const bp: 'lg' | 'md' | 'sm' = 'lg'
       const positionIds = new Set(template.layouts[bp].map(p => p.i))
       for (const item of template.items) {
         if (!positionIds.has(item.id)) continue
+        // Widgets may opt out of rendering via canRender — skip those.
+        const canRender = WIDGET_CAN_RENDER[item.type]
+        if (canRender && !canRender(data)) continue
         const wrapper = document.querySelector(`[data-widget-id="${item.id}"]`)
         expect(
           wrapper,

@@ -1,11 +1,15 @@
 import type { ComponentType } from 'react'
 
 import type { WidgetTypeId } from '@/lib/evals/layout/types'
+import type { EvalsDashboardData } from '@/lib/evals/types'
 
 import type { WidgetProps } from './shared/widget-props'
 import { ActivityFeed } from './activity-feed'
 import { CombinedTrendChart } from './combined-trend-chart'
-import { DivergenceBanner } from './divergence-banner'
+import {
+  canRenderDivergenceBanner,
+  DivergenceBanner
+} from './divergence-banner'
 import { EvaluatorBarsWidget } from './evaluator-bars-widget'
 import { EvaluatorChipGrid } from './evaluator-chip-grid'
 import { EvaluatorComparisonGrid } from './evaluator-comparison-grid'
@@ -31,4 +35,10 @@ export const WIDGET_REGISTRY: Record<
   'divergence-banner': DivergenceBanner as ComponentType<WidgetProps>,
   'what-changed-card': WhatChangedCard as ComponentType<WidgetProps>,
   'activity-feed': ActivityFeed as ComponentType<WidgetProps>
+}
+
+export const WIDGET_CAN_RENDER: Partial<
+  Record<WidgetTypeId, (data: EvalsDashboardData) => boolean>
+> = {
+  'divergence-banner': canRenderDivergenceBanner
 }
