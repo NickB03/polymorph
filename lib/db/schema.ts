@@ -579,7 +579,7 @@ export const evalSummaries = pgTable(
       .notNull()
       .default(sql`'[]'::jsonb`),
     evaluatorScores: jsonb('evaluator_scores')
-      .$type<Record<string, number>>()
+      .$type<Record<string, number | null>>()
       .notNull(),
     totalCases: integer('total_cases').notNull(),
     phoenixUrl: text('phoenix_url'),

@@ -15,7 +15,9 @@ import type {
   TrafficMonitorDashboardData
 } from './types'
 
-function computeOverallScore(evaluatorScores: Record<string, number>): number {
+function computeOverallScore(
+  evaluatorScores: Record<string, number | null>
+): number {
   const scored = Object.values(evaluatorScores).filter(
     (value): value is number =>
       typeof value === 'number' && !Number.isNaN(value)

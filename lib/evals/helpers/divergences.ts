@@ -10,8 +10,8 @@ export interface Divergence {
 }
 
 export function computeDivergences(
-  capability: Record<string, number>,
-  traffic: Record<string, number>
+  capability: Record<string, number | null>,
+  traffic: Record<string, number | null>
 ): Divergence[] {
   const out: Divergence[] = []
   for (const key of Object.keys(capability)) {

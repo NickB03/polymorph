@@ -64,8 +64,9 @@ export function EvaluatorComparisonGrid({ data }: WidgetProps) {
           <span className="text-right">Δ</span>
         </div>
         {EVALUATOR_DISPLAY_ORDER.map(key => {
-          const capValue = cap.evaluatorScores[key] ?? 0
-          const trafValue = traf.evaluatorScores[key] ?? 0
+          const capValue = cap.evaluatorScores[key]
+          const trafValue = traf.evaluatorScores[key]
+          if (capValue == null || trafValue == null) return null
           const delta = capValue - trafValue
           const div = divergences.find(d => d.evaluator === key)
           const rowAccent =

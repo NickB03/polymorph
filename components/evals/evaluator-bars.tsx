@@ -8,15 +8,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 export function EvaluatorBars({
   evaluatorScores
 }: {
-  evaluatorScores: Record<string, number>
+  evaluatorScores: Record<string, number | null>
 }) {
-  const entries = Object.entries(evaluatorScores).sort((left, right) => {
-    if (right[1] !== left[1]) {
-      return right[1] - left[1]
-    }
+  const entries = Object.entries(evaluatorScores)
+    .filter((entry): entry is [string, number] => entry[1] != null)
+    .sort((left, right) => {
+      if (right[1] !== left[1]) {
+        return right[1] - left[1]
+      }
 
-    return left[0].localeCompare(right[0])
-  })
+      return left[0].localeCompare(right[0])
+    })
 
   return (
     <Card>
