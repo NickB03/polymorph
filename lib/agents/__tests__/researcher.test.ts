@@ -7,15 +7,24 @@ vi.mock('@/lib/tools/create-canvas-artifact', () => ({
     .fn()
     .mockReturnValue({ name: 'createCanvasArtifact' })
 }))
+vi.mock('@/lib/tools/create-canvas-artifact/server', () => ({
+  serverTool: vi.fn().mockReturnValue({ name: 'createCanvasArtifact' })
+}))
 vi.mock('@/lib/tools/update-canvas-artifact', () => ({
   updateCanvasArtifactTool: vi
     .fn()
     .mockReturnValue({ name: 'updateCanvasArtifact' })
 }))
+vi.mock('@/lib/tools/update-canvas-artifact/server', () => ({
+  serverTool: vi.fn().mockReturnValue({ name: 'updateCanvasArtifact' })
+}))
 vi.mock('@/lib/tools/read-canvas-artifact', () => ({
   readCanvasArtifactTool: vi
     .fn()
     .mockReturnValue({ name: 'readCanvasArtifact' })
+}))
+vi.mock('@/lib/tools/read-canvas-artifact/server', () => ({
+  serverTool: vi.fn().mockReturnValue({ name: 'readCanvasArtifact' })
 }))
 vi.mock('@/lib/tools/display-callout', () => ({
   displayCalloutTool: { name: 'displayCallout' }
@@ -29,11 +38,23 @@ vi.mock('@/lib/tools/display-geo-map', () => ({
 vi.mock('@/lib/tools/display-citations', () => ({
   displayCitationsTool: { name: 'displayCitations' }
 }))
+vi.mock('@/lib/tools/display-citations/server', () => ({
+  serverTool: { name: 'displayCitations' }
+}))
 vi.mock('@/lib/tools/display-link-preview', () => ({
   displayLinkPreviewTool: { name: 'displayLinkPreview' }
 }))
+vi.mock('@/lib/tools/display-link-preview/server', () => ({
+  serverTool: { name: 'displayLinkPreview' }
+}))
 vi.mock('@/lib/tools/display-option-list', () => ({
   displayOptionListTool: { name: 'displayOptionList' }
+}))
+vi.mock('@/lib/tools/display-option-list/server', () => ({
+  serverTool: { name: 'displayOptionList' }
+}))
+vi.mock('@/lib/tools/display-question-wizard/server', () => ({
+  serverTool: { name: 'displayQuestionWizard' }
 }))
 vi.mock('@/lib/tools/display-plan', () => ({
   displayPlanTool: { name: 'displayPlan' }
@@ -58,6 +79,9 @@ vi.mock('@/lib/tools/get-isochrone', () => ({
 }))
 vi.mock('@/lib/tools/get-static-map-image', () => ({
   getStaticMapImageTool: { name: 'getStaticMapImage' }
+}))
+vi.mock('@/lib/tools/generate-image/server', () => ({
+  serverTool: vi.fn().mockReturnValue({ name: 'generateImage' })
 }))
 vi.mock('@/lib/tools/search', () => ({
   createSearchTool: vi.fn().mockReturnValue({

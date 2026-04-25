@@ -6,7 +6,9 @@ const mockWriter = {
 }
 const mockAgentStream = vi.fn()
 const mockLoadCanvasArtifactByChatId = vi.fn()
+const mockLoadChatWithMessages = vi.fn()
 const mockPersistStreamResults = vi.fn()
+const mockPrepareToolResultMessages = vi.fn()
 
 vi.mock('ai', async importOriginal => {
   const actual = await importOriginal<typeof import('ai')>()
@@ -63,7 +65,8 @@ vi.mock('@/lib/agents/researcher', () => ({
 vi.mock('@/lib/db/actions', () => ({
   loadCanvasArtifactByChatId: (...args: unknown[]) =>
     mockLoadCanvasArtifactByChatId(...args),
-  loadChatWithMessages: vi.fn()
+  loadChatWithMessages: (...args: unknown[]) =>
+    mockLoadChatWithMessages(...args)
 }))
 
 vi.mock('@/lib/agents/title-generator', () => ({
@@ -80,6 +83,12 @@ vi.mock('@/lib/streaming/helpers/prepare-messages', () => ({
     async (_context: unknown, message: unknown, requestMessages?: unknown[]) =>
       requestMessages ?? [message]
   )
+}))
+
+vi.mock('@/lib/streaming/helpers/prepare-tool-result-messages', () => ({
+  prepareToolResultMessages: (...args: unknown[]) =>
+    mockPrepareToolResultMessages(...args),
+  ToolResultValidationError: class ToolResultValidationError extends Error {}
 }))
 
 vi.mock('@/lib/streaming/helpers/inline-file-urls', () => ({
@@ -115,6 +124,8 @@ describe('createChatStreamResponse', () => {
       id: 'artifact-1',
       draftRevision: 3
     })
+    mockLoadChatWithMessages.mockResolvedValue(null)
+    mockPrepareToolResultMessages.mockReset()
     mockAgentStream.mockResolvedValue({
       toUIMessageStream: vi.fn(() => ({})),
       response: Promise.resolve({ messages: [] })
@@ -168,6 +179,54 @@ describe('createChatStreamResponse', () => {
             userId: 'user-1',
             chatId: 'chat-1'
           }
+        })
+      )
+    })
+    expect(mockAgentStream).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses the injected agent factory for authenticated tool-result continuations', async () => {
+    mockLoadChatWithMessages.mockResolvedValue({
+      id: 'chat-1',
+      userId: 'user-1',
+      messages: []
+    })
+    mockPrepareToolResultMessages.mockResolvedValue([
+      {
+        id: 'assistant-1',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool-displayOptionList',
+            toolCallId: 'tool-1',
+            state: 'output-available',
+            input: { id: 'choice', options: [{ id: 'a', label: 'A' }] },
+            output: 'a'
+          }
+        ]
+      }
+    ])
+    const agentFactory = vi.fn(() => ({ stream: mockAgentStream }) as any)
+
+    const response = await createChatStreamResponse({
+      message: null,
+      model: makeModel(),
+      chatId: 'chat-1',
+      userId: 'user-1',
+      trigger: 'tool-result',
+      toolResult: { toolCallId: 'tool-1', output: 'a' } as any,
+      agentFactory
+    })
+
+    await expect(response.text()).resolves.toBe('ok')
+    await vi.waitFor(() => {
+      expect(mockLoadChatWithMessages).toHaveBeenCalledWith('chat-1', 'user-1')
+      expect(mockPrepareToolResultMessages).toHaveBeenCalled()
+      expect(agentFactory).toHaveBeenCalledWith(
+        expect.objectContaining({
+          modelId: 'openai:gpt-4o-mini',
+          writer: mockWriter,
+          imageToolContext: { userId: 'user-1', chatId: 'chat-1' }
         })
       )
     })

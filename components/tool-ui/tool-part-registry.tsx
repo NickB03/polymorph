@@ -4,16 +4,12 @@ import { Fragment, type ReactNode } from 'react'
 
 import { UseChatHelpers } from '@ai-sdk/react'
 
+import { renderToolPart as renderDisplayOptionListToolPart } from '@/lib/tools/display-option-list/client'
+import { toolName as displayOptionListToolName } from '@/lib/tools/display-option-list/schema'
+import { renderToolPart as renderDisplayQuestionWizardToolPart } from '@/lib/tools/display-question-wizard/client'
+import { toolName as displayQuestionWizardToolName } from '@/lib/tools/display-question-wizard/schema'
 import type { UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 
-import { ResearchStatusLine } from '../research-status-line'
-
-import { OptionList } from './option-list/option-list'
-import type { OptionListSelection } from './option-list/schema'
-import { safeParseSerializableOptionList } from './option-list/schema'
-import { QuestionWizard } from './question-wizard/question-wizard'
-import type { WizardResult } from './question-wizard/schema'
-import { safeParseSerializableQuestionWizard } from './question-wizard/schema'
 import { tryRenderToolUIByName } from './registry'
 
 type ToolPartState =
@@ -84,93 +80,23 @@ export function renderToolPart({
     )
   }
 
-  if (toolName === 'displayOptionList') {
-    if (toolPart.state === 'output-available') {
-      const parsed = safeParseSerializableOptionList(toolPart.input)
-      if (!parsed) return null
-
-      if (parsed.id === 'research-depth') {
-        const selectedOption = parsed.options.find(
-          opt => opt.id === toolPart.output
-        )
-        return (
-          <ResearchStatusLine
-            key={`${messageId}-display-tool-${partIndex}`}
-            selectedLabel={selectedOption?.label ?? 'Research'}
-            isStreaming={Boolean(
-              status === 'streaming' || status === 'submitted'
-            )}
-          />
-        )
-      }
-
-      return (
-        <OptionList
-          key={`${messageId}-display-tool-${partIndex}`}
-          {...parsed}
-          choice={toolPart.output as OptionListSelection}
-        />
-      )
-    }
-
-    if (toolPart.state === 'input-available') {
-      const parsed = safeParseSerializableOptionList(toolPart.input)
-      if (!parsed) return null
-
-      return (
-        <OptionList
-          key={`${messageId}-display-tool-${partIndex}`}
-          {...parsed}
-          onAction={(_actionId, selection) => {
-            if (toolPart.toolCallId) {
-              addToolResult?.({
-                toolCallId: toolPart.toolCallId,
-                result: selection
-              })
-            }
-          }}
-        />
-      )
-    }
-
-    return renderLoadingToolPlaceholder(messageId, partIndex)
+  if (toolName === displayOptionListToolName) {
+    return renderDisplayOptionListToolPart({
+      toolPart,
+      messageId,
+      partIndex,
+      status,
+      addToolResult
+    })
   }
 
-  if (toolName === 'displayQuestionWizard') {
-    if (toolPart.state === 'output-available') {
-      const parsed = safeParseSerializableQuestionWizard(toolPart.input)
-      if (!parsed) return null
-
-      return (
-        <QuestionWizard
-          key={`${messageId}-display-tool-${partIndex}`}
-          {...parsed}
-          choice={toolPart.output as WizardResult}
-        />
-      )
-    }
-
-    if (toolPart.state === 'input-available') {
-      const parsed = safeParseSerializableQuestionWizard(toolPart.input)
-      if (!parsed) return null
-
-      return (
-        <QuestionWizard
-          key={`${messageId}-display-tool-${partIndex}`}
-          {...parsed}
-          onAction={(_actionId, selection) => {
-            if (toolPart.toolCallId) {
-              addToolResult?.({
-                toolCallId: toolPart.toolCallId,
-                result: selection
-              })
-            }
-          }}
-        />
-      )
-    }
-
-    return renderLoadingToolPlaceholder(messageId, partIndex)
+  if (toolName === displayQuestionWizardToolName) {
+    return renderDisplayQuestionWizardToolPart({
+      toolPart,
+      messageId,
+      partIndex,
+      addToolResult
+    })
   }
 
   if (toolPart.state === 'output-available' && toolPart.output) {

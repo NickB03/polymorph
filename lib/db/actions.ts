@@ -187,7 +187,8 @@ export async function upsertMessage(
         set: {
           role: messageData.role,
           uiMessage: messageData.uiMessage,
-          metadata: messageData.metadata
+          metadata: messageData.metadata,
+          updatedAt: new Date()
         }
       })
       .returning()
@@ -230,7 +231,7 @@ export async function loadChat(
     })
 
     // Convert to UI format
-    return result.map(msg => buildUIMessageFromDB(msg, msg.parts))
+    return result.map(msg => buildUIMessageFromDB(msg, msg.parts ?? []))
   })
 }
 
@@ -525,7 +526,7 @@ export async function loadChatWithMessages(
 
     // Build result
     const uiMessages = messagesResult.map(msg =>
-      buildUIMessageFromDB(msg, msg.parts)
+      buildUIMessageFromDB(msg, msg.parts ?? [])
     )
     return { ...chat, messages: uiMessages }
   })

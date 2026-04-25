@@ -163,4 +163,45 @@ describe('handleChatAgentRoute', () => {
     )
     expect(createChatStreamResponse).not.toHaveBeenCalled()
   })
+
+  it('creates the build agent when validated context carries build intent', async () => {
+    registryMocks.resolveChatAgentId.mockReturnValue('build')
+
+    await handleChatAgentRoute({
+      isGuest: false,
+      message: userMessage,
+      messages: [userMessage],
+      model: makeModel(),
+      chatId: 'build-chat',
+      userId: 'user-1',
+      trigger: 'submit-message',
+      searchMode: 'chat',
+      userMode: 'build',
+      intent: 'build',
+      modelType: 'quality'
+    })
+
+    const streamConfig = vi.mocked(createChatStreamResponse).mock.calls[0][0]
+    streamConfig.agentFactory({
+      modelId: 'gateway:google/gemini-3-flash',
+      parentTraceId: 'trace-build'
+    })
+
+    expect(registryMocks.resolveChatAgentId).toHaveBeenCalledWith({
+      searchMode: 'chat',
+      userMode: 'build',
+      intent: 'build'
+    })
+    expect(registryMocks.createChatAgentById).toHaveBeenCalledWith(
+      'build',
+      expect.objectContaining({
+        model: 'gateway:google/gemini-3-flash',
+        searchMode: 'chat',
+        userMode: 'build',
+        intent: 'build',
+        modelType: 'quality',
+        parentTraceId: 'trace-build'
+      })
+    )
+  })
 })

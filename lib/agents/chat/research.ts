@@ -11,6 +11,7 @@ import type { ChatAgentTools } from './toolset'
 export const RESEARCH_AGENT_ACTIVE_TOOLS: (keyof ChatAgentTools)[] = [
   'search',
   'fetch',
+  'competitorResearch',
   'displayTable',
   'displayChart',
   'displayGeoMap',

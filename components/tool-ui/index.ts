@@ -17,6 +17,8 @@ export type {
   SerializableCitation
 } from './citation'
 export { Citation, CitationList } from './citation'
+export type { CompetitorResearchResultProps } from './competitor-research-result'
+export { CompetitorResearchResult } from './competitor-research-result'
 export type {
   Column,
   DataTableClientProps,

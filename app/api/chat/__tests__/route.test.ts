@@ -1,3 +1,5 @@
+import { cookies } from 'next/headers'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock all dependencies
@@ -67,6 +69,8 @@ vi.mock('@/lib/utils/json-error', () => ({
 
 import { handleChatAgentRoute } from '@/lib/agents/chat/route-handler'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
+import { checkAndEnforceOverallChatLimit } from '@/lib/rate-limit/chat-limits'
+import { checkAndEnforceGuestLimit } from '@/lib/rate-limit/guest-limit'
 import { isProviderEnabled } from '@/lib/utils/registry'
 
 import { POST } from '@/app/api/chat/route'
@@ -86,6 +90,17 @@ describe('POST /api/chat', () => {
 
     vi.mocked(isProviderEnabled).mockReset()
     vi.mocked(isProviderEnabled).mockReturnValue(true)
+
+    vi.mocked(checkAndEnforceOverallChatLimit).mockReset()
+    vi.mocked(checkAndEnforceOverallChatLimit).mockResolvedValue(null)
+
+    vi.mocked(checkAndEnforceGuestLimit).mockReset()
+    vi.mocked(checkAndEnforceGuestLimit).mockResolvedValue(null)
+
+    vi.mocked(cookies).mockReset()
+    vi.mocked(cookies).mockResolvedValue({
+      get: vi.fn().mockReturnValue(undefined)
+    } as any)
 
     vi.mocked(handleChatAgentRoute).mockReset()
     vi.mocked(handleChatAgentRoute).mockResolvedValue(
@@ -207,6 +222,90 @@ describe('POST /api/chat', () => {
         isNewChat: true
       })
     )
+  })
+
+  it('forwards build mode from cookies to the chat agent route handler', async () => {
+    const cookieGet = vi.fn((name: string) => {
+      if (name === 'searchMode') return { value: 'build' }
+      if (name === 'modelType') return { value: 'quality' }
+      return undefined
+    })
+    vi.mocked(cookies).mockResolvedValueOnce({ get: cookieGet } as any)
+
+    const req = createRequest({
+      message: {
+        role: 'user',
+        parts: [{ type: 'text', text: 'build an app' }]
+      },
+      messages: [
+        { role: 'user', parts: [{ type: 'text', text: 'build an app' }] }
+      ],
+      chatId: 'build-chat',
+      trigger: 'submit-message',
+      isNewChat: true
+    })
+
+    const res = await POST(req)
+
+    expect(res.status).toBe(200)
+    expect(handleChatAgentRoute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isGuest: false,
+        chatId: 'build-chat',
+        searchMode: 'chat',
+        userMode: 'build',
+        intent: 'build',
+        modelType: 'quality'
+      })
+    )
+  })
+
+  it('does not delegate authenticated requests when the overall chat limit rejects', async () => {
+    vi.mocked(checkAndEnforceOverallChatLimit).mockResolvedValueOnce(
+      new Response('limited', { status: 429 })
+    )
+
+    const req = createRequest({
+      message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'hello' }] }],
+      chatId: 'limited-chat',
+      trigger: 'submit-message',
+      isNewChat: true
+    })
+
+    const res = await POST(req)
+
+    expect(res.status).toBe(429)
+    expect(checkAndEnforceOverallChatLimit).toHaveBeenCalledWith('user-123')
+    expect(handleChatAgentRoute).not.toHaveBeenCalled()
+  })
+
+  it('does not delegate guest requests when the guest limit rejects', async () => {
+    vi.mocked(getCurrentUserId).mockResolvedValueOnce(
+      undefined as unknown as string
+    )
+    process.env.ENABLE_GUEST_CHAT = 'true'
+    vi.mocked(checkAndEnforceGuestLimit).mockResolvedValueOnce(
+      new Response('guest limited', { status: 429 })
+    )
+
+    const req = createRequest(
+      {
+        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+        messages: [{ role: 'user', parts: [{ type: 'text', text: 'hello' }] }],
+        chatId: 'guest-limited-chat',
+        trigger: 'submit-message'
+      },
+      { 'x-forwarded-for': '203.0.113.10, 10.0.0.1' }
+    )
+
+    const res = await POST(req)
+
+    expect(res.status).toBe(429)
+    expect(checkAndEnforceGuestLimit).toHaveBeenCalledWith('203.0.113.10')
+    expect(handleChatAgentRoute).not.toHaveBeenCalled()
+
+    delete process.env.ENABLE_GUEST_CHAT
   })
 
   it('delegates guest users to the chat agent route handler after validation', async () => {
