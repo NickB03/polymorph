@@ -56,4 +56,16 @@ describe('computeDivergences', () => {
     expect(DIVERGENCE_WARN).toBe(0.08)
     expect(DIVERGENCE_ALARM).toBe(0.15)
   })
+
+  it('skips evaluator pairs where either side is null', () => {
+    // faithfulness skipped (cap is null), relevance skipped (traf is null),
+    // safety has no divergence → empty result. Without the fix, null coerced
+    // to 0 would surface a 0.5 alarm on faithfulness and a 0.9 alarm on relevance.
+    const result = computeDivergences(
+      { faithfulness: null, relevance: 0.9, safety: 0.95 },
+      { faithfulness: 0.5, relevance: null, safety: 0.95 }
+    )
+
+    expect(result).toEqual([])
+  })
 })
