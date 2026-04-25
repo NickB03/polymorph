@@ -599,6 +599,10 @@ export const evalSummaries = pgTable(
       'eval_summaries_threshold_bps_range',
       sql`${table.thresholdBps} IS NULL OR (${table.thresholdBps} >= 0 AND ${table.thresholdBps} <= 10000)`
     ),
+    check(
+      'eval_summaries_suite_enum',
+      sql`${table.suite} IN ('capability', 'regression', 'traffic-monitor')`
+    ),
     pgPolicy('authenticated_read_eval_summaries', {
       as: 'permissive',
       for: 'select',
