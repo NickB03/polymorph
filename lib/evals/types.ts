@@ -19,7 +19,7 @@ export interface EvalSummarySnapshot {
   thresholdBreached: boolean
   failedEvaluators: string[]
   overallScore: number
-  evaluatorScores: Record<string, number>
+  evaluatorScores: Record<string, number | null>
   totalCases: number
   phoenixUrl: string | null
   createdAt: string
@@ -50,7 +50,7 @@ export interface EvalSummaryRow {
   thresholdBps: number | null
   thresholdBreached: boolean
   failedEvaluators: string[]
-  evaluatorScores: Record<string, number>
+  evaluatorScores: Record<string, number | null>
   totalCases: number
   phoenixUrl: string | null
   createdAt: Date

@@ -579,7 +579,7 @@ export const evalSummaries = pgTable(
       .notNull()
       .default(sql`'[]'::jsonb`),
     evaluatorScores: jsonb('evaluator_scores')
-      .$type<Record<string, number>>()
+      .$type<Record<string, number | null>>()
       .notNull(),
     totalCases: integer('total_cases').notNull(),
     phoenixUrl: text('phoenix_url'),
@@ -598,6 +598,10 @@ export const evalSummaries = pgTable(
     check(
       'eval_summaries_threshold_bps_range',
       sql`${table.thresholdBps} IS NULL OR (${table.thresholdBps} >= 0 AND ${table.thresholdBps} <= 10000)`
+    ),
+    check(
+      'eval_summaries_suite_enum',
+      sql`${table.suite} IN ('capability', 'regression', 'traffic-monitor')`
     ),
     pgPolicy('authenticated_read_eval_summaries', {
       as: 'permissive',

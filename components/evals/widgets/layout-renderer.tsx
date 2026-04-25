@@ -75,7 +75,9 @@ export function LayoutRenderer({
       {template.items.map(item => {
         const pos = positionById.get(item.id)
         if (!pos) return null
-        const Component = WIDGET_REGISTRY[item.type]
+        const entry = WIDGET_REGISTRY[item.type]
+        if (entry.canRender && !entry.canRender(data)) return null
+        const { Component } = entry
         return (
           <div
             key={item.id}

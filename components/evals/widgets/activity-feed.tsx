@@ -107,8 +107,9 @@ function FeedRowCard({
       {expanded ? (
         <CardContent className="space-y-3 border-t bg-muted/20 pt-4">
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-            {Object.entries(row.snapshot.evaluatorScores).map(
-              ([key, value]) => (
+            {Object.entries(row.snapshot.evaluatorScores)
+              .filter((entry): entry is [string, number] => entry[1] != null)
+              .map(([key, value]) => (
                 <div key={key} className="flex items-center gap-3 text-xs">
                   <span className="w-32 truncate text-muted-foreground">
                     {getEvaluatorLabel(key)}
@@ -126,8 +127,7 @@ function FeedRowCard({
                     {percent(value)}
                   </span>
                 </div>
-              )
-            )}
+              ))}
           </div>
           <div className="flex gap-6 text-xs text-muted-foreground">
             <span>dataset: {row.snapshot.datasetName}</span>

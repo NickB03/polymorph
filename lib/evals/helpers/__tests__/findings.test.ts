@@ -6,7 +6,7 @@ import { computeFindings } from '../findings'
 
 function snap(
   overrides: Partial<EvalSummarySnapshot> & {
-    evaluatorScores: Record<string, number>
+    evaluatorScores: Record<string, number | null>
   }
 ): EvalSummarySnapshot {
   return {
@@ -27,10 +27,10 @@ function snap(
 }
 
 function data(
-  capLatest: Record<string, number>,
-  capPrev: Record<string, number>,
-  trafLatest: Record<string, number>,
-  trafPrev: Record<string, number>,
+  capLatest: Record<string, number | null>,
+  capPrev: Record<string, number | null>,
+  trafLatest: Record<string, number | null>,
+  trafPrev: Record<string, number | null>,
   trafPassRate = 0.9,
   criticalSuite: 'capability' | 'regression' | 'traffic-monitor' | null = null
 ): EvalsDashboardData {
@@ -207,6 +207,37 @@ describe('computeFindings', () => {
     expect(result[0].severity).toBe('critical')
     expect(result[0].text).toContain('Regression')
     expect(result[0].snapshotId).toBe('reg-l')
+  })
+
+  it('skips evaluators whose latest traffic score is null instead of treating them as 0', () => {
+    // All non-null scores match across snapshots so no other findings fire — the
+    // only delta the bugged code would produce is the phantom -85pt drop from
+    // null being coerced to 0 against the 0.85 previous score.
+    const result = computeFindings(
+      data(
+        { faithfulness: 0.9 },
+        { faithfulness: 0.9 },
+        { faithfulness: null },
+        { faithfulness: 0.85 }
+      )
+    )
+
+    expect(result).toEqual([])
+  })
+
+  it('skips evaluators whose previous traffic score is null', () => {
+    // Mirror of the test above: with the bug, latest=0.85 against previous=null
+    // (coerced to 0) would surface as a phantom +85pt improvement.
+    const result = computeFindings(
+      data(
+        { faithfulness: 0.9 },
+        { faithfulness: 0.9 },
+        { faithfulness: 0.85 },
+        { faithfulness: null }
+      )
+    )
+
+    expect(result).toEqual([])
   })
 
   it('emits a critical finding for legacy traffic-monitor rows without threshold metadata', () => {
