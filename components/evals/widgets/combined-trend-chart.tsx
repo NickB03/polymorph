@@ -41,13 +41,13 @@ export function CombinedTrendChart({ data, config }: WidgetProps<Config>) {
     )
   }
   return (
-    <Card className="h-full">
+    <Card className="h-full min-w-0 overflow-hidden">
       <CardHeader>
         <CardTitle className="text-base">
           {config.title ?? 'Trend · both suites overlaid'}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="min-w-0">
         <ChartContainer
           config={{
             capability: { label: 'Capability', color: 'var(--chart-1)' },
