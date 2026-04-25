@@ -70,10 +70,30 @@ export async function runConfiguredModes(): Promise<SuiteRunResult[]> {
     config.exitOnThresholdBreach &&
     results.some(result => result.status === 'threshold_breached')
   ) {
-    throw new Error(formatThresholdBreachExitMessage(results))
+    if (persistErrors.length > 0) {
+      console.error(
+        `[evals] Threshold breach AND ${persistErrors.length} DB-write failure(s) — see cause chain`
+      )
+    }
+    throw new Error(formatThresholdBreachExitMessage(results), {
+      cause: persistErrors[0]
+    })
   }
 
   if (persistErrors.length > 0) {
+    if (persistErrors.length > 1) {
+      console.error(
+        `[evals] ${persistErrors.length} DB-write failures occurred; first is thrown, rest on cause chain`
+      )
+      // Chain subsequent errors onto the first via cause.
+      let head: Error = persistErrors[0]
+      for (let i = 1; i < persistErrors.length; i++) {
+        const next: Error = persistErrors[i]
+        ;(next as Error & { cause?: unknown }).cause = undefined
+        ;(head as Error & { cause?: unknown }).cause = next
+        head = next
+      }
+    }
     throw persistErrors[0]
   }
 

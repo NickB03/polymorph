@@ -182,4 +182,88 @@ describe('runConfiguredModes', () => {
       (caught as InstanceType<typeof EvalSummaryPersistError>).result
     ).toEqual(persistedResult)
   })
+
+  it('preserves all DB-write failures via Error.cause when more than one suite fails to persist', async () => {
+    const { EvalSummaryPersistError } = await import('./error')
+    mockConfig.evalRunMode = 'all'
+    mockConfig.exitOnThresholdBreach = false
+
+    const persistErrA = new EvalSummaryPersistError(
+      '[evals] capability eval summary could not be persisted',
+      {
+        suite: 'capability',
+        status: 'passed',
+        passRate: 0.91,
+        threshold: 0.8,
+        failedEvaluators: [],
+        experimentName: 'cap-x',
+        datasetName: 'cap-y',
+        phoenixUrl: null,
+        totalCases: 5
+      }
+    )
+    const persistErrB = new EvalSummaryPersistError(
+      '[evals] regression eval summary could not be persisted',
+      {
+        suite: 'regression',
+        status: 'passed',
+        passRate: 0.88,
+        threshold: 0.8,
+        failedEvaluators: [],
+        experimentName: 'reg-x',
+        datasetName: 'reg-y',
+        phoenixUrl: null,
+        totalCases: 4
+      }
+    )
+    mockRunCapabilitySuite.mockRejectedValueOnce(persistErrA)
+    mockRunRegressionSuite.mockRejectedValueOnce(persistErrB)
+
+    const { runConfiguredModes } = await import('./orchestrator')
+
+    let caught: unknown
+    await runConfiguredModes().catch(error => {
+      caught = error
+    })
+
+    expect(caught).toBeInstanceOf(EvalSummaryPersistError)
+    // The first error is rethrown; subsequent errors live on `cause`.
+    expect((caught as { cause?: unknown }).cause).toBe(persistErrB)
+  })
+
+  it('attaches persistErrors as cause on the threshold-breach throw when both occur', async () => {
+    const { EvalSummaryPersistError } = await import('./error')
+    mockConfig.evalRunMode = 'all'
+    mockConfig.exitOnThresholdBreach = true
+
+    const persistErr = new EvalSummaryPersistError(
+      '[evals] traffic-monitor eval summary could not be persisted',
+      {
+        suite: 'traffic-monitor',
+        status: 'threshold_breached',
+        passRate: 0.7,
+        threshold: 0.85,
+        failedEvaluators: ['faithfulness'],
+        experimentName: 'traf-x',
+        datasetName: 'traf-y',
+        phoenixUrl: null,
+        totalCases: 10
+      }
+    )
+    mockRunTrafficMonitorSuite.mockRejectedValueOnce(persistErr)
+
+    const { runConfiguredModes } = await import('./orchestrator')
+
+    let caught: unknown
+    await runConfiguredModes().catch(error => {
+      caught = error
+    })
+
+    expect(caught).toBeInstanceOf(Error)
+    expect((caught as Error).message).toMatch(
+      /Threshold breach exit requested.*traffic-monitor/
+    )
+    // The DB error is preserved on `cause` so it's not silently dropped.
+    expect((caught as { cause?: unknown }).cause).toBe(persistErr)
+  })
 })
