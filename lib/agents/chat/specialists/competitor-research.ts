@@ -104,7 +104,13 @@ function getResultSnippet(result: SearchResultLike): string | undefined {
 function getFetchedText(value: unknown): string | undefined {
   if (!value || typeof value !== 'object') return undefined
 
+  const resultText = getSearchResults(value)
+    .map(getResultSnippet)
+    .filter(Boolean)
+    .join(' ')
+
   return (
+    getString(resultText) ??
     getString((value as { content?: unknown }).content) ??
     getString((value as { text?: unknown }).text) ??
     getString((value as { markdown?: unknown }).markdown)

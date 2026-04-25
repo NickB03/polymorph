@@ -102,8 +102,15 @@ describe('chat specialist fixtures', () => {
       execute: vi.fn(async function* () {
         yield {
           state: 'complete',
-          url: 'https://example.com/alpha',
-          content: 'Alpha pricing and reliability details.'
+          query: '',
+          images: [],
+          results: [
+            {
+              title: 'Alpha source',
+              url: 'https://example.com/alpha',
+              content: 'Alpha pricing and reliability details.'
+            }
+          ]
         }
       })
     }
@@ -125,7 +132,11 @@ describe('chat specialist fixtures', () => {
 
     expect(searchTool.execute).toHaveBeenCalled()
     expect(fetchTool.execute).toHaveBeenCalled()
-    expect(competitorResearchOutputSchema.parse(output).cards).toHaveLength(2)
+    const parsedOutput = competitorResearchOutputSchema.parse(output)
+    expect(parsedOutput.cards).toHaveLength(2)
+    expect(parsedOutput.matrix[0]?.UX).toContain(
+      'Alpha pricing and reliability details.'
+    )
   })
 
   it('registers competitor research only on the research agent', () => {

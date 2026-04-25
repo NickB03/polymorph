@@ -546,6 +546,12 @@ The React client uses the AI SDK's `useChat` hook (`@ai-sdk/react`) which:
 
 The `messages` array is structured as `UIMessage[]` where each message has `parts` (text, tool calls, tool results, reasoning, etc.) that map to the generative UI component tree.
 
+### Portable Tool Boundary
+
+The streaming layer does not special-case `competitorResearch` or other structured specialist tools. `handleChatAgentRoute()` selects an agent factory, the stream helpers call that factory, and the AI SDK emits normal tool parts into the `UIMessage` stream. The Workstream 5 proof in [`lib/agents/chat/__tests__/community-portability.test.ts`](../../lib/agents/chat/__tests__/community-portability.test.ts) covers the downstream adapter chain for one structured specialist: local toolset execution, dedicated Tool UI rendering, and dynamic-part message mapping.
+
+That test is not a substitute for reviewing a future change's diff. It proves the current seams are sufficient for the representative AI SDK `tool({ inputSchema, execute })` pattern; it does not prove that no route, stream helper, or persistence files changed in a separate commit.
+
 ---
 
 ## Key Files

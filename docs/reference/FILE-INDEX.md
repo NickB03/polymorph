@@ -752,7 +752,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/utils/model-selection.ts`        | Resolves the appropriate model based on search mode and model type cookie preferences                       |
 | `lib/utils/context-window.ts`         | Token counting, context window management, and message truncation using tiktoken                            |
 | `lib/utils/citation.ts`               | Citation extraction, processing, and mapping from search results to inline references                       |
-| `lib/utils/message-mapping.ts`        | Bidirectional mapping between AI SDK UIMessage format and database message/part records                     |
+| `lib/utils/message-mapping.ts`        | Maps AI SDK UIMessage and DB parts; restores registered rich dynamic tools                                  |
 | `lib/utils/message-utils.ts`          | Helpers for extracting text content from message parts                                                      |
 | `lib/utils/domain.ts`                 | Extracts display-friendly domain name from URLs (e.g., "google" from "www.google.com")                      |
 | `lib/utils/file-validation.ts`        | Allowed file types, size limits, and validation constants for uploads                                       |
@@ -1008,57 +1008,57 @@ Offline evaluation pipeline (`services/evals/`) for measuring search quality via
 
 Test files are co-located with their source files using `__tests__/` directories.
 
-| File                                                                    | Purpose                                                                                     |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `app/api/chat/__tests__/route.test.ts`                                  | Tests for the chat API route                                                                |
-| `app/api/feedback/__tests__/route.test.ts`                              | Tests for the feedback API route                                                            |
-| `app/api/suggestions/__tests__/route.test.ts`                           | Tests for the suggestions API route                                                         |
-| `app/api/advanced-search/__tests__/route.test.ts`                       | Tests for the advanced search API route                                                     |
-| `components/mode-selector.test.tsx`                                     | Tests for the three-mode selector                                                           |
-| `components/__tests__/research-process-section.test.tsx`                | Tests for the research process section component                                            |
-| `components/chat-request.test.ts`                                       | Tests for chat request utilities                                                            |
-| `components/chat.test.tsx`                                              | Tests for the main chat component                                                           |
-| `components/motion/pill-presence.test.tsx`                              | Tests for mode-pill presence and swap behavior                                              |
-| `components/motion/stagger-list.test.tsx`                               | Tests for capped timeline staggering                                                        |
-| `components/motion/tool-card-mount.test.tsx`                            | Tests for new-vs-hydrated tool-card animation                                               |
-| `components/tool-ui/competitor-research-result.test.tsx`                | Tests the dedicated `competitorResearch` result renderer                                    |
-| `components/tool-ui/geo-map/__tests__/schema-mirror.test.ts`            | Tests the mirrored geo-map schema contract                                                  |
-| `components/tool-ui/geo-map/__tests__/schema.test.ts`                   | Tests geo-map schema parsing and validation                                                 |
-| `components/tool-ui/tool-part-registry.test.tsx`                        | Tests module-local interactive dispatch for option list and question wizard tools           |
-| `lib/actions/__tests__/chat.test.ts`                                    | Tests for chat server actions                                                               |
-| `lib/actions/__tests__/feedback.test.ts`                                | Tests for feedback server actions                                                           |
-| `lib/agents/__tests__/generate-trending-suggestions.test.ts`            | Tests for trending suggestions generation                                                   |
-| `lib/agents/__tests__/researcher.test.ts`                               | Tests for the researcher agent                                                              |
-| `lib/agents/__tests__/title-generator.test.ts`                          | Tests for chat title generation                                                             |
-| `lib/agents/chat/__tests__/community-portability.test.ts`               | Proves a structured specialist ports through local adapters without route/streaming changes |
-| `lib/agents/chat/__tests__/specialists.test.ts`                         | Tests specialist schemas, active tool registration, and live specialist execution           |
-| `lib/db/__tests__/chat-ui-message-load.test.ts`                         | Tests canonical `uiMessage` load preference, fallback, metadata merge, and upsert behavior  |
-| `lib/db/__tests__/rls-policies.integration.test.ts`                     | Integration tests for RLS policy enforcement                                                |
-| `lib/db/__tests__/with-rls.test.ts`                                     | Tests for RLS helper functions                                                              |
-| `lib/motion/hydration-boundary.test.tsx`                                | Tests initial tool-part tracking for motion                                                 |
-| `lib/motion/part-ids.test.ts`                                           | Tests tool-part ID extraction from message data                                             |
-| `lib/motion/tokens.test.ts`                                             | Tests motion token snapshots                                                                |
-| `lib/motion/variants.test.ts`                                           | Tests reduced-motion variant resolution                                                     |
-| `lib/rate-limit/__tests__/guest-limit.test.ts`                          | Tests for guest rate limiting logic                                                         |
-| `lib/rate-limit/__tests__/rate-limit-fallback.test.ts`                  | Tests for rate limit fallback behavior                                                      |
-| `lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts` | Tests for ephemeral streaming                                                               |
-| `lib/streaming/__tests__/prune-messages-integration.test.ts`            | Integration tests for message pruning                                                       |
-| `lib/streaming/helpers/__tests__/prepare-messages.test.ts`              | Tests for message preparation                                                               |
-| `lib/tools/__tests__/module-contract.test.ts`                           | Tests migrated tool folders and compatibility shims expose the stable module contract       |
-| `lib/tools/__tests__/display-geo-map.test.ts`                           | Tests geo-map tool validation and passthrough                                               |
-| `lib/tools/__tests__/fetch.test.ts`                                     | Tests for the fetch tool                                                                    |
-| `lib/tools/__tests__/geocode-address.test.ts`                           | Tests geocoding result normalization and errors                                             |
-| `lib/tools/__tests__/get-directions.test.ts`                            | Tests directions routing outputs and edge cases                                             |
-| `lib/tools/__tests__/get-isochrone.test.ts`                             | Tests isochrone polygon generation and failures                                             |
-| `lib/tools/__tests__/get-static-map-image.test.ts`                      | Tests static map URL generation                                                             |
-| `scripts/__tests__/backfill-chat-ui-message.test.ts`                    | Tests legacy parts reconstruction for the `messages.ui_message` backfill                    |
-| `lib/tools/maptiler/__tests__/client.test.ts`                           | Tests MapTiler client configuration and URL building                                        |
-| `lib/tools/search/providers/__tests__/providers.test.ts`                | Tests for search provider implementations                                                   |
-| `lib/utils/__tests__/citation.test.ts`                                  | Tests for citation extraction and processing                                                |
-| `lib/utils/__tests__/context-window.test.ts`                            | Tests for token counting and message truncation                                             |
-| `lib/utils/__tests__/domain.test.ts`                                    | Tests for domain name extraction                                                            |
-| `lib/utils/__tests__/message-mapping-display-tools.test.ts`             | Tests for display tool message mapping                                                      |
-| `lib/utils/__tests__/message-utils.test.ts`                             | Tests for message utility functions                                                         |
-| `lib/utils/__tests__/model-selection.test.ts`                           | Tests for model resolution logic                                                            |
-| `lib/utils/__tests__/retry.test.ts`                                     | Tests for retry utility                                                                     |
-| `lib/utils/__tests__/search-config.test.ts`                             | Tests for search configuration                                                              |
+| File                                                                    | Purpose                                                                                    |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `app/api/chat/__tests__/route.test.ts`                                  | Tests for the chat API route                                                               |
+| `app/api/feedback/__tests__/route.test.ts`                              | Tests for the feedback API route                                                           |
+| `app/api/suggestions/__tests__/route.test.ts`                           | Tests for the suggestions API route                                                        |
+| `app/api/advanced-search/__tests__/route.test.ts`                       | Tests for the advanced search API route                                                    |
+| `components/mode-selector.test.tsx`                                     | Tests for the three-mode selector                                                          |
+| `components/__tests__/research-process-section.test.tsx`                | Tests for the research process section component                                           |
+| `components/chat-request.test.ts`                                       | Tests for chat request utilities                                                           |
+| `components/chat.test.tsx`                                              | Tests for the main chat component                                                          |
+| `components/motion/pill-presence.test.tsx`                              | Tests for mode-pill presence and swap behavior                                             |
+| `components/motion/stagger-list.test.tsx`                               | Tests for capped timeline staggering                                                       |
+| `components/motion/tool-card-mount.test.tsx`                            | Tests for new-vs-hydrated tool-card animation                                              |
+| `components/tool-ui/competitor-research-result.test.tsx`                | Tests the dedicated `competitorResearch` result renderer                                   |
+| `components/tool-ui/geo-map/__tests__/schema-mirror.test.ts`            | Tests the mirrored geo-map schema contract                                                 |
+| `components/tool-ui/geo-map/__tests__/schema.test.ts`                   | Tests geo-map schema parsing and validation                                                |
+| `components/tool-ui/tool-part-registry.test.tsx`                        | Tests module-local interactive dispatch for option list and question wizard tools          |
+| `lib/actions/__tests__/chat.test.ts`                                    | Tests for chat server actions                                                              |
+| `lib/actions/__tests__/feedback.test.ts`                                | Tests for feedback server actions                                                          |
+| `lib/agents/__tests__/generate-trending-suggestions.test.ts`            | Tests for trending suggestions generation                                                  |
+| `lib/agents/__tests__/researcher.test.ts`                               | Tests for the researcher agent                                                             |
+| `lib/agents/__tests__/title-generator.test.ts`                          | Tests for chat title generation                                                            |
+| `lib/agents/chat/__tests__/community-portability.test.ts`               | Tests research activation, toolset execution, Tool UI rendering, and dynamic mapping       |
+| `lib/agents/chat/__tests__/specialists.test.ts`                         | Tests specialist schemas, active tool registration, and live specialist execution          |
+| `lib/db/__tests__/chat-ui-message-load.test.ts`                         | Tests canonical `uiMessage` load preference, fallback, metadata merge, and upsert behavior |
+| `lib/db/__tests__/rls-policies.integration.test.ts`                     | Integration tests for RLS policy enforcement                                               |
+| `lib/db/__tests__/with-rls.test.ts`                                     | Tests for RLS helper functions                                                             |
+| `lib/motion/hydration-boundary.test.tsx`                                | Tests initial tool-part tracking for motion                                                |
+| `lib/motion/part-ids.test.ts`                                           | Tests tool-part ID extraction from message data                                            |
+| `lib/motion/tokens.test.ts`                                             | Tests motion token snapshots                                                               |
+| `lib/motion/variants.test.ts`                                           | Tests reduced-motion variant resolution                                                    |
+| `lib/rate-limit/__tests__/guest-limit.test.ts`                          | Tests for guest rate limiting logic                                                        |
+| `lib/rate-limit/__tests__/rate-limit-fallback.test.ts`                  | Tests for rate limit fallback behavior                                                     |
+| `lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts` | Tests for ephemeral streaming                                                              |
+| `lib/streaming/__tests__/prune-messages-integration.test.ts`            | Integration tests for message pruning                                                      |
+| `lib/streaming/helpers/__tests__/prepare-messages.test.ts`              | Tests for message preparation                                                              |
+| `lib/tools/__tests__/module-contract.test.ts`                           | Tests migrated tool folders and compatibility shims expose the stable module contract      |
+| `lib/tools/__tests__/display-geo-map.test.ts`                           | Tests geo-map tool validation and passthrough                                              |
+| `lib/tools/__tests__/fetch.test.ts`                                     | Tests for the fetch tool                                                                   |
+| `lib/tools/__tests__/geocode-address.test.ts`                           | Tests geocoding result normalization and errors                                            |
+| `lib/tools/__tests__/get-directions.test.ts`                            | Tests directions routing outputs and edge cases                                            |
+| `lib/tools/__tests__/get-isochrone.test.ts`                             | Tests isochrone polygon generation and failures                                            |
+| `lib/tools/__tests__/get-static-map-image.test.ts`                      | Tests static map URL generation                                                            |
+| `scripts/__tests__/backfill-chat-ui-message.test.ts`                    | Tests legacy parts reconstruction for the `messages.ui_message` backfill                   |
+| `lib/tools/maptiler/__tests__/client.test.ts`                           | Tests MapTiler client configuration and URL building                                       |
+| `lib/tools/search/providers/__tests__/providers.test.ts`                | Tests for search provider implementations                                                  |
+| `lib/utils/__tests__/citation.test.ts`                                  | Tests for citation extraction and processing                                               |
+| `lib/utils/__tests__/context-window.test.ts`                            | Tests for token counting and message truncation                                            |
+| `lib/utils/__tests__/domain.test.ts`                                    | Tests for domain name extraction                                                           |
+| `lib/utils/__tests__/message-mapping-display-tools.test.ts`             | Tests for display tool message mapping                                                     |
+| `lib/utils/__tests__/message-utils.test.ts`                             | Tests for message utility functions                                                        |
+| `lib/utils/__tests__/model-selection.test.ts`                           | Tests for model resolution logic                                                           |
+| `lib/utils/__tests__/retry.test.ts`                                     | Tests for retry utility                                                                    |
+| `lib/utils/__tests__/search-config.test.ts`                             | Tests for search configuration                                                             |

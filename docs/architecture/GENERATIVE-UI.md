@@ -216,6 +216,17 @@ See [Geo & Spatial Tools](GEO-TOOLS.md) for the full compose-first flow.
 
 Display tools are passthrough schemas rendered inline. A separate category of conditionally registered tools (`generateImage`, canvas artifact tools) performs work outside the chat and renders through module-local result adapters that are surfaced by the Tool UI registry. The live `competitorResearch` specialist follows the same dedicated-result pattern. See [Research Agent → Conditional Tools](RESEARCH-AGENT.md#conditional-tools).
 
+### Community-portability evidence
+
+Workstream 5 uses `competitorResearch` as the representative external/community-inspired AI SDK pattern: a structured Vercel AI SDK `tool({ inputSchema, execute })` definition ported through local adapters. The proof lives in [`lib/agents/chat/__tests__/community-portability.test.ts`](../../lib/agents/chat/__tests__/community-portability.test.ts) and exercises the local path rather than only checking registration:
+
+- Research agent resolution and `activeTools` activation include `competitorResearch`, while search/chat and build definitions do not.
+- `createChatAgentTools()` creates the specialist through the local toolset and executes it with mocked search/fetch tools shaped like real tool outputs.
+- `components/tool-ui/registry.tsx` renders the structured result through the dedicated `CompetitorResearchResult` adapter.
+- `lib/utils/message-mapping.ts` persists and restores the rich `tool-competitorResearch` part through dynamic tool columns.
+
+This is an adapter-chain proof, not isolated git-history proof. It shows the current architecture can carry one structured AI SDK tool pattern through agent, toolset, rendering, and mapping seams without adding route/streaming/persistence-specific code for that tool. Verifying that a future change avoided route, streaming, or persistence edits still requires checking that change's diff.
+
 ### Shared base fields
 
 All display tool schemas support optional base fields defined in `components/tool-ui/shared/schema.ts`:

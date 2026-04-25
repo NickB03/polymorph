@@ -65,7 +65,7 @@ const modules = [
   ]
 ] as const
 
-const compatibilityFiles = ['lib/tools/fetch.ts', 'lib/tools/search.ts']
+const compatibilityFiles = modules.map(([name]) => `lib/tools/${name}.ts`)
 
 function expectModuleContract(mod: unknown) {
   expect(mod).toEqual(

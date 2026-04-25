@@ -351,6 +351,10 @@ Session-scoped task management. Each `createTodoTools()` call creates an isolate
 
 The research agent exposes one live specialist as a normal tool. It accepts a market, 2-6 competitors, and 1-8 comparison dimensions, then uses live `search` and `fetch` evidence to return a structured summary, competitor cards, and a comparison matrix. It is present in `createChatAgentTools()` but only active in `RESEARCH_AGENT_ACTIVE_TOOLS`, so search/chat/build agents cannot call it.
 
+`competitorResearch` is also the Workstream 5 portability proof for bringing a community-style AI SDK `tool({ inputSchema, execute })` pattern into this repo. [`lib/agents/chat/__tests__/community-portability.test.ts`](../../lib/agents/chat/__tests__/community-portability.test.ts) verifies research-agent activation, local toolset execution, dedicated Tool UI rendering, and dynamic-part persistence mapping. Search and fetch are mocked in that test to keep the proof deterministic; live provider coverage remains in the specialist/tool tests and runtime paths.
+
+The proof does not claim that every future specialist is route/streaming/persistence-free by default. Future structured tools still need to stay within the existing seams: add the tool contract, register it in `createChatAgentTools()`, activate it in the intended agent definition/prompt, add a Tool UI result adapter when the output needs rich rendering, and extend message mapping only if the tool needs rich dynamic-part restoration.
+
 #### Spatial tools — geocoding, routing, isochrones, and static maps
 
 These helpers are ordinary agent tools, not display tools. They usually compose into a final `displayGeoMap` or `getStaticMapImage` response.
