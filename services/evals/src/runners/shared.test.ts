@@ -799,6 +799,41 @@ describe('runJudgedSuite', () => {
     warnSpy.mockRestore()
     errorSpy.mockRestore()
   })
+
+  it('wraps persistEvalSummary failures in EvalSummaryPersistError carrying the run result', async () => {
+    const { EvalSummaryPersistError } = await import('../error')
+
+    const cases = [makeCaseSpec('c1', 'capability')]
+    mockGetCasesForEvaluation.mockReturnValue(cases)
+    mockRunEvalCase.mockResolvedValueOnce(makeRunResult('c1'))
+    mockPersistEvalSummary.mockRejectedValueOnce(
+      new Error('connection refused')
+    )
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { runJudgedSuite } = await import('./shared')
+
+    let caught: unknown
+    await runJudgedSuite('capability').catch(error => {
+      caught = error
+    })
+
+    expect(caught).toBeInstanceOf(EvalSummaryPersistError)
+    expect(
+      (caught as InstanceType<typeof EvalSummaryPersistError>).result
+    ).toMatchObject({
+      suite: 'capability',
+      passRate: expect.any(Number),
+      threshold: expect.any(Number),
+      failedEvaluators: expect.any(Array)
+    })
+    expect((caught as Error).message).toContain(
+      'eval summary could not be persisted'
+    )
+
+    errorSpy.mockRestore()
+  })
 })
 
 describe('runCasesConcurrently', () => {
