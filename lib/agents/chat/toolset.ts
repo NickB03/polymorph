@@ -56,6 +56,7 @@ type CreateChatAgentToolsArgs = {
   writer?: UIMessageStreamWriter
   canvasToolContext?: CanvasToolContext
   imageToolContext?: ImageToolContext
+  searchTool?: ReturnType<typeof createSearchTool>
 }
 
 function createNoopCanvasToolContext(): CanvasToolContext {
@@ -76,12 +77,13 @@ export function createChatAgentTools({
   model,
   writer: _writer,
   canvasToolContext,
-  imageToolContext
+  imageToolContext,
+  searchTool
 }: CreateChatAgentToolsArgs): ChatAgentTools {
   const todoTools = createTodoTools()
-  const searchTool = createSearchTool(model)
+  const activeSearchTool = searchTool ?? createSearchTool(model)
   const competitorResearchTool = createCompetitorResearchTool({
-    searchTool,
+    searchTool: activeSearchTool,
     fetchTool
   })
   const canvasTools = canvasToolContext
@@ -99,7 +101,7 @@ export function createChatAgentTools({
     : {}
 
   return {
-    search: searchTool,
+    search: activeSearchTool,
     fetch: fetchTool,
     competitorResearch: competitorResearchTool,
     displayPlan: displayPlanTool,

@@ -24,7 +24,7 @@ import { GenerateImage } from './tool-ui/generate-image'
 import { safeParseSerializableGenerateImage } from './tool-ui/generate-image/schema'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
 import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
-import { tryRenderToolUI } from './tool-ui/registry'
+import { tryRenderToolUI, tryRenderToolUIByName } from './tool-ui/registry'
 import { renderToolPart } from './tool-ui/tool-part-registry'
 import { AnswerSection } from './answer-section'
 import { DynamicToolDisplay } from './dynamic-tool-display'
@@ -768,11 +768,34 @@ export function RenderMessage({
       }
       // Streaming/pending state — push to buffer for process section
       buffer.push(part)
-    } else if (
-      part.type === 'reasoning' ||
-      part.type?.startsWith?.('tool-') ||
-      part.type?.startsWith?.('data-')
-    ) {
+    } else if (part.type?.startsWith?.('tool-')) {
+      const toolPart = part as {
+        state?: string
+        output?: unknown
+        toolCallId?: string
+      }
+      if (toolPart.state === 'output-available') {
+        const toolName = part.type.substring(5)
+        const partId = toolPart.toolCallId ?? `${messageId}-tool-${index}`
+        const rendered = tryRenderToolUIByName(
+          toolName,
+          toolPart.output,
+          partId
+        )
+
+        if (rendered) {
+          flushBuffer(`seg-${index}`)
+          elements.push(
+            <Fragment key={`${messageId}-tool-ui-${index}`}>
+              {rendered}
+            </Fragment>
+          )
+          return
+        }
+      }
+
+      buffer.push(part)
+    } else if (part.type === 'reasoning' || part.type?.startsWith?.('data-')) {
       buffer.push(part)
     } else if (part.type === 'dynamic-tool') {
       flushBuffer(`seg-${index}`)

@@ -102,13 +102,11 @@ export function createConfiguredChatAgent(
       model,
       writer,
       canvasToolContext,
-      imageToolContext
+      imageToolContext,
+      searchTool
     })
 
-    const tools: ChatAgentTools = {
-      ...baseTools,
-      search: searchTool
-    }
+    const tools: ChatAgentTools = baseTools
 
     console.log(
       `[ChatAgent:${definition.agentId}] mode=${searchMode ?? 'default'}, maxSteps=${definition.maxSteps}, modelType=${modelType}, tools=[${activeTools.join(', ')}]`
