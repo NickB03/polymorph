@@ -159,6 +159,17 @@ describe('EvalsDashboardV2', () => {
     }
   )
 
+  it("TEMPLATE_B's regression header card displays the 'Regression' title", () => {
+    const data = makeData()
+    const { container } = render(
+      <EvalsDashboardV2 data={data} initialLayout="b" />
+    )
+
+    const regHeader = container.querySelector('[data-widget-id="reg-header"]')
+    expect(regHeader).not.toBeNull()
+    expect(regHeader?.textContent).toContain('Regression')
+  })
+
   it('template B renders the updated live cadence copy', () => {
     render(<EvalsDashboardV2 data={makeData()} initialLayout="b" />)
 
