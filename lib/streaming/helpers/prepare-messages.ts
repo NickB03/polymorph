@@ -88,8 +88,12 @@ export async function prepareMessages(
 
       const lastMessage = normalizedMessages[normalizedMessages.length - 1]
 
+      if (!lastMessage) {
+        throw new Error('No messages provided')
+      }
+
       if (isNewChat) {
-        if (lastMessage?.role !== 'user') {
+        if (lastMessage.role !== 'user') {
           throw new Error(
             'New chat submissions must end with a user message before streaming'
           )
@@ -119,14 +123,16 @@ export async function prepareMessages(
         return normalizedMessages
       }
 
+      if (lastMessage.role !== 'user') {
+        throw new Error(
+          'Existing chat submissions must end with a user message before streaming'
+        )
+      }
+
       if (!initialChat) {
         const createStart = performance.now()
         await createChat(chatId, DEFAULT_CHAT_TITLE, userId)
         perfTime('createChat completed', createStart)
-      }
-
-      if (!lastMessage) {
-        throw new Error('No messages provided')
       }
 
       const persistableLastMessage = {
@@ -138,8 +144,16 @@ export async function prepareMessages(
       await upsertMessage(chatId, persistableLastMessage, userId)
       perfTime('upsertMessage completed', upsertStart)
 
-      perfTime('prepareMessages - Total (using client messages)', startTime)
-      return normalizedMessages
+      if (initialChat && initialChat.messages) {
+        perfTime('prepareMessages - Total (using cached chat)', startTime)
+        return [...initialChat.messages, persistableLastMessage]
+      }
+
+      const loadStart = performance.now()
+      const updatedChat = await loadChat(chatId, userId)
+      perfTime('loadChat (fallback) completed', loadStart)
+      perfTime('prepareMessages - Total', startTime)
+      return updatedChat?.messages || [persistableLastMessage]
     }
 
     // Handle normal message submission

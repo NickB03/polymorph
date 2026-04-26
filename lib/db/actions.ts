@@ -184,7 +184,11 @@ export async function upsertMessage(
       .values(messageData)
       .onConflictDoUpdate({
         target: messages.id,
-        set: { role: messageData.role }
+        set: {
+          role: messageData.role,
+          uiMessage: messageData.uiMessage,
+          metadata: messageData.metadata
+        }
       })
       .returning()
 

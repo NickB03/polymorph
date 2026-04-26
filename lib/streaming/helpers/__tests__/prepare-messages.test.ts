@@ -501,7 +501,83 @@ describe('prepareMessages', () => {
       expect(result[1].id).toBe('msg-2')
     })
 
-    it('persists the updated assistant message when client messages contain tool outputs', async () => {
+    it('uses server history plus the latest user message when client messages include prior history', async () => {
+      const existingChat: Chat & { messages: UIMessage[] } = {
+        id: chatId,
+        title: 'Existing Chat',
+        userId,
+        visibility: 'private',
+        createdAt: new Date(),
+        messages: [
+          {
+            id: 'msg-1',
+            role: 'user',
+            parts: [{ type: 'text', text: 'Need your preference' }]
+          },
+          {
+            id: 'msg-2',
+            role: 'assistant',
+            parts: [
+              {
+                type: 'tool-displayOptionList',
+                toolCallId: 'tool-1',
+                state: 'input-available',
+                input: {
+                  id: 'theme',
+                  options: [
+                    { id: 'dark', label: 'Dark' },
+                    { id: 'light', label: 'Light' }
+                  ]
+                }
+              } as any
+            ]
+          }
+        ]
+      }
+
+      const tamperedServerHistory: UIMessage = {
+        id: 'msg-1',
+        role: 'user',
+        parts: [{ type: 'text', text: 'Tampered prompt' }]
+      }
+
+      const newUserMessage: UIMessage = {
+        id: 'msg-3',
+        role: 'user',
+        parts: [{ type: 'text', text: 'I choose dark' }]
+      }
+
+      vi.mocked(upsertMessage).mockResolvedValue({
+        id: 'msg-3',
+        chatId,
+        role: 'user',
+        metadata: {},
+        uiMessage: null,
+        createdAt: new Date(),
+        updatedAt: null
+      })
+
+      const context: StreamContext = {
+        chatId,
+        userId,
+        modelId: 'gpt-4',
+        trigger: 'submit-message',
+        messageId: undefined,
+        initialChat: existingChat,
+        isNewChat: false
+      }
+
+      const result = await prepareMessages(context, null, [
+        tamperedServerHistory,
+        existingChat.messages[1]!,
+        newUserMessage
+      ])
+
+      expect(upsertMessage).toHaveBeenCalledWith(chatId, newUserMessage, userId)
+      expect(result).toEqual([...existingChat.messages, newUserMessage])
+    })
+
+    it('rejects assistant tool-output updates from submit-message client history', async () => {
       const existingChat: Chat & { messages: UIMessage[] } = {
         id: chatId,
         title: 'Existing Chat',
@@ -555,16 +631,6 @@ describe('prepareMessages', () => {
         ]
       }
 
-      vi.mocked(upsertMessage).mockResolvedValue({
-        id: 'msg-2',
-        chatId,
-        role: 'assistant',
-        metadata: {},
-        uiMessage: null,
-        createdAt: new Date(),
-        updatedAt: null
-      })
-
       const context: StreamContext = {
         chatId,
         userId,
@@ -575,17 +641,15 @@ describe('prepareMessages', () => {
         isNewChat: false
       }
 
-      const result = await prepareMessages(context, null, [
-        existingChat.messages[0]!,
-        updatedAssistant
-      ])
-
-      expect(upsertMessage).toHaveBeenCalledWith(
-        chatId,
-        updatedAssistant,
-        userId
+      await expect(
+        prepareMessages(context, null, [
+          existingChat.messages[0]!,
+          updatedAssistant
+        ])
+      ).rejects.toThrow(
+        'Existing chat submissions must end with a user message before streaming'
       )
-      expect(result[result.length - 1]).toEqual(updatedAssistant)
+      expect(upsertMessage).not.toHaveBeenCalled()
     })
   })
 })
