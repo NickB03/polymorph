@@ -322,3 +322,43 @@ Use the Vercel preview only if SSO protection is cleared. Otherwise use `http://
 - [ ] Add a focused `DataTable` warning test for `rowIdKey`.
 - [ ] Add `DialogDescription` coverage to `CommandDialog` if it becomes reachable through current app UI.
 - [ ] Investigate Brave quota pressure only if provider fallback noise becomes operationally disruptive.
+
+## Implementation Results - 2026-04-26
+
+### Code Changes
+
+- Fixed the duplicate canvas read/update renderer path by treating `readCanvasArtifact` as a non-renderable context tool in `components/tool-ui/registry.tsx` and `components/render-message.tsx`.
+- Added regression coverage for regular `tool-readCanvasArtifact`, `dynamic-tool` `readCanvasArtifact`, and the registry fallback false positive in `components/render-message.test.tsx` and `components/tool-ui/registry.test.tsx`.
+- Fixed a live specialist failure found during QA: `competitorResearch` now falls back to search snippets when fetching the top source returns an error such as HTTP 403.
+- Added prompt guidance so explicit user requests to call or use `competitorResearch` must route through the specialist before generic search/table/prose.
+
+### Verification
+
+- `bun run test -- --run components/render-message.test.tsx components/tool-ui/registry.test.tsx components/tool-ui/tool-part-registry.test.tsx components/tool-ui/data-table/data-table.test.tsx lib/tools/__tests__/canvas-tools.test.ts lib/tools/__tests__/search-provider-routing.test.ts lib/agents/chat/__tests__/specialists.test.ts lib/agents/prompts/search-mode-prompts.test.ts` passed: 8 files, 117 tests.
+- `bun run lint` passed.
+- `bun run typecheck` passed.
+
+### Chrome Manual QA Report
+
+Chrome target: `http://localhost:43100`. The PR173 Vercel preview remained blocked by Vercel SSO with HTTP 401 for `/` and `/api/health`, so preview QA did not reach app code.
+
+| Flow                                   | Status                | Evidence                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authenticated shell                    | Pass                  | Local Chrome showed `#user-menu-trigger` present and `#guest-menu-trigger` absent. Local signup/auth was used; credentials are intentionally not recorded.                                                                                                                                                                                          |
+| Authenticated search mode              | Pass                  | Chat `sh5f1sdz11po4qgx0rw5lp13` streamed and persisted after reload. A local-only DB schema drift blocker was repaired by adding the missing `messages.ui_message` column in the configured local DB; no repo file changed for that repair.                                                                                                         |
+| Authenticated research mode            | Pass                  | Chat `l2z08mluv43xz6fyao6mtqpt` streamed in Research mode and persisted after reload with authenticated UI state.                                                                                                                                                                                                                                   |
+| Live `competitorResearch` specialist   | Pass                  | Chat `bbep8rl4s8ducg6ahnd0andv` used Research mode with an explicit `competitorResearch` request and rendered the dedicated `Competitor Research` component.                                                                                                                                                                                        |
+| Build-mode prompt path                 | Pass                  | Chat `zhrey8pxiy03shkejewlm4fo` in Build mode created a ready `Phoenix Pro Project Tracker Dashboard` canvas artifact.                                                                                                                                                                                                                              |
+| Canvas create/read/update              | Pass                  | The same chat was updated after an explicit read-first request. During the update flow there were two cards total across the whole chat: the original create card plus one update card. The previous extra read-generated `Ready` card did not reproduce. After reload, the persisted chat showed one canvas artifact card for the active artifact. |
+| Guest chat flow                        | Pass, carried forward | Already verified in the pre-remediation local manual QA evidence; not re-run here to preserve the authenticated local QA session.                                                                                                                                                                                                                   |
+| Interactive option-list completion     | Pass, carried forward | Already verified in the pre-remediation local manual QA evidence.                                                                                                                                                                                                                                                                                   |
+| Interactive question-wizard completion | Pass, carried forward | Already verified in the pre-remediation local manual QA evidence.                                                                                                                                                                                                                                                                                   |
+| Image-generation flow                  | Pass, carried forward | Already verified in the pre-remediation local manual QA evidence.                                                                                                                                                                                                                                                                                   |
+
+Residuals:
+
+- The `DataTable` `rowIdKey` warning still appears in dev console output and remains a non-blocking follow-up.
+- The Radix `DialogContent` description warning still appears in dev console output and remains a non-blocking accessibility follow-up unless tied to a current Phase 2 flow.
+- One stale console error from the earlier local DB schema-drift run remained visible in browser log history; it did not recur in the post-repair search, research, competitor, or canvas runs.
+
+Recommendation: **Phase 2 parked acceptance can be recorded** for the remediated PR173 blockers. PR171 and PR173 should remain draft, unmerged, and not marked ready for review.

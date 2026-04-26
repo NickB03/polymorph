@@ -23,7 +23,8 @@ vi.mock('./dynamic-tool-display', () => ({
   }) => {
     if (part.state === 'output-available') {
       const rendered =
-        part.toolName === 'createCanvasArtifact' ? (
+        part.toolName === 'createCanvasArtifact' ||
+        part.toolName === 'readCanvasArtifact' ? (
           <div data-testid="canvas-artifact-card" data-source="tool" />
         ) : null
       return rendered
@@ -141,7 +142,8 @@ vi.mock('./tool-ui/registry', () => ({
 
     if (
       (toolName === 'createCanvasArtifact' ||
-        toolName === 'updateCanvasArtifact') &&
+        toolName === 'updateCanvasArtifact' ||
+        toolName === 'readCanvasArtifact') &&
       output &&
       typeof output === 'object'
     ) {
@@ -307,6 +309,147 @@ describe('RenderMessage', () => {
     )
 
     expect(screen.getAllByTestId('canvas-artifact-card')).toHaveLength(1)
+  })
+
+  it('does not render readCanvasArtifact output as a duplicate canvas card during updates', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-readCanvasArtifact',
+          state: 'output-available',
+          toolCallId: 'read-1',
+          output: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Phoenix Pro Project Tracker Dashboard',
+            status: 'ready',
+            draftRevision: 1,
+            currentVersionId: 'version-1',
+            files: [
+              {
+                path: 'app/page.tsx',
+                content: 'export default function Page() {}'
+              }
+            ]
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifactStatus',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Phoenix Pro Project Tracker Dashboard',
+            status: 'compiling',
+            draftRevision: 2,
+            currentVersionId: 'version-1',
+            updatedAt: '2026-04-26T03:00:00.000Z'
+          }
+        } as any,
+        {
+          type: 'tool-updateCanvasArtifact',
+          state: 'output-available',
+          toolCallId: 'update-1',
+          output: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Phoenix Pro Project Tracker Dashboard',
+            status: 'ready',
+            draftRevision: 2,
+            currentVersionId: 'version-2'
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifact',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Phoenix Pro Project Tracker Dashboard',
+            status: 'ready',
+            draftRevision: 2,
+            currentVersionId: 'version-2'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    const cards = screen.getAllByTestId('canvas-artifact-card')
+    expect(cards).toHaveLength(1)
+    expect(cards[0]).toHaveAttribute('data-artifact-id', 'artifact-1')
+    expect(cards[0]).toHaveAttribute(
+      'data-title',
+      'Phoenix Pro Project Tracker Dashboard'
+    )
+    expect(cards[0]).toHaveAttribute('data-status', 'ready')
+  })
+
+  it('does not render dynamic readCanvasArtifact output as a duplicate canvas card', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'dynamic-tool',
+          toolCallId: 'read-1',
+          toolName: 'readCanvasArtifact',
+          state: 'output-available',
+          input: { artifactId: 'artifact-1' },
+          output: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Phoenix Pro Project Tracker Dashboard',
+            status: 'ready',
+            draftRevision: 1,
+            currentVersionId: 'version-1',
+            files: [
+              {
+                path: 'app/page.tsx',
+                content: 'export default function Page() {}'
+              }
+            ]
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifact',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Phoenix Pro Project Tracker Dashboard Updated',
+            status: 'ready',
+            draftRevision: 2,
+            currentVersionId: 'version-2'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    const cards = screen.getAllByTestId('canvas-artifact-card')
+    expect(cards).toHaveLength(1)
+    expect(cards[0]).toHaveAttribute(
+      'data-title',
+      'Phoenix Pro Project Tracker Dashboard Updated'
+    )
   })
 
   it('calls onCanvasArtifactClick when a data-canvasArtifact card is clicked', () => {

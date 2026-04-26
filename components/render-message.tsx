@@ -250,6 +250,8 @@ function isHiddenInfrastructurePart(part: { type?: string } | undefined) {
   )
 }
 
+const nonRenderableToolPartNames = new Set(['readCanvasArtifact'])
+
 function mergeSequentialAssistantText(previous: string, next: string) {
   const previousTrimmed = previous.trim()
   const nextTrimmed = next.trim()
@@ -776,6 +778,11 @@ export function RenderMessage({
       }
       if (toolPart.state === 'output-available') {
         const toolName = part.type.substring(5)
+        if (nonRenderableToolPartNames.has(toolName)) {
+          buffer.push(part)
+          return
+        }
+
         const partId = toolPart.toolCallId ?? `${messageId}-tool-${index}`
         const rendered = tryRenderToolUIByName(
           toolName,
@@ -800,6 +807,10 @@ export function RenderMessage({
     } else if (part.type === 'dynamic-tool') {
       flushBuffer(`seg-${index}`)
       const dynamicToolPart = part as DynamicToolPart
+      if (nonRenderableToolPartNames.has(dynamicToolPart.toolName)) {
+        return
+      }
+
       if (
         (dynamicToolPart.toolName === 'createCanvasArtifact' ||
           dynamicToolPart.toolName === 'updateCanvasArtifact') &&

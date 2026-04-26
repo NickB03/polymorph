@@ -190,6 +190,8 @@ const entries: ToolUIEntry[] = [
   }
 ]
 
+const nonRenderableToolNames = new Set(['readCanvasArtifact'])
+
 /**
  * Try to render tool output using a named Tool UI component.
  * Falls back to trying all registered schemas if no name match.
@@ -204,6 +206,10 @@ export function tryRenderToolUIByName(
   if (named) {
     const result = named.tryRender(output, partId)
     if (result) return result
+  }
+
+  if (nonRenderableToolNames.has(toolName)) {
+    return null
   }
 
   // Fall back to trying all schemas
