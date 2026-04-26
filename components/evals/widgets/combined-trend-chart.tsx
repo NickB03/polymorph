@@ -23,7 +23,7 @@ type Config = {
 
 export function CombinedTrendChart({ data, config }: WidgetProps<Config>) {
   const combined = buildCombinedTrend(data)
-  const title = config.title ?? 'Trend · both suites overlaid'
+  const title = config.title ?? 'Trend · all suites overlaid'
   if (combined.length === 0) {
     return (
       <Card className="flex h-full flex-col border-dashed bg-muted/10">
@@ -46,13 +46,14 @@ export function CombinedTrendChart({ data, config }: WidgetProps<Config>) {
     <Card className="h-full min-w-0 overflow-hidden">
       <CardHeader>
         <CardTitle className="text-base">
-          {config.title ?? 'Trend · both suites overlaid'}
+          {config.title ?? 'Trend · all suites overlaid'}
         </CardTitle>
       </CardHeader>
       <CardContent className="min-w-0">
         <ChartContainer
           config={{
             capability: { label: 'Capability', color: 'var(--chart-1)' },
+            regression: { label: 'Regression', color: 'var(--chart-2)' },
             trafficMonitor: {
               label: 'Traffic Monitor',
               color: 'var(--chart-3)'
@@ -91,6 +92,15 @@ export function CombinedTrendChart({ data, config }: WidgetProps<Config>) {
               dataKey="capability"
               stroke="var(--color-capability)"
               strokeWidth={2}
+              dot={false}
+              connectNulls
+            />
+            <Line
+              type="monotone"
+              dataKey="regression"
+              stroke="var(--color-regression)"
+              strokeWidth={2}
+              strokeDasharray="2 4"
               dot={false}
               connectNulls
             />
