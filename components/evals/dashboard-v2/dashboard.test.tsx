@@ -159,8 +159,22 @@ describe('EvalsDashboardV2', () => {
     }
   )
 
-  it("TEMPLATE_B's regression header card displays the 'Regression' title", () => {
+  it("TEMPLATE_B's populated regression header card renders the column variant", () => {
     const data = makeData()
+    data.regression = {
+      latest: makeSnapshot('regression'),
+      previous: {
+        ...makeSnapshot('regression'),
+        id: 'reg-prev',
+        overallScore: 0.87
+      },
+      trend: [
+        makeTrendPoint('2026-04-12T10:00:00Z', 0.87),
+        makeTrendPoint('2026-04-13T10:00:00Z', 0.89),
+        makeTrendPoint('2026-04-14T10:00:00Z', 0.9)
+      ],
+      lastUpdated: '2026-04-14T10:00:00Z'
+    }
     const { container } = render(
       <EvalsDashboardV2 data={data} initialLayout="b" />
     )
@@ -168,6 +182,11 @@ describe('EvalsDashboardV2', () => {
     const regHeader = container.querySelector('[data-widget-id="reg-header"]')
     expect(regHeader).not.toBeNull()
     expect(regHeader?.textContent).toContain('Regression')
+    // Populated `column` variant — these strings only appear when latest is
+    // present, so the assertion would fail if SuiteHeaderCard fell through to
+    // SuiteEmptyState.
+    expect(regHeader?.textContent).toContain('90%')
+    expect(regHeader?.textContent).toContain('exp-regression')
   })
 
   it('template B renders the updated live cadence copy', () => {

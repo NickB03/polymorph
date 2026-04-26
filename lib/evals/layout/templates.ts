@@ -159,7 +159,7 @@ export const TEMPLATE_B: EvalsLayoutTemplate = {
     {
       id: 'combined-trend',
       type: 'combined-trend-chart',
-      config: { title: 'Trend · both suites overlaid' }
+      config: { title: 'Trend · all suites overlaid' }
     },
     {
       id: 'comparison-grid',

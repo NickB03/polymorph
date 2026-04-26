@@ -35,8 +35,8 @@ export function CombinedTrendChart({ data, config }: WidgetProps<Config>) {
             <LineChartIcon aria-hidden className="h-5 w-5" />
           </div>
           <p className="max-w-sm text-xs text-muted-foreground">
-            No trend data yet. Both suites need at least one run to overlay
-            their history.
+            No trend data yet. At least one suite needs a run to overlay its
+            history.
           </p>
         </CardContent>
       </Card>
