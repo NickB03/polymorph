@@ -15,6 +15,7 @@ import {
   varchar
 } from 'drizzle-orm/pg-core'
 
+import type { UIMessage } from '@/lib/types/ai'
 import type { CanvasDiagnostics } from '@/lib/types/canvas'
 
 // Constants
@@ -86,6 +87,7 @@ export const messages = pgTable(
     role: varchar('role', { length: VARCHAR_LENGTH }).notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at'),
+    uiMessage: jsonb('ui_message').$type<UIMessage>(),
     metadata: jsonb('metadata').$type<Record<string, any>>()
   },
   table => [

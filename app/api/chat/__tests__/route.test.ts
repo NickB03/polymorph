@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock all dependencies
 vi.mock('next/cache', () => ({
@@ -87,6 +87,24 @@ function createRequest(body: any, headers?: Record<string, string>): Request {
 }
 
 describe('POST /api/chat', () => {
+  beforeEach(() => {
+    vi.mocked(getCurrentUserId).mockReset()
+    vi.mocked(getCurrentUserId).mockResolvedValue('user-123')
+
+    vi.mocked(isProviderEnabled).mockReset()
+    vi.mocked(isProviderEnabled).mockReturnValue(true)
+
+    vi.mocked(createChatStreamResponse).mockReset()
+    vi.mocked(createChatStreamResponse).mockResolvedValue(
+      new Response('stream', { status: 200 })
+    )
+
+    vi.mocked(createEphemeralChatStreamResponse).mockReset()
+    vi.mocked(createEphemeralChatStreamResponse).mockResolvedValue(
+      new Response('ephemeral-stream', { status: 200 })
+    )
+  })
+
   it('returns 400 for unknown trigger', async () => {
     const req = createRequest({
       message: 'hi',
@@ -132,12 +150,17 @@ describe('POST /api/chat', () => {
     const res = await POST(req)
     expect(res.status).toBe(400)
     const json = await res.json()
-    expect(json.message).toContain('message')
+    expect(json.message).toContain('messages')
   })
 
   it('returns 403 for requests from share pages', async () => {
     const req = createRequest(
-      { message: 'hi', chatId: 'c1', trigger: 'submit-message' },
+      {
+        message: 'hi',
+        messages: [{ role: 'user', parts: [{ type: 'text', text: 'hi' }] }],
+        chatId: 'c1',
+        trigger: 'submit-message'
+      },
       { referer: 'http://localhost/share/abc123' }
     )
 
@@ -153,6 +176,7 @@ describe('POST /api/chat', () => {
 
     const req = createRequest({
       message: 'hi',
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'hi' }] }],
       chatId: 'c1',
       trigger: 'submit-message'
     })
@@ -166,6 +190,7 @@ describe('POST /api/chat', () => {
 
     const req = createRequest({
       message: 'hi',
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'hi' }] }],
       chatId: 'c1',
       trigger: 'submit-message'
     })
@@ -177,6 +202,7 @@ describe('POST /api/chat', () => {
   it('calls createChatStreamResponse for authenticated users', async () => {
     const req = createRequest({
       message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'hello' }] }],
       chatId: 'c1',
       trigger: 'submit-message',
       isNewChat: true

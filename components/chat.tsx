@@ -11,7 +11,10 @@ import {
 import { useRouter } from 'next/navigation'
 
 import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport } from 'ai'
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls
+} from 'ai'
 import { toast } from 'sonner'
 
 import { generateId } from '@/lib/db/schema'
@@ -27,7 +30,6 @@ import type {
 } from '@/lib/types/ai'
 import {
   isDynamicToolPart,
-  isInteractiveToolPart,
   isToolCallPart,
   isToolTypePart
 } from '@/lib/types/dynamic-tools'
@@ -115,7 +117,6 @@ export function Chat({
     // Clear other chat-related state that persists due to Next.js 16 component caching
     setInput('')
     setUploadedFiles([])
-    autoSendFiredRef.current.clear()
     setErrorModal({
       open: false,
       type: 'general',
@@ -163,7 +164,6 @@ export function Chat({
     canvasRef.current.setGuestCanvasToken(token)
   }, [savedMessages])
 
-  const autoSendFiredRef = useRef<Set<string>>(new Set())
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const stopVoiceRef = useRef<(() => void) | null>(null)
   const lastVoiceErrorRef = useRef<string | null>(null)
@@ -195,7 +195,7 @@ export function Chat({
     stop,
     sendMessage,
     regenerate,
-    addToolResult,
+    addToolOutput,
     error
   } = useChat({
     id: chatId, // use the client-generated or provided chatId
@@ -326,36 +326,7 @@ export function Chat({
         toast.error(`Error in chat: ${errorMessage}`)
       }
     },
-    sendAutomaticallyWhen: ({ messages: msgs }) => {
-      const lastMsg = msgs[msgs.length - 1]
-      if (!lastMsg || lastMsg.role !== 'assistant') return false
-      const parts = lastMsg.parts
-      if (!parts) return false
-      // Check if any interactive tool parts are still pending (waiting for user input)
-      const hasPendingTools = parts.some(
-        p =>
-          isInteractiveToolPart(p) &&
-          'state' in p &&
-          p.state === 'input-available' &&
-          !('output' in p)
-      )
-      if (hasPendingTools) return false
-      // Auto-continue when a displayOptionList has been resolved with a selection.
-      // Use a ref to track which toolCallIds have already triggered auto-send
-      // to prevent re-triggering on subsequent evaluations.
-      // Find the first resolved part that hasn't already triggered auto-send
-      // (not just the first resolved part — earlier ones may already be fired).
-      const resolvedOptionPart = parts.find(
-        (p: any) =>
-          isInteractiveToolPart(p) &&
-          'state' in p &&
-          p.state === 'output-available' &&
-          !autoSendFiredRef.current.has(p.toolCallId)
-      ) as { toolCallId: string } | undefined
-      if (!resolvedOptionPart) return false
-      autoSendFiredRef.current.add(resolvedOptionPart.toolCallId)
-      return true
-    },
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     experimental_throttle: 100,
     generateId
   })
@@ -378,7 +349,6 @@ export function Chat({
     setChatId(providedId)
     setInput('')
     setUploadedFiles([])
-    autoSendFiredRef.current.clear()
     setErrorModal({
       open: false,
       type: 'general',
@@ -944,7 +914,7 @@ export function Chat({
               }
             }
 
-            addToolResult({ tool: toolName, toolCallId, output: result })
+            addToolOutput({ tool: toolName, toolCallId, output: result })
           }}
           scrollContainerRef={scrollContainerRef}
           onUpdateMessage={handleUpdateAndReloadMessage}

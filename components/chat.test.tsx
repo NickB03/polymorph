@@ -90,7 +90,7 @@ function makeUseChatReturnValue(messages: UIMessage[] = []) {
     stop: vi.fn(),
     sendMessage: vi.fn(),
     regenerate: vi.fn(),
-    addToolResult: vi.fn(),
+    addToolOutput: vi.fn(),
     error: null
   }
 }
@@ -107,7 +107,8 @@ vi.mock('@ai-sdk/react', () => ({
 }))
 
 vi.mock('ai', () => ({
-  DefaultChatTransport: class DefaultChatTransport {}
+  DefaultChatTransport: class DefaultChatTransport {},
+  lastAssistantMessageIsCompleteWithToolCalls: vi.fn(() => false)
 }))
 
 vi.mock('sonner', () => ({

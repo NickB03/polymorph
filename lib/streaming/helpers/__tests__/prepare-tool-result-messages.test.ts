@@ -77,6 +77,7 @@ describe('prepareToolResultMessages', () => {
         chatId: 'chat-1',
         role: 'assistant',
         metadata: {},
+        uiMessage: null,
         createdAt: new Date(),
         updatedAt: new Date()
       })

@@ -8,6 +8,7 @@ import type { ToolResultDelta } from './helpers/prepare-tool-result-messages'
 
 export interface BaseStreamConfig {
   message: UIMessage | null
+  messages?: UIMessage[]
   model: Model
   chatId: string
   userId: string

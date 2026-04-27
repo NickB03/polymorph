@@ -41,6 +41,12 @@ export async function POST(req: Request) {
       guestCanvasToken
     } = body
 
+    const normalizedMessages = Array.isArray(messages)
+      ? messages
+      : typeof messages === 'undefined' && message?.parts
+        ? [message]
+        : messages
+
     perfLog(
       `API Route - Start: chatId=${chatId}, trigger=${trigger}, isNewChat=${isNewChat}`
     )
@@ -84,10 +90,13 @@ export async function POST(req: Request) {
         `[tool-result] Received continuation: chatId=${chatId}, toolCallId=${toolResult.toolCallId}`
       )
     } else if (validatedTrigger === 'submit-message') {
-      if (!message) {
+      if (
+        !Array.isArray(normalizedMessages) ||
+        normalizedMessages.length === 0
+      ) {
         return jsonError(
           'BAD_REQUEST',
-          'message is required for submission',
+          'messages are required for submission',
           400
         )
       }
@@ -171,9 +180,9 @@ export async function POST(req: Request) {
     // Validate guest messages shape at the system boundary
     if (isGuest) {
       if (
-        !Array.isArray(messages) ||
-        messages.length === 0 ||
-        !messages.every(
+        !Array.isArray(normalizedMessages) ||
+        normalizedMessages.length === 0 ||
+        !normalizedMessages.every(
           (m: any) =>
             (m.role === 'user' || m.role === 'assistant') &&
             Array.isArray(m.parts) &&
@@ -198,11 +207,9 @@ export async function POST(req: Request) {
     }
 
     // Validate file parts for all users (guests and authenticated)
-    const messagesToValidate = isGuest
-      ? messages
-      : message?.parts
-        ? [message]
-        : []
+    const messagesToValidate = Array.isArray(normalizedMessages)
+      ? normalizedMessages
+      : []
 
     for (const msg of messagesToValidate) {
       if (!Array.isArray(msg.parts)) continue
@@ -218,7 +225,7 @@ export async function POST(req: Request) {
 
     const response = isGuest
       ? await createEphemeralChatStreamResponse({
-          messages,
+          messages: normalizedMessages ?? [],
           model: selectedModel,
           abortSignal,
           searchMode,
@@ -231,6 +238,9 @@ export async function POST(req: Request) {
         })
       : await createChatStreamResponse({
           message: validatedTrigger === 'tool-result' ? null : message,
+          messages: Array.isArray(normalizedMessages)
+            ? normalizedMessages
+            : undefined,
           model: selectedModel,
           chatId,
           userId: userId, // userId is guaranteed to be non-null after authentication check above

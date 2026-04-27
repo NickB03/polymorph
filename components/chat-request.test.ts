@@ -27,7 +27,7 @@ describe('chat request helpers', () => {
     })
   })
 
-  it('builds a tool-result continuation request for guest users', () => {
+  it('builds a submit-message continuation request with canonical messages', () => {
     const request = buildChatRequestBody({
       messages: [
         {
@@ -52,13 +52,12 @@ describe('chat request helpers', () => {
 
     expect(request).toEqual({
       body: {
-        trigger: 'tool-result',
+        trigger: 'submit-message',
         chatId: 'chat-1',
-        toolResult: {
-          toolCallId: 'tool-1',
-          output: { value: 'dark' }
-        },
-        messages: expect.any(Array)
+        messageId: undefined,
+        messages: expect.any(Array),
+        message: expect.any(Object),
+        isNewChat: false
       }
     })
   })

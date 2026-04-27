@@ -6,51 +6,10 @@ import type {
   UIToolInvocation
 } from 'ai'
 
-import type { createCanvasArtifactTool } from '../tools/create-canvas-artifact'
-import type { displayCalloutTool } from '../tools/display-callout'
-import type { displayChartTool } from '../tools/display-chart'
-import type { displayCitationsTool } from '../tools/display-citations'
-import type { displayGeoMapTool } from '../tools/display-geo-map'
-import type { displayLinkPreviewTool } from '../tools/display-link-preview'
-import type { displayOptionListTool } from '../tools/display-option-list'
-import type { displayPlanTool } from '../tools/display-plan'
-import type { displayQuestionWizardTool } from '../tools/display-question-wizard'
-import type { displayTableTool } from '../tools/display-table'
-import type { displayTimelineTool } from '../tools/display-timeline'
-import type { fetchTool } from '../tools/fetch'
-import type { createGenerateImageTool } from '../tools/generate-image'
-import type { geocodeAddressTool } from '../tools/geocode-address'
-import type { getDirectionsTool } from '../tools/get-directions'
-import type { getIsochroneTool } from '../tools/get-isochrone'
-import type { getStaticMapImageTool } from '../tools/get-static-map-image'
-import type { readCanvasArtifactTool } from '../tools/read-canvas-artifact'
-import type { createSearchTool } from '../tools/search'
-import type { createTodoTools } from '../tools/todo'
-import type { updateCanvasArtifactTool } from '../tools/update-canvas-artifact'
+import type { ChatAgentTools } from '@/lib/agents/chat/toolset'
 
 // Define the tools type for researcher agent
-export type ResearcherTools = {
-  search: ReturnType<typeof createSearchTool>
-  fetch: typeof fetchTool
-  displayPlan: typeof displayPlanTool
-  displayTable: typeof displayTableTool
-  displayChart: typeof displayChartTool
-  displayGeoMap: typeof displayGeoMapTool
-  getDirections: typeof getDirectionsTool
-  geocodeAddress: typeof geocodeAddressTool
-  getIsochrone: typeof getIsochroneTool
-  getStaticMapImage: typeof getStaticMapImageTool
-  displayCitations: typeof displayCitationsTool
-  displayLinkPreview: typeof displayLinkPreviewTool
-  displayOptionList: typeof displayOptionListTool
-  displayQuestionWizard: typeof displayQuestionWizardTool
-  displayCallout: typeof displayCalloutTool
-  displayTimeline: typeof displayTimelineTool
-  createCanvasArtifact: ReturnType<typeof createCanvasArtifactTool>
-  updateCanvasArtifact: ReturnType<typeof updateCanvasArtifactTool>
-  readCanvasArtifact: ReturnType<typeof readCanvasArtifactTool>
-  generateImage: ReturnType<typeof createGenerateImageTool>
-} & ReturnType<typeof createTodoTools>
+export type ResearcherTools = ChatAgentTools
 
 // Type alias for the researcher agent using ToolLoopAgent
 // ToolLoopAgent generic signature is <CALL_OPTIONS, TOOLS, OUTPUT>

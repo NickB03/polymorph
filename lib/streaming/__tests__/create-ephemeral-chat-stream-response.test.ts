@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockWriter = {
   merge: vi.fn()
@@ -54,6 +54,10 @@ function makeModel() {
 }
 
 describe('createEphemeralChatStreamResponse', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('passes guest image tool context into the researcher', async () => {
     mockResearcher.mockReturnValue({
       stream: vi.fn().mockResolvedValue({
@@ -88,6 +92,7 @@ describe('createEphemeralChatStreamResponse', () => {
         })
       )
     })
+    expect(mockResearcher).toHaveBeenCalledTimes(1)
   })
 
   it('hydrates guest currentArtifact before constructing the researcher', async () => {
@@ -155,6 +160,9 @@ describe('createEphemeralChatStreamResponse', () => {
         })
       })
     )
+    expect(mockVerifyGuestCanvasToken).toHaveBeenCalledTimes(1)
+    expect(loadCanvasArtifactState).toHaveBeenCalledTimes(1)
+    expect(mockResearcher).toHaveBeenCalledTimes(1)
   })
 
   it('returns 400 when messages are missing', async () => {

@@ -5,32 +5,15 @@ import {
   type UIMessageStreamWriter
 } from 'ai'
 
+import {
+  type ChatAgentTools,
+  createChatAgentTools
+} from '@/lib/agents/chat/toolset'
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
-import type { ResearcherTools } from '@/lib/types/agent'
 import { type ModelType } from '@/lib/types/model-type'
 import { type Model } from '@/lib/types/models'
 
-import { createCanvasArtifactTool } from '../tools/create-canvas-artifact'
-import { displayCalloutTool } from '../tools/display-callout'
-import { displayChartTool } from '../tools/display-chart'
-import { displayCitationsTool } from '../tools/display-citations'
-import { displayGeoMapTool } from '../tools/display-geo-map'
-import { displayLinkPreviewTool } from '../tools/display-link-preview'
-import { displayOptionListTool } from '../tools/display-option-list'
-import { displayPlanTool } from '../tools/display-plan'
-import { displayQuestionWizardTool } from '../tools/display-question-wizard'
-import { displayTableTool } from '../tools/display-table'
-import { displayTimelineTool } from '../tools/display-timeline'
-import { fetchTool } from '../tools/fetch'
-import { createGenerateImageTool } from '../tools/generate-image'
-import { geocodeAddressTool } from '../tools/geocode-address'
-import { getDirectionsTool } from '../tools/get-directions'
-import { getIsochroneTool } from '../tools/get-isochrone'
-import { getStaticMapImageTool } from '../tools/get-static-map-image'
-import { readCanvasArtifactTool } from '../tools/read-canvas-artifact'
 import { createSearchTool } from '../tools/search'
-import { createTodoTools } from '../tools/todo'
-import { updateCanvasArtifactTool } from '../tools/update-canvas-artifact'
 import { SearchMode } from '../types/search'
 import { getModel } from '../utils/registry'
 import { isTracingEnabled } from '../utils/telemetry'
@@ -185,17 +168,16 @@ export function createResearcher({
 
     // Create model-specific tools with proper typing
     const originalSearchTool = createSearchTool(model)
-    const todoTools = writer ? createTodoTools() : {}
 
     // Interactive tools that require a human in the loop — excluded in eval mode
-    const INTERACTIVE_TOOLS: (keyof ResearcherTools)[] = [
+    const INTERACTIVE_TOOLS: (keyof ChatAgentTools)[] = [
       'displayOptionList',
       'displayQuestionWizard'
     ]
 
     let instructions: string
     let systemPrompt: string
-    let activeToolsList: (keyof ResearcherTools)[] = []
+    let activeToolsList: (keyof ChatAgentTools)[] = []
     let maxSteps: number
     let searchTool = originalSearchTool
 
@@ -249,7 +231,7 @@ export function createResearcher({
           'displayTimeline'
         ]
         // Enable todo tools when writer is available
-        if (writer && 'todoWrite' in todoTools) {
+        if (writer) {
           activeToolsList.push('todoWrite')
         }
         console.log(
@@ -288,56 +270,31 @@ export function createResearcher({
       instructions = `${ARTIFACT_INTAKE_PROTOCOL}${instructions}`
     }
 
-    // Build canvas tools when context is available
-    const canvasTools = canvasToolContext
-      ? {
-          createCanvasArtifact: createCanvasArtifactTool(canvasToolContext),
-          updateCanvasArtifact: updateCanvasArtifactTool(canvasToolContext),
-          readCanvasArtifact: readCanvasArtifactTool(canvasToolContext)
-        }
-      : {}
-
     if (canvasToolContext) {
       activeToolsList.push(
-        'createCanvasArtifact' as keyof ResearcherTools,
-        'updateCanvasArtifact' as keyof ResearcherTools,
-        'readCanvasArtifact' as keyof ResearcherTools
+        'createCanvasArtifact',
+        'updateCanvasArtifact',
+        'readCanvasArtifact'
       )
     }
 
-    // Build image generation tool when context is available
-    const imageTools = imageToolContext
-      ? {
-          generateImage: createGenerateImageTool(imageToolContext)
-        }
-      : {}
-
     if (imageToolContext) {
-      activeToolsList.push('generateImage' as keyof ResearcherTools)
+      activeToolsList.push('generateImage')
     }
 
-    // Build tools object with proper typing
-    const tools: ResearcherTools = {
-      search: searchTool,
-      fetch: fetchTool,
-      displayPlan: displayPlanTool,
-      displayTable: displayTableTool,
-      displayChart: displayChartTool,
-      displayGeoMap: displayGeoMapTool,
-      getDirections: getDirectionsTool,
-      geocodeAddress: geocodeAddressTool,
-      getIsochrone: getIsochroneTool,
-      getStaticMapImage: getStaticMapImageTool,
-      displayCitations: displayCitationsTool,
-      displayLinkPreview: displayLinkPreviewTool,
-      displayOptionList: displayOptionListTool,
-      displayQuestionWizard: displayQuestionWizardTool,
-      displayCallout: displayCalloutTool,
-      displayTimeline: displayTimelineTool,
-      ...todoTools,
-      ...canvasTools,
-      ...imageTools
-    } as ResearcherTools
+    const baseTools = createChatAgentTools({
+      model,
+      writer,
+      canvasToolContext,
+      imageToolContext
+    })
+
+    // Keep search-mode-specific wrapped search behavior while delegating
+    // the actual tool registry ownership to the chat agent contract.
+    const tools: ChatAgentTools = {
+      ...baseTools,
+      search: searchTool
+    }
 
     // Create ToolLoopAgent with all configuration
     const agent = new ToolLoopAgent({
@@ -372,8 +329,8 @@ export function createResearcher({
 
 // Helper function to access agent tools
 export function getResearcherTools(
-  agent: ToolLoopAgent<never, ResearcherTools, never>
-): ResearcherTools {
+  agent: ToolLoopAgent<never, ChatAgentTools, never>
+): ChatAgentTools {
   return agent.tools
 }
 
