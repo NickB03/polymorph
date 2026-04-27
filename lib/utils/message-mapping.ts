@@ -89,6 +89,12 @@ const REGISTERED_RICH_DYNAMIC_TOOL_NAMES = new Set<string>([
   'competitorResearch'
 ])
 
+const CANVAS_DYNAMIC_TOOL_NAMES = new Set<string>([
+  'createCanvasArtifact',
+  'updateCanvasArtifact',
+  'readCanvasArtifact'
+])
+
 // Type guards
 function isToolCallPart(part: unknown): part is ToolCallPart {
   if (typeof part !== 'object' || part === null) return false
@@ -154,12 +160,15 @@ function isRegisteredRichDynamicToolName(toolName: string) {
   return REGISTERED_RICH_DYNAMIC_TOOL_NAMES.has(toolName)
 }
 
+function isCanvasDynamicToolName(toolName: string) {
+  return CANVAS_DYNAMIC_TOOL_NAMES.has(toolName)
+}
+
 function shouldRestoreDynamicToolAsRichPart(part: DBMessagePartSelect) {
   return (
     !!part.tool_dynamic_name &&
     (part.tool_dynamic_type === 'display' ||
-      part.tool_dynamic_name === 'createCanvasArtifact' ||
-      part.tool_dynamic_name === 'updateCanvasArtifact' ||
+      isCanvasDynamicToolName(part.tool_dynamic_name) ||
       part.tool_dynamic_name === 'generateImage' ||
       isRegisteredRichDynamicToolName(part.tool_dynamic_name))
   )
@@ -359,8 +368,7 @@ export function mapUIMessagePartsToDBParts(
 
         if (
           part.type.startsWith('tool-display') ||
-          part.type === 'tool-createCanvasArtifact' ||
-          part.type === 'tool-updateCanvasArtifact' ||
+          isCanvasDynamicToolName(dynamicToolName) ||
           part.type === 'tool-generateImage' ||
           isRegisteredRichDynamicToolName(dynamicToolName)
         ) {
@@ -635,8 +643,7 @@ function getToolNameFromType(toolName: string): string {
 
   // Canvas artifact tools and image generation route to dynamic columns
   if (
-    toolName === 'createCanvasArtifact' ||
-    toolName === 'updateCanvasArtifact' ||
+    isCanvasDynamicToolName(toolName) ||
     toolName === 'generateImage' ||
     isRegisteredRichDynamicToolName(toolName)
   ) {

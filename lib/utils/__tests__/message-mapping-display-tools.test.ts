@@ -113,6 +113,34 @@ function makeCanvasToolPart(
   }
 }
 
+function makeReadCanvasArtifactToolPart(overrides?: Record<string, unknown>) {
+  return {
+    type: 'tool-readCanvasArtifact',
+    toolCallId: 'call-readCanvasArtifact',
+    state: 'output-available',
+    input: {
+      artifactId: 'art-1'
+    },
+    output: {
+      artifactId: 'art-1',
+      chatId: 'chat-1',
+      title: 'Canvas Artifact',
+      status: 'ready',
+      draftRevision: 4,
+      currentVersionId: null,
+      files: {
+        'App.tsx': 'export default function App() { return <div>Hello</div> }'
+      }
+    },
+    callProviderMetadata: {
+      provider: {
+        requestId: 'readCanvasArtifact-request'
+      }
+    },
+    ...overrides
+  }
+}
+
 function makeCompetitorResearchToolPart(overrides?: Record<string, unknown>) {
   return {
     type: 'tool-competitorResearch',
@@ -590,6 +618,37 @@ describe('canvas tool persistence', () => {
     }
   )
 
+  it('persists tool-readCanvasArtifact as tool-dynamic with required tool fields and files intact', () => {
+    const parts = mapUIMessagePartsToDBParts(
+      [makeReadCanvasArtifactToolPart()],
+      'msg-1'
+    )
+
+    expect(parts).toHaveLength(1)
+    expect(parts[0]).toMatchObject({
+      type: 'tool-dynamic',
+      tool_toolCallId: 'call-readCanvasArtifact',
+      tool_state: 'output-available',
+      tool_dynamic_name: 'readCanvasArtifact',
+      tool_dynamic_type: 'dynamic',
+      tool_dynamic_input: {
+        artifactId: 'art-1'
+      },
+      tool_dynamic_output: expect.objectContaining({
+        artifactId: 'art-1',
+        title: 'Canvas Artifact',
+        files: {
+          'App.tsx': 'export default function App() { return <div>Hello</div> }'
+        }
+      }),
+      providerMetadata: {
+        provider: {
+          requestId: 'readCanvasArtifact-request'
+        }
+      }
+    })
+  })
+
   it.each(['createCanvasArtifact', 'updateCanvasArtifact'] as const)(
     'round-trips tool-%s through UI -> DB -> UI',
     toolName => {
@@ -632,6 +691,48 @@ describe('canvas tool persistence', () => {
       })
     }
   )
+
+  it('round-trips tool-readCanvasArtifact through UI -> DB -> UI with reload metadata', () => {
+    const originalPart = makeReadCanvasArtifactToolPart()
+    const [dbPart] = mapUIMessagePartsToDBParts([originalPart], 'msg-1')
+
+    const restored = mapDBPartToUIMessagePart(
+      makeDBDynamicPart('readCanvasArtifact', {
+        type: dbPart.type,
+        tool_toolCallId: dbPart.tool_toolCallId,
+        tool_state: dbPart.tool_state,
+        tool_dynamic_name: dbPart.tool_dynamic_name,
+        tool_dynamic_type: dbPart.tool_dynamic_type,
+        tool_dynamic_input: dbPart.tool_dynamic_input,
+        tool_dynamic_output: dbPart.tool_dynamic_output,
+        tool_errorText: dbPart.tool_errorText ?? null,
+        providerMetadata: dbPart.providerMetadata ?? null
+      })
+    )
+
+    expect(restored).toMatchObject({
+      type: 'tool-readCanvasArtifact',
+      toolCallId: 'call-readCanvasArtifact',
+      state: 'output-available',
+      input: {
+        artifactId: 'art-1'
+      },
+      output: expect.objectContaining({
+        artifactId: 'art-1',
+        chatId: 'chat-1',
+        title: 'Canvas Artifact',
+        status: 'ready',
+        files: {
+          'App.tsx': 'export default function App() { return <div>Hello</div> }'
+        }
+      }),
+      callProviderMetadata: {
+        provider: {
+          requestId: 'readCanvasArtifact-request'
+        }
+      }
+    })
+  })
 })
 
 describe('registered rich dynamic tool persistence', () => {

@@ -362,3 +362,295 @@ Residuals:
 - One stale console error from the earlier local DB schema-drift run remained visible in browser log history; it did not recur in the post-repair search, research, competitor, or canvas runs.
 
 Recommendation: **Phase 2 parked acceptance can be recorded** for the remediated PR173 blockers. PR171 and PR173 should remain draft, unmerged, and not marked ready for review.
+
+## Final Completion Verification Attempt - 2026-04-26
+
+Status: **Phase 2 complete except blocked by authenticated Chrome replay access**.
+
+This pass was run from `/Users/nick/.codex/worktrees/restack-pr173/vana-v2` on `codex/restack-pr173-clean` at `c5d11e422c8e320fdf700dba53e1c1e2db6411a0`. The worktree was clean before and after verification.
+
+### Stacked PR State
+
+- PR171: open draft, base `main`, head `codex/ai-sdk-contract-phase-1`, head SHA `ec99402938e47baefb739a5e91022505a6e1a6dc`, `mergeStateStatus: CLEAN`.
+- PR173: open draft, base `codex/ai-sdk-contract-phase-1`, head `codex/ai-sdk-contract-phase-2`, head SHA `2d1125672d1e4df14e90402a4bd053916aa0b9ee`, `mergeStateStatus: CLEAN`.
+- PR177: open draft, base `codex/ai-sdk-contract-phase-2`, head `codex/restack-pr173-clean`, head SHA `c5d11e422c8e320fdf700dba53e1c1e2db6411a0`, `mergeStateStatus: CLEAN`.
+- PR177 head still matches the expected prior-review SHA `c5d11e422c8e320fdf700dba53e1c1e2db6411a0`.
+- PR171's previous `mergeStateStatus: UNKNOWN` did not reproduce; `gh pr view`, GraphQL, and REST checks all reported clean/mergeable state during the current pass.
+
+Commands:
+
+```bash
+git status --short --branch
+gh pr view 171 --json number,title,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,url
+gh pr view 173 --json number,title,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,url
+gh pr view 177 --json number,title,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,url
+gh pr checks 171
+gh pr checks 173
+gh pr checks 177
+gh pr view 177 --json statusCheckRollup,url
+```
+
+Check status:
+
+- PR171: `Build`, `Format Check`, `Lint`, `Test`, `Test (evals)`, `Type Check`, `Vercel`, `Vercel Preview Comments`, and `CodeRabbit` passed.
+- PR173: `Vercel`, `Vercel Preview Comments`, and `CodeRabbit` passed.
+- PR177: `Vercel`, `Vercel Preview Comments`, and `CodeRabbit` passed.
+- No failing or pending checks were reported.
+
+### Automated Verification
+
+Commands:
+
+```bash
+bun run test -- --run components/render-message.test.tsx components/tool-ui/registry.test.tsx components/tool-ui/tool-part-registry.test.tsx components/tool-ui/data-table/data-table.test.ts lib/tools/__tests__/canvas-tools.test.ts lib/tools/__tests__/search-provider-routing.test.ts lib/agents/chat/__tests__/specialists.test.ts lib/agents/prompts/search-mode-prompts.test.ts
+bun run lint
+bun run typecheck
+```
+
+Results:
+
+- Focused tests passed: 8 files, 117 tests.
+- `bun run lint` passed.
+- `bun run typecheck` passed.
+
+### Core Fix Revalidation
+
+- `readCanvasArtifact` remains a non-renderable context-only path in `components/render-message.tsx` and `components/tool-ui/registry.tsx`.
+- Create/update artifact cards still render through the explicit create/update paths.
+- Tests cover regular `tool-readCanvasArtifact`, dynamic-tool `readCanvasArtifact`, and the registry fallback false-positive.
+- `competitorResearch` still falls back to search snippets when top-source fetch fails.
+- Prompt forcing remains narrow: only explicit requests to call or use `competitorResearch` require the specialist path.
+
+### Chrome/Manual QA
+
+Chrome target: `http://localhost:43100`.
+
+Dev server command:
+
+```bash
+bun --env-file=/Users/nick/Projects/vana-v2/.env.local run dev
+```
+
+Local runtime state:
+
+- `curl -I http://localhost:43100` returned HTTP 200.
+- The configured local Supabase target is `127.0.0.1:44321`; local signup settings reported `disable_signup: false` and `mailer_autoconfirm: true`.
+- PR177 Vercel preview remained blocked before app code with HTTP 401 on both `/` and `/api/health`.
+
+Current-run browser evidence:
+
+| Flow                                                          | Status                        | Evidence                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Guest shell                                                   | Pass                          | Clean Chrome profile loaded `/`; `#guest-menu-trigger` was present, `#user-menu-trigger` was absent, and `[data-testid="full-chat"]` was present.                                                                                                  |
+| Guest chat                                                    | Pass                          | Submitted `Say hello in one short sentence for Phase 2 QA.`; `/api/chat` returned `200 text/event-stream`; rendered answer: `Hello, I am ready for Phase 2 QA.`                                                                                    |
+| Authenticated shell                                           | Blocked                       | The normal Chrome profile could be opened, but JavaScript inspection through Apple Events is disabled and Computer Use permissions remained pending. Creating a new temporary local QA account requires explicit user confirmation at action time. |
+| Authenticated search mode                                     | Blocked                       | Not replayed in current pass because authenticated shell access is blocked. Prior recorded evidence in this file remains from the earlier remediation QA pass.                                                                                     |
+| Authenticated research mode                                   | Blocked                       | Not replayed in current pass because authenticated shell access is blocked. Prior recorded evidence in this file remains from the earlier remediation QA pass.                                                                                     |
+| Live `competitorResearch` browser replay                      | Blocked                       | Not replayed in current pass because authenticated research-mode access is blocked. Code/test coverage and prior recorded local QA evidence remain valid, but this was not freshly replayed in Chrome today.                                       |
+| Build/canvas create/read/update browser replay                | Blocked                       | Not replayed in current pass because the final required replay target was authenticated Chrome. Code/test coverage and prior recorded local QA evidence remain valid, but this was not freshly replayed in Chrome today.                           |
+| Option-list, question-wizard, image-generation browser replay | Carried forward, not replayed | These remain covered by the earlier local manual QA record above and focused tests where applicable; they were not replayed in the current pass.                                                                                                   |
+
+Blocked access details:
+
+- Browser plugin/in-app browser attempts to navigate to `http://localhost:43100` and `http://127.0.0.1:43100` timed out before producing page evidence.
+- Default Chrome AppleScript inspection failed because Chrome has `Allow JavaScript from Apple Events` disabled.
+- Computer Use remained unavailable because macOS Accessibility/Screen Recording permissions were still pending.
+- Creating a new local Supabase QA account was not performed because account creation requires explicit user confirmation at action time.
+
+Final current-run judgment: **Phase 2 is not yet fully verified in this pass; the remaining blocker is authenticated Chrome replay access.** If the user confirms temporary local QA account creation or grants Computer Use/browser inspection access, rerun authenticated shell, search, research, competitorResearch, build/canvas read-update, and the optional interactive/image flows. If those pass, update this section to: **"Phase 2 is fully verified and complete pending user-directed PR readiness/merge workflow."**
+
+## Authenticated Chrome Replay - 2026-04-26 Local / 2026-04-27 UTC
+
+Status: **Phase 2 not complete; fix `readCanvasArtifact` persistence first.**
+
+This pass supersedes the access-blocked attempt above. Authenticated local Chrome access was established with a temporary local Supabase account against `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:44321`; credentials were intentionally not recorded. No PR was merged and no draft/ready state was changed.
+
+### Stacked PR State
+
+- PR171: open draft, base `main`, head `codex/ai-sdk-contract-phase-1`, head SHA `ec99402938e47baefb739a5e91022505a6e1a6dc`, `mergeStateStatus: CLEAN`.
+- PR173: open draft, base `codex/ai-sdk-contract-phase-1`, head `codex/ai-sdk-contract-phase-2`, head SHA `2d1125672d1e4df14e90402a4bd053916aa0b9ee`, `mergeStateStatus: CLEAN`.
+- PR177: open draft, base `codex/ai-sdk-contract-phase-2`, head `codex/restack-pr173-clean`, head SHA `c5d11e422c8e320fdf700dba53e1c1e2db6411a0`, `mergeStateStatus: CLEAN`.
+- PR177 head matches the expected SHA `c5d11e422c8e320fdf700dba53e1c1e2db6411a0`.
+- PR171 checks passed: `Build`, `Format Check`, `Lint`, `Test`, `Test (evals)`, `Type Check`, `Vercel`, `Vercel Preview Comments`, and `CodeRabbit`.
+- PR173 checks passed: `Vercel`, `Vercel Preview Comments`, and `CodeRabbit`.
+- PR177 checks passed: `Vercel`, `Vercel Preview Comments`, and `CodeRabbit`.
+
+Commands:
+
+```bash
+git status --short --branch
+gh pr view 171 --json number,title,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,url
+gh pr view 173 --json number,title,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,url
+gh pr view 177 --json number,title,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,url
+gh pr checks 171
+gh pr checks 173
+gh pr checks 177
+```
+
+### Runtime Checks
+
+Commands:
+
+```bash
+npx supabase start
+bun --env-file=/Users/nick/Projects/vana-v2/.env.local run dev
+curl -I http://localhost:43100
+curl -I https://polymorph-git-codex-restack-pr173-clean-nick-bohmers-projects.vercel.app/
+curl -I https://polymorph-git-codex-restack-pr173-clean-nick-bohmers-projects.vercel.app/api/health
+curl -sS http://127.0.0.1:44321/auth/v1/settings | jq '{external_email_enabled,disable_signup,mailer_autoconfirm}'
+```
+
+Results:
+
+- Local app target `http://localhost:43100` returned HTTP 200.
+- PR177 Vercel preview returned HTTP 401 with Vercel SSO protection for both `/` and `/api/health`.
+- Local Supabase auth settings returned `disable_signup: false` and `mailer_autoconfirm: true`.
+
+### Automated Verification
+
+Commands:
+
+```bash
+bun run test -- --run components/render-message.test.tsx components/tool-ui/registry.test.tsx components/tool-ui/tool-part-registry.test.tsx components/tool-ui/data-table/data-table.test.ts lib/tools/__tests__/canvas-tools.test.ts lib/tools/__tests__/search-provider-routing.test.ts lib/agents/chat/__tests__/specialists.test.ts lib/agents/prompts/search-mode-prompts.test.ts
+bun run lint
+bun run typecheck
+```
+
+Results:
+
+- Focused tests passed: 8 files, 117 tests.
+- `bun run lint` passed with no diagnostics.
+- `bun run typecheck` passed with no diagnostics.
+
+### Code Invariant Review
+
+- Finding: `components/render-message.tsx` suppresses `readCanvasArtifact` output before preserving visible `not_found` or `output-error` fallback, so the visible-error preservation invariant is not fully covered.
+- Finding: live authenticated canvas replay exposed a persistence gap in `lib/utils/message-mapping.ts`: `tool-readCanvasArtifact` is not mapped to `tool-dynamic` or filtered, so it falls through as an unknown `tool-*` part and violates the `parts.tool_fields_required` database constraint during message persistence.
+
+### Chrome Manual QA
+
+Chrome target: `http://localhost:43100`.
+
+| Flow                                                       | Status       | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---------------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authenticated shell                                        | Pass         | Local Chrome showed `#user-menu-trigger` present, `#guest-menu-trigger` absent, and `[data-testid="full-chat"]` mounted.                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Authenticated search mode                                  | Pass         | Chat `ieghoxtv83p18uco16urm1yl` streamed through `/api/chat` with `200 text/event-stream`, rendered search results and a sourced answer, then persisted after reload.                                                                                                                                                                                                                                                                                                                                                                         |
+| Authenticated research mode                                | Pass         | Chat `f2wm62c98ir1hkput2fgbfo6` in Research mode streamed two search-result blocks, rendered the Research Activity panel and answer content, then persisted after reload.                                                                                                                                                                                                                                                                                                                                                                     |
+| Explicit `competitorResearch`                              | Pass         | Chat `cwj4p5s20odz1g951z5n60pl` in Research mode rendered the dedicated `COMPETITOR RESEARCH` region for Vercel and Netlify, then completed with source links.                                                                                                                                                                                                                                                                                                                                                                                |
+| Build mode create                                          | Pass         | Chat `hgxo7e9et7pm55ygig7r5yr1` in Build mode created `QA Status Dashboard`; the canvas artifact card rendered `Ready` and the workspace preview loaded.                                                                                                                                                                                                                                                                                                                                                                                      |
+| Canvas read/update                                         | Fail         | The model did call `readCanvasArtifact` and `updateCanvasArtifact`; the live UI showed the original create card plus one update/final card, and no extra read-generated `Ready` card. However, the server logged `Unrecognized tool part type "tool-readCanvasArtifact"` followed by `tool_fields_required` constraint failure while saving the assistant message. After reload, the updated artifact preview still showed `Active Bugs` as `3` and `Reviewer sign-off`, but the update assistant message/card was not persisted in the chat. |
+| Guest chat, option-list, question-wizard, image generation | Not replayed | Optional in this pass; prior local evidence remains carried forward above.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+
+Residual risks:
+
+- Brave search is over quota and repeatedly falls back to Tavily; the fallback path completed search/research/competitor flows but remains noisy in dev logs.
+- The PR177 Vercel preview remains inaccessible without Deployment Protection/SSO access.
+- The local QA account exists only in local Supabase and should not be treated as deployed auth evidence.
+
+Final current-run judgment: **Phase 2 not complete; fix `readCanvasArtifact` persistence first.**
+
+## Phase 2 Completion Verification - 2026-04-27
+
+Status: **Phase 2 is fully verified and complete pending user-directed PR readiness/merge workflow.**
+
+This pass was run from `/Users/nick/.codex/worktrees/restack-pr173/vana-v2` on `codex/restack-pr173-clean`. No PR was merged, no PR draft/ready state was changed, and the remote PR heads were left unchanged. The local working tree contains the Phase 2 fix and verification doc updates.
+
+### Stacked PR State
+
+- PR171: open draft, base `main`, head `codex/ai-sdk-contract-phase-1`, head SHA `ec99402938e47baefb739a5e91022505a6e1a6dc`, `mergeStateStatus: CLEAN`.
+- PR173: open draft, base `codex/ai-sdk-contract-phase-1`, head `codex/ai-sdk-contract-phase-2`, head SHA `2d1125672d1e4df14e90402a4bd053916aa0b9ee`, `mergeStateStatus: CLEAN`.
+- PR177: open draft, base `codex/ai-sdk-contract-phase-2`, head `codex/restack-pr173-clean`, remote head SHA `c5d11e422c8e320fdf700dba53e1c1e2db6411a0`, `mergeStateStatus: CLEAN`.
+- Local `git log -1 --oneline`: `c5d11e4 fix: remediate pr 173 manual qa blockers`.
+
+Commands:
+
+```bash
+git status --short --branch
+git log -1 --oneline
+gh pr view 171 --json number,title,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,url
+gh pr view 173 --json number,title,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,url
+gh pr view 177 --json number,title,state,isDraft,baseRefName,headRefName,headRefOid,mergeStateStatus,url
+gh pr checks 171
+gh pr checks 173
+gh pr checks 177
+```
+
+Check status:
+
+- PR171: `Build`, `Format Check`, `Lint`, `Test`, `Test (evals)`, `Type Check`, `Vercel`, `Vercel Preview Comments`, and `CodeRabbit` passed.
+- PR173: `Vercel`, `Vercel Preview Comments`, and `CodeRabbit` passed.
+- PR177: `Vercel`, `Vercel Preview Comments`, and `CodeRabbit` passed.
+- No failing or pending checks were reported.
+
+### Code Fixes
+
+- `lib/utils/message-mapping.ts`: `tool-readCanvasArtifact` now persists through `tool-dynamic` with `tool_toolCallId`, `tool_state`, dynamic name/type, input, output, provider metadata, and full `files` output intact. DB-to-UI restore now reconstructs it as `tool-readCanvasArtifact`.
+- `components/render-message.tsx`: successful `readCanvasArtifact` context reads are hidden to avoid duplicate canvas cards, while `not_found` and `output-error` read outputs remain visible through the dynamic-tool fallback.
+- Regression tests were added for read-tool persistence, DB round trip, hidden successful read cards, visible `not_found`, and visible `output-error` for both named and dynamic read parts.
+
+### Automated Verification
+
+Commands:
+
+```bash
+bun run test -- --run components/render-message.test.tsx lib/utils/__tests__/message-mapping-display-tools.test.ts
+bun run test -- --run components/render-message.test.tsx components/tool-ui/registry.test.tsx components/tool-ui/tool-part-registry.test.tsx components/tool-ui/data-table/data-table.test.ts lib/tools/__tests__/canvas-tools.test.ts lib/tools/__tests__/search-provider-routing.test.ts lib/agents/chat/__tests__/specialists.test.ts lib/agents/prompts/search-mode-prompts.test.ts lib/utils/__tests__/message-mapping-display-tools.test.ts
+bun run lint
+bun run typecheck
+```
+
+Results:
+
+- Focused regression tests passed: 2 files, 76 tests.
+- Required focused suite passed: 9 files, 171 tests.
+- `bun run lint` passed with no diagnostics.
+- `bun run typecheck` passed with no diagnostics.
+
+### Runtime Checks
+
+Commands:
+
+```bash
+bun --env-file=/Users/nick/Projects/vana-v2/.env.local run dev
+curl -I http://localhost:43100
+curl -I https://polymorph-git-codex-restack-pr173-clean-nick-bohmers-projects.vercel.app/
+curl -I https://polymorph-git-codex-restack-pr173-clean-nick-bohmers-projects.vercel.app/api/health
+curl -sS http://127.0.0.1:44321/auth/v1/settings | jq '{external_email_enabled,disable_signup,mailer_autoconfirm}'
+```
+
+Results:
+
+- Local Chrome target: `http://localhost:43100`.
+- Local app returned HTTP 200.
+- PR177 Vercel preview returned HTTP 401 with Vercel SSO protection for both `/` and `/api/health`.
+- Local Supabase auth settings returned `disable_signup: false` and `mailer_autoconfirm: true`.
+- Browser connector used the existing local QA session; no credentials were printed.
+
+### Authenticated Chrome QA
+
+| Flow                          | Status | Evidence                                                                                                                                                                                                                                                                                                                      |
+| ----------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authenticated shell           | Pass   | Local Chrome at `/` reported `#user-menu-trigger: true`, `#guest-menu-trigger: false`, and `[data-testid="full-chat"]: true`.                                                                                                                                                                                                 |
+| Authenticated search mode     | Pass   | Chat `b7s8oy953kosvpsyesmqc0ld` streamed `/api/chat` with HTTP 200, rendered 24 search results and an answer linking to `https://nextjs.org/`, then persisted after reload.                                                                                                                                                   |
+| Authenticated research mode   | Pass   | Chat `jsnq74tehyz4c07h7gyyhpxt` streamed `/api/chat` with HTTP 200, rendered `Research Plan - 3/3 complete`, 24 search results, sourced answer links, and the Research Activity panel, then persisted after reload.                                                                                                           |
+| Explicit `competitorResearch` | Pass   | Chat `s6tqp3pq5xwoc3cmzd1mdab1` rendered the dedicated `Competitor research result` region with `COMPETITOR RESEARCH` for Vercel and Netlify.                                                                                                                                                                                 |
+| Build create                  | Pass   | Chat `brq2q1gvm729o3xfg9ed1my0` created `QA Status Dashboard`; the canvas artifact card rendered `Ready` and the preview showed Passed Checks `6`, Active Bugs `0`, Coverage `92%`, and Review Status `Ready`.                                                                                                                |
+| Canvas read/update            | Pass   | Same chat called `readCanvasArtifact` and `updateCanvasArtifact`, rendered the original create card plus one update/final card, and did not render an extra read-generated Ready card. After reload, the updated assistant message/card persisted and the preview showed Active Bugs `1` and Review Status `Needs Follow-up`. |
+
+Server-log evidence for the fixed read/update path:
+
+```text
+[readCanvasArtifact] Tool invoked: chatId=brq2q1gvm729o3xfg9ed1my0, artifactId=no2fur0g4dz5mgcefhp81041
+[updateCanvasArtifact] Tool invoked: chatId=brq2q1gvm729o3xfg9ed1my0, artifactId=no2fur0g4dz5mgcefhp81041, baseRevision=2, files=[App.tsx]
+[updateCanvasArtifact] Success: chatId=brq2q1gvm729o3xfg9ed1my0, artifactId=no2fur0g4dz5mgcefhp81041, status=ready
+POST /api/chat 200
+GET /api/canvas-artifacts/no2fur0g4dz5mgcefhp81041 200
+```
+
+The post-fix read/update run did not log `Unrecognized tool part type "tool-readCanvasArtifact"` and did not log `tool_fields_required`.
+
+Residual risks:
+
+- Brave search remains over quota and falls back to Tavily in local QA logs; the fallback completed search, research, and competitor flows.
+- The PR177 Vercel preview remains inaccessible without Deployment Protection/SSO access.
+- Optional guest chat, option-list, question-wizard, and image-generation flows were not replayed in this final pass. One abandoned competitorResearch attempt surfaced an interactive depth-question continuation guard, but the required explicit competitorResearch flow passed after specifying depth upfront.

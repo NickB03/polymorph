@@ -19,16 +19,43 @@ vi.mock('./dynamic-tool-display', () => ({
   DynamicToolDisplay: ({
     part
   }: {
-    part: { toolName: string; state: string; output?: unknown }
+    part: {
+      toolName: string
+      state: string
+      output?: unknown
+      errorText?: string
+    }
   }) => {
     if (part.state === 'output-available') {
-      const rendered =
-        part.toolName === 'createCanvasArtifact' ||
-        part.toolName === 'readCanvasArtifact' ? (
-          <div data-testid="canvas-artifact-card" data-source="tool" />
-        ) : null
-      return rendered
+      if (part.toolName === 'readCanvasArtifact') {
+        const output =
+          part.output && typeof part.output === 'object'
+            ? (part.output as Record<string, unknown>)
+            : {}
+        if (
+          output.status === 'not_found' ||
+          typeof output.error === 'string' ||
+          typeof output.errorCode === 'string'
+        ) {
+          return (
+            <div data-testid="dynamic-tool-display">
+              {JSON.stringify(part.output)}
+            </div>
+          )
+        }
+
+        return <div data-testid="canvas-artifact-card" data-source="tool" />
+      }
+
+      if (part.toolName === 'createCanvasArtifact') {
+        return <div data-testid="canvas-artifact-card" data-source="tool" />
+      }
     }
+
+    if (part.state === 'output-error') {
+      return <div data-testid="dynamic-tool-display">{part.errorText}</div>
+    }
+
     return null
   }
 }))
@@ -449,6 +476,152 @@ describe('RenderMessage', () => {
     expect(cards[0]).toHaveAttribute(
       'data-title',
       'Phoenix Pro Project Tracker Dashboard Updated'
+    )
+  })
+
+  it('renders readCanvasArtifact not_found output instead of hiding it', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-readCanvasArtifact',
+          state: 'output-available',
+          toolCallId: 'read-1',
+          input: { artifactId: 'missing-artifact' },
+          output: {
+            artifactId: 'missing-artifact',
+            chatId: 'chat-1',
+            title: '',
+            status: 'not_found',
+            draftRevision: 0,
+            currentVersionId: null,
+            files: {},
+            error: 'Artifact not found',
+            errorCode: 'not-found'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dynamic-tool-display')).toHaveTextContent(
+      'Artifact not found'
+    )
+  })
+
+  it('renders dynamic-tool readCanvasArtifact not_found output instead of hiding it', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'dynamic-tool',
+          toolCallId: 'read-1',
+          toolName: 'readCanvasArtifact',
+          state: 'output-available',
+          input: { artifactId: 'missing-artifact' },
+          output: {
+            artifactId: 'missing-artifact',
+            chatId: 'chat-1',
+            title: '',
+            status: 'not_found',
+            draftRevision: 0,
+            currentVersionId: null,
+            files: {},
+            error: 'Artifact not found',
+            errorCode: 'not-found'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dynamic-tool-display')).toHaveTextContent(
+      'Artifact not found'
+    )
+  })
+
+  it('renders readCanvasArtifact output-error output instead of hiding it', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-readCanvasArtifact',
+          state: 'output-error',
+          toolCallId: 'read-1',
+          input: { artifactId: 'artifact-1' },
+          errorText: 'Read failed'
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dynamic-tool-display')).toHaveTextContent(
+      'Read failed'
+    )
+  })
+
+  it('renders dynamic-tool readCanvasArtifact output-error output instead of hiding it', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'dynamic-tool',
+          toolCallId: 'read-1',
+          toolName: 'readCanvasArtifact',
+          state: 'output-error',
+          input: { artifactId: 'artifact-1' },
+          errorText: 'Dynamic read failed'
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dynamic-tool-display')).toHaveTextContent(
+      'Dynamic read failed'
     )
   })
 
