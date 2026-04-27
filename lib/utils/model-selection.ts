@@ -7,9 +7,9 @@ import { SearchMode } from '@/lib/types/search'
 import { isProviderEnabled } from '@/lib/utils/registry'
 
 const DEFAULT_MODEL: Model = {
-  id: 'google/gemini-3-flash',
-  name: 'Gemini 3 Flash',
-  provider: 'Google',
+  id: 'xai/grok-4.1-fast',
+  name: 'Grok 4.1 Fast',
+  provider: 'xAI',
   providerId: 'gateway'
 }
 

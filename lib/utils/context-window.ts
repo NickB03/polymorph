@@ -29,6 +29,7 @@ const MODEL_CONTEXT_WINDOWS: Record<string, ModelContextInfo> = {
   'gemini-2.5-pro': { contextWindow: 1048576, outputTokens: 65536 },
 
   // xAI Models
+  'grok-4.1-fast': { contextWindow: 2097152, outputTokens: 65536 },
   'grok-4.1-fast-reasoning': { contextWindow: 1048576, outputTokens: 65536 },
   'grok-4-0709': { contextWindow: 256000, outputTokens: 8192 },
   'grok-3': { contextWindow: 131072, outputTokens: 8192 },
@@ -60,6 +61,7 @@ const MODEL_TO_ENCODING: Record<string, TiktokenEncoding> = {
   'gemini-3-flash': 'cl100k_base',
   'gemini-2.5-flash': 'cl100k_base', // Use GPT-4 tokenizer as approximation for Gemini
   'gemini-2.5-pro': 'cl100k_base',
+  'grok-4.1-fast': 'cl100k_base',
   'grok-4.1-fast-reasoning': 'cl100k_base',
   'grok-4-0709': 'cl100k_base', // Use GPT-4 tokenizer as approximation for Grok
   'grok-3': 'cl100k_base',
