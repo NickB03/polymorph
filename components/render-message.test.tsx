@@ -19,15 +19,43 @@ vi.mock('./dynamic-tool-display', () => ({
   DynamicToolDisplay: ({
     part
   }: {
-    part: { toolName: string; state: string; output?: unknown }
+    part: {
+      toolName: string
+      state: string
+      output?: unknown
+      errorText?: string
+    }
   }) => {
     if (part.state === 'output-available') {
-      const rendered =
-        part.toolName === 'createCanvasArtifact' ? (
-          <div data-testid="canvas-artifact-card" data-source="tool" />
-        ) : null
-      return rendered
+      if (part.toolName === 'readCanvasArtifact') {
+        const output =
+          part.output && typeof part.output === 'object'
+            ? (part.output as Record<string, unknown>)
+            : {}
+        if (
+          output.status === 'not_found' ||
+          typeof output.error === 'string' ||
+          typeof output.errorCode === 'string'
+        ) {
+          return (
+            <div data-testid="dynamic-tool-display">
+              {JSON.stringify(part.output)}
+            </div>
+          )
+        }
+
+        return <div data-testid="canvas-artifact-card" data-source="tool" />
+      }
+
+      if (part.toolName === 'createCanvasArtifact') {
+        return <div data-testid="canvas-artifact-card" data-source="tool" />
+      }
     }
+
+    if (part.state === 'output-error') {
+      return <div data-testid="dynamic-tool-display">{part.errorText}</div>
+    }
+
     return null
   }
 }))
@@ -141,7 +169,8 @@ vi.mock('./tool-ui/registry', () => ({
 
     if (
       (toolName === 'createCanvasArtifact' ||
-        toolName === 'updateCanvasArtifact') &&
+        toolName === 'updateCanvasArtifact' ||
+        toolName === 'readCanvasArtifact') &&
       output &&
       typeof output === 'object'
     ) {
@@ -307,6 +336,293 @@ describe('RenderMessage', () => {
     )
 
     expect(screen.getAllByTestId('canvas-artifact-card')).toHaveLength(1)
+  })
+
+  it('does not render readCanvasArtifact output as a duplicate canvas card during updates', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-readCanvasArtifact',
+          state: 'output-available',
+          toolCallId: 'read-1',
+          output: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Phoenix Pro Project Tracker Dashboard',
+            status: 'ready',
+            draftRevision: 1,
+            currentVersionId: 'version-1',
+            files: [
+              {
+                path: 'app/page.tsx',
+                content: 'export default function Page() {}'
+              }
+            ]
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifactStatus',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Phoenix Pro Project Tracker Dashboard',
+            status: 'compiling',
+            draftRevision: 2,
+            currentVersionId: 'version-1',
+            updatedAt: '2026-04-26T03:00:00.000Z'
+          }
+        } as any,
+        {
+          type: 'tool-updateCanvasArtifact',
+          state: 'output-available',
+          toolCallId: 'update-1',
+          output: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Phoenix Pro Project Tracker Dashboard',
+            status: 'ready',
+            draftRevision: 2,
+            currentVersionId: 'version-2'
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifact',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Phoenix Pro Project Tracker Dashboard',
+            status: 'ready',
+            draftRevision: 2,
+            currentVersionId: 'version-2'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    const cards = screen.getAllByTestId('canvas-artifact-card')
+    expect(cards).toHaveLength(1)
+    expect(cards[0]).toHaveAttribute('data-artifact-id', 'artifact-1')
+    expect(cards[0]).toHaveAttribute(
+      'data-title',
+      'Phoenix Pro Project Tracker Dashboard'
+    )
+    expect(cards[0]).toHaveAttribute('data-status', 'ready')
+  })
+
+  it('does not render dynamic readCanvasArtifact output as a duplicate canvas card', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'dynamic-tool',
+          toolCallId: 'read-1',
+          toolName: 'readCanvasArtifact',
+          state: 'output-available',
+          input: { artifactId: 'artifact-1' },
+          output: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Phoenix Pro Project Tracker Dashboard',
+            status: 'ready',
+            draftRevision: 1,
+            currentVersionId: 'version-1',
+            files: [
+              {
+                path: 'app/page.tsx',
+                content: 'export default function Page() {}'
+              }
+            ]
+          }
+        } as any,
+        {
+          type: 'data-canvasArtifact',
+          data: {
+            artifactId: 'artifact-1',
+            chatId: 'chat-1',
+            title: 'Phoenix Pro Project Tracker Dashboard Updated',
+            status: 'ready',
+            draftRevision: 2,
+            currentVersionId: 'version-2'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    const cards = screen.getAllByTestId('canvas-artifact-card')
+    expect(cards).toHaveLength(1)
+    expect(cards[0]).toHaveAttribute(
+      'data-title',
+      'Phoenix Pro Project Tracker Dashboard Updated'
+    )
+  })
+
+  it('renders readCanvasArtifact not_found output instead of hiding it', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-readCanvasArtifact',
+          state: 'output-available',
+          toolCallId: 'read-1',
+          input: { artifactId: 'missing-artifact' },
+          output: {
+            artifactId: 'missing-artifact',
+            chatId: 'chat-1',
+            title: '',
+            status: 'not_found',
+            draftRevision: 0,
+            currentVersionId: null,
+            files: {},
+            error: 'Artifact not found',
+            errorCode: 'not-found'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dynamic-tool-display')).toHaveTextContent(
+      'Artifact not found'
+    )
+  })
+
+  it('renders dynamic-tool readCanvasArtifact not_found output instead of hiding it', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'dynamic-tool',
+          toolCallId: 'read-1',
+          toolName: 'readCanvasArtifact',
+          state: 'output-available',
+          input: { artifactId: 'missing-artifact' },
+          output: {
+            artifactId: 'missing-artifact',
+            chatId: 'chat-1',
+            title: '',
+            status: 'not_found',
+            draftRevision: 0,
+            currentVersionId: null,
+            files: {},
+            error: 'Artifact not found',
+            errorCode: 'not-found'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dynamic-tool-display')).toHaveTextContent(
+      'Artifact not found'
+    )
+  })
+
+  it('renders readCanvasArtifact output-error output instead of hiding it', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-readCanvasArtifact',
+          state: 'output-error',
+          toolCallId: 'read-1',
+          input: { artifactId: 'artifact-1' },
+          errorText: 'Read failed'
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dynamic-tool-display')).toHaveTextContent(
+      'Read failed'
+    )
+  })
+
+  it('renders dynamic-tool readCanvasArtifact output-error output instead of hiding it', () => {
+    const message: UIMessage = {
+      id: 'assistant-1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'dynamic-tool',
+          toolCallId: 'read-1',
+          toolName: 'readCanvasArtifact',
+          state: 'output-error',
+          input: { artifactId: 'artifact-1' },
+          errorText: 'Dynamic read failed'
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dynamic-tool-display')).toHaveTextContent(
+      'Dynamic read failed'
+    )
   })
 
   it('calls onCanvasArtifactClick when a data-canvasArtifact card is clicked', () => {

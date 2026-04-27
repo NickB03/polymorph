@@ -250,6 +250,57 @@ function isHiddenInfrastructurePart(part: { type?: string } | undefined) {
   )
 }
 
+function isSuccessfulReadCanvasArtifactOutput(output: unknown) {
+  if (!output || typeof output !== 'object') return false
+
+  const data = output as Record<string, unknown>
+  return (
+    typeof data.artifactId === 'string' &&
+    typeof data.chatId === 'string' &&
+    typeof data.status === 'string' &&
+    data.status !== 'not_found' &&
+    !('error' in data) &&
+    !('errorCode' in data)
+  )
+}
+
+type ToolPartForDynamicFallback = {
+  state?: string
+  input?: unknown
+  output?: unknown
+  errorText?: string
+  toolCallId?: string
+}
+
+function toDynamicToolPart(
+  toolName: string,
+  toolPart: ToolPartForDynamicFallback,
+  fallbackToolCallId: string
+): DynamicToolPart {
+  const base = {
+    type: 'dynamic-tool' as const,
+    toolCallId: toolPart.toolCallId ?? fallbackToolCallId,
+    toolName,
+    input: toolPart.input
+  }
+
+  switch (toolPart.state) {
+    case 'input-streaming':
+      return { ...base, state: 'input-streaming' }
+    case 'output-available':
+      return { ...base, state: 'output-available', output: toolPart.output }
+    case 'output-error':
+      return {
+        ...base,
+        state: 'output-error',
+        errorText: toolPart.errorText ?? 'Tool failed'
+      }
+    case 'input-available':
+    default:
+      return { ...base, state: 'input-available' }
+  }
+}
+
 function mergeSequentialAssistantText(previous: string, next: string) {
   const previousTrimmed = previous.trim()
   const nextTrimmed = next.trim()
@@ -776,6 +827,25 @@ export function RenderMessage({
       }
       if (toolPart.state === 'output-available') {
         const toolName = part.type.substring(5)
+        if (toolName === 'readCanvasArtifact') {
+          if (isSuccessfulReadCanvasArtifactOutput(toolPart.output)) {
+            return
+          }
+
+          flushBuffer(`seg-${index}`)
+          elements.push(
+            <DynamicToolDisplay
+              key={`${messageId}-read-canvas-tool-${index}`}
+              part={toDynamicToolPart(
+                toolName,
+                part as ToolPartForDynamicFallback,
+                `${messageId}-tool-${index}`
+              )}
+            />
+          )
+          return
+        }
+
         const partId = toolPart.toolCallId ?? `${messageId}-tool-${index}`
         const rendered = tryRenderToolUIByName(
           toolName,
@@ -794,12 +864,38 @@ export function RenderMessage({
         }
       }
 
+      if (
+        part.type.substring(5) === 'readCanvasArtifact' &&
+        toolPart.state === 'output-error'
+      ) {
+        flushBuffer(`seg-${index}`)
+        elements.push(
+          <DynamicToolDisplay
+            key={`${messageId}-read-canvas-tool-${index}`}
+            part={toDynamicToolPart(
+              'readCanvasArtifact',
+              part as ToolPartForDynamicFallback,
+              `${messageId}-tool-${index}`
+            )}
+          />
+        )
+        return
+      }
+
       buffer.push(part)
     } else if (part.type === 'reasoning' || part.type?.startsWith?.('data-')) {
       buffer.push(part)
     } else if (part.type === 'dynamic-tool') {
       flushBuffer(`seg-${index}`)
       const dynamicToolPart = part as DynamicToolPart
+      if (
+        dynamicToolPart.toolName === 'readCanvasArtifact' &&
+        dynamicToolPart.state === 'output-available' &&
+        isSuccessfulReadCanvasArtifactOutput(dynamicToolPart.output)
+      ) {
+        return
+      }
+
       if (
         (dynamicToolPart.toolName === 'createCanvasArtifact' ||
           dynamicToolPart.toolName === 'updateCanvasArtifact') &&

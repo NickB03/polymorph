@@ -81,6 +81,19 @@ describe('tool UI registry', () => {
     )
   })
 
+  it('does not render readCanvasArtifact output through the canvas card fallback', () => {
+    const node = tryRenderToolUIByName(
+      'readCanvasArtifact',
+      {
+        ...canvasArtifactOutput,
+        files: [{ path: 'app/page.tsx', content: 'source' }]
+      },
+      'test-part-id'
+    )
+
+    expect(node).toBeNull()
+  })
+
   it('falls back to matching schemas for unrelated tool names', () => {
     const node = tryRenderToolUIByName(
       'unknownTool',

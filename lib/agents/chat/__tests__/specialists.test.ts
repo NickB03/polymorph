@@ -139,6 +139,52 @@ describe('chat specialist fixtures', () => {
     )
   })
 
+  it('falls back to search snippets when fetching the top source fails', async () => {
+    const searchTool = {
+      execute: vi.fn(async function* (_input: { query: string }) {
+        yield {
+          state: 'complete',
+          query: 'AI chat platforms',
+          results: [
+            {
+              title: 'Competitor overview',
+              url: 'https://example.com/blocked',
+              content: 'Search snippet still contains usable evidence.'
+            }
+          ],
+          images: []
+        }
+      })
+    }
+    const fetchTool = {
+      execute: vi.fn(async function* () {
+        throw new Error('HTTP 403: Forbidden')
+      })
+    }
+
+    const tool = createCompetitorResearchTool({
+      searchTool: searchTool as any,
+      fetchTool: fetchTool as any
+    })
+    const output = await collectToolResult(
+      await tool.execute?.(
+        {
+          market: 'AI chat platforms',
+          competitors: ['Alpha', 'Beta'],
+          dimensions: ['UX', 'Reliability']
+        },
+        {} as never
+      )
+    )
+
+    expect(fetchTool.execute).toHaveBeenCalled()
+    const parsedOutput = competitorResearchOutputSchema.parse(output)
+    expect(parsedOutput.cards).toHaveLength(2)
+    expect(parsedOutput.matrix[0]?.UX).toContain(
+      'Search snippet still contains usable evidence.'
+    )
+  })
+
   it('registers competitor research only on the research agent', () => {
     expect(createResearchAgentDefinition().activeTools).toContain(
       competitorResearchToolName

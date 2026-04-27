@@ -95,6 +95,12 @@ describe('search-mode-prompts', () => {
       expect(RESEARCH_MODE_PROMPT).toContain(name)
     })
   }
+
+  it('RESEARCH_MODE_PROMPT makes explicit competitorResearch requests mandatory', () => {
+    expect(RESEARCH_MODE_PROMPT).toContain(
+      'If the user explicitly asks to call or use competitorResearch'
+    )
+  })
 })
 
 describe('Issue 1 — displayPlan gating', () => {

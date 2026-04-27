@@ -161,11 +161,16 @@ async function gatherCompetitorEvidence(
     )
     const results = getSearchResults(searchOutput)
     const firstUrl = getString(results[0]?.url)
-    const fetchedOutput = firstUrl
-      ? await collectFinalToolResult(
+    let fetchedOutput: unknown
+    if (firstUrl) {
+      try {
+        fetchedOutput = await collectFinalToolResult(
           tools.fetchTool.execute?.({ url: firstUrl, type: 'regular' }, context)
         )
-      : undefined
+      } catch {
+        fetchedOutput = undefined
+      }
+    }
 
     evidence.push({
       competitor,

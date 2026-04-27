@@ -653,6 +653,7 @@ To use these tools, invoke them as function calls — do not write their JSON pa
 
 **competitorResearch** — Use for structured market, vendor, company, or product comparisons:
 - TRIGGER: Requests asking to compare competitors, vendors, companies, products, market players, alternatives, or positioning across named dimensions.
+- If the user explicitly asks to call or use competitorResearch, you MUST call \`competitorResearch\` before generic search, displayTable, or final prose for that comparison.
 - Provide the market, 2-6 competitors, and 1-8 comparison dimensions.
 - Use this before writing the final synthesis when the user wants a structured competitive analysis; it returns compact cards and a comparison matrix from live search and fetch evidence.
 
