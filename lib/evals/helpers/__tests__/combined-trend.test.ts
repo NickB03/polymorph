@@ -31,11 +31,13 @@ describe('buildCombinedTrend', () => {
       {
         createdAt: '2026-04-01T00:00:00Z',
         capability: 0.9,
+        regression: null,
         trafficMonitor: null
       },
       {
         createdAt: '2026-04-02T00:00:00Z',
         capability: null,
+        regression: null,
         trafficMonitor: 0.7
       }
     ])
@@ -53,6 +55,7 @@ describe('buildCombinedTrend', () => {
     expect(result[0]).toEqual({
       createdAt: t,
       capability: 0.9,
+      regression: null,
       trafficMonitor: 0.7
     })
   })
@@ -68,5 +71,40 @@ describe('buildCombinedTrend', () => {
       '2026-04-01T00:00:00Z',
       '2026-04-03T00:00:00Z'
     ])
+  })
+
+  it('includes regression as a third series in combined trend points', () => {
+    const data = emptySnapshot()
+    const t = '2026-04-22T00:00:00Z'
+    data.capability.trend = [{ createdAt: t, overallScore: 0.9, passRate: 0.9 }]
+    data.regression.trend = [
+      { createdAt: t, overallScore: 0.85, passRate: 0.85 }
+    ]
+    data.trafficMonitor.trend = [
+      { createdAt: t, overallScore: 0.8, passRate: 0.8 }
+    ]
+
+    const result = buildCombinedTrend(data)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual({
+      createdAt: t,
+      capability: 0.9,
+      regression: 0.85,
+      trafficMonitor: 0.8
+    })
+  })
+
+  it('leaves regression null when only capability and trafficMonitor have data at a timestamp', () => {
+    const data = emptySnapshot()
+    const t = '2026-04-22T00:00:00Z'
+    data.capability.trend = [{ createdAt: t, overallScore: 0.9, passRate: 0.9 }]
+    data.trafficMonitor.trend = [
+      { createdAt: t, overallScore: 0.8, passRate: 0.8 }
+    ]
+
+    const result = buildCombinedTrend(data)
+
+    expect(result[0].regression).toBe(null)
   })
 })

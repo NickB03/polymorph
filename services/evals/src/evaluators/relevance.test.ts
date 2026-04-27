@@ -82,7 +82,7 @@ describe('relevance experiment evaluator', () => {
     expect(mockEvaluate).not.toHaveBeenCalled()
   })
 
-  it('maps context to documentText in inner evaluator', async () => {
+  it('maps context to retrievedSearchTopics in inner evaluator', async () => {
     mockEvaluate.mockResolvedValue({
       score: 1,
       label: 'relevant',
@@ -95,7 +95,7 @@ describe('relevance experiment evaluator', () => {
     })
     expect(mockEvaluate).toHaveBeenCalledWith({
       input: 'what is AI?',
-      documentText: 'AI overview article...'
+      retrievedSearchTopics: 'AI overview article...'
     })
     expect(result).toEqual({
       score: 1,
