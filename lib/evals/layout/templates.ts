@@ -138,6 +138,15 @@ export const TEMPLATE_B: EvalsLayoutTemplate = {
       }
     },
     {
+      id: 'reg-header',
+      type: 'suite-header-card',
+      config: {
+        suite: 'regression',
+        variant: 'column',
+        cadence: 'on-demand'
+      }
+    },
+    {
       id: 'traf-header',
       type: 'suite-header-card',
       config: {
@@ -150,7 +159,7 @@ export const TEMPLATE_B: EvalsLayoutTemplate = {
     {
       id: 'combined-trend',
       type: 'combined-trend-chart',
-      config: { title: 'Trend · both suites overlaid' }
+      config: { title: 'Trend · all suites overlaid' }
     },
     {
       id: 'comparison-grid',
@@ -162,16 +171,18 @@ export const TEMPLATE_B: EvalsLayoutTemplate = {
     lg: [
       { i: 'header', x: 0, y: 0, w: 12, h: 1, static: true },
       { i: 'divergence', x: 0, y: 1, w: 12, h: 1 },
-      { i: 'cap-header', x: 0, y: 2, w: 6, h: 4 },
-      { i: 'traf-header', x: 6, y: 2, w: 6, h: 4 },
+      { i: 'cap-header', x: 0, y: 2, w: 4, h: 4 },
+      { i: 'reg-header', x: 4, y: 2, w: 4, h: 4 },
+      { i: 'traf-header', x: 8, y: 2, w: 4, h: 4 },
       { i: 'combined-trend', x: 0, y: 6, w: 12, h: 6 },
       { i: 'comparison-grid', x: 0, y: 12, w: 12, h: 8 }
     ],
     md: [
       { i: 'header', x: 0, y: 0, w: 12, h: 1, static: true },
       { i: 'divergence', x: 0, y: 1, w: 12, h: 1 },
-      { i: 'cap-header', x: 0, y: 2, w: 6, h: 4 },
-      { i: 'traf-header', x: 6, y: 2, w: 6, h: 4 },
+      { i: 'cap-header', x: 0, y: 2, w: 4, h: 4 },
+      { i: 'reg-header', x: 4, y: 2, w: 4, h: 4 },
+      { i: 'traf-header', x: 8, y: 2, w: 4, h: 4 },
       { i: 'combined-trend', x: 0, y: 6, w: 12, h: 6 },
       { i: 'comparison-grid', x: 0, y: 12, w: 12, h: 8 }
     ],
@@ -179,6 +190,7 @@ export const TEMPLATE_B: EvalsLayoutTemplate = {
       { i: 'header', h: 1, static: true },
       { i: 'divergence', h: 1 },
       { i: 'traf-header', h: 4 },
+      { i: 'reg-header', h: 4 },
       { i: 'cap-header', h: 4 },
       { i: 'combined-trend', h: 6 },
       { i: 'comparison-grid', h: 8 }

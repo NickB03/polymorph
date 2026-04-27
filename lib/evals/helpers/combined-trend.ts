@@ -3,6 +3,7 @@ import type { EvalsDashboardData } from '@/lib/evals/types'
 export interface CombinedTrendPoint {
   createdAt: string
   capability: number | null
+  regression: number | null
   trafficMonitor: number | null
 }
 
@@ -12,12 +13,20 @@ export function buildCombinedTrend(
   const map = new Map<string, CombinedTrendPoint>()
   const ensure = (iso: string) => {
     if (!map.has(iso)) {
-      map.set(iso, { createdAt: iso, capability: null, trafficMonitor: null })
+      map.set(iso, {
+        createdAt: iso,
+        capability: null,
+        regression: null,
+        trafficMonitor: null
+      })
     }
     return map.get(iso)!
   }
   data.capability.trend.forEach(p => {
     ensure(p.createdAt).capability = p.overallScore
+  })
+  data.regression.trend.forEach(p => {
+    ensure(p.createdAt).regression = p.overallScore
   })
   data.trafficMonitor.trend.forEach(p => {
     ensure(p.createdAt).trafficMonitor = p.overallScore

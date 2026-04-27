@@ -23,7 +23,7 @@ import { TrendChartInner } from './trend-chart-widget'
 type Variant = 'hero' | 'column' | 'rail'
 
 type Config = {
-  suite: 'capability' | 'trafficMonitor'
+  suite: 'capability' | 'regression' | 'trafficMonitor'
   variant: Variant
   cadence?: string
   showTrend?: boolean
@@ -40,7 +40,12 @@ export function SuiteHeaderCard({
   const suiteKey = config.suite
   const suite = data[suiteKey]
   const latest = suite.latest
-  const title = suiteKey === 'capability' ? 'Capability' : 'Traffic Monitor'
+  const title =
+    suiteKey === 'capability'
+      ? 'Capability'
+      : suiteKey === 'regression'
+        ? 'Regression'
+        : 'Traffic Monitor'
   if (!latest) {
     return <SuiteEmptyState title={title} variant={config.variant} />
   }
@@ -48,8 +53,8 @@ export function SuiteHeaderCard({
   const delta = previous ? latest.overallScore - previous.overallScore : null
   const state: HealthState = healthForScore(
     latest.overallScore,
-    suiteKey === 'capability' ? 0.9 : 0.85,
-    suiteKey === 'capability' ? 0.75 : 0.7
+    suiteKey === 'trafficMonitor' ? 0.85 : 0.9,
+    suiteKey === 'trafficMonitor' ? 0.7 : 0.75
   )
   const alarmCount = config.showAlarmCount
     ? computeFindings(data).filter(
@@ -162,7 +167,9 @@ export function SuiteHeaderCard({
             <p className="text-xs text-muted-foreground">
               {suiteKey === 'trafficMonitor'
                 ? 'real user chats · sampled daily'
-                : 'rehearsed · on-demand'}
+                : suiteKey === 'regression'
+                  ? 'regression fixtures · guard against drift'
+                  : 'rehearsed · on-demand'}
             </p>
           </div>
           <Badge variant="outline" className={stateColor(state)}>
@@ -225,7 +232,9 @@ function SuiteEmptyState({
   const helper =
     title === 'Traffic Monitor'
       ? 'Runs land daily from the evals cron or on manual trigger.'
-      : 'Runs land on demand from the rehearsed suite.'
+      : title === 'Regression'
+        ? 'Runs land when a regression fixture exercise is triggered.'
+        : 'Runs land on demand from the rehearsed suite.'
 
   if (variant === 'rail') {
     return (
@@ -276,7 +285,9 @@ function SuiteEmptyState({
             <p className="text-xs text-muted-foreground">
               {title === 'Traffic Monitor'
                 ? 'real user chats · sampled daily'
-                : 'rehearsed · on-demand'}
+                : title === 'Regression'
+                  ? 'regression fixtures · guard against drift'
+                  : 'rehearsed · on-demand'}
             </p>
           </div>
           <Badge variant="outline" className="text-muted-foreground">

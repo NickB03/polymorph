@@ -10,7 +10,7 @@ import {
 import type { WidgetProps } from './shared/widget-props'
 
 type Config = {
-  suite: 'capability' | 'trafficMonitor'
+  suite: 'capability' | 'regression' | 'trafficMonitor'
 }
 
 export function EvaluatorChipGrid({ data, config }: WidgetProps<Config>) {
