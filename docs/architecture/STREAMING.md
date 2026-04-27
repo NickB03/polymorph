@@ -110,10 +110,12 @@ The route reads `searchMode` and `modelType` from cookies, then calls `selectMod
 
 ### 4. Stream Path Dispatch
 
-Based on authentication status, the route delegates to one of:
+After authentication, rate limiting, request validation, model selection, and mode normalization, the route delegates to `handleChatAgentRoute()` in `lib/agents/chat/route-handler.ts`. The route handler resolves the chat agent from `userMode`, `searchMode`, and `intent`, then injects an `agentFactory` into the selected stream primitive.
 
 - `createChatStreamResponse(config)` for authenticated users
 - `createEphemeralChatStreamResponse(config)` for guests
+
+The stream primitives own persistence, message preparation, tracing metadata, related questions, and SSE mechanics. They do not choose prompts or active tools.
 
 ### 5. Authorization and Chat Loading (Authenticated Only)
 
@@ -136,20 +138,29 @@ Inside `execute`, `prepareMessages(context, message)` resolves the full conversa
 
 If this is a new chat, `generateChatTitle()` fires immediately and runs concurrently with the main agent stream. It uses the same model to generate a 3-5 word title from the user's first message. The returned promise is stored in `titlePromise` and awaited later in `onFinish`.
 
-### 9. Research Agent Streaming
+### 9. Chat Agent Streaming
 
-The `researcher()` factory (`lib/agents/researcher.ts`) creates a `ToolLoopAgent` configured with:
+The injected `agentFactory` creates a `ToolLoopAgent` through the chat agent registry in `lib/agents/chat/`. `lib/agents/researcher.ts` is now a compatibility shim for older imports; runtime route delegation is owned by:
+
+- `lib/agents/chat/registry.ts`
+- `lib/agents/chat/route-handler.ts`
+- `lib/agents/chat/search.ts`
+- `lib/agents/chat/research.ts`
+- `lib/agents/chat/build.ts`
+
+The selected agent is configured with:
 
 - The selected model
-- A system prompt based on search mode (chat or research)
-- Active tools (search, fetch, display tools, and optionally todoWrite)
-- A step limit (20 for chat mode, 50 for research mode)
+- A system prompt based on the resolved agent (`search`, `research`, or `build`)
+- Active tools owned by the agent definition
+- A step limit (20 for search/build, 50 for research)
 - Telemetry configuration for Phoenix
 
 The agent is invoked with:
 
 ```typescript
-const result = await researchAgent.stream({
+const agent = agentFactory({ modelId, writer, parentTraceId })
+const result = await agent.stream({
   messages: modelMessages,
   abortSignal,
   experimental_transform: smoothStream({ chunking: 'word' })
@@ -268,7 +279,7 @@ sequenceDiagram
         Stream->>Title: generateChatTitle() [parallel, non-blocking]
     end
 
-    Stream->>Agent: researcher({model, writer, searchMode})
+    Stream->>Agent: agentFactory({modelId, writer, parentTraceId})
     Agent->>LLM: stream({messages, abortSignal, smoothStream})
 
     loop Tool Loop (max 20 or 50 steps)
@@ -535,23 +546,34 @@ The React client uses the AI SDK's `useChat` hook (`@ai-sdk/react`) which:
 
 The `messages` array is structured as `UIMessage[]` where each message has `parts` (text, tool calls, tool results, reasoning, etc.) that map to the generative UI component tree.
 
+### Portable Tool Boundary
+
+The streaming layer does not special-case `competitorResearch` or other structured specialist tools. `handleChatAgentRoute()` selects an agent factory, the stream helpers call that factory, and the AI SDK emits normal tool parts into the `UIMessage` stream. The Workstream 5 proof in [`lib/agents/chat/__tests__/community-portability.test.ts`](../../lib/agents/chat/__tests__/community-portability.test.ts) covers the downstream adapter chain for one structured specialist: local toolset execution, dedicated Tool UI rendering, and dynamic-part message mapping.
+
+That test is not a substitute for reviewing a future change's diff. It proves the current seams are sufficient for the representative AI SDK `tool({ inputSchema, execute })` pattern; it does not prove that no route, stream helper, or persistence files changed in a separate commit.
+
 ---
 
 ## Key Files
 
-| File                                                     | Purpose                                              |
-| -------------------------------------------------------- | ---------------------------------------------------- |
-| `app/api/chat/route.ts`                                  | API endpoint; auth, model selection, stream dispatch |
-| `lib/streaming/create-chat-stream-response.ts`           | Authenticated stream creation                        |
-| `lib/streaming/create-ephemeral-chat-stream-response.ts` | Guest/ephemeral stream creation                      |
-| `lib/streaming/helpers/prepare-messages.ts`              | Message history resolution                           |
-| `lib/streaming/helpers/persist-stream-results.ts`        | Post-stream database persistence                     |
-| `lib/streaming/helpers/stream-related-questions.ts`      | Related questions streaming                          |
-| `lib/streaming/helpers/strip-reasoning-parts.ts`         | OpenAI reasoning compatibility                       |
-| `lib/streaming/helpers/types.ts`                         | `StreamContext` interface                            |
-| `lib/streaming/types.ts`                                 | `BaseStreamConfig` interface                         |
-| `lib/agents/researcher.ts`                               | `ToolLoopAgent` factory                              |
-| `lib/agents/title-generator.ts`                          | Parallel title generation                            |
-| `lib/agents/generate-related-questions.ts`               | Related questions LLM call                           |
-| `lib/utils/context-window.ts`                            | Token counting and message truncation                |
-| `components/chat.tsx`                                    | Client-side `useChat` hook and stream consumption    |
+| File                                                     | Purpose                                                                                |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `app/api/chat/route.ts`                                  | API endpoint; auth, rate limits, model selection, and route-handler delegation         |
+| `lib/agents/chat/route-handler.ts`                       | Resolves the chat agent and injects `agentFactory` into auth/guest streams             |
+| `lib/agents/chat/registry.ts`                            | Maps `userMode`, `searchMode`, and `intent` to `search`, `research`, or `build` agents |
+| `lib/agents/chat/search.ts`                              | Search/chat agent definition and search pacing wrappers                                |
+| `lib/agents/chat/research.ts`                            | Research agent definition, research active tools, and `competitorResearch` activation  |
+| `lib/agents/chat/build.ts`                               | Build agent definition and artifact-intake prompt wiring                               |
+| `lib/streaming/create-chat-stream-response.ts`           | Authenticated stream creation with injected agent factory                              |
+| `lib/streaming/create-ephemeral-chat-stream-response.ts` | Guest/ephemeral stream creation with injected agent factory                            |
+| `lib/streaming/helpers/prepare-messages.ts`              | Message history resolution                                                             |
+| `lib/streaming/helpers/persist-stream-results.ts`        | Post-stream database persistence                                                       |
+| `lib/streaming/helpers/stream-related-questions.ts`      | Related questions streaming                                                            |
+| `lib/streaming/helpers/strip-reasoning-parts.ts`         | OpenAI reasoning compatibility                                                         |
+| `lib/streaming/helpers/types.ts`                         | `StreamContext` interface                                                              |
+| `lib/streaming/types.ts`                                 | `BaseStreamConfig` interface                                                           |
+| `lib/agents/researcher.ts`                               | Compatibility shim that delegates to the chat agent registry                           |
+| `lib/agents/title-generator.ts`                          | Parallel title generation                                                              |
+| `lib/agents/generate-related-questions.ts`               | Related questions LLM call                                                             |
+| `lib/utils/context-window.ts`                            | Token counting and message truncation                                                  |
+| `components/chat.tsx`                                    | Client-side `useChat` hook and stream consumption                                      |

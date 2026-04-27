@@ -10,7 +10,6 @@ import {
 import { randomUUID } from 'crypto'
 
 import { createChatValidationContract } from '@/lib/agents/chat/message-contract'
-import { researcher } from '@/lib/agents/researcher'
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import { loadCanvasArtifactByChatId } from '@/lib/db/actions'
@@ -61,8 +60,8 @@ export async function createChatStreamResponse(
     isNewChat,
     searchMode,
     userMode,
-    intent,
-    modelType
+    modelType,
+    agentFactory
   } = config
 
   // Verify that chatId is provided
@@ -214,15 +213,10 @@ export async function createChatStreamResponse(
             )
           }
 
-          // Get the researcher agent with parent trace ID, search mode, and model type
-          const researchAgent = researcher({
-            model: context.modelId,
-            modelConfig: model,
+          const chatAgent = agentFactory({
+            modelId: context.modelId,
             writer,
             parentTraceId,
-            searchMode,
-            intent,
-            modelType,
             canvasToolContext,
             imageToolContext: { userId, chatId }
           })
@@ -283,13 +277,13 @@ export async function createChatStreamResponse(
           const llmStart = performance.now()
           if (toolResult) {
             console.log(
-              `[tool-result] researchAgent.stream: chatId=${chatId}, model=${context.modelId}, ${modelMessages.length} model messages`
+              `[tool-result] chatAgent.stream: chatId=${chatId}, model=${context.modelId}, ${modelMessages.length} model messages`
             )
           }
           perfLog(
-            `researchAgent.stream - Start: model=${context.modelId}, searchMode=${searchMode}`
+            `chatAgent.stream - Start: model=${context.modelId}, searchMode=${searchMode}`
           )
-          const result = await researchAgent.stream({
+          const result = await chatAgent.stream({
             messages: modelMessages,
             abortSignal,
             experimental_transform: smoothStream({ chunking: 'word' })
@@ -315,7 +309,7 @@ export async function createChatStreamResponse(
           )
 
           const responseMessages = (await result.response).messages
-          perfTime('researchAgent.stream completed', llmStart)
+          perfTime('chatAgent.stream completed', llmStart)
 
           // Generate related questions (skip for tool-result continuations and pending interactive tools)
           if (

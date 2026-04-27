@@ -10,7 +10,6 @@ import {
 import { randomUUID } from 'crypto'
 
 import { createChatValidationContract } from '@/lib/agents/chat/message-contract'
-import { researcher } from '@/lib/agents/researcher'
 import { verifyGuestCanvasToken } from '@/lib/canvas/guest-token'
 import { loadCanvasArtifactState } from '@/lib/canvas/service'
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
@@ -42,6 +41,7 @@ type EphemeralStreamConfig = Pick<
   | 'intent'
   | 'modelType'
   | 'trigger'
+  | 'agentFactory'
 > & {
   messages: UIMessage[]
   chatId?: string
@@ -55,13 +55,12 @@ export async function createEphemeralChatStreamResponse(
     messages,
     model,
     abortSignal,
-    searchMode,
     userMode,
-    intent,
     modelType,
     chatId,
     trigger,
-    guestCanvasToken
+    guestCanvasToken,
+    agentFactory
   } = config
   const modelId = createModelId(model)
   const validationContract = createChatValidationContract(modelId)
@@ -137,14 +136,10 @@ export async function createEphemeralChatStreamResponse(
           }
         }
 
-        const researchAgent = researcher({
-          model: modelId,
-          modelConfig: model,
+        const chatAgent = agentFactory({
+          modelId,
           writer,
           parentTraceId,
-          searchMode,
-          intent,
-          modelType,
           canvasToolContext,
           ...(chatId
             ? {
@@ -156,7 +151,7 @@ export async function createEphemeralChatStreamResponse(
             : {})
         })
 
-        const result = await researchAgent.stream({
+        const result = await chatAgent.stream({
           messages: modelMessages,
           abortSignal,
           experimental_transform: smoothStream({ chunking: 'word' })

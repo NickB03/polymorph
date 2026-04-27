@@ -85,6 +85,10 @@ const TRANSIENT_DATA_PART_TYPES = new Set<string>([
   'canvasDiagnostics'
 ])
 
+const REGISTERED_RICH_DYNAMIC_TOOL_NAMES = new Set<string>([
+  'competitorResearch'
+])
+
 // Type guards
 function isToolCallPart(part: unknown): part is ToolCallPart {
   if (typeof part !== 'object' || part === null) return false
@@ -144,6 +148,21 @@ function getDynamicToolType(toolName: string) {
   }
 
   return 'dynamic'
+}
+
+function isRegisteredRichDynamicToolName(toolName: string) {
+  return REGISTERED_RICH_DYNAMIC_TOOL_NAMES.has(toolName)
+}
+
+function shouldRestoreDynamicToolAsRichPart(part: DBMessagePartSelect) {
+  return (
+    !!part.tool_dynamic_name &&
+    (part.tool_dynamic_type === 'display' ||
+      part.tool_dynamic_name === 'createCanvasArtifact' ||
+      part.tool_dynamic_name === 'updateCanvasArtifact' ||
+      part.tool_dynamic_name === 'generateImage' ||
+      isRegisteredRichDynamicToolName(part.tool_dynamic_name))
+  )
 }
 
 // Helper function to create tool part mapping
@@ -342,7 +361,8 @@ export function mapUIMessagePartsToDBParts(
           part.type.startsWith('tool-display') ||
           part.type === 'tool-createCanvasArtifact' ||
           part.type === 'tool-updateCanvasArtifact' ||
-          part.type === 'tool-generateImage'
+          part.type === 'tool-generateImage' ||
+          isRegisteredRichDynamicToolName(dynamicToolName)
         ) {
           if (!isExtendedToolPart(part)) {
             console.error('Invalid extended tool part:', part)
@@ -461,13 +481,7 @@ export function mapDBPartToUIMessagePart(
         // Special handling for dynamic tools
         if (toolName === 'dynamic') {
           // Reconstruct display tools to their original type for rich rendering
-          if (
-            part.tool_dynamic_name &&
-            (part.tool_dynamic_type === 'display' ||
-              part.tool_dynamic_name === 'createCanvasArtifact' ||
-              part.tool_dynamic_name === 'updateCanvasArtifact' ||
-              part.tool_dynamic_name === 'generateImage')
-          ) {
+          if (shouldRestoreDynamicToolAsRichPart(part)) {
             return {
               type: `tool-${part.tool_dynamic_name}` as any,
               toolCallId: part.tool_toolCallId || '',
@@ -623,7 +637,8 @@ function getToolNameFromType(toolName: string): string {
   if (
     toolName === 'createCanvasArtifact' ||
     toolName === 'updateCanvasArtifact' ||
-    toolName === 'generateImage'
+    toolName === 'generateImage' ||
+    isRegisteredRichDynamicToolName(toolName)
   ) {
     return 'dynamic'
   }

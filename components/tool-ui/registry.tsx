@@ -2,22 +2,22 @@
 
 import type { ReactNode } from 'react'
 
+import { tryRenderResult as tryRenderCreateCanvasArtifactResult } from '@/lib/tools/create-canvas-artifact/result'
+import { tryRenderResult as tryRenderDisplayCitationsResult } from '@/lib/tools/display-citations/result'
+import { tryRenderResult as tryRenderDisplayLinkPreviewResult } from '@/lib/tools/display-link-preview/result'
+import { tryRenderResult as tryRenderGenerateImageResult } from '@/lib/tools/generate-image/result'
+import { tryRenderResult as tryRenderUpdateCanvasArtifactResult } from '@/lib/tools/update-canvas-artifact/result'
+
 import { ToolCardMount } from '@/components/motion/tool-card-mount'
 
 import { Callout } from './callout/callout'
 import { safeParseSerializableCallout } from './callout/schema'
 import { Chart } from './chart/chart'
 import { safeParseSerializableChart } from './chart/schema'
-import { CitationList } from './citation/citation-list'
-import { safeParseSerializableCitation } from './citation/schema'
 import { DataTable } from './data-table/data-table'
 import { safeParseSerializableDataTable } from './data-table/schema'
-import { GenerateImage } from './generate-image/generate-image'
-import { safeParseSerializableGenerateImage } from './generate-image/schema'
 import { GeoMap } from './geo-map/geo-map'
 import { safeParseSerializableGeoMap } from './geo-map/schema'
-import { LinkPreview } from './link-preview/link-preview'
-import { safeParseSerializableLinkPreview } from './link-preview/schema'
 import { OptionList } from './option-list/option-list'
 import { safeParseSerializableOptionList } from './option-list/schema'
 import { Plan } from './plan/plan'
@@ -27,27 +27,14 @@ import { safeParseSerializableQuestionWizard } from './question-wizard/schema'
 import { safeParseSerializableTimeline } from './timeline/schema'
 import { Timeline } from './timeline/timeline'
 import {
-  CanvasArtifactCard,
-  tryParseCanvasArtifactCardData
-} from './canvas-artifact-card'
+  CompetitorResearchResult,
+  safeParseCompetitorResearchResult
+} from './competitor-research-result'
 import { ToolErrorBoundary } from './tool-error-boundary'
 
 type ToolUIEntry = {
   name: string
   tryRender: (output: unknown, partId: string) => ReactNode | null
-}
-
-function renderCanvasArtifactInMount(
-  output: unknown,
-  partId: string
-): ReactNode | null {
-  const data = tryParseCanvasArtifactCardData(output)
-  if (!data) return null
-  return (
-    <ToolCardMount partId={partId}>
-      <CanvasArtifactCard data={data} />
-    </ToolCardMount>
-  )
 }
 
 const entries: ToolUIEntry[] = [
@@ -74,6 +61,20 @@ const entries: ToolUIEntry[] = [
         <ToolErrorBoundary toolName="DataTable">
           <ToolCardMount partId={partId}>
             <DataTable {...parsed} />
+          </ToolCardMount>
+        </ToolErrorBoundary>
+      )
+    }
+  },
+  {
+    name: 'competitorResearch',
+    tryRender: (output, partId) => {
+      const parsed = safeParseCompetitorResearchResult(output)
+      if (!parsed) return null
+      return (
+        <ToolErrorBoundary toolName="CompetitorResearch">
+          <ToolCardMount partId={partId}>
+            <CompetitorResearchResult {...parsed} />
           </ToolCardMount>
         </ToolErrorBoundary>
       )
@@ -109,46 +110,11 @@ const entries: ToolUIEntry[] = [
   },
   {
     name: 'displayCitations',
-    tryRender: (output, partId) => {
-      // Output can be an array of citations or an object with a citations array
-      const items = Array.isArray(output)
-        ? output
-        : typeof output === 'object' && output !== null && 'citations' in output
-          ? (output as { citations: unknown[] }).citations
-          : null
-      if (!items || !Array.isArray(items)) return null
-
-      const parsed = items
-        .map(item => safeParseSerializableCitation(item))
-        .filter(Boolean)
-      if (parsed.length === 0) return null
-
-      return (
-        <ToolErrorBoundary toolName="CitationList">
-          <ToolCardMount partId={partId}>
-            <CitationList
-              id={`citations-${parsed[0]!.id}`}
-              citations={parsed as NonNullable<(typeof parsed)[number]>[]}
-              variant="default"
-            />
-          </ToolCardMount>
-        </ToolErrorBoundary>
-      )
-    }
+    tryRender: tryRenderDisplayCitationsResult
   },
   {
     name: 'displayLinkPreview',
-    tryRender: (output, partId) => {
-      const parsed = safeParseSerializableLinkPreview(output)
-      if (!parsed) return null
-      return (
-        <ToolErrorBoundary toolName="LinkPreview">
-          <ToolCardMount partId={partId}>
-            <LinkPreview {...parsed} />
-          </ToolCardMount>
-        </ToolErrorBoundary>
-      )
-    }
+    tryRender: tryRenderDisplayLinkPreviewResult
   },
   {
     name: 'displayOptionList',
@@ -208,29 +174,19 @@ const entries: ToolUIEntry[] = [
   },
   {
     name: 'generateImage',
-    tryRender: (output, partId) => {
-      const parsed = safeParseSerializableGenerateImage(output)
-      if (!parsed) return null
-      return (
-        <ToolErrorBoundary toolName="GenerateImage">
-          <ToolCardMount partId={partId}>
-            <GenerateImage {...parsed} />
-          </ToolCardMount>
-        </ToolErrorBoundary>
-      )
-    }
+    tryRender: tryRenderGenerateImageResult
   },
   {
     name: 'canvasArtifactCard',
-    tryRender: renderCanvasArtifactInMount
+    tryRender: tryRenderCreateCanvasArtifactResult
   },
   {
     name: 'createCanvasArtifact',
-    tryRender: renderCanvasArtifactInMount
+    tryRender: tryRenderCreateCanvasArtifactResult
   },
   {
     name: 'updateCanvasArtifact',
-    tryRender: renderCanvasArtifactInMount
+    tryRender: tryRenderUpdateCanvasArtifactResult
   }
 ]
 

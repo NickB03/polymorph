@@ -53,7 +53,7 @@ import {
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 import { incrementDbOperationCount } from '@/lib/utils/perf-tracking'
 
-import type { Chat, Message } from './schema'
+import type { Chat, Message, Part } from './schema'
 import {
   artifactRevisions,
   artifactRuntimeSessions,
@@ -68,6 +68,48 @@ import {
 import type { TxInstance } from './with-rls'
 import { withOptionalRLS, withRLS } from './with-rls'
 import { db } from '.'
+
+type CompatibilityPartsReader = Pick<TxInstance, 'select'>
+
+async function loadCompatibilityPartsByMessageId(
+  tx: CompatibilityPartsReader,
+  messageRows: Message[]
+): Promise<Map<string, Part[]>> {
+  const legacyMessageIds = messageRows
+    .filter(message => !message.uiMessage)
+    .map(message => message.id)
+
+  if (legacyMessageIds.length === 0) {
+    return new Map()
+  }
+
+  const compatibilityParts = await tx
+    .select()
+    .from(parts)
+    .where(inArray(parts.messageId, legacyMessageIds))
+    .orderBy(asc(parts.messageId), asc(parts.order))
+
+  const partsByMessageId = new Map<string, Part[]>()
+  for (const part of compatibilityParts) {
+    const existing = partsByMessageId.get(part.messageId)
+    if (existing) {
+      existing.push(part)
+    } else {
+      partsByMessageId.set(part.messageId, [part])
+    }
+  }
+
+  return partsByMessageId
+}
+
+function buildUIMessagesFromRows(
+  messageRows: Message[],
+  partsByMessageId: Map<string, Part[]>
+): UIMessage[] {
+  return messageRows.map(message =>
+    buildUIMessageFromDB(message, partsByMessageId.get(message.id) ?? [])
+  )
+}
 
 /**
  * Ensure a chat record exists for the given ID.
@@ -187,7 +229,8 @@ export async function upsertMessage(
         set: {
           role: messageData.role,
           uiMessage: messageData.uiMessage,
-          metadata: messageData.metadata
+          metadata: messageData.metadata,
+          updatedAt: new Date()
         }
       })
       .returning()
@@ -218,19 +261,14 @@ export async function loadChat(
   userId?: string
 ): Promise<UIMessage[]> {
   return withOptionalRLS(userId || null, async tx => {
-    // Use Drizzle's query API with relations
     const result = await tx.query.messages.findMany({
       where: eq(messages.chatId, chatId),
-      with: {
-        parts: {
-          orderBy: [asc(parts.order)]
-        }
-      },
       orderBy: [asc(messages.createdAt)]
     })
+    const compatibilityPartsByMessageId =
+      await loadCompatibilityPartsByMessageId(tx, result)
 
-    // Convert to UI format
-    return result.map(msg => buildUIMessageFromDB(msg, msg.parts))
+    return buildUIMessagesFromRows(result, compatibilityPartsByMessageId)
   })
 }
 
@@ -504,11 +542,6 @@ export async function loadChatWithMessages(
       tx.select().from(chats).where(eq(chats.id, chatId)).limit(1),
       tx.query.messages.findMany({
         where: eq(messages.chatId, chatId),
-        with: {
-          parts: {
-            orderBy: [asc(parts.order)]
-          }
-        },
         orderBy: [asc(messages.createdAt)]
       })
     ])
@@ -523,9 +556,11 @@ export async function loadChatWithMessages(
       return null
     }
 
-    // Build result
-    const uiMessages = messagesResult.map(msg =>
-      buildUIMessageFromDB(msg, msg.parts)
+    const compatibilityPartsByMessageId =
+      await loadCompatibilityPartsByMessageId(tx, messagesResult)
+    const uiMessages = buildUIMessagesFromRows(
+      messagesResult,
+      compatibilityPartsByMessageId
     )
     return { ...chat, messages: uiMessages }
   })

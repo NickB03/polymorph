@@ -24,7 +24,7 @@ This document provides a deep technical reference for the research agent system 
 
 ## Overview
 
-The research agent is the research subsystem of Polymorph. When a user submits a question, the agent autonomously plans a research strategy, executes web searches, fetches page content, tracks progress through tasks, composes geo helper calls when the answer needs a map or route, and synthesizes findings into a cited answer with inline generative UI components (tables, charts, geo maps, citations, plans, link previews, option lists, question wizards, callouts, timelines).
+The research agent is the research subsystem of Polymorph. When a user submits a question, the agent autonomously plans a research strategy, executes web searches, fetches page content, tracks progress through tasks, composes geo helper calls when the answer needs a map or route, can run the live `competitorResearch` specialist for structured market comparisons, and synthesizes findings into a cited answer with inline generative UI components (tables, charts, geo maps, citations, plans, link previews, option lists, question wizards, callouts, timelines).
 
 The agent is built on the Vercel AI SDK's `ToolLoopAgent` — a construct that runs an LLM in a loop, allowing it to call tools repeatedly until it decides to produce a final answer or hits a step limit. Two operating modes (chat and research) control the agent's behavior, tool availability, and depth of research.
 
@@ -34,7 +34,7 @@ graph TD
     Route["POST /api/chat"]
     Select["selectModel()"]
     Stream["createUIMessageStream"]
-    Agent["ToolLoopAgent<br/>(createResearcher)"]
+    Agent["ToolLoopAgent<br/>(chat agent registry)"]
     Prompt["System Prompt<br/>(chat or research)"]
     Tools["Tools<br/>(search, fetch, display, todo)"]
     LLM["LLM Provider<br/>(Gemini, Grok, GPT, Claude)"]
@@ -47,7 +47,7 @@ graph TD
     Agent --> Answer
 ```
 
-**Source file:** [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts)
+**Source files:** [`lib/agents/chat/registry.ts`](../../lib/agents/chat/registry.ts), [`lib/agents/chat/route-handler.ts`](../../lib/agents/chat/route-handler.ts), [`lib/agents/chat/research.ts`](../../lib/agents/chat/research.ts), [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts) (compatibility shim)
 
 ---
 
@@ -68,6 +68,7 @@ flowchart TD
         RateLimit["Rate limit check<br/>(guest: IP-based, auth: per-user)"]
         ReadCookies["Read cookies:<br/>searchMode, modelType"]
         SelectModel["selectModel()<br/>(mode + type + provider check)"]
+        DelegateAgent["handleChatAgentRoute()<br/>(resolve agent)"]
         DispatchStream{"Authenticated<br/>or Guest?"}
     end
 
@@ -79,7 +80,7 @@ flowchart TD
     end
 
     subgraph AgentLayer["Research Agent"]
-        CreateAgent["createResearcher()<br/>(configure mode, tools, prompt)"]
+        CreateAgent["agentFactory()<br/>(configure mode, tools, prompt)"]
         AgentStream["agent.stream()<br/>+ smoothStream(word)"]
         ToolLoop["Tool Loop"]
     end
@@ -101,7 +102,7 @@ flowchart TD
         SSE["SSE stream to client"]
     end
 
-    UserInput --> UseChat --> ParseBody --> Auth --> RateLimit --> ReadCookies --> SelectModel --> DispatchStream
+    UserInput --> UseChat --> ParseBody --> Auth --> RateLimit --> ReadCookies --> SelectModel --> DelegateAgent --> DispatchStream
     DispatchStream -->|Authenticated| AuthStream
     DispatchStream -->|Guest| EphStream
     AuthStream --> PrepareMsg --> ConvertMsg
@@ -129,7 +130,7 @@ flowchart TD
 
 5. **Message Preparation**: Conversation history is loaded, converted to model messages, pruned (old reasoning/tool calls removed), and truncated to fit the model's context window.
 
-6. **Agent Creation**: `createResearcher()` instantiates a `ToolLoopAgent` with the appropriate system prompt, tool set, and step limit based on search mode.
+6. **Agent Creation**: `handleChatAgentRoute()` resolves `search`, `research`, or `build` from `userMode`, `searchMode`, and `intent`, then passes an injected `agentFactory` into the authenticated or guest stream primitive.
 
 7. **Tool Loop Execution**: The LLM reasons about the query and calls tools (search, fetch, display, todo). Each tool call and result is streamed to the client in real time. The loop continues until the agent produces a final text answer or hits the step limit.
 
@@ -162,7 +163,7 @@ stateDiagram-v2
 
 ### Configuration
 
-The `createResearcher` function in [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts) configures the agent with:
+The chat agent modules configure `ToolLoopAgent` instances through [`lib/agents/chat/factory.ts`](../../lib/agents/chat/factory.ts). [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts) remains as a compatibility shim that delegates into this registry.
 
 ```typescript
 const agent = new ToolLoopAgent({
@@ -237,16 +238,17 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 
 **Purpose:** Thorough, multi-step research. For complex queries that need systematic investigation.
 
-| Property          | Value                                                                  |
-| ----------------- | ---------------------------------------------------------------------- |
-| Max steps         | 50                                                                     |
-| Search type       | Full (general + optimized)                                             |
-| Target tool calls | ~20                                                                    |
-| `todoWrite`       | Available (when writer present)                                        |
-| `displayChart`    | Available                                                              |
-| `displayGeoMap`   | Available                                                              |
-| Geo helpers       | `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage` |
-| `displayPlan`     | Not in `activeTools`                                                   |
+| Property             | Value                                                                  |
+| -------------------- | ---------------------------------------------------------------------- |
+| Max steps            | 50                                                                     |
+| Search type          | Full (general + optimized)                                             |
+| Target tool calls    | ~20                                                                    |
+| `todoWrite`          | Available (when writer present)                                        |
+| `displayChart`       | Available                                                              |
+| `displayGeoMap`      | Available                                                              |
+| Geo helpers          | `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage` |
+| `competitorResearch` | Available for structured market/vendor/company/product comparisons     |
+| `displayPlan`        | Not in `activeTools`                                                   |
 
 **System prompt behavior:**
 
@@ -255,8 +257,9 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 - Supports both `type: 'optimized'` (content snippets) and `type: 'general'` (for news, videos, images via Brave)
 - Encourages multiple searches from different angles
 - Allows fetching top 2-3 sources for deeper content analysis
+- Uses `competitorResearch` for structured market, vendor, company, or product comparisons when the user asks for competitor-style analysis
 
-**Active tools:** `search`, `fetch`, `displayTable`, `displayChart`, `displayGeoMap`, `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`, `todoWrite` (conditional)
+**Active tools:** `search`, `fetch`, `competitorResearch`, `displayTable`, `displayChart`, `displayGeoMap`, `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`, `todoWrite` (conditional)
 
 ### Mode Comparison
 
@@ -266,6 +269,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 | Search types                 | `optimized` only (forced)    | `optimized` + `general`               |
 | Task planning                | No (`todoWrite` unavailable) | Yes (`todoWrite` available)           |
 | `displayPlan`                | Available                    | Not in active tools                   |
+| `competitorResearch`         | Not available                | Available                             |
 | `displayGeoMap`              | Available                    | Available                             |
 | Geo helper tools             | Available                    | Available                             |
 | Fetch from search results    | Discouraged by prompt        | Encouraged for top sources            |
@@ -341,6 +345,16 @@ Session-scoped task management. Each `createTodoTools()` call creates an isolate
 2. UPDATE: Send only changed tasks (unchanged ones are preserved)
 3. FINALIZE: Mark all tasks completed before writing final answer
 
+#### `competitorResearch` — Live competitor specialist
+
+**Source:** [`lib/agents/chat/specialists/competitor-research.ts`](../../lib/agents/chat/specialists/competitor-research.ts)
+
+The research agent exposes one live specialist as a normal tool. It accepts a market, 2-6 competitors, and 1-8 comparison dimensions, then uses live `search` and `fetch` evidence to return a structured summary, competitor cards, and a comparison matrix. It is present in `createChatAgentTools()` but only active in `RESEARCH_AGENT_ACTIVE_TOOLS`, so search/chat/build agents cannot call it.
+
+`competitorResearch` is also the Workstream 5 portability proof for bringing a community-style AI SDK `tool({ inputSchema, execute })` pattern into this repo. [`lib/agents/chat/__tests__/community-portability.test.ts`](../../lib/agents/chat/__tests__/community-portability.test.ts) verifies research-agent activation, local toolset execution, dedicated Tool UI rendering, and dynamic-part persistence mapping. Search and fetch are mocked in that test to keep the proof deterministic; live provider coverage remains in the specialist/tool tests and runtime paths.
+
+The proof does not claim that every future specialist is route/streaming/persistence-free by default. Future structured tools still need to stay within the existing seams: add the tool contract, register it in `createChatAgentTools()`, activate it in the intended agent definition/prompt, add a Tool UI result adapter when the output needs rich rendering, and extend message mapping only if the tool needs rich dynamic-part restoration.
+
 #### Spatial tools — geocoding, routing, isochrones, and static maps
 
 These helpers are ordinary agent tools, not display tools. They usually compose into a final `displayGeoMap` or `getStaticMapImage` response.
@@ -356,7 +370,7 @@ For the end-to-end compose-first flow, see [Geo & Spatial Tools](GEO-TOOLS.md).
 
 ### Display Tools
 
-All display tools share a common pattern: they accept structured input, validate it with Zod schemas, and return the input as output (`execute: async params => params`). The actual rendering happens in the frontend via `components/tool-ui/registry.tsx`.
+All display tools share a common pattern: they accept structured input, validate it with Zod schemas, and return the input as output (`execute: async params => params`). Migrated high-friction tools use per-tool modules under `lib/tools/<tool-name>/` with `schema.ts`, `server.ts`, optional `client.tsx`, optional `result.tsx`, and `index.ts`. The actual rendering happens through `components/tool-ui/tool-part-registry.tsx` for interactive tools and `components/tool-ui/registry.tsx` for output/result rendering.
 
 | Tool                    | Purpose                                             | Key input fields                                                                                             | Trigger examples                                                            |
 | ----------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
@@ -379,8 +393,12 @@ All display tools share a common pattern: they accept structured input, validate
 
 Some tools are registered only when the request context provides the capabilities they need. These are not part of the default chat or research tool lists — they are injected on demand at agent-creation time.
 
-- **`generateImage`** (`lib/tools/generate-image.ts`) — Text-to-image generation via `gateway:google/gemini-2.5-flash-image`. Registered when a `userId` + `chatId` context is available (authenticated and guest flows both supply this). Accepts `prompt`, optional `aspectRatio`, and an optional `sourceImageUrl` for image editing. Uploaded images are persisted to Supabase Storage under `{userId}/chats/{chatId}/generated-{timestamp}.{ext}` via `lib/supabase/server-storage.ts`.
-- **`createCanvasArtifact`, `updateCanvasArtifact`, `readCanvasArtifact`** — Canvas authoring tools. Registered when a canvas context is present on the request. Enforce one-artifact-per-chat (see `lib/db/schema.ts` — `canvas_artifacts_chat_id_idx` unique index).
+- **`generateImage`** (`lib/tools/generate-image/`) — Text-to-image generation via `gateway:google/gemini-2.5-flash-image`. Registered when a `userId` + `chatId` context is available (authenticated and guest flows both supply this). Accepts `prompt`, optional `aspectRatio`, and an optional `sourceImageUrl` for image editing. Uploaded images are persisted to Supabase Storage under `{userId}/chats/{chatId}/generated-{timestamp}.{ext}` via `lib/supabase/server-storage.ts`.
+- **`createCanvasArtifact`, `updateCanvasArtifact`, `readCanvasArtifact`** (`lib/tools/*-canvas-artifact/`) — Canvas authoring tools. Registered when a canvas context is present on the request. Enforce one-artifact-per-chat (see `lib/db/schema.ts` — `canvas_artifacts_chat_id_idx` unique index).
+
+### Message Persistence Contract
+
+Chat messages use `messages.ui_message` as the canonical persisted `UIMessage`. The legacy `parts` table is still dual-written as a compatibility projection and as fallback data for older rows. Load paths call `buildUIMessageFromDB(messageRow, messageRow.parts ?? [])`, which prefers row-level `uiMessage` and reconstructs from `parts` only when `uiMessage` is null. `scripts/backfill-chat-ui-message.ts` provides the one-time backfill path for rows where `messages.ui_message IS NULL`.
 
 ### Dynamic Tools
 
@@ -738,9 +756,9 @@ export const myTool = tool({
 })
 ```
 
-2. Add the tool to the `ResearcherTools` type in [`lib/types/agent.ts`](../../lib/types/agent.ts).
+2. Add the tool to `ChatAgentTools` in [`lib/agents/chat/toolset.ts`](../../lib/agents/chat/toolset.ts).
 
-3. Register the tool in `createResearcher` ([`lib/agents/researcher.ts`](../../lib/agents/researcher.ts)):
+3. Register the tool in `createChatAgentTools()` and add its name to the relevant active-tools array in `lib/agents/chat/search.ts`, `lib/agents/chat/research.ts`, or `lib/agents/chat/build.ts`:
 
 ```typescript
 import { myTool } from '../tools/my-tool'
@@ -832,36 +850,43 @@ case 'my-provider':
 
 ## Key Files
 
-| File                                                     | Purpose                                                                     |
-| -------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `lib/agents/researcher.ts`                               | `ToolLoopAgent` factory — configures tools, prompt, and step limit per mode |
-| `lib/agents/prompts/search-mode-prompts.ts`              | System prompts for chat and research modes (environment-aware)              |
-| `lib/agents/generate-related-questions.ts`               | Follow-up question generation with structured output                        |
-| `lib/agents/title-generator.ts`                          | Parallel chat title generation                                              |
-| `lib/tools/search.ts`                                    | Multi-provider search tool with streaming and citation mapping              |
-| `lib/tools/fetch.ts`                                     | Web content extraction (regular HTML + API-based for PDFs)                  |
-| `lib/tools/todo.ts`                                      | Session-scoped task tracking with content-based merge                       |
-| `lib/tools/dynamic.ts`                                   | Dynamic/MCP tool factory                                                    |
-| `lib/tools/display-plan.ts`                              | Step-by-step guide display tool                                             |
-| `lib/tools/display-table.ts`                             | Sortable data table display tool                                            |
-| `lib/tools/display-chart.ts`                             | Bar and line chart display tool                                             |
-| `lib/tools/display-citations.ts`                         | Rich citation card display tool                                             |
-| `lib/tools/display-link-preview.ts`                      | Featured link preview display tool                                          |
-| `lib/tools/display-option-list.ts`                       | Interactive option list display tool                                        |
-| `lib/tools/search/providers/index.ts`                    | Search provider factory and type exports                                    |
-| `lib/tools/search/providers/base.ts`                     | `SearchProvider` interface and `BaseSearchProvider` abstract class          |
-| `lib/tools/search/providers/brave.ts`                    | Brave search provider (default)                                             |
-| `lib/tools/search/providers/tavily.ts`                   | Tavily search provider (fallback)                                           |
-| `lib/tools/search/providers/exa.ts`                      | Exa semantic search provider                                                |
-| `lib/tools/search/providers/searxng.ts`                  | SearXNG meta-search provider (self-hosted)                                  |
-| `lib/tools/search/providers/firecrawl.ts`                | Firecrawl search provider                                                   |
-| `lib/streaming/create-chat-stream-response.ts`           | Authenticated stream with persistence and title generation                  |
-| `lib/streaming/create-ephemeral-chat-stream-response.ts` | Guest/ephemeral stream (stateless)                                          |
-| `lib/utils/model-selection.ts`                           | Model resolution with fallback chain                                        |
-| `lib/utils/registry.ts`                                  | AI provider registry (6 providers)                                          |
-| `lib/utils/context-window.ts`                            | Token counting and context window truncation                                |
-| `lib/utils/search-config.ts`                             | Environment-aware search provider configuration                             |
-| `lib/types/agent.ts`                                     | `ResearcherTools` type, `ResearcherAgent` type, tool invocation types       |
-| `lib/types/ai.ts`                                        | UI message types, tool part types, data part types                          |
-| `app/api/chat/route.ts`                                  | API endpoint — auth, model selection, stream dispatch                       |
-| `config/models/default.json`                             | Default model assignments per mode and type                                 |
+| File                                                     | Purpose                                                               |
+| -------------------------------------------------------- | --------------------------------------------------------------------- |
+| `lib/agents/researcher.ts`                               | Compatibility shim that delegates to the chat agent registry          |
+| `lib/agents/chat/registry.ts`                            | Resolves `search`, `research`, and `build` agent IDs                  |
+| `lib/agents/chat/factory.ts`                             | Shared `ToolLoopAgent` factory for chat agents                        |
+| `lib/agents/chat/search.ts`                              | Search/chat agent definition and search pacing wrappers               |
+| `lib/agents/chat/research.ts`                            | Research agent definition, active tools, and specialist activation    |
+| `lib/agents/chat/build.ts`                               | Build agent definition with artifact-intake prompt wiring             |
+| `lib/agents/chat/specialists/competitor-research.ts`     | Live competitor research specialist tool and schemas                  |
+| `lib/agents/prompts/search-mode-prompts.ts`              | System prompts for chat and research modes (environment-aware)        |
+| `lib/agents/generate-related-questions.ts`               | Follow-up question generation with structured output                  |
+| `lib/agents/title-generator.ts`                          | Parallel chat title generation                                        |
+| `lib/tools/search.ts`                                    | Multi-provider search tool with streaming and citation mapping        |
+| `lib/tools/fetch.ts`                                     | Web content extraction (regular HTML + API-based for PDFs)            |
+| `lib/tools/todo.ts`                                      | Session-scoped task tracking with content-based merge                 |
+| `lib/tools/dynamic.ts`                                   | Dynamic/MCP tool factory                                              |
+| `lib/tools/display-plan.ts`                              | Step-by-step guide display tool                                       |
+| `lib/tools/display-table.ts`                             | Sortable data table display tool                                      |
+| `lib/tools/display-chart.ts`                             | Bar and line chart display tool                                       |
+| `lib/tools/display-citations/`                           | Rich citation card display tool module                                |
+| `lib/tools/display-link-preview/`                        | Featured link preview display tool module                             |
+| `lib/tools/display-option-list/`                         | Interactive option list display tool module                           |
+| `scripts/backfill-chat-ui-message.ts`                    | Backfills canonical `messages.ui_message` from legacy `parts` rows    |
+| `lib/tools/search/providers/index.ts`                    | Search provider factory and type exports                              |
+| `lib/tools/search/providers/base.ts`                     | `SearchProvider` interface and `BaseSearchProvider` abstract class    |
+| `lib/tools/search/providers/brave.ts`                    | Brave search provider (default)                                       |
+| `lib/tools/search/providers/tavily.ts`                   | Tavily search provider (fallback)                                     |
+| `lib/tools/search/providers/exa.ts`                      | Exa semantic search provider                                          |
+| `lib/tools/search/providers/searxng.ts`                  | SearXNG meta-search provider (self-hosted)                            |
+| `lib/tools/search/providers/firecrawl.ts`                | Firecrawl search provider                                             |
+| `lib/streaming/create-chat-stream-response.ts`           | Authenticated stream with persistence and title generation            |
+| `lib/streaming/create-ephemeral-chat-stream-response.ts` | Guest/ephemeral stream (stateless)                                    |
+| `lib/utils/model-selection.ts`                           | Model resolution with fallback chain                                  |
+| `lib/utils/registry.ts`                                  | AI provider registry (6 providers)                                    |
+| `lib/utils/context-window.ts`                            | Token counting and context window truncation                          |
+| `lib/utils/search-config.ts`                             | Environment-aware search provider configuration                       |
+| `lib/types/agent.ts`                                     | `ResearcherTools` type, `ResearcherAgent` type, tool invocation types |
+| `lib/types/ai.ts`                                        | UI message types, tool part types, data part types                    |
+| `app/api/chat/route.ts`                                  | API endpoint — auth, model selection, stream dispatch                 |
+| `config/models/default.json`                             | Default model assignments per mode and type                           |

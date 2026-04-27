@@ -349,11 +349,13 @@ Shared motion primitives used by the chat and Tool UI surfaces.
 
 The `components/tool-ui/` directory contains generative UI components rendered by the AI agent's display tools. Each tool has an adapter, schema, and presentational component.
 
-| File                                         | Purpose                                                                       |
-| -------------------------------------------- | ----------------------------------------------------------------------------- |
-| `components/tool-ui/index.ts`                | Barrel export for all tool UI components and registry                         |
-| `components/tool-ui/registry.tsx`            | Tool UI registry mapping tool names to render functions via schema validation |
-| `components/tool-ui/tool-error-boundary.tsx` | Error boundary component wrapping tool UI renders with fallback display       |
+| File                                                | Purpose                                                                                    |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `components/tool-ui/index.ts`                       | Barrel export for all tool UI components and registry                                      |
+| `components/tool-ui/registry.tsx`                   | Tool UI compatibility facade mapping tool names to result renderers via schema validation  |
+| `components/tool-ui/tool-part-registry.tsx`         | Tool-part dispatcher; delegates migrated interactive tools to module-local client adapters |
+| `components/tool-ui/competitor-research-result.tsx` | Dedicated result component for the `competitorResearch` specialist                         |
+| `components/tool-ui/tool-error-boundary.tsx`        | Error boundary component wrapping tool UI renders with fallback display                    |
 
 #### Callout Tool
 
@@ -543,41 +545,65 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Agents
 
-| File                                             | Purpose                                                                                                             |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `lib/agents/researcher.ts`                       | Creates the ToolLoopAgent with search/fetch/display tools; configures Chat (20 steps) and Research (50 steps) modes |
-| `lib/agents/title-generator.ts`                  | Generates concise 3-5 word chat titles using an LLM                                                                 |
-| `lib/agents/generate-related-questions.ts`       | Streams 3 follow-up question suggestions using structured output                                                    |
-| `lib/agents/generate-trending-suggestions.ts`    | Generates trending topic suggestions for the homepage                                                               |
-| `lib/agents/prompts/search-mode-prompts.ts`      | System prompts for Chat mode and Research mode search behaviors                                                     |
-| `lib/agents/prompts/related-questions-prompt.ts` | System prompt for related question generation                                                                       |
+| File                                                 | Purpose                                                                          |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `lib/agents/researcher.ts`                           | Compatibility shim that delegates to the chat agent registry                     |
+| `lib/agents/chat/registry.ts`                        | Resolves chat agent IDs from `searchMode`, `userMode`, and `intent`              |
+| `lib/agents/chat/route-handler.ts`                   | Injects selected agent factories into authenticated and guest stream primitives  |
+| `lib/agents/chat/factory.ts`                         | Shared `ToolLoopAgent` creation for chat, research, and build agents             |
+| `lib/agents/chat/search.ts`                          | Search/chat agent definition and search pacing wrappers                          |
+| `lib/agents/chat/research.ts`                        | Research agent definition, active tools, and `competitorResearch` activation     |
+| `lib/agents/chat/build.ts`                           | Build agent definition with artifact-intake prompt wiring                        |
+| `lib/agents/chat/specialists.ts`                     | Specialist registry metadata                                                     |
+| `lib/agents/chat/specialists/competitor-research.ts` | Live competitor research specialist tool, schemas, and structured output builder |
+| `lib/agents/title-generator.ts`                      | Generates concise 3-5 word chat titles using an LLM                              |
+| `lib/agents/generate-related-questions.ts`           | Streams 3 follow-up question suggestions using structured output                 |
+| `lib/agents/generate-trending-suggestions.ts`        | Generates trending topic suggestions for the homepage                            |
+| `lib/agents/prompts/search-mode-prompts.ts`          | System prompts for Chat mode and Research mode search behaviors                  |
+| `lib/agents/prompts/related-questions-prompt.ts`     | System prompt for related question generation                                    |
 
 ### Tools
 
-| File                                   | Purpose                                                                                          |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `lib/tools/search.ts`                  | Multi-provider search tool with streaming progress; supports general and optimized search types  |
-| `lib/tools/fetch.ts`                   | Web content extraction tool; supports regular HTML fetch and API-based extraction (Jina, Tavily) |
-| `lib/tools/todo.ts`                    | Task list management tool; creates and updates structured todo items                             |
-| `lib/tools/create-canvas-artifact.ts`  | AI tool: creates a new canvas artifact in the current chat with initial React SPA source         |
-| `lib/tools/display-callout.ts`         | Display tool that renders a styled callout box with variant-specific icons and colors            |
-| `lib/tools/display-chart.ts`           | Display tool that renders bar and line charts                                                    |
-| `lib/tools/display-citations.ts`       | Display tool that renders a formatted citation list                                              |
-| `lib/tools/display-geo-map.ts`         | Display tool that renders interactive geo maps with markers, routes, polygons, and clustering    |
-| `lib/tools/display-link-preview.ts`    | Display tool that renders a rich link preview card                                               |
-| `lib/tools/display-option-list.ts`     | Display tool that renders an interactive option list for user selection                          |
-| `lib/tools/display-plan.ts`            | Display tool that renders a step-by-step research plan                                           |
-| `lib/tools/display-question-wizard.ts` | Display tool that renders a multi-step interactive question wizard                               |
-| `lib/tools/display-table.ts`           | Display tool that renders a formatted data table with column types                               |
-| `lib/tools/display-timeline.ts`        | Display tool that renders a chronological event timeline with category styling                   |
-| `lib/tools/dynamic.ts`                 | Factory for creating runtime-defined tools (MCP tools, user-defined functions)                   |
-| `lib/tools/generate-image.ts`          | AI tool: generates images via Gemini Flash and uploads to Supabase Storage                       |
-| `lib/tools/geocode-address.ts`         | AI tool: resolves place names or addresses into ranked coordinate candidates                     |
-| `lib/tools/get-directions.ts`          | AI tool: computes road-following directions with route points, distance, and duration labels     |
-| `lib/tools/get-isochrone.ts`           | AI tool: computes reachability polygons from a center point and travel-time budget               |
-| `lib/tools/get-static-map-image.ts`    | AI tool: builds shareable static MapTiler PNG URLs with optional markers                         |
-| `lib/tools/read-canvas-artifact.ts`    | AI tool: reads the current canvas artifact source for inspection (no side effects)               |
-| `lib/tools/update-canvas-artifact.ts`  | AI tool: updates the existing canvas artifact source with a full replacement                     |
+| File                                                                          | Purpose                                                                                          |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `lib/tools/search.ts`                                                         | Multi-provider search tool with streaming progress; supports general and optimized search types  |
+| `lib/tools/fetch.ts`                                                          | Web content extraction tool; supports regular HTML fetch and API-based extraction (Jina, Tavily) |
+| `lib/tools/todo.ts`                                                           | Task list management tool; creates and updates structured todo items                             |
+| `lib/tools/create-canvas-artifact.ts`                                         | Compatibility re-export for the canvas artifact create module                                    |
+| `lib/tools/create-canvas-artifact/`                                           | AI tool module: schema, server tool, and result renderer for creating canvas artifacts           |
+| `lib/tools/create-canvas-artifact/{schema.ts,server.ts,result.tsx,index.ts}`  | Module-local contract, server tool, result adapter, and public exports                           |
+| `lib/tools/display-callout.ts`                                                | Display tool that renders a styled callout box with variant-specific icons and colors            |
+| `lib/tools/display-chart.ts`                                                  | Display tool that renders bar and line charts                                                    |
+| `lib/tools/display-citations.ts`                                              | Compatibility re-export for the citations display module                                         |
+| `lib/tools/display-citations/`                                                | Display tool module: schema, server tool, and result renderer for citation lists                 |
+| `lib/tools/display-citations/{schema.ts,server.ts,result.tsx,index.ts}`       | Module-local contract, server tool, result adapter, and public exports                           |
+| `lib/tools/display-geo-map.ts`                                                | Display tool that renders interactive geo maps with markers, routes, polygons, and clustering    |
+| `lib/tools/display-link-preview.ts`                                           | Compatibility re-export for the link preview display module                                      |
+| `lib/tools/display-link-preview/`                                             | Display tool module: schema, server tool, and result renderer for link previews                  |
+| `lib/tools/display-link-preview/{schema.ts,server.ts,result.tsx,index.ts}`    | Module-local contract, server tool, result adapter, and public exports                           |
+| `lib/tools/display-option-list.ts`                                            | Compatibility re-export for the option list display module                                       |
+| `lib/tools/display-option-list/`                                              | Interactive display tool module: schema, frontend-resolved server tool, and client adapter       |
+| `lib/tools/display-option-list/{schema.ts,server.ts,client.tsx,index.ts}`     | Module-local contract, frontend-resolved server tool, client adapter, and public exports         |
+| `lib/tools/display-plan.ts`                                                   | Display tool that renders a step-by-step research plan                                           |
+| `lib/tools/display-question-wizard.ts`                                        | Compatibility re-export for the question wizard display module                                   |
+| `lib/tools/display-question-wizard/`                                          | Interactive display tool module: schema, server tool, and client adapter                         |
+| `lib/tools/display-question-wizard/{schema.ts,server.ts,client.tsx,index.ts}` | Module-local contract, server tool, client adapter, and public exports                           |
+| `lib/tools/display-table.ts`                                                  | Display tool that renders a formatted data table with column types                               |
+| `lib/tools/display-timeline.ts`                                               | Display tool that renders a chronological event timeline with category styling                   |
+| `lib/tools/dynamic.ts`                                                        | Factory for creating runtime-defined tools (MCP tools, user-defined functions)                   |
+| `lib/tools/generate-image.ts`                                                 | Compatibility re-export for the image generation module                                          |
+| `lib/tools/generate-image/`                                                   | AI tool module: schema, server tool, and result renderer for generated images                    |
+| `lib/tools/generate-image/{schema.ts,server.ts,result.tsx,index.ts}`          | Module-local contract, server tool, result adapter, and public exports                           |
+| `lib/tools/geocode-address.ts`                                                | AI tool: resolves place names or addresses into ranked coordinate candidates                     |
+| `lib/tools/get-directions.ts`                                                 | AI tool: computes road-following directions with route points, distance, and duration labels     |
+| `lib/tools/get-isochrone.ts`                                                  | AI tool: computes reachability polygons from a center point and travel-time budget               |
+| `lib/tools/get-static-map-image.ts`                                           | AI tool: builds shareable static MapTiler PNG URLs with optional markers                         |
+| `lib/tools/read-canvas-artifact.ts`                                           | Compatibility re-export for the canvas artifact read module                                      |
+| `lib/tools/read-canvas-artifact/`                                             | AI tool module: schema and server tool for reading current canvas artifact source                |
+| `lib/tools/read-canvas-artifact/{schema.ts,server.ts,index.ts}`               | Module-local contract, server tool, and public exports                                           |
+| `lib/tools/update-canvas-artifact.ts`                                         | Compatibility re-export for the canvas artifact update module                                    |
+| `lib/tools/update-canvas-artifact/`                                           | AI tool module: schema, server tool, and result renderer for updating canvas artifacts           |
+| `lib/tools/update-canvas-artifact/{schema.ts,server.ts,result.tsx,index.ts}`  | Module-local contract, server tool, result adapter, and public exports                           |
 
 ### Search Providers
 
@@ -616,7 +642,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `feedback`, `canvas_artifacts`, `eval_summaries`, `user_eval_preferences`, and `trending_suggestions_cache` with RLS policies |
 | `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                                                                                     |
 | `lib/db/relations.ts` | Drizzle relation definitions (chats -> messages -> parts)                                                                                                                           |
-| `lib/db/actions.ts`   | Database CRUD operations (create/load/update/delete chats, messages, parts) with RLS enforcement                                                                                    |
+| `lib/db/actions.ts`   | Database CRUD operations with RLS; loads canonical `messages.ui_message` first and keeps `parts` as compatibility projection                                                        |
 | `lib/db/admin.ts`     | Privileged DB client factory (`getPrivilegedDb`) bypassing RLS for cron/service writes (e.g., suggestions refresh)                                                                  |
 | `lib/db/constants.ts` | Database constants (query limits, default values)                                                                                                                                   |
 | `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                                                                                             |
@@ -726,7 +752,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/utils/model-selection.ts`        | Resolves the appropriate model based on search mode and model type cookie preferences                       |
 | `lib/utils/context-window.ts`         | Token counting, context window management, and message truncation using tiktoken                            |
 | `lib/utils/citation.ts`               | Citation extraction, processing, and mapping from search results to inline references                       |
-| `lib/utils/message-mapping.ts`        | Bidirectional mapping between AI SDK UIMessage format and database message/part records                     |
+| `lib/utils/message-mapping.ts`        | Maps AI SDK UIMessage and DB parts; restores registered rich dynamic tools                                  |
 | `lib/utils/message-utils.ts`          | Helpers for extracting text content from message parts                                                      |
 | `lib/utils/domain.ts`                 | Extracts display-friendly domain name from URLs (e.g., "google" from "www.google.com")                      |
 | `lib/utils/file-validation.ts`        | Allowed file types, size limits, and validation constants for uploads                                       |
@@ -839,10 +865,11 @@ Server-side compile pipeline, validation, service layer, and guest token support
 
 ## Scripts
 
-| File                  | Purpose                                                        |
-| --------------------- | -------------------------------------------------------------- |
-| `scripts/chat-cli.ts` | CLI script for testing the chat API endpoint from the terminal |
-| `scripts/README.md`   | Documentation for available scripts                            |
+| File                                  | Purpose                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------ |
+| `scripts/backfill-chat-ui-message.ts` | Backfills canonical `messages.ui_message` for legacy rows reconstructed from `parts` |
+| `scripts/chat-cli.ts`                 | CLI script for testing the chat API endpoint from the terminal                       |
+| `scripts/README.md`                   | Documentation for available scripts                                                  |
 
 ---
 
@@ -981,50 +1008,57 @@ Offline evaluation pipeline (`services/evals/`) for measuring search quality via
 
 Test files are co-located with their source files using `__tests__/` directories.
 
-| File                                                                    | Purpose                                              |
-| ----------------------------------------------------------------------- | ---------------------------------------------------- |
-| `app/api/chat/__tests__/route.test.ts`                                  | Tests for the chat API route                         |
-| `app/api/feedback/__tests__/route.test.ts`                              | Tests for the feedback API route                     |
-| `app/api/suggestions/__tests__/route.test.ts`                           | Tests for the suggestions API route                  |
-| `app/api/advanced-search/__tests__/route.test.ts`                       | Tests for the advanced search API route              |
-| `components/mode-selector.test.tsx`                                     | Tests for the three-mode selector                    |
-| `components/__tests__/research-process-section.test.tsx`                | Tests for the research process section component     |
-| `components/chat-request.test.ts`                                       | Tests for chat request utilities                     |
-| `components/chat.test.tsx`                                              | Tests for the main chat component                    |
-| `components/motion/pill-presence.test.tsx`                              | Tests for mode-pill presence and swap behavior       |
-| `components/motion/stagger-list.test.tsx`                               | Tests for capped timeline staggering                 |
-| `components/motion/tool-card-mount.test.tsx`                            | Tests for new-vs-hydrated tool-card animation        |
-| `components/tool-ui/geo-map/__tests__/schema-mirror.test.ts`            | Tests the mirrored geo-map schema contract           |
-| `components/tool-ui/geo-map/__tests__/schema.test.ts`                   | Tests geo-map schema parsing and validation          |
-| `lib/actions/__tests__/chat.test.ts`                                    | Tests for chat server actions                        |
-| `lib/actions/__tests__/feedback.test.ts`                                | Tests for feedback server actions                    |
-| `lib/agents/__tests__/generate-trending-suggestions.test.ts`            | Tests for trending suggestions generation            |
-| `lib/agents/__tests__/researcher.test.ts`                               | Tests for the researcher agent                       |
-| `lib/agents/__tests__/title-generator.test.ts`                          | Tests for chat title generation                      |
-| `lib/db/__tests__/rls-policies.integration.test.ts`                     | Integration tests for RLS policy enforcement         |
-| `lib/db/__tests__/with-rls.test.ts`                                     | Tests for RLS helper functions                       |
-| `lib/motion/hydration-boundary.test.tsx`                                | Tests initial tool-part tracking for motion          |
-| `lib/motion/part-ids.test.ts`                                           | Tests tool-part ID extraction from message data      |
-| `lib/motion/tokens.test.ts`                                             | Tests motion token snapshots                         |
-| `lib/motion/variants.test.ts`                                           | Tests reduced-motion variant resolution              |
-| `lib/rate-limit/__tests__/guest-limit.test.ts`                          | Tests for guest rate limiting logic                  |
-| `lib/rate-limit/__tests__/rate-limit-fallback.test.ts`                  | Tests for rate limit fallback behavior               |
-| `lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts` | Tests for ephemeral streaming                        |
-| `lib/streaming/__tests__/prune-messages-integration.test.ts`            | Integration tests for message pruning                |
-| `lib/streaming/helpers/__tests__/prepare-messages.test.ts`              | Tests for message preparation                        |
-| `lib/tools/__tests__/display-geo-map.test.ts`                           | Tests geo-map tool validation and passthrough        |
-| `lib/tools/__tests__/fetch.test.ts`                                     | Tests for the fetch tool                             |
-| `lib/tools/__tests__/geocode-address.test.ts`                           | Tests geocoding result normalization and errors      |
-| `lib/tools/__tests__/get-directions.test.ts`                            | Tests directions routing outputs and edge cases      |
-| `lib/tools/__tests__/get-isochrone.test.ts`                             | Tests isochrone polygon generation and failures      |
-| `lib/tools/__tests__/get-static-map-image.test.ts`                      | Tests static map URL generation                      |
-| `lib/tools/maptiler/__tests__/client.test.ts`                           | Tests MapTiler client configuration and URL building |
-| `lib/tools/search/providers/__tests__/providers.test.ts`                | Tests for search provider implementations            |
-| `lib/utils/__tests__/citation.test.ts`                                  | Tests for citation extraction and processing         |
-| `lib/utils/__tests__/context-window.test.ts`                            | Tests for token counting and message truncation      |
-| `lib/utils/__tests__/domain.test.ts`                                    | Tests for domain name extraction                     |
-| `lib/utils/__tests__/message-mapping-display-tools.test.ts`             | Tests for display tool message mapping               |
-| `lib/utils/__tests__/message-utils.test.ts`                             | Tests for message utility functions                  |
-| `lib/utils/__tests__/model-selection.test.ts`                           | Tests for model resolution logic                     |
-| `lib/utils/__tests__/retry.test.ts`                                     | Tests for retry utility                              |
-| `lib/utils/__tests__/search-config.test.ts`                             | Tests for search configuration                       |
+| File                                                                    | Purpose                                                                                    |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `app/api/chat/__tests__/route.test.ts`                                  | Tests for the chat API route                                                               |
+| `app/api/feedback/__tests__/route.test.ts`                              | Tests for the feedback API route                                                           |
+| `app/api/suggestions/__tests__/route.test.ts`                           | Tests for the suggestions API route                                                        |
+| `app/api/advanced-search/__tests__/route.test.ts`                       | Tests for the advanced search API route                                                    |
+| `components/mode-selector.test.tsx`                                     | Tests for the three-mode selector                                                          |
+| `components/__tests__/research-process-section.test.tsx`                | Tests for the research process section component                                           |
+| `components/chat-request.test.ts`                                       | Tests for chat request utilities                                                           |
+| `components/chat.test.tsx`                                              | Tests for the main chat component                                                          |
+| `components/motion/pill-presence.test.tsx`                              | Tests for mode-pill presence and swap behavior                                             |
+| `components/motion/stagger-list.test.tsx`                               | Tests for capped timeline staggering                                                       |
+| `components/motion/tool-card-mount.test.tsx`                            | Tests for new-vs-hydrated tool-card animation                                              |
+| `components/tool-ui/competitor-research-result.test.tsx`                | Tests the dedicated `competitorResearch` result renderer                                   |
+| `components/tool-ui/geo-map/__tests__/schema-mirror.test.ts`            | Tests the mirrored geo-map schema contract                                                 |
+| `components/tool-ui/geo-map/__tests__/schema.test.ts`                   | Tests geo-map schema parsing and validation                                                |
+| `components/tool-ui/tool-part-registry.test.tsx`                        | Tests module-local interactive dispatch for option list and question wizard tools          |
+| `lib/actions/__tests__/chat.test.ts`                                    | Tests for chat server actions                                                              |
+| `lib/actions/__tests__/feedback.test.ts`                                | Tests for feedback server actions                                                          |
+| `lib/agents/__tests__/generate-trending-suggestions.test.ts`            | Tests for trending suggestions generation                                                  |
+| `lib/agents/__tests__/researcher.test.ts`                               | Tests for the researcher agent                                                             |
+| `lib/agents/__tests__/title-generator.test.ts`                          | Tests for chat title generation                                                            |
+| `lib/agents/chat/__tests__/community-portability.test.ts`               | Tests research activation, toolset execution, Tool UI rendering, and dynamic mapping       |
+| `lib/agents/chat/__tests__/specialists.test.ts`                         | Tests specialist schemas, active tool registration, and live specialist execution          |
+| `lib/db/__tests__/chat-ui-message-load.test.ts`                         | Tests canonical `uiMessage` load preference, fallback, metadata merge, and upsert behavior |
+| `lib/db/__tests__/rls-policies.integration.test.ts`                     | Integration tests for RLS policy enforcement                                               |
+| `lib/db/__tests__/with-rls.test.ts`                                     | Tests for RLS helper functions                                                             |
+| `lib/motion/hydration-boundary.test.tsx`                                | Tests initial tool-part tracking for motion                                                |
+| `lib/motion/part-ids.test.ts`                                           | Tests tool-part ID extraction from message data                                            |
+| `lib/motion/tokens.test.ts`                                             | Tests motion token snapshots                                                               |
+| `lib/motion/variants.test.ts`                                           | Tests reduced-motion variant resolution                                                    |
+| `lib/rate-limit/__tests__/guest-limit.test.ts`                          | Tests for guest rate limiting logic                                                        |
+| `lib/rate-limit/__tests__/rate-limit-fallback.test.ts`                  | Tests for rate limit fallback behavior                                                     |
+| `lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts` | Tests for ephemeral streaming                                                              |
+| `lib/streaming/__tests__/prune-messages-integration.test.ts`            | Integration tests for message pruning                                                      |
+| `lib/streaming/helpers/__tests__/prepare-messages.test.ts`              | Tests for message preparation                                                              |
+| `lib/tools/__tests__/module-contract.test.ts`                           | Tests migrated tool folders and compatibility shims expose the stable module contract      |
+| `lib/tools/__tests__/display-geo-map.test.ts`                           | Tests geo-map tool validation and passthrough                                              |
+| `lib/tools/__tests__/fetch.test.ts`                                     | Tests for the fetch tool                                                                   |
+| `lib/tools/__tests__/geocode-address.test.ts`                           | Tests geocoding result normalization and errors                                            |
+| `lib/tools/__tests__/get-directions.test.ts`                            | Tests directions routing outputs and edge cases                                            |
+| `lib/tools/__tests__/get-isochrone.test.ts`                             | Tests isochrone polygon generation and failures                                            |
+| `lib/tools/__tests__/get-static-map-image.test.ts`                      | Tests static map URL generation                                                            |
+| `scripts/__tests__/backfill-chat-ui-message.test.ts`                    | Tests legacy parts reconstruction for the `messages.ui_message` backfill                   |
+| `lib/tools/maptiler/__tests__/client.test.ts`                           | Tests MapTiler client configuration and URL building                                       |
+| `lib/tools/search/providers/__tests__/providers.test.ts`                | Tests for search provider implementations                                                  |
+| `lib/utils/__tests__/citation.test.ts`                                  | Tests for citation extraction and processing                                               |
+| `lib/utils/__tests__/context-window.test.ts`                            | Tests for token counting and message truncation                                            |
+| `lib/utils/__tests__/domain.test.ts`                                    | Tests for domain name extraction                                                           |
+| `lib/utils/__tests__/message-mapping-display-tools.test.ts`             | Tests for display tool message mapping                                                     |
+| `lib/utils/__tests__/message-utils.test.ts`                             | Tests for message utility functions                                                        |
+| `lib/utils/__tests__/model-selection.test.ts`                           | Tests for model resolution logic                                                           |
+| `lib/utils/__tests__/retry.test.ts`                                     | Tests for retry utility                                                                    |
+| `lib/utils/__tests__/search-config.test.ts`                             | Tests for search configuration                                                             |

@@ -1,0 +1,158 @@
+import { act, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { renderToolPart } from './tool-part-registry'
+
+const optionListInput = {
+  id: 'research-depth',
+  options: [
+    { id: 'quick', label: 'Quick scan' },
+    { id: 'deep', label: 'Deep research' }
+  ],
+  selectionMode: 'single' as const
+}
+
+const optionListReceiptInput = {
+  ...optionListInput,
+  id: 'build-target'
+}
+
+const questionWizardInput = {
+  id: 'project-intake',
+  steps: [
+    {
+      id: 'style',
+      title: 'Choose a style',
+      options: [
+        { id: 'minimal', label: 'Minimal' },
+        { id: 'editorial', label: 'Editorial' }
+      ],
+      selectionMode: 'single' as const
+    },
+    {
+      id: 'tone',
+      title: 'Choose a tone',
+      options: [
+        { id: 'formal', label: 'Formal' },
+        { id: 'friendly', label: 'Friendly' }
+      ],
+      selectionMode: 'single' as const
+    }
+  ],
+  submitLabel: 'Finish'
+}
+
+async function click(element: Element) {
+  await act(async () => {
+    fireEvent.click(element)
+    await Promise.resolve()
+  })
+}
+
+describe('tool part registry interactive display tools', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('renders displayOptionList input and submits the selected result', async () => {
+    const addToolResult = vi.fn()
+    const node = renderToolPart({
+      toolName: 'displayOptionList',
+      toolPart: {
+        state: 'input-available',
+        input: optionListInput,
+        toolCallId: 'option-call'
+      },
+      messageId: 'message-1',
+      partIndex: 0,
+      isResearchMode: false,
+      addToolResult
+    })
+
+    render(<>{node}</>)
+
+    await click(screen.getByRole('option', { name: /deep research/i }))
+    await click(screen.getByRole('button', { name: /confirm/i }))
+
+    expect(addToolResult).toHaveBeenCalledWith({
+      toolCallId: 'option-call',
+      result: 'deep'
+    })
+  })
+
+  it('renders displayOptionList output as the selected choice', () => {
+    const node = renderToolPart({
+      toolName: 'displayOptionList',
+      toolPart: {
+        state: 'output-available',
+        input: optionListReceiptInput,
+        output: 'quick'
+      },
+      messageId: 'message-1',
+      partIndex: 0,
+      isResearchMode: false
+    })
+
+    render(<>{node}</>)
+
+    expect(screen.getByRole('status')).toHaveTextContent('Quick scan')
+    expect(screen.queryByText('Deep research')).not.toBeInTheDocument()
+  })
+
+  it('renders displayQuestionWizard input and submits the wizard result', async () => {
+    vi.useFakeTimers()
+    const addToolResult = vi.fn()
+    const node = renderToolPart({
+      toolName: 'displayQuestionWizard',
+      toolPart: {
+        state: 'input-available',
+        input: questionWizardInput,
+        toolCallId: 'wizard-call'
+      },
+      messageId: 'message-1',
+      partIndex: 0,
+      isResearchMode: false,
+      addToolResult
+    })
+
+    render(<>{node}</>)
+
+    await click(screen.getByRole('option', { name: /minimal/i }))
+    await click(screen.getByRole('button', { name: /next/i }))
+    act(() => {
+      vi.advanceTimersByTime(200)
+    })
+    await click(screen.getByRole('option', { name: /friendly/i }))
+    await click(screen.getByRole('button', { name: /finish/i }))
+
+    expect(addToolResult).toHaveBeenCalledWith({
+      toolCallId: 'wizard-call',
+      result: {
+        style: 'minimal',
+        tone: 'friendly'
+      }
+    })
+  })
+
+  it('renders displayQuestionWizard output as submitted selections', () => {
+    const node = renderToolPart({
+      toolName: 'displayQuestionWizard',
+      toolPart: {
+        state: 'output-available',
+        input: questionWizardInput,
+        output: {
+          style: 'editorial',
+          tone: 'formal'
+        }
+      },
+      messageId: 'message-1',
+      partIndex: 0,
+      isResearchMode: false
+    })
+
+    render(<>{node}</>)
+
+    expect(screen.getByRole('status')).toHaveTextContent('Editorial')
+    expect(screen.getByRole('status')).toHaveTextContent('Formal')
+  })
+})

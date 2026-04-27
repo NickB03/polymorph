@@ -1,4 +1,4 @@
-import { ToolLoopAgent } from 'ai'
+import { stepCountIs, ToolLoopAgent } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 
 // Mock all tool imports
@@ -7,15 +7,24 @@ vi.mock('@/lib/tools/create-canvas-artifact', () => ({
     .fn()
     .mockReturnValue({ name: 'createCanvasArtifact' })
 }))
+vi.mock('@/lib/tools/create-canvas-artifact/server', () => ({
+  serverTool: vi.fn().mockReturnValue({ name: 'createCanvasArtifact' })
+}))
 vi.mock('@/lib/tools/update-canvas-artifact', () => ({
   updateCanvasArtifactTool: vi
     .fn()
     .mockReturnValue({ name: 'updateCanvasArtifact' })
 }))
+vi.mock('@/lib/tools/update-canvas-artifact/server', () => ({
+  serverTool: vi.fn().mockReturnValue({ name: 'updateCanvasArtifact' })
+}))
 vi.mock('@/lib/tools/read-canvas-artifact', () => ({
   readCanvasArtifactTool: vi
     .fn()
     .mockReturnValue({ name: 'readCanvasArtifact' })
+}))
+vi.mock('@/lib/tools/read-canvas-artifact/server', () => ({
+  serverTool: vi.fn().mockReturnValue({ name: 'readCanvasArtifact' })
 }))
 vi.mock('@/lib/tools/display-callout', () => ({
   displayCalloutTool: { name: 'displayCallout' }
@@ -29,11 +38,23 @@ vi.mock('@/lib/tools/display-geo-map', () => ({
 vi.mock('@/lib/tools/display-citations', () => ({
   displayCitationsTool: { name: 'displayCitations' }
 }))
+vi.mock('@/lib/tools/display-citations/server', () => ({
+  serverTool: { name: 'displayCitations' }
+}))
 vi.mock('@/lib/tools/display-link-preview', () => ({
   displayLinkPreviewTool: { name: 'displayLinkPreview' }
 }))
+vi.mock('@/lib/tools/display-link-preview/server', () => ({
+  serverTool: { name: 'displayLinkPreview' }
+}))
 vi.mock('@/lib/tools/display-option-list', () => ({
   displayOptionListTool: { name: 'displayOptionList' }
+}))
+vi.mock('@/lib/tools/display-option-list/server', () => ({
+  serverTool: { name: 'displayOptionList' }
+}))
+vi.mock('@/lib/tools/display-question-wizard/server', () => ({
+  serverTool: { name: 'displayQuestionWizard' }
 }))
 vi.mock('@/lib/tools/display-plan', () => ({
   displayPlanTool: { name: 'displayPlan' }
@@ -44,7 +65,7 @@ vi.mock('@/lib/tools/display-table', () => ({
 vi.mock('@/lib/tools/display-timeline', () => ({
   displayTimelineTool: { name: 'displayTimeline' }
 }))
-vi.mock('@/lib/tools/fetch', () => ({
+vi.mock('@/lib/tools/fetch/server', () => ({
   fetchTool: { name: 'fetch' }
 }))
 vi.mock('@/lib/tools/get-directions', () => ({
@@ -59,7 +80,10 @@ vi.mock('@/lib/tools/get-isochrone', () => ({
 vi.mock('@/lib/tools/get-static-map-image', () => ({
   getStaticMapImageTool: { name: 'getStaticMapImage' }
 }))
-vi.mock('@/lib/tools/search', () => ({
+vi.mock('@/lib/tools/generate-image/server', () => ({
+  serverTool: vi.fn().mockReturnValue({ name: 'generateImage' })
+}))
+vi.mock('@/lib/tools/search/server', () => ({
   createSearchTool: vi.fn().mockReturnValue({
     name: 'search',
     description: 'Search the web',
@@ -79,6 +103,7 @@ vi.mock('@/lib/utils/telemetry', () => ({
   isTracingEnabled: vi.fn().mockReturnValue(false)
 }))
 vi.mock('@/lib/agents/prompts/search-mode-prompts', () => ({
+  ARTIFACT_INTAKE_PROTOCOL: 'Artifact intake protocol',
   CHAT_MODE_PROMPT: 'Chat mode system prompt',
   RESEARCH_MODE_PROMPT: 'Research mode system prompt'
 }))
@@ -147,6 +172,7 @@ describe('createResearcher', () => {
     expect(Object.keys(config.tools)).toContain('getStaticMapImage')
     // Research mode should NOT include displayPlan
     expect(config.activeTools).not.toContain('displayPlan')
+    expect(vi.mocked(stepCountIs).mock.calls.at(-1)?.[0]).toBe(50)
   })
 
   it('configures chat mode with correct tools and step limit', () => {
@@ -171,6 +197,26 @@ describe('createResearcher', () => {
     expect(Object.keys(config.tools)).toContain('displayGeoMap')
     // Chat mode should NOT include todoWrite
     expect(config.activeTools).not.toContain('todoWrite')
+    expect(vi.mocked(stepCountIs).mock.calls.at(-1)?.[0]).toBe(20)
+  })
+
+  it('routes build intent through chat tools with the artifact intake prefix', () => {
+    MockToolLoopAgent.mockClear()
+
+    createResearcher({
+      model: 'gateway:google/gemini-3-flash',
+      searchMode: 'chat',
+      intent: 'build'
+    })
+
+    const config = MockToolLoopAgent.mock.calls[0][0] as any
+    expect(config.activeTools).toContain('displayPlan')
+    expect(config.activeTools).not.toContain('todoWrite')
+    expect(config.instructions).toContain('Artifact intake protocol')
+    expect(
+      config.instructions.indexOf('Artifact intake protocol')
+    ).toBeLessThan(config.instructions.indexOf('Chat mode system prompt'))
+    expect(vi.mocked(stepCountIs).mock.calls.at(-1)?.[0]).toBe(20)
   })
 
   it('includes todoWrite in research mode when writer is provided', () => {
@@ -396,7 +442,7 @@ describe('createResearcher', () => {
     MockToolLoopAgent.mockClear()
 
     try {
-      const searchModule = await import('@/lib/tools/search')
+      const searchModule = await import('@/lib/tools/search/server')
       const mockedCreateSearchTool = vi.mocked(searchModule.createSearchTool)
       const underlyingExecute = vi.fn().mockResolvedValue({
         state: 'complete' as const,

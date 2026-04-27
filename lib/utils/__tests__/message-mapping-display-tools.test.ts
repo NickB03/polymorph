@@ -113,6 +113,43 @@ function makeCanvasToolPart(
   }
 }
 
+function makeCompetitorResearchToolPart(overrides?: Record<string, unknown>) {
+  return {
+    type: 'tool-competitorResearch',
+    toolCallId: 'call-competitorResearch',
+    state: 'output-available',
+    input: {
+      market: 'AI coding assistants',
+      competitors: ['AlphaCode', 'BetaDev'],
+      dimensions: ['UX', 'Reliability']
+    },
+    output: {
+      summary:
+        'AlphaCode leads on UX while BetaDev is stronger on reliability.',
+      cards: [
+        {
+          competitor: 'AlphaCode',
+          strengths: ['Fast onboarding'],
+          weaknesses: ['Limited controls']
+        }
+      ],
+      matrix: [
+        {
+          competitor: 'AlphaCode',
+          UX: 'Strong',
+          Reliability: 'Moderate'
+        }
+      ]
+    },
+    callProviderMetadata: {
+      provider: {
+        requestId: 'competitor-research-request'
+      }
+    },
+    ...overrides
+  }
+}
+
 function makeDBDynamicPart(
   name: string,
   overrides?: Partial<DBMessagePartSelect>
@@ -595,4 +632,149 @@ describe('canvas tool persistence', () => {
       })
     }
   )
+})
+
+describe('registered rich dynamic tool persistence', () => {
+  it('persists tool-competitorResearch as tool-dynamic with metadata intact', () => {
+    const parts = mapUIMessagePartsToDBParts(
+      [makeCompetitorResearchToolPart()],
+      'msg-1'
+    )
+
+    expect(parts).toHaveLength(1)
+    expect(parts[0]).toMatchObject({
+      type: 'tool-dynamic',
+      tool_toolCallId: 'call-competitorResearch',
+      tool_state: 'output-available',
+      tool_dynamic_name: 'competitorResearch',
+      tool_dynamic_type: 'dynamic',
+      tool_dynamic_input: {
+        market: 'AI coding assistants',
+        competitors: ['AlphaCode', 'BetaDev'],
+        dimensions: ['UX', 'Reliability']
+      },
+      tool_dynamic_output: expect.objectContaining({
+        summary:
+          'AlphaCode leads on UX while BetaDev is stronger on reliability.'
+      }),
+      providerMetadata: {
+        provider: {
+          requestId: 'competitor-research-request'
+        }
+      }
+    })
+  })
+
+  it('persists tool-competitorResearch errorText in dynamic columns', () => {
+    const parts = mapUIMessagePartsToDBParts(
+      [
+        makeCompetitorResearchToolPart({
+          state: 'output-error',
+          output: undefined,
+          errorText: 'research failed'
+        })
+      ],
+      'msg-1'
+    )
+
+    expect(parts).toHaveLength(1)
+    expect(parts[0]).toMatchObject({
+      type: 'tool-dynamic',
+      tool_toolCallId: 'call-competitorResearch',
+      tool_state: 'output-error',
+      tool_dynamic_name: 'competitorResearch',
+      tool_dynamic_type: 'dynamic',
+      tool_dynamic_input: {
+        market: 'AI coding assistants',
+        competitors: ['AlphaCode', 'BetaDev'],
+        dimensions: ['UX', 'Reliability']
+      },
+      tool_errorText: 'research failed',
+      providerMetadata: {
+        provider: {
+          requestId: 'competitor-research-request'
+        }
+      }
+    })
+    expect(parts[0].tool_dynamic_output).toBeUndefined()
+  })
+
+  it('restores persisted competitorResearch dynamic rows to tool-competitorResearch', () => {
+    const originalPart = makeCompetitorResearchToolPart()
+    const [dbPart] = mapUIMessagePartsToDBParts([originalPart], 'msg-1')
+
+    const restored = mapDBPartToUIMessagePart(
+      makeDBDynamicPart('competitorResearch', {
+        type: dbPart.type,
+        tool_toolCallId: dbPart.tool_toolCallId,
+        tool_state: dbPart.tool_state,
+        tool_dynamic_name: dbPart.tool_dynamic_name,
+        tool_dynamic_type: dbPart.tool_dynamic_type,
+        tool_dynamic_input: dbPart.tool_dynamic_input,
+        tool_dynamic_output: dbPart.tool_dynamic_output,
+        tool_errorText: dbPart.tool_errorText ?? null,
+        providerMetadata: dbPart.providerMetadata ?? null
+      })
+    )
+
+    expect(restored).toMatchObject({
+      type: 'tool-competitorResearch',
+      toolCallId: 'call-competitorResearch',
+      state: 'output-available',
+      input: {
+        market: 'AI coding assistants',
+        competitors: ['AlphaCode', 'BetaDev'],
+        dimensions: ['UX', 'Reliability']
+      },
+      output: expect.objectContaining({
+        summary:
+          'AlphaCode leads on UX while BetaDev is stronger on reliability.'
+      }),
+      callProviderMetadata: {
+        provider: {
+          requestId: 'competitor-research-request'
+        }
+      }
+    })
+  })
+
+  it('restores competitorResearch error rows with errorText and metadata intact', () => {
+    const restored = mapDBPartToUIMessagePart(
+      makeDBDynamicPart('competitorResearch', {
+        tool_toolCallId: 'call-competitorResearch-error',
+        tool_state: 'output-error',
+        tool_dynamic_name: 'competitorResearch',
+        tool_dynamic_type: 'dynamic',
+        tool_dynamic_input: {
+          market: 'AI coding assistants',
+          competitors: ['AlphaCode', 'BetaDev'],
+          dimensions: ['UX', 'Reliability']
+        },
+        tool_dynamic_output: null,
+        tool_errorText: 'research failed',
+        providerMetadata: {
+          provider: {
+            requestId: 'competitor-research-error-request'
+          }
+        }
+      })
+    )
+
+    expect(restored).toMatchObject({
+      type: 'tool-competitorResearch',
+      toolCallId: 'call-competitorResearch-error',
+      state: 'output-error',
+      input: {
+        market: 'AI coding assistants',
+        competitors: ['AlphaCode', 'BetaDev'],
+        dimensions: ['UX', 'Reliability']
+      },
+      errorText: 'research failed',
+      callProviderMetadata: {
+        provider: {
+          requestId: 'competitor-research-error-request'
+        }
+      }
+    })
+  })
 })

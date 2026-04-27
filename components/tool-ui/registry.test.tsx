@@ -92,4 +92,33 @@ describe('tool UI registry', () => {
 
     expect(screen.getByTestId('canvas-artifact-card')).toBeInTheDocument()
   })
+
+  it('renders competitorResearch output through the competitor research result', () => {
+    const node = tryRenderToolUIByName(
+      'competitorResearch',
+      {
+        summary: 'Alpha leads on UX while Beta is stronger on reliability.',
+        cards: [
+          {
+            competitor: 'Alpha',
+            strengths: ['Fast onboarding'],
+            weaknesses: ['Limited controls']
+          }
+        ],
+        matrix: [
+          {
+            competitor: 'Alpha',
+            UX: 'Strong',
+            Reliability: 'Moderate'
+          }
+        ]
+      },
+      'test-part-id'
+    )
+
+    render(<>{node}</>)
+
+    expect(screen.getByText('Fast onboarding')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'UX' })).toBeInTheDocument()
+  })
 })

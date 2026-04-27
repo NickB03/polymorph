@@ -110,7 +110,11 @@ vi.mock('./tool-ui/registry', () => ({
 
     return null
   },
-  tryRenderToolUIByName: (toolName: string, output: unknown) => {
+  tryRenderToolUIByName: (
+    toolName: string,
+    output: unknown,
+    partId: string
+  ) => {
     if (
       toolName === 'displayTimeline' &&
       output &&
@@ -120,6 +124,19 @@ vi.mock('./tool-ui/registry', () => ({
       Array.isArray((output as Record<string, unknown>).events)
     ) {
       return <div data-testid="timeline-tool-ui" data-source="tool" />
+    }
+
+    if (
+      toolName === 'competitorResearch' &&
+      output &&
+      typeof output === 'object' &&
+      typeof (output as Record<string, unknown>).summary === 'string' &&
+      Array.isArray((output as Record<string, unknown>).cards) &&
+      Array.isArray((output as Record<string, unknown>).matrix)
+    ) {
+      return (
+        <div data-testid="competitor-research-tool-ui" data-part-id={partId} />
+      )
     }
 
     if (
@@ -595,6 +612,73 @@ describe('RenderMessage', () => {
       'data-source',
       'tool'
     )
+  })
+
+  it('renders completed registered non-display tool output through the tool UI registry instead of the research process buffer', () => {
+    const message: UIMessage = {
+      id: 'assistant-competitor-research-tool',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'text',
+          text: 'Competitive analysis is ready.'
+        },
+        {
+          type: 'tool-competitorResearch',
+          toolCallId: 'competitor-tool-1',
+          state: 'output-available',
+          output: {
+            summary: 'Alpha is stronger on reach; Beta is stronger on trust.',
+            cards: [
+              {
+                competitor: 'Alpha',
+                strengths: ['Reach'],
+                weaknesses: ['Trust']
+              },
+              {
+                competitor: 'Beta',
+                strengths: ['Trust'],
+                weaknesses: ['Reach']
+              }
+            ],
+            matrix: [
+              {
+                competitor: 'Alpha',
+                reach: 'High',
+                trust: 'Medium'
+              },
+              {
+                competitor: 'Beta',
+                reach: 'Medium',
+                trust: 'High'
+              }
+            ]
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('competitor-research-tool-ui')).toHaveAttribute(
+      'data-part-id',
+      'competitor-tool-1'
+    )
+    expect(
+      mockResearchProcessSection.mock.calls.some(([props]) =>
+        (props.parts as UIMessage['parts'] | undefined)?.some(
+          part => part.type === 'tool-competitorResearch'
+        )
+      )
+    ).toBe(false)
   })
 
   it('extracts valid fenced JSON timeline payloads from assistant text', () => {

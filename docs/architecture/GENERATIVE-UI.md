@@ -116,24 +116,35 @@ Display tools transition quickly through these states since their `execute` func
 
 ## Display Tools (Server)
 
-Display tools are defined in `lib/tools/display-*.ts`. Each is a Vercel AI SDK `tool()` with a Zod input schema; most use a passthrough execute function, while `displayOptionList` is frontend-resolved and does not define `execute`.
+Display tools are defined either as legacy flat shims (`lib/tools/display-*.ts`) or as per-tool modules under `lib/tools/<tool-name>/`. New and migrated high-friction tools use the module shape:
+
+```text
+lib/tools/<tool-name>/
+  schema.ts    Zod input/output contracts and toolName
+  server.ts    AI SDK tool() or dynamicTool() export
+  client.tsx   optional browser-side resolver for interactive tools
+  result.tsx   optional dedicated result renderer
+  index.ts     public module contract
+```
+
+Server-side agent code imports `serverTool` from `server.ts` so it does not pull client renderers into the agent runtime. The flat files remain compatibility re-exports for older imports.
 
 Display tools do not perform any computation. They serve as a structured output channel for the AI agent. The agent fills in the schema, and the frontend renders it.
 
 ### Tool definitions
 
-| Tool                    | File                                   | Description                                                           | Has `execute`? |
-| ----------------------- | -------------------------------------- | --------------------------------------------------------------------- | :------------: |
-| `displayPlan`           | `lib/tools/display-plan.ts`            | Step-by-step guides with status                                       |      Yes       |
-| `displayTable`          | `lib/tools/display-table.ts`           | Sortable data tables with formatting                                  |      Yes       |
-| `displayChart`          | `lib/tools/display-chart.ts`           | Bar and line chart visualizations                                     |      Yes       |
-| `displayGeoMap`         | `lib/tools/display-geo-map.ts`         | Leaflet-based geo maps with markers, routes, polygons, and clustering |      Yes       |
-| `displayCitations`      | `lib/tools/display-citations.ts`       | Rich source citation lists                                            |      Yes       |
-| `displayLinkPreview`    | `lib/tools/display-link-preview.ts`    | Link preview cards                                                    |      Yes       |
-| `displayOptionList`     | `lib/tools/display-option-list.ts`     | Interactive option lists                                              |       No       |
-| `displayQuestionWizard` | `lib/tools/display-question-wizard.ts` | Multi-step guided question flows                                      |      Yes       |
-| `displayCallout`        | `lib/tools/display-callout.ts`         | Styled callout boxes                                                  |      Yes       |
-| `displayTimeline`       | `lib/tools/display-timeline.ts`        | Chronological event timelines                                         |      Yes       |
+| Tool                    | File                                 | Description                                                           | Has `execute`? |
+| ----------------------- | ------------------------------------ | --------------------------------------------------------------------- | :------------: |
+| `displayPlan`           | `lib/tools/display-plan.ts`          | Step-by-step guides with status                                       |      Yes       |
+| `displayTable`          | `lib/tools/display-table.ts`         | Sortable data tables with formatting                                  |      Yes       |
+| `displayChart`          | `lib/tools/display-chart.ts`         | Bar and line chart visualizations                                     |      Yes       |
+| `displayGeoMap`         | `lib/tools/display-geo-map.ts`       | Leaflet-based geo maps with markers, routes, polygons, and clustering |      Yes       |
+| `displayCitations`      | `lib/tools/display-citations/`       | Rich source citation lists                                            |      Yes       |
+| `displayLinkPreview`    | `lib/tools/display-link-preview/`    | Link preview cards                                                    |      Yes       |
+| `displayOptionList`     | `lib/tools/display-option-list/`     | Interactive option lists                                              |       No       |
+| `displayQuestionWizard` | `lib/tools/display-question-wizard/` | Multi-step guided question flows                                      |      Yes       |
+| `displayCallout`        | `lib/tools/display-callout.ts`       | Styled callout boxes                                                  |      Yes       |
+| `displayTimeline`       | `lib/tools/display-timeline.ts`      | Chronological event timelines                                         |      Yes       |
 
 All tools with `execute` use the same passthrough pattern:
 
@@ -141,7 +152,7 @@ All tools with `execute` use the same passthrough pattern:
 execute: async params => params
 ```
 
-**`displayOptionList`** is the exception — it has no `execute` function because it is a **frontend tool**. The AI sends the tool call input, the frontend renders an interactive option list, the user makes a selection, and `addToolResult` sends the selection back to the AI as the tool result.
+**`displayOptionList`** is the exception — it has no `execute` function because it is a **frontend tool**. The AI sends the tool call input, the module-local `client.tsx` renders an interactive option list, the user makes a selection, and `addToolResult` sends the selection back to the AI as the tool result. `displayQuestionWizard` also owns its interactive client behavior in its module-local `client.tsx`.
 
 ### Schema example (displayTable)
 
@@ -165,11 +176,11 @@ const FormatSchema = z.discriminatedUnion('kind', [
 
 This allows the AI to specify exactly how each column should be formatted — currencies, percentages, status badges, links — and the DataTable component renders them accordingly.
 
-**Source files:** [`lib/tools/display-plan.ts`](../../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../../lib/tools/display-chart.ts), [`lib/tools/display-geo-map.ts`](../../lib/tools/display-geo-map.ts), [`lib/tools/display-citations.ts`](../../lib/tools/display-citations.ts), [`lib/tools/display-link-preview.ts`](../../lib/tools/display-link-preview.ts), [`lib/tools/display-option-list.ts`](../../lib/tools/display-option-list.ts), [`lib/tools/display-question-wizard.ts`](../../lib/tools/display-question-wizard.ts), [`lib/tools/display-callout.ts`](../../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../../lib/tools/display-timeline.ts)
+**Source files:** [`lib/tools/display-plan.ts`](../../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../../lib/tools/display-chart.ts), [`lib/tools/display-geo-map.ts`](../../lib/tools/display-geo-map.ts), [`lib/tools/display-citations/`](../../lib/tools/display-citations), [`lib/tools/display-link-preview/`](../../lib/tools/display-link-preview), [`lib/tools/display-option-list/`](../../lib/tools/display-option-list), [`lib/tools/display-question-wizard/`](../../lib/tools/display-question-wizard), [`lib/tools/display-callout.ts`](../../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../../lib/tools/display-timeline.ts)
 
 ### Mode-specific tool availability
 
-The researcher agent (`lib/agents/researcher.ts`) exposes different tools depending on the search mode:
+The chat agent registry exposes different tools depending on the resolved agent mode:
 
 | Tool                    | Chat Mode |        Research Mode        |
 | ----------------------- | :-------: | :-------------------------: |
@@ -203,7 +214,18 @@ See [Geo & Spatial Tools](GEO-TOOLS.md) for the full compose-first flow.
 
 ### Related: side-effect tools
 
-Display tools are passthrough schemas rendered inline. A separate category of conditionally registered tools (`generateImage`, canvas artifact tools) performs work outside the chat and renders through dedicated UI rather than the Tool UI registry. See [Research Agent → Conditional Tools](RESEARCH-AGENT.md#conditional-tools).
+Display tools are passthrough schemas rendered inline. A separate category of conditionally registered tools (`generateImage`, canvas artifact tools) performs work outside the chat and renders through module-local result adapters that are surfaced by the Tool UI registry. The live `competitorResearch` specialist follows the same dedicated-result pattern. See [Research Agent → Conditional Tools](RESEARCH-AGENT.md#conditional-tools).
+
+### Community-portability evidence
+
+Workstream 5 uses `competitorResearch` as the representative external/community-inspired AI SDK pattern: a structured Vercel AI SDK `tool({ inputSchema, execute })` definition ported through local adapters. The proof lives in [`lib/agents/chat/__tests__/community-portability.test.ts`](../../lib/agents/chat/__tests__/community-portability.test.ts) and exercises the local path rather than only checking registration:
+
+- Research agent resolution and `activeTools` activation include `competitorResearch`, while search/chat and build definitions do not.
+- `createChatAgentTools()` creates the specialist through the local toolset and executes it with mocked search/fetch tools shaped like real tool outputs.
+- `components/tool-ui/registry.tsx` renders the structured result through the dedicated `CompetitorResearchResult` adapter.
+- `lib/utils/message-mapping.ts` persists and restores the rich `tool-competitorResearch` part through dynamic tool columns.
+
+This is an adapter-chain proof, not isolated git-history proof. It shows the current architecture can carry one structured AI SDK tool pattern through agent, toolset, rendering, and mapping seams without adding route/streaming/persistence-specific code for that tool. Verifying that a future change avoided route, streaming, or persistence edits still requires checking that change's diff.
 
 ### Shared base fields
 
@@ -447,8 +469,8 @@ This produces an interleaved layout:
 When the dispatcher encounters a part with a `tool-display*` type prefix:
 
 1. It flushes any buffered parts first
-2. For `displayOptionList`: renders the interactive `OptionList` component with `addToolResult` callback
-3. For all other display tools: calls `tryRenderToolUIByName(toolName, output)` from the registry
+2. For `displayOptionList` and `displayQuestionWizard`: delegates to the tool module's `renderToolPart()` client adapter, which owns parsing, local component state, and `addToolResult` submission
+3. For all other display tools and dedicated result tools: calls `tryRenderToolUIByName(toolName, output)` from the registry, which delegates migrated result tools to their module-local `tryRenderResult()` adapters
 4. During `input-streaming` and `input-available` states: shows an animated skeleton placeholder
 
 ### Display tool text suppression
@@ -652,7 +674,7 @@ sequenceDiagram
     Render->>OL: Render receipt mode (read-only confirmation)
 ```
 
-**Source files:** [`lib/tools/display-option-list.ts`](../../lib/tools/display-option-list.ts), [`components/tool-ui/option-list/option-list.tsx`](../../components/tool-ui/option-list/option-list.tsx)
+**Source files:** [`lib/tools/display-option-list/`](../../lib/tools/display-option-list), [`components/tool-ui/option-list/option-list.tsx`](../../components/tool-ui/option-list/option-list.tsx)
 
 ---
 
@@ -739,20 +761,22 @@ Polymorph does **not** use `assistant-ui` `Toolkit` wiring for its chat runtime.
 - Do **not** start with `tool-agent`, `npx shadcn add @tool-ui/...`, or an `assistant-ui` migration unless the user explicitly asks for that.
 - First inspect the existing integration points:
   - `components/tool-ui/*` for component shape, schema contracts, and adapters
-  - `components/tool-ui/registry.tsx` for output rendering
-  - `components/render-message.tsx` for interactive rendering and `addToolResult` handling
+  - `components/tool-ui/registry.tsx` for output rendering and compatibility facade registration
+  - `components/tool-ui/tool-part-registry.tsx` for tool-part dispatch
+  - `lib/tools/<tool-name>/client.tsx` for interactive rendering and `addToolResult` handling
   - `components/chat.tsx` and `components/chat-request.ts` for request/continuation plumbing
   - `lib/types/dynamic-tools.ts` and `lib/streaming/helpers/prepare-tool-result-messages.ts` for interactive tool state transitions
-  - `lib/agents/researcher.ts` and any prompt files that must actually cause the model to call the tool
+  - `lib/agents/chat/toolset.ts`, the relevant `lib/agents/chat/*` agent definition, and any prompt files that must actually cause the model to call the tool
 - Reuse the existing naming pattern (`displayX`, `generateImage`, canvas tools) unless there is a deliberate reason to change the contract.
-- For interactive tools, registry registration is not enough. You usually need explicit handling in `render-message.tsx`, tool-result continuation support, and tests for the exact `tool-*` part shape.
-- For passive display tools, the minimum path is usually: server tool -> component/schema -> registry -> agent activation -> prompt usage/tests.
+- For interactive tools, registry registration is not enough. Add a module-local `client.tsx`, delegate it from `components/tool-ui/tool-part-registry.tsx`, cover tool-result continuation, and test the exact `tool-*` part shape.
+- For passive display tools, the minimum path is usually: `schema.ts` -> `server.ts` -> optional `result.tsx` -> registry facade -> agent activation -> prompt usage/tests.
 
 ### Step 1: Define the server-side tool
 
-Create `lib/tools/display-timeline.ts`:
+Create `lib/tools/display-timeline/schema.ts` and `lib/tools/display-timeline/server.ts`, then keep `lib/tools/display-timeline.ts` as a compatibility re-export if an older flat import already exists:
 
 ```ts
+// lib/tools/display-timeline/server.ts
 import { tool } from 'ai'
 import { z } from 'zod'
 
@@ -771,7 +795,7 @@ const DisplayTimelineSchema = z.object({
     .describe('Timeline events in chronological order')
 })
 
-export const displayTimelineTool = tool({
+export const serverTool = tool({
   description:
     'Display a timeline of events. Use when presenting chronological sequences, project milestones, or historical events.',
   inputSchema: DisplayTimelineSchema,
@@ -867,10 +891,10 @@ import { safeParseSerializableTimeline } from './timeline/schema'
 
 ### Step 4: Add the tool to the agent
 
-In `lib/agents/researcher.ts`, add the tool to the active tools for the desired mode(s):
+In `lib/agents/chat/toolset.ts`, import the server tool from the module-local `server.ts`, then add the tool name to the desired agent definition in `lib/agents/chat/search.ts`, `lib/agents/chat/research.ts`, or `lib/agents/chat/build.ts`:
 
 ```ts
-import { displayTimelineTool } from '@/lib/tools/display-timeline'
+import { serverTool as displayTimelineTool } from '@/lib/tools/display-timeline/server'
 
 // In the tools object:
 displayTimeline: displayTimelineTool
@@ -892,16 +916,16 @@ activeTools: [...existingTools, 'displayTimeline']
 
 ### Display tools (server)
 
-| File                                | Purpose                                 |
-| ----------------------------------- | --------------------------------------- |
-| `lib/tools/display-plan.ts`         | Plan tool definition + schema           |
-| `lib/tools/display-table.ts`        | DataTable tool definition + schema      |
-| `lib/tools/display-chart.ts`        | Chart tool definition + schema          |
-| `lib/tools/display-citations.ts`    | Citations tool definition + schema      |
-| `lib/tools/display-link-preview.ts` | LinkPreview tool definition + schema    |
-| `lib/tools/display-option-list.ts`  | OptionList tool definition (no execute) |
-| `lib/tools/display-callout.ts`      | Callout tool definition + schema        |
-| `lib/tools/display-timeline.ts`     | Timeline tool definition + schema       |
+| File                              | Purpose                                  |
+| --------------------------------- | ---------------------------------------- |
+| `lib/tools/display-plan.ts`       | Plan tool definition + schema            |
+| `lib/tools/display-table.ts`      | DataTable tool definition + schema       |
+| `lib/tools/display-chart.ts`      | Chart tool definition + schema           |
+| `lib/tools/display-citations/`    | Citations tool module + result adapter   |
+| `lib/tools/display-link-preview/` | LinkPreview tool module + result adapter |
+| `lib/tools/display-option-list/`  | OptionList tool module (no execute)      |
+| `lib/tools/display-callout.ts`    | Callout tool definition + schema         |
+| `lib/tools/display-timeline.ts`   | Timeline tool definition + schema        |
 
 ### Tool UI components (client)
 
