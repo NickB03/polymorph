@@ -228,4 +228,50 @@ describe('runEvalChat', () => {
     ])
     expect(result.usedInteractiveOnlyOutput).toBe(false)
   })
+
+  it('passes build user mode and intent to the researcher while keeping chat search mode', async () => {
+    const finalMessage = {
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'Built it.' }]
+    }
+
+    mockReadUIMessageStream.mockImplementation(async function* () {
+      yield finalMessage
+    })
+
+    mockResearcher.mockReturnValue({
+      stream: vi.fn().mockResolvedValue({
+        toUIMessageStream: vi.fn(() => new ReadableStream())
+      })
+    })
+
+    await runEvalChat({
+      caseId: 'build-traffic-1',
+      suite: 'traffic-monitor',
+      conversation: [
+        {
+          role: 'user',
+          parts: [{ type: 'text', text: 'Build a tiny counter app.' }]
+        }
+      ] as any,
+      searchMode: 'chat',
+      userMode: 'build',
+      intent: 'build',
+      modelType: 'quality',
+      model: {
+        id: 'gemini-3-flash',
+        name: 'Gemini 3 Flash',
+        provider: 'Google',
+        providerId: 'gateway'
+      }
+    })
+
+    expect(mockResearcher).toHaveBeenCalledWith(
+      expect.objectContaining({
+        searchMode: 'chat',
+        userMode: 'build',
+        intent: 'build'
+      })
+    )
+  })
 })

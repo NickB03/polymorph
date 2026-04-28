@@ -149,4 +149,46 @@ describe('POST /api/evals/run', () => {
       })
     )
   })
+
+  it('forwards build user mode and intent while keeping chat search mode', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/evals/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-eval-runner-secret': 'test-secret'
+        },
+        body: JSON.stringify({
+          caseId: 'build-traffic-1',
+          suite: 'traffic-monitor',
+          conversation: [
+            {
+              role: 'user',
+              parts: [{ type: 'text', text: 'Build a tiny counter app.' }]
+            }
+          ],
+          searchMode: 'chat',
+          userMode: 'build',
+          intent: 'build',
+          modelType: 'quality'
+        })
+      })
+    )
+
+    expect(response.status).toBe(200)
+    expect(mockSelectModelForModeAndType).toHaveBeenCalledWith({
+      searchMode: 'chat',
+      modelType: 'quality'
+    })
+    expect(mockRunEvalChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        caseId: 'build-traffic-1',
+        suite: 'traffic-monitor',
+        searchMode: 'chat',
+        userMode: 'build',
+        intent: 'build',
+        modelType: 'quality'
+      })
+    )
+  })
 })

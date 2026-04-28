@@ -59,6 +59,36 @@ describe('runEvalCase', () => {
     expect(result.answerText).toBe('answer')
   })
 
+  it('posts build user mode and intent without changing chat search mode', async () => {
+    mockFetch.mockResolvedValueOnce(new Response(successBody, { status: 200 }))
+
+    await runEvalCase(
+      {
+        ...baseCaseSpec,
+        id: 'traffic-build-1',
+        suite: 'traffic-monitor',
+        searchMode: 'chat',
+        userMode: 'build',
+        intent: 'build',
+        modelType: 'quality'
+      },
+      {
+        evalRunnerUrl: 'https://app.example.com',
+        evalRunnerSecret: 'secret'
+      }
+    )
+
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      caseId: 'traffic-build-1',
+      suite: 'traffic-monitor',
+      searchMode: 'chat',
+      userMode: 'build',
+      intent: 'build',
+      modelType: 'quality'
+    })
+  })
+
   it('includes response body in error for non-200 responses', async () => {
     mockFetch.mockResolvedValue(
       new Response(

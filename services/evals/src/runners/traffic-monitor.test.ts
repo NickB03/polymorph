@@ -236,6 +236,50 @@ describe('runTrafficMonitorSuite', () => {
     expect(result?.status).toBe('passed')
   })
 
+  it('replays build samples with build user mode and intent while keeping chat search mode', async () => {
+    const buildSample = {
+      ...sampleChat,
+      userMode: 'build' as const,
+      intent: 'build',
+      searchMode: 'chat' as const,
+      modelType: 'quality' as const,
+      metadataTags: ['user-mode:build']
+    }
+    mockSampleRecentChats.mockResolvedValueOnce([buildSample])
+    mockRunCasesConcurrently.mockResolvedValueOnce({
+      succeeded: [
+        {
+          caseSpec: {
+            ...replayedCase,
+            userMode: 'build' as const,
+            intent: 'build',
+            modelType: 'quality' as const,
+            tags: ['traffic-monitor', 'user-mode:build']
+          },
+          result: replayedResult
+        }
+      ],
+      failCount: 0
+    })
+    mockBuildDatasetExamples.mockReturnValueOnce([
+      { input: {}, output: {}, metadata: {} }
+    ])
+    mockCreateDatasetAndExperiment.mockResolvedValueOnce(datasetResult)
+
+    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
+    await runTrafficMonitorSuite()
+
+    expect(mockRunCasesConcurrently).toHaveBeenCalledWith([
+      expect.objectContaining({
+        searchMode: 'chat',
+        userMode: 'build',
+        intent: 'build',
+        modelType: 'quality',
+        tags: ['traffic-monitor', 'user-mode:build']
+      })
+    ])
+  })
+
   it('throws when createDatasetAndExperiment cannot record to Phoenix', async () => {
     mockSampleRecentChats.mockResolvedValueOnce([sampleChat])
     mockBuildDatasetExamples.mockReturnValueOnce([

@@ -48,6 +48,8 @@ export async function runTrafficMonitorSuite() {
     suite: 'traffic-monitor',
     conversation: sample.conversation,
     searchMode: sample.searchMode,
+    ...(sample.userMode ? { userMode: sample.userMode } : {}),
+    ...(sample.intent ? { intent: sample.intent } : {}),
     modelType: sample.modelType,
     tags: ['traffic-monitor', ...sample.metadataTags],
     requiresTextAnswer: true,

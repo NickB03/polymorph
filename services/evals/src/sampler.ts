@@ -9,7 +9,8 @@ import type {
   EvalConversationMessage,
   EvalModelType,
   EvalSearchMode,
-  EvalSearchResult
+  EvalSearchResult,
+  EvalUserMode
 } from './types'
 
 export class SamplerParseError extends Error {
@@ -29,6 +30,8 @@ export interface ChatSample {
   userQuery: string
   conversation: EvalConversationMessage[]
   searchMode: EvalSearchMode
+  userMode?: EvalUserMode
+  intent?: string
   modelType: EvalModelType
   originalModelId?: string
   metadataTags: string[]
@@ -427,6 +430,10 @@ function isSearchMode(value: unknown): value is EvalSearchMode {
   return value === 'chat' || value === 'research'
 }
 
+function isUserMode(value: unknown): value is EvalUserMode {
+  return value === 'search' || value === 'research' || value === 'build'
+}
+
 function isModelType(value: unknown): value is EvalModelType {
   return value === 'speed' || value === 'quality'
 }
@@ -477,7 +484,18 @@ function mapRowToSample(row: ChatSampleRow): ChatSample {
     ) ?? conversationRows[conversationRows.length - 1]
   const userMetadata = metadataFor(userMessageRow ?? {})
   const assistantMetadata = metadataFor(targetAssistant)
-  const rawUserMode = userMetadata.userMode
+  const rawUserMode = isUserMode(userMetadata.userMode)
+    ? userMetadata.userMode
+    : isUserMode(assistantMetadata.userMode)
+      ? assistantMetadata.userMode
+      : undefined
+  const rawIntent =
+    typeof userMetadata.intent === 'string'
+      ? userMetadata.intent
+      : typeof assistantMetadata.intent === 'string'
+        ? assistantMetadata.intent
+        : undefined
+  const intent = rawUserMode === 'build' ? 'build' : rawIntent
   const rawSearchMode = userMetadata.searchMode
   const searchMode = isSearchMode(rawSearchMode)
     ? rawSearchMode
@@ -493,10 +511,9 @@ function mapRowToSample(row: ChatSampleRow): ChatSample {
       : typeof assistantMetadata.modelId === 'string'
         ? assistantMetadata.modelId
         : undefined
-  const metadataTags =
-    typeof rawUserMode === 'string'
-      ? [`user-mode:${rawUserMode}`]
-      : ['mode_metadata_missing']
+  const metadataTags = rawUserMode
+    ? [`user-mode:${rawUserMode}`]
+    : ['mode_metadata_missing']
 
   return {
     chatId: row.chat_id,
@@ -506,6 +523,8 @@ function mapRowToSample(row: ChatSampleRow): ChatSample {
     userQuery,
     conversation,
     searchMode,
+    ...(rawUserMode ? { userMode: rawUserMode } : {}),
+    ...(intent ? { intent } : {}),
     modelType,
     ...(originalModelId ? { originalModelId } : {}),
     metadataTags,

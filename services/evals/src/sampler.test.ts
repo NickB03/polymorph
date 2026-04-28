@@ -259,4 +259,115 @@ describe('sampleRecentChats', () => {
     })
     expect(samples[0].metadataTags).toContain('mode_metadata_missing')
   })
+
+  it('preserves build user mode as chat search mode with build intent', async () => {
+    mockDbExecute.mockResolvedValueOnce([
+      {
+        chat_id: 'chat-build',
+        created_at: new Date('2026-04-22T12:00:00Z'),
+        target_user_message_id: 'user-build',
+        target_assistant_message_id: 'assistant-build',
+        conversation_messages: [
+          {
+            id: 'user-build',
+            role: 'user',
+            createdAt: '2026-04-22T11:05:00Z',
+            uiMessage: {
+              id: 'user-build',
+              role: 'user',
+              parts: [{ type: 'text', text: 'Make a dashboard' }],
+              metadata: {
+                userMode: 'build',
+                intent: 'build',
+                modelType: 'quality'
+              }
+            },
+            metadata: {
+              userMode: 'build',
+              intent: 'build',
+              modelType: 'quality'
+            },
+            textParts: [{ type: 'text', text: 'legacy build question' }]
+          }
+        ],
+        target_assistant_message: {
+          id: 'assistant-build',
+          role: 'assistant',
+          createdAt: '2026-04-22T11:06:00Z',
+          uiMessage: {
+            id: 'assistant-build',
+            role: 'assistant',
+            parts: [{ type: 'text', text: 'Here is a dashboard.' }]
+          },
+          metadata: {},
+          textParts: [{ type: 'text', text: 'legacy build answer' }]
+        },
+        target_search_results: null,
+        target_citations: null,
+        target_tool_names: null
+      }
+    ])
+
+    const samples = await sampleRecentChats()
+
+    expect(samples[0]).toMatchObject({
+      searchMode: 'chat',
+      userMode: 'build',
+      intent: 'build',
+      modelType: 'quality'
+    })
+    expect(samples[0].metadataTags).toContain('user-mode:build')
+  })
+
+  it('falls back to assistant build user mode when user metadata lacks mode', async () => {
+    mockDbExecute.mockResolvedValueOnce([
+      {
+        chat_id: 'chat-assistant-build',
+        created_at: new Date('2026-04-22T12:00:00Z'),
+        target_user_message_id: 'user-assistant-build',
+        target_assistant_message_id: 'assistant-assistant-build',
+        conversation_messages: [
+          {
+            id: 'user-assistant-build',
+            role: 'user',
+            createdAt: '2026-04-22T11:05:00Z',
+            uiMessage: {
+              id: 'user-assistant-build',
+              role: 'user',
+              parts: [{ type: 'text', text: 'Build a pricing table' }],
+              metadata: { modelType: 'speed' }
+            },
+            metadata: { modelType: 'speed' },
+            textParts: [{ type: 'text', text: 'legacy question' }]
+          }
+        ],
+        target_assistant_message: {
+          id: 'assistant-assistant-build',
+          role: 'assistant',
+          createdAt: '2026-04-22T11:06:00Z',
+          uiMessage: {
+            id: 'assistant-assistant-build',
+            role: 'assistant',
+            parts: [{ type: 'text', text: 'Here is a pricing table.' }],
+            metadata: { userMode: 'build' }
+          },
+          metadata: { userMode: 'build' },
+          textParts: [{ type: 'text', text: 'legacy answer' }]
+        },
+        target_search_results: null,
+        target_citations: null,
+        target_tool_names: null
+      }
+    ])
+
+    const samples = await sampleRecentChats()
+
+    expect(samples[0]).toMatchObject({
+      searchMode: 'chat',
+      userMode: 'build',
+      intent: 'build',
+      modelType: 'speed'
+    })
+    expect(samples[0].metadataTags).toContain('user-mode:build')
+  })
 })

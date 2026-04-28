@@ -249,6 +249,8 @@ export function buildDatasetExamples(
         suite: caseSpec.suite,
         conversation: caseSpec.conversation,
         searchMode: caseSpec.searchMode,
+        ...(caseSpec.userMode ? { userMode: caseSpec.userMode } : {}),
+        ...(caseSpec.intent ? { intent: caseSpec.intent } : {}),
         modelType: caseSpec.modelType,
         prompt,
         query: prompt,
