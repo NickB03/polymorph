@@ -182,8 +182,7 @@ describe('sampleRecentChats', () => {
       userQuery: 'follow-up question',
       modelAnswer: 'fresh historical answer',
       searchMode: 'research',
-      modelType: 'quality',
-      originalModelId: 'original-model'
+      modelType: 'quality'
     })
     expect(samples[0].conversation).toEqual([
       {
@@ -369,5 +368,69 @@ describe('sampleRecentChats', () => {
       modelType: 'speed'
     })
     expect(samples[0].metadataTags).toContain('user-mode:build')
+  })
+
+  it('dedupes search results when ui_message and legacy parts carry the same payload', async () => {
+    const sharedSearchOutput = {
+      query: 'shared query',
+      results: [
+        {
+          title: 'Shared Result',
+          url: 'https://shared.example.com',
+          content: 'shared snippet'
+        }
+      ]
+    }
+
+    mockDbExecute.mockResolvedValueOnce([
+      {
+        chat_id: 'chat-dup',
+        created_at: new Date('2026-04-22T12:00:00Z'),
+        target_user_message_id: 'user-dup',
+        target_assistant_message_id: 'assistant-dup',
+        conversation_messages: [
+          {
+            id: 'user-dup',
+            role: 'user',
+            createdAt: '2026-04-22T11:05:00Z',
+            uiMessage: {
+              id: 'user-dup',
+              role: 'user',
+              parts: [{ type: 'text', text: 'shared query' }]
+            },
+            metadata: null,
+            textParts: null
+          }
+        ],
+        target_assistant_message: {
+          id: 'assistant-dup',
+          role: 'assistant',
+          createdAt: '2026-04-22T11:06:00Z',
+          uiMessage: {
+            id: 'assistant-dup',
+            role: 'assistant',
+            parts: [
+              { type: 'text', text: 'answer' },
+              { type: 'tool-search', output: sharedSearchOutput }
+            ]
+          },
+          metadata: null,
+          textParts: null
+        },
+        target_search_results: JSON.stringify([sharedSearchOutput]),
+        target_citations: null,
+        target_tool_names: null
+      }
+    ])
+
+    const samples = await sampleRecentChats()
+
+    expect(samples[0].searchResults).toHaveLength(1)
+    expect(samples[0].searchResults[0]).toMatchObject({
+      query: 'shared query'
+    })
+    expect(samples[0].searchResults[0].results[0]).toMatchObject({
+      url: 'https://shared.example.com'
+    })
   })
 })

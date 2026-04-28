@@ -4,7 +4,7 @@ Railway CLI (`railway`, v4.35.2) and Phoenix CLI (`npx @arizeai/phoenix-cli`) ma
 
 ## Evals Service (`services/evals/`)
 
-Offline LLM-judge evaluation pipeline running as a Railway cron service (daily at 00:00 UTC). Deployed alongside `phoenix` on Railway. See `docs/operations/DEPLOYMENT.md` for configuration details.
+Offline LLM-judge evaluation pipeline running as a Railway cron service (every 48 hours, schedule managed in Railway). Deployed alongside `phoenix` on Railway. See `docs/operations/DEPLOYMENT.md` for configuration details.
 
 - Samples recent chats from Supabase Postgres (parameterized SQL)
 - Runs 7 evaluators: 2 deterministic (`prechecks`, `tool-usage`) + 5 LLM-judge (`faithfulness`, `relevance`, `response-quality`, `safety`, `citation-accuracy`) via `asExperimentEvaluator` shells

@@ -33,7 +33,6 @@ export interface ChatSample {
   userMode?: EvalUserMode
   intent?: string
   modelType: EvalModelType
-  originalModelId?: string
   metadataTags: string[]
   searchResults: EvalSearchResult[]
   modelAnswer: string
@@ -365,6 +364,16 @@ function dedupeStrings(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean)))
 }
 
+function dedupeSearchResults(results: EvalSearchResult[]): EvalSearchResult[] {
+  const seen = new Set<string>()
+  return results.filter(result => {
+    const key = `${result.query}::${result.results.map(r => r.url).join('|')}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 function searchResultsFromMessage(
   message: SampleMessageRow
 ): EvalSearchResult[] {
@@ -505,12 +514,6 @@ function mapRowToSample(row: ChatSampleRow): ChatSample {
   const modelType = isModelType(userMetadata.modelType)
     ? userMetadata.modelType
     : 'speed'
-  const originalModelId =
-    typeof userMetadata.modelId === 'string'
-      ? userMetadata.modelId
-      : typeof assistantMetadata.modelId === 'string'
-        ? assistantMetadata.modelId
-        : undefined
   const metadataTags = rawUserMode
     ? [`user-mode:${rawUserMode}`]
     : ['mode_metadata_missing']
@@ -526,11 +529,11 @@ function mapRowToSample(row: ChatSampleRow): ChatSample {
     ...(rawUserMode ? { userMode: rawUserMode } : {}),
     ...(intent ? { intent } : {}),
     modelType,
-    ...(originalModelId ? { originalModelId } : {}),
     metadataTags,
-    searchResults: searchResultsFromMessage(targetAssistant).concat(
-      parseSearchResults(row.target_search_results)
-    ),
+    searchResults: dedupeSearchResults([
+      ...searchResultsFromMessage(targetAssistant),
+      ...parseSearchResults(row.target_search_results)
+    ]),
     modelAnswer,
     citations: dedupeCitations([
       ...citationsFromMessage(targetAssistant),
