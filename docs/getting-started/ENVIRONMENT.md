@@ -97,7 +97,7 @@ Required when `ENABLE_AUTH=true`:
 ## Evals cron (Railway `polymorph-evals`)
 
 See [Deployment → Evals cron service](../operations/DEPLOYMENT.md#evals-cron-service) for the full env matrix.
-The current repo baseline is `google/gemini-3.1-flash-lite-preview` with `LOOKBACK_HOURS=48`, `SAMPLE_SIZE=10`, and `EVAL_CASE_CONCURRENCY=1`; the live cron cadence itself is managed in Railway.
+The current repo baseline is OpenRouter-backed `google/gemini-3.1-flash-lite-preview` with `LOOKBACK_HOURS=48`, `SAMPLE_SIZE=10`, and `EVAL_CASE_CONCURRENCY=1`; the live cron cadence itself is managed in Railway.
 
 ### Tracing (Arize Phoenix)
 
