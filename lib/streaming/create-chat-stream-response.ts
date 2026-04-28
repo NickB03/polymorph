@@ -356,7 +356,8 @@ export async function createChatStreamResponse(
           userMode,
           context.modelId,
           context.pendingInitialSave,
-          context.pendingInitialUserMessage
+          context.pendingInitialUserMessage,
+          modelType
         )
       } catch (error) {
         console.error(
