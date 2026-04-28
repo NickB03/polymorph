@@ -13,6 +13,13 @@ import type {
   EvalUserMode
 } from './types'
 
+const UNSUPPORTED_REPLAY_TOOLS: ReadonlySet<string> = new Set([
+  'createCanvasArtifact',
+  'updateCanvasArtifact',
+  'readCanvasArtifact',
+  'generateImage'
+])
+
 export class SamplerParseError extends Error {
   constructor(field: string, chatId: string, cause: unknown) {
     super(
@@ -119,6 +126,17 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
               AND assistant_part.type = 'text'
               AND assistant_part.text_text IS NOT NULL
           )
+        )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM parts unsupported_part
+          WHERE unsupported_part.message_id = assistant.id
+            AND unsupported_part.type IN (
+              'tool-createCanvasArtifact',
+              'tool-updateCanvasArtifact',
+              'tool-readCanvasArtifact',
+              'tool-generateImage'
+            )
         )
       ORDER BY assistant.chat_id, assistant.created_at DESC, assistant.id DESC
     ),
@@ -520,6 +538,32 @@ function mapRowToSample(row: ChatSampleRow): ChatSample {
     ? [`user-mode:${rawUserMode}`]
     : ['mode_metadata_missing']
 
+  const searchResults = dedupeSearchResults([
+    ...searchResultsFromMessage(targetAssistant),
+    ...parseSearchResults(row.target_search_results)
+  ])
+  const citations = dedupeCitations([
+    ...citationsFromMessage(targetAssistant),
+    ...parseCitations(row.target_citations)
+  ])
+  const toolNames = dedupeStrings([
+    ...toolNamesFromMessage(targetAssistant),
+    ...parseToolNames(row.target_tool_names)
+  ])
+
+  const unsupportedTools = toolNames.filter(name =>
+    UNSUPPORTED_REPLAY_TOOLS.has(name)
+  )
+  if (unsupportedTools.length > 0) {
+    throw new SamplerParseError(
+      'unsupported_replay_tools',
+      row.chat_id,
+      new Error(
+        `Tools incompatible with eval replay: ${unsupportedTools.join(', ')}`
+      )
+    )
+  }
+
   return {
     chatId: row.chat_id,
     createdAt: row.created_at,
@@ -532,19 +576,10 @@ function mapRowToSample(row: ChatSampleRow): ChatSample {
     ...(intent ? { intent } : {}),
     modelType,
     metadataTags,
-    searchResults: dedupeSearchResults([
-      ...searchResultsFromMessage(targetAssistant),
-      ...parseSearchResults(row.target_search_results)
-    ]),
+    searchResults,
     modelAnswer,
-    citations: dedupeCitations([
-      ...citationsFromMessage(targetAssistant),
-      ...parseCitations(row.target_citations)
-    ]),
-    toolNames: dedupeStrings([
-      ...toolNamesFromMessage(targetAssistant),
-      ...parseToolNames(row.target_tool_names)
-    ])
+    citations,
+    toolNames
   }
 }
 

@@ -406,6 +406,81 @@ describe('sampleRecentChats', () => {
     expect(samples[0].modelType).toBe('quality')
   })
 
+  it('rejects samples whose target assistant used canvas tools', async () => {
+    mockDbExecute.mockResolvedValueOnce([
+      {
+        chat_id: 'chat-canvas',
+        created_at: new Date('2026-04-28T00:00:00Z'),
+        target_user_message_id: 'user-1',
+        target_assistant_message_id: 'assistant-1',
+        conversation_messages: JSON.stringify([
+          {
+            id: 'user-1',
+            role: 'user',
+            createdAt: '2026-04-28T00:00:00Z',
+            uiMessage: null,
+            metadata: {},
+            textParts: [{ type: 'text', text: 'make a chart' }]
+          }
+        ]),
+        target_assistant_message: JSON.stringify({
+          id: 'assistant-1',
+          role: 'assistant',
+          createdAt: '2026-04-28T00:00:01Z',
+          uiMessage: {
+            parts: [
+              { type: 'text', text: 'here you go' },
+              { type: 'tool-createCanvasArtifact', output: { ok: true } }
+            ]
+          },
+          metadata: {},
+          textParts: [{ type: 'text', text: 'here you go' }]
+        }),
+        target_search_results: null,
+        target_citations: null,
+        target_tool_names: JSON.stringify(['createCanvasArtifact'])
+      }
+    ])
+
+    const samples = await sampleRecentChats()
+    expect(samples).toHaveLength(0)
+  })
+
+  it('rejects samples whose target assistant used generateImage', async () => {
+    mockDbExecute.mockResolvedValueOnce([
+      {
+        chat_id: 'chat-image',
+        created_at: new Date('2026-04-28T00:00:00Z'),
+        target_user_message_id: 'user-1',
+        target_assistant_message_id: 'assistant-1',
+        conversation_messages: JSON.stringify([
+          {
+            id: 'user-1',
+            role: 'user',
+            createdAt: '2026-04-28T00:00:00Z',
+            uiMessage: null,
+            metadata: {},
+            textParts: [{ type: 'text', text: 'draw a cat' }]
+          }
+        ]),
+        target_assistant_message: JSON.stringify({
+          id: 'assistant-1',
+          role: 'assistant',
+          createdAt: '2026-04-28T00:00:01Z',
+          uiMessage: null,
+          metadata: {},
+          textParts: [{ type: 'text', text: 'here is a cat' }]
+        }),
+        target_search_results: null,
+        target_citations: null,
+        target_tool_names: JSON.stringify(['generateImage'])
+      }
+    ])
+
+    const samples = await sampleRecentChats()
+    expect(samples).toHaveLength(0)
+  })
+
   it('dedupes search results when ui_message and legacy parts carry the same payload', async () => {
     const sharedSearchOutput = {
       query: 'shared query',
