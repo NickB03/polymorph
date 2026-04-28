@@ -139,17 +139,18 @@ The App Router is split into two route groups (`(chat)/` and `(admin)/`) plus no
 
 ### API Routes
 
-| File                                   | Purpose                                                                                                                                             |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/chat/route.ts`                | Main chat endpoint (POST, 300s timeout); handles auth, rate limiting, model selection, and delegates to authenticated or ephemeral stream responses |
-| `app/api/chats/route.ts`               | Chat history endpoint (GET); returns paginated list of user chats                                                                                   |
-| `app/api/feedback/route.ts`            | Feedback endpoint (POST); records thumbs up/down scores and updates message metadata                                                                |
-| `app/api/upload/route.ts`              | File upload endpoint (POST); validates file type/size and uploads to Supabase Storage                                                               |
-| `app/api/advanced-search/route.ts`     | SearXNG advanced search endpoint (POST); performs cached deep-crawl searches with relevance scoring                                                 |
-| `app/api/suggestions/route.ts`         | Trending suggestions endpoint; reads the `trending_suggestions_cache` singleton and blends dynamic suggestions with static rotation                 |
-| `app/api/suggestions/refresh/route.ts` | Vercel cron target (GET, 60s timeout); Bearer-auth via `CRON_SECRET`; regenerates trending suggestions and upserts the singleton cache row          |
-| `app/api/voice/synthesize/route.ts`    | TTS synthesis endpoint (POST); synthesizes text to speech via OpenAI or ElevenLabs                                                                  |
-| `app/api/health/route.ts`              | Health check endpoint; returns server status and database connectivity for monitoring                                                               |
+| File                                   | Purpose                                                                                                                                                                             |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/chat/route.ts`                | Main chat endpoint (POST, 300s timeout); handles auth, rate limiting, model selection, and delegates to authenticated or ephemeral stream responses                                 |
+| `app/api/chats/route.ts`               | Chat history endpoint (GET); returns paginated list of user chats                                                                                                                   |
+| `app/api/feedback/route.ts`            | Feedback endpoint (POST); records thumbs up/down scores and updates message metadata                                                                                                |
+| `app/api/upload/route.ts`              | File upload endpoint (POST); validates file type/size and uploads to Supabase Storage                                                                                               |
+| `app/api/advanced-search/route.ts`     | SearXNG advanced search endpoint (POST); performs cached deep-crawl searches with relevance scoring                                                                                 |
+| `app/api/suggestions/route.ts`         | Trending suggestions endpoint; reads the `trending_suggestions_cache` singleton and blends dynamic suggestions with static rotation                                                 |
+| `app/api/suggestions/refresh/route.ts` | Vercel cron target (GET, 60s timeout); Bearer-auth via `CRON_SECRET`; regenerates trending suggestions and upserts the singleton cache row                                          |
+| `app/api/voice/synthesize/route.ts`    | TTS synthesis endpoint (POST); synthesizes text to speech via OpenAI or ElevenLabs                                                                                                  |
+| `app/api/health/route.ts`              | Health check endpoint; returns server status and database connectivity for monitoring                                                                                               |
+| `app/api/evals/run/route.ts`           | Secret-authenticated eval runner endpoint (POST); replays capability, regression, smoke, and traffic-monitor conversations through the researcher pipeline without chat persistence |
 
 ### Canvas API Routes
 
@@ -163,7 +164,6 @@ The App Router is split into two route groups (`(chat)/` and `(admin)/`) plus no
 | `app/api/canvas-artifacts/[artifactId]/runtime-diagnostics/route.ts` | Persist runtime diagnostics (errors, warnings) from the preview iframe (POST)               |
 | `app/api/canvas-artifacts/[artifactId]/view/route.ts`                | Serve compiled HTML for inline embedding or preview (GET)                                   |
 | `app/api/canvas-assets/image-proxy/route.ts`                         | Proxy image search results for canvas artifacts via Brave; SSRF-safe redirect (GET)         |
-| `app/api/evals/run/route.ts`                                         | Run evaluation chats through the researcher agent pipeline (POST, secret-authenticated)     |
 
 ---
 
@@ -986,7 +986,7 @@ Offline evaluation pipeline (`services/evals/`) for measuring search quality via
 | `services/evals/src/orchestrator.ts`                 | Orchestrates eval suite execution by dispatching to the configured run mode                                                                                                       |
 | `services/evals/src/retry.ts`                        | Exponential backoff retry with `maxAttempts >= 1` validation                                                                                                                      |
 | `services/evals/src/retry.test.ts`                   | Tests for retry utility including zero-attempts edge case                                                                                                                         |
-| `services/evals/src/sampler.ts`                      | Samples recent chats with parameterized SQL queries and safe `parseCitations()` JSON parsing                                                                                      |
+| `services/evals/src/sampler.ts`                      | Samples coherent target turns from recent chats with parameterized SQL; reconstructs canonical UI messages and falls back to legacy parts/citation metadata                       |
 | `services/evals/src/types.ts`                        | TypeScript type definitions for eval suites, run modes, cases, and results; exports `PersistedEvalSuite` (`Exclude<EvalSuite, 'smoke'>`)                                          |
 | `services/evals/src/evaluators/citation-accuracy.ts` | Citation accuracy evaluator — checks if citations match source content and claims                                                                                                 |
 | `services/evals/src/evaluators/faithfulness.ts`      | Faithfulness evaluator — checks if answers are grounded in search results                                                                                                         |
@@ -1000,7 +1000,7 @@ Offline evaluation pipeline (`services/evals/`) for measuring search quality via
 | `services/evals/src/runners/regression.ts`           | Regression eval runner — executes the regression test suite                                                                                                                       |
 | `services/evals/src/runners/shared.ts`               | Shared runner utilities for dataset creation, experiment execution, and threshold checks; split try/catch isolates Phoenix vs. DB persistence failures with distinct error labels |
 | `services/evals/src/runners/smoke.ts`                | Smoke test runner — executes lightweight smoke tests via live chat API                                                                                                            |
-| `services/evals/src/runners/traffic-monitor.ts`      | Traffic monitor runner — samples recent production chats, evaluates quality, and persists results to `eval_summaries`                                                             |
+| `services/evals/src/runners/traffic-monitor.ts`      | Traffic monitor runner — samples recent production target turns, replays them through `/api/evals/run`, evaluates the replayed output, and persists summaries                     |
 
 ---
 

@@ -189,8 +189,8 @@ describe('runEvalChat', () => {
     })
 
     const result = await runEvalChat({
-      caseId: 'case-1',
-      suite: 'capability',
+      caseId: 'traffic-1',
+      suite: 'traffic-monitor',
       conversation: [
         {
           role: 'user',
@@ -212,6 +212,11 @@ describe('runEvalChat', () => {
         searchMode: 'research',
         modelType: 'quality',
         telemetryEnabled: false,
+        experimentalContext: expect.objectContaining({
+          caseId: 'traffic-1',
+          suite: 'traffic-monitor',
+          executionMode: 'eval'
+        }),
         modelConfig: expect.objectContaining({
           id: 'gemini-3-flash'
         })

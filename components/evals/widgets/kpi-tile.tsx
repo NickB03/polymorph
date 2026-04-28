@@ -122,9 +122,9 @@ export function KpiTile({ data, config, breakpoint }: WidgetProps<Config>) {
       label = 'Samples'
       value = String(latest.totalCases)
       state =
-        latest.totalCases >= 40
+        latest.totalCases >= 10
           ? 'healthy'
-          : latest.totalCases >= 20
+          : latest.totalCases >= 5
             ? 'warning'
             : 'critical'
       break
@@ -141,7 +141,7 @@ export function KpiTile({ data, config, breakpoint }: WidgetProps<Config>) {
       } else {
         value = formatDistanceToNow(new Date(iso))
         const hours = (nowMs - new Date(iso).getTime()) / HOUR
-        state = hours >= 12 ? 'critical' : hours >= 7 ? 'warning' : 'healthy'
+        state = hours >= 72 ? 'critical' : hours >= 54 ? 'warning' : 'healthy'
       }
       break
     }

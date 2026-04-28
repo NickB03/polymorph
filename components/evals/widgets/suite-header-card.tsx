@@ -166,7 +166,7 @@ export function SuiteHeaderCard({
             <CardTitle className="text-base">{title}</CardTitle>
             <p className="text-xs text-muted-foreground">
               {suiteKey === 'trafficMonitor'
-                ? 'real user chats · sampled daily'
+                ? 'real user chats · cron/manual'
                 : suiteKey === 'regression'
                   ? 'regression fixtures · guard against drift'
                   : 'rehearsed · on-demand'}
@@ -231,7 +231,7 @@ function SuiteEmptyState({
   const Icon = variant === 'hero' ? Activity : BarChart3
   const helper =
     title === 'Traffic Monitor'
-      ? 'Runs land daily from the evals cron or on manual trigger.'
+      ? 'Runs land from the evals cron or manual trigger.'
       : title === 'Regression'
         ? 'Runs land when a regression fixture exercise is triggered.'
         : 'Runs land on demand from the rehearsed suite.'
@@ -284,7 +284,7 @@ function SuiteEmptyState({
             <CardTitle className="text-base">{title}</CardTitle>
             <p className="text-xs text-muted-foreground">
               {title === 'Traffic Monitor'
-                ? 'real user chats · sampled daily'
+                ? 'real user chats · cron/manual'
                 : title === 'Regression'
                   ? 'regression fixtures · guard against drift'
                   : 'rehearsed · on-demand'}

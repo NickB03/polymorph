@@ -14,11 +14,11 @@ const COPY: Record<TemplateId, { title: string; body: string }> = {
   },
   b: {
     title: 'Nothing to compare yet',
-    body: 'This layout shows divergence between capability (rehearsed) and traffic-monitor (real) suites. Run at least one of each to see them side by side.'
+    body: 'This layout compares capability, regression, and traffic-monitor suites. Run at least one suite to see the side-by-side board.'
   },
   c: {
     title: 'Activity feed is quiet',
-    body: "As eval runs land in Postgres, they'll stream into this feed newest-first. The next Traffic Monitor run is scheduled daily."
+    body: "As eval runs land in Postgres, they'll stream into this feed newest-first. The next Traffic Monitor run is scheduled by Railway cron."
   }
 }
 

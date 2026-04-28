@@ -6,7 +6,7 @@ import { selectModelForModeAndType } from '@/lib/utils/model-selection'
 
 const evalRequestSchema = z.object({
   caseId: z.string().min(1),
-  suite: z.enum(['capability', 'regression', 'smoke']),
+  suite: z.enum(['capability', 'regression', 'smoke', 'traffic-monitor']),
   conversation: z.array(
     z.object({
       role: z.enum(['user', 'assistant']),

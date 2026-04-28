@@ -192,7 +192,7 @@ describe('EvalsDashboardV2', () => {
   it('template B renders the updated live cadence copy', () => {
     render(<EvalsDashboardV2 data={makeData()} initialLayout="b" />)
 
-    expect(screen.getByText('daily')).toBeInTheDocument()
+    expect(screen.getByText('48h cron/manual')).toBeInTheDocument()
     expect(screen.queryByText('every 6h')).not.toBeInTheDocument()
   })
 
@@ -206,7 +206,7 @@ describe('EvalsDashboardV2', () => {
       createdAt: '2026-04-14T13:00:00Z'
     }
 
-    render(<EvalsDashboardV2 data={data} initialLayout="a" />)
+    render(<EvalsDashboardV2 data={data} initialLayout="b" />)
 
     expect(screen.getByTestId('eval-alert-banner')).toBeInTheDocument()
     expect(
@@ -214,13 +214,16 @@ describe('EvalsDashboardV2', () => {
     ).toBeInTheDocument()
   })
 
-  it('keeps the empty state when only regression data exists', () => {
+  it('renders the dashboard when only regression data exists', () => {
     const data = makeEmptyData()
     data.regression.latest = makeSnapshot('regression')
 
-    render(<EvalsDashboardV2 data={data} initialLayout="a" />)
+    render(<EvalsDashboardV2 data={data} initialLayout="b" />)
 
-    expect(screen.getByTestId('evals-empty-state-bypass')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('evals-empty-state-bypass')
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Regression')).toBeInTheDocument()
   })
 
   it('template C expands the row matching the worst drop finding', () => {
@@ -283,7 +286,7 @@ describe('EvalsDashboardV2', () => {
   })
 
   it.each(['a', 'b', 'c'] as const)(
-    'template %s renders EvalsEmptyState when both suites return null',
+    'template %s renders EvalsEmptyState when all suites return null',
     id => {
       render(<EvalsDashboardV2 data={makeEmptyData()} initialLayout={id} />)
       const emptyState = screen.getByTestId('evals-empty-state')

@@ -157,7 +157,8 @@ export function ActivityFeed({ data, config }: WidgetProps<Config>) {
             <p className="text-sm font-medium">No runs yet</p>
             <p className="max-w-sm text-xs text-muted-foreground">
               As eval runs land in Postgres, they&apos;ll stream in here
-              newest-first. The next Traffic Monitor run is scheduled daily.
+              newest-first. The next Traffic Monitor run is scheduled by Railway
+              cron.
             </p>
           </div>
         </CardContent>

@@ -65,7 +65,12 @@ function parseRunMode(raw: string | undefined): EvalRunMode {
 }
 
 function requiredEvalRunnerSettings(mode: EvalRunMode): boolean {
-  return mode === 'capability' || mode === 'regression' || mode === 'all'
+  return (
+    mode === 'capability' ||
+    mode === 'regression' ||
+    mode === 'traffic-monitor' ||
+    mode === 'all'
+  )
 }
 
 function requiredSmokeSettings(

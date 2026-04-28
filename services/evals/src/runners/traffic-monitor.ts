@@ -11,6 +11,7 @@ import { createSafetyExperimentEvaluator } from '../evaluators/safety'
 import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
 import { type ChatSample, sampleRecentChats } from '../sampler'
+import type { EvalCase } from '../types'
 
 import {
   buildDatasetExamples,
@@ -22,7 +23,8 @@ import {
   checkExperimentThresholds,
   createDatasetAndExperiment,
   createJudgeModel,
-  logThresholdBreachWarning
+  logThresholdBreachWarning,
+  runCasesConcurrently
 } from './shared'
 
 export function formatContext(sample: ChatSample): string {
@@ -41,35 +43,40 @@ export async function runTrafficMonitorSuite() {
 
   console.log(`[evals] Sampled ${samples.length} chats`)
 
-  const cases = samples.map((sample, index) => ({
+  const cases: EvalCase[] = samples.map((sample, index) => ({
     id: `traffic-${index + 1}`,
-    suite: 'traffic-monitor' as const,
-    conversation: [
-      {
-        role: 'user' as const,
-        parts: [{ type: 'text' as const, text: sample.userQuery }]
-      }
-    ],
-    searchMode: 'chat' as const,
-    modelType: 'speed' as const,
-    tags: ['traffic-monitor'],
+    suite: 'traffic-monitor',
+    conversation: sample.conversation,
+    searchMode: sample.searchMode,
+    modelType: sample.modelType,
+    tags: ['traffic-monitor', ...sample.metadataTags],
     requiresTextAnswer: true,
     requiresCitations: sample.citations.length > 0,
     allowsInteractiveOnly: false,
     expectsRefusal: false
   }))
 
-  const results = samples.map(sample => ({
-    answerText: sample.modelAnswer,
-    citations: sample.citations,
-    searchResults: sample.searchResults,
-    toolNames: sample.toolNames,
-    usedInteractiveOnlyOutput: false,
-    modelId: '',
-    durationMs: 0
-  }))
+  console.log(
+    `[evals] Replaying ${cases.length} traffic samples through the runner...`
+  )
 
-  const examples = buildDatasetExamples(cases, results)
+  const { succeeded, failCount } = await runCasesConcurrently(cases)
+
+  if (succeeded.length === 0) {
+    throw new Error(
+      `[evals] All ${cases.length} traffic-monitor cases failed, aborting experiment`
+    )
+  }
+
+  if (failCount > 0) {
+    console.warn(
+      `[evals] ${failCount}/${cases.length} traffic-monitor cases failed, recording partial results`
+    )
+  }
+
+  const successCases = succeeded.map(s => s.caseSpec)
+  const successResults = succeeded.map(s => s.result)
+  const examples = buildDatasetExamples(successCases, successResults)
   const model = createJudgeModel()
   const evaluators = buildExperimentEvaluators({
     prechecks: createDeterministicPrecheckEvaluator,

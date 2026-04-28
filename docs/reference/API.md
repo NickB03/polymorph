@@ -750,7 +750,7 @@ Proxies image search results for use in canvas artifacts. Performs a Brave image
 
 ### POST `/api/evals/run`
 
-Runs an evaluation chat through the researcher agent pipeline. Used by the evals service to execute test conversations and capture agent output.
+Runs an evaluation chat through the researcher agent pipeline without creating or mutating persisted chat rows. Used by the evals service to replay test conversations, including sampled traffic-monitor target turns, and capture agent output. The `smoke` runner normally exercises `/api/chat` instead.
 
 **Authentication:** Required (`x-eval-runner-secret` header must match `EVAL_RUNNER_SECRET` env var)
 
@@ -759,7 +759,7 @@ Runs an evaluation chat through the researcher agent pipeline. Used by the evals
 ```typescript
 {
   caseId: string // Unique identifier for the eval case
-  suite: 'capability' | 'regression' | 'smoke'
+  suite: 'capability' | 'regression' | 'smoke' | 'traffic-monitor'
   conversation: Array<{
     // Message history to replay
     role: 'user' | 'assistant'
@@ -770,19 +770,35 @@ Runs an evaluation chat through the researcher agent pipeline. Used by the evals
 }
 ```
 
-| Field          | Type     | Required | Description                                             |
-| -------------- | -------- | -------- | ------------------------------------------------------- |
-| `caseId`       | `string` | Yes      | Identifier for the evaluation case.                     |
-| `suite`        | `string` | Yes      | Eval suite: `capability`, `regression`, or `smoke`.     |
-| `conversation` | `array`  | Yes      | Message array with `role` and `parts` for each message. |
-| `searchMode`   | `string` | Yes      | Agent mode: `chat` or `research`.                       |
-| `modelType`    | `string` | Yes      | Model tier: `speed` or `quality`.                       |
+| Field          | Type     | Required | Description                                                            |
+| -------------- | -------- | -------- | ---------------------------------------------------------------------- |
+| `caseId`       | `string` | Yes      | Identifier for the evaluation case.                                    |
+| `suite`        | `string` | Yes      | Eval suite: `capability`, `regression`, `smoke`, or `traffic-monitor`. |
+| `conversation` | `array`  | Yes      | Message array with `role` and `parts` for each message.                |
+| `searchMode`   | `string` | Yes      | Agent mode: `chat` or `research`.                                      |
+| `modelType`    | `string` | Yes      | Model tier: `speed` or `quality`.                                      |
 
 #### Response
 
 **Content-Type:** `application/json`
 
 Returns the eval chat result. Response is not cached (`Cache-Control: no-store`).
+
+```typescript
+{
+  answerText: string
+  citations: Array<{ url: string; title: string }>
+  searchResults: Array<{
+    query: string
+    results: Array<{ title: string; url: string; snippet: string }>
+  }>
+  toolNames: string[]
+  usedInteractiveOnlyOutput: boolean
+  modelId: string
+  traceId?: string
+  durationMs: number
+}
+```
 
 #### Error Responses
 

@@ -111,4 +111,42 @@ describe('POST /api/evals/run', () => {
       durationMs: 42
     })
   })
+
+  it('accepts traffic-monitor and forwards it to the no-persistence eval helper', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/evals/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-eval-runner-secret': 'test-secret'
+        },
+        body: JSON.stringify({
+          caseId: 'traffic-1',
+          suite: 'traffic-monitor',
+          conversation: [
+            {
+              role: 'user',
+              parts: [{ type: 'text', text: 'Summarize this sampled chat.' }]
+            }
+          ],
+          searchMode: 'chat',
+          modelType: 'speed'
+        })
+      })
+    )
+
+    expect(response.status).toBe(200)
+    expect(mockSelectModelForModeAndType).toHaveBeenCalledWith({
+      searchMode: 'chat',
+      modelType: 'speed'
+    })
+    expect(mockRunEvalChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        caseId: 'traffic-1',
+        suite: 'traffic-monitor',
+        searchMode: 'chat',
+        modelType: 'speed'
+      })
+    )
+  })
 })

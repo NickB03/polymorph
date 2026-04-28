@@ -117,14 +117,14 @@ export const TEMPLATE_A: EvalsLayoutTemplate = {
 export const TEMPLATE_B: EvalsLayoutTemplate = {
   id: 'b',
   name: 'Rehearsed vs. Real',
-  description: 'Two-column suite comparison + divergence banner',
+  description: 'Three-suite comparison + divergence banner',
   items: [
     {
       id: 'header',
       type: 'page-header',
       config: {
         title: 'Evals · Rehearsed vs. Real',
-        subtitle: 'bothSuites'
+        subtitle: 'allSuites'
       }
     },
     { id: 'divergence', type: 'divergence-banner', config: { topN: 3 } },
@@ -152,7 +152,7 @@ export const TEMPLATE_B: EvalsLayoutTemplate = {
       config: {
         suite: 'trafficMonitor',
         variant: 'column',
-        cadence: 'daily',
+        cadence: '48h cron/manual',
         showAlarmCount: true
       }
     },

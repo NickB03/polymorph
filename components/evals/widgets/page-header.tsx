@@ -4,7 +4,7 @@ import type { WidgetProps } from './shared/widget-props'
 
 type Config = {
   title?: string
-  subtitle?: 'lastSync' | 'bothSuites' | string
+  subtitle?: 'lastSync' | 'allSuites' | string
 }
 
 export function PageHeader({ data, config }: WidgetProps<Config>) {
@@ -29,14 +29,19 @@ function renderSubtitle(
     if (!iso) return null
     return `Last sync ${formatDistanceToNow(new Date(iso), { addSuffix: true })}`
   }
-  if (mode === 'bothSuites') {
+  if (mode === 'allSuites') {
     const c = data.capability.lastUpdated
+    const r = data.regression.lastUpdated
     const t = data.trafficMonitor.lastUpdated
-    if (!c && !t) return null
+    if (!c && !r && !t) return null
     const bits: string[] = []
     if (c)
       bits.push(
         `Capability ${formatDistanceToNow(new Date(c), { addSuffix: true })}`
+      )
+    if (r)
+      bits.push(
+        `Regression ${formatDistanceToNow(new Date(r), { addSuffix: true })}`
       )
     if (t)
       bits.push(

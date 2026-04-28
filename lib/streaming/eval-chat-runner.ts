@@ -12,7 +12,7 @@ import { createModelId } from '@/lib/utils'
 import { maybeTruncateMessages } from '@/lib/utils/context-window'
 import { flushTraces, isTracingEnabled } from '@/lib/utils/telemetry'
 
-type EvalSuite = 'capability' | 'regression' | 'smoke'
+type EvalSuite = 'capability' | 'regression' | 'smoke' | 'traffic-monitor'
 
 export interface EvalChatRunInput {
   caseId: string

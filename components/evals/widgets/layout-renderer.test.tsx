@@ -41,7 +41,7 @@ function emptyData(): EvalsDashboardData {
 }
 
 function snapshot(
-  suite: 'capability' | 'traffic-monitor'
+  suite: 'capability' | 'regression' | 'traffic-monitor'
 ): EvalSummarySnapshot {
   return {
     id: `${suite}-1`,
@@ -140,6 +140,44 @@ describe('LayoutRenderer', () => {
     )
     expect(
       container.querySelector('[data-widget-id="divergence"]')
+    ).not.toBeNull()
+  })
+
+  it('does not bypass the dashboard when only regression has data', () => {
+    const template = {
+      id: 'b' as const,
+      name: 'Test',
+      description: 'Test',
+      items: [
+        {
+          id: 'reg-header',
+          type: 'suite-header-card' as const,
+          config: { suite: 'regression' as const }
+        }
+      ],
+      layouts: {
+        lg: [{ i: 'reg-header', x: 0, y: 0, w: 12, h: 2 }],
+        md: [{ i: 'reg-header', x: 0, y: 0, w: 12, h: 2 }],
+        sm: [{ i: 'reg-header', x: 0, y: 0, w: 12, h: 2 }]
+      }
+    }
+    const data: EvalsDashboardData = {
+      ...emptyData(),
+      regression: {
+        latest: snapshot('regression'),
+        previous: null,
+        trend: [],
+        lastUpdated: null
+      }
+    }
+
+    const { container, queryByTestId } = render(
+      <LayoutRenderer template={template} data={data} />
+    )
+
+    expect(queryByTestId('evals-empty-state-bypass')).toBeNull()
+    expect(
+      container.querySelector('[data-widget-id="reg-header"]')
     ).not.toBeNull()
   })
 })
