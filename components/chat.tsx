@@ -53,6 +53,7 @@ import { ChatPanel } from './chat-panel'
 import { buildChatRequestBody, getLatestGuestCanvasToken } from './chat-request'
 import { DragOverlay } from './drag-overlay'
 import { ErrorModal } from './error-modal'
+import { PolymorphWordmark } from './polymorph-wordmark'
 
 const EMPTY_MESSAGES: UIMessage[] = []
 
@@ -870,59 +871,62 @@ export function Chat({
     <HydrationAnimationProvider initialPartIds={initialPartIds}>
       <div
         className={cn(
-          'relative flex h-full min-w-0 flex-1 flex-col transition-all duration-500 ease-out',
-          messages.length === 0
-            ? 'items-center justify-start pt-16 md:justify-center md:pt-[8vh] md:pb-0'
-            : ''
+          'relative flex h-full min-w-0 flex-1 flex-col transition-all duration-500 ease-out'
         )}
         data-testid="full-chat"
         onDragOver={dragHandlers.handleDragOver}
         onDragLeave={dragHandlers.handleDragLeave}
         onDrop={dragHandlers.handleDrop}
       >
-        <ChatMessages
-          sections={sections}
-          onQuerySelect={onQuerySelect}
-          status={status}
-          chatId={chatId}
-          isGuest={isGuest}
-          addToolResult={({
-            toolCallId,
-            result
-          }: {
-            toolCallId: string
-            result: any
-          }) => {
-            let toolName = 'unknown'
-            const matchedPart = messages
-              .flatMap(m => m.parts ?? [])
-              .find(
-                p =>
-                  (isToolCallPart(p) ||
-                    isToolTypePart(p) ||
-                    isDynamicToolPart(p)) &&
-                  p.toolCallId === toolCallId
-              )
-            if (matchedPart) {
-              if (
-                isToolCallPart(matchedPart) ||
-                isDynamicToolPart(matchedPart)
-              ) {
-                toolName = matchedPart.toolName
-              } else if (isToolTypePart(matchedPart)) {
-                toolName = matchedPart.type.substring(5) // Remove 'tool-' prefix
+        {messages.length === 0 ? (
+          <div className="flex flex-1 items-center justify-center px-4 pt-14 animate-in fade-in duration-500">
+            <PolymorphWordmark className="text-[2rem] md:text-[2.5rem]" />
+          </div>
+        ) : (
+          <ChatMessages
+            sections={sections}
+            onQuerySelect={onQuerySelect}
+            status={status}
+            chatId={chatId}
+            isGuest={isGuest}
+            addToolResult={({
+              toolCallId,
+              result
+            }: {
+              toolCallId: string
+              result: any
+            }) => {
+              let toolName = 'unknown'
+              const matchedPart = messages
+                .flatMap(m => m.parts ?? [])
+                .find(
+                  p =>
+                    (isToolCallPart(p) ||
+                      isToolTypePart(p) ||
+                      isDynamicToolPart(p)) &&
+                    p.toolCallId === toolCallId
+                )
+              if (matchedPart) {
+                if (
+                  isToolCallPart(matchedPart) ||
+                  isDynamicToolPart(matchedPart)
+                ) {
+                  toolName = matchedPart.toolName
+                } else if (isToolTypePart(matchedPart)) {
+                  toolName = matchedPart.type.substring(5) // Remove 'tool-' prefix
+                }
               }
-            }
 
-            addToolOutput({ tool: toolName, toolCallId, output: result })
-          }}
-          scrollContainerRef={scrollContainerRef}
-          onUpdateMessage={handleUpdateAndReloadMessage}
-          reload={handleReloadFrom}
-          error={error}
-          onCanvasArtifactClick={handleCanvasArtifactClick}
-          onLegacyArtifactClick={handleLegacyArtifactClick}
-        />
+              addToolOutput({ tool: toolName, toolCallId, output: result })
+            }}
+            scrollContainerRef={scrollContainerRef}
+            onUpdateMessage={handleUpdateAndReloadMessage}
+            reload={handleReloadFrom}
+            error={error}
+            onCanvasArtifactClick={handleCanvasArtifactClick}
+            onLegacyArtifactClick={handleLegacyArtifactClick}
+          />
+        )}
         <ChatPanel
           chatId={chatId}
           input={input}

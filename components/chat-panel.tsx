@@ -26,7 +26,6 @@ import { VoiceModeToggle } from './voice/voice-mode-toggle'
 import { ActionButtons } from './action-buttons'
 import { FileUploadButton, readFileAsDataUrl } from './file-upload-button'
 import { ModeSelector } from './mode-selector'
-import { PolymorphWordmark } from './polymorph-wordmark'
 import { UploadedFileList } from './uploaded-file-list'
 
 // Constants for timing delays
@@ -253,22 +252,10 @@ export function ChatPanel({
     <div
       className={cn(
         'w-full bg-background group/form-container shrink-0',
-        messages.length > 0
-          ? 'sticky bottom-0 px-2 pb-[max(1rem,env(safe-area-inset-bottom,0px))]'
-          : 'px-6'
+        'pb-[max(1rem,env(safe-area-inset-bottom,0px))]',
+        messages.length > 0 ? 'px-2' : 'px-2 sm:px-6'
       )}
     >
-      {/* Wordmark - always rendered, fades out when messages appear */}
-      <div
-        className={cn(
-          'transition-all duration-500 ease-out overflow-hidden',
-          messages.length === 0
-            ? 'mb-6 flex flex-col items-center gap-4 opacity-100 max-h-20 scale-100'
-            : 'mb-0 flex flex-col items-center gap-4 opacity-0 max-h-0 scale-95 pointer-events-none'
-        )}
-      >
-        <PolymorphWordmark className="text-[2rem] md:text-[2.5rem]" />
-      </div>
       {uploadedFiles.length > 0 && (
         <UploadedFileList files={uploadedFiles} onRemove={handleFileRemove} />
       )}
@@ -295,6 +282,36 @@ export function ChatPanel({
           >
             <ChevronDown size={16} />
           </Button>
+        )}
+
+        {/* Action buttons (categories / suggestions) — rendered above the input
+            so the composer stays anchored to the bottom edge on mobile. */}
+        {messages.length === 0 && (
+          <ActionButtons
+            promptSamples={suggestions}
+            canvasEnabled
+            onSelectPrompt={(message, category) => {
+              // Auto-switch to Research + Quality for research suggestions
+              if (category === 'research') {
+                syncSearchMode('research')
+                syncModelType('quality')
+              }
+              submitPromptValue(message)
+            }}
+            onBuildTemplateSelect={prompt => {
+              submitPromptValue(prompt)
+            }}
+            onCategoryClick={category => {
+              // Set the category in the input
+              handleInputChange({
+                target: { value: category }
+              } as React.ChangeEvent<HTMLTextAreaElement>)
+              // Focus the input
+              inputRef.current?.focus()
+            }}
+            inputRef={inputRef}
+            className="mb-2"
+          />
         )}
 
         <div
@@ -438,35 +455,6 @@ export function ChatPanel({
             </div>
           </div>
         </div>
-
-        {/* Action buttons for prompt suggestions */}
-        {messages.length === 0 && (
-          <ActionButtons
-            promptSamples={suggestions}
-            canvasEnabled
-            onSelectPrompt={(message, category) => {
-              // Auto-switch to Research + Quality for research suggestions
-              if (category === 'research') {
-                syncSearchMode('research')
-                syncModelType('quality')
-              }
-              submitPromptValue(message)
-            }}
-            onBuildTemplateSelect={prompt => {
-              submitPromptValue(prompt)
-            }}
-            onCategoryClick={category => {
-              // Set the category in the input
-              handleInputChange({
-                target: { value: category }
-              } as React.ChangeEvent<HTMLTextAreaElement>)
-              // Focus the input
-              inputRef.current?.focus()
-            }}
-            inputRef={inputRef}
-            className="mt-2"
-          />
-        )}
       </form>
     </div>
   )
