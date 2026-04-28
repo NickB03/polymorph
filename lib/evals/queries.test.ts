@@ -14,7 +14,8 @@ import {
   buildTrafficMonitorDashboardData,
   getEvalsDashboard,
   getEvalsDashboardWithLayout,
-  getPreferredEvalsLayout
+  getPreferredEvalsLayout,
+  toSnapshot
 } from './queries'
 
 const sampleRow = (
@@ -30,6 +31,8 @@ const sampleRow = (
   failedEvaluators: [],
   evaluatorScores: { faithfulness: 0.9, relevance: 0.8 },
   totalCases: 20,
+  attemptedCases: 20,
+  failedCases: 0,
   phoenixUrl: 'https://phoenix.example.com/1',
   createdAt: new Date('2026-04-09T12:00:00.000Z'),
   ...overrides
@@ -95,6 +98,8 @@ describe('buildCapabilityDashboardData', () => {
         faithfulness: null as unknown as number
       },
       totalCases: 1,
+      attemptedCases: 1,
+      failedCases: 0,
       phoenixUrl: null,
       createdAt: new Date('2026-04-22T00:00:00Z')
     }
@@ -119,6 +124,8 @@ describe('buildCapabilityDashboardData', () => {
         faithfulness: null as unknown as number
       },
       totalCases: 1,
+      attemptedCases: 1,
+      failedCases: 1,
       phoenixUrl: null,
       createdAt: new Date('2026-04-22T00:00:00Z')
     }
@@ -126,6 +133,29 @@ describe('buildCapabilityDashboardData', () => {
     const data = buildCapabilityDashboardData([row])
 
     expect(data.latest?.overallScore).toBe(0)
+  })
+
+  it('surfaces attempted/failed/dropRate on the snapshot', () => {
+    const row: EvalSummaryRow = {
+      id: 'r-1',
+      suite: 'traffic-monitor',
+      experimentName: 'exp',
+      datasetName: 'ds',
+      passRateBps: 9000,
+      thresholdBps: 8000,
+      thresholdBreached: false,
+      failedEvaluators: [],
+      evaluatorScores: { faithfulness: 0.9 },
+      totalCases: 7,
+      attemptedCases: 10,
+      failedCases: 3,
+      phoenixUrl: null,
+      createdAt: new Date('2026-04-28T00:00:00Z')
+    }
+    const snapshot = toSnapshot(row)
+    expect(snapshot.attemptedCases).toBe(10)
+    expect(snapshot.failedCases).toBe(3)
+    expect(snapshot.dropRate).toBeCloseTo(0.3, 5)
   })
 })
 

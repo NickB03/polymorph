@@ -55,6 +55,9 @@ function snapshot(
     overallScore: 0.9,
     evaluatorScores: { faithfulness: 0.9 },
     totalCases: 10,
+    attemptedCases: 10,
+    failedCases: 0,
+    dropRate: 0,
     phoenixUrl: null,
     createdAt: new Date().toISOString()
   }

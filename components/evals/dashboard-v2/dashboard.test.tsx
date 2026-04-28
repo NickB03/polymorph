@@ -58,6 +58,9 @@ function makeSnapshot(suite: 'capability' | 'regression' | 'traffic-monitor') {
       citation_accuracy: 0.86
     },
     totalCases: 12,
+    attemptedCases: 12,
+    failedCases: 0,
+    dropRate: 0,
     phoenixUrl: 'https://phoenix.example.com/experiment/abc',
     createdAt: '2026-04-14T10:00:00Z'
   }

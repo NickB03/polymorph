@@ -21,6 +21,9 @@ export interface EvalSummarySnapshot {
   overallScore: number
   evaluatorScores: Record<string, number | null>
   totalCases: number
+  attemptedCases: number
+  failedCases: number
+  dropRate: number
   phoenixUrl: string | null
   createdAt: string
 }
@@ -52,6 +55,8 @@ export interface EvalSummaryRow {
   failedEvaluators: string[]
   evaluatorScores: Record<string, number | null>
   totalCases: number
+  attemptedCases: number
+  failedCases: number
   phoenixUrl: string | null
   createdAt: Date
 }

@@ -21,6 +21,9 @@ function snap(
     overallScore,
     evaluatorScores: {},
     totalCases: 10,
+    attemptedCases: 10,
+    failedCases: 0,
+    dropRate: 0,
     phoenixUrl: null,
     createdAt
   }

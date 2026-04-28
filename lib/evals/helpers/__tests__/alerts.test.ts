@@ -22,6 +22,9 @@ function snapshot(
     overallScore: 0.8,
     evaluatorScores: { faithfulness: 0.8 },
     totalCases: 10,
+    attemptedCases: 10,
+    failedCases: 0,
+    dropRate: 0,
     phoenixUrl: null,
     createdAt,
     ...overrides

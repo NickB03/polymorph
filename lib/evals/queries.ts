@@ -29,7 +29,7 @@ function computeOverallScore(
   return scored.reduce((total, value) => total + value, 0) / scored.length
 }
 
-function toSnapshot(row: EvalSummaryRow): EvalSummarySnapshot {
+export function toSnapshot(row: EvalSummaryRow): EvalSummarySnapshot {
   return {
     id: row.id,
     suite: row.suite,
@@ -42,6 +42,9 @@ function toSnapshot(row: EvalSummaryRow): EvalSummarySnapshot {
     overallScore: computeOverallScore(row.evaluatorScores),
     evaluatorScores: row.evaluatorScores,
     totalCases: row.totalCases,
+    attemptedCases: row.attemptedCases,
+    failedCases: row.failedCases,
+    dropRate: row.attemptedCases > 0 ? row.failedCases / row.attemptedCases : 0,
     phoenixUrl: row.phoenixUrl,
     createdAt: row.createdAt.toISOString()
   }
@@ -92,6 +95,8 @@ async function selectSuiteRows(
       failedEvaluators: evalSummaries.failedEvaluators,
       evaluatorScores: evalSummaries.evaluatorScores,
       totalCases: evalSummaries.totalCases,
+      attemptedCases: evalSummaries.attemptedCases,
+      failedCases: evalSummaries.failedCases,
       phoenixUrl: evalSummaries.phoenixUrl,
       createdAt: evalSummaries.createdAt
     })

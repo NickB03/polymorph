@@ -20,6 +20,9 @@ function snap(
     failedEvaluators: [],
     overallScore: 0.9,
     totalCases: 10,
+    attemptedCases: 10,
+    failedCases: 0,
+    dropRate: 0,
     phoenixUrl: null,
     createdAt: '2026-04-14T10:00:00Z',
     ...overrides
