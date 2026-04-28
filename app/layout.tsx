@@ -27,6 +27,24 @@ export const viewport: Viewport = {
   viewportFit: 'cover'
 }
 
+// Tracks the actual visible viewport height so mobile browsers (especially iOS
+// Safari) keep the chat composer above the soft keyboard. CSS `dvh` covers the
+// URL-bar case but does not shrink for the keyboard on iOS; visualViewport does.
+const setAppHeightScript = `(function(){
+  var d=document.documentElement;
+  function set(){
+    var h=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+    d.style.setProperty('--app-height',h+'px');
+  }
+  set();
+  window.addEventListener('resize',set);
+  window.addEventListener('orientationchange',set);
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize',set);
+    window.visualViewport.addEventListener('scroll',set);
+  }
+})();`
+
 export default function RootLayout({
   children
 }: Readonly<{
@@ -34,9 +52,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: setAppHeightScript }} />
+      </head>
       <body
         className={cn(
-          'min-h-screen flex flex-col font-sans antialiased overflow-hidden pb-safe',
+          'h-app flex flex-col font-sans antialiased overflow-hidden pb-safe',
           fontSans.variable
         )}
       >

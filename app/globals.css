@@ -754,6 +754,12 @@
   }
 }
 
+/* Visible-viewport height. Falls back to 100dvh (then 100vh) when the
+   --app-height variable is not yet set by the inline script in layout.tsx. */
+@utility h-app {
+  height: var(--app-height, 100dvh);
+}
+
 /* Safe area utilities for notch/Dynamic Island devices */
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);

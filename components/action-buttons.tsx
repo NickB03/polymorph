@@ -158,8 +158,8 @@ export function ActionButtons({
   const isSuggestionActive = activeView !== null && activeView !== 'build'
 
   const containerHeight = isBuildActive
-    ? 'min-h-[180px] h-auto sm:h-[220px]'
-    : 'min-h-[180px] h-auto sm:h-[180px]'
+    ? 'min-h-[140px] h-auto sm:min-h-[180px] sm:h-[220px]'
+    : 'min-h-[140px] h-auto sm:min-h-[180px] sm:h-[180px]'
 
   // Total number of pills for stagger animation
   const buildPillIndex = actionCategories.length

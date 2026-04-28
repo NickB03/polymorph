@@ -872,7 +872,7 @@ export function Chat({
         className={cn(
           'relative flex h-full min-w-0 flex-1 flex-col transition-all duration-500 ease-out',
           messages.length === 0
-            ? 'items-center justify-center pt-[10vh] md:pt-[8vh] md:pb-0'
+            ? 'items-center justify-start pt-16 md:justify-center md:pt-[8vh] md:pb-0'
             : ''
         )}
         data-testid="full-chat"
