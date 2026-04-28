@@ -16,7 +16,8 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 - **Storage:** Supabase Storage
 - **Caching/Rate Limiting:** Upstash Redis
 - **Search:** Brave (primary), Tavily (fallback), Exa, SearXNG, Firecrawl
-- **AI Providers:** Google (Gemini image/eval models), xAI (Grok 4.1 Fast Non-Reasoning / Reasoning) via Vercel AI Gateway
+- **App AI Providers:** xAI Grok defaults and Google Gemini image generation via Vercel AI Gateway
+- **Evals Judge Provider:** OpenRouter-backed `google/gemini-3.1-flash-lite-preview` in `services/evals`
 - **Styling:** Tailwind CSS v4 + shadcn/ui
 - **Testing:** Vitest
 - **Tracing:** Arize Phoenix
@@ -87,6 +88,7 @@ Offline evaluation pipeline (`services/evals/`) running as a Railway cron servic
 
 - **Sampler** (`services/evals/src/sampler.ts`): Queries recent chats from Supabase Postgres using parameterized SQL with safe `parseCitations()` JSON parsing
 - **Evaluators** (`services/evals/src/evaluators/`): Five LLM-judge evaluators (faithfulness, relevance, response quality, safety, citation accuracy) built with a shared factory pattern (`create-evaluator.ts`). Shared `extractVerdict()` uses word-boundary matching to prevent substring false positives
+- **Judge model** (`services/evals/src/judge-model.ts`): Uses the OpenRouter provider with `JUDGE_MODEL` defaulting to `google/gemini-3.1-flash-lite-preview`
 - **Config** (`services/evals/src/config.ts`): NaN-safe `validInt()` parsing for `SAMPLE_SIZE` and `LOOKBACK_HOURS`
 - **Robustness**: `closeDb()` guaranteed on all exit paths; `withRetry()` validates `maxAttempts >= 1`
 
@@ -139,7 +141,8 @@ Strict import sorting via `simple-import-sort`:
 See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 
 - `DATABASE_URL` — PostgreSQL connection
-- `AI_GATEWAY_API_KEY` — Vercel AI Gateway (primary model provider)
+- `AI_GATEWAY_API_KEY` — Vercel AI Gateway for app chat/canvas/image model calls
+- `JUDGE_API_KEY` — OpenRouter key for offline eval judge calls in `services/evals`
 - `BRAVE_SEARCH_API_KEY` — search (Brave is default provider)
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase
 - `DATABASE_SSL_DISABLED=true` — for local dev with Supabase CLI
