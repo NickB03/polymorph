@@ -513,7 +513,9 @@ function mapRowToSample(row: ChatSampleRow): ChatSample {
       : 'chat'
   const modelType = isModelType(userMetadata.modelType)
     ? userMetadata.modelType
-    : 'speed'
+    : isModelType(assistantMetadata.modelType)
+      ? assistantMetadata.modelType
+      : 'speed'
   const metadataTags = rawUserMode
     ? [`user-mode:${rawUserMode}`]
     : ['mode_metadata_missing']

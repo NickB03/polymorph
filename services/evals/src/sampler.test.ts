@@ -370,6 +370,42 @@ describe('sampleRecentChats', () => {
     expect(samples[0].metadataTags).toContain('user-mode:build')
   })
 
+  it('reads modelType from assistant metadata when user metadata omits it', async () => {
+    mockDbExecute.mockResolvedValueOnce([
+      {
+        chat_id: 'chat-assistant-modeltype',
+        created_at: new Date('2026-04-28T00:00:00Z'),
+        target_user_message_id: 'user-1',
+        target_assistant_message_id: 'assistant-1',
+        conversation_messages: [
+          {
+            id: 'user-1',
+            role: 'user',
+            createdAt: '2026-04-28T00:00:00Z',
+            uiMessage: null,
+            metadata: { userMode: 'search' },
+            textParts: [{ type: 'text', text: 'hello' }]
+          }
+        ],
+        target_assistant_message: {
+          id: 'assistant-1',
+          role: 'assistant',
+          createdAt: '2026-04-28T00:00:01Z',
+          uiMessage: null,
+          metadata: { modelType: 'quality', modelId: 'openrouter:x/y' },
+          textParts: [{ type: 'text', text: 'hi' }]
+        },
+        target_search_results: null,
+        target_citations: null,
+        target_tool_names: null
+      }
+    ])
+
+    const samples = await sampleRecentChats()
+
+    expect(samples[0].modelType).toBe('quality')
+  })
+
   it('dedupes search results when ui_message and legacy parts carry the same payload', async () => {
     const sharedSearchOutput = {
       query: 'shared query',
