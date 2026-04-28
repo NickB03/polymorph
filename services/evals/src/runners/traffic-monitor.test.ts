@@ -34,7 +34,9 @@ const mockBuildSuiteRunResult = vi.hoisted(() =>
       experimentName,
       datasetName,
       phoenixUrl,
-      totalCases
+      totalCases,
+      attemptedCases,
+      failedCases
     }) => ({
       suite,
       status: thresholds.passed ? 'passed' : 'threshold_breached',
@@ -44,7 +46,9 @@ const mockBuildSuiteRunResult = vi.hoisted(() =>
       experimentName,
       datasetName,
       phoenixUrl,
-      totalCases
+      totalCases,
+      attemptedCases,
+      failedCases
     })
   )
 )
@@ -458,6 +462,35 @@ describe('runTrafficMonitorSuite', () => {
       expect.objectContaining({
         suite: 'traffic-monitor',
         status: 'threshold_breached'
+      })
+    )
+  })
+
+  it('persists attempted and failed case counts', async () => {
+    const succeededCase = replayedCase
+    mockSampleRecentChats.mockResolvedValueOnce([
+      sampleChat,
+      { ...sampleChat, chatId: 'chat-2' },
+      { ...sampleChat, chatId: 'chat-3' }
+    ])
+    mockRunCasesConcurrently.mockResolvedValueOnce({
+      succeeded: [{ caseSpec: succeededCase, result: replayedResult }],
+      failCount: 2
+    })
+    mockBuildDatasetExamples.mockReturnValueOnce([
+      { input: {}, output: {}, metadata: {} }
+    ])
+    mockCreateDatasetAndExperiment.mockResolvedValueOnce(datasetResult)
+
+    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
+    await runTrafficMonitorSuite()
+
+    expect(mockPersistEvalSummary).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        totalCases: 1,
+        attemptedCases: 3,
+        failedCases: 2
       })
     )
   })

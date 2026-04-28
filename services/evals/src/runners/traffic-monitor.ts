@@ -141,7 +141,9 @@ export async function runTrafficMonitorSuite() {
     experimentName,
     datasetName,
     phoenixUrl,
-    totalCases: examples.length
+    totalCases: examples.length,
+    attemptedCases: cases.length,
+    failedCases: failCount
   })
 
   if (result.status === 'threshold_breached') {
@@ -161,6 +163,8 @@ export async function runTrafficMonitorSuite() {
         failedEvaluators: result.failedEvaluators,
         experiment,
         totalCases: result.totalCases,
+        attemptedCases: result.attemptedCases,
+        failedCases: result.failedCases,
         phoenixUrl
       }
     )

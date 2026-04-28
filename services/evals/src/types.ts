@@ -18,6 +18,8 @@ export interface SuiteRunResult {
   datasetName: string
   phoenixUrl: string | null
   totalCases: number
+  attemptedCases: number
+  failedCases: number
 }
 
 export type EvalRunMode =

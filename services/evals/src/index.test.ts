@@ -244,7 +244,9 @@ describe('main lifecycle', () => {
         experimentName: 'exp-1',
         datasetName: 'ds-1',
         phoenixUrl: null,
-        totalCases: 12
+        totalCases: 12,
+        attemptedCases: 12,
+        failedCases: 0
       }
     ] satisfies Array<import('./types').SuiteRunResult>)
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})

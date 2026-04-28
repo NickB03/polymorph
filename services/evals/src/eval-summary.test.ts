@@ -72,6 +72,8 @@ describe('persistEvalSummary', () => {
         ]
       } as never,
       totalCases: 8,
+      attemptedCases: 8,
+      failedCases: 0,
       phoenixUrl: 'https://phoenix.example.com/exp-1'
     })
 
@@ -103,6 +105,8 @@ describe('persistEvalSummary traffic-monitor support', () => {
         ]
       } as never,
       totalCases: 25,
+      attemptedCases: 25,
+      failedCases: 0,
       phoenixUrl: 'https://phoenix.example.com/traffic-exp-1'
     })
 
