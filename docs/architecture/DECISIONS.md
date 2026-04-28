@@ -24,7 +24,7 @@ This document records the foundational architecture decisions for Polymorph.
 ## 3) AI Model Orchestration
 
 - **Primary Interface**: Vercel AI Gateway (`AI_GATEWAY_API_KEY`)
-- **Default Models**: Gemini 3 Flash (Speed), Grok 4.1 Fast Reasoning (Quality) — see [`config/models/default.json`](../../config/models/default.json)
+- **Default Models**: Grok 4.1 Fast Non-Reasoning (Speed), Grok 4.1 Fast Reasoning (Quality) — see [`config/models/default.json`](../../config/models/default.json)
 - **Image Generation**: `gateway:google/gemini-2.5-flash-image` via the same Gateway interface (see `lib/tools/generate-image.ts`)
 
 ## 4) Storage Strategy

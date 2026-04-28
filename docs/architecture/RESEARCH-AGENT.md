@@ -124,7 +124,7 @@ flowchart TD
 
 2. **Authentication & Rate Limiting**: The API route authenticates the user via Supabase. Guest users are rate-limited by IP (Upstash Redis); authenticated users by overall chat limits.
 
-3. **Model Selection**: `selectModel()` reads cookie preferences for model type (`speed` or `quality`) and search mode (`chat` or `research`), looks up the model in `config/models/*.json`, and verifies the provider is enabled (API key present). Falls back to Gemini 3 Flash via Gateway.
+3. **Model Selection**: `selectModel()` reads cookie preferences for model type (`speed` or `quality`) and search mode (`chat` or `research`), looks up the model in `config/models/*.json`, and verifies the provider is enabled (API key present). Falls back to Grok 4.1 Fast Non-Reasoning via Gateway.
 
 4. **Stream Dispatch**: Authenticated users go through `createChatStreamResponse` (with DB persistence and title generation); guests go through `createEphemeralChatStreamResponse` (stateless).
 
@@ -549,7 +549,7 @@ flowchart TD
     Enabled{"Provider enabled?<br/>(API key present)"}
     Return["Return model"]
     Next["Next candidate"]
-    Default["Return DEFAULT_MODEL<br/>(Gemini 3 Flash via Gateway)"]
+    Default["Return DEFAULT_MODEL<br/>(Grok 4.1 Fast Non-Reasoning via Gateway)"]
 
     Start --> ReadType --> ReadMode --> BuildOrder --> Loop
     Loop --> LoadJSON --> Found
@@ -564,12 +564,12 @@ flowchart TD
 
 From `config/models/default.json`:
 
-| Mode     | Type    | Model                         | Provider |
-| -------- | ------- | ----------------------------- | -------- |
-| Chat     | Speed   | `google/gemini-3-flash`       | Gateway  |
-| Chat     | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
-| Research | Speed   | `google/gemini-3-flash`       | Gateway  |
-| Research | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
+| Mode     | Type    | Model                             | Provider |
+| -------- | ------- | --------------------------------- | -------- |
+| Chat     | Speed   | `xai/grok-4.1-fast-non-reasoning` | Gateway  |
+| Chat     | Quality | `xai/grok-4.1-fast-reasoning`     | Gateway  |
+| Research | Speed   | `xai/grok-4.1-fast-non-reasoning` | Gateway  |
+| Research | Quality | `xai/grok-4.1-fast-reasoning`     | Gateway  |
 
 ### Provider Registry
 
@@ -727,7 +727,7 @@ Generates a 3-5 word chat title from the user's first message. Runs in parallel 
 Generates 3 concise follow-up questions after the main agent completes. Streams results incrementally.
 
 - Uses `streamText` with `Output.array` for structured output
-- Model: configured via `getRelatedQuestionsModel()` (default: Gemini 3 Flash)
+- Model: configured via `getRelatedQuestionsModel()` (default: Grok 4.1 Fast Non-Reasoning)
 - Receives the last user message + all response messages as context
 - Validated against `relatedQuestionSchema` (Zod)
 - Questions must be 10-12 words max, unique angles, in the user's language

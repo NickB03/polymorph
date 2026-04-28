@@ -7,8 +7,8 @@ import { SearchMode } from '@/lib/types/search'
 import { isProviderEnabled } from '@/lib/utils/registry'
 
 const DEFAULT_MODEL: Model = {
-  id: 'xai/grok-4.1-fast',
-  name: 'Grok 4.1 Fast',
+  id: 'xai/grok-4.1-fast-non-reasoning',
+  name: 'Grok 4.1 Fast Non-Reasoning',
   provider: 'xAI',
   providerId: 'gateway'
 }

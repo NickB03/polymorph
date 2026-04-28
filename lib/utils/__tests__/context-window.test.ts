@@ -42,10 +42,10 @@ describe('context-window', () => {
       expect(maxTokens).toBe(10650)
     })
 
-    test('resolves prefixed gateway ids (e.g. xai/grok-4.1-fast)', () => {
+    test('resolves prefixed gateway ids (e.g. xai/grok-4.1-fast-non-reasoning)', () => {
       const grokFast: Model = {
-        id: 'xai/grok-4.1-fast',
-        name: 'Grok 4.1 Fast',
+        id: 'xai/grok-4.1-fast-non-reasoning',
+        name: 'Grok 4.1 Fast Non-Reasoning',
         provider: 'xAI',
         providerId: 'gateway'
       }

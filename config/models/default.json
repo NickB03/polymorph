@@ -4,8 +4,8 @@
     "byMode": {
       "chat": {
         "speed": {
-          "id": "xai/grok-4.1-fast",
-          "name": "Grok 4.1 Fast",
+          "id": "xai/grok-4.1-fast-non-reasoning",
+          "name": "Grok 4.1 Fast Non-Reasoning",
           "provider": "xAI",
           "providerId": "gateway"
         },
@@ -18,8 +18,8 @@
       },
       "research": {
         "speed": {
-          "id": "xai/grok-4.1-fast",
-          "name": "Grok 4.1 Fast",
+          "id": "xai/grok-4.1-fast-non-reasoning",
+          "name": "Grok 4.1 Fast Non-Reasoning",
           "provider": "xAI",
           "providerId": "gateway"
         },
@@ -32,14 +32,14 @@
       }
     },
     "relatedQuestions": {
-      "id": "xai/grok-4.1-fast",
-      "name": "Grok 4.1 Fast",
+      "id": "xai/grok-4.1-fast-non-reasoning",
+      "name": "Grok 4.1 Fast Non-Reasoning",
       "provider": "xAI",
       "providerId": "gateway"
     },
     "trendingSuggestions": {
-      "id": "xai/grok-4.1-fast",
-      "name": "Grok 4.1 Fast",
+      "id": "xai/grok-4.1-fast-non-reasoning",
+      "name": "Grok 4.1 Fast Non-Reasoning",
       "provider": "xAI",
       "providerId": "gateway"
     }
