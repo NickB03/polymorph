@@ -495,6 +495,38 @@ describe('runTrafficMonitorSuite', () => {
     )
   })
 
+  it('marks the run threshold_breached when drop rate exceeds 50%', async () => {
+    mockSampleRecentChats.mockResolvedValueOnce([
+      sampleChat,
+      { ...sampleChat, chatId: 'chat-2' },
+      { ...sampleChat, chatId: 'chat-3' },
+      { ...sampleChat, chatId: 'chat-4' }
+    ])
+    // 1 success, 3 failures = 75% drop rate
+    mockRunCasesConcurrently.mockResolvedValueOnce({
+      succeeded: [{ caseSpec: replayedCase, result: replayedResult }],
+      failCount: 3
+    })
+    mockBuildDatasetExamples.mockReturnValueOnce([
+      { input: {}, output: {}, metadata: {} }
+    ])
+    mockCreateDatasetAndExperiment.mockResolvedValueOnce(datasetResult)
+    // Evaluator scoring "passes" — we want drop-rate alone to trip threshold
+    mockCheckExperimentThresholds.mockReturnValueOnce({
+      passed: true,
+      passRate: 1,
+      totalEvaluations: 1,
+      passedEvaluations: 1,
+      failedEvaluators: []
+    })
+
+    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
+    const result = await runTrafficMonitorSuite()
+
+    expect(result.status).toBe('threshold_breached')
+    expect(result.failedEvaluators).toContain('replay-drop-rate')
+  })
+
   it('fails when no chats are sampled so the run is treated as incomplete', async () => {
     mockSampleRecentChats.mockResolvedValueOnce([])
 
