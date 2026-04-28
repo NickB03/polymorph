@@ -29,6 +29,10 @@ const MODEL_CONTEXT_WINDOWS: Record<string, ModelContextInfo> = {
   'gemini-2.5-pro': { contextWindow: 1048576, outputTokens: 65536 },
 
   // xAI Models
+  'grok-4.1-fast-non-reasoning': {
+    contextWindow: 2097152,
+    outputTokens: 65536
+  },
   'grok-4.1-fast-reasoning': { contextWindow: 1048576, outputTokens: 65536 },
   'grok-4-0709': { contextWindow: 256000, outputTokens: 8192 },
   'grok-3': { contextWindow: 131072, outputTokens: 8192 },
@@ -60,19 +64,27 @@ const MODEL_TO_ENCODING: Record<string, TiktokenEncoding> = {
   'gemini-3-flash': 'cl100k_base',
   'gemini-2.5-flash': 'cl100k_base', // Use GPT-4 tokenizer as approximation for Gemini
   'gemini-2.5-pro': 'cl100k_base',
+  'grok-4.1-fast-non-reasoning': 'cl100k_base',
   'grok-4.1-fast-reasoning': 'cl100k_base',
   'grok-4-0709': 'cl100k_base', // Use GPT-4 tokenizer as approximation for Grok
   'grok-3': 'cl100k_base',
   'grok-3-mini': 'cl100k_base'
 }
 
+// Model ids in config carry a provider prefix
+// (e.g. "xai/grok-4.1-fast-non-reasoning") but the lookup tables here are
+// keyed unprefixed. Strip the segment before "/".
+function stripProviderPrefix(modelId: string): string {
+  const slash = modelId.indexOf('/')
+  return slash >= 0 ? modelId.slice(slash + 1) : modelId
+}
+
 /**
  * Get model-specific context window information
  */
 function getModelContextInfo(modelId: string): ModelContextInfo {
-  // Direct lookup only
   return (
-    MODEL_CONTEXT_WINDOWS[modelId] || {
+    MODEL_CONTEXT_WINDOWS[stripProviderPrefix(modelId)] || {
       contextWindow: DEFAULT_CONTEXT_WINDOW,
       outputTokens: DEFAULT_OUTPUT_TOKENS
     }
@@ -129,7 +141,7 @@ function extractTextContent(content: ModelMessage['content']): string {
 function getEncoder(modelId: string) {
   try {
     const encodingName: TiktokenEncoding =
-      MODEL_TO_ENCODING[modelId] || 'cl100k_base'
+      MODEL_TO_ENCODING[stripProviderPrefix(modelId)] || 'cl100k_base'
 
     if (!encoderCache.has(encodingName)) {
       const encoder = getEncoding(encodingName)

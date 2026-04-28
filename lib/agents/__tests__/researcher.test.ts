@@ -97,7 +97,8 @@ vi.mock('@/lib/tools/todo', () => ({
   })
 }))
 vi.mock('@/lib/utils/registry', () => ({
-  getModel: vi.fn().mockReturnValue('mock-model')
+  getModel: vi.fn().mockReturnValue('mock-model'),
+  isProviderEnabled: vi.fn().mockReturnValue(true)
 }))
 vi.mock('@/lib/utils/telemetry', () => ({
   isTracingEnabled: vi.fn().mockReturnValue(false)

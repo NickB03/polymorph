@@ -152,7 +152,7 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
    - Check if the model's provider is enabled via `isProviderEnabled(providerId)`
    - If both succeed, return that model immediately
 
-5. **Fallback** — If no candidate succeeds (all providers disabled, or config loading fails), return the hardcoded `DEFAULT_MODEL` (Gemini 3 Flash via Gateway).
+5. **Fallback** — If no candidate succeeds (all providers disabled, or config loading fails), return the hardcoded `DEFAULT_MODEL` (Grok 4.1 Fast Non-Reasoning via Gateway).
 
 **Cloud deployment:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag selects the `cloud.json` config profile instead of `default.json`. The legacy `VANA_CLOUD_DEPLOYMENT` alias is also accepted. This does not force a specific model type.
 
@@ -164,11 +164,11 @@ For a request with `searchMode=chat` and `modelType=quality`, the candidates are
 2. `chat` + `speed` (fallback type)
 3. `research` + `quality` (fallback mode)
 4. `research` + `speed` (fallback mode + type)
-5. `DEFAULT_MODEL` (hardcoded Gemini 3 Flash)
+5. `DEFAULT_MODEL` (hardcoded Grok 4.1 Fast Non-Reasoning)
 
 ### Example scenarios
 
-**Default local development** — User has `modelType=speed`, `searchMode=chat`. Lookup finds `chat/speed` -> `google/gemini-3-flash` via `gateway`. `AI_GATEWAY_API_KEY` is set, so the provider is enabled. Result: Gemini 3 Flash.
+**Default local development** — User has `modelType=speed`, `searchMode=chat`. Lookup finds `chat/speed` -> `xai/grok-4.1-fast-non-reasoning` via `gateway`. `AI_GATEWAY_API_KEY` is set, so the provider is enabled. Result: Grok 4.1 Fast Non-Reasoning.
 
 **Quality preference** — User has `modelType=quality`, `searchMode=chat`. Lookup finds `chat/quality` -> `xai/grok-4.1-fast-reasoning` via `gateway`. Provider is enabled. Result: Grok 4.1 Fast Reasoning.
 
@@ -197,22 +197,22 @@ The `getModel(modelString)` function takes a `providerId:modelId` string and ret
 
 The current default configuration (`config/models/default.json`):
 
-| Mode                 | Type    | Model                   | Provider |
-| -------------------- | ------- | ----------------------- | -------- |
-| Chat                 | Speed   | Gemini 3 Flash          | Gateway  |
-| Chat                 | Quality | Grok 4.1 Fast Reasoning | Gateway  |
-| Research             | Speed   | Gemini 3 Flash          | Gateway  |
-| Research             | Quality | Grok 4.1 Fast Reasoning | Gateway  |
-| Related Questions    | -       | Gemini 3 Flash          | Gateway  |
-| Trending Suggestions | -       | Gemini 3 Flash          | Gateway  |
+| Mode                 | Type    | Model                       | Provider |
+| -------------------- | ------- | --------------------------- | -------- |
+| Chat                 | Speed   | Grok 4.1 Fast Non-Reasoning | Gateway  |
+| Chat                 | Quality | Grok 4.1 Fast Reasoning     | Gateway  |
+| Research             | Speed   | Grok 4.1 Fast Non-Reasoning | Gateway  |
+| Research             | Quality | Grok 4.1 Fast Reasoning     | Gateway  |
+| Related Questions    | -       | Grok 4.1 Fast Non-Reasoning | Gateway  |
+| Trending Suggestions | -       | Grok 4.1 Fast Non-Reasoning | Gateway  |
 
 The hardcoded `DEFAULT_MODEL` fallback (used when all config models fail):
 
 ```typescript
 const DEFAULT_MODEL: Model = {
-  id: 'google/gemini-3-flash',
-  name: 'Gemini 3 Flash',
-  provider: 'Google',
+  id: 'xai/grok-4.1-fast-non-reasoning',
+  name: 'Grok 4.1 Fast Non-Reasoning',
+  provider: 'xAI',
   providerId: 'gateway'
 }
 ```

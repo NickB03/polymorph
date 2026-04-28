@@ -642,7 +642,7 @@ flowchart TD
     ProviderEnabled{"isProviderEnabled()<br/>API key present?"}
     ReturnModel["Return model"]
     NextCandidate["Try next candidate"]
-    DefaultModel["Return DEFAULT_MODEL<br/>(Gemini 3 Flash via Gateway)"]
+    DefaultModel["Return DEFAULT_MODEL<br/>(Grok 4.1 Fast Non-Reasoning via Gateway)"]
 
     subgraph ConfigFiles["Configuration Files"]
         DefaultJSON["default.json<br/>(standard deployment)"]
@@ -677,13 +677,13 @@ flowchart TD
 
 From [`config/models/default.json`](../../config/models/default.json):
 
-| Mode              | Type    | Model                         | Provider |
-| ----------------- | ------- | ----------------------------- | -------- |
-| Chat              | Speed   | `google/gemini-3-flash`       | Gateway  |
-| Chat              | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
-| Research          | Speed   | `google/gemini-3-flash`       | Gateway  |
-| Research          | Quality | `xai/grok-4.1-fast-reasoning` | Gateway  |
-| Related Questions | --      | `google/gemini-3-flash`       | Gateway  |
+| Mode              | Type    | Model                             | Provider |
+| ----------------- | ------- | --------------------------------- | -------- |
+| Chat              | Speed   | `xai/grok-4.1-fast-non-reasoning` | Gateway  |
+| Chat              | Quality | `xai/grok-4.1-fast-reasoning`     | Gateway  |
+| Research          | Speed   | `xai/grok-4.1-fast-non-reasoning` | Gateway  |
+| Research          | Quality | `xai/grok-4.1-fast-reasoning`     | Gateway  |
+| Related Questions | --      | `xai/grok-4.1-fast-non-reasoning` | Gateway  |
 
 **Cloud deployment behavior:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag controls config profile selection (uses `cloud.json` instead of `default.json`), rate limiting enforcement, and analytics event tracking.
 

@@ -5,6 +5,8 @@ import { createSearchTool } from '@/lib/tools/search/server'
 import type { ModelType } from '@/lib/types/model-type'
 import type { Model } from '@/lib/types/models'
 import type { SearchMode, UserMode } from '@/lib/types/search'
+import { createModelId } from '@/lib/utils'
+import { selectModelForModeAndType } from '@/lib/utils/model-selection'
 import { getModel } from '@/lib/utils/registry'
 import { isTracingEnabled } from '@/lib/utils/telemetry'
 
@@ -49,8 +51,6 @@ export function createConfiguredChatAgent(
   definition: ChatAgentDefinition
 ): ChatAgent {
   const {
-    model,
-    modelConfig,
     writer,
     parentTraceId,
     searchMode,
@@ -60,6 +60,8 @@ export function createConfiguredChatAgent(
     canvasToolContext,
     imageToolContext
   } = args
+  let model = args.model
+  let modelConfig = args.modelConfig
 
   try {
     const currentDate = new Date().toLocaleString()
@@ -85,6 +87,18 @@ export function createConfiguredChatAgent(
     }
 
     if (canvasToolContext) {
+      if (modelType !== 'quality') {
+        const upgraded = selectModelForModeAndType({
+          searchMode,
+          modelType: 'quality'
+        })
+        const upgradedId = createModelId(upgraded)
+        console.log(
+          `[ChatAgent:${definition.agentId}] Canvas active, upgrading model: ${model} → ${upgradedId}`
+        )
+        model = upgradedId
+        modelConfig = upgraded
+      }
       activeTools.push(
         'createCanvasArtifact',
         'updateCanvasArtifact',
