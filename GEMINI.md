@@ -33,7 +33,7 @@ The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → too
 - **Canvas artifact tools** (conditional): `createCanvasArtifact`, `updateCanvasArtifact`, `readCanvasArtifact` — generate, iterate, and read React SPA artifacts compiled server-side via esbuild + Tailwind CSS v4
 - **Image generation** (conditional): `generateImage` — generates images via Gemini 2.5 Flash Image when image context is available
 - **Tools** (`lib/tools/`): `search` (Brave primary, Tavily fallback, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todoWrite` (task management), `dynamic` (MCP/runtime-defined tools)
-- **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Gemini 3 Flash (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway
+- **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Grok 4.1 Fast (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway. The factory at `lib/agents/chat/factory.ts` upgrades Speed → Quality automatically when a canvas tool context is present.
 - **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
 
 ### Database (Drizzle + Supabase PostgreSQL)
