@@ -42,6 +42,17 @@ describe('context-window', () => {
       expect(maxTokens).toBe(10650)
     })
 
+    test('resolves prefixed gateway ids (e.g. xai/grok-4.1-fast)', () => {
+      const grokFast: Model = {
+        id: 'xai/grok-4.1-fast',
+        name: 'Grok 4.1 Fast',
+        provider: 'xAI',
+        providerId: 'gateway'
+      }
+      // 2097152 - 65536 - floor(2097152 * 0.1) = 2031616 - 209715 = 1821901
+      expect(getMaxAllowedTokens(grokFast)).toBe(1821901)
+    })
+
     test('ensures minimum viable token count', () => {
       // This would need a model with very small context window to test
       // For now, verify the function returns at least 1000
