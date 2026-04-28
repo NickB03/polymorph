@@ -10,6 +10,7 @@ const mockReadUIMessageStream = vi.fn()
 const mockConvertToModelMessages = vi.fn()
 const mockPruneMessages = vi.fn()
 const mockMaybeTruncateMessages = vi.fn()
+const mockInlineFileUrls = vi.fn()
 
 vi.mock('ai', async importOriginal => {
   const actual = await importOriginal<typeof import('ai')>()
@@ -43,6 +44,10 @@ vi.mock('@/lib/streaming/helpers/strip-reasoning-parts', () => ({
   stripReasoningParts: vi.fn((messages: unknown[]) => messages)
 }))
 
+vi.mock('@/lib/streaming/helpers/inline-file-urls', () => ({
+  inlineFileUrls: (...args: unknown[]) => mockInlineFileUrls(...args)
+}))
+
 beforeEach(() => {
   vi.clearAllMocks()
   mockConvertToModelMessages.mockResolvedValue([])
@@ -52,6 +57,7 @@ beforeEach(() => {
   mockMaybeTruncateMessages.mockImplementation(
     (messages: unknown[]) => messages
   )
+  mockInlineFileUrls.mockImplementation(async (messages: unknown[]) => messages)
 })
 
 describe('normalizeEvalRunResult', () => {
@@ -273,5 +279,57 @@ describe('runEvalChat', () => {
         intent: 'build'
       })
     )
+  })
+
+  it('inlines file URLs after pruneMessages and before maybeTruncateMessages', async () => {
+    const finalMessage = {
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'ok' }]
+    }
+
+    mockReadUIMessageStream.mockImplementation(async function* () {
+      yield finalMessage
+    })
+
+    mockResearcher.mockReturnValue({
+      stream: vi.fn().mockResolvedValue({
+        toUIMessageStream: vi.fn(() => new ReadableStream())
+      })
+    })
+
+    const callOrder: string[] = []
+    mockPruneMessages.mockImplementation(
+      ({ messages }: { messages: unknown[] }) => {
+        callOrder.push('prune')
+        return messages
+      }
+    )
+    mockInlineFileUrls.mockImplementation(async (messages: unknown[]) => {
+      callOrder.push('inline')
+      return messages
+    })
+    mockMaybeTruncateMessages.mockImplementation((messages: unknown[]) => {
+      callOrder.push('truncate')
+      return messages
+    })
+
+    await runEvalChat({
+      caseId: 'c-1',
+      suite: 'traffic-monitor',
+      conversation: [
+        { role: 'user', parts: [{ type: 'text', text: 'hi' }] }
+      ] as any,
+      searchMode: 'chat',
+      modelType: 'speed',
+      model: {
+        id: 'gemini-3-flash',
+        name: 'Gemini 3 Flash',
+        provider: 'Google',
+        providerId: 'gateway'
+      }
+    })
+
+    expect(mockInlineFileUrls).toHaveBeenCalledTimes(1)
+    expect(callOrder).toEqual(['prune', 'inline', 'truncate'])
   })
 })

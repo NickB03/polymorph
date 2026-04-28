@@ -2,6 +2,7 @@ import { convertToModelMessages, pruneMessages, readUIMessageStream } from 'ai'
 import { randomUUID } from 'crypto'
 
 import { researcher } from '@/lib/agents/researcher'
+import { inlineFileUrls } from '@/lib/streaming/helpers/inline-file-urls'
 import { stripReasoningParts } from '@/lib/streaming/helpers/strip-reasoning-parts'
 import type { SearchResults } from '@/lib/types'
 import type { UIMessage } from '@/lib/types/ai'
@@ -205,6 +206,7 @@ export async function runEvalChat({
     toolCalls: 'before-last-2-messages',
     emptyMessages: 'remove'
   })
+  modelMessages = await inlineFileUrls(modelMessages)
   modelMessages = maybeTruncateMessages(modelMessages, model)
 
   const researchAgent = researcher({
