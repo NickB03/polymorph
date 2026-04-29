@@ -208,7 +208,7 @@ export const TEMPLATE_C: EvalsLayoutTemplate = {
       type: 'page-header',
       config: {
         title: 'Evals · Activity',
-        subtitle: 'what changed in the last 24 hours'
+        subtitle: 'what changed since the last run'
       }
     },
     { id: 'ring-cap', type: 'score-ring', config: { suite: 'capability' } },

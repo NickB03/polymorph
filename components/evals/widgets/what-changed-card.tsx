@@ -27,12 +27,12 @@ export function WhatChangedCard({ data, config }: WidgetProps<Config>) {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-sm">What changed (last 24h)</CardTitle>
+        <CardTitle className="text-sm">What changed (since last run)</CardTitle>
       </CardHeader>
       <CardContent>
         {findings.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            All stable — no deltas above threshold in the last 24h.
+            All stable — no deltas above threshold since the last run.
           </p>
         ) : (
           <ul className="space-y-2">
