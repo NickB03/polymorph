@@ -5,7 +5,7 @@ import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 
-import { ActivityList } from './activity-list'
+import { ActivityList } from '@/components/evals/dashboard/activity-list'
 
 const baseSnapshot = (
   overrides: Partial<EvalSummarySnapshot> = {}

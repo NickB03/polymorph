@@ -100,6 +100,7 @@ Canvas is one artifact per chat. Keep it coupled to chat context:
 
 - Desktop: resizable right workspace, default around 500px, bounded between 320px and 800px while preserving a 360px chat minimum.
 - Mobile: workspace overlays chat full-screen while chat remains mounted behind it.
+- Split view: pair the CodeMirror editor with live preview, diagnostics, and version history without unmounting chat behind the mobile overlay.
 - Use amber build-mode accents for artifact-generation affordances.
 - Runtime errors, compile progress, and diagnostics should feel operational and clear, not like modal interruptions.
 
@@ -131,7 +132,7 @@ Tool cards should feel embedded in the conversation, not like separate dashboard
 - Use `ToolCardMount`/motion mount patterns when adding a registered tool UI.
 - Show unavailable output as dashed bordered fallback only when there is no renderer.
 - Use semantic callout tokens for `info`, `warning`, `tip`, `success`, `error`, and `definition`.
-- Data-heavy tools can use cards, tables, charts, and timelines, but keep labels compact and avoid decorative empty space.
+- Data-heavy tools can use cards, tables, charts, and timelines, but keep labels compact and avoid decorative space.
 
 ### Evals And Admin Dashboards
 

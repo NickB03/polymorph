@@ -253,8 +253,10 @@ export function buildDatasetExamples(
         suite: caseSpec.suite,
         conversation: caseSpec.conversation,
         searchMode: caseSpec.searchMode,
-        ...(caseSpec.userMode ? { userMode: caseSpec.userMode } : {}),
-        ...(caseSpec.intent ? { intent: caseSpec.intent } : {}),
+        ...(caseSpec.userMode !== undefined
+          ? { userMode: caseSpec.userMode }
+          : {}),
+        ...(caseSpec.intent !== undefined ? { intent: caseSpec.intent } : {}),
         modelType: caseSpec.modelType,
         prompt,
         query: prompt,

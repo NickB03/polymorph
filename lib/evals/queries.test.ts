@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { EvalSummaryRow } from './types'
+import type { EvalSummaryRow } from '@/lib/evals/types'
 
 const mockWithRLS = vi.hoisted(() => vi.fn())
 
@@ -13,7 +13,7 @@ import {
   buildTrafficMonitorDashboardData,
   getEvalsDashboard,
   toSnapshot
-} from './queries'
+} from '@/lib/evals/queries'
 
 const sampleRow = (
   overrides: Partial<EvalSummaryRow> = {}

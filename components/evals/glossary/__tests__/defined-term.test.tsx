@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 
-import { DefinedTerm } from '../defined-term'
-import { JudgeLabel } from '../judge-label'
+import { DefinedTerm } from '@/components/evals/glossary/defined-term'
+import { JudgeLabel } from '@/components/evals/glossary/judge-label'
 
 function withTooltip(node: React.ReactNode) {
   return <TooltipProvider>{node}</TooltipProvider>

@@ -126,7 +126,7 @@ export function CombinedTrend({
             tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
           />
           <YAxis
-            domain={[0.5, 1]}
+            domain={[0, 1]}
             tickFormatter={v => `${Math.round(Number(v) * 100)}`}
             tickLine={false}
             axisLine={false}

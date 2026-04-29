@@ -20,16 +20,17 @@ export function DefinedTerm({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span
+        <button
+          type="button"
           className={[
-            'cursor-help underline decoration-dotted decoration-muted-foreground/50 underline-offset-[3px] transition-colors hover:decoration-foreground',
+            'inline cursor-help appearance-none border-0 bg-transparent p-0 font-[inherit] text-inherit underline decoration-dotted decoration-muted-foreground/50 underline-offset-[3px] transition-colors hover:decoration-foreground',
             className
           ]
             .filter(Boolean)
             .join(' ')}
         >
           {children}
-        </span>
+        </button>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
         {def}

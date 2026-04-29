@@ -16,9 +16,8 @@ import type {
 } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
-import { DefinedTerm, ScoreCell } from '@/components/evals/glossary'
-
-import { pct } from './shared'
+import { pct } from '@/components/evals/dashboard/shared'
+import { ScoreCell } from '@/components/evals/glossary'
 
 type SuiteLabel = 'Benchmarks' | 'Traffic Monitor' | 'Regression'
 
@@ -100,7 +99,7 @@ export function ActivityList({ data }: { data: EvalsDashboardData }) {
           <span aria-hidden />
         </div>
         <ul className="divide-y divide-border/60">
-          {rows.map(({ id, suite, def, snap, deltaPct }) => {
+          {rows.map(({ id, suite, snap, deltaPct }) => {
             const open = expanded === id
             return (
               <li key={id}>
@@ -113,9 +112,7 @@ export function ActivityList({ data }: { data: EvalsDashboardData }) {
                   <span className="font-mono text-xs text-muted-foreground tabular-nums">
                     {format(new Date(snap.createdAt), 'MMM d · HH:mm')}
                   </span>
-                  <span className="truncate text-sm">
-                    <DefinedTerm def={def}>{suite}</DefinedTerm>
-                  </span>
+                  <span className="truncate text-sm">{suite}</span>
                   <span className="text-right font-mono text-sm font-semibold tabular-nums">
                     {pct(snap.overallScore)}
                   </span>

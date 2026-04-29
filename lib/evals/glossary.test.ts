@@ -5,7 +5,7 @@ import {
   getJudgeDefinition,
   getScoreInsight,
   snapshotSuiteKey
-} from './glossary'
+} from '@/lib/evals/glossary'
 
 describe('glossary', () => {
   it('defines every canonical term', () => {

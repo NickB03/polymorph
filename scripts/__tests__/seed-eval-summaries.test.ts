@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   assertLocalDatabaseUrl,
   buildSeedEvalSummaryRows,
-  getSeedResetPattern
+  getSeedResetPattern,
+  seedEvalSummaries
 } from '../seed-eval-summaries'
 
 const NOW = new Date('2026-04-29T16:00:00.000Z')
@@ -88,5 +89,37 @@ describe('local database guard', () => {
 describe('reset target', () => {
   it('only targets local seed experiment names', () => {
     expect(getSeedResetPattern()).toBe('local-seed-%')
+  })
+})
+
+describe('dry run', () => {
+  it('does not require a database URL', async () => {
+    const databaseUrl = process.env.DATABASE_URL
+    const postgresUrl = process.env.POSTGRES_URL
+
+    delete process.env.DATABASE_URL
+    delete process.env.POSTGRES_URL
+
+    try {
+      await expect(
+        seedEvalSummaries({ dryRun: true, now: NOW })
+      ).resolves.toMatchObject({
+        dryRun: true,
+        inserted: 0,
+        planned: 12
+      })
+    } finally {
+      if (databaseUrl === undefined) {
+        delete process.env.DATABASE_URL
+      } else {
+        process.env.DATABASE_URL = databaseUrl
+      }
+
+      if (postgresUrl === undefined) {
+        delete process.env.POSTGRES_URL
+      } else {
+        process.env.POSTGRES_URL = postgresUrl
+      }
+    }
   })
 })

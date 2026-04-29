@@ -292,14 +292,6 @@ export async function seedEvalSummaries({
   now = new Date()
 }: SeedOptions = {}) {
   const rows = buildSeedEvalSummaryRows(now)
-  const databaseUrl = resolveDatabaseUrl()
-
-  if (!databaseUrl) {
-    throw new Error('DATABASE_URL or POSTGRES_URL is required')
-  }
-
-  assertLocalDatabaseUrl(databaseUrl)
-
   if (dryRun) {
     return {
       dryRun,
@@ -310,68 +302,81 @@ export async function seedEvalSummaries({
     }
   }
 
+  const databaseUrl = resolveDatabaseUrl()
+
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL or POSTGRES_URL is required')
+  }
+
+  assertLocalDatabaseUrl(databaseUrl)
+
   const sql = postgres(databaseUrl, {
-    ssl: process.env.DATABASE_SSL_DISABLED === 'true' ? false : false,
+    // This script is guarded to local database hosts only.
+    ssl: false,
     prepare: false,
     max: 1
   })
 
   try {
-    if (reset) {
-      await sql`
-        DELETE FROM eval_summaries
-        WHERE experiment_name LIKE ${LOCAL_SEED_RESET_PATTERN}
-      `
-    }
+    await sql.begin(async tx => {
+      const trx = tx as unknown as typeof sql
 
-    for (const row of rows) {
-      await sql`
-        INSERT INTO eval_summaries (
-          id,
-          suite,
-          experiment_name,
-          dataset_name,
-          pass_rate_bps,
-          threshold_bps,
-          threshold_breached,
-          failed_evaluators,
-          evaluator_scores,
-          total_cases,
-          attempted_cases,
-          failed_cases,
-          phoenix_url,
-          created_at
-        )
-        VALUES (
-          ${row.experimentName},
-          ${row.suite},
-          ${row.experimentName},
-          ${row.datasetName},
-          ${row.passRateBps},
-          ${row.thresholdBps},
-          ${row.thresholdBreached},
-          CAST(${JSON.stringify(row.failedEvaluators)} AS jsonb),
-          CAST(${JSON.stringify(row.evaluatorScores)} AS jsonb),
-          ${row.totalCases},
-          ${row.attemptedCases},
-          ${row.failedCases},
-          ${row.phoenixUrl},
-          ${row.createdAt}
-        )
-        ON CONFLICT (experiment_name) DO UPDATE SET
-          dataset_name = EXCLUDED.dataset_name,
-          pass_rate_bps = EXCLUDED.pass_rate_bps,
-          threshold_bps = EXCLUDED.threshold_bps,
-          threshold_breached = EXCLUDED.threshold_breached,
-          failed_evaluators = EXCLUDED.failed_evaluators,
-          evaluator_scores = EXCLUDED.evaluator_scores,
-          total_cases = EXCLUDED.total_cases,
-          attempted_cases = EXCLUDED.attempted_cases,
-          failed_cases = EXCLUDED.failed_cases,
-          phoenix_url = EXCLUDED.phoenix_url,
-          created_at = EXCLUDED.created_at
-      `
-    }
+      if (reset) {
+        await trx`
+          DELETE FROM eval_summaries
+          WHERE experiment_name LIKE ${LOCAL_SEED_RESET_PATTERN}
+        `
+      }
+
+      for (const row of rows) {
+        await trx`
+          INSERT INTO eval_summaries (
+            id,
+            suite,
+            experiment_name,
+            dataset_name,
+            pass_rate_bps,
+            threshold_bps,
+            threshold_breached,
+            failed_evaluators,
+            evaluator_scores,
+            total_cases,
+            attempted_cases,
+            failed_cases,
+            phoenix_url,
+            created_at
+          )
+          VALUES (
+            ${row.experimentName},
+            ${row.suite},
+            ${row.experimentName},
+            ${row.datasetName},
+            ${row.passRateBps},
+            ${row.thresholdBps},
+            ${row.thresholdBreached},
+            CAST(${JSON.stringify(row.failedEvaluators)} AS jsonb),
+            CAST(${JSON.stringify(row.evaluatorScores)} AS jsonb),
+            ${row.totalCases},
+            ${row.attemptedCases},
+            ${row.failedCases},
+            ${row.phoenixUrl},
+            ${row.createdAt}
+          )
+          ON CONFLICT (experiment_name) DO UPDATE SET
+            dataset_name = EXCLUDED.dataset_name,
+            pass_rate_bps = EXCLUDED.pass_rate_bps,
+            threshold_bps = EXCLUDED.threshold_bps,
+            threshold_breached = EXCLUDED.threshold_breached,
+            failed_evaluators = EXCLUDED.failed_evaluators,
+            evaluator_scores = EXCLUDED.evaluator_scores,
+            total_cases = EXCLUDED.total_cases,
+            attempted_cases = EXCLUDED.attempted_cases,
+            failed_cases = EXCLUDED.failed_cases,
+            phoenix_url = EXCLUDED.phoenix_url,
+            created_at = EXCLUDED.created_at
+        `
+      }
+    })
   } finally {
     await sql.end()
   }

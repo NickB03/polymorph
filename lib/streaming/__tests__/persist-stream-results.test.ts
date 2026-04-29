@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { persistStreamResults } from '../helpers/persist-stream-results'
+import { persistStreamResults } from '@/lib/streaming/helpers/persist-stream-results'
 
 vi.mock('@/lib/actions/chat', () => ({
   createChatWithFirstMessage: vi.fn(),

@@ -103,7 +103,12 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
         FROM messages user_message
         WHERE user_message.chat_id = assistant.chat_id
           AND user_message.role = 'user'
-          AND user_message.created_at < assistant.created_at
+          AND (
+            user_message.created_at < assistant.created_at OR (
+              user_message.created_at = assistant.created_at
+              AND user_message.id < assistant.id
+            )
+          )
           AND (
             user_message.ui_message IS NOT NULL OR EXISTS (
               SELECT 1
@@ -177,7 +182,12 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
         )
         FROM messages conversation_message
         WHERE conversation_message.chat_id = sampled.chat_id
-          AND conversation_message.created_at <= sampled.user_created_at
+          AND (
+            conversation_message.created_at < sampled.user_created_at OR (
+              conversation_message.created_at = sampled.user_created_at
+              AND conversation_message.id <= sampled.target_user_message_id
+            )
+          )
       ) AS conversation_messages,
       json_build_object(
         'id', assistant_message.id,
@@ -538,18 +548,25 @@ function mapRowToSample(row: ChatSampleRow): ChatSample {
     ? [`user-mode:${rawUserMode}`]
     : ['mode_metadata_missing']
 
-  const searchResults = dedupeSearchResults([
-    ...searchResultsFromMessage(targetAssistant),
-    ...parseSearchResults(row.target_search_results)
-  ])
-  const citations = dedupeCitations([
-    ...citationsFromMessage(targetAssistant),
-    ...parseCitations(row.target_citations)
-  ])
-  const toolNames = dedupeStrings([
-    ...toolNamesFromMessage(targetAssistant),
-    ...parseToolNames(row.target_tool_names)
-  ])
+  const canonicalSearchResults = searchResultsFromMessage(targetAssistant)
+  const canonicalCitations = citationsFromMessage(targetAssistant)
+  const canonicalToolNames = toolNamesFromMessage(targetAssistant)
+
+  const searchResults = dedupeSearchResults(
+    canonicalSearchResults.length > 0
+      ? canonicalSearchResults
+      : parseSearchResults(row.target_search_results)
+  )
+  const citations = dedupeCitations(
+    canonicalCitations.length > 0
+      ? canonicalCitations
+      : parseCitations(row.target_citations)
+  )
+  const toolNames = dedupeStrings(
+    canonicalToolNames.length > 0
+      ? canonicalToolNames
+      : parseToolNames(row.target_tool_names)
+  )
 
   const unsupportedTools = toolNames.filter(name =>
     UNSUPPORTED_REPLAY_TOOLS.has(name)
@@ -572,8 +589,8 @@ function mapRowToSample(row: ChatSampleRow): ChatSample {
     userQuery,
     conversation,
     searchMode,
-    ...(rawUserMode ? { userMode: rawUserMode } : {}),
-    ...(intent ? { intent } : {}),
+    ...(rawUserMode !== undefined ? { userMode: rawUserMode } : {}),
+    ...(intent !== undefined ? { intent } : {}),
     modelType,
     metadataTags,
     searchResults,

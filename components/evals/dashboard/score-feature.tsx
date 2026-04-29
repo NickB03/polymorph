@@ -1,6 +1,10 @@
 'use client'
 
-import { DEFINITIONS, snapshotSuiteKey } from '@/lib/evals/glossary'
+import {
+  DEFINITIONS,
+  snapshotSuiteKey,
+  type SuiteKey
+} from '@/lib/evals/glossary'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 
 import {
@@ -9,9 +13,29 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 
+import { deltaPts, pct } from '@/components/evals/dashboard/shared'
 import { AggregateBreakdown, DefinedTerm } from '@/components/evals/glossary'
 
-import { deltaPts, pct } from './shared'
+const SUITE_COPY: Record<
+  SuiteKey,
+  { label: string; definition: string; description: string }
+> = {
+  benchmarks: {
+    label: 'Benchmarks',
+    definition: DEFINITIONS.benchmarks,
+    description: 'Curated test prompts · the model under controlled inputs.'
+  },
+  trafficMonitor: {
+    label: 'Traffic Monitor',
+    definition: DEFINITIONS.trafficMonitor,
+    description: 'Sampled production chats · the model against recent traffic.'
+  },
+  regression: {
+    label: 'Regression',
+    definition: DEFINITIONS.regression,
+    description: 'Pinned breakage cases · the model against known failures.'
+  }
+}
 
 export function ScoreFeature({
   cap,
@@ -21,36 +45,44 @@ export function ScoreFeature({
   previous: EvalSummarySnapshot | null
 }) {
   const score = Math.max(0, Math.min(1, cap.overallScore))
+  const previousScore = previous
+    ? Math.max(0, Math.min(1, previous.overallScore))
+    : null
   const r = 80
   const C = 2 * Math.PI * r
   const offset = C * (1 - score)
-  const delta = previous ? cap.overallScore - previous.overallScore : null
+  const delta = previousScore === null ? null : score - previousScore
   const suiteKey = snapshotSuiteKey(cap)
-  const label = 'Benchmarks'
+  const suiteCopy = SUITE_COPY[suiteKey]
 
   return (
     <section className="flex h-full flex-col gap-6">
       <div className="space-y-1">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-base font-semibold tracking-tight">
-            <DefinedTerm def={DEFINITIONS.benchmarks}>{label}</DefinedTerm>
+            <DefinedTerm def={suiteCopy.definition}>
+              {suiteCopy.label}
+            </DefinedTerm>
           </h2>
           <span className="text-xs italic text-muted-foreground">
             on demand
           </span>
         </div>
         <p className="text-xs leading-snug text-muted-foreground">
-          Curated test prompts · the model under controlled inputs.
+          {suiteCopy.description}
         </p>
       </div>
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="relative mx-auto flex h-56 w-56 cursor-help items-center justify-center transition-opacity hover:opacity-90">
+          <button
+            type="button"
+            className="relative mx-auto flex h-56 w-56 cursor-help appearance-none items-center justify-center border-0 bg-transparent p-0 font-[inherit] text-inherit transition-opacity hover:opacity-90"
+          >
             <svg
               className="h-full w-full -rotate-90"
               viewBox="0 0 200 200"
-              aria-label={`${label} score: ${pct(score)}. Hover for per-judge breakdown.`}
+              aria-label={`${suiteCopy.label} score: ${pct(score)}. Focus or hover for per-judge breakdown.`}
               role="img"
             >
               <circle
@@ -83,7 +115,7 @@ export function ScoreFeature({
                 aggregate
               </span>
             </div>
-          </div>
+          </button>
         </TooltipTrigger>
         <TooltipContent
           side="right"
@@ -93,7 +125,7 @@ export function ScoreFeature({
           className="max-w-xs space-y-2 text-xs leading-relaxed"
         >
           <AggregateBreakdown
-            suiteLabel={label}
+            suiteLabel={suiteCopy.label}
             suite={suiteKey}
             snap={cap}
             score={score}

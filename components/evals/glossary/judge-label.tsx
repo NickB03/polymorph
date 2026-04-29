@@ -3,7 +3,7 @@
 import { getEvaluatorLabel } from '@/lib/evals/evaluator-labels'
 import { getJudgeDefinition } from '@/lib/evals/glossary'
 
-import { DefinedTerm } from './defined-term'
+import { DefinedTerm } from '@/components/evals/glossary/defined-term'
 
 export function JudgeLabel({ judgeKey }: { judgeKey: string }) {
   const def = getJudgeDefinition(judgeKey)
