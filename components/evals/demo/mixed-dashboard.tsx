@@ -3,7 +3,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { useMemo, useState } from 'react'
 
-import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import { format, formatDistanceToNow } from 'date-fns'
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
@@ -11,6 +10,7 @@ import {
   EVALUATOR_DISPLAY_ORDER,
   getEvaluatorLabel
 } from '@/lib/evals/evaluator-labels'
+import { buildCombinedTrendFromSeries } from '@/lib/evals/helpers/combined-trend'
 import type {
   EvalsDashboardData,
   EvalSummarySnapshot,
@@ -29,12 +29,24 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 
-const TooltipPortal = TooltipPrimitive.Portal
+import {
+  clampScore,
+  getScoreStatus,
+  getScoreStatusLabel,
+  ScoreBar
+} from '@/components/evals/dashboard/score-bar'
 
 // ---------- Mock data ---------------------------------------------------------
 
 const NOW = Date.now()
 const HOUR = 60 * 60 * 1000
+const SHORT_AXIS_SPAN_MS = 3 * 24 * HOUR
+
+const SUITE_LABELS: Record<string, string> = {
+  capability: 'Benchmarks',
+  regression: 'Pinned checks',
+  trafficMonitor: 'Traffic'
+}
 
 function trend(seed: number, count = 14): EvalTrendPoint[] {
   const out: EvalTrendPoint[] = []
@@ -197,7 +209,7 @@ const DEFINITIONS = {
   trafficMonitor:
     'A rolling sample of real production chats, scored on a cron. Tells you what users are actually getting.',
   regression:
-    'Pinned cases that previously broke. Run after material changes to catch drift. Silent unless one fails.',
+    'Pinned checks are saved cases from prior failures or high-risk behavior. A drop here means something expected to stay fixed may be breaking again.',
   aggregateScore:
     'Weighted mean across all judges per run. 0–1 scale; higher is better.',
   passRate:
@@ -252,11 +264,9 @@ function DefinedTerm({
           {children}
         </span>
       </TooltipTrigger>
-      <TooltipPortal>
-        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
-          {def}
-        </TooltipContent>
-      </TooltipPortal>
+      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+        {def}
+      </TooltipContent>
     </Tooltip>
   )
 }
@@ -530,65 +540,103 @@ function ScoreCell({
   suite,
   judgeKey,
   value,
+  caseCount,
+  threshold,
+  failed,
   children
 }: {
   suite: SuiteKey
   judgeKey: string
   value: number
+  caseCount?: number
+  threshold?: number | null
+  failed?: boolean
   children: ReactNode
 }) {
   const insight = getScoreInsight(suite, judgeKey)
   if (!insight) return <>{children}</>
 
   const judgeLabel = getEvaluatorLabel(judgeKey)
-  const pctValue = Math.round(value * 100)
+  const clampedValue = clampScore(value)
+  const pctValue = Math.round(clampedValue * 100)
+  const effectiveThreshold = threshold ?? insight.threshold ?? null
+  const status = getScoreStatus({
+    value: clampedValue,
+    threshold: effectiveThreshold,
+    failed
+  })
+  const statusLabel = getScoreStatusLabel(status)
+  const thresholdPct =
+    effectiveThreshold == null
+      ? null
+      : Math.round(clampScore(effectiveThreshold) * 100)
+  const ariaValueText = [
+    `${judgeLabel} score ${pctValue}%`,
+    statusLabel.toLowerCase(),
+    thresholdPct != null ? `${thresholdPct}% threshold` : null,
+    caseCount != null ? `${caseCount} cases` : null
+  ]
+    .filter(Boolean)
+    .join(', ')
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="inline-flex w-full cursor-help">{children}</span>
-      </TooltipTrigger>
-      <TooltipPortal>
-        <TooltipContent
-          side="top"
-          align="end"
-          sideOffset={6}
-          collisionPadding={16}
-          className="max-w-sm space-y-2 text-xs leading-relaxed"
+        <span
+          aria-valuemax={100}
+          aria-valuemin={0}
+          aria-valuenow={pctValue}
+          aria-valuetext={ariaValueText}
+          className="block w-full cursor-help rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+          role="meter"
+          tabIndex={0}
         >
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="font-semibold text-foreground">
-              {judgeLabel} · {pctValue}%
-            </span>
-            <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
-              {insight.passed}/{insight.total} passed
-            </span>
+          {children}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        align="end"
+        sideOffset={6}
+        collisionPadding={16}
+        className="max-w-sm space-y-2 text-xs leading-relaxed"
+      >
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="font-semibold text-foreground">
+            {judgeLabel} · {pctValue}%
+          </span>
+          <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+            {insight.passed}/{insight.total} passed
+          </span>
+        </div>
+        <p className="text-muted-foreground">
+          Threshold status: {statusLabel}
+          {thresholdPct != null ? ` · ${thresholdPct}% threshold` : ''}.
+        </p>
+        {insight.failureModes && insight.failureModes.length > 0 ? (
+          <div className="space-y-1.5">
+            <p className="text-muted-foreground">Top failure modes</p>
+            <ul className="space-y-1">
+              {insight.failureModes.map(mode => (
+                <li
+                  key={mode.description}
+                  className="grid grid-cols-[20px_1fr] gap-2"
+                >
+                  <span className="font-mono font-medium tabular-nums text-foreground">
+                    {mode.count}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {mode.description}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
-          {insight.failureModes && insight.failureModes.length > 0 ? (
-            <div className="space-y-1.5">
-              <p className="text-muted-foreground">Top failure modes</p>
-              <ul className="space-y-1">
-                {insight.failureModes.map(mode => (
-                  <li
-                    key={mode.description}
-                    className="grid grid-cols-[20px_1fr] gap-2"
-                  >
-                    <span className="font-mono font-medium tabular-nums text-foreground">
-                      {mode.count}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {mode.description}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {insight.note ? (
-            <p className="text-muted-foreground italic">{insight.note}</p>
-          ) : null}
-        </TooltipContent>
-      </TooltipPortal>
+        ) : null}
+        {insight.note ? (
+          <p className="text-muted-foreground italic">{insight.note}</p>
+        ) : null}
+      </TooltipContent>
     </Tooltip>
   )
 }
@@ -660,14 +708,19 @@ function Header() {
   )
 
   return (
-    <header className="flex flex-col gap-6 border-b border-border/60 pb-6 sm:flex-row sm:items-end sm:justify-between">
-      <div className="max-w-2xl space-y-3">
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          Polymorph · Quality evals
-        </p>
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-          Response quality
-        </h1>
+    <header className="space-y-6 border-b border-border/60 pb-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            Polymorph · Quality evals
+          </p>
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+            Response quality
+          </h1>
+        </div>
+        <ViewSwitcher />
+      </div>
+      <div className="space-y-3">
         <p className="text-sm leading-relaxed text-muted-foreground">
           Seven automated judges grade every model response on faithfulness,
           relevance, safety, and four other criteria. This page tracks how
@@ -676,7 +729,6 @@ function Header() {
         </p>
         <p className="text-xs text-muted-foreground">Last sync {lastSync}.</p>
       </div>
-      <ViewSwitcher />
     </header>
   )
 }
@@ -706,7 +758,7 @@ function ViewSwitcher() {
     <div
       role="radiogroup"
       aria-label="Dashboard layout"
-      className="inline-flex items-center gap-1 self-start rounded-full border border-border bg-background p-1 shadow-xs"
+      className="inline-flex shrink-0 items-center gap-1 self-start rounded-full border border-border bg-background p-1 shadow-xs"
     >
       {items.map(it => {
         const on = active === it.id
@@ -920,22 +972,20 @@ function ScoreFeature({
             </div>
           </div>
         </TooltipTrigger>
-        <TooltipPortal>
-          <TooltipContent
-            side="right"
-            align="center"
-            sideOffset={12}
-            collisionPadding={16}
-            className="max-w-xs space-y-2 text-xs leading-relaxed"
-          >
-            <AggregateBreakdown
-              suiteLabel={label}
-              suite={suiteKey}
-              snap={cap}
-              score={score}
-            />
-          </TooltipContent>
-        </TooltipPortal>
+        <TooltipContent
+          side="right"
+          align="center"
+          sideOffset={12}
+          collisionPadding={16}
+          className="max-w-xs space-y-2 text-xs leading-relaxed"
+        >
+          <AggregateBreakdown
+            suiteLabel={label}
+            suite={suiteKey}
+            snap={cap}
+            score={score}
+          />
+        </TooltipContent>
       </Tooltip>
 
       <dl className="grid grid-cols-3 gap-4 text-xs">
@@ -982,33 +1032,23 @@ function CombinedTrend({
   traffic: EvalTrendPoint[]
   regression: EvalTrendPoint[]
 }) {
-  const series = useMemo(() => {
-    const byDate = new Map<
-      string,
-      { createdAt: string; cap?: number; traf?: number; reg?: number }
-    >()
-    for (const p of capability) {
-      const k = p.createdAt.slice(0, 10)
-      const row = byDate.get(k) ?? { createdAt: p.createdAt }
-      row.cap = p.overallScore
-      byDate.set(k, row)
-    }
-    for (const p of traffic) {
-      const k = p.createdAt.slice(0, 10)
-      const row = byDate.get(k) ?? { createdAt: p.createdAt }
-      row.traf = p.overallScore
-      byDate.set(k, row)
-    }
-    for (const p of regression) {
-      const k = p.createdAt.slice(0, 10)
-      const row = byDate.get(k) ?? { createdAt: p.createdAt }
-      row.reg = p.overallScore
-      byDate.set(k, row)
-    }
-    return Array.from(byDate.values()).sort((a, b) =>
-      a.createdAt.localeCompare(b.createdAt)
-    )
-  }, [capability, traffic, regression])
+  const series = useMemo(
+    () =>
+      buildCombinedTrendFromSeries({
+        capability,
+        regression,
+        trafficMonitor: traffic
+      }).map(point => ({
+        ...point,
+        timestamp: new Date(point.createdAt).getTime()
+      })),
+    [capability, traffic, regression]
+  )
+  const timeSpanMs =
+    series.length > 1
+      ? series[series.length - 1].timestamp - series[0].timestamp
+      : 0
+  const axisFormat = timeSpanMs <= SHORT_AXIS_SPAN_MS ? 'MMM d, ha' : 'MMM d'
 
   return (
     <section className="flex h-full flex-col gap-5 rounded-2xl border border-border/60 bg-background p-6">
@@ -1033,7 +1073,7 @@ function CombinedTrend({
               solid: true
             },
             {
-              label: 'Regression — pinned cases',
+              label: 'Pinned checks — known-risk cases',
               color: 'var(--muted-foreground)',
               def: DEFINITIONS.regression,
               dashed: true
@@ -1049,9 +1089,12 @@ function CombinedTrend({
       </div>
       <ChartContainer
         config={{
-          cap: { label: 'Benchmarks', color: 'var(--accent-blue)' },
-          reg: { label: 'Regression', color: 'var(--muted-foreground)' },
-          traf: { label: 'Traffic', color: 'var(--accent-amber)' }
+          capability: { label: 'Benchmarks', color: 'var(--accent-blue)' },
+          regression: {
+            label: 'Pinned checks',
+            color: 'var(--muted-foreground)'
+          },
+          trafficMonitor: { label: 'Traffic', color: 'var(--accent-amber)' }
         }}
         className="h-[260px] w-full"
       >
@@ -1076,10 +1119,19 @@ function CombinedTrend({
             strokeDasharray="2 4"
           />
           <XAxis
-            dataKey="createdAt"
-            tickFormatter={v => format(new Date(v), 'MMM d')}
+            dataKey="timestamp"
+            type="number"
+            scale="time"
+            domain={[
+              (dataMin: number) =>
+                series.length > 1 ? dataMin : dataMin - HOUR,
+              (dataMax: number) =>
+                series.length > 1 ? dataMax : dataMax + HOUR
+            ]}
+            tickFormatter={v => format(new Date(Number(v)), axisFormat)}
             tickLine={false}
             axisLine={false}
+            minTickGap={24}
             tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
           />
           <YAxis
@@ -1093,16 +1145,32 @@ function CombinedTrend({
           <ChartTooltip
             content={
               <ChartTooltipContent
-                formatter={v => `${Math.round(Number(v) * 100)}%`}
-                labelFormatter={v =>
-                  format(new Date(String(v)), 'MMM d, h:mm a')
-                }
+                formatter={(_value, name) => (
+                  <>
+                    <span className="text-muted-foreground">
+                      {SUITE_LABELS[String(name)] ?? String(name)}
+                    </span>
+                    <span className="font-mono font-medium tabular-nums text-foreground">
+                      {Math.round(Number(_value) * 100)}%
+                    </span>
+                  </>
+                )}
+                labelFormatter={(_value, payload) => {
+                  const createdAt = payload?.find(
+                    item => item?.payload?.createdAt
+                  )?.payload.createdAt
+                  return createdAt
+                    ? format(new Date(createdAt), 'MMM d, h:mm a')
+                    : null
+                }}
+                indicator="line"
+                className="min-w-[10rem]"
               />
             }
           />
           <Area
             type="monotone"
-            dataKey="cap"
+            dataKey="capability"
             stroke="var(--accent-blue)"
             strokeWidth={2}
             fill="url(#capFillMixed)"
@@ -1110,7 +1178,7 @@ function CombinedTrend({
           />
           <Area
             type="monotone"
-            dataKey="reg"
+            dataKey="regression"
             stroke="var(--muted-foreground)"
             strokeOpacity={0.7}
             strokeWidth={1.5}
@@ -1120,7 +1188,7 @@ function CombinedTrend({
           />
           <Area
             type="monotone"
-            dataKey="traf"
+            dataKey="trafficMonitor"
             stroke="var(--accent-amber)"
             strokeWidth={1.5}
             strokeDasharray="1 4"
@@ -1256,11 +1324,33 @@ function ComparisonTable({
                     <JudgeLabel judgeKey={key} />
                   </span>
                 </div>
-                <ScoreCell suite="capability" judgeKey={key} value={c}>
-                  <Bar value={c} tone="primary" />
+                <ScoreCell
+                  suite="capability"
+                  judgeKey={key}
+                  value={c}
+                  caseCount={cap.totalCases}
+                  threshold={cap.threshold}
+                  failed={cap.failedEvaluators.includes(key)}
+                >
+                  <ScoreValue
+                    failed={cap.failedEvaluators.includes(key)}
+                    threshold={cap.threshold}
+                    value={c}
+                  />
                 </ScoreCell>
-                <ScoreCell suite="trafficMonitor" judgeKey={key} value={t}>
-                  <Bar value={t} tone="secondary" />
+                <ScoreCell
+                  suite="trafficMonitor"
+                  judgeKey={key}
+                  value={t}
+                  caseCount={traf.totalCases}
+                  threshold={traf.threshold}
+                  failed={traf.failedEvaluators.includes(key)}
+                >
+                  <ScoreValue
+                    failed={traf.failedEvaluators.includes(key)}
+                    threshold={traf.threshold}
+                    value={t}
+                  />
                 </ScoreCell>
                 <span
                   className={[
@@ -1279,24 +1369,18 @@ function ComparisonTable({
   )
 }
 
-function Bar({
+function ScoreValue({
   value,
-  tone
+  threshold,
+  failed
 }: {
   value: number
-  tone: 'primary' | 'secondary'
+  threshold?: number | null
+  failed?: boolean
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted/60">
-        <div
-          className={[
-            'h-full rounded-full motion-safe:transition-[width] motion-safe:duration-700',
-            tone === 'primary' ? 'bg-accent-blue' : 'bg-foreground/35'
-          ].join(' ')}
-          style={{ width: `${Math.max(0, Math.min(value, 1)) * 100}%` }}
-        />
-      </div>
+    <div className="flex min-w-0 items-center gap-3">
+      <ScoreBar failed={failed} threshold={threshold} value={value} />
       <span className="w-9 text-right font-mono text-xs tabular-nums text-muted-foreground">
         {pct(value)}
       </span>
@@ -1329,7 +1413,7 @@ function ActivityList({
       deltaPct: -3
     },
     {
-      suite: 'Regression',
+      suite: 'Pinned checks',
       def: DEFINITIONS.regression,
       snap: reg,
       deltaPct: 0
@@ -1436,17 +1520,24 @@ function ExpandedRow({ snap }: { snap: EvalSummarySnapshot }) {
           const v = snap.evaluatorScores[key]
           if (v == null) return null
           return (
-            <ScoreCell key={key} suite={suiteKey} judgeKey={key} value={v}>
+            <ScoreCell
+              key={key}
+              suite={suiteKey}
+              judgeKey={key}
+              value={v}
+              caseCount={snap.totalCases}
+              threshold={snap.threshold}
+              failed={snap.failedEvaluators.includes(key)}
+            >
               <div className="flex items-center gap-3 text-xs hover:bg-background/60 -mx-2 px-2 py-1 rounded-md transition-colors">
                 <span className="w-32 truncate text-muted-foreground">
                   {getEvaluatorLabel(key)}
                 </span>
-                <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted/60">
-                  <div
-                    className="h-full rounded-full bg-accent-blue/70"
-                    style={{ width: `${v * 100}%` }}
-                  />
-                </div>
+                <ScoreBar
+                  failed={snap.failedEvaluators.includes(key)}
+                  threshold={snap.threshold}
+                  value={v}
+                />
                 <span className="w-9 text-right font-mono tabular-nums">
                   {pct(v)}
                 </span>

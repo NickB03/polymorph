@@ -3,7 +3,11 @@
 import type { ReactNode } from 'react'
 
 import { getEvaluatorLabel } from '@/lib/evals/evaluator-labels'
-import { getScoreInsight, type SuiteKey } from '@/lib/evals/glossary'
+import {
+  getJudgeDefinition,
+  getScoreInsight,
+  type SuiteKey
+} from '@/lib/evals/glossary'
 
 import {
   Tooltip,
@@ -11,30 +15,82 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 
+import {
+  clampScore,
+  getScoreStatus,
+  getScoreStatusLabel
+} from '@/components/evals/dashboard/score-bar'
+
 export function ScoreCell({
   suite,
   judgeKey,
   value,
+  caseCount,
+  threshold,
+  failed,
   children
 }: {
   suite: SuiteKey
   judgeKey: string
   value: number
+  caseCount?: number
+  threshold?: number | null
+  failed?: boolean
   children: ReactNode
 }) {
   const insight = getScoreInsight(suite, judgeKey)
+  const definition = getJudgeDefinition(judgeKey)
   const failureModes = insight?.failureModes?.filter(m => m.count > 0) ?? []
-  if (!insight || (insight.total === 0 && failureModes.length === 0)) {
+  const modeGuidance = insight?.failureModes ?? []
+  if (!insight && !definition) {
     return <>{children}</>
   }
 
   const judgeLabel = getEvaluatorLabel(judgeKey)
-  const pctValue = Math.round(value * 100)
+  const clampedValue = clampScore(value)
+  const pctValue = Math.round(clampedValue * 100)
+  const effectiveThreshold = threshold ?? insight?.threshold ?? null
+  const status = getScoreStatus({
+    value: clampedValue,
+    threshold: effectiveThreshold,
+    failed
+  })
+  const statusLabel = getScoreStatusLabel(status)
+  const thresholdPct =
+    effectiveThreshold == null
+      ? null
+      : Math.round(clampScore(effectiveThreshold) * 100)
+  const ariaValueText = [
+    `${judgeLabel} score ${pctValue}%`,
+    statusLabel.toLowerCase(),
+    thresholdPct != null ? `${thresholdPct}% threshold` : null,
+    caseCount != null ? `${caseCount} cases` : null
+  ]
+    .filter(Boolean)
+    .join(', ')
+
+  const thresholdSentence =
+    thresholdPct == null ? '' : ` Run threshold is ${thresholdPct}%.`
+
+  const breachSentence =
+    failed == null
+      ? ''
+      : ` This judge ${failed ? 'appears' : 'does not appear'} in the run's threshold-breach list.`
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="inline-flex w-full cursor-help">{children}</span>
+        <span
+          aria-valuemax={100}
+          aria-valuemin={0}
+          aria-valuenow={pctValue}
+          aria-valuetext={ariaValueText}
+          className="block w-full cursor-help rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+          role="meter"
+          tabIndex={0}
+        >
+          {children}
+        </span>
       </TooltipTrigger>
       <TooltipContent
         side="top"
@@ -47,15 +103,29 @@ export function ScoreCell({
           <span className="font-semibold text-foreground">
             {judgeLabel} · {pctValue}%
           </span>
-          {insight.total > 0 ? (
+          {caseCount != null ? (
+            <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+              {caseCount} cases
+            </span>
+          ) : insight && insight.total > 0 ? (
             <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
               {insight.passed}/{insight.total} passed
             </span>
           ) : null}
         </div>
+        {definition ? (
+          <p className="text-muted-foreground">{definition}</p>
+        ) : null}
+        <p className="text-muted-foreground">
+          Score shown is the mean of this judge&apos;s recorded outputs for the
+          run.{thresholdSentence}
+        </p>
+        <p className="text-muted-foreground">
+          Threshold status: {statusLabel}.{breachSentence}
+        </p>
         {failureModes.length > 0 ? (
           <div className="space-y-1.5">
-            <p className="text-muted-foreground">Top failure modes</p>
+            <p className="text-muted-foreground">Observed failure modes</p>
             <ul className="space-y-1">
               {failureModes.map(mode => (
                 <li
@@ -72,8 +142,19 @@ export function ScoreCell({
               ))}
             </ul>
           </div>
+        ) : modeGuidance.length > 0 ? (
+          <div className="space-y-1.5">
+            <p className="text-muted-foreground">What lowers this score</p>
+            <ul className="space-y-1">
+              {modeGuidance.map(mode => (
+                <li key={mode.description} className="text-muted-foreground">
+                  {mode.description}
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
-        {insight.note ? (
+        {insight?.note ? (
           <p className="italic text-muted-foreground">{insight.note}</p>
         ) : null}
       </TooltipContent>

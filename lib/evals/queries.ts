@@ -57,11 +57,20 @@ export function buildCapabilityDashboardData(
   const snapshots = ordered.map(toSnapshot)
   const latest = snapshots[0] ?? null
   const previous = snapshots[1] ?? null
+  const latestTime = latest ? new Date(latest.createdAt).getTime() : null
+  const trendSnapshots =
+    latestTime == null
+      ? snapshots
+      : snapshots.filter(
+          snapshot =>
+            latestTime - new Date(snapshot.createdAt).getTime() <=
+            TREND_WINDOW_MS
+        )
 
   return {
     latest,
     previous,
-    trend: [...snapshots]
+    trend: [...trendSnapshots]
       .reverse()
       .map(({ createdAt, passRate, overallScore }) => ({
         createdAt,
@@ -77,6 +86,8 @@ export const buildRegressionDashboardData = buildCapabilityDashboardData
 
 type SuiteValue = PersistedDashboardSuite
 
+const TREND_WINDOW_MS = 14 * 24 * 60 * 60 * 1000
+const SUITE_RUNS_LIMIT = 60
 const RECENT_RUNS_LIMIT = 10
 
 const SUMMARY_COLUMNS = {
@@ -105,7 +116,7 @@ async function selectSuiteRows(
     .from(evalSummaries)
     .where(eq(evalSummaries.suite, suite))
     .orderBy(desc(evalSummaries.createdAt))
-    .limit(12)
+    .limit(SUITE_RUNS_LIMIT)
 }
 
 async function selectRecentRuns(

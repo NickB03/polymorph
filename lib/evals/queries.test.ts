@@ -75,6 +75,33 @@ describe('buildCapabilityDashboardData', () => {
     expect(data.latest?.overallScore).toBe(0)
   })
 
+  it('keeps latest and previous but limits trend points to the latest 14-day window', () => {
+    const data = buildCapabilityDashboardData([
+      sampleRow({
+        id: 'old-run',
+        experimentName: 'old-exp',
+        createdAt: new Date('2026-04-10T12:00:00.000Z')
+      }),
+      sampleRow({
+        id: 'previous-run',
+        experimentName: 'previous-exp',
+        createdAt: new Date('2026-04-20T12:00:00.000Z')
+      }),
+      sampleRow({
+        id: 'latest-run',
+        experimentName: 'latest-exp',
+        createdAt: new Date('2026-04-29T12:00:00.000Z')
+      })
+    ])
+
+    expect(data.latest?.experimentName).toBe('latest-exp')
+    expect(data.previous?.experimentName).toBe('previous-exp')
+    expect(data.trend.map(point => point.createdAt)).toEqual([
+      '2026-04-20T12:00:00.000Z',
+      '2026-04-29T12:00:00.000Z'
+    ])
+  })
+
   it('excludes null evaluator scores from the mean instead of coercing to zero', () => {
     const row: EvalSummaryRow = {
       id: 'row-null',
@@ -266,6 +293,6 @@ describe('getEvalsDashboard', () => {
       'reg-exp-1',
       'cap-exp-1'
     ])
-    expect(limitCalls).toEqual([12, 12, 12, 10])
+    expect(limitCalls).toEqual([60, 60, 60, 10])
   })
 })

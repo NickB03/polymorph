@@ -8,7 +8,7 @@ import {
   EVALUATOR_DISPLAY_ORDER,
   getEvaluatorLabel
 } from '@/lib/evals/evaluator-labels'
-import { DEFINITIONS, snapshotSuiteKey } from '@/lib/evals/glossary'
+import { snapshotSuiteKey } from '@/lib/evals/glossary'
 import type {
   EvalsDashboardData,
   EvalSummarySnapshot,
@@ -16,27 +16,21 @@ import type {
 } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
+import { ScoreBar } from '@/components/evals/dashboard/score-bar'
 import { pct } from '@/components/evals/dashboard/shared'
 import { ScoreCell } from '@/components/evals/glossary'
 
-type SuiteLabel = 'Benchmarks' | 'Traffic Monitor' | 'Regression'
+type SuiteLabel = 'Benchmarks' | 'Traffic Monitor' | 'Pinned checks'
 
 const SUITE_LABEL: Record<PersistedDashboardSuite, SuiteLabel> = {
   capability: 'Benchmarks',
   'traffic-monitor': 'Traffic Monitor',
-  regression: 'Regression'
-}
-
-const SUITE_DEF: Record<PersistedDashboardSuite, string> = {
-  capability: DEFINITIONS.benchmarks,
-  'traffic-monitor': DEFINITIONS.trafficMonitor,
-  regression: DEFINITIONS.regression
+  regression: 'Pinned checks'
 }
 
 type Row = {
   id: string
   suite: SuiteLabel
-  def: string
   snap: EvalSummarySnapshot
   deltaPct: number
 }
@@ -56,7 +50,6 @@ function buildRows(data: EvalsDashboardData): Row[] {
     rows.push({
       id: snap.id,
       suite: SUITE_LABEL[snap.suite],
-      def: SUITE_DEF[snap.suite],
       snap,
       deltaPct: older
         ? Math.round((snap.overallScore - older.overallScore) * 100)
@@ -156,24 +149,31 @@ function ExpandedRow({ snap }: { snap: EvalSummarySnapshot }) {
   return (
     <div className="border-t border-border/60 bg-muted/20 px-5 py-4">
       <p className="mb-3 text-xs font-medium text-muted-foreground">
-        Per-judge scores · hover any row for the failure-mode breakdown
+        Per-judge scores · failure-mode signals
       </p>
       <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
         {EVALUATOR_DISPLAY_ORDER.map(key => {
           const v = snap.evaluatorScores[key]
           if (v == null) return null
           return (
-            <ScoreCell key={key} suite={suiteKey} judgeKey={key} value={v}>
+            <ScoreCell
+              key={key}
+              suite={suiteKey}
+              judgeKey={key}
+              value={v}
+              caseCount={snap.totalCases}
+              threshold={snap.threshold}
+              failed={snap.failedEvaluators.includes(key)}
+            >
               <span className="-mx-2 flex items-center gap-3 rounded-md px-2 py-1 text-xs transition-colors hover:bg-background/60">
                 <span className="w-32 truncate text-muted-foreground">
                   {getEvaluatorLabel(key)}
                 </span>
-                <span className="block h-1 flex-1 overflow-hidden rounded-full bg-muted/60">
-                  <span
-                    className="block h-full rounded-full bg-accent-blue/70"
-                    style={{ width: `${v * 100}%` }}
-                  />
-                </span>
+                <ScoreBar
+                  failed={snap.failedEvaluators.includes(key)}
+                  threshold={snap.threshold}
+                  value={v}
+                />
                 <span className="w-9 text-right font-mono tabular-nums">
                   {pct(v)}
                 </span>

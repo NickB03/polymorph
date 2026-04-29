@@ -106,4 +106,32 @@ describe('ActivityList', () => {
     expect(rows[2]).toHaveTextContent('Benchmarks')
     expect(rows[2]).toHaveTextContent('84%')
   })
+
+  it('keeps expanded score bars visible inside focusable tooltip rows', () => {
+    const capabilityNew = baseSnapshot({
+      id: 'cap-new',
+      evaluatorScores: { faithfulness: 0.9, relevance: 0.82 },
+      overallScore: 0.9,
+      passRate: 0.9
+    })
+
+    renderActivityList(dataWithRecentRuns([capabilityNew]))
+
+    const meters = screen.getAllByRole('meter')
+    expect(meters).toHaveLength(2)
+    expect(meters[0]).toHaveClass('block', 'w-full')
+    expect(meters[0]).toHaveAttribute(
+      'aria-valuetext',
+      'Faithfulness score 90%, on track, 80% threshold, 10 cases'
+    )
+
+    const scoreBars = screen.getAllByTestId('score-bar')
+    expect(scoreBars).toHaveLength(2)
+    expect(screen.getAllByTestId('score-bar-fill')[0]).toHaveStyle({
+      width: '90%'
+    })
+    expect(screen.getAllByTestId('score-bar-threshold')[0]).toHaveStyle({
+      left: '80%'
+    })
+  })
 })

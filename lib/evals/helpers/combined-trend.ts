@@ -1,4 +1,4 @@
-import type { EvalsDashboardData } from '@/lib/evals/types'
+import type { EvalsDashboardData, EvalTrendPoint } from '@/lib/evals/types'
 
 export interface CombinedTrendPoint {
   createdAt: string
@@ -7,9 +7,15 @@ export interface CombinedTrendPoint {
   trafficMonitor: number | null
 }
 
-export function buildCombinedTrend(
-  data: EvalsDashboardData
-): CombinedTrendPoint[] {
+export function buildCombinedTrendFromSeries({
+  capability,
+  regression,
+  trafficMonitor
+}: {
+  capability: EvalTrendPoint[]
+  regression: EvalTrendPoint[]
+  trafficMonitor: EvalTrendPoint[]
+}): CombinedTrendPoint[] {
   const map = new Map<string, CombinedTrendPoint>()
   const ensure = (iso: string) => {
     if (!map.has(iso)) {
@@ -22,16 +28,26 @@ export function buildCombinedTrend(
     }
     return map.get(iso)!
   }
-  data.capability.trend.forEach(p => {
+  capability.forEach(p => {
     ensure(p.createdAt).capability = p.overallScore
   })
-  data.regression.trend.forEach(p => {
+  regression.forEach(p => {
     ensure(p.createdAt).regression = p.overallScore
   })
-  data.trafficMonitor.trend.forEach(p => {
+  trafficMonitor.forEach(p => {
     ensure(p.createdAt).trafficMonitor = p.overallScore
   })
   return [...map.values()].sort((a, b) =>
     a.createdAt.localeCompare(b.createdAt)
   )
+}
+
+export function buildCombinedTrend(
+  data: EvalsDashboardData
+): CombinedTrendPoint[] {
+  return buildCombinedTrendFromSeries({
+    capability: data.capability.trend,
+    regression: data.regression.trend,
+    trafficMonitor: data.trafficMonitor.trend
+  })
 }

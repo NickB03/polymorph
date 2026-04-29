@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
 import { DEFINITIONS } from '@/lib/evals/glossary'
+import { buildCombinedTrendFromSeries } from '@/lib/evals/helpers/combined-trend'
 import type { EvalTrendPoint } from '@/lib/evals/types'
 
 import {
@@ -16,6 +17,15 @@ import {
 
 import { DefinedTerm } from '@/components/evals/glossary'
 
+const HOUR_MS = 60 * 60 * 1000
+const SHORT_AXIS_SPAN_MS = 3 * 24 * HOUR_MS
+
+const SUITE_LABELS: Record<string, string> = {
+  capability: 'Benchmarks',
+  regression: 'Pinned checks',
+  trafficMonitor: 'Traffic'
+}
+
 export function CombinedTrend({
   capability,
   traffic,
@@ -25,33 +35,23 @@ export function CombinedTrend({
   traffic: EvalTrendPoint[]
   regression: EvalTrendPoint[]
 }) {
-  const series = useMemo(() => {
-    const byDate = new Map<
-      string,
-      { createdAt: string; cap?: number; traf?: number; reg?: number }
-    >()
-    for (const p of capability) {
-      const k = p.createdAt.slice(0, 10)
-      const row = byDate.get(k) ?? { createdAt: p.createdAt }
-      row.cap = p.overallScore
-      byDate.set(k, row)
-    }
-    for (const p of traffic) {
-      const k = p.createdAt.slice(0, 10)
-      const row = byDate.get(k) ?? { createdAt: p.createdAt }
-      row.traf = p.overallScore
-      byDate.set(k, row)
-    }
-    for (const p of regression) {
-      const k = p.createdAt.slice(0, 10)
-      const row = byDate.get(k) ?? { createdAt: p.createdAt }
-      row.reg = p.overallScore
-      byDate.set(k, row)
-    }
-    return Array.from(byDate.values()).sort((a, b) =>
-      a.createdAt.localeCompare(b.createdAt)
-    )
-  }, [capability, traffic, regression])
+  const series = useMemo(
+    () =>
+      buildCombinedTrendFromSeries({
+        capability,
+        regression,
+        trafficMonitor: traffic
+      }).map(point => ({
+        ...point,
+        timestamp: new Date(point.createdAt).getTime()
+      })),
+    [capability, traffic, regression]
+  )
+  const timeSpanMs =
+    series.length > 1
+      ? series[series.length - 1].timestamp - series[0].timestamp
+      : 0
+  const axisFormat = timeSpanMs <= SHORT_AXIS_SPAN_MS ? 'MMM d, ha' : 'MMM d'
 
   return (
     <section className="flex h-full flex-col gap-5 rounded-2xl border border-border/60 bg-background p-6">
@@ -76,7 +76,7 @@ export function CombinedTrend({
               solid: true
             },
             {
-              label: 'Regression — pinned cases',
+              label: 'Pinned checks — known-risk cases',
               color: 'var(--muted-foreground)',
               def: DEFINITIONS.regression,
               dashed: true
@@ -92,9 +92,12 @@ export function CombinedTrend({
       </div>
       <ChartContainer
         config={{
-          cap: { label: 'Benchmarks', color: 'var(--accent-blue)' },
-          reg: { label: 'Regression', color: 'var(--muted-foreground)' },
-          traf: { label: 'Traffic', color: 'var(--accent-amber)' }
+          capability: { label: 'Benchmarks', color: 'var(--accent-blue)' },
+          regression: {
+            label: 'Pinned checks',
+            color: 'var(--muted-foreground)'
+          },
+          trafficMonitor: { label: 'Traffic', color: 'var(--accent-amber)' }
         }}
         className="h-[260px] w-full"
       >
@@ -119,10 +122,19 @@ export function CombinedTrend({
             strokeDasharray="2 4"
           />
           <XAxis
-            dataKey="createdAt"
-            tickFormatter={v => format(new Date(v), 'MMM d')}
+            dataKey="timestamp"
+            type="number"
+            scale="time"
+            domain={[
+              (dataMin: number) =>
+                series.length > 1 ? dataMin : dataMin - HOUR_MS,
+              (dataMax: number) =>
+                series.length > 1 ? dataMax : dataMax + HOUR_MS
+            ]}
+            tickFormatter={v => format(new Date(Number(v)), axisFormat)}
             tickLine={false}
             axisLine={false}
+            minTickGap={24}
             tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
           />
           <YAxis
@@ -136,16 +148,32 @@ export function CombinedTrend({
           <ChartTooltip
             content={
               <ChartTooltipContent
-                formatter={v => `${Math.round(Number(v) * 100)}%`}
-                labelFormatter={v =>
-                  format(new Date(String(v)), 'MMM d, h:mm a')
-                }
+                formatter={(_value, name) => (
+                  <>
+                    <span className="text-muted-foreground">
+                      {SUITE_LABELS[String(name)] ?? String(name)}
+                    </span>
+                    <span className="font-mono font-medium tabular-nums text-foreground">
+                      {Math.round(Number(_value) * 100)}%
+                    </span>
+                  </>
+                )}
+                labelFormatter={(_value, payload) => {
+                  const createdAt = payload?.find(
+                    item => item?.payload?.createdAt
+                  )?.payload.createdAt
+                  return createdAt
+                    ? format(new Date(createdAt), 'MMM d, h:mm a')
+                    : null
+                }}
+                indicator="line"
+                className="min-w-[10rem]"
               />
             }
           />
           <Area
             type="monotone"
-            dataKey="cap"
+            dataKey="capability"
             stroke="var(--accent-blue)"
             strokeWidth={2}
             fill="url(#capFillCombined)"
@@ -153,7 +181,7 @@ export function CombinedTrend({
           />
           <Area
             type="monotone"
-            dataKey="reg"
+            dataKey="regression"
             stroke="var(--muted-foreground)"
             strokeOpacity={0.7}
             strokeWidth={1.5}
@@ -163,7 +191,7 @@ export function CombinedTrend({
           />
           <Area
             type="monotone"
-            dataKey="traf"
+            dataKey="trafficMonitor"
             stroke="var(--accent-amber)"
             strokeWidth={1.5}
             strokeDasharray="1 4"
