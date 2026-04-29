@@ -409,7 +409,9 @@ function parseArgs(argv: string[]) {
   }
 }
 
-if (import.meta.main) {
+const bunImportMeta = import.meta as ImportMeta & { main?: boolean }
+
+if (bunImportMeta.main) {
   seedEvalSummaries(parseArgs(process.argv.slice(2)))
     .then(printSummary)
     .catch(error => {
