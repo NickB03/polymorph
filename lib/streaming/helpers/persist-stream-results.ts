@@ -4,6 +4,7 @@ import { createChatWithFirstMessage, upsertMessage } from '@/lib/actions/chat'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import { updateChatTitle } from '@/lib/db/actions'
 import type { UIMessage } from '@/lib/types/ai'
+import type { ModelType } from '@/lib/types/model-type'
 import { UserMode } from '@/lib/types/search'
 import { perfTime } from '@/lib/utils/perf-logging'
 import { retryDatabaseOperation } from '@/lib/utils/retry'
@@ -19,14 +20,16 @@ export async function persistStreamResults(
   initialSavePromise?: Promise<
     Awaited<ReturnType<typeof createChatWithFirstMessage>>
   >,
-  initialUserMessage?: UIMessage
+  initialUserMessage?: UIMessage,
+  modelType?: ModelType
 ) {
   // Attach metadata to the response message
   responseMessage.metadata = {
     ...(responseMessage.metadata || {}),
     ...(parentTraceId && { traceId: parentTraceId }),
     ...(userMode && { userMode }),
-    ...(modelId && { modelId })
+    ...(modelId && { modelId }),
+    ...(modelType && { modelType })
   }
 
   // Ensure the initial chat/message persistence finished before saving the response

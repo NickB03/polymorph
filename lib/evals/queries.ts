@@ -1,10 +1,8 @@
 import { desc, eq } from 'drizzle-orm'
 
-import { evalSummaries, userEvalPreferences } from '@/lib/db/schema'
+import { evalSummaries } from '@/lib/db/schema'
 import { type TxInstance, withRLS } from '@/lib/db/with-rls'
 
-import { DEFAULT_TEMPLATE_ID } from './layout/templates'
-import type { TemplateId } from './layout/types'
 import type {
   CapabilityDashboardData,
   EvalsDashboardData,
@@ -29,7 +27,7 @@ function computeOverallScore(
   return scored.reduce((total, value) => total + value, 0) / scored.length
 }
 
-function toSnapshot(row: EvalSummaryRow): EvalSummarySnapshot {
+export function toSnapshot(row: EvalSummaryRow): EvalSummarySnapshot {
   return {
     id: row.id,
     suite: row.suite,
@@ -42,6 +40,9 @@ function toSnapshot(row: EvalSummaryRow): EvalSummarySnapshot {
     overallScore: computeOverallScore(row.evaluatorScores),
     evaluatorScores: row.evaluatorScores,
     totalCases: row.totalCases,
+    attemptedCases: row.attemptedCases,
+    failedCases: row.failedCases,
+    dropRate: row.attemptedCases > 0 ? row.failedCases / row.attemptedCases : 0,
     phoenixUrl: row.phoenixUrl,
     createdAt: row.createdAt.toISOString()
   }
@@ -76,29 +77,46 @@ export const buildRegressionDashboardData = buildCapabilityDashboardData
 
 type SuiteValue = PersistedDashboardSuite
 
+const RECENT_RUNS_LIMIT = 10
+
+const SUMMARY_COLUMNS = {
+  id: evalSummaries.id,
+  suite: evalSummaries.suite,
+  experimentName: evalSummaries.experimentName,
+  datasetName: evalSummaries.datasetName,
+  passRateBps: evalSummaries.passRateBps,
+  thresholdBps: evalSummaries.thresholdBps,
+  thresholdBreached: evalSummaries.thresholdBreached,
+  failedEvaluators: evalSummaries.failedEvaluators,
+  evaluatorScores: evalSummaries.evaluatorScores,
+  totalCases: evalSummaries.totalCases,
+  attemptedCases: evalSummaries.attemptedCases,
+  failedCases: evalSummaries.failedCases,
+  phoenixUrl: evalSummaries.phoenixUrl,
+  createdAt: evalSummaries.createdAt
+}
+
 async function selectSuiteRows(
   tx: TxInstance,
   suite: SuiteValue
 ): Promise<EvalSummaryRow[]> {
   return tx
-    .select({
-      id: evalSummaries.id,
-      suite: evalSummaries.suite,
-      experimentName: evalSummaries.experimentName,
-      datasetName: evalSummaries.datasetName,
-      passRateBps: evalSummaries.passRateBps,
-      thresholdBps: evalSummaries.thresholdBps,
-      thresholdBreached: evalSummaries.thresholdBreached,
-      failedEvaluators: evalSummaries.failedEvaluators,
-      evaluatorScores: evalSummaries.evaluatorScores,
-      totalCases: evalSummaries.totalCases,
-      phoenixUrl: evalSummaries.phoenixUrl,
-      createdAt: evalSummaries.createdAt
-    })
+    .select(SUMMARY_COLUMNS)
     .from(evalSummaries)
     .where(eq(evalSummaries.suite, suite))
     .orderBy(desc(evalSummaries.createdAt))
     .limit(12)
+}
+
+async function selectRecentRuns(
+  tx: TxInstance,
+  limit: number
+): Promise<EvalSummaryRow[]> {
+  return tx
+    .select(SUMMARY_COLUMNS)
+    .from(evalSummaries)
+    .orderBy(desc(evalSummaries.createdAt))
+    .limit(limit)
 }
 
 export async function getCapabilityDashboard(userId: string) {
@@ -130,59 +148,18 @@ export async function getEvalsDashboard(
   userId: string
 ): Promise<EvalsDashboardData> {
   return withRLS(userId, async tx => {
-    const [capabilityRows, regressionRows, trafficRows] = await Promise.all([
-      selectSuiteRows(tx, 'capability'),
-      selectSuiteRows(tx, 'regression'),
-      selectSuiteRows(tx, 'traffic-monitor')
-    ])
-    return {
-      capability: buildCapabilityDashboardData(capabilityRows),
-      regression: buildRegressionDashboardData(regressionRows),
-      trafficMonitor: buildTrafficMonitorDashboardData(trafficRows)
-    }
-  })
-}
-
-function parseTemplateId(value: unknown): TemplateId {
-  if (value === 'a' || value === 'b' || value === 'c') return value
-  return DEFAULT_TEMPLATE_ID
-}
-
-export async function getPreferredEvalsLayout(
-  userId: string
-): Promise<TemplateId> {
-  const rows = await withRLS(userId, tx =>
-    tx
-      .select({ preferredLayout: userEvalPreferences.preferredLayout })
-      .from(userEvalPreferences)
-      .where(eq(userEvalPreferences.userId, userId))
-      .limit(1)
-  )
-  return parseTemplateId(rows[0]?.preferredLayout)
-}
-
-export async function getEvalsDashboardWithLayout(
-  userId: string
-): Promise<{ data: EvalsDashboardData; layout: TemplateId }> {
-  return withRLS(userId, async tx => {
-    const [capabilityRows, regressionRows, trafficRows, prefRows] =
+    const [capabilityRows, regressionRows, trafficRows, recentRows] =
       await Promise.all([
         selectSuiteRows(tx, 'capability'),
         selectSuiteRows(tx, 'regression'),
         selectSuiteRows(tx, 'traffic-monitor'),
-        tx
-          .select({ preferredLayout: userEvalPreferences.preferredLayout })
-          .from(userEvalPreferences)
-          .where(eq(userEvalPreferences.userId, userId))
-          .limit(1)
+        selectRecentRuns(tx, RECENT_RUNS_LIMIT)
       ])
     return {
-      data: {
-        capability: buildCapabilityDashboardData(capabilityRows),
-        regression: buildRegressionDashboardData(regressionRows),
-        trafficMonitor: buildTrafficMonitorDashboardData(trafficRows)
-      },
-      layout: parseTemplateId(prefRows[0]?.preferredLayout)
+      capability: buildCapabilityDashboardData(capabilityRows),
+      regression: buildRegressionDashboardData(regressionRows),
+      trafficMonitor: buildTrafficMonitorDashboardData(trafficRows),
+      recentRuns: recentRows.map(toSnapshot)
     }
   })
 }

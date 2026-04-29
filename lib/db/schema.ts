@@ -584,6 +584,8 @@ export const evalSummaries = pgTable(
       .$type<Record<string, number | null>>()
       .notNull(),
     totalCases: integer('total_cases').notNull(),
+    attemptedCases: integer('attempted_cases').notNull().default(0),
+    failedCases: integer('failed_cases').notNull().default(0),
     phoenixUrl: text('phoenix_url'),
     createdAt: timestamp('created_at').notNull().defaultNow()
   },
@@ -600,6 +602,10 @@ export const evalSummaries = pgTable(
     check(
       'eval_summaries_threshold_bps_range',
       sql`${table.thresholdBps} IS NULL OR (${table.thresholdBps} >= 0 AND ${table.thresholdBps} <= 10000)`
+    ),
+    check(
+      'eval_summaries_failed_cases_lte_attempted',
+      sql`${table.failedCases} <= ${table.attemptedCases}`
     ),
     check(
       'eval_summaries_suite_enum',

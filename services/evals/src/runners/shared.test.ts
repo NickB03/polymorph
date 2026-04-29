@@ -255,6 +255,52 @@ describe('buildDatasetExamples', () => {
     expect(examples[0].input.query).toBe('hello there')
     expect(examples[0].input.context).toBe('')
   })
+
+  it('includes optional build user mode and intent in dataset input', async () => {
+    const { buildDatasetExamples } = await import('./shared')
+
+    const examples = buildDatasetExamples(
+      [
+        {
+          id: 'traffic-build-1',
+          suite: 'traffic-monitor',
+          conversation: [
+            {
+              role: 'user',
+              parts: [{ type: 'text', text: 'Build a budget tracker' }]
+            }
+          ],
+          searchMode: 'chat',
+          userMode: 'build',
+          intent: 'build',
+          modelType: 'quality',
+          tags: ['traffic-monitor', 'user-mode:build'],
+          requiresTextAnswer: true,
+          requiresCitations: false,
+          allowsInteractiveOnly: false,
+          expectsRefusal: false
+        }
+      ],
+      [
+        {
+          answerText: 'answer',
+          citations: [],
+          searchResults: [],
+          toolNames: [],
+          usedInteractiveOnlyOutput: false,
+          modelId: 'model',
+          durationMs: 1
+        }
+      ]
+    )
+
+    expect(examples[0].input).toMatchObject({
+      searchMode: 'chat',
+      userMode: 'build',
+      intent: 'build',
+      modelType: 'quality'
+    })
+  })
 })
 
 describe('buildTimestampedDatasetName', () => {

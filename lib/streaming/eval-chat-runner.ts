@@ -2,17 +2,18 @@ import { convertToModelMessages, pruneMessages, readUIMessageStream } from 'ai'
 import { randomUUID } from 'crypto'
 
 import { researcher } from '@/lib/agents/researcher'
+import { inlineFileUrls } from '@/lib/streaming/helpers/inline-file-urls'
 import { stripReasoningParts } from '@/lib/streaming/helpers/strip-reasoning-parts'
 import type { SearchResults } from '@/lib/types'
 import type { UIMessage } from '@/lib/types/ai'
 import type { ModelType } from '@/lib/types/model-type'
 import type { Model } from '@/lib/types/models'
-import type { SearchMode } from '@/lib/types/search'
+import type { SearchMode, UserMode } from '@/lib/types/search'
 import { createModelId } from '@/lib/utils'
 import { maybeTruncateMessages } from '@/lib/utils/context-window'
 import { flushTraces, isTracingEnabled } from '@/lib/utils/telemetry'
 
-type EvalSuite = 'capability' | 'regression' | 'smoke'
+type EvalSuite = 'capability' | 'regression' | 'smoke' | 'traffic-monitor'
 
 export interface EvalChatRunInput {
   caseId: string
@@ -22,6 +23,8 @@ export interface EvalChatRunInput {
     parts: Array<{ type: 'text'; text: string }>
   }>
   searchMode: SearchMode
+  userMode?: UserMode
+  intent?: string
   modelType: ModelType
   model: Model
   abortSignal?: AbortSignal
@@ -178,6 +181,8 @@ export async function runEvalChat({
   suite,
   conversation,
   searchMode,
+  userMode,
+  intent,
   modelType,
   model,
   abortSignal
@@ -201,6 +206,7 @@ export async function runEvalChat({
     toolCalls: 'before-last-2-messages',
     emptyMessages: 'remove'
   })
+  modelMessages = await inlineFileUrls(modelMessages)
   modelMessages = maybeTruncateMessages(modelMessages, model)
 
   const researchAgent = researcher({
@@ -208,6 +214,8 @@ export async function runEvalChat({
     modelConfig: model,
     parentTraceId,
     searchMode,
+    userMode,
+    intent,
     modelType,
     telemetryEnabled: false,
     experimentalContext: { caseId, suite, executionMode: 'eval' }

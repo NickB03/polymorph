@@ -16,6 +16,8 @@
     "migrate": "bun run lib/db/migrate.ts",
     "test": "NODE_ENV=test vitest run",
     "test:watch": "vitest --watch",
+    "seed:evals": "bun run scripts/seed-eval-summaries.ts --write --reset",
+    "seed:evals:dry-run": "bun run scripts/seed-eval-summaries.ts --dry-run",
     "chat": "bun run scripts/chat-cli.ts",
     "prepare": "husky"
   },

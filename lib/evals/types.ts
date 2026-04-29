@@ -21,6 +21,9 @@ export interface EvalSummarySnapshot {
   overallScore: number
   evaluatorScores: Record<string, number | null>
   totalCases: number
+  attemptedCases: number
+  failedCases: number
+  dropRate: number
   phoenixUrl: string | null
   createdAt: string
 }
@@ -39,6 +42,7 @@ export interface EvalsDashboardData {
   capability: CapabilityDashboardData
   regression: RegressionDashboardData
   trafficMonitor: TrafficMonitorDashboardData
+  recentRuns: EvalSummarySnapshot[]
 }
 
 export interface EvalSummaryRow {
@@ -52,6 +56,8 @@ export interface EvalSummaryRow {
   failedEvaluators: string[]
   evaluatorScores: Record<string, number | null>
   totalCases: number
+  attemptedCases: number
+  failedCases: number
   phoenixUrl: string | null
   createdAt: Date
 }

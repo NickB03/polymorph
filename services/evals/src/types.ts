@@ -18,6 +18,8 @@ export interface SuiteRunResult {
   datasetName: string
   phoenixUrl: string | null
   totalCases: number
+  attemptedCases: number
+  failedCases: number
 }
 
 export type EvalRunMode =
@@ -28,6 +30,7 @@ export type EvalRunMode =
   | 'all'
 
 export type EvalSearchMode = 'chat' | 'research'
+export type EvalUserMode = 'search' | 'research' | 'build'
 export type EvalModelType = 'speed' | 'quality'
 
 export interface EvalConversationPart {
@@ -45,6 +48,8 @@ export interface EvalCase {
   suite: EvalSuite
   conversation: EvalConversationMessage[]
   searchMode: EvalSearchMode
+  userMode?: EvalUserMode
+  intent?: string
   modelType: EvalModelType
   tags: string[]
   requiresTextAnswer: boolean
@@ -85,6 +90,8 @@ export interface EvalDatasetInput {
   suite: EvalSuite
   conversation: EvalConversationMessage[]
   searchMode: EvalSearchMode
+  userMode?: EvalUserMode
+  intent?: string
   modelType: EvalModelType
   prompt: string
   query: string

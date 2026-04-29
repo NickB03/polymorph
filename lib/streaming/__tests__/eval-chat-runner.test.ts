@@ -10,6 +10,7 @@ const mockReadUIMessageStream = vi.fn()
 const mockConvertToModelMessages = vi.fn()
 const mockPruneMessages = vi.fn()
 const mockMaybeTruncateMessages = vi.fn()
+const mockInlineFileUrls = vi.fn()
 
 vi.mock('ai', async importOriginal => {
   const actual = await importOriginal<typeof import('ai')>()
@@ -43,6 +44,10 @@ vi.mock('@/lib/streaming/helpers/strip-reasoning-parts', () => ({
   stripReasoningParts: vi.fn((messages: unknown[]) => messages)
 }))
 
+vi.mock('@/lib/streaming/helpers/inline-file-urls', () => ({
+  inlineFileUrls: (...args: unknown[]) => mockInlineFileUrls(...args)
+}))
+
 beforeEach(() => {
   vi.clearAllMocks()
   mockConvertToModelMessages.mockResolvedValue([])
@@ -52,6 +57,7 @@ beforeEach(() => {
   mockMaybeTruncateMessages.mockImplementation(
     (messages: unknown[]) => messages
   )
+  mockInlineFileUrls.mockImplementation(async (messages: unknown[]) => messages)
 })
 
 describe('normalizeEvalRunResult', () => {
@@ -189,8 +195,8 @@ describe('runEvalChat', () => {
     })
 
     const result = await runEvalChat({
-      caseId: 'case-1',
-      suite: 'capability',
+      caseId: 'traffic-1',
+      suite: 'traffic-monitor',
       conversation: [
         {
           role: 'user',
@@ -212,6 +218,11 @@ describe('runEvalChat', () => {
         searchMode: 'research',
         modelType: 'quality',
         telemetryEnabled: false,
+        experimentalContext: expect.objectContaining({
+          caseId: 'traffic-1',
+          suite: 'traffic-monitor',
+          executionMode: 'eval'
+        }),
         modelConfig: expect.objectContaining({
           id: 'gemini-3-flash'
         })
@@ -222,5 +233,103 @@ describe('runEvalChat', () => {
       { title: 'Alpha', url: 'https://alpha.test' }
     ])
     expect(result.usedInteractiveOnlyOutput).toBe(false)
+  })
+
+  it('passes build user mode and intent to the researcher while keeping chat search mode', async () => {
+    const finalMessage = {
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'Built it.' }]
+    }
+
+    mockReadUIMessageStream.mockImplementation(async function* () {
+      yield finalMessage
+    })
+
+    mockResearcher.mockReturnValue({
+      stream: vi.fn().mockResolvedValue({
+        toUIMessageStream: vi.fn(() => new ReadableStream())
+      })
+    })
+
+    await runEvalChat({
+      caseId: 'build-traffic-1',
+      suite: 'traffic-monitor',
+      conversation: [
+        {
+          role: 'user',
+          parts: [{ type: 'text', text: 'Build a tiny counter app.' }]
+        }
+      ] as any,
+      searchMode: 'chat',
+      userMode: 'build',
+      intent: 'build',
+      modelType: 'quality',
+      model: {
+        id: 'gemini-3-flash',
+        name: 'Gemini 3 Flash',
+        provider: 'Google',
+        providerId: 'gateway'
+      }
+    })
+
+    expect(mockResearcher).toHaveBeenCalledWith(
+      expect.objectContaining({
+        searchMode: 'chat',
+        userMode: 'build',
+        intent: 'build'
+      })
+    )
+  })
+
+  it('inlines file URLs after pruneMessages and before maybeTruncateMessages', async () => {
+    const finalMessage = {
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'ok' }]
+    }
+
+    mockReadUIMessageStream.mockImplementation(async function* () {
+      yield finalMessage
+    })
+
+    mockResearcher.mockReturnValue({
+      stream: vi.fn().mockResolvedValue({
+        toUIMessageStream: vi.fn(() => new ReadableStream())
+      })
+    })
+
+    const callOrder: string[] = []
+    mockPruneMessages.mockImplementation(
+      ({ messages }: { messages: unknown[] }) => {
+        callOrder.push('prune')
+        return messages
+      }
+    )
+    mockInlineFileUrls.mockImplementation(async (messages: unknown[]) => {
+      callOrder.push('inline')
+      return messages
+    })
+    mockMaybeTruncateMessages.mockImplementation((messages: unknown[]) => {
+      callOrder.push('truncate')
+      return messages
+    })
+
+    await runEvalChat({
+      caseId: 'c-1',
+      suite: 'traffic-monitor',
+      conversation: [
+        { role: 'user', parts: [{ type: 'text', text: 'hi' }] }
+      ] as any,
+      searchMode: 'chat',
+      modelType: 'speed',
+      model: {
+        id: 'gemini-3-flash',
+        name: 'Gemini 3 Flash',
+        provider: 'Google',
+        providerId: 'gateway'
+      }
+    })
+
+    expect(mockInlineFileUrls).toHaveBeenCalledTimes(1)
+    expect(callOrder).toEqual(['prune', 'inline', 'truncate'])
   })
 })

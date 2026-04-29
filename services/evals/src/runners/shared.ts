@@ -170,7 +170,9 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     experimentName,
     datasetName,
     phoenixUrl,
-    totalCases: examples.length
+    totalCases: examples.length,
+    attemptedCases: cases.length,
+    failedCases: failCount
   })
 
   if (result.status === 'threshold_breached') {
@@ -190,6 +192,8 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
         failedEvaluators: result.failedEvaluators,
         experiment,
         totalCases: result.totalCases,
+        attemptedCases: result.attemptedCases,
+        failedCases: result.failedCases,
         phoenixUrl
       }
     )
@@ -249,6 +253,10 @@ export function buildDatasetExamples(
         suite: caseSpec.suite,
         conversation: caseSpec.conversation,
         searchMode: caseSpec.searchMode,
+        ...(caseSpec.userMode !== undefined
+          ? { userMode: caseSpec.userMode }
+          : {}),
+        ...(caseSpec.intent !== undefined ? { intent: caseSpec.intent } : {}),
         modelType: caseSpec.modelType,
         prompt,
         query: prompt,
@@ -399,6 +407,8 @@ export function buildSuiteRunResult(params: {
   datasetName: string
   phoenixUrl: string | null
   totalCases: number
+  attemptedCases: number
+  failedCases: number
 }): SuiteRunResult {
   return {
     suite: params.suite,
@@ -409,7 +419,9 @@ export function buildSuiteRunResult(params: {
     experimentName: params.experimentName,
     datasetName: params.datasetName,
     phoenixUrl: params.phoenixUrl,
-    totalCases: params.totalCases
+    totalCases: params.totalCases,
+    attemptedCases: params.attemptedCases,
+    failedCases: params.failedCases
   }
 }
 

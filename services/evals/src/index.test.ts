@@ -2,12 +2,37 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ChatSample } from './sampler'
 
+function makeSample(overrides: Partial<ChatSample>): ChatSample {
+  const userQuery = overrides.userQuery ?? 'test query'
+  return {
+    chatId: overrides.chatId ?? 'chat-wiring',
+    createdAt: overrides.createdAt ?? new Date('2026-04-01T12:00:00Z'),
+    targetUserMessageId: overrides.targetUserMessageId ?? 'user-1',
+    targetAssistantMessageId:
+      overrides.targetAssistantMessageId ?? 'assistant-1',
+    userQuery,
+    conversation: overrides.conversation ?? [
+      {
+        role: 'user',
+        parts: [{ type: 'text', text: userQuery }]
+      }
+    ],
+    searchMode: overrides.searchMode ?? 'chat',
+    modelType: overrides.modelType ?? 'speed',
+    metadataTags: overrides.metadataTags ?? ['mode_metadata_missing'],
+    searchResults: overrides.searchResults ?? [],
+    modelAnswer: overrides.modelAnswer ?? 'Test answer',
+    citations: overrides.citations ?? [],
+    toolNames: overrides.toolNames ?? []
+  }
+}
+
 const mockCloseDb = vi.fn(async () => {})
 const mockRunConfiguredModes = vi.fn(
   async () => [] as Array<import('./types').SuiteRunResult>
 )
 
-const fixtureSample: ChatSample = {
+const fixtureSample = makeSample({
   chatId: 'chat-wiring',
   createdAt: new Date('2026-04-01T12:00:00Z'),
   userQuery: 'test query',
@@ -22,7 +47,7 @@ const fixtureSample: ChatSample = {
   modelAnswer: 'Test answer',
   citations: [{ title: 'Source', url: 'https://source.com' }],
   toolNames: ['search']
-}
+})
 
 vi.mock('./db', () => ({
   db: {},
@@ -71,7 +96,7 @@ describe('formatContext', () => {
   it('formats search results with query headers', async () => {
     const { formatContext } = await import('./runners/traffic-monitor')
 
-    const sample: ChatSample = {
+    const sample = makeSample({
       chatId: 'chat-1',
       createdAt: new Date('2026-04-01'),
       userQuery: 'what is AI?',
@@ -90,7 +115,7 @@ describe('formatContext', () => {
       modelAnswer: 'AI stands for artificial intelligence.',
       citations: [],
       toolNames: ['search']
-    }
+    })
 
     const result = formatContext(sample)
     expect(result).toContain('[Search: "artificial intelligence"]')
@@ -103,7 +128,7 @@ describe('formatContext', () => {
   it('formats citations when present', async () => {
     const { formatContext } = await import('./runners/traffic-monitor')
 
-    const sample: ChatSample = {
+    const sample = makeSample({
       chatId: 'chat-2',
       createdAt: new Date('2026-04-01'),
       userQuery: 'what is quantum computing?',
@@ -113,7 +138,7 @@ describe('formatContext', () => {
         { title: 'Quantum Wiki', url: 'https://example.com/quantum' }
       ],
       toolNames: []
-    }
+    })
 
     const result = formatContext(sample)
     expect(result).toContain('[Citations]')
@@ -123,7 +148,7 @@ describe('formatContext', () => {
   it('returns empty string when no search results or citations', async () => {
     const { formatContext } = await import('./runners/traffic-monitor')
 
-    const sample: ChatSample = {
+    const sample = makeSample({
       chatId: 'chat-3',
       createdAt: new Date('2026-04-01'),
       userQuery: 'hello',
@@ -131,7 +156,7 @@ describe('formatContext', () => {
       modelAnswer: 'Hi!',
       citations: [],
       toolNames: []
-    }
+    })
 
     const result = formatContext(sample)
     expect(result).toBe('')
@@ -140,7 +165,7 @@ describe('formatContext', () => {
   it('formats multiple search results and citations together', async () => {
     const { formatContext } = await import('./runners/traffic-monitor')
 
-    const sample: ChatSample = {
+    const sample = makeSample({
       chatId: 'chat-4',
       createdAt: new Date('2026-04-01'),
       userQuery: 'climate change',
@@ -177,7 +202,7 @@ describe('formatContext', () => {
         { title: 'IPCC', url: 'https://ipcc.ch' }
       ],
       toolNames: ['search']
-    }
+    })
 
     const result = formatContext(sample)
     expect(result).toContain('[Search: "climate change effects"]')
@@ -219,7 +244,9 @@ describe('main lifecycle', () => {
         experimentName: 'exp-1',
         datasetName: 'ds-1',
         phoenixUrl: null,
-        totalCases: 12
+        totalCases: 12,
+        attemptedCases: 12,
+        failedCases: 0
       }
     ] satisfies Array<import('./types').SuiteRunResult>)
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})

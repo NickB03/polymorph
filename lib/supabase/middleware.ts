@@ -4,7 +4,7 @@ import { type CookieOptions, createServerClient } from '@supabase/ssr'
 
 import { getSafeRedirectPath } from '@/lib/auth/redirect-path'
 
-const PUBLIC_EXACT_PATHS = new Set(['/'])
+const PUBLIC_EXACT_PATHS = new Set(['/', '/manifest.webmanifest'])
 const PUBLIC_PREFIX_PATHS = ['/auth', '/share', '/api']
 
 export function isPublicPath(pathname: string) {

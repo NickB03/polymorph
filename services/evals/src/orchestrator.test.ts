@@ -138,7 +138,9 @@ describe('runConfiguredModes', () => {
           experimentName: 'traf-exp-x',
           datasetName: 'traf-ds-x',
           phoenixUrl: null,
-          totalCases: 10
+          totalCases: 10,
+          attemptedCases: 10,
+          failedCases: 0
         }
       )
     )
@@ -162,7 +164,9 @@ describe('runConfiguredModes', () => {
       experimentName: 'traf-exp-y',
       datasetName: 'traf-ds-y',
       phoenixUrl: null,
-      totalCases: 10
+      totalCases: 10,
+      attemptedCases: 10,
+      failedCases: 0
     }
     mockRunTrafficMonitorSuite.mockRejectedValueOnce(
       new EvalSummaryPersistError(
@@ -199,7 +203,9 @@ describe('runConfiguredModes', () => {
         experimentName: 'cap-x',
         datasetName: 'cap-y',
         phoenixUrl: null,
-        totalCases: 5
+        totalCases: 5,
+        attemptedCases: 5,
+        failedCases: 0
       }
     )
     const persistErrB = new EvalSummaryPersistError(
@@ -213,7 +219,9 @@ describe('runConfiguredModes', () => {
         experimentName: 'reg-x',
         datasetName: 'reg-y',
         phoenixUrl: null,
-        totalCases: 4
+        totalCases: 4,
+        attemptedCases: 4,
+        failedCases: 0
       }
     )
     mockRunCapabilitySuite.mockRejectedValueOnce(persistErrA)
@@ -252,7 +260,9 @@ describe('runConfiguredModes', () => {
         experimentName: 'traf-x',
         datasetName: 'traf-y',
         phoenixUrl: null,
-        totalCases: 10
+        totalCases: 10,
+        attemptedCases: 10,
+        failedCases: 0
       }
     )
     mockRunTrafficMonitorSuite.mockRejectedValueOnce(persistErr)
@@ -288,7 +298,9 @@ describe('runConfiguredModes', () => {
         experimentName: 'cap-x',
         datasetName: 'cap-y',
         phoenixUrl: null,
-        totalCases: 5
+        totalCases: 5,
+        attemptedCases: 5,
+        failedCases: 0
       }
     )
     const persistErrB = new EvalSummaryPersistError(
@@ -302,7 +314,9 @@ describe('runConfiguredModes', () => {
         experimentName: 'traf-x',
         datasetName: 'traf-y',
         phoenixUrl: null,
-        totalCases: 10
+        totalCases: 10,
+        attemptedCases: 10,
+        failedCases: 0
       }
     )
     mockRunCapabilitySuite.mockRejectedValueOnce(persistErrA)

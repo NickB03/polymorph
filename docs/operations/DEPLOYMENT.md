@@ -157,17 +157,17 @@ The `services/evals/` directory contains a scheduled evaluation pipeline:
 - **Failure-mode split in logs:** two distinct error labels, each pointing at a different system.
   - `[evals] PHOENIX UNAVAILABLE - could not record <suite> experiment results` — Phoenix HTTP layer is down, dataset/experiment creation failed. The suite never reached the DB write step. Investigate Phoenix service health (`railway logs -s phoenix`, `/` 200 check).
   - `[evals] DB WRITE FAILED - could not persist <suite> eval summary` — Phoenix experiment was created successfully, but the Postgres write to `eval_summaries` failed. The Phoenix experiment is intact; only the dashboard row is missing. Investigate Postgres connectivity, the RLS role on `DATABASE_URL`, and the `eval_summaries` table.
-  - Threshold gating survives DB failures: if a capability/regression suite scores below threshold **and** the DB write fails, the runner still throws the threshold-failure error so the cron fails and pages alert.
+  - Threshold breaches are warning-only by default so a personal-project cron keeps publishing Phoenix and dashboard evidence. Set `EVAL_EXIT_ON_THRESHOLD_BREACH=true` when you want threshold breaches from capability, regression, traffic-monitor, or any other persisted eval suite to fail the cron. If a DB write fails, the runner still surfaces the DB failure after the mode finishes so the missing dashboard row is visible.
 
 > **The `evaluators` project in the Phoenix UI is Phoenix-managed, not ours.** When an experiment runs, Phoenix auto-routes the judge model's LLM spans into a reserved project called `evaluators`. You can't rename, delete, or reconfigure it — it exists anywhere experiments run. This is why you'll see traces there even though `services/evals/` never sets `PHOENIX_PROJECT_NAME`.
-
-> **Ad-hoc evals run locally against `bun dev`, not against preview deployments.** The Railway cron above targets production (`EVAL_RUNNER_URL=https://polymorph-nb.vercel.app`). For one-off runs on a branch, run `services/evals/` locally with `EVAL_RUNNER_URL=http://localhost:43100` and a matching `EVAL_RUNNER_SECRET` set in both your local `.env.local` and the shell invoking the evals service. The `capability` and `regression` modes call `/api/evals/run` (secret-gated); the `smoke` mode instead calls `/api/chat` directly using a Supabase seed user, so it needs `APP_URL` / `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SEED_USER_EMAIL` / `SEED_USER_PASSWORD` — see `services/evals/src/config.ts` for the exact required set per mode. Vercel Preview deployments intentionally do **not** have `EVAL_RUNNER_SECRET` configured, so `/api/evals/run` on a preview URL returns HTTP 403 — preview remains a visual-QA surface, not an eval target.
+>
+> **Ad-hoc evals run locally against `bun dev`, not against preview deployments.** The Railway cron above targets production (`EVAL_RUNNER_URL=https://polymorph-nb.vercel.app`). For one-off runs on a branch, run `services/evals/` locally with `EVAL_RUNNER_URL=http://localhost:43100` and a matching `EVAL_RUNNER_SECRET` set in both your local `.env.local` and the shell invoking the evals service. The `capability`, `regression`, and `traffic-monitor` modes call `/api/evals/run` (secret-gated); the `smoke` mode instead calls `/api/chat` directly using a Supabase seed user, so it needs `APP_URL` / `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SEED_USER_EMAIL` / `SEED_USER_PASSWORD` — see `services/evals/src/config.ts` for the exact required set per mode. Vercel Preview deployments intentionally do **not** have `EVAL_RUNNER_SECRET` configured, so `/api/evals/run` on a preview URL returns HTTP 403 — preview remains a visual-QA surface, not an eval target.
 
 **Railway deployment:**
 
 - Deploy as a Railway cron service from `services/evals/Dockerfile`
 - Schedule: set the Railway cron to an every-48-hours cadence for the personal-project baseline. This schedule is managed in Railway, not in git.
-- Uses private networking to Phoenix (`PHOENIX_HOST=http://phoenix.railway.internal:6006`)
+- Uses private networking to Phoenix for writes (`PHOENIX_HOST=http://phoenix.railway.internal:6006`) and `PHOENIX_PUBLIC_URL` for dashboard links.
 
 > **Triggering a cron run manually.** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image and re-registers the schedule — it does **not** execute the container CMD. For an immediate one-off run use the Railway dashboard (`Deployments → ⋯ → Redeploy`), which does run the CMD. Otherwise wait for the next scheduled tick.
 
@@ -185,7 +185,11 @@ These defaults are tuned for low-volume personal-project traffic. If you widen t
 | Variable                     | Value                                                              |
 | ---------------------------- | ------------------------------------------------------------------ |
 | `DATABASE_URL`               | Supabase Postgres connection string                                |
+| `EVAL_RUN_MODE`              | `traffic-monitor` for the scheduled production cron                |
+| `EVAL_RUNNER_URL`            | Production app URL for `/api/evals/run`                            |
+| `EVAL_RUNNER_SECRET`         | Shared secret that matches the app's `EVAL_RUNNER_SECRET`          |
 | `PHOENIX_HOST`               | `http://phoenix.railway.internal:6006`                             |
+| `PHOENIX_PUBLIC_URL`         | Public Phoenix URL used in persisted dashboard links               |
 | `PHOENIX_API_KEY`            | Phoenix System API key                                             |
 | `JUDGE_API_KEY`              | OpenRouter API key for the judge model (preferred)                 |
 | `OPENROUTER_API_KEY`         | Fallback; read by the OpenRouter SDK when `JUDGE_API_KEY` is unset |

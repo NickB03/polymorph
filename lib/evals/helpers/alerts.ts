@@ -5,7 +5,7 @@ import type {
 } from '@/lib/evals/types'
 
 const SUITE_LABELS: Record<PersistedDashboardSuite, string> = {
-  capability: 'Capability',
+  capability: 'Benchmarks',
   regression: 'Regression',
   'traffic-monitor': 'Traffic Monitor'
 }

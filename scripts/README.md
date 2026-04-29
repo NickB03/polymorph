@@ -2,6 +2,29 @@
 
 This directory contains utility scripts for testing and development.
 
+## seed-eval-summaries.ts
+
+Seeds a local Supabase/Postgres database with deterministic synthetic
+`eval_summaries` rows for dashboard development. It does not call Phoenix,
+OpenRouter, or the eval runner.
+
+### Safety
+
+- Only runs when `DATABASE_URL` or `POSTGRES_URL` points at `localhost`,
+  `127.0.0.1`, or `::1`.
+- Refuses remote database hosts.
+- Uses `local-seed-*` experiment names so seeded rows are easy to identify.
+
+### Usage
+
+```bash
+# Preview the rows without writing
+bun run seed:evals:dry-run
+
+# Reset prior local seed rows, then seed 12 rows across all persisted suites
+bun run seed:evals
+```
+
 ## chat-cli.ts
 
 A command-line interface for testing the chat API without a browser client. This script allows you to interact with the chat API directly, making it easier to debug server-side issues and test API functionality.

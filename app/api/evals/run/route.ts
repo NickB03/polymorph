@@ -6,7 +6,7 @@ import { selectModelForModeAndType } from '@/lib/utils/model-selection'
 
 const evalRequestSchema = z.object({
   caseId: z.string().min(1),
-  suite: z.enum(['capability', 'regression', 'smoke']),
+  suite: z.enum(['capability', 'regression', 'smoke', 'traffic-monitor']),
   conversation: z.array(
     z.object({
       role: z.enum(['user', 'assistant']),
@@ -19,6 +19,8 @@ const evalRequestSchema = z.object({
     })
   ),
   searchMode: z.enum(['chat', 'research']),
+  userMode: z.enum(['search', 'research', 'build']).optional(),
+  intent: z.string().optional(),
   modelType: z.enum(['speed', 'quality'])
 })
 
@@ -52,6 +54,8 @@ export async function POST(req: Request) {
       suite: parsed.data.suite,
       conversation: parsed.data.conversation,
       searchMode: parsed.data.searchMode,
+      userMode: parsed.data.userMode,
+      intent: parsed.data.intent,
       modelType: parsed.data.modelType,
       model,
       abortSignal: req.signal

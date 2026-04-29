@@ -12,6 +12,8 @@ export interface EvalRunnerRequest {
   suite: EvalCase['suite']
   conversation: EvalCase['conversation']
   searchMode: EvalCase['searchMode']
+  userMode?: EvalCase['userMode']
+  intent?: EvalCase['intent']
   modelType: EvalCase['modelType']
 }
 
@@ -53,6 +55,12 @@ export async function runEvalCase(
             suite: caseSpec.suite,
             conversation: caseSpec.conversation,
             searchMode: caseSpec.searchMode,
+            ...(caseSpec.userMode !== undefined
+              ? { userMode: caseSpec.userMode }
+              : {}),
+            ...(caseSpec.intent !== undefined
+              ? { intent: caseSpec.intent }
+              : {}),
             modelType: caseSpec.modelType
           } satisfies EvalRunnerRequest),
           signal: controller.signal

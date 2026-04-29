@@ -21,6 +21,9 @@ function snap(
     overallScore,
     evaluatorScores: {},
     totalCases: 10,
+    attemptedCases: 10,
+    failedCases: 0,
+    dropRate: 0,
     phoenixUrl: null,
     createdAt
   }
@@ -52,7 +55,8 @@ describe('buildFeed', () => {
         },
         trend: [],
         lastUpdated: null
-      }
+      },
+      recentRuns: []
     }
     const feed = buildFeed(data)
     // Row ids MUST be the stable synthetic constants, NOT the underlying DB cuids.
@@ -93,7 +97,8 @@ describe('buildFeed', () => {
         previous: null,
         trend: [],
         lastUpdated: null
-      }
+      },
+      recentRuns: []
     }
     const feed = buildFeed(data)
     expect(feed).toHaveLength(1)
@@ -119,7 +124,8 @@ describe('buildFeed', () => {
         previous: null,
         trend: [],
         lastUpdated: null
-      }
+      },
+      recentRuns: []
     }
     const feed = buildFeed(data)
     expect(feed[0].overallDelta).toBeCloseTo(0.03, 5)
@@ -145,7 +151,8 @@ describe('buildFeed', () => {
         previous: null,
         trend: [],
         lastUpdated: null
-      }
+      },
+      recentRuns: []
     }
     const feed = buildFeed(data)
     expect(feed[0].snapshot).toBe(latestSnap)

@@ -11,6 +11,7 @@ import { createSafetyExperimentEvaluator } from '../evaluators/safety'
 import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
 import { type ChatSample, sampleRecentChats } from '../sampler'
+import type { EvalCase } from '../types'
 
 import {
   buildDatasetExamples,
@@ -22,7 +23,8 @@ import {
   checkExperimentThresholds,
   createDatasetAndExperiment,
   createJudgeModel,
-  logThresholdBreachWarning
+  logThresholdBreachWarning,
+  runCasesConcurrently
 } from './shared'
 
 export function formatContext(sample: ChatSample): string {
@@ -41,35 +43,47 @@ export async function runTrafficMonitorSuite() {
 
   console.log(`[evals] Sampled ${samples.length} chats`)
 
-  const cases = samples.map((sample, index) => ({
+  const cases: EvalCase[] = samples.map((sample, index) => ({
     id: `traffic-${index + 1}`,
-    suite: 'traffic-monitor' as const,
-    conversation: [
-      {
-        role: 'user' as const,
-        parts: [{ type: 'text' as const, text: sample.userQuery }]
-      }
-    ],
-    searchMode: 'chat' as const,
-    modelType: 'speed' as const,
-    tags: ['traffic-monitor'],
+    suite: 'traffic-monitor',
+    conversation: sample.conversation,
+    searchMode: sample.searchMode,
+    ...(sample.userMode ? { userMode: sample.userMode } : {}),
+    ...(sample.intent ? { intent: sample.intent } : {}),
+    modelType: sample.modelType,
+    tags: ['traffic-monitor', ...sample.metadataTags],
     requiresTextAnswer: true,
-    requiresCitations: sample.citations.length > 0,
+    // The historical answer's citations are not a hard contract for the
+    // replay. Production may legitimately route a similar question without
+    // search and still produce a correct answer. The LLM judges
+    // (faithfulness, citation-accuracy) score citation quality nuancedly;
+    // the deterministic precheck must not hard-fail on routing changes.
+    requiresCitations: false,
     allowsInteractiveOnly: false,
     expectsRefusal: false
   }))
 
-  const results = samples.map(sample => ({
-    answerText: sample.modelAnswer,
-    citations: sample.citations,
-    searchResults: sample.searchResults,
-    toolNames: sample.toolNames,
-    usedInteractiveOnlyOutput: false,
-    modelId: '',
-    durationMs: 0
-  }))
+  console.log(
+    `[evals] Replaying ${cases.length} traffic samples through the runner...`
+  )
 
-  const examples = buildDatasetExamples(cases, results)
+  const { succeeded, failCount } = await runCasesConcurrently(cases)
+
+  if (succeeded.length === 0) {
+    throw new Error(
+      `[evals] All ${cases.length} traffic-monitor cases failed, aborting experiment`
+    )
+  }
+
+  if (failCount > 0) {
+    console.warn(
+      `[evals] ${failCount}/${cases.length} traffic-monitor cases failed, recording partial results`
+    )
+  }
+
+  const successCases = succeeded.map(s => s.caseSpec)
+  const successResults = succeeded.map(s => s.result)
+  const examples = buildDatasetExamples(successCases, successResults)
   const model = createJudgeModel()
   const evaluators = buildExperimentEvaluators({
     prechecks: createDeterministicPrecheckEvaluator,
@@ -132,8 +146,20 @@ export async function runTrafficMonitorSuite() {
     experimentName,
     datasetName,
     phoenixUrl,
-    totalCases: examples.length
+    totalCases: examples.length,
+    attemptedCases: cases.length,
+    failedCases: failCount
   })
+
+  // Drop-rate gate: if more than half of replays failed, mark the suite
+  // as threshold_breached even if the surviving cases scored well.
+  // The dashboard signal must reflect "we lost most of the run," not
+  // "the few cases we kept happened to pass."
+  const dropRate = cases.length > 0 ? failCount / cases.length : 0
+  if (dropRate > 0.5 && result.status === 'passed') {
+    result.status = 'threshold_breached'
+    result.failedEvaluators = [...result.failedEvaluators, 'replay-drop-rate']
+  }
 
   if (result.status === 'threshold_breached') {
     logThresholdBreachWarning(result)
@@ -152,6 +178,8 @@ export async function runTrafficMonitorSuite() {
         failedEvaluators: result.failedEvaluators,
         experiment,
         totalCases: result.totalCases,
+        attemptedCases: result.attemptedCases,
+        failedCases: result.failedCases,
         phoenixUrl
       }
     )

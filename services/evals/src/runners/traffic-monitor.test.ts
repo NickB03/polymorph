@@ -13,6 +13,7 @@ const mockBuildExperimentEvaluators = vi.hoisted(() => vi.fn(() => []))
 const mockBuildExperimentTask = vi.hoisted(() => vi.fn(() => vi.fn()))
 const mockCreateJudgeModel = vi.hoisted(() => vi.fn(() => ({ id: 'judge' })))
 const mockBuildTimestampedDatasetName = vi.hoisted(() => vi.fn(() => 'dataset'))
+const mockRunCasesConcurrently = vi.hoisted(() => vi.fn())
 const mockCheckExperimentThresholds = vi.hoisted(() =>
   vi.fn(() => ({
     passed: true,
@@ -33,7 +34,9 @@ const mockBuildSuiteRunResult = vi.hoisted(() =>
       experimentName,
       datasetName,
       phoenixUrl,
-      totalCases
+      totalCases,
+      attemptedCases,
+      failedCases
     }) => ({
       suite,
       status: thresholds.passed ? 'passed' : 'threshold_breached',
@@ -43,7 +46,9 @@ const mockBuildSuiteRunResult = vi.hoisted(() =>
       experimentName,
       datasetName,
       phoenixUrl,
-      totalCases
+      totalCases,
+      attemptedCases,
+      failedCases
     })
   )
 )
@@ -67,7 +72,8 @@ vi.mock('./shared', () => ({
   checkExperimentThresholds: mockCheckExperimentThresholds,
   createDatasetAndExperiment: mockCreateDatasetAndExperiment,
   createJudgeModel: mockCreateJudgeModel,
-  logThresholdBreachWarning: mockLogThresholdBreachWarning
+  logThresholdBreachWarning: mockLogThresholdBreachWarning,
+  runCasesConcurrently: mockRunCasesConcurrently
 }))
 
 vi.mock('../eval-summary', () => ({
@@ -125,8 +131,45 @@ vi.mock('../prechecks', () => ({
 }))
 
 describe('runTrafficMonitorSuite', () => {
+  const replayedCase = {
+    id: 'traffic-1',
+    suite: 'traffic-monitor' as const,
+    conversation: [
+      {
+        role: 'user' as const,
+        parts: [
+          {
+            type: 'text' as const,
+            text: 'What changed in the market today?'
+          }
+        ]
+      }
+    ],
+    searchMode: 'chat' as const,
+    modelType: 'speed' as const,
+    tags: ['traffic-monitor', 'mode_metadata_missing'],
+    requiresTextAnswer: true,
+    requiresCitations: false,
+    allowsInteractiveOnly: false,
+    expectsRefusal: false
+  }
+
+  const replayedResult = {
+    answerText: 'Replayed summary',
+    citations: [],
+    searchResults: [],
+    toolNames: [],
+    usedInteractiveOnlyOutput: false,
+    modelId: 'test-model',
+    durationMs: 123
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRunCasesConcurrently.mockResolvedValue({
+      succeeded: [{ caseSpec: replayedCase, result: replayedResult }],
+      failCount: 0
+    })
     mockPersistEvalSummary.mockResolvedValue(undefined)
     mockCheckExperimentThresholds.mockReturnValue({
       passed: true,
@@ -144,7 +187,13 @@ describe('runTrafficMonitorSuite', () => {
     modelAnswer: 'Summary',
     citations: [],
     searchResults: [],
-    toolNames: []
+    toolNames: [],
+    conversation: replayedCase.conversation,
+    targetUserMessageId: 'user-1',
+    targetAssistantMessageId: 'assistant-1',
+    searchMode: 'chat' as const,
+    modelType: 'speed' as const,
+    metadataTags: ['mode_metadata_missing']
   }
 
   const datasetResult = {
@@ -170,6 +219,11 @@ describe('runTrafficMonitorSuite', () => {
     const result = await runTrafficMonitorSuite()
 
     expect(mockPersistEvalSummary).toHaveBeenCalledTimes(1)
+    expect(mockRunCasesConcurrently).toHaveBeenCalledWith([replayedCase])
+    expect(mockBuildDatasetExamples).toHaveBeenCalledWith(
+      [replayedCase],
+      [replayedResult]
+    )
     expect(mockPersistEvalSummary).toHaveBeenCalledWith(
       expect.objectContaining({ execute: expect.any(Function) }),
       expect.objectContaining({
@@ -184,6 +238,50 @@ describe('runTrafficMonitorSuite', () => {
       })
     )
     expect(result?.status).toBe('passed')
+  })
+
+  it('replays build samples with build user mode and intent while keeping chat search mode', async () => {
+    const buildSample = {
+      ...sampleChat,
+      userMode: 'build' as const,
+      intent: 'build',
+      searchMode: 'chat' as const,
+      modelType: 'quality' as const,
+      metadataTags: ['user-mode:build']
+    }
+    mockSampleRecentChats.mockResolvedValueOnce([buildSample])
+    mockRunCasesConcurrently.mockResolvedValueOnce({
+      succeeded: [
+        {
+          caseSpec: {
+            ...replayedCase,
+            userMode: 'build' as const,
+            intent: 'build',
+            modelType: 'quality' as const,
+            tags: ['traffic-monitor', 'user-mode:build']
+          },
+          result: replayedResult
+        }
+      ],
+      failCount: 0
+    })
+    mockBuildDatasetExamples.mockReturnValueOnce([
+      { input: {}, output: {}, metadata: {} }
+    ])
+    mockCreateDatasetAndExperiment.mockResolvedValueOnce(datasetResult)
+
+    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
+    await runTrafficMonitorSuite()
+
+    expect(mockRunCasesConcurrently).toHaveBeenCalledWith([
+      expect.objectContaining({
+        searchMode: 'chat',
+        userMode: 'build',
+        intent: 'build',
+        modelType: 'quality',
+        tags: ['traffic-monitor', 'user-mode:build']
+      })
+    ])
   })
 
   it('throws when createDatasetAndExperiment cannot record to Phoenix', async () => {
@@ -207,6 +305,63 @@ describe('runTrafficMonitorSuite', () => {
     )
     expect(mockPersistEvalSummary).not.toHaveBeenCalled()
     errorSpy.mockRestore()
+  })
+
+  it('records partial traffic-monitor replay results when some cases fail', async () => {
+    mockSampleRecentChats.mockResolvedValueOnce([
+      sampleChat,
+      {
+        ...sampleChat,
+        chatId: 'chat-2',
+        userQuery: 'How did bonds move?',
+        conversation: [
+          {
+            role: 'user' as const,
+            parts: [{ type: 'text' as const, text: 'How did bonds move?' }]
+          }
+        ],
+        targetUserMessageId: 'user-2',
+        targetAssistantMessageId: 'assistant-2'
+      }
+    ])
+    mockRunCasesConcurrently.mockResolvedValueOnce({
+      succeeded: [{ caseSpec: replayedCase, result: replayedResult }],
+      failCount: 1
+    })
+    mockBuildDatasetExamples.mockReturnValueOnce([
+      { input: {}, output: {}, metadata: {} }
+    ])
+    mockCreateDatasetAndExperiment.mockResolvedValueOnce(datasetResult)
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
+    const result = await runTrafficMonitorSuite()
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[evals] 1/2 traffic-monitor cases failed, recording partial results'
+    )
+    expect(mockCreateDatasetAndExperiment).toHaveBeenCalledTimes(1)
+    expect(result.status).toBe('passed')
+
+    warnSpy.mockRestore()
+  })
+
+  it('throws before Phoenix when all traffic-monitor replays fail', async () => {
+    mockSampleRecentChats.mockResolvedValueOnce([sampleChat])
+    mockRunCasesConcurrently.mockResolvedValueOnce({
+      succeeded: [],
+      failCount: 1
+    })
+
+    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
+    await expect(runTrafficMonitorSuite()).rejects.toThrow(
+      'All 1 traffic-monitor cases failed, aborting experiment'
+    )
+
+    expect(mockBuildDatasetExamples).not.toHaveBeenCalled()
+    expect(mockCreateDatasetAndExperiment).not.toHaveBeenCalled()
+    expect(mockPersistEvalSummary).not.toHaveBeenCalled()
   })
 
   it('logs DB WRITE FAILED when persistEvalSummary throws', async () => {
@@ -311,6 +466,90 @@ describe('runTrafficMonitorSuite', () => {
     )
   })
 
+  it('persists attempted and failed case counts', async () => {
+    const succeededCase = replayedCase
+    mockSampleRecentChats.mockResolvedValueOnce([
+      sampleChat,
+      { ...sampleChat, chatId: 'chat-2' },
+      { ...sampleChat, chatId: 'chat-3' }
+    ])
+    mockRunCasesConcurrently.mockResolvedValueOnce({
+      succeeded: [{ caseSpec: succeededCase, result: replayedResult }],
+      failCount: 2
+    })
+    mockBuildDatasetExamples.mockReturnValueOnce([
+      { input: {}, output: {}, metadata: {} }
+    ])
+    mockCreateDatasetAndExperiment.mockResolvedValueOnce(datasetResult)
+
+    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
+    await runTrafficMonitorSuite()
+
+    expect(mockPersistEvalSummary).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        totalCases: 1,
+        attemptedCases: 3,
+        failedCases: 2
+      })
+    )
+  })
+
+  it('marks the run threshold_breached when drop rate exceeds 50%', async () => {
+    mockSampleRecentChats.mockResolvedValueOnce([
+      sampleChat,
+      { ...sampleChat, chatId: 'chat-2' },
+      { ...sampleChat, chatId: 'chat-3' },
+      { ...sampleChat, chatId: 'chat-4' }
+    ])
+    // 1 success, 3 failures = 75% drop rate
+    mockRunCasesConcurrently.mockResolvedValueOnce({
+      succeeded: [{ caseSpec: replayedCase, result: replayedResult }],
+      failCount: 3
+    })
+    mockBuildDatasetExamples.mockReturnValueOnce([
+      { input: {}, output: {}, metadata: {} }
+    ])
+    mockCreateDatasetAndExperiment.mockResolvedValueOnce(datasetResult)
+    // Evaluator scoring "passes" — we want drop-rate alone to trip threshold
+    mockCheckExperimentThresholds.mockReturnValueOnce({
+      passed: true,
+      passRate: 1,
+      totalEvaluations: 1,
+      passedEvaluations: 1,
+      failedEvaluators: []
+    })
+
+    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
+    const result = await runTrafficMonitorSuite()
+
+    expect(result.status).toBe('threshold_breached')
+    expect(result.failedEvaluators).toContain('replay-drop-rate')
+  })
+
+  it('does not enforce historical citations on replay cases', async () => {
+    const sampleWithCitations = {
+      ...sampleChat,
+      citations: [{ url: 'https://example.com', title: 'Source' }]
+    }
+    mockSampleRecentChats.mockResolvedValueOnce([sampleWithCitations])
+    mockRunCasesConcurrently.mockResolvedValueOnce({
+      succeeded: [{ caseSpec: replayedCase, result: replayedResult }],
+      failCount: 0
+    })
+    mockBuildDatasetExamples.mockReturnValueOnce([
+      { input: {}, output: {}, metadata: {} }
+    ])
+    mockCreateDatasetAndExperiment.mockResolvedValueOnce(datasetResult)
+
+    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
+    await runTrafficMonitorSuite()
+
+    expect(mockRunCasesConcurrently).toHaveBeenCalledWith([
+      expect.objectContaining({ requiresCitations: false })
+    ])
+  })
+
   it('fails when no chats are sampled so the run is treated as incomplete', async () => {
     mockSampleRecentChats.mockResolvedValueOnce([])
 
@@ -320,6 +559,7 @@ describe('runTrafficMonitorSuite', () => {
     )
 
     expect(mockCreateDatasetAndExperiment).not.toHaveBeenCalled()
+    expect(mockRunCasesConcurrently).not.toHaveBeenCalled()
     expect(mockPersistEvalSummary).not.toHaveBeenCalled()
   })
 })

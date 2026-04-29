@@ -52,6 +52,8 @@ export async function persistEvalSummary(
     failedEvaluators: string[]
     experiment: RanExperiment
     totalCases: number
+    attemptedCases: number
+    failedCases: number
     phoenixUrl: string | null
   }
 ) {
@@ -71,6 +73,8 @@ export async function persistEvalSummary(
       failed_evaluators,
       evaluator_scores,
       total_cases,
+      attempted_cases,
+      failed_cases,
       phoenix_url
     )
     VALUES (
@@ -84,6 +88,8 @@ export async function persistEvalSummary(
       CAST(${JSON.stringify(params.failedEvaluators)} AS jsonb),
       CAST(${JSON.stringify(evaluatorScores)} AS jsonb),
       ${params.totalCases},
+      ${params.attemptedCases},
+      ${params.failedCases},
       ${params.phoenixUrl}
     )
     ON CONFLICT (experiment_name) DO UPDATE SET
@@ -93,6 +99,8 @@ export async function persistEvalSummary(
       failed_evaluators = EXCLUDED.failed_evaluators,
       evaluator_scores = EXCLUDED.evaluator_scores,
       total_cases = EXCLUDED.total_cases,
+      attempted_cases = EXCLUDED.attempted_cases,
+      failed_cases = EXCLUDED.failed_cases,
       phoenix_url = EXCLUDED.phoenix_url
   `)
 }

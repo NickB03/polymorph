@@ -36,6 +36,7 @@ describe('createConfig', () => {
     vi.stubEnv('DATABASE_URL', 'postgresql://db')
     vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
     vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUN_MODE', 'traffic-monitor')
     vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
     vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
 
@@ -141,6 +142,29 @@ describe('createConfig', () => {
     vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
     vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
     vi.stubEnv('EVAL_RUN_MODE', 'capability')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+
+    const { createConfig } = await import('./config')
+
+    expect(() => createConfig()).toThrow('EVAL_RUNNER_SECRET')
+  })
+
+  it('requires eval runner settings for traffic-monitor mode', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUN_MODE', 'traffic-monitor')
+
+    const { createConfig } = await import('./config')
+
+    expect(() => createConfig()).toThrow('EVAL_RUNNER_URL')
+  })
+
+  it('requires EVAL_RUNNER_SECRET for traffic-monitor mode', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUN_MODE', 'traffic-monitor')
     vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
 
     const { createConfig } = await import('./config')
