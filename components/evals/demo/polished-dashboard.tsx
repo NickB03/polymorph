@@ -561,7 +561,7 @@ function TrafficMonitorSection({ data }: { data: EvalsDashboardData }) {
   )
 }
 
-// ---------- 03 · Regression section (compact strip) --------------------------
+// ---------- 03 · Pinned checks section (compact strip) -----------------------
 
 function RegressionSection({ data }: { data: EvalsDashboardData }) {
   const reg = data.regression.latest!
@@ -570,11 +570,11 @@ function RegressionSection({ data }: { data: EvalsDashboardData }) {
   const delta = prev ? reg.overallScore - prev.overallScore : null
 
   return (
-    <section aria-label="Regression suite">
+    <section aria-label="Pinned checks suite">
       <SectionHeading
         number="03"
-        title="Regression"
-        subtitle="Fixture exercises · guard against drift · silent unless it isn't"
+        title="Pinned checks"
+        subtitle="Known-risk cases · catch drift · quiet unless something breaks"
         accentVar="--muted-foreground"
         badge={{ label: stateLabel(sev), severity: sev }}
       />
@@ -1094,7 +1094,7 @@ function DemoFootnote() {
         lives at <span className="font-mono">/admin/evals</span>. Each suite is
         its own zone now: Capability owns blue and the score ring; Traffic
         Monitor owns amber and a threshold gauge with divergences pulled inline;
-        Regression is a quiet horizontal strip — louder only when it breaks.
+        Pinned checks stay quiet unless a known-risk case starts breaking again.
       </p>
       <span className="font-mono text-[10px] uppercase tracking-[0.18em]">
         v3.1 · sectioned

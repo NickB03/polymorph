@@ -14,14 +14,19 @@ export function DashboardHeader({ data }: { data: EvalsDashboardData }) {
     : 'never'
 
   return (
-    <header className="flex flex-col gap-6 border-b border-border/60 pb-6 sm:flex-row sm:items-end sm:justify-between">
-      <div className="max-w-2xl space-y-3">
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-          Polymorph · Quality evals
-        </p>
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-          Response quality
-        </h1>
+    <header className="space-y-6 border-b border-border/60 pb-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            Polymorph · Quality evals
+          </p>
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+            Response quality
+          </h1>
+        </div>
+        <ViewSwitcher />
+      </div>
+      <div className="space-y-3">
         <p className="text-sm leading-relaxed text-muted-foreground">
           Seven automated judges grade every model response on faithfulness,
           relevance, safety, and four other criteria. This page tracks how
@@ -30,7 +35,6 @@ export function DashboardHeader({ data }: { data: EvalsDashboardData }) {
         </p>
         <p className="text-xs text-muted-foreground">Last sync {lastSync}.</p>
       </div>
-      <ViewSwitcher />
     </header>
   )
 }
@@ -49,7 +53,7 @@ function ViewSwitcher() {
     <div
       role="radiogroup"
       aria-label="Dashboard layout"
-      className="inline-flex items-center gap-1 self-start rounded-full border border-border bg-background p-1 shadow-xs"
+      className="inline-flex shrink-0 items-center gap-1 self-start rounded-full border border-border bg-background p-1 shadow-xs"
     >
       {items.map(it => {
         const on = active === it.id

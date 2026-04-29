@@ -61,6 +61,39 @@ describe('buildCombinedTrend', () => {
     })
   })
 
+  it('keeps separate runs from the same calendar date', () => {
+    const data = emptySnapshot()
+    data.trafficMonitor.trend = [
+      {
+        createdAt: '2026-04-29T00:00:00Z',
+        overallScore: 0.7,
+        passRate: 0.7
+      },
+      {
+        createdAt: '2026-04-29T06:00:00Z',
+        overallScore: 0.8,
+        passRate: 0.8
+      }
+    ]
+
+    const result = buildCombinedTrend(data)
+
+    expect(result).toEqual([
+      {
+        createdAt: '2026-04-29T00:00:00Z',
+        capability: null,
+        regression: null,
+        trafficMonitor: 0.7
+      },
+      {
+        createdAt: '2026-04-29T06:00:00Z',
+        capability: null,
+        regression: null,
+        trafficMonitor: 0.8
+      }
+    ])
+  })
+
   it('sorts by createdAt ascending', () => {
     const data = emptySnapshot()
     data.capability.trend = [

@@ -6,7 +6,7 @@ import type {
 
 const SUITE_LABELS: Record<PersistedDashboardSuite, string> = {
   capability: 'Benchmarks',
-  regression: 'Regression',
+  regression: 'Pinned checks',
   'traffic-monitor': 'Traffic Monitor'
 }
 

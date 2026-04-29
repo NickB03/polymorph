@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 
 import { DefinedTerm, JudgeLabel, ScoreCell } from '@/components/evals/glossary'
 
+import { ScoreBar } from './score-bar'
 import { deltaPts, pct, type Severity, severityText } from './shared'
 
 export function ComparisonTable({
@@ -69,11 +70,33 @@ export function ComparisonTable({
                     <JudgeLabel judgeKey={key} />
                   </span>
                 </div>
-                <ScoreCell suite="benchmarks" judgeKey={key} value={c}>
-                  <Bar value={c} tone="primary" />
+                <ScoreCell
+                  suite="benchmarks"
+                  judgeKey={key}
+                  value={c}
+                  caseCount={cap.totalCases}
+                  threshold={cap.threshold}
+                  failed={cap.failedEvaluators.includes(key)}
+                >
+                  <ScoreValue
+                    failed={cap.failedEvaluators.includes(key)}
+                    threshold={cap.threshold}
+                    value={c}
+                  />
                 </ScoreCell>
-                <ScoreCell suite="trafficMonitor" judgeKey={key} value={t}>
-                  <Bar value={t} tone="secondary" />
+                <ScoreCell
+                  suite="trafficMonitor"
+                  judgeKey={key}
+                  value={t}
+                  caseCount={traf.totalCases}
+                  threshold={traf.threshold}
+                  failed={traf.failedEvaluators.includes(key)}
+                >
+                  <ScoreValue
+                    failed={traf.failedEvaluators.includes(key)}
+                    threshold={traf.threshold}
+                    value={t}
+                  />
                 </ScoreCell>
                 <span
                   className={cn(
@@ -104,24 +127,18 @@ function SeverityDot({ severity }: { severity: Severity }) {
   )
 }
 
-function Bar({
+function ScoreValue({
   value,
-  tone
+  threshold,
+  failed
 }: {
   value: number
-  tone: 'primary' | 'secondary'
+  threshold?: number | null
+  failed?: boolean
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted/60">
-        <div
-          className={cn(
-            'h-full rounded-full motion-safe:transition-[width] motion-safe:duration-700',
-            tone === 'primary' ? 'bg-accent-blue' : 'bg-foreground/35'
-          )}
-          style={{ width: `${Math.max(0, Math.min(value, 1)) * 100}%` }}
-        />
-      </div>
+    <div className="flex min-w-0 items-center gap-3">
+      <ScoreBar failed={failed} threshold={threshold} value={value} />
       <span className="w-9 text-right font-mono text-xs tabular-nums text-muted-foreground">
         {pct(value)}
       </span>

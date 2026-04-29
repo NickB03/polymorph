@@ -18,7 +18,7 @@ export const DEFINITIONS = {
   trafficMonitor:
     'A rolling sample of real production chats, scored on a cron. Tells you what users are actually getting.',
   regression:
-    'Pinned cases that previously broke. Run after material changes to catch drift. Silent unless one fails.',
+    'Pinned checks are saved cases from prior failures or high-risk behavior. A drop here means something expected to stay fixed may be breaking again.',
   aggregateScore:
     'Weighted mean across all judges per run. 0–1 scale; higher is better.',
   passRate:
@@ -54,51 +54,190 @@ export function getJudgeDefinition(key: string): string | null {
   return JUDGE_DEFINITIONS[key] ?? null
 }
 
-// Placeholder fixtures. Real population from a failure-mode pipeline is
-// tracked separately. Until then, these read as plausible defaults — the
-// shape is the contract the UI relies on.
+const mode = (description: string): FailureMode => ({ count: 0, description })
+
+// Failure-mode prompts for the score tooltips. Real per-run counts are tracked
+// separately; until that pipeline lands, keep these as descriptive signals
+// instead of fake observed totals.
 export const SCORE_INSIGHTS: Record<SuiteKey, Record<string, ScoreInsight>> = {
   benchmarks: {
-    faithfulness: { passed: 0, total: 0 },
-    relevance: { passed: 0, total: 0 },
-    safety: { passed: 0, total: 0 },
-    response_quality: { passed: 0, total: 0 },
-    citation_accuracy: { passed: 0, total: 0 },
-    tool_usage: { passed: 0, total: 0 },
-    deterministic_prechecks: { passed: 0, total: 0 }
-  },
-  trafficMonitor: {
-    faithfulness: { passed: 0, total: 0 },
-    relevance: { passed: 0, total: 0 },
-    safety: { passed: 0, total: 0 },
-    response_quality: { passed: 0, total: 0 },
+    faithfulness: {
+      passed: 0,
+      total: 0,
+      threshold: 0.9,
+      failureModes: [
+        mode('Summarised sources without grounding every claim.'),
+        mode('Added details that were not present in the reference answer.')
+      ]
+    },
+    relevance: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Over-explained when the prompt asked for a brief answer.'),
+        mode('Answered an adjacent task instead of the exact prompt.')
+      ]
+    },
+    safety: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Continued unsafe or policy-sensitive content too far.'),
+        mode('Missed a refusal or safety redirection opportunity.')
+      ]
+    },
+    response_quality: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Verbose intros buried the useful answer.'),
+        mode('Structure made the response harder to scan or act on.')
+      ]
+    },
     citation_accuracy: {
       passed: 0,
       total: 0,
       failureModes: [
-        {
-          count: 0,
-          description: 'Citation did not support the claim it followed.'
-        },
-        { count: 0, description: 'Linked URLs that returned 404.' },
-        {
-          count: 0,
-          description: 'Fabricated citation IDs that resolve to nothing.'
-        }
+        mode('Citation did not support the claim it followed.'),
+        mode('Linked source was missing, stale, or unrelated.')
+      ]
+    },
+    tool_usage: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Used search when the prompt could be answered directly.'),
+        mode('Skipped a tool call when current data was required.')
+      ]
+    },
+    deterministic_prechecks: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Output shape, schema, or length check failed.'),
+        mode('Required fields or formatting constraints were missing.')
+      ]
+    }
+  },
+  trafficMonitor: {
+    faithfulness: {
+      passed: 0,
+      total: 0,
+      threshold: 0.85,
+      failureModes: [
+        mode('Added details not present in the supplied sources.'),
+        mode('Hallucinated specific dates, versions, or causal claims.'),
+        mode('Mixed sourced facts with unstated model assumptions.')
+      ]
+    },
+    relevance: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Drifted into adjacent topics the user did not ask about.'),
+        mode('Answered a slightly different question than was asked.')
+      ]
+    },
+    safety: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Continued a request after a refusal was warranted.'),
+        mode('Missed a safer framing for sensitive content.')
+      ]
+    },
+    response_quality: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Answer was verbose, indirect, or hard to scan.'),
+        mode('Missing headings or inconsistent ordering reduced usefulness.')
+      ]
+    },
+    citation_accuracy: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Citation did not support the claim it followed.'),
+        mode('Linked URLs returned 404 or were not inspectable.'),
+        mode('Citation IDs were fabricated or resolved to nothing.')
       ],
       note: 'Most common breach in the live sample.'
     },
-    tool_usage: { passed: 0, total: 0 },
-    deterministic_prechecks: { passed: 0, total: 0 }
+    tool_usage: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Skipped a tool call when one would have improved the answer.'),
+        mode('Called a tool but ignored or overrode its result.')
+      ]
+    },
+    deterministic_prechecks: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Replay failed before judge scoring completed.'),
+        mode('Schema, formatting, or length guard failed.')
+      ]
+    }
   },
   regression: {
-    faithfulness: { passed: 0, total: 0 },
-    relevance: { passed: 0, total: 0 },
-    safety: { passed: 0, total: 0 },
-    response_quality: { passed: 0, total: 0 },
-    citation_accuracy: { passed: 0, total: 0 },
-    tool_usage: { passed: 0, total: 0 },
-    deterministic_prechecks: { passed: 0, total: 0 }
+    faithfulness: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Previously fixed hallucination or grounding case reopened.'),
+        mode('Pinned source-support expectation was missed again.')
+      ]
+    },
+    relevance: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Known prompt still pulls the answer off task.'),
+        mode('Pinned edge case receives a generic or incomplete answer.')
+      ]
+    },
+    safety: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Known unsafe pattern no longer refuses cleanly.'),
+        mode('Safety framing regressed on a saved high-risk case.')
+      ]
+    },
+    response_quality: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Pinned case became verbose, vague, or poorly structured.'),
+        mode('Expected concise answer format was lost.')
+      ]
+    },
+    citation_accuracy: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Known citation bug or unsupported claim returned.'),
+        mode('Pinned source URL or citation mapping failed again.')
+      ]
+    },
+    tool_usage: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Known tool-routing case chose the wrong tool.'),
+        mode('Pinned no-tool case triggered unnecessary retrieval.')
+      ]
+    },
+    deterministic_prechecks: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Saved schema, formatting, or length guard failed.'),
+        mode('Known replay setup issue resurfaced.')
+      ]
+    }
   }
 }
 

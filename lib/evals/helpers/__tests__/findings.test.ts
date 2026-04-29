@@ -209,7 +209,7 @@ describe('computeFindings', () => {
     )
 
     expect(result[0].severity).toBe('critical')
-    expect(result[0].text).toContain('Regression')
+    expect(result[0].text).toContain('Pinned checks')
     expect(result[0].snapshotId).toBe('reg-l')
   })
 
