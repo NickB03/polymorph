@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card'
 
 function formatEvaluators(failedEvaluators: string[]) {
   if (failedEvaluators.length === 0) {
-    return 'No passing evaluator scores were recorded.'
+    return 'No passing judge scores were recorded.'
   }
 
   return failedEvaluators.map(getEvaluatorLabel).join(', ')
@@ -44,7 +44,7 @@ export function AlertBanner({ data }: { data: EvalsDashboardData }) {
             </p>
             <p className="text-sm text-muted-foreground">
               Pass rate {formatPercent(alert.passRate)} against a{' '}
-              {formatPercent(alert.threshold)} threshold. Failing evaluators:{' '}
+              {formatPercent(alert.threshold)} threshold. Failing judges:{' '}
               {formatEvaluators(alert.failedEvaluators)}
             </p>
             <p className="text-xs text-muted-foreground">
