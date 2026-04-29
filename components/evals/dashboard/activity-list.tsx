@@ -168,20 +168,20 @@ function ExpandedRow({ snap }: { snap: EvalSummarySnapshot }) {
           if (v == null) return null
           return (
             <ScoreCell key={key} suite={suiteKey} judgeKey={key} value={v}>
-              <div className="-mx-2 flex items-center gap-3 rounded-md px-2 py-1 text-xs transition-colors hover:bg-background/60">
+              <span className="-mx-2 flex items-center gap-3 rounded-md px-2 py-1 text-xs transition-colors hover:bg-background/60">
                 <span className="w-32 truncate text-muted-foreground">
                   {getEvaluatorLabel(key)}
                 </span>
-                <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted/60">
-                  <div
-                    className="h-full rounded-full bg-accent-blue/70"
+                <span className="block h-1 flex-1 overflow-hidden rounded-full bg-muted/60">
+                  <span
+                    className="block h-full rounded-full bg-accent-blue/70"
                     style={{ width: `${v * 100}%` }}
                   />
-                </div>
+                </span>
                 <span className="w-9 text-right font-mono tabular-nums">
                   {pct(v)}
                 </span>
-              </div>
+              </span>
             </ScoreCell>
           )
         })}
