@@ -53,7 +53,12 @@ export async function runTrafficMonitorSuite() {
     modelType: sample.modelType,
     tags: ['traffic-monitor', ...sample.metadataTags],
     requiresTextAnswer: true,
-    requiresCitations: sample.citations.length > 0,
+    // The historical answer's citations are not a hard contract for the
+    // replay. Production may legitimately route a similar question without
+    // search and still produce a correct answer. The LLM judges
+    // (faithfulness, citation-accuracy) score citation quality nuancedly;
+    // the deterministic precheck must not hard-fail on routing changes.
+    requiresCitations: false,
     allowsInteractiveOnly: false,
     expectsRefusal: false
   }))

@@ -527,6 +527,29 @@ describe('runTrafficMonitorSuite', () => {
     expect(result.failedEvaluators).toContain('replay-drop-rate')
   })
 
+  it('does not enforce historical citations on replay cases', async () => {
+    const sampleWithCitations = {
+      ...sampleChat,
+      citations: [{ url: 'https://example.com', title: 'Source' }]
+    }
+    mockSampleRecentChats.mockResolvedValueOnce([sampleWithCitations])
+    mockRunCasesConcurrently.mockResolvedValueOnce({
+      succeeded: [{ caseSpec: replayedCase, result: replayedResult }],
+      failCount: 0
+    })
+    mockBuildDatasetExamples.mockReturnValueOnce([
+      { input: {}, output: {}, metadata: {} }
+    ])
+    mockCreateDatasetAndExperiment.mockResolvedValueOnce(datasetResult)
+
+    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
+    await runTrafficMonitorSuite()
+
+    expect(mockRunCasesConcurrently).toHaveBeenCalledWith([
+      expect.objectContaining({ requiresCitations: false })
+    ])
+  })
+
   it('fails when no chats are sampled so the run is treated as incomplete', async () => {
     mockSampleRecentChats.mockResolvedValueOnce([])
 
