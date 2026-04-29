@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 
 import { DEFINITIONS } from '@/lib/evals/glossary'
 import type { EvalsDashboardData } from '@/lib/evals/types'
+import { cn } from '@/lib/utils'
 
 import { DefinedTerm } from '@/components/evals/glossary'
 
@@ -93,23 +94,23 @@ export function KpiStrip({ data }: { data: EvalsDashboardData }) {
       {tiles.map((t, i) => (
         <div
           key={i}
-          className={[
+          className={cn(
             'flex flex-col gap-2',
             i === 0 ? 'lg:pr-8' : 'lg:px-8',
-            i === tiles.length - 1 ? 'lg:pl-8 lg:pr-0' : ''
-          ].join(' ')}
+            i === tiles.length - 1 && 'lg:pl-8 lg:pr-0'
+          )}
         >
           <span className="text-xs font-medium text-muted-foreground">
             {t.labelNode}
           </span>
           <div className="flex items-baseline gap-3">
             <span
-              className={[
+              className={cn(
                 t.isText
                   ? 'font-semibold tracking-tight text-3xl sm:text-4xl'
                   : 'font-mono font-semibold tabular-nums text-4xl sm:text-[2.75rem]',
                 severityText(t.severity ?? 'ok')
-              ].join(' ')}
+              )}
             >
               {t.value}
             </span>
