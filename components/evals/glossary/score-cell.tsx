@@ -23,7 +23,8 @@ export function ScoreCell({
   children: ReactNode
 }) {
   const insight = getScoreInsight(suite, judgeKey)
-  if (!insight || (insight.total === 0 && !insight.failureModes)) {
+  const failureModes = insight?.failureModes?.filter(m => m.count > 0) ?? []
+  if (!insight || (insight.total === 0 && failureModes.length === 0)) {
     return <>{children}</>
   }
 
@@ -52,11 +53,11 @@ export function ScoreCell({
             </span>
           ) : null}
         </div>
-        {insight.failureModes && insight.failureModes.length > 0 ? (
+        {failureModes.length > 0 ? (
           <div className="space-y-1.5">
             <p className="text-muted-foreground">Top failure modes</p>
             <ul className="space-y-1">
-              {insight.failureModes.map(mode => (
+              {failureModes.map(mode => (
                 <li
                   key={mode.description}
                   className="grid grid-cols-[20px_1fr] gap-2"
