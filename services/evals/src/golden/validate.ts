@@ -1,7 +1,9 @@
 import { getErrorMessage } from '../error'
+import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
+import { createSafetyExperimentEvaluator } from '../evaluators/safety'
 import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { createJudgeConfig } from '../judge-config'
 import { createJudgeModel } from '../judge-model'
@@ -156,7 +158,7 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
     })
   )
 
-  // 3-5. Validate LLM evaluators (require API credentials)
+  // 3-7. Validate LLM evaluators (require API credentials)
   const judgeConfig = createJudgeConfig()
   if (!judgeConfig.judgeApiKey && !process.env.OPENROUTER_API_KEY) {
     console.log('\n[WARN] Missing judge API key — skipping LLM evaluators.')
@@ -177,33 +179,55 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
   const faithfulnessEval = createFaithfulnessExperimentEvaluator(model)
   const relevanceEval = createRelevanceExperimentEvaluator(model)
   const qualityEval = createResponseQualityExperimentEvaluator(model)
+  const safetyEval = createSafetyExperimentEvaluator(model)
+  const citationAccuracyEval = createCitationAccuracyExperimentEvaluator(model)
 
   function runEval(evaluator: {
     evaluate: (args: any) => any
   }): (example: GoldenExample) => Promise<EvaluatorResult> {
     return async example => {
       const evalResult = await evaluator.evaluate({
-        input: { query: example.query, context: example.context },
+        input: {
+          prompt: example.query,
+          query: example.query,
+          context: example.context
+        },
         output: buildEvalOutput(example)
       })
       return evalResult as EvaluatorResult
     }
   }
 
-  const [faithfulness, relevance, responseQuality] = await Promise.all([
-    (console.log('\n=== Faithfulness (LLM) ==='),
-    validateLLMEvaluator('faithfulness', examples, runEval(faithfulnessEval))),
-    (console.log('\n=== Relevance (LLM) ==='),
-    validateLLMEvaluator('relevance', examples, runEval(relevanceEval))),
-    (console.log('\n=== Response Quality (LLM) ==='),
-    validateLLMEvaluator('response_quality', examples, runEval(qualityEval)))
-  ])
+  const [faithfulness, relevance, responseQuality, safety, citationAccuracy] =
+    await Promise.all([
+      (console.log('\n=== Faithfulness (LLM) ==='),
+      validateLLMEvaluator(
+        'faithfulness',
+        examples,
+        runEval(faithfulnessEval)
+      )),
+      (console.log('\n=== Relevance (LLM) ==='),
+      validateLLMEvaluator('relevance', examples, runEval(relevanceEval))),
+      (console.log('\n=== Response Quality (LLM) ==='),
+      validateLLMEvaluator('response_quality', examples, runEval(qualityEval))),
+      (console.log('\n=== Safety (LLM) ==='),
+      validateLLMEvaluator('safety', examples, runEval(safetyEval))),
+      (console.log('\n=== Citation Accuracy (LLM) ==='),
+      validateLLMEvaluator(
+        'citation_accuracy',
+        examples,
+        runEval(citationAccuracyEval)
+      ))
+    ])
 
-  results.push(faithfulness, relevance, responseQuality)
+  results.push(
+    faithfulness,
+    relevance,
+    responseQuality,
+    safety,
+    citationAccuracy
+  )
 
-  // Safety evaluator is intentionally excluded — it's in a non-blocking calibration
-  // phase (excludeFromThreshold) and golden examples will be added once scoring
-  // baselines stabilize.
   return results
 }
 

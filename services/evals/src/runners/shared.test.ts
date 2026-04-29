@@ -1,5 +1,5 @@
 import type { LanguageModel } from 'ai'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockProvider = vi.hoisted(() => vi.fn())
 const mockCreateOpenRouter = vi.hoisted(() => vi.fn(() => mockProvider))
@@ -52,6 +52,9 @@ vi.mock('../eval-summary', () => ({
 }))
 
 const mockCreateClient = vi.hoisted(() => vi.fn(() => ({})))
+const mockCreateDataset = vi.hoisted(() =>
+  vi.fn(async () => ({ datasetId: 'ds-created' }))
+)
 const mockCreateOrGetDataset = vi.hoisted(() =>
   vi.fn(async () => ({ datasetId: 'ds-1' }))
 )
@@ -84,7 +87,7 @@ vi.mock('@arizeai/phoenix-client', () => ({
 }))
 
 vi.mock('@arizeai/phoenix-client/datasets', () => ({
-  createDataset: vi.fn(),
+  createDataset: mockCreateDataset,
   createOrGetDataset: mockCreateOrGetDataset
 }))
 
@@ -313,6 +316,95 @@ describe('buildTimestampedDatasetName', () => {
   })
 })
 
+describe('Phoenix dataset and experiment naming', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-29T12:34:56Z'))
+    mockCreateDataset.mockClear()
+    mockCreateOrGetDataset.mockClear()
+    mockRunExperiment.mockClear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('uses stable corpus-versioned datasets for judged suites', async () => {
+    const { buildStableDatasetName } = await import('./shared')
+
+    expect(buildStableDatasetName('capability')).toBe('polymorph-capability-v2')
+    expect(buildStableDatasetName('regression')).toBe('polymorph-regression-v2')
+  })
+
+  it('uses second-precision timestamped experiment names', async () => {
+    const { buildTimestampedExperimentName } = await import('./shared')
+
+    expect(buildTimestampedExperimentName('capability')).toBe(
+      'polymorph-capability-2026-04-29-12-34-56'
+    )
+  })
+
+  it('uses createOrGetDataset for stable judged-suite datasets', async () => {
+    const { createDatasetAndExperiment } = await import('./shared')
+
+    await createDatasetAndExperiment({
+      suite: 'capability',
+      examples: [
+        {
+          input: { caseId: 'c1' },
+          output: { answerText: 'ok' },
+          metadata: { caseId: 'c1' }
+        }
+      ] as any,
+      evaluators: [],
+      task: async example => example.output as any
+    })
+
+    expect(mockCreateOrGetDataset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'polymorph-capability-v2'
+      })
+    )
+    expect(mockCreateDataset).not.toHaveBeenCalled()
+    expect(mockRunExperiment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        experimentName: 'polymorph-capability-2026-04-29-12-34-56',
+        dataset: { datasetId: 'ds-1' }
+      })
+    )
+  })
+
+  it('uses createDataset for timestamped traffic-monitor overrides', async () => {
+    const { createDatasetAndExperiment } = await import('./shared')
+
+    await createDatasetAndExperiment({
+      suite: 'traffic-monitor',
+      datasetName: 'polymorph-traffic-monitor-2026-04-29-12-34',
+      examples: [
+        {
+          input: { caseId: 'traffic-1' },
+          output: { answerText: 'ok' },
+          metadata: { caseId: 'traffic-1' }
+        }
+      ] as any,
+      evaluators: [],
+      task: async example => example.output as any
+    })
+
+    expect(mockCreateDataset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'polymorph-traffic-monitor-2026-04-29-12-34'
+      })
+    )
+    expect(mockCreateOrGetDataset).not.toHaveBeenCalled()
+    expect(mockRunExperiment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dataset: { datasetId: 'ds-created' }
+      })
+    )
+  })
+})
+
 describe('createJudgeModel', () => {
   beforeEach(() => {
     mockCreateOpenRouter.mockClear()
@@ -533,7 +625,7 @@ describe('buildExperimentEvaluators', () => {
 
     const evaluators = buildExperimentEvaluators({
       prechecks: () => ({
-        name: 'precheck',
+        name: 'deterministic_prechecks',
         kind: 'CODE',
         evaluate: () => ({ label: 'pass', score: 1 })
       }),
@@ -571,7 +663,7 @@ describe('buildExperimentEvaluators', () => {
     })
 
     expect(evaluators).toHaveLength(7)
-    expect(evaluators[0].name).toBe('precheck')
+    expect(evaluators[0].name).toBe('deterministic_prechecks')
     expect(evaluators[1].name).toBe('tool_usage')
     expect(evaluators[2].name).toBe('faithfulness')
 

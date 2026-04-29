@@ -7,6 +7,7 @@
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "validate": "EVAL_RUN_MODE=traffic-monitor bun run src/golden/validate.ts"
   },
   "dependencies": {
