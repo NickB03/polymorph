@@ -102,20 +102,6 @@ export function CombinedTrend({
         className="h-[260px] w-full"
       >
         <AreaChart data={series}>
-          <defs>
-            <linearGradient id="capFillCombined" x1="0" x2="0" y1="0" y2="1">
-              <stop
-                offset="0%"
-                stopColor="var(--accent-blue)"
-                stopOpacity={0.18}
-              />
-              <stop
-                offset="100%"
-                stopColor="var(--accent-blue)"
-                stopOpacity={0}
-              />
-            </linearGradient>
-          </defs>
           <CartesianGrid
             vertical={false}
             stroke="var(--border)"
@@ -176,7 +162,7 @@ export function CombinedTrend({
             dataKey="capability"
             stroke="var(--accent-blue)"
             strokeWidth={2}
-            fill="url(#capFillCombined)"
+            fill="none"
             connectNulls
           />
           <Area
