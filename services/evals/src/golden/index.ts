@@ -1,4 +1,16 @@
-import type { EvalRunResult } from '../types'
+import type { EvalRunResult, EvalSearchResult } from '../types'
+
+type ExpectedEvaluatorResult = { label: string; score: number }
+
+interface GoldenExpected {
+  prechecks: ExpectedEvaluatorResult
+  tool_usage: ExpectedEvaluatorResult | null // null = expect skip
+  faithfulness: ExpectedEvaluatorResult | null // null = expect skip
+  relevance: ExpectedEvaluatorResult | null // null = expect skip
+  response_quality: ExpectedEvaluatorResult
+  safety: ExpectedEvaluatorResult | null // null = expect skip
+  citation_accuracy: ExpectedEvaluatorResult | null // null = expect skip
+}
 
 export interface GoldenExample {
   id: string
@@ -6,17 +18,69 @@ export interface GoldenExample {
   context: string
   answer: string
   citations: Array<{ url: string; title: string }>
+  searchResults?: EvalSearchResult[]
   usedInteractiveOnlyOutput: boolean
   requiresTextAnswer: boolean
   requiresCitations: boolean
   allowsInteractiveOnly: boolean
   toolNames: string[]
-  expected: {
-    prechecks: { label: string; score: number }
-    tool_usage: { label: string; score: number } | null // null = expect skip
-    faithfulness: { label: string; score: number } | null // null = expect skip
-    relevance: { label: string; score: number } | null // null = expect skip
-    response_quality: { label: string; score: number }
+  expected: GoldenExpected
+}
+
+type GoldenExampleInput = Omit<GoldenExample, 'expected'> & {
+  expected: Omit<GoldenExpected, 'safety' | 'citation_accuracy'> &
+    Partial<Pick<GoldenExpected, 'safety' | 'citation_accuracy'>>
+}
+
+function buildGoldenSearchResults(example: GoldenExample): EvalSearchResult[] {
+  if (example.searchResults) return example.searchResults
+  if (example.toolNames.length === 0 && example.citations.length === 0)
+    return []
+
+  const results =
+    example.citations.length > 0
+      ? example.citations.map(citation => ({
+          title: citation.title,
+          url: citation.url,
+          snippet: example.context
+        }))
+      : [
+          {
+            title: 'Golden Context',
+            url: 'https://example.com/golden-context',
+            snippet: example.context
+          }
+        ]
+
+  return [
+    {
+      query: example.query,
+      results
+    }
+  ]
+}
+
+function withExpectedDefaults(example: GoldenExampleInput): GoldenExample {
+  const safety =
+    example.expected.safety ??
+    (example.answer.trim() ? { label: 'safe', score: 1 } : null)
+
+  const citationAccuracy =
+    example.expected.citation_accuracy ??
+    (example.citations.length === 0
+      ? null
+      : example.expected.faithfulness?.score === 0 ||
+          example.expected.response_quality.score === 0
+        ? { label: 'mostly_inaccurate', score: 0.25 }
+        : { label: 'accurate', score: 1 })
+
+  return {
+    ...example,
+    expected: {
+      ...example.expected,
+      safety,
+      citation_accuracy: citationAccuracy
+    }
   }
 }
 
@@ -24,7 +88,7 @@ export function buildEvalOutput(example: GoldenExample): EvalRunResult {
   return {
     answerText: example.answer,
     citations: example.citations,
-    searchResults: [],
+    searchResults: buildGoldenSearchResults(example),
     toolNames: example.toolNames,
     usedInteractiveOnlyOutput: example.usedInteractiveOnlyOutput,
     modelId: '',
@@ -33,7 +97,7 @@ export function buildEvalOutput(example: GoldenExample): EvalRunResult {
 }
 
 export function getGoldenExamples(): GoldenExample[] {
-  return [
+  const examples: GoldenExampleInput[] = [
     // ──────────────────────────────────────────────────────────────
     // TRUE POSITIVES — well-grounded, relevant, quality answers
     // ──────────────────────────────────────────────────────────────
@@ -400,7 +464,7 @@ export function getGoldenExamples(): GoldenExample[] {
       toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
-        tool_usage: { label: 'missing_tools', score: 0 },
+        tool_usage: { label: 'tools_missing', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -426,7 +490,7 @@ export function getGoldenExamples(): GoldenExample[] {
       toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
-        tool_usage: { label: 'missing_tools', score: 0 },
+        tool_usage: { label: 'tools_missing', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -452,7 +516,7 @@ export function getGoldenExamples(): GoldenExample[] {
       toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
-        tool_usage: { label: 'missing_tools', score: 0 },
+        tool_usage: { label: 'tools_missing', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -478,7 +542,7 @@ export function getGoldenExamples(): GoldenExample[] {
       toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
-        tool_usage: { label: 'missing_tools', score: 0 },
+        tool_usage: { label: 'tools_missing', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -504,7 +568,7 @@ export function getGoldenExamples(): GoldenExample[] {
       toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
-        tool_usage: { label: 'missing_tools', score: 0 },
+        tool_usage: { label: 'tools_missing', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -530,7 +594,7 @@ export function getGoldenExamples(): GoldenExample[] {
       toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
-        tool_usage: { label: 'missing_tools', score: 0 },
+        tool_usage: { label: 'tools_missing', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -556,7 +620,7 @@ export function getGoldenExamples(): GoldenExample[] {
       toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
-        tool_usage: { label: 'missing_tools', score: 0 },
+        tool_usage: { label: 'tools_missing', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -582,7 +646,7 @@ export function getGoldenExamples(): GoldenExample[] {
       toolNames: [],
       expected: {
         prechecks: { label: 'pass', score: 1 },
-        tool_usage: { label: 'missing_tools', score: 0 },
+        tool_usage: { label: 'tools_missing', score: 0 },
         faithfulness: { label: 'unfaithful', score: 0 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
@@ -627,7 +691,7 @@ export function getGoldenExamples(): GoldenExample[] {
       toolNames: [],
       expected: {
         prechecks: { label: 'missing_citations', score: 0 },
-        tool_usage: { label: 'missing_tools', score: 0 },
+        tool_usage: { label: 'tools_missing', score: 0 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'good', score: 0.75 }
@@ -674,4 +738,6 @@ export function getGoldenExamples(): GoldenExample[] {
       }
     }
   ]
+
+  return examples.map(withExpectedDefaults)
 }
