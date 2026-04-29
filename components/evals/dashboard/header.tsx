@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 
 import type { EvalsDashboardData } from '@/lib/evals/types'
+import { cn } from '@/lib/utils'
 
 export function DashboardHeader({ data }: { data: EvalsDashboardData }) {
   const lastSyncIso = data.trafficMonitor.lastUpdated
@@ -34,6 +35,7 @@ export function DashboardHeader({ data }: { data: EvalsDashboardData }) {
   )
 }
 
+// Visual-only placeholder. The active tab does not yet control page content.
 function ViewSwitcher() {
   const [active, setActive] = useState<'glance' | 'sidebyside' | 'history'>(
     'glance'
@@ -58,12 +60,12 @@ function ViewSwitcher() {
             aria-checked={on}
             type="button"
             onClick={() => setActive(it.id)}
-            className={[
+            className={cn(
               'rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
               on
                 ? 'bg-accent-blue/10 text-accent-blue'
                 : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-            ].join(' ')}
+            )}
           >
             {it.label}
           </button>
