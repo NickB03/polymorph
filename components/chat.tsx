@@ -882,7 +882,13 @@ export function Chat({
           <div className="flex flex-1 items-center justify-center px-4 pt-14 animate-in fade-in duration-500">
             <PolymorphWordmark className="text-[2rem] md:text-[2.5rem]" />
           </div>
-        ) : (
+        ) : null}
+        <div
+          className={cn(
+            'flex flex-1 min-h-0 w-full flex-col',
+            messages.length === 0 && 'hidden'
+          )}
+        >
           <ChatMessages
             sections={sections}
             onQuerySelect={onQuerySelect}
@@ -926,7 +932,7 @@ export function Chat({
             onCanvasArtifactClick={handleCanvasArtifactClick}
             onLegacyArtifactClick={handleLegacyArtifactClick}
           />
-        )}
+        </div>
         <ChatPanel
           chatId={chatId}
           input={input}
