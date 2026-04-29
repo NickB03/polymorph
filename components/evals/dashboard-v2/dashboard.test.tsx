@@ -31,4 +31,9 @@ describe('EvalsDashboardV2', () => {
       screen.getByRole('heading', { level: 1, name: /response quality/i })
     ).toBeInTheDocument()
   })
+
+  it('renders an optional footer inside the dashboard shell', () => {
+    render(<EvalsDashboardV2 data={EMPTY} footer={<p>Fixture footer</p>} />)
+    expect(screen.getByText('Fixture footer')).toBeInTheDocument()
+  })
 })

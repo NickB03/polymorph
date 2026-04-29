@@ -1,6 +1,6 @@
 'use client'
 
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
 import type { EvalsDashboardData } from '@/lib/evals/types'
 
@@ -18,7 +18,13 @@ function enter(delayMs: number): CSSProperties {
   return { ['--enter-delay' as string]: `${delayMs}ms` }
 }
 
-export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
+export function EvalsDashboardV2({
+  data,
+  footer
+}: {
+  data: EvalsDashboardData
+  footer?: ReactNode
+}) {
   const cap = data.capability.latest
   const traf = data.trafficMonitor.latest
   const reg = data.regression.latest
@@ -33,6 +39,7 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
               No evaluation runs have landed yet. The next Traffic Monitor cron
               will populate this page.
             </p>
+            {footer}
           </div>
         </div>
       </TooltipProvider>
@@ -87,6 +94,8 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
           <div className="motion-safe:animate-content-enter" style={enter(300)}>
             <ActivityList data={data} />
           </div>
+
+          {footer}
         </div>
       </div>
     </TooltipProvider>
