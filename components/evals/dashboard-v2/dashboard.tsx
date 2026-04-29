@@ -1,66 +1,94 @@
 'use client'
 
-import { useOptimistic, useState, useTransition } from 'react'
+import type { CSSProperties } from 'react'
 
-import { toast } from 'sonner'
-
-import { setPreferredEvalsLayout } from '@/lib/actions/eval-preferences'
-import { getTemplate } from '@/lib/evals/layout/templates'
-import type { TemplateId } from '@/lib/evals/layout/types'
 import type { EvalsDashboardData } from '@/lib/evals/types'
 
+import { TooltipProvider } from '@/components/ui/tooltip'
+
+import { ActivityList } from '@/components/evals/dashboard/activity-list'
+import { CombinedTrend } from '@/components/evals/dashboard/combined-trend'
+import { ComparisonTable } from '@/components/evals/dashboard/comparison-table'
+import { DashboardHeader } from '@/components/evals/dashboard/header'
+import { KpiStrip } from '@/components/evals/dashboard/kpi-strip'
+import { ScoreFeature } from '@/components/evals/dashboard/score-feature'
 import { AlertBanner } from '@/components/evals/widgets/alert-banner'
-import { LayoutRenderer } from '@/components/evals/widgets/layout-renderer'
 
-import { TemplateSwitcher } from './template-switcher'
+function enter(delayMs: number): CSSProperties {
+  return { ['--enter-delay' as string]: `${delayMs}ms` }
+}
 
-export function EvalsDashboardV2({
-  data,
-  initialLayout
-}: {
-  data: EvalsDashboardData
-  initialLayout: TemplateId
-}) {
-  const [layoutId, setLayoutId] = useState<TemplateId>(initialLayout)
-  const [optimisticLayoutId, setOptimisticLayoutId] = useOptimistic<
-    TemplateId,
-    TemplateId
-  >(layoutId, (_current, next) => next)
-  const [pending, startTransition] = useTransition()
+export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
+  const cap = data.capability.latest
+  const traf = data.trafficMonitor.latest
+  const reg = data.regression.latest
 
-  const template = getTemplate(optimisticLayoutId)
-
-  function handleChange(next: TemplateId) {
-    if (next === optimisticLayoutId) return
-    startTransition(async () => {
-      setOptimisticLayoutId(next)
-      const result = await setPreferredEvalsLayout(next)
-      if (result.success) {
-        setLayoutId(next)
-      } else {
-        toast.error("Couldn't save layout preference", {
-          description: result.error ?? 'Please try again.'
-        })
-      }
-    })
+  if (!cap && !traf && !reg) {
+    return (
+      <TooltipProvider delayDuration={200}>
+        <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-8 lg:px-12">
+            <DashboardHeader data={data} />
+            <p className="rounded-2xl border border-dashed border-border/60 bg-muted/10 p-12 text-center text-sm text-muted-foreground">
+              No evaluation runs have landed yet. The next Traffic Monitor cron
+              will populate this page.
+            </p>
+          </div>
+        </div>
+      </TooltipProvider>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      <AlertBanner data={data} />
-      <div className="flex items-center justify-end">
-        <TemplateSwitcher
-          value={optimisticLayoutId}
-          onChange={handleChange}
-          pending={pending}
-        />
+    <TooltipProvider delayDuration={200}>
+      <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-8 lg:px-12">
+          <AlertBanner data={data} />
+
+          <div className="motion-safe:animate-content-enter" style={enter(0)}>
+            <DashboardHeader data={data} />
+          </div>
+
+          <div className="motion-safe:animate-content-enter" style={enter(60)}>
+            <KpiStrip data={data} />
+          </div>
+
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
+            {cap ? (
+              <div
+                className="motion-safe:animate-content-enter lg:col-span-4"
+                style={enter(120)}
+              >
+                <ScoreFeature cap={cap} previous={data.capability.previous} />
+              </div>
+            ) : null}
+
+            <div
+              className="motion-safe:animate-content-enter lg:col-span-8"
+              style={enter(180)}
+            >
+              <CombinedTrend
+                capability={data.capability.trend}
+                traffic={data.trafficMonitor.trend}
+                regression={data.regression.trend}
+              />
+            </div>
+          </div>
+
+          {cap && traf ? (
+            <div
+              className="motion-safe:animate-content-enter"
+              style={enter(240)}
+            >
+              <ComparisonTable cap={cap} traf={traf} />
+            </div>
+          ) : null}
+
+          <div className="motion-safe:animate-content-enter" style={enter(300)}>
+            <ActivityList data={data} />
+          </div>
+        </div>
       </div>
-      <div
-        key={template.id}
-        className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200"
-      >
-        <LayoutRenderer template={template} data={data} />
-      </div>
-    </div>
+    </TooltipProvider>
   )
 }

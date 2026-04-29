@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/lib/auth/get-current-user'
-import { getEvalsDashboardWithLayout } from '@/lib/evals/queries'
+import { getEvalsDashboard } from '@/lib/evals/queries'
 
 import { EvalsDashboardV2 } from '@/components/evals/dashboard-v2/dashboard'
 
@@ -15,15 +15,7 @@ export default async function EvalsPage() {
     return null
   }
 
-  const { data, layout: initialLayout } = await getEvalsDashboardWithLayout(
-    user.id
-  )
+  const data = await getEvalsDashboard(user.id)
 
-  return (
-    <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-7xl flex-col px-4 pb-8 pt-8 sm:px-6 lg:px-8">
-        <EvalsDashboardV2 data={data} initialLayout={initialLayout} />
-      </div>
-    </div>
-  )
+  return <EvalsDashboardV2 data={data} />
 }
