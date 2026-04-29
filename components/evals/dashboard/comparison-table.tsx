@@ -1,0 +1,130 @@
+'use client'
+
+import { EVALUATOR_DISPLAY_ORDER } from '@/lib/evals/evaluator-labels'
+import { DEFINITIONS } from '@/lib/evals/glossary'
+import type { EvalSummarySnapshot } from '@/lib/evals/types'
+import { cn } from '@/lib/utils'
+
+import { DefinedTerm, JudgeLabel, ScoreCell } from '@/components/evals/glossary'
+
+import { deltaPts, pct, type Severity, severityText } from './shared'
+
+export function ComparisonTable({
+  cap,
+  traf
+}: {
+  cap: EvalSummarySnapshot
+  traf: EvalSummarySnapshot
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold tracking-tight">
+            Where curated and live diverge
+          </h2>
+          <p className="max-w-xl text-xs leading-snug text-muted-foreground">
+            One row per judge. Bars show each judge&apos;s score for{' '}
+            <DefinedTerm def={DEFINITIONS.benchmarks}>
+              curated test prompts
+            </DefinedTerm>{' '}
+            vs{' '}
+            <DefinedTerm def={DEFINITIONS.trafficMonitor}>
+              live user chats
+            </DefinedTerm>
+            . <DefinedTerm def={DEFINITIONS.delta}>Δ</DefinedTerm> flags judges
+            where live underperforms curated by &gt;7 points.
+          </p>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-border/60 bg-background">
+        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_64px] items-center gap-4 border-b border-border/60 px-5 py-3 text-xs font-medium text-muted-foreground">
+          <span>Judge</span>
+          <span>Curated prompts</span>
+          <span>Live chats</span>
+          <span className="text-right">Δ pts</span>
+        </div>
+
+        <ul className="divide-y divide-border/60">
+          {EVALUATOR_DISPLAY_ORDER.map(key => {
+            const c = cap.evaluatorScores[key]
+            const t = traf.evaluatorScores[key]
+            if (c == null || t == null) return null
+            const delta = c - t
+            const sev: Severity =
+              delta >= 0.15 ? 'alarm' : delta >= 0.07 ? 'watch' : 'ok'
+
+            return (
+              <li
+                key={key}
+                className={cn(
+                  'grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_64px] items-center gap-4 px-5 py-3 text-sm transition-colors',
+                  sev === 'alarm' ? 'bg-destructive/5' : 'hover:bg-muted/40'
+                )}
+              >
+                <div className="flex items-center gap-2.5 truncate">
+                  <SeverityDot severity={sev} />
+                  <span className="truncate">
+                    <JudgeLabel judgeKey={key} />
+                  </span>
+                </div>
+                <ScoreCell suite="benchmarks" judgeKey={key} value={c}>
+                  <Bar value={c} tone="primary" />
+                </ScoreCell>
+                <ScoreCell suite="trafficMonitor" judgeKey={key} value={t}>
+                  <Bar value={t} tone="secondary" />
+                </ScoreCell>
+                <span
+                  className={cn(
+                    'text-right font-mono text-xs font-medium tabular-nums',
+                    severityText(sev)
+                  )}
+                >
+                  {deltaPts(-delta) ?? '·'}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
+function SeverityDot({ severity }: { severity: Severity }) {
+  const colorClass =
+    severity === 'alarm'
+      ? 'bg-destructive'
+      : severity === 'watch'
+        ? 'bg-accent-amber'
+        : 'bg-transparent'
+  return (
+    <span aria-hidden className={cn('size-1.5 rounded-full', colorClass)} />
+  )
+}
+
+function Bar({
+  value,
+  tone
+}: {
+  value: number
+  tone: 'primary' | 'secondary'
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted/60">
+        <div
+          className={cn(
+            'h-full rounded-full motion-safe:transition-[width] motion-safe:duration-700',
+            tone === 'primary' ? 'bg-accent-blue' : 'bg-foreground/35'
+          )}
+          style={{ width: `${Math.max(0, Math.min(value, 1)) * 100}%` }}
+        />
+      </div>
+      <span className="w-9 text-right font-mono text-xs tabular-nums text-muted-foreground">
+        {pct(value)}
+      </span>
+    </div>
+  )
+}
