@@ -795,7 +795,9 @@ Returns the eval chat result. Response is not cached (`Cache-Control: no-store`)
   toolNames: string[]
   usedInteractiveOnlyOutput: boolean
   modelId: string
-  traceId?: string
+  correlationId?: string
+  otelTraceId?: string
+  traceId?: string // Legacy alias for correlationId
   durationMs: number
 }
 ```

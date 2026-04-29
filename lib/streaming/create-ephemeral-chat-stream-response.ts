@@ -17,11 +17,7 @@ import type { UIMessage } from '@/lib/types/ai'
 import { createModelId } from '@/lib/utils'
 import { getErrorMessage } from '@/lib/utils/error'
 import { jsonError } from '@/lib/utils/json-error'
-import {
-  flushTraces,
-  isTracingEnabled,
-  withOtelSession
-} from '@/lib/utils/telemetry'
+import { flushTraces, withOtelRootSpan } from '@/lib/utils/telemetry'
 
 import { maybeTruncateMessages } from '../utils/context-window'
 
@@ -69,10 +65,8 @@ export async function createEphemeralChatStreamResponse(
     return jsonError('BAD_REQUEST', 'messages are required', 400)
   }
 
-  // Create parent trace ID for grouping all operations
-  const parentTraceId: string | undefined = isTracingEnabled()
-    ? randomUUID()
-    : undefined
+  const correlationId = randomUUID()
+  let otelTraceId: string | undefined
 
   const stream = createUIMessageStream<UIMessage>({
     // Pass originalMessages so handleUIMessageStreamFinish reuses the
@@ -139,7 +133,9 @@ export async function createEphemeralChatStreamResponse(
         const chatAgent = agentFactory({
           modelId,
           writer,
-          parentTraceId,
+          correlationId,
+          otelTraceId,
+          parentTraceId: correlationId,
           canvasToolContext,
           ...(chatId
             ? {
@@ -164,7 +160,8 @@ export async function createEphemeralChatStreamResponse(
             messageMetadata: ({ part }) => {
               if (part.type === 'start') {
                 return {
-                  traceId: parentTraceId,
+                  correlationId,
+                  ...(otelTraceId ? { otelTraceId } : {}),
                   userMode,
                   modelType,
                   modelId
@@ -191,16 +188,28 @@ export async function createEphemeralChatStreamResponse(
             writer,
             messagesForQuestions,
             abortSignal,
-            parentTraceId
+            correlationId
           )
         }
       } // end executeBody
 
-      if (chatId) {
-        await withOtelSession({ sessionId: chatId }, executeBody)
-      } else {
-        await executeBody()
-      }
+      await withOtelRootSpan(
+        {
+          name: 'guest-chat-response',
+          sessionId: chatId,
+          metadata: {
+            correlationId,
+            executionMode: 'guest-chat',
+            modelId,
+            userMode,
+            modelType
+          }
+        },
+        async activeTrace => {
+          otelTraceId = activeTrace.otelTraceId
+          await executeBody()
+        }
+      )
     },
     onError: (error: unknown) => {
       return getErrorMessage(error)

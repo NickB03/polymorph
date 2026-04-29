@@ -7,6 +7,8 @@ import { type ChatAgentTools, createChatAgentValidationTools } from './toolset'
 
 const chatMessageMetadataSchema = z
   .object({
+    correlationId: z.string().optional(),
+    otelTraceId: z.string().optional(),
     traceId: z.string().optional(),
     feedbackScore: z.number().nullable().optional(),
     userMode: z.enum(['search', 'research', 'build']).optional(),

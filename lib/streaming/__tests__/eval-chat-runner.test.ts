@@ -11,6 +11,14 @@ const mockConvertToModelMessages = vi.fn()
 const mockPruneMessages = vi.fn()
 const mockMaybeTruncateMessages = vi.fn()
 const mockInlineFileUrls = vi.fn()
+const mockIsTracingEnabled = vi.fn(() => false)
+const mockIsEvalReplayTracingEnabled = vi.fn(() => false)
+const mockWithOtelRootSpan = vi.hoisted(() =>
+  vi.fn(async (...args: unknown[]) => {
+    const callback = args[1] as (context: unknown) => unknown
+    return callback({ otelTraceId: 'otel-trace-1' })
+  })
+)
 
 vi.mock('ai', async importOriginal => {
   const actual = await importOriginal<typeof import('ai')>()
@@ -37,7 +45,9 @@ vi.mock('@/lib/utils/context-window', () => ({
 
 vi.mock('@/lib/utils/telemetry', () => ({
   flushTraces: vi.fn(),
-  isTracingEnabled: vi.fn(() => false)
+  isEvalReplayTracingEnabled: () => mockIsEvalReplayTracingEnabled(),
+  isTracingEnabled: () => mockIsTracingEnabled(),
+  withOtelRootSpan: mockWithOtelRootSpan
 }))
 
 vi.mock('@/lib/streaming/helpers/strip-reasoning-parts', () => ({
@@ -58,6 +68,9 @@ beforeEach(() => {
     (messages: unknown[]) => messages
   )
   mockInlineFileUrls.mockImplementation(async (messages: unknown[]) => messages)
+  mockIsTracingEnabled.mockReturnValue(false)
+  mockIsEvalReplayTracingEnabled.mockReturnValue(false)
+  mockWithOtelRootSpan.mockClear()
 })
 
 describe('normalizeEvalRunResult', () => {
@@ -218,6 +231,8 @@ describe('runEvalChat', () => {
         searchMode: 'research',
         modelType: 'quality',
         telemetryEnabled: false,
+        correlationId: expect.any(String),
+        parentTraceId: expect.any(String),
         experimentalContext: expect.objectContaining({
           caseId: 'traffic-1',
           suite: 'traffic-monitor',
@@ -233,6 +248,62 @@ describe('runEvalChat', () => {
       { title: 'Alpha', url: 'https://alpha.test' }
     ])
     expect(result.usedInteractiveOnlyOutput).toBe(false)
+    expect(result.correlationId).toEqual(expect.any(String))
+    expect(result.otelTraceId).toBeUndefined()
+    expect(result.traceId).toBeUndefined()
+  })
+
+  it('emits eval replay telemetry only when both tracing flags are enabled', async () => {
+    mockIsTracingEnabled.mockReturnValue(true)
+    mockIsEvalReplayTracingEnabled.mockReturnValue(true)
+    mockReadUIMessageStream.mockImplementation(async function* () {
+      yield {
+        role: 'assistant',
+        parts: [{ type: 'text', text: 'Traced answer' }]
+      }
+    })
+    mockResearcher.mockReturnValue({
+      stream: vi.fn().mockResolvedValue({
+        toUIMessageStream: vi.fn(() => new ReadableStream())
+      })
+    })
+
+    const result = await runEvalChat({
+      caseId: 'cap-1',
+      suite: 'capability',
+      conversation: [
+        { role: 'user', parts: [{ type: 'text', text: 'hi' }] }
+      ] as any,
+      searchMode: 'chat',
+      modelType: 'speed',
+      corpusVersion: 'v6',
+      model: {
+        id: 'gemini-3-flash',
+        name: 'Gemini 3 Flash',
+        provider: 'Google',
+        providerId: 'gateway'
+      }
+    })
+
+    expect(mockWithOtelRootSpan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'eval-replay',
+        metadata: expect.objectContaining({
+          caseId: 'cap-1',
+          suite: 'capability',
+          corpusVersion: 'v6',
+          executionMode: 'eval'
+        })
+      }),
+      expect.any(Function)
+    )
+    expect(mockResearcher).toHaveBeenCalledWith(
+      expect.objectContaining({
+        telemetryEnabled: true,
+        otelTraceId: 'otel-trace-1'
+      })
+    )
+    expect(result.otelTraceId).toBe('otel-trace-1')
   })
 
   it('passes build user mode and intent to the researcher while keeping chat search mode', async () => {

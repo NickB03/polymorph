@@ -83,6 +83,8 @@ describe('handleChatAgentRoute', () => {
     const streamConfig = vi.mocked(createChatStreamResponse).mock.calls[0][0]
     const agent = streamConfig.agentFactory({
       modelId: 'gateway:google/gemini-3-flash',
+      correlationId: 'corr-1',
+      otelTraceId: 'otel-1',
       parentTraceId: 'trace-1'
     })
     expect(agent).toBe(registryMocks.mockAgent)
@@ -99,6 +101,8 @@ describe('handleChatAgentRoute', () => {
         searchMode: 'research',
         userMode: 'research',
         modelType: 'quality',
+        correlationId: 'corr-1',
+        otelTraceId: 'otel-1',
         parentTraceId: 'trace-1'
       })
     )

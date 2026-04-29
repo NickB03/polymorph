@@ -137,12 +137,27 @@ Phoenix is a single stateful SQLite file. An unmounted or region-mismatched volu
 
 Set these env vars in the Vercel dashboard (Settings → Environment Variables, Production):
 
-| Variable                     | Value                                            |
-| ---------------------------- | ------------------------------------------------ |
-| `ENABLE_TRACING`             | `true`                                           |
-| `PHOENIX_COLLECTOR_ENDPOINT` | `https://phoenix-production-c6b5.up.railway.app` |
-| `PHOENIX_PROJECT_NAME`       | `polymorph-prod`                                 |
-| `PHOENIX_API_KEY`            | System API key created in Phoenix UI             |
+| Variable                      | Value                                            |
+| ----------------------------- | ------------------------------------------------ |
+| `ENABLE_TRACING`              | `true`                                           |
+| `PHOENIX_COLLECTOR_ENDPOINT`  | `https://phoenix-production-c6b5.up.railway.app` |
+| `PHOENIX_PROJECT_NAME`        | `polymorph-prod`                                 |
+| `PHOENIX_API_KEY`             | System API key created in Phoenix UI             |
+| `EVAL_REPLAY_TRACING_ENABLED` | `false` unless intentionally tracing eval replay |
+
+The app exports traces to `${PHOENIX_COLLECTOR_ENDPOINT}/v1/traces` with `Authorization: Bearer $PHOENIX_API_KEY` from `instrumentation.ts`. Use low-cardinality Phoenix projects such as `polymorph-prod`; keep per-request details in metadata (`correlationId`, `otelTraceId`, model, mode, and eval case fields).
+
+For production, set OpenInference masking according to the data you are comfortable storing in Phoenix:
+
+| Variable                                | Typical production value |
+| --------------------------------------- | ------------------------ |
+| `OPENINFERENCE_HIDE_INPUTS`             | `true`                   |
+| `OPENINFERENCE_HIDE_OUTPUTS`            | `true`                   |
+| `OPENINFERENCE_HIDE_INPUT_MESSAGES`     | `true`                   |
+| `OPENINFERENCE_HIDE_OUTPUT_MESSAGES`    | `true`                   |
+| `OPENINFERENCE_HIDE_INPUT_IMAGES`       | `true`                   |
+| `OPENINFERENCE_HIDE_INPUT_TEXT`         | `true`                   |
+| `OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH` | `10000`                  |
 
 See [Environment Reference](../getting-started/ENVIRONMENT.md#tracing-arize-phoenix) for details.
 

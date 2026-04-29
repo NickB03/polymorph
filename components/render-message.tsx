@@ -971,7 +971,7 @@ export function RenderMessage({
         key={`${messageId}-trailing-actions`}
         message={lastTextContent}
         messageId={messageId}
-        traceId={metadata?.traceId}
+        traceId={metadata?.otelTraceId ?? metadata?.traceId}
         feedbackScore={metadata?.feedbackScore}
         chatId={chatId}
         reload={reload ? () => reload(messageId) : undefined}

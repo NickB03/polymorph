@@ -11,7 +11,7 @@ import { RELATED_QUESTIONS_PROMPT } from './prompts/related-questions-prompt'
 export function createRelatedQuestionsStream(
   messages: ModelMessage[],
   abortSignal?: AbortSignal,
-  parentTraceId?: string
+  correlationId?: string
 ) {
   const relatedModel = getRelatedQuestionsModel()
   const modelId = createModelId(relatedModel)
@@ -39,7 +39,8 @@ export function createRelatedQuestionsStream(
       metadata: {
         modelId,
         agentType: 'related-questions-generator',
-        messageCount: messages.length
+        messageCount: messages.length,
+        ...(correlationId ? { correlationId } : {})
       }
     }
   })

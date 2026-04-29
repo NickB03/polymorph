@@ -30,6 +30,9 @@ export function createChatAgent(args: {
   intent?: string
   modelType?: ModelType
   writer?: UIMessageStreamWriter
+  correlationId?: string
+  otelTraceId?: string
+  /** Legacy compatibility for older call sites. */
   parentTraceId?: string
   telemetryEnabled?: boolean
   experimentalContext?: unknown

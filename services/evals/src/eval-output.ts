@@ -53,6 +53,8 @@ export function normalizeEvalRunResult(output: unknown): EvalRunResult {
     toolNames,
     usedInteractiveOnlyOutput,
     modelId: value.modelId ?? '',
+    correlationId: value.correlationId,
+    otelTraceId: value.otelTraceId,
     traceId: value.traceId,
     durationMs: typeof value.durationMs === 'number' ? value.durationMs : 0
   }

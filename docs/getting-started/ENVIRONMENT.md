@@ -103,13 +103,14 @@ The current repo baseline is OpenRouter-backed `google/gemini-3.1-flash-lite-pre
 
 Polymorph exports OpenTelemetry traces to a self-hosted Arize Phoenix instance. Tracing is gated behind `ENABLE_TRACING` and configured in `instrumentation.ts`.
 
-| Variable                     | Required          | Default                 | Purpose                                                                                                                                                          |
-| ---------------------------- | ----------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ENABLE_TRACING`             | No                | `false`                 | Gate all OTel trace export                                                                                                                                       |
-| `PHOENIX_COLLECTOR_ENDPOINT` | When tracing on   | `http://localhost:6006` | Phoenix OTLP HTTP endpoint (base URL, no `/v1/traces`)                                                                                                           |
-| `PHOENIX_PROJECT_NAME`       | No                | `polymorph-local`       | Project name shown in Phoenix UI. Convention: `polymorph-{env}` — `polymorph-prod`, `polymorph-preview`, `polymorph-local`. Never use the bare name `polymorph`. |
-| `PHOENIX_API_KEY`            | When auth enabled | —                       | API key created in Phoenix; sets `Authorization: Bearer` header on the OTLP exporter                                                                             |
-| `OTEL_EXPORTER_OTLP_HEADERS` | No                | —                       | Standard OTel env var for exporter headers (redundant if `PHOENIX_API_KEY` is set; see note below)                                                               |
+| Variable                      | Required          | Default                 | Purpose                                                                                                                                                          |
+| ----------------------------- | ----------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ENABLE_TRACING`              | No                | `false`                 | Gate all OTel trace export                                                                                                                                       |
+| `EVAL_REPLAY_TRACING_ENABLED` | No                | `false`                 | Opt-in tracing for eval replay runs; leave off by default to avoid noisy/costly Phoenix traces                                                                   |
+| `PHOENIX_COLLECTOR_ENDPOINT`  | When tracing on   | `http://localhost:6006` | Phoenix OTLP HTTP endpoint (base URL, no `/v1/traces`)                                                                                                           |
+| `PHOENIX_PROJECT_NAME`        | No                | `polymorph-local`       | Project name shown in Phoenix UI. Convention: `polymorph-{env}` — `polymorph-prod`, `polymorph-preview`, `polymorph-local`. Never use the bare name `polymorph`. |
+| `PHOENIX_API_KEY`             | When auth enabled | —                       | API key created in Phoenix; sets `Authorization: Bearer` header on the OTLP exporter                                                                             |
+| `OTEL_EXPORTER_OTLP_HEADERS`  | No                | —                       | Standard OTel env var for exporter headers (redundant if `PHOENIX_API_KEY` is set; see note below)                                                               |
 
 > **Production HTTPS enforcement:** When the app detects a production environment (`VERCEL_ENV`, `VERCEL_TARGET_ENV`, `RAILWAY_ENVIRONMENT`, or `NODE_ENV` set to `production`), the collector endpoint must use `https://`. Plain HTTP endpoints cause tracing to be silently disabled to protect the API key in transit.
 
@@ -120,9 +121,12 @@ ENABLE_TRACING=true
 PHOENIX_COLLECTOR_ENDPOINT=<public Phoenix URL, e.g. https://phoenix-production-xxxx.up.railway.app>
 PHOENIX_PROJECT_NAME=polymorph-prod
 PHOENIX_API_KEY=<API key created in Phoenix>
+EVAL_REPLAY_TRACING_ENABLED=false
 ```
 
 Set these in the Vercel dashboard under **Settings → Environment Variables** for the Production environment. Since Vercel serverless functions run outside of any private network, the Phoenix endpoint must be publicly reachable (with auth via `PHOENIX_API_KEY`).
+
+For production masking, configure OpenInference environment variables according to the sensitivity of your trace data: `OPENINFERENCE_HIDE_INPUTS`, `OPENINFERENCE_HIDE_OUTPUTS`, `OPENINFERENCE_HIDE_INPUT_MESSAGES`, `OPENINFERENCE_HIDE_OUTPUT_MESSAGES`, `OPENINFERENCE_HIDE_INPUT_IMAGES`, `OPENINFERENCE_HIDE_INPUT_TEXT`, and `OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH`.
 
 **`PHOENIX_API_KEY` vs `OTEL_EXPORTER_OTLP_HEADERS`:** `instrumentation.ts` (lines 29-31) reads `PHOENIX_API_KEY` and explicitly sets the `Authorization: Bearer` header on the `OTLPTraceExporter`. The standard OTel env var `OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer <key>` accomplishes the same thing at the SDK level. Setting `PHOENIX_API_KEY` alone is sufficient. Adding `OTEL_EXPORTER_OTLP_HEADERS` is harmless as a belt-and-suspenders approach but not required.
 

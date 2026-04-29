@@ -81,6 +81,9 @@ export interface EvalRunResult {
   toolNames: string[]
   usedInteractiveOnlyOutput: boolean
   modelId: string
+  correlationId?: string
+  otelTraceId?: string
+  /** Legacy compatibility for older app payloads. */
   traceId?: string
   durationMs: number
 }

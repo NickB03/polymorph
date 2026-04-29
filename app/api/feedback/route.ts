@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { updateMessageFeedback } from '@/lib/actions/feedback'
+import { annotatePhoenixUserFeedback } from '@/lib/observability/phoenix-feedback'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: Request) {
@@ -35,6 +36,17 @@ export async function POST(req: Request) {
       if (!result.success) {
         console.error('Error updating message feedback:', result.error)
         // Continue even if database update fails
+      } else if (result.chatId) {
+        try {
+          await annotatePhoenixUserFeedback({
+            chatId: result.chatId,
+            messageId,
+            score,
+            metadata: result.metadata
+          })
+        } catch (error) {
+          console.warn('[feedback] Phoenix annotation failed:', error)
+        }
       }
     }
 

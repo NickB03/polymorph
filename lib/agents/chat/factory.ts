@@ -24,6 +24,9 @@ export type CreateChatAgentArgs = {
   intent?: string
   modelType?: ModelType
   writer?: UIMessageStreamWriter
+  correlationId?: string
+  otelTraceId?: string
+  /** Legacy compatibility for call sites that still pass generated trace IDs. */
   parentTraceId?: string
   telemetryEnabled?: boolean
   experimentalContext?: unknown
@@ -52,6 +55,8 @@ export function createConfiguredChatAgent(
 ): ChatAgent {
   const {
     writer,
+    correlationId,
+    otelTraceId,
     parentTraceId,
     searchMode,
     modelType,
@@ -111,6 +116,7 @@ export function createConfiguredChatAgent(
     }
 
     const searchTool = definition.configureSearchTool(createSearchTool(model))
+    const effectiveCorrelationId = correlationId ?? parentTraceId
 
     const baseTools = createChatAgentTools({
       model,
@@ -144,7 +150,14 @@ export function createConfiguredChatAgent(
         metadata: {
           modelId: model,
           agentType: definition.agentId,
-          ...(searchMode ? { searchMode } : {})
+          ...(effectiveCorrelationId
+            ? { correlationId: effectiveCorrelationId }
+            : {}),
+          ...(otelTraceId ? { otelTraceId } : {}),
+          ...(searchMode ? { searchMode } : {}),
+          ...(args.userMode ? { userMode: args.userMode } : {}),
+          ...(args.intent ? { intent: args.intent } : {}),
+          ...(modelType ? { modelType } : {})
         }
       }
     })

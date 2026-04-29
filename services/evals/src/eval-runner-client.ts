@@ -1,3 +1,4 @@
+import { getCorpusVersion } from './corpus'
 import { withRetry } from './retry'
 import type { EvalCase, EvalRunResult } from './types'
 
@@ -15,6 +16,7 @@ export interface EvalRunnerRequest {
   userMode?: EvalCase['userMode']
   intent?: EvalCase['intent']
   modelType: EvalCase['modelType']
+  corpusVersion?: string
 }
 
 export class EvalRunnerHttpError extends Error {
@@ -61,7 +63,8 @@ export async function runEvalCase(
             ...(caseSpec.intent !== undefined
               ? { intent: caseSpec.intent }
               : {}),
-            modelType: caseSpec.modelType
+            modelType: caseSpec.modelType,
+            corpusVersion: getCorpusVersion()
           } satisfies EvalRunnerRequest),
           signal: controller.signal
         })

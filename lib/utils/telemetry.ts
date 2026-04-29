@@ -1,7 +1,120 @@
-import { context as otelContext, trace } from '@opentelemetry/api'
+import {
+  context as otelContext,
+  SpanStatusCode,
+  trace
+} from '@opentelemetry/api'
 
 export function isTracingEnabled(): boolean {
   return process.env.ENABLE_TRACING === 'true'
+}
+
+export function isEvalReplayTracingEnabled(): boolean {
+  return process.env.EVAL_REPLAY_TRACING_ENABLED === 'true'
+}
+
+type TraceMetadata = Record<
+  string,
+  string | number | boolean | null | undefined
+>
+
+export interface OtelRootSpanOptions {
+  name: string
+  sessionId?: string
+  userId?: string
+  metadata?: TraceMetadata
+}
+
+export interface OtelRootSpanContext {
+  otelTraceId?: string
+}
+
+function cleanMetadata(metadata: TraceMetadata = {}) {
+  return Object.fromEntries(
+    Object.entries(metadata).filter(([, value]) => value !== undefined)
+  )
+}
+
+async function buildOpenInferenceContext({
+  sessionId,
+  userId,
+  metadata
+}: Omit<OtelRootSpanOptions, 'name'>) {
+  let ctx = otelContext.active()
+
+  try {
+    const { setMetadata, setSession, setUser } =
+      await import('@arizeai/openinference-core')
+
+    if (sessionId) {
+      ctx = setSession(ctx, { sessionId })
+    }
+    if (userId) {
+      ctx = setUser(ctx, { userId })
+    }
+
+    const filteredMetadata = cleanMetadata(metadata)
+    if (Object.keys(filteredMetadata).length > 0) {
+      ctx = setMetadata(ctx, filteredMetadata)
+    }
+  } catch {
+    // If openinference-core fails to load, keep the active context.
+  }
+
+  return ctx
+}
+
+export async function withOtelRootSpan<T>(
+  options: OtelRootSpanOptions,
+  fn: (context: OtelRootSpanContext) => Promise<T>
+): Promise<T> {
+  if (!isTracingEnabled()) return fn({})
+
+  const ctx = await buildOpenInferenceContext(options)
+  const metadata = cleanMetadata(options.metadata)
+
+  let spanStarted = false
+
+  return otelContext.with(ctx, async () => {
+    try {
+      return await new Promise<T>((resolve, reject) => {
+        const tracer = trace.getTracer('polymorph')
+        tracer.startActiveSpan(options.name, span => {
+          spanStarted = true
+          const otelTraceId = span.spanContext().traceId
+
+          if (options.sessionId) {
+            span.setAttribute('session.id', options.sessionId)
+          }
+          if (options.userId) {
+            span.setAttribute('user.id', options.userId)
+          }
+          if (Object.keys(metadata).length > 0) {
+            span.setAttribute('metadata', JSON.stringify(metadata))
+          }
+
+          fn({ otelTraceId })
+            .then(result => {
+              span.setStatus({ code: SpanStatusCode.OK })
+              resolve(result)
+            })
+            .catch(error => {
+              span.recordException(error as Error)
+              span.setStatus({
+                code: SpanStatusCode.ERROR,
+                message: error instanceof Error ? error.message : String(error)
+              })
+              reject(error)
+            })
+            .finally(() => span.end())
+        })
+      })
+    } catch (error) {
+      if (!spanStarted) {
+        return fn({})
+      }
+      throw error
+    }
+  })
 }
 
 /**
@@ -25,12 +138,7 @@ export async function withOtelSession<T>(
   if (!isTracingEnabled()) return fn()
 
   try {
-    const { setSession, setUser } = await import('@arizeai/openinference-core')
-
-    let ctx = setSession(otelContext.active(), { sessionId })
-    if (userId) {
-      ctx = setUser(ctx, { userId })
-    }
+    const ctx = await buildOpenInferenceContext({ sessionId, userId })
 
     return otelContext.with(ctx, fn)
   } catch {

@@ -37,7 +37,11 @@ describe('Feedback Actions', () => {
 
       const result = await updateMessageFeedback(messageId, score)
 
-      expect(result).toEqual({ success: true })
+      expect(result).toEqual({
+        success: true,
+        chatId,
+        metadata: { traceId: 'test-trace-id' }
+      })
       expect(db.select).toHaveBeenCalled()
       expect(db.update).toHaveBeenCalled()
     })
@@ -73,6 +77,9 @@ describe('Feedback Actions', () => {
       const result = await updateMessageFeedback(messageId, score)
 
       expect(result.success).toBe(false)
+      if (result.success) {
+        throw new Error('expected feedback update to fail')
+      }
       expect(result.error).toBe('Database error')
     })
   })

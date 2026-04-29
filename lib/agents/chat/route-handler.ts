@@ -64,6 +64,8 @@ function createRouteAgentFactory({
   return ({
     modelId,
     writer,
+    correlationId,
+    otelTraceId,
     parentTraceId,
     canvasToolContext,
     imageToolContext
@@ -72,6 +74,8 @@ function createRouteAgentFactory({
       model: modelId,
       modelConfig: model,
       writer,
+      correlationId,
+      otelTraceId,
       parentTraceId,
       searchMode,
       userMode,

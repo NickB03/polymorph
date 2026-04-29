@@ -14,19 +14,21 @@ export async function persistStreamResults(
   chatId: string,
   userId: string,
   titlePromise?: Promise<string>,
-  parentTraceId?: string,
+  correlationId?: string,
   userMode?: UserMode,
   modelId?: string,
   initialSavePromise?: Promise<
     Awaited<ReturnType<typeof createChatWithFirstMessage>>
   >,
   initialUserMessage?: UIMessage,
-  modelType?: ModelType
+  modelType?: ModelType,
+  otelTraceId?: string
 ) {
   // Attach metadata to the response message
   responseMessage.metadata = {
     ...(responseMessage.metadata || {}),
-    ...(parentTraceId && { traceId: parentTraceId }),
+    ...(correlationId && { correlationId }),
+    ...(otelTraceId && { otelTraceId }),
     ...(userMode && { userMode }),
     ...(modelId && { modelId }),
     ...(modelType && { modelType })
