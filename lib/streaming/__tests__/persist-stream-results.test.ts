@@ -37,19 +37,21 @@ describe('persistStreamResults', () => {
       'chat-1',
       'user-1',
       undefined,
-      'trace-1',
+      'corr-1',
       'search',
       'openrouter:anthropic/claude-haiku-4.5',
       undefined,
       undefined,
-      'quality'
+      'quality',
+      'otel-1'
     )
 
     expect(upsertMessage).toHaveBeenCalledWith(
       'chat-1',
       expect.objectContaining({
         metadata: expect.objectContaining({
-          traceId: 'trace-1',
+          correlationId: 'corr-1',
+          otelTraceId: 'otel-1',
           userMode: 'search',
           modelId: 'openrouter:anthropic/claude-haiku-4.5',
           modelType: 'quality'

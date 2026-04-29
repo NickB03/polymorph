@@ -26,8 +26,13 @@ vi.mock('@/lib/actions/feedback', () => ({
   updateMessageFeedback: vi.fn()
 }))
 
+vi.mock('@/lib/observability/phoenix-feedback', () => ({
+  annotatePhoenixUserFeedback: vi.fn()
+}))
+
 // Import after mocking
 import { updateMessageFeedback } from '@/lib/actions/feedback'
+import { annotatePhoenixUserFeedback } from '@/lib/observability/phoenix-feedback'
 
 import { POST } from '../route'
 
@@ -39,8 +44,14 @@ describe('Feedback API Route', () => {
   describe('POST /api/feedback', () => {
     it('should record feedback successfully', async () => {
       vi.mocked(updateMessageFeedback).mockResolvedValue({
-        success: true
+        success: true,
+        chatId: 'chat-1',
+        metadata: {
+          correlationId: 'corr-1',
+          otelTraceId: 'otel-1'
+        }
       })
+      vi.mocked(annotatePhoenixUserFeedback).mockResolvedValue(undefined)
 
       const request = new Request('http://localhost:3000/api/feedback', {
         method: 'POST',
@@ -64,11 +75,22 @@ describe('Feedback API Route', () => {
         1,
         null
       )
+      expect(annotatePhoenixUserFeedback).toHaveBeenCalledWith({
+        chatId: 'chat-1',
+        messageId: 'test-message-id',
+        score: 1,
+        metadata: {
+          correlationId: 'corr-1',
+          otelTraceId: 'otel-1'
+        }
+      })
     })
 
     it('should handle negative feedback', async () => {
       vi.mocked(updateMessageFeedback).mockResolvedValue({
-        success: true
+        success: true,
+        chatId: 'chat-1',
+        metadata: null
       })
 
       const request = new Request('http://localhost:3000/api/feedback', {
@@ -113,7 +135,9 @@ describe('Feedback API Route', () => {
 
     it('should work without traceId', async () => {
       vi.mocked(updateMessageFeedback).mockResolvedValue({
-        success: true
+        success: true,
+        chatId: 'chat-1',
+        metadata: null
       })
 
       const request = new Request('http://localhost:3000/api/feedback', {
@@ -137,6 +161,41 @@ describe('Feedback API Route', () => {
         1,
         null
       )
+    })
+
+    it('should continue if Phoenix annotation fails', async () => {
+      vi.mocked(updateMessageFeedback).mockResolvedValue({
+        success: true,
+        chatId: 'chat-1',
+        metadata: { correlationId: 'corr-1' }
+      })
+      vi.mocked(annotatePhoenixUserFeedback).mockRejectedValue(
+        new Error('phoenix down')
+      )
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+
+      const request = new Request('http://localhost:3000/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          score: 1,
+          messageId: 'test-message-id'
+        })
+      })
+
+      const response = await POST(request)
+
+      expect(response.status).toBe(200)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[feedback] Phoenix annotation failed:',
+        expect.any(Error)
+      )
+
+      consoleWarnSpy.mockRestore()
     })
 
     it('should continue even if database update fails', async () => {

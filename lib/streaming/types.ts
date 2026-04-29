@@ -13,6 +13,9 @@ import type { ToolResultDelta } from './helpers/prepare-tool-result-messages'
 export type ChatStreamAgentFactoryArgs = {
   modelId: string
   writer?: UIMessageStreamWriter
+  correlationId?: string
+  otelTraceId?: string
+  /** Legacy compatibility for older factory implementations. */
   parentTraceId?: string
   canvasToolContext?: CanvasToolContext
   imageToolContext?: { userId: string; chatId: string }

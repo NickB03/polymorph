@@ -7,48 +7,67 @@ import { messages } from '@/lib/db/schema'
 import { withOptionalRLS } from '@/lib/db/with-rls'
 import type { UIMessageMetadata } from '@/lib/types/ai'
 
+export type MessageFeedbackUpdateResult =
+  | {
+      success: true
+      chatId: string
+      metadata: UIMessageMetadata | null
+    }
+  | { success: false; error?: string }
+
 export async function updateMessageFeedback(
   messageId: string,
   score: number,
   userId: string | null = null
-): Promise<{ success: boolean; error?: string }> {
+): Promise<MessageFeedbackUpdateResult> {
   try {
     // Use RLS context for all database operations
-    const result = await withOptionalRLS(userId, async tx => {
-      // Get the current message to preserve existing metadata and get chatId
-      const [currentMessage] = await tx
-        .select({
-          metadata: messages.metadata,
-          chatId: messages.chatId
-        })
-        .from(messages)
-        .where(eq(messages.id, messageId))
-        .limit(1)
+    const result = await withOptionalRLS<MessageFeedbackUpdateResult>(
+      userId,
+      async tx => {
+        // Get the current message to preserve existing metadata and get chatId
+        const [currentMessage] = await tx
+          .select({
+            metadata: messages.metadata,
+            chatId: messages.chatId
+          })
+          .from(messages)
+          .where(eq(messages.id, messageId))
+          .limit(1)
 
-      if (!currentMessage) {
-        return { success: false, error: 'Message not found' }
+        if (!currentMessage) {
+          return { success: false, error: 'Message not found' }
+        }
+
+        // Merge the feedback score with existing metadata
+        const updatedMetadata = {
+          ...(currentMessage.metadata || {}),
+          feedbackScore: score
+        }
+
+        // Update the message with the new feedback score
+        await tx
+          .update(messages)
+          .set({ metadata: updatedMetadata })
+          .where(eq(messages.id, messageId))
+
+        return {
+          success: true,
+          chatId: currentMessage.chatId,
+          metadata: currentMessage.metadata as UIMessageMetadata | null
+        }
       }
-
-      // Merge the feedback score with existing metadata
-      const updatedMetadata = {
-        ...(currentMessage.metadata || {}),
-        feedbackScore: score
-      }
-
-      // Update the message with the new feedback score
-      await tx
-        .update(messages)
-        .set({ metadata: updatedMetadata })
-        .where(eq(messages.id, messageId))
-
-      return { success: true, metadata: currentMessage.metadata }
-    })
+    )
 
     if (!result.success) {
       return result
     }
 
-    return { success: true }
+    return {
+      success: true,
+      chatId: result.chatId,
+      metadata: result.metadata
+    }
   } catch (error) {
     console.error('Error updating message feedback:', error)
     return {

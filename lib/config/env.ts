@@ -18,9 +18,20 @@ const baseEnvSchema = z.object({
 
   // Tracing / observability (optional)
   ENABLE_TRACING: z.enum(['true', 'false']).optional().default('false'),
+  EVAL_REPLAY_TRACING_ENABLED: z
+    .enum(['true', 'false'])
+    .optional()
+    .default('false'),
   PHOENIX_COLLECTOR_ENDPOINT: z.string().optional(),
   PHOENIX_PROJECT_NAME: z.string().optional(),
   PHOENIX_API_KEY: z.string().optional(),
+  OPENINFERENCE_HIDE_INPUTS: z.string().optional(),
+  OPENINFERENCE_HIDE_OUTPUTS: z.string().optional(),
+  OPENINFERENCE_HIDE_INPUT_MESSAGES: z.string().optional(),
+  OPENINFERENCE_HIDE_OUTPUT_MESSAGES: z.string().optional(),
+  OPENINFERENCE_HIDE_INPUT_IMAGES: z.string().optional(),
+  OPENINFERENCE_HIDE_INPUT_TEXT: z.string().optional(),
+  OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH: z.string().optional(),
 
   // Feature-gated (warn if missing)
   AI_GATEWAY_API_KEY: z.string().optional(),
@@ -87,9 +98,21 @@ export function validateEnv(): Env {
       GUEST_CHAT_DAILY_LIMIT: process.env.GUEST_CHAT_DAILY_LIMIT,
       DATABASE_SSL_DISABLED: process.env.DATABASE_SSL_DISABLED,
       ENABLE_TRACING: process.env.ENABLE_TRACING,
+      EVAL_REPLAY_TRACING_ENABLED: process.env.EVAL_REPLAY_TRACING_ENABLED,
       PHOENIX_COLLECTOR_ENDPOINT: process.env.PHOENIX_COLLECTOR_ENDPOINT,
       PHOENIX_PROJECT_NAME: process.env.PHOENIX_PROJECT_NAME,
       PHOENIX_API_KEY: process.env.PHOENIX_API_KEY,
+      OPENINFERENCE_HIDE_INPUTS: process.env.OPENINFERENCE_HIDE_INPUTS,
+      OPENINFERENCE_HIDE_OUTPUTS: process.env.OPENINFERENCE_HIDE_OUTPUTS,
+      OPENINFERENCE_HIDE_INPUT_MESSAGES:
+        process.env.OPENINFERENCE_HIDE_INPUT_MESSAGES,
+      OPENINFERENCE_HIDE_OUTPUT_MESSAGES:
+        process.env.OPENINFERENCE_HIDE_OUTPUT_MESSAGES,
+      OPENINFERENCE_HIDE_INPUT_IMAGES:
+        process.env.OPENINFERENCE_HIDE_INPUT_IMAGES,
+      OPENINFERENCE_HIDE_INPUT_TEXT: process.env.OPENINFERENCE_HIDE_INPUT_TEXT,
+      OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH:
+        process.env.OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH,
       AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
       TAVILY_API_KEY: process.env.TAVILY_API_KEY,
       BRAVE_SEARCH_API_KEY: process.env.BRAVE_SEARCH_API_KEY,

@@ -9,6 +9,12 @@ const mockLoadCanvasArtifactByChatId = vi.fn()
 const mockLoadChatWithMessages = vi.fn()
 const mockPersistStreamResults = vi.fn()
 const mockPrepareToolResultMessages = vi.fn()
+const mockWithOtelRootSpan = vi.hoisted(() =>
+  vi.fn(async (...args: unknown[]) => {
+    const callback = args[1] as (context: unknown) => unknown
+    return callback({ otelTraceId: 'otel-trace-1' })
+  })
+)
 
 vi.mock('ai', async importOriginal => {
   const actual = await importOriginal<typeof import('ai')>()
@@ -102,9 +108,7 @@ vi.mock('@/lib/utils/context-window', () => ({
 vi.mock('@/lib/utils/telemetry', () => ({
   flushTraces: vi.fn(),
   isTracingEnabled: vi.fn(() => false),
-  withOtelSession: vi.fn(async (_context: unknown, callback: () => unknown) =>
-    callback()
-  )
+  withOtelRootSpan: mockWithOtelRootSpan
 }))
 
 vi.mock('@/lib/streaming/helpers/stream-related-questions', () => ({
@@ -126,6 +130,7 @@ describe('createChatStreamResponse', () => {
     })
     mockLoadChatWithMessages.mockResolvedValue(null)
     mockPrepareToolResultMessages.mockReset()
+    mockWithOtelRootSpan.mockClear()
     mockAgentStream.mockResolvedValue({
       toUIMessageStream: vi.fn(() => ({})),
       response: Promise.resolve({ messages: [] })
@@ -166,6 +171,8 @@ describe('createChatStreamResponse', () => {
         expect.objectContaining({
           modelId: 'openai:gpt-4o-mini',
           writer: mockWriter,
+          correlationId: expect.any(String),
+          otelTraceId: 'otel-trace-1',
           canvasToolContext: expect.objectContaining({
             chatId: 'chat-1',
             userId: 'user-1',
@@ -183,6 +190,21 @@ describe('createChatStreamResponse', () => {
       )
     })
     expect(mockAgentStream).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => {
+      expect(mockPersistStreamResults).toHaveBeenCalledWith(
+        expect.anything(),
+        'chat-1',
+        'user-1',
+        expect.any(Promise),
+        expect.any(String),
+        'search',
+        'openai:gpt-4o-mini',
+        undefined,
+        undefined,
+        'speed',
+        'otel-trace-1'
+      )
+    })
   })
 
   it('uses the injected agent factory for authenticated tool-result continuations', async () => {

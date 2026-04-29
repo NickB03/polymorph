@@ -9,6 +9,9 @@ export interface StreamContext {
   trigger?: 'submit-message' | 'regenerate-message' | 'tool-result'
   initialChat: (Chat & { messages: UIMessage[] }) | null
   abortSignal?: AbortSignal
+  correlationId?: string
+  otelTraceId?: string
+  /** Legacy compatibility for older helper call sites. */
   parentTraceId?: string
   isNewChat?: boolean
   pendingInitialSave?: Promise<{ chat: Chat; message: Message }>

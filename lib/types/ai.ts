@@ -22,6 +22,9 @@ export type { TodoItem }
 
 // Define metadata type for messages
 export interface UIMessageMetadata {
+  correlationId?: string
+  otelTraceId?: string
+  /** Legacy compatibility for messages persisted before correlationId/otelTraceId split. */
   traceId?: string
   feedbackScore?: number | null
   userMode?: UserMode

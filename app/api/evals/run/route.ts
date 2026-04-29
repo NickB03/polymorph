@@ -21,7 +21,8 @@ const evalRequestSchema = z.object({
   searchMode: z.enum(['chat', 'research']),
   userMode: z.enum(['search', 'research', 'build']).optional(),
   intent: z.string().optional(),
-  modelType: z.enum(['speed', 'quality'])
+  modelType: z.enum(['speed', 'quality']),
+  corpusVersion: z.string().optional()
 })
 
 export async function POST(req: Request) {
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
       userMode: parsed.data.userMode,
       intent: parsed.data.intent,
       modelType: parsed.data.modelType,
+      corpusVersion: parsed.data.corpusVersion,
       model,
       abortSignal: req.signal
     })

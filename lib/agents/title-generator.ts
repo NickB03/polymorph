@@ -7,6 +7,8 @@ interface GenerateChatTitleParams {
   userMessageContent: string
   modelId: string
   abortSignal?: AbortSignal
+  correlationId?: string
+  /** Legacy compatibility for older call sites. */
   parentTraceId?: string
 }
 
@@ -20,6 +22,7 @@ export async function generateChatTitle({
   userMessageContent,
   modelId,
   abortSignal,
+  correlationId,
   parentTraceId
 }: GenerateChatTitleParams): Promise<string> {
   // Fallback title uses the first 75 characters of the message or a default string.
@@ -39,7 +42,10 @@ export async function generateChatTitle({
         metadata: {
           modelId: modelId,
           agentType: 'title-generator',
-          promptLength: userMessageContent.length
+          promptLength: userMessageContent.length,
+          ...((correlationId ?? parentTraceId)
+            ? { correlationId: correlationId ?? parentTraceId }
+            : {})
         }
       }
     })

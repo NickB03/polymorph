@@ -65,7 +65,7 @@ export function AnswerSection({
           <MessageActions
             message={content} // Provide original message; copy path remaps citations
             messageId={messageId}
-            traceId={metadata?.traceId}
+            traceId={metadata?.otelTraceId ?? metadata?.traceId}
             feedbackScore={metadata?.feedbackScore}
             chatId={chatId}
             reload={handleReload}

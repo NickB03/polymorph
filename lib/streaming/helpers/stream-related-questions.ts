@@ -11,7 +11,7 @@ export async function streamRelatedQuestions(
   writer: UIMessageStreamWriter,
   messages: ModelMessage[],
   abortSignal?: AbortSignal,
-  parentTraceId?: string
+  correlationId?: string
 ): Promise<{
   questionPartId?: string
   questions?: Array<{ question: string }>
@@ -35,7 +35,7 @@ export async function streamRelatedQuestions(
     const relatedQuestionsResult = createRelatedQuestionsStream(
       messages,
       abortSignal,
-      parentTraceId
+      correlationId
     )
 
     const collectedQuestions: Array<{ question: string }> = []
