@@ -21,11 +21,11 @@ export function KpiStrip({ data }: { data: EvalsDashboardData }) {
   const prev = data.capability.previous
   const traf = data.trafficMonitor.latest
 
-  if (!cap || !prev || !traf) {
+  if (!cap) {
     return null
   }
 
-  const overallSeverity: Severity = traf.thresholdBreached
+  const overallSeverity: Severity = traf?.thresholdBreached
     ? 'alarm'
     : severityForScore(cap.passRate, 0.9, 0.8)
 
@@ -36,7 +36,7 @@ export function KpiStrip({ data }: { data: EvalsDashboardData }) {
         ? 'Watch'
         : 'Healthy'
 
-  const statusHint = traf.thresholdBreached
+  const statusHint = traf?.thresholdBreached
     ? `Traffic Monitor below ${pct(traf.threshold ?? 0.85)} threshold`
     : 'No suites are below threshold'
 
@@ -63,7 +63,7 @@ export function KpiStrip({ data }: { data: EvalsDashboardData }) {
         </span>
       ),
       value: pct(cap.passRate),
-      delta: deltaPts(cap.passRate - prev.passRate),
+      delta: prev ? deltaPts(cap.passRate - prev.passRate) : null,
       severity: 'ok',
       hint: `Across the last ${cap.totalCases} cases`
     },
@@ -74,15 +74,17 @@ export function KpiStrip({ data }: { data: EvalsDashboardData }) {
         </DefinedTerm>
       ),
       value: cap.overallScore.toFixed(2),
-      delta: deltaPts(cap.overallScore - prev.overallScore),
+      delta: prev ? deltaPts(cap.overallScore - prev.overallScore) : null,
       severity: severityForScore(cap.overallScore, 0.85, 0.7),
       hint: '0–1 scale · higher is better'
     },
     {
       labelNode: <span>Cases scored · 48h</span>,
-      value: String(cap.totalCases + traf.totalCases),
+      value: String(cap.totalCases + (traf?.totalCases ?? 0)),
       severity: 'ok',
-      hint: `${cap.totalCases} curated · ${traf.totalCases} live`
+      hint: traf
+        ? `${cap.totalCases} curated · ${traf.totalCases} live`
+        : `${cap.totalCases} curated`
     }
   ]
 
