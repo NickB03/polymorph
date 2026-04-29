@@ -50,7 +50,8 @@ function data(): EvalsDashboardData {
       previous: null,
       trend: [],
       lastUpdated: null
-    }
+    },
+    recentRuns: []
   }
 }
 
@@ -93,7 +94,8 @@ describe('buildThresholdAlerts', () => {
         previous: null,
         trend: [],
         lastUpdated: null
-      }
+      },
+      recentRuns: []
     })
 
     expect(alerts).toHaveLength(1)

@@ -9,64 +9,63 @@ import {
   getEvaluatorLabel
 } from '@/lib/evals/evaluator-labels'
 import { DEFINITIONS, snapshotSuiteKey } from '@/lib/evals/glossary'
-import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
+import type {
+  EvalsDashboardData,
+  EvalSummarySnapshot,
+  PersistedDashboardSuite
+} from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
 import { DefinedTerm, ScoreCell } from '@/components/evals/glossary'
 
-import { deltaPts, pct } from './shared'
+import { pct } from './shared'
+
+type SuiteLabel = 'Benchmarks' | 'Traffic Monitor' | 'Regression'
+
+const SUITE_LABEL: Record<PersistedDashboardSuite, SuiteLabel> = {
+  capability: 'Benchmarks',
+  'traffic-monitor': 'Traffic Monitor',
+  regression: 'Regression'
+}
+
+const SUITE_DEF: Record<PersistedDashboardSuite, string> = {
+  capability: DEFINITIONS.benchmarks,
+  'traffic-monitor': DEFINITIONS.trafficMonitor,
+  regression: DEFINITIONS.regression
+}
 
 type Row = {
   id: string
-  suite: 'Benchmarks' | 'Traffic Monitor' | 'Regression'
+  suite: SuiteLabel
   def: string
   snap: EvalSummarySnapshot
   deltaPct: number
 }
 
 function buildRows(data: EvalsDashboardData): Row[] {
+  // recentRuns arrives newest-first. Walk oldest→newest so each row's
+  // delta is against the next-older same-suite snapshot we've seen.
+  const previousBySuite = new Map<
+    PersistedDashboardSuite,
+    EvalSummarySnapshot
+  >()
   const rows: Row[] = []
-  if (data.capability.latest) {
-    const cap = data.capability.latest
-    const prev = data.capability.previous
+
+  for (let i = data.recentRuns.length - 1; i >= 0; i--) {
+    const snap = data.recentRuns[i]
+    const older = previousBySuite.get(snap.suite)
     rows.push({
-      id: cap.id,
-      suite: 'Benchmarks',
-      def: DEFINITIONS.benchmarks,
-      snap: cap,
-      deltaPct: prev
-        ? Math.round((cap.overallScore - prev.overallScore) * 100)
+      id: snap.id,
+      suite: SUITE_LABEL[snap.suite],
+      def: SUITE_DEF[snap.suite],
+      snap,
+      deltaPct: older
+        ? Math.round((snap.overallScore - older.overallScore) * 100)
         : 0
     })
+    previousBySuite.set(snap.suite, snap)
   }
-  if (data.trafficMonitor.latest) {
-    const traf = data.trafficMonitor.latest
-    const prev = data.trafficMonitor.previous
-    rows.push({
-      id: traf.id,
-      suite: 'Traffic Monitor',
-      def: DEFINITIONS.trafficMonitor,
-      snap: traf,
-      deltaPct: prev
-        ? Math.round((traf.overallScore - prev.overallScore) * 100)
-        : 0
-    })
-  }
-  if (data.regression.latest) {
-    const reg = data.regression.latest
-    const prev = data.regression.previous
-    rows.push({
-      id: reg.id,
-      suite: 'Regression',
-      def: DEFINITIONS.regression,
-      snap: reg,
-      deltaPct: prev
-        ? Math.round((reg.overallScore - prev.overallScore) * 100)
-        : 0
-    })
-  }
-  rows.sort((a, b) => b.snap.createdAt.localeCompare(a.snap.createdAt))
-  return rows
+  return rows.reverse()
 }
 
 export function ActivityList({ data }: { data: EvalsDashboardData }) {
@@ -83,7 +82,7 @@ export function ActivityList({ data }: { data: EvalsDashboardData }) {
             Recent runs
           </h2>
           <p className="text-xs leading-snug text-muted-foreground">
-            One row per eval run across all three suites. Click a row to expand
+            Latest 10 eval runs across all three suites. Click a row to expand
             its per-judge breakdown.
           </p>
         </div>

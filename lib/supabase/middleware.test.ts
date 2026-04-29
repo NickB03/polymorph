@@ -17,4 +17,8 @@ describe('isPublicPath', () => {
   it('keeps api routes public', () => {
     expect(isPublicPath('/api/health')).toBe(true)
   })
+
+  it('keeps metadata routes public', () => {
+    expect(isPublicPath('/manifest.webmanifest')).toBe(true)
+  })
 })

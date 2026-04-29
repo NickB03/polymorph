@@ -77,31 +77,46 @@ export const buildRegressionDashboardData = buildCapabilityDashboardData
 
 type SuiteValue = PersistedDashboardSuite
 
+const RECENT_RUNS_LIMIT = 10
+
+const SUMMARY_COLUMNS = {
+  id: evalSummaries.id,
+  suite: evalSummaries.suite,
+  experimentName: evalSummaries.experimentName,
+  datasetName: evalSummaries.datasetName,
+  passRateBps: evalSummaries.passRateBps,
+  thresholdBps: evalSummaries.thresholdBps,
+  thresholdBreached: evalSummaries.thresholdBreached,
+  failedEvaluators: evalSummaries.failedEvaluators,
+  evaluatorScores: evalSummaries.evaluatorScores,
+  totalCases: evalSummaries.totalCases,
+  attemptedCases: evalSummaries.attemptedCases,
+  failedCases: evalSummaries.failedCases,
+  phoenixUrl: evalSummaries.phoenixUrl,
+  createdAt: evalSummaries.createdAt
+}
+
 async function selectSuiteRows(
   tx: TxInstance,
   suite: SuiteValue
 ): Promise<EvalSummaryRow[]> {
   return tx
-    .select({
-      id: evalSummaries.id,
-      suite: evalSummaries.suite,
-      experimentName: evalSummaries.experimentName,
-      datasetName: evalSummaries.datasetName,
-      passRateBps: evalSummaries.passRateBps,
-      thresholdBps: evalSummaries.thresholdBps,
-      thresholdBreached: evalSummaries.thresholdBreached,
-      failedEvaluators: evalSummaries.failedEvaluators,
-      evaluatorScores: evalSummaries.evaluatorScores,
-      totalCases: evalSummaries.totalCases,
-      attemptedCases: evalSummaries.attemptedCases,
-      failedCases: evalSummaries.failedCases,
-      phoenixUrl: evalSummaries.phoenixUrl,
-      createdAt: evalSummaries.createdAt
-    })
+    .select(SUMMARY_COLUMNS)
     .from(evalSummaries)
     .where(eq(evalSummaries.suite, suite))
     .orderBy(desc(evalSummaries.createdAt))
     .limit(12)
+}
+
+async function selectRecentRuns(
+  tx: TxInstance,
+  limit: number
+): Promise<EvalSummaryRow[]> {
+  return tx
+    .select(SUMMARY_COLUMNS)
+    .from(evalSummaries)
+    .orderBy(desc(evalSummaries.createdAt))
+    .limit(limit)
 }
 
 export async function getCapabilityDashboard(userId: string) {
@@ -133,15 +148,18 @@ export async function getEvalsDashboard(
   userId: string
 ): Promise<EvalsDashboardData> {
   return withRLS(userId, async tx => {
-    const [capabilityRows, regressionRows, trafficRows] = await Promise.all([
-      selectSuiteRows(tx, 'capability'),
-      selectSuiteRows(tx, 'regression'),
-      selectSuiteRows(tx, 'traffic-monitor')
-    ])
+    const [capabilityRows, regressionRows, trafficRows, recentRows] =
+      await Promise.all([
+        selectSuiteRows(tx, 'capability'),
+        selectSuiteRows(tx, 'regression'),
+        selectSuiteRows(tx, 'traffic-monitor'),
+        selectRecentRuns(tx, RECENT_RUNS_LIMIT)
+      ])
     return {
       capability: buildCapabilityDashboardData(capabilityRows),
       regression: buildRegressionDashboardData(regressionRows),
-      trafficMonitor: buildTrafficMonitorDashboardData(trafficRows)
+      trafficMonitor: buildTrafficMonitorDashboardData(trafficRows),
+      recentRuns: recentRows.map(toSnapshot)
     }
   })
 }

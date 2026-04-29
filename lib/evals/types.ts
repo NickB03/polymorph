@@ -42,6 +42,7 @@ export interface EvalsDashboardData {
   capability: CapabilityDashboardData
   regression: RegressionDashboardData
   trafficMonitor: TrafficMonitorDashboardData
+  recentRuns: EvalSummarySnapshot[]
 }
 
 export interface EvalSummaryRow {

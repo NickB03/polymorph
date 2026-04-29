@@ -151,7 +151,8 @@ const MOCK: EvalsDashboardData = {
     }),
     trend: trend(3),
     lastUpdated: new Date(NOW - 4 * HOUR).toISOString()
-  }
+  },
+  recentRuns: []
 }
 
 // ---------- Helpers -----------------------------------------------------------

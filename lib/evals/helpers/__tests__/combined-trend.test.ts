@@ -13,7 +13,8 @@ function emptySnapshot(): EvalsDashboardData {
       previous: null,
       trend: [],
       lastUpdated: null
-    }
+    },
+    recentRuns: []
   }
 }
 

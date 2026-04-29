@@ -215,21 +215,35 @@ describe('getEvalsDashboard', () => {
       'traffic-monitor': [trafficRow]
     }
 
-    const buildChain = (suite: string) => ({
+    const allRecent = [trafficRow, regressionRow, capabilityRow]
+    const limitCalls: number[] = []
+
+    const buildLimitChain = (rows: EvalSummaryRow[]) => ({
       orderBy: vi.fn(() => ({
-        limit: vi.fn(() => rowsBySuite[suite] ?? [])
+        limit: vi.fn((limit: number) => {
+          limitCalls.push(limit)
+          return rows
+        })
       }))
     })
 
-    let callIndex = 0
+    let suiteCallIndex = 0
     const select = vi.fn(() => ({
       from: vi.fn(() => ({
+        // selectSuiteRows: select(...).from(...).where(...).orderBy(...).limit(...)
         where: vi.fn(() => {
           const suite = ['capability', 'regression', 'traffic-monitor'][
-            callIndex++
+            suiteCallIndex++
           ]
-          return buildChain(suite)
-        })
+          return buildLimitChain(rowsBySuite[suite] ?? [])
+        }),
+        // selectRecentRuns: select(...).from(...).orderBy(...).limit(...)
+        orderBy: vi.fn(() => ({
+          limit: vi.fn((limit: number) => {
+            limitCalls.push(limit)
+            return allRecent
+          })
+        }))
       }))
     }))
 
@@ -247,5 +261,11 @@ describe('getEvalsDashboard', () => {
     expect(data.capability.latest?.experimentName).toBe('cap-exp-1')
     expect(data.regression.latest?.experimentName).toBe('reg-exp-1')
     expect(data.trafficMonitor.latest?.experimentName).toBe('tm-exp-1')
+    expect(data.recentRuns.map(r => r.experimentName)).toEqual([
+      'tm-exp-1',
+      'reg-exp-1',
+      'cap-exp-1'
+    ])
+    expect(limitCalls).toEqual([12, 12, 12, 10])
   })
 })

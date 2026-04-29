@@ -13,7 +13,8 @@ const EMPTY: EvalsDashboardData = {
     previous: null,
     trend: [],
     lastUpdated: null
-  }
+  },
+  recentRuns: []
 }
 
 describe('EvalsDashboardV2', () => {

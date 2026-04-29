@@ -80,7 +80,8 @@ function data(
       }),
       trend: [],
       lastUpdated: null
-    }
+    },
+    recentRuns: []
   }
 }
 
