@@ -1,5 +1,3 @@
-'use client'
-
 import type {
   EvalsDashboardData,
   EvalSummarySnapshot,
@@ -163,12 +161,12 @@ function DemoFootnote() {
   return (
     <footer className="mt-4 flex items-start justify-between gap-6 border-t border-border/60 pt-6 text-xs text-muted-foreground">
       <p className="max-w-2xl leading-relaxed">
-        Demo surface - mock data. Hover any underlined term for its definition.
+        Demo surface — mock data. Hover any underlined term for its definition.
         The sectioned alternative lives at{' '}
         <span className="font-mono">/admin/evals/demo</span>.
       </p>
       <span className="font-mono text-[11px] text-muted-foreground">
-        v3.7 - production fixture
+        v3.7 · production fixture
       </span>
     </footer>
   )

@@ -28,7 +28,7 @@ describe('MixedEvalsDashboard', () => {
     expect(screen.getByTestId('shared-dashboard')).toBeInTheDocument()
     expect(screen.getByTestId('recent-count')).toHaveTextContent('6')
     expect(screen.getByText('curated-prompts-v4')).toBeInTheDocument()
-    expect(screen.getByText(/Demo surface - mock data/i)).toBeInTheDocument()
+    expect(screen.getByText(/Demo surface — mock data/i)).toBeInTheDocument()
 
     const dashboard = vi.mocked(EvalsDashboardV2)
     expect(dashboard).toHaveBeenCalledTimes(1)
