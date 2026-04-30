@@ -3,7 +3,14 @@
 import { useMemo } from 'react'
 
 import { format } from 'date-fns'
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ReferenceArea,
+  XAxis,
+  YAxis
+} from 'recharts'
 
 import { DEFINITIONS } from '@/lib/evals/glossary'
 import { buildCombinedTrendFromSeries } from '@/lib/evals/helpers/combined-trend'
@@ -52,6 +59,18 @@ export function CombinedTrend({
       ? series[series.length - 1].timestamp - series[0].timestamp
       : 0
   const axisFormat = timeSpanMs <= SHORT_AXIS_SPAN_MS ? 'MMM d, ha' : 'MMM d'
+  const plotStart =
+    series.length > 1
+      ? series[0].timestamp
+      : series[0]
+        ? series[0].timestamp - HOUR_MS
+        : null
+  const plotEnd =
+    series.length > 1
+      ? series[series.length - 1].timestamp
+      : series[0]
+        ? series[0].timestamp + HOUR_MS
+        : null
 
   return (
     <section className="flex h-full flex-col gap-5 rounded-2xl border border-border/60 bg-background p-6">
@@ -102,6 +121,35 @@ export function CombinedTrend({
         className="h-[260px] w-full"
       >
         <AreaChart data={series}>
+          <defs>
+            <linearGradient id="trendPlotWash" x1="0" x2="0" y1="0" y2="1">
+              <stop
+                offset="0%"
+                stopColor="var(--accent-blue)"
+                stopOpacity={0.08}
+              />
+              <stop
+                offset="58%"
+                stopColor="var(--accent-blue)"
+                stopOpacity={0.025}
+              />
+              <stop
+                offset="100%"
+                stopColor="var(--accent-blue)"
+                stopOpacity={0}
+              />
+            </linearGradient>
+          </defs>
+          {plotStart != null && plotEnd != null ? (
+            <ReferenceArea
+              x1={plotStart}
+              x2={plotEnd}
+              y1={0}
+              y2={1}
+              fill="url(#trendPlotWash)"
+              strokeOpacity={0}
+            />
+          ) : null}
           <CartesianGrid
             vertical={false}
             stroke="var(--border)"
