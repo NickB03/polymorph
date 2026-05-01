@@ -40,9 +40,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Consolidated production detection into exported `isProductionTarget()` in `lib/config/env.ts`
 - Enhanced `flushTraces()` in `lib/utils/telemetry.ts` with timeout and missing-provider warnings
 - Evaluators (faithfulness, relevance, response-quality) refactored to use shared utilities and factory pattern
+- Evals dashboard (`/admin/evals`) reorganized around a Suites/History view switcher with a tabbed suite selector, compact alert banner, and an evaluator-breakdown panel with AUTO badges for deterministic rules. View and suite selection persist in the URL (`?view=...&suite=...`).
+
+### Removed
+
+- Demo evals routes and components: `/admin/evals/demo`, `/admin/evals/demo-mixed`, `/admin/evals/demo-redesign`, plus orphaned `dashboard/header.tsx`, `dashboard/kpi-strip.tsx`, `dashboard/combined-trend.tsx`, `lib/evals/helpers/combined-trend.ts`, and `widgets/alert-banner.tsx` (replaced by `dashboard-v2/compact-alert.tsx`)
 
 ### Fixed
 
+- Evals dashboard empty state: hid the non-functional view switcher (previously rendered as an interactive radio group with a no-op `onChange`)
 - Evals skip `response_quality` for refusal cases and add `expectsRefusal` flag
 - SQL injection risk in evals sampler: replaced `sql.raw()` interpolation with parameterized `make_interval(hours => $1)` query
 - `extractVerdict` substring false positive where "faithful" matched inside "unfaithful", inflating faithfulness scores

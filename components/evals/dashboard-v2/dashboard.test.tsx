@@ -1,7 +1,17 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
+
+const mockSearchParamGet = vi.hoisted(() =>
+  vi.fn<(key: string) => string | null>(() => null)
+)
+
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => ({
+    get: mockSearchParamGet
+  })
+}))
 
 import { EvalsDashboardV2 } from './dashboard'
 
@@ -36,6 +46,19 @@ const POPULATED_CAPABILITY: EvalSummarySnapshot = {
   createdAt: '2026-04-29T12:00:00.000Z'
 }
 
+function snapshot(
+  overrides: Partial<EvalSummarySnapshot> = {}
+): EvalSummarySnapshot {
+  return {
+    ...POPULATED_CAPABILITY,
+    ...overrides,
+    evaluatorScores:
+      overrides.evaluatorScores ?? POPULATED_CAPABILITY.evaluatorScores,
+    failedEvaluators:
+      overrides.failedEvaluators ?? POPULATED_CAPABILITY.failedEvaluators
+  }
+}
+
 const POPULATED: EvalsDashboardData = {
   capability: {
     latest: POPULATED_CAPABILITY,
@@ -54,6 +77,11 @@ const POPULATED: EvalsDashboardData = {
 }
 
 describe('EvalsDashboardV2', () => {
+  beforeEach(() => {
+    mockSearchParamGet.mockReset()
+    mockSearchParamGet.mockReturnValue(null)
+  })
+
   it('renders the empty state when no suite has data', () => {
     render(<EvalsDashboardV2 data={EMPTY} />)
     expect(
@@ -68,15 +96,126 @@ describe('EvalsDashboardV2', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders an optional footer inside the dashboard shell', () => {
-    render(<EvalsDashboardV2 data={EMPTY} footer={<p>Fixture footer</p>} />)
-    expect(screen.getByText('Fixture footer')).toBeInTheDocument()
+  it('renders the populated state without crashing', () => {
+    render(<EvalsDashboardV2 data={POPULATED} />)
+    expect(
+      screen.getByRole('heading', { level: 1, name: /response quality/i })
+    ).toBeInTheDocument()
   })
 
-  it('renders the optional footer in the populated state', () => {
+  it('defaults to traffic monitor when capability is empty and live traffic has data', () => {
+    const trafficMonitor = snapshot({
+      id: 'traffic-latest',
+      suite: 'traffic-monitor',
+      datasetName: 'traffic-dataset',
+      experimentName: 'traffic-fixture',
+      totalCases: 5
+    })
+    const regression = snapshot({
+      id: 'regression-latest',
+      suite: 'regression',
+      datasetName: 'regression-dataset',
+      experimentName: 'regression-fixture',
+      totalCases: 7
+    })
+
     render(
-      <EvalsDashboardV2 data={POPULATED} footer={<p>Populated footer</p>} />
+      <EvalsDashboardV2
+        data={{
+          ...EMPTY,
+          trafficMonitor: {
+            latest: trafficMonitor,
+            previous: null,
+            trend: [],
+            lastUpdated: trafficMonitor.createdAt
+          },
+          regression: {
+            latest: regression,
+            previous: null,
+            trend: [],
+            lastUpdated: regression.createdAt
+          },
+          recentRuns: [regression, trafficMonitor]
+        }}
+      />
     )
-    expect(screen.getByText('Populated footer')).toBeInTheDocument()
+
+    expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
+    expect(screen.getByRole('tab', { name: /live traffic/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+  })
+
+  it('defaults to regression when it is the only suite with data', () => {
+    const regression = snapshot({
+      id: 'regression-latest',
+      suite: 'regression',
+      datasetName: 'regression-dataset',
+      experimentName: 'regression-fixture',
+      totalCases: 7
+    })
+
+    render(
+      <EvalsDashboardV2
+        data={{
+          ...EMPTY,
+          regression: {
+            latest: regression,
+            previous: null,
+            trend: [],
+            lastUpdated: regression.createdAt
+          },
+          recentRuns: [regression]
+        }}
+      />
+    )
+
+    expect(screen.getAllByText('regression-dataset').length).toBeGreaterThan(0)
+    expect(screen.getByText('Evaluator breakdown')).toBeInTheDocument()
+  })
+
+  it('counts capability, traffic monitor, and regression cases in the subtitle', () => {
+    const capability = snapshot({ id: 'capability-latest', totalCases: 2 })
+    const trafficMonitor = snapshot({
+      id: 'traffic-latest',
+      suite: 'traffic-monitor',
+      totalCases: 3
+    })
+    const regression = snapshot({
+      id: 'regression-latest',
+      suite: 'regression',
+      totalCases: 5
+    })
+
+    render(
+      <EvalsDashboardV2
+        data={{
+          capability: {
+            latest: capability,
+            previous: null,
+            trend: [],
+            lastUpdated: capability.createdAt
+          },
+          trafficMonitor: {
+            latest: trafficMonitor,
+            previous: null,
+            trend: [],
+            lastUpdated: trafficMonitor.createdAt
+          },
+          regression: {
+            latest: regression,
+            previous: null,
+            trend: [],
+            lastUpdated: regression.createdAt
+          },
+          recentRuns: [regression, trafficMonitor, capability]
+        }}
+      />
+    )
+
+    expect(
+      screen.getByText(/10 cases scored in the last 48h/i)
+    ).toBeInTheDocument()
   })
 })

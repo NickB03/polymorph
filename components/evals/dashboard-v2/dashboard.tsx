@@ -1,30 +1,29 @@
 'use client'
 
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties } from 'react'
 
-import type { EvalsDashboardData } from '@/lib/evals/types'
+import { formatDistanceToNow } from 'date-fns'
+
+import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 import { ActivityList } from '@/components/evals/dashboard/activity-list'
-import { CombinedTrend } from '@/components/evals/dashboard/combined-trend'
-import { ComparisonTable } from '@/components/evals/dashboard/comparison-table'
-import { DashboardHeader } from '@/components/evals/dashboard/header'
-import { KpiStrip } from '@/components/evals/dashboard/kpi-strip'
 import { ScoreFeature } from '@/components/evals/dashboard/score-feature'
-import { AlertBanner } from '@/components/evals/widgets/alert-banner'
+
+import { CollapsibleComparison } from './collapsible-comparison'
+import { CompactAlert } from './compact-alert'
+import { EvaluatorBreakdown } from './evaluator-breakdown'
+import { SuiteSelector } from './suite-selector'
+import { isSuiteId, isView, type SuiteId, type View } from './url-state'
+import { useUrlState } from './use-url-state'
+import { getViewDescription, ViewSwitcher } from './view-switcher'
 
 function enter(delayMs: number): CSSProperties {
   return { ['--enter-delay' as string]: `${delayMs}ms` }
 }
 
-export function EvalsDashboardV2({
-  data,
-  footer
-}: {
-  data: EvalsDashboardData
-  footer?: ReactNode
-}) {
+export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
   const cap = data.capability.latest
   const traf = data.trafficMonitor.latest
   const reg = data.regression.latest
@@ -34,70 +33,148 @@ export function EvalsDashboardV2({
       <TooltipProvider delayDuration={200}>
         <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-8 lg:px-12">
-            <DashboardHeader data={data} />
+            <Header
+              view="suites"
+              onChange={() => {}}
+              data={data}
+              hideSwitcher
+            />
             <p className="rounded-2xl border border-dashed border-border/60 bg-muted/10 p-12 text-center text-sm text-muted-foreground">
               No evaluation runs have landed yet. The next Traffic Monitor cron
               will populate this page.
             </p>
-            {footer}
           </div>
         </div>
       </TooltipProvider>
     )
   }
 
+  return <DashboardWithViews data={data} />
+}
+
+function DashboardWithViews({ data }: { data: EvalsDashboardData }) {
+  const [view, setView] = useUrlState('view', 'suites', isView)
+
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-8 lg:px-12">
-          <AlertBanner data={data} />
+          <Header view={view} onChange={setView} data={data} />
 
-          <div className="motion-safe:animate-content-enter" style={enter(0)}>
-            <DashboardHeader data={data} />
-          </div>
-
-          <div className="motion-safe:animate-content-enter" style={enter(60)}>
-            <KpiStrip data={data} />
-          </div>
-
-          <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
-            {cap ? (
-              <div
-                className="motion-safe:animate-content-enter lg:col-span-4"
-                style={enter(120)}
-              >
-                <ScoreFeature cap={cap} previous={data.capability.previous} />
-              </div>
-            ) : null}
-
-            <div
-              className="motion-safe:animate-content-enter lg:col-span-8"
-              style={enter(180)}
-            >
-              <CombinedTrend
-                capability={data.capability.trend}
-                traffic={data.trafficMonitor.trend}
-                regression={data.regression.trend}
-              />
-            </div>
-          </div>
-
-          {cap && traf ? (
+          {view === 'suites' ? <SuitesView data={data} /> : null}
+          {view === 'history' ? (
             <div
               className="motion-safe:animate-content-enter"
-              style={enter(240)}
+              style={enter(60)}
             >
-              <ComparisonTable cap={cap} traf={traf} />
+              <ActivityList data={data} />
             </div>
           ) : null}
-
-          <div className="motion-safe:animate-content-enter" style={enter(300)}>
-            <ActivityList data={data} />
-          </div>
-
-          {footer}
         </div>
       </div>
     </TooltipProvider>
+  )
+}
+
+function Header({
+  view,
+  onChange,
+  data,
+  hideSwitcher = false
+}: {
+  view: View
+  onChange: (next: View) => void
+  data: EvalsDashboardData
+  hideSwitcher?: boolean
+}) {
+  const lastSyncIso = data.trafficMonitor.lastUpdated
+  const lastSync = lastSyncIso
+    ? formatDistanceToNow(new Date(lastSyncIso), { addSuffix: true })
+    : 'never'
+  const cap = data.capability.latest
+  const traf = data.trafficMonitor.latest
+  const reg = data.regression.latest
+  const totalCases =
+    (cap?.totalCases ?? 0) + (traf?.totalCases ?? 0) + (reg?.totalCases ?? 0)
+
+  return (
+    <header
+      className="space-y-6 border-b border-border/60 pb-6 motion-safe:animate-content-enter"
+      style={enter(0)}
+    >
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            Polymorph · Quality evals
+          </p>
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+            Response quality
+          </h1>
+        </div>
+        {hideSwitcher ? null : (
+          <ViewSwitcher value={view} onChange={onChange} />
+        )}
+      </div>
+      <div className="space-y-2">
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {getViewDescription(view)} {totalCases} cases scored in the last 48h ·
+          last sync {lastSync}.
+        </p>
+      </div>
+    </header>
+  )
+}
+
+function SuitesView({ data }: { data: EvalsDashboardData }) {
+  const cap = data.capability.latest
+  const traf = data.trafficMonitor.latest
+  const reg = data.regression.latest
+  const defaultSuite: SuiteId = cap
+    ? 'capability'
+    : traf
+      ? 'trafficMonitor'
+      : reg
+        ? 'regression'
+        : 'capability'
+  const [active, setActive] = useUrlState('suite', defaultSuite, isSuiteId)
+
+  const previousMap: Record<SuiteId, EvalSummarySnapshot | null> = {
+    capability: data.capability.previous,
+    trafficMonitor: data.trafficMonitor.previous,
+    regression: data.regression.previous
+  }
+  const snapMap: Record<SuiteId, EvalSummarySnapshot | null> = {
+    capability: cap,
+    trafficMonitor: traf,
+    regression: reg
+  }
+  const activeSnap = snapMap[active]
+
+  return (
+    <div
+      className="space-y-10 motion-safe:animate-content-enter"
+      style={enter(60)}
+    >
+      <CompactAlert data={data} />
+
+      <SuiteSelector active={active} onChange={setActive} snaps={snapMap} />
+
+      {activeSnap ? (
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
+          <div className="lg:col-span-4">
+            <ScoreFeature
+              cap={activeSnap}
+              previous={previousMap[active]}
+              hideTagline
+            />
+          </div>
+          <div className="lg:col-span-8">
+            <EvaluatorBreakdown snap={activeSnap} />
+          </div>
+        </div>
+      ) : null}
+
+      {cap && traf ? <CollapsibleComparison cap={cap} traf={traf} /> : null}
+    </div>
   )
 }
