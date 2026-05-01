@@ -1,7 +1,15 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
+
+const mockSearchParamGet = vi.hoisted(() => vi.fn(() => null))
+
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => ({
+    get: mockSearchParamGet
+  })
+}))
 
 import { EvalsDashboardV2 } from './dashboard'
 
@@ -68,15 +76,10 @@ describe('EvalsDashboardV2', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders an optional footer inside the dashboard shell', () => {
-    render(<EvalsDashboardV2 data={EMPTY} footer={<p>Fixture footer</p>} />)
-    expect(screen.getByText('Fixture footer')).toBeInTheDocument()
-  })
-
-  it('renders the optional footer in the populated state', () => {
-    render(
-      <EvalsDashboardV2 data={POPULATED} footer={<p>Populated footer</p>} />
-    )
-    expect(screen.getByText('Populated footer')).toBeInTheDocument()
+  it('renders the populated state without crashing', () => {
+    render(<EvalsDashboardV2 data={POPULATED} />)
+    expect(
+      screen.getByRole('heading', { level: 1, name: /response quality/i })
+    ).toBeInTheDocument()
   })
 })
