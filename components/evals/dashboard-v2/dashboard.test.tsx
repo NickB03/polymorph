@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
 
-const mockSearchParamGet = vi.hoisted(() => vi.fn(() => null))
+const mockSearchParamGet = vi.hoisted(() =>
+  vi.fn<(key: string) => string | null>(() => null)
+)
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => ({

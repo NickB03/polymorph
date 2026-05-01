@@ -1,7 +1,5 @@
 'use client'
 
-import { useMemo } from 'react'
-
 import { EVALUATOR_DISPLAY_ORDER } from '@/lib/evals/evaluator-labels'
 import { snapshotSuiteKey } from '@/lib/evals/glossary'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
@@ -17,10 +15,7 @@ import { localLabel } from './local-labels'
 const DETERMINISTIC_KEYS = new Set(['deterministic_prechecks', 'tool_usage'])
 
 export function EvaluatorBreakdown({ snap }: { snap: EvalSummarySnapshot }) {
-  const failed = useMemo(
-    () => new Set(snap.failedEvaluators),
-    [snap.failedEvaluators]
-  )
+  const failed = new Set(snap.failedEvaluators)
   const suiteKey = snapshotSuiteKey(snap)
 
   return (

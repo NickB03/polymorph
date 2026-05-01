@@ -1,8 +1,6 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { useCallback, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 
 import { formatDistanceToNow } from 'date-fns'
 
@@ -17,13 +15,8 @@ import { CollapsibleComparison } from './collapsible-comparison'
 import { CompactAlert } from './compact-alert'
 import { EvaluatorBreakdown } from './evaluator-breakdown'
 import { SuiteSelector } from './suite-selector'
-import {
-  isSuiteId,
-  isView,
-  replaceSearchParam,
-  type SuiteId,
-  type View
-} from './url-state'
+import { isSuiteId, isView, type SuiteId, type View } from './url-state'
+import { useUrlState } from './use-url-state'
 import { getViewDescription, ViewSwitcher } from './view-switcher'
 
 function enter(delayMs: number): CSSProperties {
@@ -60,16 +53,7 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
 }
 
 function DashboardWithViews({ data }: { data: EvalsDashboardData }) {
-  const search = useSearchParams()
-  const initialView: View = isView(search.get('view'))
-    ? (search.get('view') as View)
-    : 'suites'
-  const [view, setViewState] = useState<View>(initialView)
-
-  const setView = useCallback((next: View) => {
-    setViewState(next)
-    replaceSearchParam('view', next)
-  }, [])
+  const [view, setView] = useUrlState('view', 'suites', isView)
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -140,16 +124,7 @@ function Header({
 }
 
 function SuitesView({ data }: { data: EvalsDashboardData }) {
-  const search = useSearchParams()
-  const initialSuite: SuiteId = isSuiteId(search.get('suite'))
-    ? (search.get('suite') as SuiteId)
-    : 'capability'
-  const [active, setActiveState] = useState<SuiteId>(initialSuite)
-
-  const setActive = useCallback((next: SuiteId) => {
-    setActiveState(next)
-    replaceSearchParam('suite', next)
-  }, [])
+  const [active, setActive] = useUrlState('suite', 'capability', isSuiteId)
 
   const cap = data.capability.latest
   const traf = data.trafficMonitor.latest

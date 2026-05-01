@@ -1,16 +1,15 @@
-export type View = 'suites' | 'history'
-export type SuiteId = 'capability' | 'trafficMonitor' | 'regression'
+const VIEWS = ['suites', 'history'] as const
+const SUITE_IDS = ['capability', 'trafficMonitor', 'regression'] as const
+
+export type View = (typeof VIEWS)[number]
+export type SuiteId = (typeof SUITE_IDS)[number]
 
 export function isView(value: string | null): value is View {
-  return value === 'suites' || value === 'history'
+  return (VIEWS as readonly string[]).includes(value ?? '')
 }
 
 export function isSuiteId(value: string | null): value is SuiteId {
-  return (
-    value === 'capability' ||
-    value === 'trafficMonitor' ||
-    value === 'regression'
-  )
+  return (SUITE_IDS as readonly string[]).includes(value ?? '')
 }
 
 // Update the URL search param without pushing to history. Refresh-safe
@@ -19,6 +18,7 @@ export function isSuiteId(value: string | null): value is SuiteId {
 export function replaceSearchParam(key: string, value: string): void {
   if (typeof window === 'undefined') return
   const url = new URL(window.location.href)
+  if (url.searchParams.get(key) === value) return
   url.searchParams.set(key, value)
   window.history.replaceState(window.history.state, '', url.toString())
 }
