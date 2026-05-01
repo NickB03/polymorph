@@ -93,7 +93,9 @@ function Header({
     : 'never'
   const cap = data.capability.latest
   const traf = data.trafficMonitor.latest
-  const totalCases = (cap?.totalCases ?? 0) + (traf?.totalCases ?? 0)
+  const reg = data.regression.latest
+  const totalCases =
+    (cap?.totalCases ?? 0) + (traf?.totalCases ?? 0) + (reg?.totalCases ?? 0)
 
   return (
     <header
@@ -124,11 +126,17 @@ function Header({
 }
 
 function SuitesView({ data }: { data: EvalsDashboardData }) {
-  const [active, setActive] = useUrlState('suite', 'capability', isSuiteId)
-
   const cap = data.capability.latest
   const traf = data.trafficMonitor.latest
   const reg = data.regression.latest
+  const defaultSuite: SuiteId = cap
+    ? 'capability'
+    : traf
+      ? 'trafficMonitor'
+      : reg
+        ? 'regression'
+        : 'capability'
+  const [active, setActive] = useUrlState('suite', defaultSuite, isSuiteId)
 
   const previousMap: Record<SuiteId, EvalSummarySnapshot | null> = {
     capability: data.capability.previous,
