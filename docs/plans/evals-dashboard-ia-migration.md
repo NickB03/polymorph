@@ -105,13 +105,15 @@ This is a cosmetic IA change, not a data or schema change. Standard Vercel deplo
 - Smoke test the production `/admin/evals` route
 - If broken: revert the merge commit; the previous `EvalsDashboardV2` returns
 
-## Open questions to resolve before phase 1
+## Resolved decisions (locked in before phase 1)
 
-1. **`localLabel` "Prechecks" override — keep or revert to "Deterministic Prechecks" in the canonical?** The shorter form fits the 2-column grid + `AUTO` badge cleanly. The longer form is the official name used in `lib/evals/evaluator-labels.ts`, the Phoenix experiment data, and other surfaces. Recommendation: ship the local override in `dashboard-v2/local-labels.ts` only — don't change the global `getEvaluatorLabel` mapping.
-2. **Compare toggle — default open or closed?** Demo defaults to closed. Could default to open whenever Live traffic is breached (auto-investigative posture). Recommendation: keep closed; the `CompactAlert` already directs attention to the breach.
-3. **CombinedTrend deletion — really gone?** If Phoenix has equivalent time-series tooling and the user agreed it was decorative, yes. If anyone has muscle memory for "click the dashboard, glance at the chart," they'll lose that. Worth a Slack heads-up before merging.
-4. **`SuiteSelector` clicks — should they update the URL too?** Currently they don't (`active` is local React state). Adding `?suite=trafficMonitor` to the URL would make the active drill-down deep-linkable. Recommendation: add it in a follow-up; not blocking phase 1.
-5. **Should the active-suite tagline (e.g., "Curated test prompts · the model under controlled inputs") render somewhere now that `ScoreFeature` already shows the suite name and definition?** It's currently shown to the left of `EvaluatorBreakdown` on the demo. Could be cut.
+All five questions have been answered by the product owner. The demo now reflects the resolved state — phase 1's job is to lift the demo into the canonical render path with no further design choices to make.
+
+1. **"Prechecks" label — local override.** `LOCAL_LABEL_OVERRIDES` lives in `dashboard-v2/local-labels.ts` only. `lib/evals/evaluator-labels.ts` keeps "Deterministic Prechecks" as the canonical name; ActivityList, ComparisonTable, ScoreFeature tooltip, and Phoenix data all continue to use the longer form. Trade-off accepted: two names for the same thing across surfaces, in exchange for zero blast radius.
+2. **Compare section — default expanded with chevron collapse.** Replaces the verbose "Show comparison side-by-side" pill button with a standard collapsible section. Defaults to open; chevron-up button in top-right collapses to a single-row header showing "Where curated and live diverge ▾". Pattern: `lucide-react` `ChevronUp`/`ChevronDown` icons.
+3. **CombinedTrend chart — deleted entirely.** No sparkline, no collapsible. Phoenix is the canonical place for time-series investigation via "Inspect in Phoenix →". `components/evals/dashboard/combined-trend.tsx` gets deleted in phase 3. **Action item before merge:** post a Slack heads-up so anyone with chart muscle memory isn't surprised.
+4. **`SuiteSelector` clicks — `?suite=` lands in phase 1.** Both URL params (`?view=` and `?suite=`) ship together so there's no legacy bookmark migration later. Implementation: same `replaceState` pattern as `?view=`. Refresh-safe; deep-linkable.
+5. **Active-suite tagline — cut, keep suite name + "on demand" badge.** Tagline previously rendered above the score ring is removed. The SuiteSelector card above already shows the tagline, so the ring header was duplicating. The "on demand" / cron cadence badge stays — it's the one piece of unique info above the ring. Implementation: `ScoreFeature` gains a `hideTagline?: boolean` prop (defaults to `false` — backward-compatible). The new dashboard passes `hideTagline`; the existing live dashboard is unaffected until phase 1.
 
 ## Rollback
 

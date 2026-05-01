@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 import { formatDistanceToNow } from 'date-fns'
-import { TriangleAlert } from 'lucide-react'
+import { ChevronDown, ChevronUp, TriangleAlert } from 'lucide-react'
 
 import {
   EVALUATOR_DISPLAY_ORDER,
@@ -344,9 +344,25 @@ const SUITE_TABS: ReadonlyArray<{
   }
 ]
 
+function isSuiteId(v: string | null): v is SuiteId {
+  return v === 'capability' || v === 'trafficMonitor' || v === 'regression'
+}
+
 function SuitesView() {
-  const [active, setActive] = useState<SuiteId>('capability')
-  const [showCompare, setShowCompare] = useState(false)
+  const search = useSearchParams()
+  const initialSuite: SuiteId = isSuiteId(search.get('suite'))
+    ? (search.get('suite') as SuiteId)
+    : 'capability'
+  const [active, setActiveState] = useState<SuiteId>(initialSuite)
+
+  const setActive = useCallback((next: SuiteId) => {
+    setActiveState(next)
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('suite', next)
+      window.history.replaceState(window.history.state, '', url.toString())
+    }
+  }, [])
 
   const cap = MOCK.capability.latest!
   const traf = MOCK.trafficMonitor.latest!
@@ -373,19 +389,18 @@ function SuitesView() {
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
         <div className="lg:col-span-4">
-          <ScoreFeature cap={snapMap[active]} previous={previousMap[active]} />
+          <ScoreFeature
+            cap={snapMap[active]}
+            previous={previousMap[active]}
+            hideTagline
+          />
         </div>
         <div className="lg:col-span-8">
           <EvaluatorBreakdown snap={snapMap[active]} />
         </div>
       </div>
 
-      <CompareToggle
-        on={showCompare}
-        onToggle={() => setShowCompare(s => !s)}
-      />
-
-      {showCompare ? <ComparisonTable cap={cap} traf={traf} /> : null}
+      <CollapsibleComparison cap={cap} traf={traf} />
     </div>
   )
 }
@@ -599,35 +614,43 @@ function AutoBadge() {
   )
 }
 
-function CompareToggle({
-  on,
-  onToggle
+function CollapsibleComparison({
+  cap,
+  traf
 }: {
-  on: boolean
-  onToggle: () => void
+  cap: EvalSummarySnapshot
+  traf: EvalSummarySnapshot
 }) {
-  return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-border/60 bg-muted/10 p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="space-y-1">
-        <p className="text-sm font-medium">Compare suites side-by-side</p>
-        <p className="text-xs text-muted-foreground">
-          Show where Benchmarks and Live traffic diverge per judge — only
-          surface this when you’re investigating a gap.
-        </p>
-      </div>
+  const [open, setOpen] = useState(true)
+
+  if (!open) {
+    return (
       <button
         type="button"
-        onClick={onToggle}
-        aria-pressed={on}
-        className={cn(
-          'inline-flex shrink-0 items-center gap-2 self-start rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors sm:self-auto',
-          on
-            ? 'border-accent-blue/40 bg-accent-blue/10 text-accent-blue'
-            : 'border-border bg-background text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-        )}
+        onClick={() => setOpen(true)}
+        aria-expanded={false}
+        className="flex w-full items-center justify-between rounded-2xl border border-border/60 bg-background px-5 py-3 text-left transition-colors hover:bg-muted/40"
       >
-        {on ? 'Hide comparison' : 'Show comparison'}
+        <span className="text-sm font-medium">
+          Where curated and live diverge
+        </span>
+        <ChevronDown className="size-4 text-muted-foreground" />
       </button>
+    )
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        aria-expanded={true}
+        aria-label="Collapse comparison"
+        className="absolute right-4 top-4 z-10 inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+      >
+        <ChevronUp className="size-4" />
+      </button>
+      <ComparisonTable cap={cap} traf={traf} />
     </div>
   )
 }

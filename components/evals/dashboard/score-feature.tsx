@@ -39,10 +39,12 @@ const SUITE_COPY: Record<
 
 export function ScoreFeature({
   cap,
-  previous
+  previous,
+  hideTagline = false
 }: {
   cap: EvalSummarySnapshot
   previous: EvalSummarySnapshot | null
+  hideTagline?: boolean
 }) {
   const score = Math.max(0, Math.min(1, cap.overallScore))
   const previousScore = previous
@@ -68,9 +70,11 @@ export function ScoreFeature({
             on demand
           </span>
         </div>
-        <p className="text-xs leading-snug text-muted-foreground">
-          {suiteCopy.description}
-        </p>
+        {hideTagline ? null : (
+          <p className="text-xs leading-snug text-muted-foreground">
+            {suiteCopy.description}
+          </p>
+        )}
       </div>
 
       <Tooltip>
