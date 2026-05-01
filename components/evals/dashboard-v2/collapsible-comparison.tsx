@@ -23,7 +23,7 @@ export function CollapsibleComparison({
         type="button"
         onClick={() => setOpen(true)}
         aria-expanded={false}
-        className="flex w-full items-center justify-between rounded-2xl border border-border/60 bg-background px-5 py-3 text-left transition-colors hover:bg-muted/40"
+        className="flex w-full items-center justify-between rounded-2xl border border-border/60 bg-background px-5 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <span className="text-sm font-medium">
           Where curated and live diverge
@@ -40,7 +40,7 @@ export function CollapsibleComparison({
         onClick={() => setOpen(false)}
         aria-expanded={true}
         aria-label="Collapse comparison"
-        className="absolute right-4 top-4 z-10 inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+        className="absolute right-4 top-4 z-10 inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <ChevronUp className="size-4" />
       </button>

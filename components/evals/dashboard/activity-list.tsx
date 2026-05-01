@@ -99,7 +99,7 @@ export function ActivityList({ data }: { data: EvalsDashboardData }) {
                 <button
                   type="button"
                   onClick={() => setExpanded(open ? null : id)}
-                  className="grid w-full grid-cols-[140px_minmax(0,1fr)_96px_120px_72px_24px] items-center gap-4 px-5 py-3.5 text-left transition-colors hover:bg-muted/40"
+                  className="grid w-full grid-cols-[140px_minmax(0,1fr)_96px_120px_72px_24px] items-center gap-4 px-5 py-3.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   aria-expanded={open}
                 >
                   <span className="font-mono text-xs text-muted-foreground tabular-nums">
