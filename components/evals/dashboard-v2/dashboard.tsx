@@ -40,7 +40,12 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
       <TooltipProvider delayDuration={200}>
         <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-8 lg:px-12">
-            <Header view="suites" onChange={() => {}} data={data} />
+            <Header
+              view="suites"
+              onChange={() => {}}
+              data={data}
+              hideSwitcher
+            />
             <p className="rounded-2xl border border-dashed border-border/60 bg-muted/10 p-12 text-center text-sm text-muted-foreground">
               No evaluation runs have landed yet. The next Traffic Monitor cron
               will populate this page.
@@ -90,11 +95,13 @@ function DashboardWithViews({ data }: { data: EvalsDashboardData }) {
 function Header({
   view,
   onChange,
-  data
+  data,
+  hideSwitcher = false
 }: {
   view: View
   onChange: (next: View) => void
   data: EvalsDashboardData
+  hideSwitcher?: boolean
 }) {
   const lastSyncIso = data.trafficMonitor.lastUpdated
   const lastSync = lastSyncIso
@@ -118,7 +125,9 @@ function Header({
             Response quality
           </h1>
         </div>
-        <ViewSwitcher value={view} onChange={onChange} />
+        {hideSwitcher ? null : (
+          <ViewSwitcher value={view} onChange={onChange} />
+        )}
       </div>
       <div className="space-y-2">
         <p className="text-sm leading-relaxed text-muted-foreground">
