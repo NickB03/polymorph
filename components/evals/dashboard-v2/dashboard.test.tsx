@@ -80,6 +80,7 @@ describe('EvalsDashboardV2', () => {
   beforeEach(() => {
     mockSearchParamGet.mockReset()
     mockSearchParamGet.mockReturnValue(null)
+    window.history.replaceState({}, '', '/admin/evals')
   })
 
   it('renders the empty state when no suite has data', () => {
@@ -141,6 +142,54 @@ describe('EvalsDashboardV2', () => {
     )
 
     expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
+    expect(screen.getByRole('tab', { name: /live traffic/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+  })
+
+  it('falls back to a populated suite when the URL selects an empty suite', () => {
+    mockSearchParamGet.mockImplementation(key =>
+      key === 'suite' ? 'capability' : null
+    )
+    const trafficMonitor = snapshot({
+      id: 'traffic-latest',
+      suite: 'traffic-monitor',
+      datasetName: 'traffic-dataset',
+      experimentName: 'traffic-fixture',
+      totalCases: 5
+    })
+    const regression = snapshot({
+      id: 'regression-latest',
+      suite: 'regression',
+      datasetName: 'regression-dataset',
+      experimentName: 'regression-fixture',
+      totalCases: 7
+    })
+
+    render(
+      <EvalsDashboardV2
+        data={{
+          ...EMPTY,
+          trafficMonitor: {
+            latest: trafficMonitor,
+            previous: null,
+            trend: [],
+            lastUpdated: trafficMonitor.createdAt
+          },
+          regression: {
+            latest: regression,
+            previous: null,
+            trend: [],
+            lastUpdated: regression.createdAt
+          },
+          recentRuns: [regression, trafficMonitor]
+        }}
+      />
+    )
+
+    expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
+    expect(screen.getByText('Evaluator breakdown')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /live traffic/i })).toHaveAttribute(
       'aria-selected',
       'true'
