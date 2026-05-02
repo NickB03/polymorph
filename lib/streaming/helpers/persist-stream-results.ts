@@ -115,8 +115,8 @@ export async function persistStreamResults(
   }
 
   if (messageSaved) {
-    // Route-handler writes need immediate expiration so reloads observe the
-    // just-persisted canonical UIMessage instead of a stale chat transcript.
+    // Keep any chat-tagged consumers in sync after writing the canonical
+    // UIMessage; loadChat itself now reads directly from the database.
     revalidateTag(`chat-${chatId}`, { expire: 0 })
   }
 

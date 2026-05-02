@@ -652,7 +652,7 @@ shadcn/ui-based primitives and custom UI components.
 
 | File                              | Purpose                                                                                                |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `lib/actions/chat.ts`             | Server actions for chat operations with `unstable_cache` and revalidation tags                         |
+| `lib/actions/chat.ts`             | Server actions for chat operations with direct chat loading and write-side revalidation tags           |
 | `lib/actions/feedback.ts`         | Server action to update message feedback score in the database                                         |
 | `lib/actions/site-feedback.ts`    | Server action to submit site-wide user feedback (sentiment + message)                                  |
 | `lib/actions/eval-preferences.ts` | Server action persisting a user's preferred evals dashboard layout (writes to `user_eval_preferences`) |

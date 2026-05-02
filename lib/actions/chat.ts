@@ -35,8 +35,8 @@ export async function getChatsPage(limit = 20, offset = 0) {
 
 /**
  * Load a chat with messages
- * If requestingUserId is provided, it will be used for authorization
- * Otherwise, no authorization check is performed (assumes already authorized)
+ * Authorization is delegated to dbActions.loadChatWithMessages; private chats
+ * return null when requestingUserId is missing or does not own the chat.
  */
 export async function loadChat(
   chatId: string,
