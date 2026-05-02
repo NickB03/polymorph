@@ -22,6 +22,8 @@ vi.mock('@/lib/utils/retry', () => ({
   retryDatabaseOperation: vi.fn()
 }))
 
+import { revalidateTag } from 'next/cache'
+
 import { upsertMessage } from '@/lib/actions/chat'
 
 describe('persistStreamResults', () => {
@@ -59,5 +61,6 @@ describe('persistStreamResults', () => {
       }),
       'user-1'
     )
+    expect(revalidateTag).toHaveBeenCalledWith('chat-chat-1', { expire: 0 })
   })
 })

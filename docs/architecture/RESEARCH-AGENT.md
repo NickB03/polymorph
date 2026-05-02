@@ -398,7 +398,7 @@ Some tools are registered only when the request context provides the capabilitie
 
 ### Message Persistence Contract
 
-Chat messages use `messages.ui_message` as the canonical persisted `UIMessage`. The legacy `parts` table is still dual-written as a compatibility projection and as fallback data for older rows. Load paths call `buildUIMessageFromDB(messageRow, messageRow.parts ?? [])`, which prefers row-level `uiMessage` and reconstructs from `parts` only when `uiMessage` is null. `scripts/backfill-chat-ui-message.ts` provides the one-time backfill path for rows where `messages.ui_message IS NULL`.
+Chat messages use `messages.ui_message` as the canonical persisted `UIMessage`. New chat writes store that canonical payload only; the legacy `parts` table remains for compatibility reads of older rows and package-local eval fallback queries, while canonical upserts clear stale projections for the message being rewritten. Load paths call `buildUIMessageFromDB(messageRow, messageRow.parts ?? [])`, which prefers row-level `uiMessage` and reconstructs from `parts` only when `uiMessage` is null. `scripts/backfill-chat-ui-message.ts` provides the one-time backfill path for rows where `messages.ui_message IS NULL`.
 
 ### Dynamic Tools
 

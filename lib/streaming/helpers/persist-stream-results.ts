@@ -91,8 +91,10 @@ export async function persistStreamResults(
 
   // Save message with retry logic
   const saveStart = performance.now()
+  let messageSaved = false
   try {
     await upsertMessage(chatId, responseMessage, userId)
+    messageSaved = true
     perfTime('upsertMessage (AI response) completed', saveStart)
   } catch (error) {
     console.error('Error saving message:', error)
@@ -101,6 +103,7 @@ export async function persistStreamResults(
         () => upsertMessage(chatId, responseMessage, userId),
         'save message'
       )
+      messageSaved = true
       perfTime('upsertMessage (AI response) completed after retry', saveStart)
     } catch (retryError) {
       console.error(
@@ -109,6 +112,12 @@ export async function persistStreamResults(
       )
       // Don't throw here to avoid breaking the stream
     }
+  }
+
+  if (messageSaved) {
+    // Keep any chat-tagged consumers in sync after writing the canonical
+    // UIMessage; loadChat itself now reads directly from the database.
+    revalidateTag(`chat-${chatId}`, { expire: 0 })
   }
 
   // Wait for title generation AFTER message is saved — title generation is a

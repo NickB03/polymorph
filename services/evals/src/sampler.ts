@@ -143,6 +143,22 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
               'tool-generateImage'
             )
         )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM jsonb_array_elements(
+            CASE
+              WHEN jsonb_typeof(assistant.ui_message->'parts') = 'array'
+                THEN assistant.ui_message->'parts'
+              ELSE '[]'::jsonb
+            END
+          ) AS unsupported_ui_part(part)
+          WHERE unsupported_ui_part.part->>'type' IN (
+            'tool-createCanvasArtifact',
+            'tool-updateCanvasArtifact',
+            'tool-readCanvasArtifact',
+            'tool-generateImage'
+          )
+        )
       ORDER BY assistant.chat_id, assistant.created_at DESC, assistant.id DESC
     ),
     sampled_targets AS (

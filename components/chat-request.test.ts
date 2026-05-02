@@ -27,9 +27,14 @@ describe('chat request helpers', () => {
     })
   })
 
-  it('builds a submit-message continuation request with canonical messages', () => {
+  it('maps completed interactive tool output to a tool-result continuation', () => {
     const request = buildChatRequestBody({
       messages: [
+        {
+          id: 'user-1',
+          role: 'user',
+          parts: [{ type: 'text', text: 'choose one' }]
+        },
         {
           id: 'assistant-1',
           role: 'assistant',
@@ -44,21 +49,60 @@ describe('chat request helpers', () => {
         }
       ] as any,
       trigger: 'submit-message',
-      messageId: undefined,
+      messageId: 'assistant-1',
       chatId: 'chat-1',
-      isGuest: true,
+      isGuest: false,
       savedMessagesCount: 2
     })
 
     expect(request).toEqual({
       body: {
-        trigger: 'submit-message',
+        trigger: 'tool-result',
         chatId: 'chat-1',
-        messageId: undefined,
+        messageId: 'assistant-1',
         messages: expect.any(Array),
-        message: expect.any(Object),
-        isNewChat: false
+        toolResult: {
+          toolCallId: 'tool-1',
+          output: { value: 'dark' }
+        }
       }
     })
+  })
+
+  it('does not map completed non-interactive tool output to a tool-result continuation', () => {
+    const request = buildChatRequestBody({
+      messages: [
+        {
+          id: 'user-1',
+          role: 'user',
+          parts: [{ type: 'text', text: 'search this' }]
+        },
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          parts: [
+            {
+              type: 'tool-search',
+              toolCallId: 'tool-1',
+              state: 'output-available',
+              output: { results: [] }
+            }
+          ]
+        }
+      ] as any,
+      trigger: 'submit-message',
+      messageId: 'assistant-1',
+      chatId: 'chat-1',
+      isGuest: false,
+      savedMessagesCount: 2
+    })
+
+    expect(request.body).toEqual(
+      expect.objectContaining({
+        trigger: 'submit-message',
+        chatId: 'chat-1'
+      })
+    )
+    expect(request.body).not.toHaveProperty('toolResult')
   })
 })

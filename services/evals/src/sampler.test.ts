@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockDbExecute = vi.hoisted(() => vi.fn())
 
@@ -23,6 +23,16 @@ import {
   parseToolNames,
   sampleRecentChats
 } from './sampler'
+
+function sqlText(raw: unknown): string {
+  const chunks = (raw as { queryChunks?: unknown[] }).queryChunks ?? []
+  return chunks
+    .map(chunk => {
+      const value = (chunk as { value?: unknown }).value
+      return Array.isArray(value) ? value.join('') : ''
+    })
+    .join('')
+}
 
 describe('parseToolNames', () => {
   it('returns parsed array for valid JSON', () => {
@@ -81,6 +91,24 @@ describe('parseSearchResults', () => {
 })
 
 describe('sampleRecentChats', () => {
+  beforeEach(() => {
+    mockDbExecute.mockReset()
+  })
+
+  it('prefilters replay-incompatible tools from canonical ui_message parts before sampling', async () => {
+    mockDbExecute.mockResolvedValueOnce([])
+
+    await sampleRecentChats()
+
+    const query = sqlText(mockDbExecute.mock.calls[0][0])
+    expect(query).toContain("assistant.ui_message->'parts'")
+    expect(query).toContain('jsonb_array_elements')
+    expect(query).toContain("'tool-createCanvasArtifact'")
+    expect(query).toContain("'tool-updateCanvasArtifact'")
+    expect(query).toContain("'tool-readCanvasArtifact'")
+    expect(query).toContain("'tool-generateImage'")
+  })
+
   it('builds a coherent target-turn sample from canonical UI messages and metadata', async () => {
     mockDbExecute.mockResolvedValueOnce([
       {
@@ -215,6 +243,146 @@ describe('sampleRecentChats', () => {
     ])
     expect(samples[0].toolNames).toEqual(['search'])
     expect(samples[0].metadataTags).toContain('user-mode:research')
+  })
+
+  it('samples ui_message-only rows without legacy parts projections', async () => {
+    mockDbExecute.mockResolvedValueOnce([
+      {
+        chat_id: 'chat-ui-only',
+        created_at: new Date('2026-04-29T12:00:00Z'),
+        target_user_message_id: 'user-ui-only',
+        target_assistant_message_id: 'assistant-ui-only',
+        conversation_messages: [
+          {
+            id: 'user-ui-only',
+            role: 'user',
+            createdAt: '2026-04-29T11:05:00Z',
+            uiMessage: {
+              id: 'user-ui-only',
+              role: 'user',
+              parts: [{ type: 'text', text: 'ui only question' }],
+              metadata: { userMode: 'research', modelType: 'quality' }
+            },
+            metadata: null,
+            textParts: null
+          }
+        ],
+        target_assistant_message: {
+          id: 'assistant-ui-only',
+          role: 'assistant',
+          createdAt: '2026-04-29T11:06:00Z',
+          uiMessage: {
+            id: 'assistant-ui-only',
+            role: 'assistant',
+            parts: [
+              { type: 'text', text: 'ui only answer' },
+              {
+                type: 'tool-search',
+                output: {
+                  query: 'ui only question',
+                  results: [
+                    {
+                      title: 'Canonical Result',
+                      url: 'https://canonical.example.com',
+                      snippet: 'Canonical snippet'
+                    }
+                  ],
+                  citationMap: {
+                    1: {
+                      title: 'Canonical Result',
+                      url: 'https://canonical.example.com'
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          metadata: null,
+          textParts: null
+        },
+        target_search_results: null,
+        target_citations: null,
+        target_tool_names: null
+      }
+    ])
+
+    const samples = await sampleRecentChats()
+
+    expect(samples).toHaveLength(1)
+    expect(samples[0]).toMatchObject({
+      chatId: 'chat-ui-only',
+      userQuery: 'ui only question',
+      modelAnswer: 'ui only answer',
+      searchMode: 'research',
+      modelType: 'quality',
+      toolNames: ['search']
+    })
+    expect(samples[0].searchResults).toEqual([
+      {
+        query: 'ui only question',
+        results: [
+          {
+            title: 'Canonical Result',
+            url: 'https://canonical.example.com',
+            snippet: 'Canonical snippet'
+          }
+        ]
+      }
+    ])
+    expect(samples[0].citations).toEqual([
+      {
+        title: 'Canonical Result',
+        url: 'https://canonical.example.com'
+      }
+    ])
+  })
+
+  it('rejects ui_message-only unsupported tools without legacy tool-name projections', async () => {
+    mockDbExecute.mockResolvedValueOnce([
+      {
+        chat_id: 'chat-ui-only-image',
+        created_at: new Date('2026-04-29T12:00:00Z'),
+        target_user_message_id: 'user-ui-only-image',
+        target_assistant_message_id: 'assistant-ui-only-image',
+        conversation_messages: [
+          {
+            id: 'user-ui-only-image',
+            role: 'user',
+            createdAt: '2026-04-29T11:05:00Z',
+            uiMessage: {
+              id: 'user-ui-only-image',
+              role: 'user',
+              parts: [{ type: 'text', text: 'draw this' }],
+              metadata: { userMode: 'search' }
+            },
+            metadata: null,
+            textParts: null
+          }
+        ],
+        target_assistant_message: {
+          id: 'assistant-ui-only-image',
+          role: 'assistant',
+          createdAt: '2026-04-29T11:06:00Z',
+          uiMessage: {
+            id: 'assistant-ui-only-image',
+            role: 'assistant',
+            parts: [
+              { type: 'text', text: 'here is the image' },
+              { type: 'tool-generateImage', output: { status: 'completed' } }
+            ]
+          },
+          metadata: null,
+          textParts: null
+        },
+        target_search_results: null,
+        target_citations: null,
+        target_tool_names: null
+      }
+    ])
+
+    const samples = await sampleRecentChats()
+
+    expect(samples).toHaveLength(0)
   })
 
   it('falls back to legacy text parts and labels missing mode metadata', async () => {
