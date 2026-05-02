@@ -767,16 +767,22 @@ Runs an evaluation chat through the researcher agent pipeline without creating o
   }>
   searchMode: 'chat' | 'research'
   modelType: 'speed' | 'quality'
+  userMode?: 'search' | 'research' | 'build' // Optional; carries the original UI mode through replay
+  intent?: string // Optional; carried from the source chat. The traffic-monitor sampler forwards this so build-mode replays preserve `'build'`. Validated as z.string().optional() — the route does not enforce a specific value.
+  corpusVersion?: string // Optional; pins the eval against a specific golden-corpus revision
 }
 ```
 
-| Field          | Type     | Required | Description                                                            |
-| -------------- | -------- | -------- | ---------------------------------------------------------------------- |
-| `caseId`       | `string` | Yes      | Identifier for the evaluation case.                                    |
-| `suite`        | `string` | Yes      | Eval suite: `capability`, `regression`, `smoke`, or `traffic-monitor`. |
-| `conversation` | `array`  | Yes      | Message array with `role` and `parts` for each message.                |
-| `searchMode`   | `string` | Yes      | Agent mode: `chat` or `research`.                                      |
-| `modelType`    | `string` | Yes      | Model tier: `speed` or `quality`.                                      |
+| Field           | Type     | Required | Description                                                                                                                                                                                                                                   |
+| --------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `caseId`        | `string` | Yes      | Identifier for the evaluation case.                                                                                                                                                                                                           |
+| `suite`         | `string` | Yes      | Eval suite: `capability`, `regression`, `smoke`, or `traffic-monitor`.                                                                                                                                                                        |
+| `conversation`  | `array`  | Yes      | Message array with `role` and `parts` for each message.                                                                                                                                                                                       |
+| `searchMode`    | `string` | Yes      | Agent mode: `chat` or `research`.                                                                                                                                                                                                             |
+| `modelType`     | `string` | Yes      | Model tier: `speed` or `quality`.                                                                                                                                                                                                             |
+| `userMode`      | `string` | No       | Original UI mode (`search`, `research`, or `build`). Required for faithful traffic-monitor replay of `build`-mode chats.                                                                                                                      |
+| `intent`        | `string` | No       | Carried through from the source chat's `intent`. The traffic-monitor sampler (`services/evals/src/sampler.ts`) forwards this so build-mode replays preserve `'build'`. Validated as any string — the route does not enforce a specific value. |
+| `corpusVersion` | `string` | No       | Pins the eval against a specific golden-corpus revision; omit to use the runner's current corpus.                                                                                                                                             |
 
 #### Response
 

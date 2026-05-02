@@ -118,11 +118,11 @@ The App Router is split into two route groups (`(chat)/` and `(admin)/`) plus no
 
 ### `(admin)` route group — admin surface
 
-| File                                  | URL            | Purpose                                                                                                                                             |
-| ------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/(admin)/layout.tsx`              | —              | Admin layout: `force-dynamic`; redirects unauthenticated users to `/auth/login`, then calls `notFound()` unless the session matches `ADMIN_USER_ID` |
-| `app/(admin)/admin/evals/page.tsx`    | `/admin/evals` | Evals dashboard v2 — template-switcher + widget layouts, persisted layout preference                                                                |
-| `app/(admin)/admin/evals/loading.tsx` | —              | Loading state for the evals dashboard                                                                                                               |
+| File                                  | URL            | Purpose                                                                                                                                                         |
+| ------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/(admin)/layout.tsx`              | —              | Admin layout: `force-dynamic`; redirects unauthenticated users to `/auth/login`, then calls `notFound()` unless the session matches `ADMIN_USER_ID`             |
+| `app/(admin)/admin/evals/page.tsx`    | `/admin/evals` | Evals dashboard v2 — "Suites" and "Run history" views with per-suite drilldown; URL state via `?view=` and `?suite=`; evaluator breakdown and comparison panels |
+| `app/(admin)/admin/evals/loading.tsx` | —              | Loading state for the evals dashboard                                                                                                                           |
 
 ### Auth Routes
 
@@ -325,15 +325,31 @@ Shared motion primitives used by the chat and Tool UI surfaces.
 
 ### Evals Dashboard Components
 
-| File                                                  | Purpose                                                                                                                                                |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `components/evals/dashboard-v2/dashboard.tsx`         | Top-level evals dashboard: loads suite data + user layout preference, renders via `LayoutRenderer`                                                     |
-| `components/evals/dashboard-v2/template-switcher.tsx` | Template switcher control; persists the user's preferred layout via `setPreferredEvalsLayout`                                                          |
-| `components/evals/dashboard-v2/dashboard.test.tsx`    | Tests for dashboard template selection, widget rendering, and layout persistence                                                                       |
-| `components/evals/widgets/layout-renderer.tsx`        | Renders widgets from a layout template definition against loaded suite data                                                                            |
-| `components/evals/widgets/registry.ts`                | Widget registry mapping widget type names to React components + prop adapters                                                                          |
-| `components/evals/widgets/*.tsx`                      | Individual widget components (KPI tiles, score rings, trend charts, evaluator bars/grids, activity feed, etc.) — see `registry.ts` for the active list |
-| `components/evals/widgets/shared/`                    | Shared widget utilities: formatters, sparkline, prop types                                                                                             |
+The dashboard tree has three sibling directories: `dashboard-v2/` (current IA — Suites/History with per-suite drilldown), `dashboard/` (legacy primitives reused by v2), and `glossary/` (term-rendering helpers used in tooltips and label cells).
+
+| File                                                       | Purpose                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `components/evals/dashboard-v2/dashboard.tsx`              | Top-level orchestrator: handles the empty-state branch, owns the `TooltipProvider` wrap and CSS-driven enter animations, routes Suites/History via `?view=`, drills into a chosen suite via `?suite=`, and composes `EvaluatorBreakdown`, `CollapsibleComparison`, `CompactAlert`, plus legacy primitives `ActivityList`/`ScoreFeature` from `components/evals/dashboard/` |
+| `components/evals/dashboard-v2/view-switcher.tsx`          | URL-state-driven `radiogroup` switcher between "Suites" (`?view=suites`) and "Run history" (`?view=history`)                                                                                                                                                                                                                                                               |
+| `components/evals/dashboard-v2/suite-selector.tsx`         | ARIA `tablist` for the per-suite drilldown. Renames the suites for display: `capability` → "Benchmarks", `trafficMonitor` → "Live traffic", `regression` → "Pinned checks"                                                                                                                                                                                                 |
+| `components/evals/dashboard-v2/evaluator-breakdown.tsx`    | Per-evaluator score breakdown for a suite run; renders `AutoBadge` next to deterministic evaluators (`deterministic_prechecks`, `tool_usage`)                                                                                                                                                                                                                              |
+| `components/evals/dashboard-v2/collapsible-comparison.tsx` | Comparison panel between latest and prior runs (collapsible)                                                                                                                                                                                                                                                                                                               |
+| `components/evals/dashboard-v2/compact-alert.tsx`          | Compact alert banner for threshold-breach state, sourced from `lib/evals/helpers/alerts.ts:getLatestThresholdAlert`                                                                                                                                                                                                                                                        |
+| `components/evals/dashboard-v2/auto-badge.tsx`             | Static "auto" pill marking deterministic evaluator rows (e.g. `deterministic_prechecks`, `tool_usage`) so readers can distinguish them from LLM-judge rows in `EvaluatorBreakdown`                                                                                                                                                                                         |
+| `components/evals/dashboard-v2/url-state.ts`               | Pure parse/serialize helpers + type guards (`isView`, `isSuiteId`) for the `?view=` and `?suite=` params                                                                                                                                                                                                                                                                   |
+| `components/evals/dashboard-v2/use-url-state.ts`           | React hook wrapping `url-state.ts` for component-level reactive URL state                                                                                                                                                                                                                                                                                                  |
+| `components/evals/dashboard-v2/local-labels.ts`            | Local display-label overrides for the dashboard-v2 surface — exists specifically because the full evaluator name "Deterministic Prechecks" overflows the 2-column row                                                                                                                                                                                                      |
+| `components/evals/dashboard/activity-list.tsx`             | Legacy: recent runs activity list (still imported by dashboard-v2)                                                                                                                                                                                                                                                                                                         |
+| `components/evals/dashboard/comparison-table.tsx`          | Legacy: tabular comparison primitive (still imported by dashboard-v2)                                                                                                                                                                                                                                                                                                      |
+| `components/evals/dashboard/score-bar.tsx`                 | Legacy: horizontal pass-rate bar primitive                                                                                                                                                                                                                                                                                                                                 |
+| `components/evals/dashboard/score-feature.tsx`             | Legacy: score-with-label feature primitive                                                                                                                                                                                                                                                                                                                                 |
+| `components/evals/dashboard/shared.ts`                     | Legacy: shared formatters and types used by dashboard primitives                                                                                                                                                                                                                                                                                                           |
+| `components/evals/glossary/defined-term.tsx`               | Inline term with hover-popover definition                                                                                                                                                                                                                                                                                                                                  |
+| `components/evals/glossary/judge-label.tsx`                | Stylized rendering of LLM-judge verdict labels                                                                                                                                                                                                                                                                                                                             |
+| `components/evals/glossary/score-cell.tsx`                 | Score cell with embedded glossary tooltip                                                                                                                                                                                                                                                                                                                                  |
+| `components/evals/glossary/aggregate-breakdown.tsx`        | Aggregate-score breakdown component for evaluator clusters                                                                                                                                                                                                                                                                                                                 |
+
+> **Note on test files:** the `dashboard-v2/`, `dashboard/`, and `glossary/` directories contain co-located `*.test.tsx` files (six in `dashboard-v2/` alone). They are intentionally omitted from this section — FILE-INDEX is selectively detailed and other component sections (e.g. `tool-ui/`) follow the same convention.
 
 ### Voice Components
 
@@ -637,25 +653,24 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Database
 
-| File                  | Purpose                                                                                                                                                                             |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `feedback`, `canvas_artifacts`, `eval_summaries`, `user_eval_preferences`, and `trending_suggestions_cache` with RLS policies |
-| `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                                                                                     |
-| `lib/db/relations.ts` | Drizzle relation definitions (chats -> messages -> parts)                                                                                                                           |
-| `lib/db/actions.ts`   | Database CRUD operations with RLS; writes canonical `messages.ui_message`, clears stale legacy projections, and reads `parts` only for compatibility fallback rows                  |
-| `lib/db/admin.ts`     | Privileged DB client factory (`getPrivilegedDb`) bypassing RLS for cron/service writes (e.g., suggestions refresh)                                                                  |
-| `lib/db/constants.ts` | Database constants (query limits, default values)                                                                                                                                   |
-| `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                                                                                             |
-| `lib/db/migrate.ts`   | Standalone migration runner script using Drizzle Kit                                                                                                                                |
+| File                  | Purpose                                                                                                                                                                                                                                                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `feedback`, `canvas_artifacts`, `eval_summaries`, and `trending_suggestions_cache` with RLS policies. Also still declares an orphan `user_eval_preferences` table left over from PR #187 — no live consumers; scheduled for removal in a follow-up |
+| `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                                                                                                                                                                                                          |
+| `lib/db/relations.ts` | Drizzle relation definitions (chats -> messages -> parts)                                                                                                                                                                                                                                                |
+| `lib/db/actions.ts`   | Database CRUD operations with RLS; writes canonical `messages.ui_message`, clears stale legacy projections, and reads `parts` only for compatibility fallback rows                                                                                                                                       |
+| `lib/db/admin.ts`     | Privileged DB client factory (`getPrivilegedDb`) bypassing RLS for cron/service writes (e.g., suggestions refresh)                                                                                                                                                                                       |
+| `lib/db/constants.ts` | Database constants (query limits, default values)                                                                                                                                                                                                                                                        |
+| `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                                                                                                                                                                                                                  |
+| `lib/db/migrate.ts`   | Standalone migration runner script using Drizzle Kit                                                                                                                                                                                                                                                     |
 
 ### Server Actions
 
-| File                              | Purpose                                                                                                |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `lib/actions/chat.ts`             | Server actions for chat operations with direct chat loading and write-side revalidation tags           |
-| `lib/actions/feedback.ts`         | Server action to update message feedback score in the database                                         |
-| `lib/actions/site-feedback.ts`    | Server action to submit site-wide user feedback (sentiment + message)                                  |
-| `lib/actions/eval-preferences.ts` | Server action persisting a user's preferred evals dashboard layout (writes to `user_eval_preferences`) |
+| File                           | Purpose                                                                                      |
+| ------------------------------ | -------------------------------------------------------------------------------------------- |
+| `lib/actions/chat.ts`          | Server actions for chat operations with direct chat loading and write-side revalidation tags |
+| `lib/actions/feedback.ts`      | Server action to update message feedback score in the database                               |
+| `lib/actions/site-feedback.ts` | Server action to submit site-wide user feedback (sentiment + message)                        |
 
 ### Schema (Zod)
 
@@ -796,20 +811,19 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Evals (app-side)
 
-Data access + layout models backing the admin `/admin/evals` dashboard. The offline cron that _writes_ these rows lives under `services/evals/`.
+Data access and view helpers backing the admin `/admin/evals` dashboard. The offline cron that _writes_ these rows lives under `services/evals/`.
 
-| File                                  | Purpose                                                                                                   |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `lib/evals/queries.ts`                | Server-side queries over `eval_summaries` + `user_eval_preferences` (incl. `getEvalsDashboardWithLayout`) |
-| `lib/evals/types.ts`                  | Shared type definitions for eval suites, summaries, and dashboard data shapes                             |
-| `lib/evals/evaluator-labels.ts`       | Human-readable labels for evaluator IDs                                                                   |
-| `lib/evals/layout/templates.ts`       | Dashboard layout templates (A/B/C) — widget composition and data selectors                                |
-| `lib/evals/layout/types.ts`           | Type definitions for layout templates and widget configuration                                            |
-| `lib/evals/helpers/health-state.ts`   | Derives overall suite health state (healthy/watch/regression) from recent runs                            |
-| `lib/evals/helpers/divergences.ts`    | Computes notable evaluator-level divergences between runs                                                 |
-| `lib/evals/helpers/feed.ts`           | Builds the activity-feed widget data from recent eval runs                                                |
-| `lib/evals/helpers/findings.ts`       | Extracts ranked findings/narratives from eval summaries                                                   |
-| `lib/evals/helpers/combined-trend.ts` | Prepares combined-trend chart series across multiple suites                                               |
+| File                                | Purpose                                                                                                                            |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/evals/queries.ts`              | Server-side queries over `eval_summaries` (`getEvalsDashboard`, capability/regression/traffic-monitor selectors)                   |
+| `lib/evals/types.ts`                | Shared type definitions for eval suites, summaries, and dashboard data shapes                                                      |
+| `lib/evals/evaluator-labels.ts`     | Human-readable labels for evaluator IDs                                                                                            |
+| `lib/evals/glossary.ts`             | Term definitions and `snapshotSuiteKey` helper powering the `components/evals/glossary/` tooltip and label-rendering UI            |
+| `lib/evals/helpers/alerts.ts`       | Builds dashboard alert payloads from threshold-breached snapshots; defines `DashboardAlert` shape; consumed by `compact-alert.tsx` |
+| `lib/evals/helpers/health-state.ts` | (orphan — no live consumers after PR #187; scheduled for removal) Derives overall suite health state from recent runs              |
+| `lib/evals/helpers/divergences.ts`  | (orphan — no live consumers after PR #187; scheduled for removal) Computes notable evaluator-level divergences between runs        |
+| `lib/evals/helpers/feed.ts`         | (orphan — no live consumers after PR #187; built the deleted `activity-feed` widget) Activity-feed data builder                    |
+| `lib/evals/helpers/findings.ts`     | (orphan — no live consumers after PR #187; scheduled for removal) Extracts ranked findings/narratives from eval summaries          |
 
 ### Canvas
 
