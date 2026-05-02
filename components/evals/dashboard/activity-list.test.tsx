@@ -98,12 +98,12 @@ describe('ActivityList', () => {
 
     const rows = screen.getAllByRole('button')
     expect(rows).toHaveLength(3)
-    expect(rows[0]).toHaveTextContent('Benchmarks')
+    expect(rows[0]).toHaveTextContent('Test Suite')
     expect(rows[0]).toHaveTextContent('90%')
     expect(rows[0]).toHaveTextContent('+6')
-    expect(rows[1]).toHaveTextContent('Traffic Monitor')
+    expect(rows[1]).toHaveTextContent('Production Evals')
     expect(rows[1]).toHaveTextContent('80%')
-    expect(rows[2]).toHaveTextContent('Benchmarks')
+    expect(rows[2]).toHaveTextContent('Test Suite')
     expect(rows[2]).toHaveTextContent('84%')
   })
 
@@ -122,7 +122,7 @@ describe('ActivityList', () => {
     expect(meters[0]).toHaveClass('block', 'w-full')
     expect(meters[0]).toHaveAttribute(
       'aria-valuetext',
-      'Faithfulness score 90%, on track, 80% threshold, 10 cases'
+      'Groundedness score 90%, on track, 80% threshold, 10 cases'
     )
 
     const scoreBars = screen.getAllByTestId('score-bar')

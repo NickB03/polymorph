@@ -28,6 +28,9 @@ export function ScoreCell({
   caseCount,
   threshold,
   failed,
+  observedFailureModes,
+  onActivate,
+  selected,
   children
 }: {
   suite: SuiteKey
@@ -36,11 +39,17 @@ export function ScoreCell({
   caseCount?: number
   threshold?: number | null
   failed?: boolean
+  observedFailureModes?: Array<{ count: number; description: string }>
+  onActivate?: () => void
+  selected?: boolean
   children: ReactNode
 }) {
   const insight = getScoreInsight(suite, judgeKey)
   const definition = getJudgeDefinition(judgeKey)
-  const failureModes = insight?.failureModes?.filter(m => m.count > 0) ?? []
+  const failureModes =
+    observedFailureModes && observedFailureModes.length > 0
+      ? observedFailureModes
+      : (insight?.failureModes?.filter(m => m.count > 0) ?? [])
   const modeGuidance = insight?.failureModes ?? []
   if (!insight && !definition) {
     return <>{children}</>
@@ -77,21 +86,36 @@ export function ScoreCell({
       ? ''
       : ` This judge ${failed ? 'appears' : 'does not appear'} in the run's threshold-breach list.`
 
+  const triggerClassName =
+    'block w-full cursor-help rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'
+
+  const trigger = onActivate ? (
+    <button
+      type="button"
+      aria-label={`${ariaValueText}. Open diagnostic details.`}
+      aria-pressed={selected}
+      onClick={onActivate}
+      className={`${triggerClassName} appearance-none border-0 bg-transparent p-0 text-left font-[inherit] text-inherit`}
+    >
+      {children}
+    </button>
+  ) : (
+    <span
+      aria-valuemax={100}
+      aria-valuemin={0}
+      aria-valuenow={pctValue}
+      aria-valuetext={ariaValueText}
+      className={triggerClassName}
+      role="meter"
+      tabIndex={0}
+    >
+      {children}
+    </span>
+  )
+
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          aria-valuemax={100}
-          aria-valuemin={0}
-          aria-valuenow={pctValue}
-          aria-valuetext={ariaValueText}
-          className="block w-full cursor-help rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-          role="meter"
-          tabIndex={0}
-        >
-          {children}
-        </span>
-      </TooltipTrigger>
+      <TooltipTrigger asChild>{trigger}</TooltipTrigger>
       <TooltipContent
         side="top"
         align="end"

@@ -1,7 +1,8 @@
 import { createClient } from '@arizeai/phoenix-client'
 import {
   createDataset,
-  createOrGetDataset
+  createOrGetDataset,
+  getDatasetExamples
 } from '@arizeai/phoenix-client/datasets'
 import { runExperiment } from '@arizeai/phoenix-client/experiments'
 import type { Example } from '@arizeai/phoenix-client/types/datasets'
@@ -21,14 +22,14 @@ import {
   formatEvalContext
 } from '../eval-output'
 import { runEvalCase } from '../eval-runner-client'
-import { persistEvalSummary } from '../eval-summary'
+import { EVALUATOR_TEMPLATE_VERSION, persistEvalSummary } from '../eval-summary'
 import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
 import { createSafetyExperimentEvaluator } from '../evaluators/safety'
 import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
-import { createJudgeModel } from '../judge-model'
+import { createJudgeModel, JUDGE_DEFAULT_SETTINGS } from '../judge-model'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
 import { withRetry } from '../retry'
 import type {
@@ -122,6 +123,10 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
   })
 
   let datasetId: string
+  let datasetVersion: string
+  let datasetExamples: Awaited<
+    ReturnType<typeof createDatasetAndExperiment>
+  >['datasetExamples']
   let datasetName: string
   let experimentName: string
   let experiment: Awaited<
@@ -129,13 +134,19 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
   >['experiment']
 
   try {
-    ;({ datasetId, datasetName, experimentName, experiment } =
-      await createDatasetAndExperiment({
-        suite,
-        examples,
-        evaluators,
-        task: buildExperimentTask()
-      }))
+    ;({
+      datasetId,
+      datasetVersion,
+      datasetExamples,
+      datasetName,
+      experimentName,
+      experiment
+    } = await createDatasetAndExperiment({
+      suite,
+      examples,
+      evaluators,
+      task: buildExperimentTask()
+    }))
   } catch (error) {
     console.error(
       `[evals] PHOENIX UNAVAILABLE - could not record ${suite} experiment results`
@@ -180,23 +191,23 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
   }
 
   try {
-    await persistEvalSummary(
-      { execute: db.execute.bind(db) },
-      {
-        suite,
-        experimentName,
-        datasetName,
-        passRate: result.passRate,
-        threshold: result.threshold,
-        thresholdBreached: result.status === 'threshold_breached',
-        failedEvaluators: result.failedEvaluators,
-        experiment,
-        totalCases: result.totalCases,
-        attemptedCases: result.attemptedCases,
-        failedCases: result.failedCases,
-        phoenixUrl
-      }
-    )
+    await persistEvalSummary(db, {
+      suite,
+      experimentName,
+      datasetName,
+      passRate: result.passRate,
+      threshold: result.threshold,
+      thresholdBreached: result.status === 'threshold_breached',
+      failedEvaluators: result.failedEvaluators,
+      experiment,
+      totalCases: result.totalCases,
+      attemptedCases: result.attemptedCases,
+      failedCases: result.failedCases,
+      phoenixUrl,
+      datasetExamples,
+      datasetVersion,
+      ...buildEvalSummaryMetadata(runtimeConfig)
+    })
   } catch (error) {
     console.error(
       `[evals] DB WRITE FAILED - could not persist ${suite} eval summary`
@@ -233,6 +244,27 @@ export function buildTimestampedDatasetName(suite: string): string {
     .replace('T', '-')
     .replace(':', '-')
   return `polymorph-${suite}-${timestamp}`
+}
+
+export function buildEvalSummaryMetadata(
+  runtimeConfig: ReturnType<typeof createConfig>
+) {
+  return {
+    judgeProvider: 'openrouter',
+    judgeModel: runtimeConfig.judgeModel,
+    judgeBaseUrl: runtimeConfig.judgeBaseUrl ?? null,
+    judgeSettings: {
+      ...JUDGE_DEFAULT_SETTINGS,
+      reasoning: {
+        enabled: runtimeConfig.judgeReasoningEnabled,
+        maxTokens: runtimeConfig.judgeReasoningMaxTokens
+      }
+    },
+    corpusVersion: getCorpusVersion(),
+    evaluatorTemplateVersion: EVALUATOR_TEMPLATE_VERSION,
+    sampleSize: runtimeConfig.sampleSize,
+    lookbackHours: runtimeConfig.lookbackHours
+  }
 }
 
 export function buildDatasetExamples(
@@ -367,6 +399,10 @@ export async function createDatasetAndExperiment({
     description: `Automated eval of ${examples.length} ${suite} cases from corpus ${getCorpusVersion()}`,
     examples: toPhoenixExamples(examples)
   })
+  const datasetExamples = await getDatasetExamples({
+    client: phoenix,
+    dataset: { datasetId }
+  })
 
   const experiment = await runExperiment({
     client: phoenix,
@@ -378,7 +414,14 @@ export async function createDatasetAndExperiment({
     concurrency: createConfig().caseConcurrency
   })
 
-  return { datasetId, experiment, experimentName, datasetName }
+  return {
+    datasetId,
+    datasetVersion: datasetExamples.versionId,
+    datasetExamples: datasetExamples.examples,
+    experiment,
+    experimentName,
+    datasetName
+  }
 }
 
 export function buildPublicExperimentUrl(

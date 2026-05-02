@@ -1,11 +1,11 @@
 const EVALUATOR_LABELS = {
-  deterministic_prechecks: 'Deterministic Prechecks',
-  tool_usage: 'Tool Usage',
-  faithfulness: 'Faithfulness',
+  deterministic_prechecks: 'Eligibility Checks',
+  tool_usage: 'Tool Usage Quality',
+  faithfulness: 'Groundedness',
   relevance: 'Relevance',
-  response_quality: 'Response Quality',
+  response_quality: 'Answer Quality',
   safety: 'Safety',
-  citation_accuracy: 'Citation Accuracy'
+  citation_accuracy: 'Citation Correctness'
 } as const
 
 const EVALUATOR_COLORS = {

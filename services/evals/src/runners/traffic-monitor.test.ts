@@ -9,6 +9,7 @@ const mockConfig = vi.hoisted(() => ({
 const mockSampleRecentChats = vi.hoisted(() => vi.fn())
 const mockCreateDatasetAndExperiment = vi.hoisted(() => vi.fn())
 const mockBuildDatasetExamples = vi.hoisted(() => vi.fn())
+const mockBuildEvalSummaryMetadata = vi.hoisted(() => vi.fn(() => ({})))
 const mockBuildExperimentEvaluators = vi.hoisted(() => vi.fn(() => []))
 const mockBuildExperimentTask = vi.hoisted(() => vi.fn(() => vi.fn()))
 const mockCreateJudgeModel = vi.hoisted(() => vi.fn(() => ({ id: 'judge' })))
@@ -64,6 +65,7 @@ vi.mock('../sampler', () => ({
 
 vi.mock('./shared', () => ({
   buildDatasetExamples: mockBuildDatasetExamples,
+  buildEvalSummaryMetadata: mockBuildEvalSummaryMetadata,
   buildExperimentEvaluators: mockBuildExperimentEvaluators,
   buildExperimentTask: mockBuildExperimentTask,
   buildPublicExperimentUrl: vi.fn(() => 'https://phoenix.example.com/exp'),

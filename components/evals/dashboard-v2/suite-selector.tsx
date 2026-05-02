@@ -1,5 +1,6 @@
 'use client'
 
+import { getSuiteDisplayByDashboardId } from '@/lib/evals/display'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
@@ -9,25 +10,7 @@ import type { SuiteId } from './url-state'
 
 const SUITE_TABS: ReadonlyArray<{
   id: SuiteId
-  label: string
-  tagline: string
-}> = [
-  {
-    id: 'capability',
-    label: 'Benchmarks',
-    tagline: 'Curated prompts · the model under controlled inputs'
-  },
-  {
-    id: 'trafficMonitor',
-    label: 'Live traffic',
-    tagline: 'Sampled production chats · what shipping looks like'
-  },
-  {
-    id: 'regression',
-    label: 'Pinned checks',
-    tagline: 'Known-risk fixtures · catch drift quietly'
-  }
-]
+}> = [{ id: 'capability' }, { id: 'trafficMonitor' }, { id: 'regression' }]
 
 export function SuiteSelector({
   active,
@@ -47,6 +30,7 @@ export function SuiteSelector({
       {SUITE_TABS.map(tab => {
         const on = tab.id === active
         const s = snaps[tab.id]
+        const copy = getSuiteDisplayByDashboardId(tab.id)
         return (
           <button
             key={tab.id}
@@ -63,7 +47,7 @@ export function SuiteSelector({
           >
             <div className="flex w-full items-baseline justify-between gap-2">
               <span className="text-sm font-semibold tracking-tight">
-                {tab.label}
+                {copy.label}
               </span>
               <span
                 className={cn(
@@ -75,7 +59,10 @@ export function SuiteSelector({
               </span>
             </div>
             <p className="text-xs leading-snug text-muted-foreground">
-              {tab.tagline}
+              {copy.tagline}
+            </p>
+            <p className="text-xs leading-snug text-muted-foreground/80">
+              {copy.action}
             </p>
           </button>
         )

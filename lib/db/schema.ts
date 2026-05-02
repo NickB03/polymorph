@@ -586,6 +586,26 @@ export const evalSummaries = pgTable(
     totalCases: integer('total_cases').notNull(),
     attemptedCases: integer('attempted_cases').notNull().default(0),
     failedCases: integer('failed_cases').notNull().default(0),
+    appModelIds: jsonb('app_model_ids')
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    primaryAppModelId: text('primary_app_model_id'),
+    judgeProvider: text('judge_provider').notNull().default('openrouter'),
+    judgeModel: text('judge_model'),
+    judgeBaseUrl: text('judge_base_url'),
+    judgeSettings: jsonb('judge_settings')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    corpusVersion: text('corpus_version'),
+    datasetVersion: text('dataset_version'),
+    evaluatorTemplateVersion: text('evaluator_template_version')
+      .notNull()
+      .default('v1'),
+    appGitSha: text('app_git_sha'),
+    sampleSize: integer('sample_size'),
+    lookbackHours: integer('lookback_hours'),
     phoenixUrl: text('phoenix_url'),
     createdAt: timestamp('created_at').notNull().defaultNow()
   },
@@ -621,6 +641,75 @@ export const evalSummaries = pgTable(
 ).enableRLS()
 
 export type EvalSummary = InferSelectModel<typeof evalSummaries>
+
+export const evalCaseResults = pgTable(
+  'eval_case_results',
+  {
+    id: varchar('id', { length: ID_LENGTH })
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    evalSummaryId: varchar('eval_summary_id', { length: ID_LENGTH })
+      .notNull()
+      .references(() => evalSummaries.id, { onDelete: 'cascade' }),
+    suite: varchar('suite', {
+      length: VARCHAR_LENGTH,
+      enum: ['capability', 'regression', 'traffic-monitor']
+    }).notNull(),
+    experimentName: text('experiment_name').notNull(),
+    experimentRunId: text('experiment_run_id').notNull(),
+    datasetExampleId: text('dataset_example_id'),
+    caseId: text('case_id').notNull(),
+    evaluatorName: text('evaluator_name').notNull(),
+    annotatorKind: text('annotator_kind'),
+    scoreBps: integer('score_bps'),
+    label: text('label'),
+    explanation: text('explanation'),
+    error: text('error'),
+    failed: boolean('failed').notNull().default(false),
+    failureMode: text('failure_mode').notNull().default('other'),
+    appModelId: text('app_model_id'),
+    modelType: text('model_type'),
+    searchMode: text('search_mode'),
+    correlationId: text('correlation_id'),
+    otelTraceId: text('otel_trace_id'),
+    evaluatorTraceId: text('evaluator_trace_id'),
+    phoenixUrl: text('phoenix_url'),
+    createdAt: timestamp('created_at').notNull().defaultNow()
+  },
+  table => [
+    index('eval_case_results_summary_idx').on(table.evalSummaryId),
+    index('eval_case_results_suite_created_at_idx').on(
+      table.suite,
+      table.createdAt.desc()
+    ),
+    index('eval_case_results_failure_idx').on(
+      table.evalSummaryId,
+      table.evaluatorName,
+      table.failed
+    ),
+    uniqueIndex('eval_case_results_summary_case_evaluator_idx').on(
+      table.evalSummaryId,
+      table.caseId,
+      table.evaluatorName
+    ),
+    check(
+      'eval_case_results_score_bps_range',
+      sql`${table.scoreBps} IS NULL OR (${table.scoreBps} >= 0 AND ${table.scoreBps} <= 10000)`
+    ),
+    check(
+      'eval_case_results_suite_enum',
+      sql`${table.suite} IN ('capability', 'regression', 'traffic-monitor')`
+    ),
+    pgPolicy('authenticated_read_eval_case_results', {
+      as: 'permissive',
+      for: 'select',
+      to: 'public',
+      using: sql`current_setting('app.current_user_id', true) IS NOT NULL`
+    })
+  ]
+).enableRLS()
+
+export type EvalCaseResult = InferSelectModel<typeof evalCaseResults>
 
 // Singleton-row cache for the home-page suggestion-pill dynamic blend.
 // Written once per day by the cron at /api/suggestions/refresh and read by

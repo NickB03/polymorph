@@ -11,7 +11,7 @@ describe('glossary', () => {
   it('defines every canonical term', () => {
     expect(DEFINITIONS.benchmarks).toMatch(/curated/i)
     expect(DEFINITIONS.trafficMonitor).toMatch(/live|production/i)
-    expect(DEFINITIONS.regression).toMatch(/pinned|drift/i)
+    expect(DEFINITIONS.regression).toMatch(/high-risk|release/i)
     expect(DEFINITIONS.aggregateScore).toMatch(/weighted/i)
     expect(DEFINITIONS.passRate).toMatch(/%|threshold/i)
   })

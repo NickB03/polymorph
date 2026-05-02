@@ -1,5 +1,9 @@
 'use client'
 
+import {
+  caseResultsForEvaluator,
+  failureModeCounts
+} from '@/lib/evals/diagnostics'
 import { EVALUATOR_DISPLAY_ORDER } from '@/lib/evals/evaluator-labels'
 import { DEFINITIONS } from '@/lib/evals/glossary'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
@@ -22,19 +26,17 @@ export function ComparisonTable({
       <div className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-base font-semibold tracking-tight">
-            Where curated and live diverge
+            Where test and production diverge
           </h2>
           <p className="max-w-xl text-xs leading-snug text-muted-foreground">
             One row per judge. Bars show each judge&apos;s score for{' '}
-            <DefinedTerm def={DEFINITIONS.benchmarks}>
-              curated test prompts
-            </DefinedTerm>{' '}
+            <DefinedTerm def={DEFINITIONS.benchmarks}>Test Suite</DefinedTerm>{' '}
             vs{' '}
             <DefinedTerm def={DEFINITIONS.trafficMonitor}>
-              live user chats
+              Production Evals
             </DefinedTerm>
             . <DefinedTerm def={DEFINITIONS.delta}>Δ</DefinedTerm> flags judges
-            where live underperforms curated by &gt;7 points.
+            where production underperforms the test suite by &gt;7 points.
           </p>
         </div>
       </div>
@@ -42,8 +44,8 @@ export function ComparisonTable({
       <div className="overflow-hidden rounded-2xl border border-border/60 bg-background">
         <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_64px] items-center gap-4 border-b border-border/60 px-5 py-3 text-xs font-medium text-muted-foreground">
           <span>Judge</span>
-          <span>Curated prompts</span>
-          <span>Live chats</span>
+          <span>Test Suite</span>
+          <span>Production Evals</span>
           <span className="text-right">Δ pts</span>
         </div>
 
@@ -77,6 +79,9 @@ export function ComparisonTable({
                   caseCount={cap.totalCases}
                   threshold={cap.threshold}
                   failed={cap.failedEvaluators.includes(key)}
+                  observedFailureModes={failureModeCounts(
+                    caseResultsForEvaluator(cap, key)
+                  )}
                 >
                   <ScoreValue
                     failed={cap.failedEvaluators.includes(key)}
@@ -91,6 +96,9 @@ export function ComparisonTable({
                   caseCount={traf.totalCases}
                   threshold={traf.threshold}
                   failed={traf.failedEvaluators.includes(key)}
+                  observedFailureModes={failureModeCounts(
+                    caseResultsForEvaluator(traf, key)
+                  )}
                 >
                   <ScoreValue
                     failed={traf.failedEvaluators.includes(key)}
