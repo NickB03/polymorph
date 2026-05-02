@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   assertLocalDatabaseUrl,
+  buildSeedEvalCaseResultRows,
   buildSeedEvalSummaryRows,
   getSeedResetPattern,
   seedEvalSummaries
@@ -51,7 +52,27 @@ describe('buildSeedEvalSummaryRows', () => {
       expect(typeof row.thresholdBreached).toBe('boolean')
       expect(Array.isArray(row.failedEvaluators)).toBe(true)
       expect(Object.keys(row.evaluatorScores).length).toBeGreaterThan(0)
+      expect(row.appModelIds.length).toBeGreaterThan(0)
+      expect(row.judgeProvider).toBe('openrouter')
+      expect(row.judgeModel).toBe('openai/gpt-4o')
+      expect(row.evaluatorTemplateVersion).toBe('v1')
     }
+  })
+
+  it('creates privacy-safe diagnostic case rows for failed seeded runs', () => {
+    const summaryRows = buildSeedEvalSummaryRows(NOW)
+    const caseRows = buildSeedEvalCaseResultRows(summaryRows)
+
+    expect(caseRows.length).toBeGreaterThan(0)
+    expect(caseRows.every(row => row.failed)).toBe(true)
+    expect(caseRows.every(row => row.caseId.startsWith('local-seed-'))).toBe(
+      true
+    )
+    expect(
+      caseRows.every(
+        row => row.explanation && !row.explanation.includes('User:')
+      )
+    ).toBe(true)
   })
 })
 

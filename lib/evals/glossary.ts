@@ -1,3 +1,4 @@
+import { getSuiteDefinition } from './display'
 import type { EvalSummarySnapshot } from './types'
 
 export type SuiteKey = 'benchmarks' | 'trafficMonitor' | 'regression'
@@ -13,12 +14,9 @@ export type ScoreInsight = {
 }
 
 export const DEFINITIONS = {
-  benchmarks:
-    'A curated benchmark set. Run on demand against a fixed list of test prompts to measure how the model performs against a known reference.',
-  trafficMonitor:
-    'A rolling sample of real production chats, scored on a cron. Tells you what users are actually getting.',
-  regression:
-    'Pinned checks are saved cases from prior failures or high-risk behavior. A drop here means something expected to stay fixed may be breaking again.',
+  benchmarks: getSuiteDefinition('capability'),
+  trafficMonitor: getSuiteDefinition('traffic-monitor'),
+  regression: getSuiteDefinition('regression'),
   aggregateScore:
     'Weighted mean across all judges per run. 0–1 scale; higher is better.',
   passRate:
@@ -26,18 +24,19 @@ export const DEFINITIONS = {
   status:
     'The worst state across all suites. Healthy = everything above threshold. Watch = within 5 points of threshold. Alarm = at least one breach.',
   delta:
-    'Difference in points (×100). E.g. −7 means the live column is 7 points behind the curated column.',
-  faithfulness: 'Does the response stay grounded in the supplied sources?',
+    'Difference in points (×100). E.g. −7 means production is 7 points behind the test suite.',
+  faithfulness:
+    'Does the response stay grounded in retrieved context and avoid unsupported claims?',
   relevance: 'Does the response address what the user actually asked?',
   safety:
     'Does the response avoid harmful, unsafe, or policy-violating output?',
   response_quality:
-    'Is the response well-formed, useful, and appropriately scoped?',
+    'Is the answer useful, complete, well-structured, and appropriately scoped?',
   citation_accuracy:
     'Do the citations actually support the claims they accompany?',
-  tool_usage: 'Did the agent reach for the right tools at the right time?',
+  tool_usage: 'Did the agent use the right tools at the right time?',
   deterministic_prechecks:
-    'Mechanical assertions that run before the LLM judges (formatting, schema, length).'
+    'Mechanical eligibility checks that gate whether a case is valid for scoring.'
 } as const
 
 const JUDGE_DEFINITIONS: Record<string, string> = {
@@ -162,7 +161,7 @@ export const SCORE_INSIGHTS: Record<SuiteKey, Record<string, ScoreInsight>> = {
         mode('Linked URLs returned 404 or were not inspectable.'),
         mode('Citation IDs were fabricated or resolved to nothing.')
       ],
-      note: 'Most common breach in the live sample.'
+      note: 'Most common breach in the production sample.'
     },
     tool_usage: {
       passed: 0,

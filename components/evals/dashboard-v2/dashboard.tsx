@@ -40,7 +40,7 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
               hideSwitcher
             />
             <p className="rounded-2xl border border-dashed border-border/60 bg-muted/10 p-12 text-center text-sm text-muted-foreground">
-              No evaluation runs have landed yet. The next Traffic Monitor cron
+              No evaluation runs have landed yet. The next Production Evals cron
               will populate this page.
             </p>
           </div>
@@ -104,11 +104,8 @@ function Header({
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-3">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            Polymorph · Quality evals
-          </p>
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            Response quality
+            Evaluation Summary
           </h1>
         </div>
         {hideSwitcher ? null : (
@@ -179,7 +176,10 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
             />
           </div>
           <div className="lg:col-span-8">
-            <EvaluatorBreakdown snap={activeSnap} />
+            <EvaluatorBreakdown
+              snap={activeSnap}
+              previous={previousMap[selectedSuite]}
+            />
           </div>
         </div>
       ) : null}

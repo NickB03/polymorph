@@ -1,14 +1,9 @@
+import { getSuiteLabel } from '@/lib/evals/display'
 import type {
   EvalsDashboardData,
   EvalSummarySnapshot,
   PersistedDashboardSuite
 } from '@/lib/evals/types'
-
-const SUITE_LABELS: Record<PersistedDashboardSuite, string> = {
-  capability: 'Benchmarks',
-  regression: 'Pinned checks',
-  'traffic-monitor': 'Traffic Monitor'
-}
 
 const LEGACY_TRAFFIC_MONITOR_THRESHOLD = 0.8
 
@@ -24,10 +19,6 @@ export interface DashboardAlert {
   totalCases: number
   phoenixUrl: string | null
   createdAt: string
-}
-
-export function getSuiteLabel(suite: PersistedDashboardSuite) {
-  return SUITE_LABELS[suite]
 }
 
 function getLatestSnapshots(data: EvalsDashboardData): EvalSummarySnapshot[] {

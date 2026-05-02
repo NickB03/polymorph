@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { EvalSummaryRow } from '@/lib/evals/types'
+import type { EvalCaseResultRow, EvalSummaryRow } from '@/lib/evals/types'
 
 const mockWithRLS = vi.hoisted(() => vi.fn())
 
@@ -32,6 +32,35 @@ const sampleRow = (
   failedCases: 0,
   phoenixUrl: 'https://phoenix.example.com/1',
   createdAt: new Date('2026-04-09T12:00:00.000Z'),
+  ...overrides
+})
+
+const sampleCaseResultRow = (
+  overrides: Partial<EvalCaseResultRow> = {}
+): EvalCaseResultRow => ({
+  id: 'case-result-1',
+  evalSummaryId: 'summary-1',
+  suite: 'capability',
+  experimentName: 'exp-1',
+  experimentRunId: 'run-1',
+  datasetExampleId: 'example-1',
+  caseId: 'case-1',
+  evaluatorName: 'faithfulness',
+  annotatorKind: 'LLM',
+  scoreBps: 2500,
+  label: 'unfaithful',
+  explanation: 'Contradicts retrieved context.',
+  error: null,
+  failed: true,
+  failureMode: 'contradicts_context',
+  appModelId: 'gpt-4.1-mini',
+  modelType: 'chat',
+  searchMode: 'auto',
+  correlationId: 'corr-1',
+  otelTraceId: 'trace-1',
+  evaluatorTraceId: 'judge-trace-1',
+  phoenixUrl: 'https://phoenix.example.com/trace-1',
+  createdAt: new Date('2026-04-09T12:01:00.000Z'),
   ...overrides
 })
 
@@ -181,6 +210,32 @@ describe('buildCapabilityDashboardData', () => {
     expect(snapshot.failedCases).toBe(3)
     expect(snapshot.dropRate).toBeCloseTo(0.3, 5)
   })
+
+  it('attaches case diagnostics and renders missing metadata as unknown-safe values', () => {
+    const row = sampleRow({
+      appModelIds: undefined,
+      primaryAppModelId: undefined,
+      judgeModel: undefined,
+      datasetVersion: undefined
+    })
+    const details = new Map([
+      [row.id, [sampleCaseResultRow({ evalSummaryId: row.id })]]
+    ])
+
+    const snapshot = toSnapshot(row, details)
+
+    expect(snapshot.appModelIds).toEqual([])
+    expect(snapshot.primaryAppModelId).toBeNull()
+    expect(snapshot.judgeModel).toBeNull()
+    expect(snapshot.datasetVersion).toBeNull()
+    expect(snapshot.caseResults).toHaveLength(1)
+    expect(snapshot.caseResults?.[0]).toMatchObject({
+      score: 0.25,
+      failed: true,
+      failureMode: 'contradicts_context',
+      caseId: 'case-1'
+    })
+  })
 })
 
 describe('buildTrafficMonitorDashboardData', () => {
@@ -243,6 +298,13 @@ describe('getEvalsDashboard', () => {
     }
 
     const allRecent = [trafficRow, regressionRow, capabilityRow]
+    const detailRows = [
+      sampleCaseResultRow({
+        evalSummaryId: capabilityRow.id,
+        suite: 'capability',
+        experimentName: capabilityRow.experimentName
+      })
+    ]
     const limitCalls: number[] = []
 
     const buildLimitChain = (rows: EvalSummaryRow[]) => ({
@@ -254,25 +316,42 @@ describe('getEvalsDashboard', () => {
       }))
     })
 
-    let suiteCallIndex = 0
-    const select = vi.fn(() => ({
-      from: vi.fn(() => ({
-        // selectSuiteRows: select(...).from(...).where(...).orderBy(...).limit(...)
-        where: vi.fn(() => {
-          const suite = ['capability', 'regression', 'traffic-monitor'][
-            suiteCallIndex++
-          ]
-          return buildLimitChain(rowsBySuite[suite] ?? [])
-        }),
-        // selectRecentRuns: select(...).from(...).orderBy(...).limit(...)
-        orderBy: vi.fn(() => ({
-          limit: vi.fn((limit: number) => {
-            limitCalls.push(limit)
-            return allRecent
-          })
+    const buildDetailChain = (rows: EvalCaseResultRow[]) => ({
+      orderBy: vi.fn(() => rows)
+    })
+
+    let selectCallIndex = 0
+    const select = vi.fn(() => {
+      const call = selectCallIndex++
+
+      if (call <= 2) {
+        const suite = ['capability', 'regression', 'traffic-monitor'][call]
+        return {
+          from: vi.fn(() => ({
+            where: vi.fn(() => buildLimitChain(rowsBySuite[suite] ?? []))
+          }))
+        }
+      }
+
+      if (call === 3) {
+        return {
+          from: vi.fn(() => ({
+            orderBy: vi.fn(() => ({
+              limit: vi.fn((limit: number) => {
+                limitCalls.push(limit)
+                return allRecent
+              })
+            }))
+          }))
+        }
+      }
+
+      return {
+        from: vi.fn(() => ({
+          where: vi.fn(() => buildDetailChain(detailRows))
         }))
-      }))
-    }))
+      }
+    })
 
     const tx = { select } as never
 
@@ -293,6 +372,7 @@ describe('getEvalsDashboard', () => {
       'reg-exp-1',
       'cap-exp-1'
     ])
+    expect(data.capability.latest?.caseResults).toHaveLength(1)
     expect(limitCalls).toEqual([60, 60, 60, 10])
   })
 })

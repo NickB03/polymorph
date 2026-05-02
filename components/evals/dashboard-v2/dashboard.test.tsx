@@ -93,14 +93,15 @@ describe('EvalsDashboardV2', () => {
   it('renders the header in any state', () => {
     render(<EvalsDashboardV2 data={EMPTY} />)
     expect(
-      screen.getByRole('heading', { level: 1, name: /response quality/i })
+      screen.getByRole('heading', { level: 1, name: /evaluation summary/i })
     ).toBeInTheDocument()
+    expect(screen.queryByText(/polymorph/i)).not.toBeInTheDocument()
   })
 
   it('renders the populated state without crashing', () => {
     render(<EvalsDashboardV2 data={POPULATED} />)
     expect(
-      screen.getByRole('heading', { level: 1, name: /response quality/i })
+      screen.getByRole('heading', { level: 1, name: /evaluation summary/i })
     ).toBeInTheDocument()
   })
 
@@ -142,10 +143,9 @@ describe('EvalsDashboardV2', () => {
     )
 
     expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
-    expect(screen.getByRole('tab', { name: /live traffic/i })).toHaveAttribute(
-      'aria-selected',
-      'true'
-    )
+    expect(
+      screen.getByRole('tab', { name: /production evals/i })
+    ).toHaveAttribute('aria-selected', 'true')
   })
 
   it('falls back to a populated suite when the URL selects an empty suite', () => {
@@ -190,10 +190,9 @@ describe('EvalsDashboardV2', () => {
 
     expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
     expect(screen.getByText('Evaluator breakdown')).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: /live traffic/i })).toHaveAttribute(
-      'aria-selected',
-      'true'
-    )
+    expect(
+      screen.getByRole('tab', { name: /production evals/i })
+    ).toHaveAttribute('aria-selected', 'true')
   })
 
   it('defaults to regression when it is the only suite with data', () => {

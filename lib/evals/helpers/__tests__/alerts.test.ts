@@ -69,7 +69,7 @@ describe('buildThresholdAlerts', () => {
     const alert = getLatestThresholdAlert(data())
 
     expect(alert?.suite).toBe('regression')
-    expect(alert?.suiteLabel).toBe('Pinned checks')
+    expect(alert?.suiteLabel).toBe('Regression Tests')
   })
 
   it('falls back to the legacy traffic-monitor threshold when metadata is missing', () => {

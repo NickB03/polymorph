@@ -15,6 +15,7 @@ import type { EvalCase } from '../types'
 
 import {
   buildDatasetExamples,
+  buildEvalSummaryMetadata,
   buildExperimentEvaluators,
   buildExperimentTask,
   buildPublicExperimentUrl,
@@ -97,6 +98,10 @@ export async function runTrafficMonitorSuite() {
   })
 
   let datasetId: string
+  let datasetVersion: string
+  let datasetExamples: Awaited<
+    ReturnType<typeof createDatasetAndExperiment>
+  >['datasetExamples']
   let datasetName: string
   let experimentName: string
   let experiment: Awaited<
@@ -104,14 +109,20 @@ export async function runTrafficMonitorSuite() {
   >['experiment']
 
   try {
-    ;({ datasetId, datasetName, experimentName, experiment } =
-      await createDatasetAndExperiment({
-        suite: 'traffic-monitor',
-        examples,
-        evaluators,
-        task: buildExperimentTask(),
-        datasetName: buildTimestampedDatasetName('traffic-monitor')
-      }))
+    ;({
+      datasetId,
+      datasetVersion,
+      datasetExamples,
+      datasetName,
+      experimentName,
+      experiment
+    } = await createDatasetAndExperiment({
+      suite: 'traffic-monitor',
+      examples,
+      evaluators,
+      task: buildExperimentTask(),
+      datasetName: buildTimestampedDatasetName('traffic-monitor')
+    }))
   } catch (error) {
     console.error(
       '[evals] PHOENIX UNAVAILABLE - could not record traffic-monitor experiment results'
@@ -166,23 +177,23 @@ export async function runTrafficMonitorSuite() {
   }
 
   try {
-    await persistEvalSummary(
-      { execute: db.execute.bind(db) },
-      {
-        suite: 'traffic-monitor',
-        experimentName,
-        datasetName,
-        passRate: result.passRate,
-        threshold: result.threshold,
-        thresholdBreached: result.status === 'threshold_breached',
-        failedEvaluators: result.failedEvaluators,
-        experiment,
-        totalCases: result.totalCases,
-        attemptedCases: result.attemptedCases,
-        failedCases: result.failedCases,
-        phoenixUrl
-      }
-    )
+    await persistEvalSummary(db, {
+      suite: 'traffic-monitor',
+      experimentName,
+      datasetName,
+      passRate: result.passRate,
+      threshold: result.threshold,
+      thresholdBreached: result.status === 'threshold_breached',
+      failedEvaluators: result.failedEvaluators,
+      experiment,
+      totalCases: result.totalCases,
+      attemptedCases: result.attemptedCases,
+      failedCases: result.failedCases,
+      phoenixUrl,
+      datasetExamples,
+      datasetVersion,
+      ...buildEvalSummaryMetadata(config)
+    })
   } catch (error) {
     console.error(
       '[evals] DB WRITE FAILED - could not persist traffic-monitor eval summary'

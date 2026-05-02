@@ -48,6 +48,7 @@ vi.mock('../eval-runner-client', () => ({
 }))
 
 vi.mock('../eval-summary', () => ({
+  EVALUATOR_TEMPLATE_VERSION: 'v1',
   persistEvalSummary: mockPersistEvalSummary
 }))
 
@@ -57,6 +58,12 @@ const mockCreateDataset = vi.hoisted(() =>
 )
 const mockCreateOrGetDataset = vi.hoisted(() =>
   vi.fn(async () => ({ datasetId: 'ds-1' }))
+)
+const mockGetDatasetExamples = vi.hoisted(() =>
+  vi.fn(async () => ({
+    versionId: 'dataset-version-1',
+    examples: []
+  }))
 )
 const mockRunExperiment = vi.hoisted(() =>
   vi.fn(async () => ({
@@ -88,6 +95,7 @@ vi.mock('@arizeai/phoenix-client', () => ({
 
 vi.mock('@arizeai/phoenix-client/datasets', () => ({
   createDataset: mockCreateDataset,
+  getDatasetExamples: mockGetDatasetExamples,
   createOrGetDataset: mockCreateOrGetDataset
 }))
 
@@ -322,6 +330,7 @@ describe('Phoenix dataset and experiment naming', () => {
     vi.setSystemTime(new Date('2026-04-29T12:34:56Z'))
     mockCreateDataset.mockClear()
     mockCreateOrGetDataset.mockClear()
+    mockGetDatasetExamples.mockClear()
     mockRunExperiment.mockClear()
   })
 

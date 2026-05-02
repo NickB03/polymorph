@@ -1,10 +1,7 @@
 'use client'
 
-import {
-  DEFINITIONS,
-  snapshotSuiteKey,
-  type SuiteKey
-} from '@/lib/evals/glossary'
+import { getSuiteDisplay } from '@/lib/evals/display'
+import { DEFINITIONS, snapshotSuiteKey } from '@/lib/evals/glossary'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 
 import {
@@ -15,27 +12,6 @@ import {
 
 import { deltaPts, pct } from '@/components/evals/dashboard/shared'
 import { AggregateBreakdown, DefinedTerm } from '@/components/evals/glossary'
-
-const SUITE_COPY: Record<
-  SuiteKey,
-  { label: string; definition: string; description: string }
-> = {
-  benchmarks: {
-    label: 'Benchmarks',
-    definition: DEFINITIONS.benchmarks,
-    description: 'Curated test prompts · the model under controlled inputs.'
-  },
-  trafficMonitor: {
-    label: 'Traffic Monitor',
-    definition: DEFINITIONS.trafficMonitor,
-    description: 'Sampled production chats · the model against recent traffic.'
-  },
-  regression: {
-    label: 'Regression',
-    definition: DEFINITIONS.regression,
-    description: 'Pinned breakage cases · the model against known failures.'
-  }
-}
 
 export function ScoreFeature({
   cap,
@@ -55,16 +31,15 @@ export function ScoreFeature({
   const offset = C * (1 - score)
   const delta = previousScore === null ? null : score - previousScore
   const suiteKey = snapshotSuiteKey(cap)
-  const suiteCopy = SUITE_COPY[suiteKey]
+  const suiteCopy = getSuiteDisplay(cap.suite)
+  const definition = DEFINITIONS[suiteKey]
 
   return (
     <section className="flex h-full flex-col gap-6">
       <div className="space-y-1">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-base font-semibold tracking-tight">
-            <DefinedTerm def={suiteCopy.definition}>
-              {suiteCopy.label}
-            </DefinedTerm>
+            <DefinedTerm def={definition}>{suiteCopy.label}</DefinedTerm>
           </h2>
           <span className="text-xs italic text-muted-foreground">
             on demand
@@ -72,7 +47,7 @@ export function ScoreFeature({
         </div>
         {hideTagline ? null : (
           <p className="text-xs leading-snug text-muted-foreground">
-            {suiteCopy.description}
+            {suiteCopy.tagline}
           </p>
         )}
       </div>

@@ -7,6 +7,15 @@ export const LOCAL_SEED_PREFIX = 'local-seed-'
 export const LOCAL_SEED_RESET_PATTERN = `${LOCAL_SEED_PREFIX}%`
 
 type PersistedSuite = 'capability' | 'regression' | 'traffic-monitor'
+type SeedFailureMode =
+  | 'retrieval_miss'
+  | 'bad_citation'
+  | 'unsafe_response'
+  | 'tool_not_called'
+  | 'tool_unnecessary'
+  | 'answer_incomplete'
+  | 'contradicts_context'
+  | 'other'
 
 export type SeedEvalSummaryRow = {
   suite: PersistedSuite
@@ -20,6 +29,44 @@ export type SeedEvalSummaryRow = {
   totalCases: number
   attemptedCases: number
   failedCases: number
+  appModelIds: string[]
+  primaryAppModelId: string | null
+  judgeProvider: string
+  judgeModel: string | null
+  judgeBaseUrl: string | null
+  judgeSettings: Record<string, unknown>
+  corpusVersion: string | null
+  datasetVersion: string | null
+  evaluatorTemplateVersion: string
+  appGitSha: string | null
+  sampleSize: number | null
+  lookbackHours: number | null
+  phoenixUrl: string | null
+  createdAt: Date
+}
+
+export type SeedEvalCaseResultRow = {
+  id: string
+  evalSummaryId: string
+  suite: PersistedSuite
+  experimentName: string
+  experimentRunId: string
+  datasetExampleId: string | null
+  caseId: string
+  evaluatorName: string
+  annotatorKind: string | null
+  scoreBps: number | null
+  label: string | null
+  explanation: string | null
+  error: string | null
+  failed: boolean
+  failureMode: SeedFailureMode
+  appModelId: string | null
+  modelType: string | null
+  searchMode: string | null
+  correlationId: string | null
+  otelTraceId: string | null
+  evaluatorTraceId: string | null
   phoenixUrl: string | null
   createdAt: Date
 }
@@ -35,6 +82,22 @@ const SUITE_ORDER: PersistedSuite[] = [
   'regression',
   'capability'
 ]
+
+const DEFAULT_JUDGE_SETTINGS = {
+  temperature: 0,
+  maxOutputTokens: 900,
+  reasoning: { enabled: false }
+}
+
+const FAILURE_MODE_BY_EVALUATOR: Record<string, SeedFailureMode> = {
+  faithfulness: 'contradicts_context',
+  citation_accuracy: 'bad_citation',
+  safety: 'unsafe_response',
+  tool_usage: 'tool_not_called',
+  relevance: 'retrieval_miss',
+  response_quality: 'answer_incomplete',
+  deterministic_prechecks: 'answer_incomplete'
+}
 
 const SUITE_FIXTURES: Record<
   PersistedSuite,
@@ -273,8 +336,87 @@ export function buildSeedEvalSummaryRows(
         totalCases: fixture.totalCases,
         attemptedCases: fixture.totalCases,
         failedCases: score.failedCases ?? 0,
+        appModelIds:
+          suite === 'traffic-monitor'
+            ? ['claude-3.5-sonnet', 'gpt-4.1-mini']
+            : ['gpt-4.1-mini'],
+        primaryAppModelId: suite === 'traffic-monitor' ? null : 'gpt-4.1-mini',
+        judgeProvider: 'openrouter',
+        judgeModel: 'openai/gpt-4o',
+        judgeBaseUrl: null,
+        judgeSettings: DEFAULT_JUDGE_SETTINGS,
+        corpusVersion: 'v6',
+        datasetVersion: `${fixture.datasetName}-version`,
+        evaluatorTemplateVersion: 'v1',
+        appGitSha: 'local-seed',
+        sampleSize: fixture.totalCases,
+        lookbackHours: suite === 'traffic-monitor' ? 48 : null,
         phoenixUrl: null,
         createdAt: new Date(now.getTime() - sequence * 60 * 60 * 1000)
+      })
+    }
+  }
+
+  return rows
+}
+
+function getSeedEvaluatorForFailure(row: SeedEvalSummaryRow) {
+  const explicit = row.failedEvaluators.find(
+    evaluator => row.evaluatorScores[evaluator] != null
+  )
+  if (explicit) return explicit
+
+  return Object.entries(row.evaluatorScores)
+    .filter((entry): entry is [string, number] => typeof entry[1] === 'number')
+    .sort((left, right) => left[1] - right[1])[0]?.[0]
+}
+
+export function buildSeedEvalCaseResultRows(
+  summaryRows: SeedEvalSummaryRow[]
+): SeedEvalCaseResultRow[] {
+  const rows: SeedEvalCaseResultRow[] = []
+
+  for (const summary of summaryRows) {
+    const count = Math.min(summary.failedCases, 3)
+    if (count === 0) continue
+
+    const evaluatorName = getSeedEvaluatorForFailure(summary)
+    if (!evaluatorName) continue
+
+    const failureMode = FAILURE_MODE_BY_EVALUATOR[evaluatorName] ?? 'other'
+    const score = summary.evaluatorScores[evaluatorName]
+    const scoreBps =
+      typeof score === 'number'
+        ? Math.max(0, Math.min(10000, Math.round(score * 10000)))
+        : null
+
+    for (let index = 0; index < count; index++) {
+      const caseId = `${summary.experimentName}-case-${index + 1}`
+      rows.push({
+        id: `${summary.experimentName}-${evaluatorName}-${index + 1}`,
+        evalSummaryId: summary.experimentName,
+        suite: summary.suite,
+        experimentName: summary.experimentName,
+        experimentRunId: `${summary.experimentName}-run-${index + 1}`,
+        datasetExampleId: `${summary.experimentName}-example-${index + 1}`,
+        caseId,
+        evaluatorName,
+        annotatorKind:
+          evaluatorName === 'deterministic_prechecks' ? 'rule' : 'llm',
+        scoreBps,
+        label: failureMode,
+        explanation: `Seeded diagnostic for ${caseId}: ${failureMode.replaceAll('_', ' ')} affected this case.`,
+        error: null,
+        failed: true,
+        failureMode,
+        appModelId: summary.primaryAppModelId ?? summary.appModelIds[0] ?? null,
+        modelType: summary.suite === 'traffic-monitor' ? 'production' : 'test',
+        searchMode: 'auto',
+        correlationId: `${caseId}-correlation`,
+        otelTraceId: `${caseId}-trace`,
+        evaluatorTraceId: `${caseId}-judge-trace`,
+        phoenixUrl: summary.phoenixUrl,
+        createdAt: summary.createdAt
       })
     }
   }
@@ -292,13 +434,15 @@ export async function seedEvalSummaries({
   now = new Date()
 }: SeedOptions = {}) {
   const rows = buildSeedEvalSummaryRows(now)
+  const caseRows = buildSeedEvalCaseResultRows(rows)
   if (dryRun) {
     return {
       dryRun,
       reset,
       planned: rows.length,
       inserted: 0,
-      rows
+      rows,
+      caseRows
     }
   }
 
@@ -328,6 +472,11 @@ export async function seedEvalSummaries({
         `
       }
 
+      await trx`
+        DELETE FROM eval_case_results
+        WHERE eval_summary_id LIKE ${LOCAL_SEED_RESET_PATTERN}
+      `
+
       for (const row of rows) {
         await trx`
           INSERT INTO eval_summaries (
@@ -343,6 +492,18 @@ export async function seedEvalSummaries({
             total_cases,
             attempted_cases,
             failed_cases,
+            app_model_ids,
+            primary_app_model_id,
+            judge_provider,
+            judge_model,
+            judge_base_url,
+            judge_settings,
+            corpus_version,
+            dataset_version,
+            evaluator_template_version,
+            app_git_sha,
+            sample_size,
+            lookback_hours,
             phoenix_url,
             created_at
           )
@@ -359,6 +520,18 @@ export async function seedEvalSummaries({
             ${row.totalCases},
             ${row.attemptedCases},
             ${row.failedCases},
+            CAST(${JSON.stringify(row.appModelIds)} AS jsonb),
+            ${row.primaryAppModelId},
+            ${row.judgeProvider},
+            ${row.judgeModel},
+            ${row.judgeBaseUrl},
+            CAST(${JSON.stringify(row.judgeSettings)} AS jsonb),
+            ${row.corpusVersion},
+            ${row.datasetVersion},
+            ${row.evaluatorTemplateVersion},
+            ${row.appGitSha},
+            ${row.sampleSize},
+            ${row.lookbackHours},
             ${row.phoenixUrl},
             ${row.createdAt}
           )
@@ -372,6 +545,91 @@ export async function seedEvalSummaries({
             total_cases = EXCLUDED.total_cases,
             attempted_cases = EXCLUDED.attempted_cases,
             failed_cases = EXCLUDED.failed_cases,
+            app_model_ids = EXCLUDED.app_model_ids,
+            primary_app_model_id = EXCLUDED.primary_app_model_id,
+            judge_provider = EXCLUDED.judge_provider,
+            judge_model = EXCLUDED.judge_model,
+            judge_base_url = EXCLUDED.judge_base_url,
+            judge_settings = EXCLUDED.judge_settings,
+            corpus_version = EXCLUDED.corpus_version,
+            dataset_version = EXCLUDED.dataset_version,
+            evaluator_template_version = EXCLUDED.evaluator_template_version,
+            app_git_sha = EXCLUDED.app_git_sha,
+            sample_size = EXCLUDED.sample_size,
+            lookback_hours = EXCLUDED.lookback_hours,
+            phoenix_url = EXCLUDED.phoenix_url,
+            created_at = EXCLUDED.created_at
+        `
+      }
+
+      for (const row of caseRows) {
+        await trx`
+          INSERT INTO eval_case_results (
+            id,
+            eval_summary_id,
+            suite,
+            experiment_name,
+            experiment_run_id,
+            dataset_example_id,
+            case_id,
+            evaluator_name,
+            annotator_kind,
+            score_bps,
+            label,
+            explanation,
+            error,
+            failed,
+            failure_mode,
+            app_model_id,
+            model_type,
+            search_mode,
+            correlation_id,
+            otel_trace_id,
+            evaluator_trace_id,
+            phoenix_url,
+            created_at
+          )
+          VALUES (
+            ${row.id},
+            ${row.evalSummaryId},
+            ${row.suite},
+            ${row.experimentName},
+            ${row.experimentRunId},
+            ${row.datasetExampleId},
+            ${row.caseId},
+            ${row.evaluatorName},
+            ${row.annotatorKind},
+            ${row.scoreBps},
+            ${row.label},
+            ${row.explanation},
+            ${row.error},
+            ${row.failed},
+            ${row.failureMode},
+            ${row.appModelId},
+            ${row.modelType},
+            ${row.searchMode},
+            ${row.correlationId},
+            ${row.otelTraceId},
+            ${row.evaluatorTraceId},
+            ${row.phoenixUrl},
+            ${row.createdAt}
+          )
+          ON CONFLICT (eval_summary_id, case_id, evaluator_name) DO UPDATE SET
+            experiment_run_id = EXCLUDED.experiment_run_id,
+            dataset_example_id = EXCLUDED.dataset_example_id,
+            annotator_kind = EXCLUDED.annotator_kind,
+            score_bps = EXCLUDED.score_bps,
+            label = EXCLUDED.label,
+            explanation = EXCLUDED.explanation,
+            error = EXCLUDED.error,
+            failed = EXCLUDED.failed,
+            failure_mode = EXCLUDED.failure_mode,
+            app_model_id = EXCLUDED.app_model_id,
+            model_type = EXCLUDED.model_type,
+            search_mode = EXCLUDED.search_mode,
+            correlation_id = EXCLUDED.correlation_id,
+            otel_trace_id = EXCLUDED.otel_trace_id,
+            evaluator_trace_id = EXCLUDED.evaluator_trace_id,
             phoenix_url = EXCLUDED.phoenix_url,
             created_at = EXCLUDED.created_at
         `
@@ -386,7 +644,8 @@ export async function seedEvalSummaries({
     reset,
     planned: rows.length,
     inserted: rows.length,
-    rows
+    rows,
+    caseRows
   }
 }
 

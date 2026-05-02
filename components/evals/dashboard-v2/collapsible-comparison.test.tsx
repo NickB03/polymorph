@@ -50,7 +50,9 @@ describe('CollapsibleComparison', () => {
       screen.getByRole('button', { name: /collapse comparison/i })
     )
     fireEvent.click(
-      screen.getByRole('button', { name: /where curated and live diverge/i })
+      screen.getByRole('button', {
+        name: /where test and production diverge/i
+      })
     )
     expect(screen.getByTestId('comparison-table')).toBeInTheDocument()
   })
