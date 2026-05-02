@@ -1,6 +1,6 @@
 'use client'
 
-import type { CSSProperties } from 'react'
+import { type CSSProperties, useEffect } from 'react'
 
 import { formatDistanceToNow } from 'date-fns'
 
@@ -136,8 +136,6 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
       : reg
         ? 'regression'
         : 'capability'
-  const [active, setActive] = useUrlState('suite', defaultSuite, isSuiteId)
-
   const previousMap: Record<SuiteId, EvalSummarySnapshot | null> = {
     capability: data.capability.previous,
     trafficMonitor: data.trafficMonitor.previous,
@@ -148,7 +146,15 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
     trafficMonitor: traf,
     regression: reg
   }
-  const activeSnap = snapMap[active]
+  const [active, setActive] = useUrlState('suite', defaultSuite, isSuiteId)
+  const selectedSuite = snapMap[active] ? active : defaultSuite
+  const activeSnap = snapMap[selectedSuite]
+
+  useEffect(() => {
+    if (active !== selectedSuite) {
+      setActive(selectedSuite)
+    }
+  }, [active, selectedSuite, setActive])
 
   return (
     <div
@@ -157,14 +163,18 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
     >
       <CompactAlert data={data} />
 
-      <SuiteSelector active={active} onChange={setActive} snaps={snapMap} />
+      <SuiteSelector
+        active={selectedSuite}
+        onChange={setActive}
+        snaps={snapMap}
+      />
 
       {activeSnap ? (
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <ScoreFeature
               cap={activeSnap}
-              previous={previousMap[active]}
+              previous={previousMap[selectedSuite]}
               hideTagline
             />
           </div>
