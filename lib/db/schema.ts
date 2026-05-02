@@ -622,31 +622,6 @@ export const evalSummaries = pgTable(
 
 export type EvalSummary = InferSelectModel<typeof evalSummaries>
 
-export const userEvalPreferences = pgTable(
-  'user_eval_preferences',
-  {
-    userId: varchar('user_id', { length: USER_ID_LENGTH }).primaryKey(),
-    preferredLayout: varchar('preferred_layout', {
-      length: VARCHAR_LENGTH,
-      enum: ['a', 'b', 'c']
-    })
-      .notNull()
-      .default('c'),
-    updatedAt: timestamp('updated_at').notNull().defaultNow()
-  },
-  table => [
-    pgPolicy('users_manage_own_eval_preferences', {
-      as: 'permissive',
-      for: 'all',
-      to: 'public',
-      using: sql`${table.userId} = current_setting('app.current_user_id', true)`,
-      withCheck: sql`${table.userId} = current_setting('app.current_user_id', true)`
-    })
-  ]
-).enableRLS()
-
-export type UserEvalPreference = InferSelectModel<typeof userEvalPreferences>
-
 // Singleton-row cache for the home-page suggestion-pill dynamic blend.
 // Written once per day by the cron at /api/suggestions/refresh and read by
 // the GET /api/suggestions hot path. The `check` constraint enforces the

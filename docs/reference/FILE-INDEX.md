@@ -653,16 +653,16 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Database
 
-| File                  | Purpose                                                                                                                                                                                                                                                                                                  |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `feedback`, `canvas_artifacts`, `eval_summaries`, and `trending_suggestions_cache` with RLS policies. Also still declares an orphan `user_eval_preferences` table left over from PR #187 — no live consumers; scheduled for removal in a follow-up |
-| `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                                                                                                                                                                                                          |
-| `lib/db/relations.ts` | Drizzle relation definitions (chats -> messages -> parts)                                                                                                                                                                                                                                                |
-| `lib/db/actions.ts`   | Database CRUD operations with RLS; writes canonical `messages.ui_message`, clears stale legacy projections, and reads `parts` only for compatibility fallback rows                                                                                                                                       |
-| `lib/db/admin.ts`     | Privileged DB client factory (`getPrivilegedDb`) bypassing RLS for cron/service writes (e.g., suggestions refresh)                                                                                                                                                                                       |
-| `lib/db/constants.ts` | Database constants (query limits, default values)                                                                                                                                                                                                                                                        |
-| `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                                                                                                                                                                                                                  |
-| `lib/db/migrate.ts`   | Standalone migration runner script using Drizzle Kit                                                                                                                                                                                                                                                     |
+| File                  | Purpose                                                                                                                                                            |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `feedback`, `canvas_artifacts`, `eval_summaries`, and `trending_suggestions_cache` with RLS policies         |
+| `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                                                                    |
+| `lib/db/relations.ts` | Drizzle relation definitions (chats -> messages -> parts)                                                                                                          |
+| `lib/db/actions.ts`   | Database CRUD operations with RLS; writes canonical `messages.ui_message`, clears stale legacy projections, and reads `parts` only for compatibility fallback rows |
+| `lib/db/admin.ts`     | Privileged DB client factory (`getPrivilegedDb`) bypassing RLS for cron/service writes (e.g., suggestions refresh)                                                 |
+| `lib/db/constants.ts` | Database constants (query limits, default values)                                                                                                                  |
+| `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                                                                            |
+| `lib/db/migrate.ts`   | Standalone migration runner script using Drizzle Kit                                                                                                               |
 
 ### Server Actions
 
@@ -813,17 +813,13 @@ shadcn/ui-based primitives and custom UI components.
 
 Data access and view helpers backing the admin `/admin/evals` dashboard. The offline cron that _writes_ these rows lives under `services/evals/`.
 
-| File                                | Purpose                                                                                                                            |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `lib/evals/queries.ts`              | Server-side queries over `eval_summaries` (`getEvalsDashboard`, capability/regression/traffic-monitor selectors)                   |
-| `lib/evals/types.ts`                | Shared type definitions for eval suites, summaries, and dashboard data shapes                                                      |
-| `lib/evals/evaluator-labels.ts`     | Human-readable labels for evaluator IDs                                                                                            |
-| `lib/evals/glossary.ts`             | Term definitions and `snapshotSuiteKey` helper powering the `components/evals/glossary/` tooltip and label-rendering UI            |
-| `lib/evals/helpers/alerts.ts`       | Builds dashboard alert payloads from threshold-breached snapshots; defines `DashboardAlert` shape; consumed by `compact-alert.tsx` |
-| `lib/evals/helpers/health-state.ts` | (orphan — no live consumers after PR #187; scheduled for removal) Derives overall suite health state from recent runs              |
-| `lib/evals/helpers/divergences.ts`  | (orphan — no live consumers after PR #187; scheduled for removal) Computes notable evaluator-level divergences between runs        |
-| `lib/evals/helpers/feed.ts`         | (orphan — no live consumers after PR #187; built the deleted `activity-feed` widget) Activity-feed data builder                    |
-| `lib/evals/helpers/findings.ts`     | (orphan — no live consumers after PR #187; scheduled for removal) Extracts ranked findings/narratives from eval summaries          |
+| File                            | Purpose                                                                                                                            |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/evals/queries.ts`          | Server-side queries over `eval_summaries` (`getEvalsDashboard`, capability/regression/traffic-monitor selectors)                   |
+| `lib/evals/types.ts`            | Shared type definitions for eval suites, summaries, and dashboard data shapes                                                      |
+| `lib/evals/evaluator-labels.ts` | Human-readable labels for evaluator IDs                                                                                            |
+| `lib/evals/glossary.ts`         | Term definitions and `snapshotSuiteKey` helper powering the `components/evals/glossary/` tooltip and label-rendering UI            |
+| `lib/evals/helpers/alerts.ts`   | Builds dashboard alert payloads from threshold-breached snapshots; defines `DashboardAlert` shape; consumed by `compact-alert.tsx` |
 
 ### Canvas
 
@@ -993,8 +989,10 @@ Offline evaluation pipeline (`services/evals/`) for measuring search quality via
 | `services/evals/src/index.ts`                        | Evals entrypoint: samples chats, runs evaluators, guarantees `closeDb()` on all exit paths                                                                                        |
 | `services/evals/src/config.ts`                       | Configuration with `validInt()` NaN-safe parsing for `SAMPLE_SIZE`, `LOOKBACK_HOURS`, judge model settings                                                                        |
 | `services/evals/src/db.ts`                           | Database client for the evals service                                                                                                                                             |
+| `services/evals/src/error.ts`                        | Error helpers for the evals pipeline; `EvalSummaryPersistError` carries the `SuiteRunResult` through DB-write failures so the orchestrator can still apply threshold-breach exits |
 | `services/evals/src/eval-output.ts`                  | Eval output normalization, context formatting, and prompt extraction helpers                                                                                                      |
 | `services/evals/src/eval-runner-client.ts`           | HTTP client for dispatching eval cases to the eval runner API endpoint                                                                                                            |
+| `services/evals/src/eval-summary.ts`                 | Persists per-suite eval summaries to the `eval_summaries` Postgres table that powers `/admin/evals`; computes evaluator score averages and clamps pass-rate basis points          |
 | `services/evals/src/judge-config.ts`                 | Judge model configuration with NaN-safe env parsing and reasoning settings                                                                                                        |
 | `services/evals/src/judge-model.ts`                  | Creates the LLM judge model client via OpenRouter provider                                                                                                                        |
 | `services/evals/src/orchestrator.ts`                 | Orchestrates eval suite execution by dispatching to the configured run mode                                                                                                       |
