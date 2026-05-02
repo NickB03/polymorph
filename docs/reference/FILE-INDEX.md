@@ -642,7 +642,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `feedback`, `canvas_artifacts`, `eval_summaries`, `user_eval_preferences`, and `trending_suggestions_cache` with RLS policies |
 | `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                                                                                     |
 | `lib/db/relations.ts` | Drizzle relation definitions (chats -> messages -> parts)                                                                                                                           |
-| `lib/db/actions.ts`   | Database CRUD operations with RLS; loads canonical `messages.ui_message` first and keeps `parts` as compatibility projection                                                        |
+| `lib/db/actions.ts`   | Database CRUD operations with RLS; writes canonical `messages.ui_message`, clears stale legacy projections, and reads `parts` only for compatibility fallback rows                  |
 | `lib/db/admin.ts`     | Privileged DB client factory (`getPrivilegedDb`) bypassing RLS for cron/service writes (e.g., suggestions refresh)                                                                  |
 | `lib/db/constants.ts` | Database constants (query limits, default values)                                                                                                                                   |
 | `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                                                                                             |

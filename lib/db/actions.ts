@@ -47,7 +47,6 @@ import type {
 } from '@/lib/types/canvas'
 import {
   buildUIMessageFromDB,
-  mapUIMessagePartsToDBParts,
   mapUIMessageToDBMessage
 } from '@/lib/utils/message-mapping'
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
@@ -235,16 +234,9 @@ export async function upsertMessage(
       })
       .returning()
 
-    // 2. Delete existing parts
+    // 2. Clear any stale legacy projection rows for this message. New writes
+    // persist canonical UIMessage payloads only.
     await tx.delete(parts).where(eq(parts.messageId, message.id))
-
-    // 3. Insert new parts
-    if (message.parts && message.parts.length > 0) {
-      const dbParts = mapUIMessagePartsToDBParts(message.parts, message.id)
-      if (dbParts.length > 0) {
-        await tx.insert(parts).values(dbParts)
-      }
-    }
 
     return dbMessage
   })
@@ -814,17 +806,6 @@ export async function createChatWithFirstMessageTransaction({
       .insert(messages)
       .values(dbMessage)
       .returning()
-
-    // 3. Save parts if they exist
-    if (message.parts && message.parts.length > 0) {
-      const partsData = mapUIMessagePartsToDBParts(
-        message.parts,
-        savedMessage.id
-      )
-      if (partsData.length > 0) {
-        await tx.insert(parts).values(partsData)
-      }
-    }
 
     perfTime('DB - createChatWithFirstMessageTransaction completed', dbStart)
     return { chat, message: savedMessage }

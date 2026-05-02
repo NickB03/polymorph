@@ -39,7 +39,11 @@ vi.mock('@/lib/db/with-rls', () => ({
   )
 }))
 
-import { loadChatWithMessages, upsertMessage } from '@/lib/db/actions'
+import {
+  createChatWithFirstMessageTransaction,
+  loadChatWithMessages,
+  upsertMessage
+} from '@/lib/db/actions'
 import { buildUIMessageFromDB } from '@/lib/utils/message-mapping'
 
 function makeTextPart(
@@ -297,7 +301,7 @@ describe('canonical chat UIMessage loading', () => {
     })
   })
 
-  it('upsertMessage updates the canonical uiMessage payload on conflict', async () => {
+  it('upsertMessage updates canonical uiMessage and clears legacy parts projection', async () => {
     const message: UIMessage & { chatId: string } = {
       id: 'msg-1',
       chatId: 'chat-1',
@@ -324,6 +328,9 @@ describe('canonical chat UIMessage loading', () => {
 
     await upsertMessage(message, 'user-1')
 
+    expect(dbMocks.tx.insert).toHaveBeenCalledTimes(1)
+    expect(dbMocks.tx.delete).toHaveBeenCalledTimes(1)
+    expect(deleteParts.where).toHaveBeenCalledTimes(1)
     expect(messageInsert.onConflictDoUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         set: expect.objectContaining({
@@ -332,6 +339,49 @@ describe('canonical chat UIMessage loading', () => {
             parts: [{ type: 'text', text: 'updated canonical payload' }]
           }),
           metadata: { traceId: 'trace-updated' }
+        })
+      })
+    )
+  })
+
+  it('createChatWithFirstMessageTransaction persists first message without legacy parts projection', async () => {
+    const message: UIMessage = {
+      id: 'msg-1',
+      role: 'user',
+      parts: [{ type: 'text', text: 'canonical first message' }],
+      metadata: { userMode: 'search' }
+    }
+    const chatInsert = {
+      values: vi.fn(() => chatInsert),
+      returning: vi.fn().mockResolvedValue([{ id: 'chat-1' }])
+    }
+    const messageInsert = {
+      values: vi.fn(() => messageInsert),
+      returning: vi.fn().mockResolvedValue([{ id: 'msg-1' }])
+    }
+    const partsInsert = {
+      values: vi.fn().mockResolvedValue(undefined)
+    }
+
+    dbMocks.tx.insert
+      .mockReturnValueOnce(chatInsert)
+      .mockReturnValueOnce(messageInsert)
+      .mockReturnValueOnce(partsInsert)
+
+    await createChatWithFirstMessageTransaction({
+      chatId: 'chat-1',
+      chatTitle: 'Canonical chat',
+      userId: 'user-1',
+      message
+    })
+
+    expect(dbMocks.tx.insert).toHaveBeenCalledTimes(2)
+    expect(messageInsert.values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'msg-1',
+        chatId: 'chat-1',
+        uiMessage: expect.objectContaining({
+          parts: [{ type: 'text', text: 'canonical first message' }]
         })
       })
     )
