@@ -1,8 +1,10 @@
 # Eval Dashboard Documentation Accuracy Fix Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **Status:** Phases A-C landed and were revalidated on `origin/main` at `a372c67` (`feat(evals): add dashboard diagnostics`). Phase D remains intentionally deferred because `docs/assets/demos/evals.mp4` has not been supplied. Task A7 was superseded by `e10d0a1` and `drizzle/0023_drop_user_eval_preferences.sql`, which fully dropped `user_eval_preferences` instead of merely documenting it as an orphan.
 
-**Goal:** Bring `OVERVIEW.md`, `FILE-INDEX.md`, `API.md`, `DEPLOYMENT.md`, and `.claude/rules/operations.md` back in line with the eval-dashboard code state at HEAD `506674f`, and ship a high-quality visual showcase of the eval dashboard in `README.md`.
+**Goal:** Bring `OVERVIEW.md`, `FILE-INDEX.md`, `API.md`, `DEPLOYMENT.md`, and `.claude/rules/operations.md` back in line with the eval-dashboard code state at HEAD `506674f`, and define the deferred visual showcase path for `README.md`.
 
 **Architecture:** Documentation changes across five files plus a visual-asset phase, grouped into four phases (one commit per phase). Each task verifies the relevant code-side claim against a specific `file:line` before editing the doc, so claims land grounded. Phase D adds screenshots/GIFs of the dashboard and a new README "See it in action" section.
 
@@ -25,20 +27,20 @@ The five docs we're touching describe the _old_ world in several places. Each ta
 
 **Out of scope for this plan** — six undocumented eval features the audit identified (judge param logging mechanism, Phoenix feedback/trace correlation, Traffic Monitor replay deep-dive, golden validation, glossary UI behavior, threshold soft-fail prose). These are substantive new content rather than corrections, and writing them requires reading the relevant feature code first. Open a follow-up plan after this one merges.
 
-**Known orphan, flagged but partially deferred** — `lib/db/schema.ts:625-648` still defines the `user_eval_preferences` table and `UserEvalPreference` type, but no production code reads or writes it after PR #187. Task A7 updates the FILE-INDEX schema row so docs no longer imply the table is live; physically dropping the table + type + writing a migration is a separate follow-up.
+**Superseded cleanup** — this plan originally flagged `user_eval_preferences` as an orphan, but the later cleanup commit `e10d0a1` fully removed the table/type from the active schema and added `drizzle/0023_drop_user_eval_preferences.sql`. Current docs should not describe `user_eval_preferences` as a remaining follow-up.
 
 ---
 
 ## File Structure
 
-| File                                                                   | Phase | What changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ---------------------------------------------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/architecture/OVERVIEW.md`                                        | A     | Lines 50, 51 (adjacent route mention), 88-89 — strip template-switcher / widget tree / `lib/evals/layout/` references; tighten the API-routes mention of evals.                                                                                                                                                                                                                                                                                                             |
-| `docs/reference/FILE-INDEX.md`                                         | A     | Line 124 — `/admin/evals` row description. Lines 326-336 — full rewrite of "Evals Dashboard Components" section + add `lib/evals/glossary.ts` row in Evals (app-side). Line 642 — flag `user_eval_preferences` as orphan in schema row (Task A7). Line 658 — delete `lib/actions/eval-preferences.ts` row. Line 799 — drop "+ layout models" framing. Lines 803, 806-807, 808-811, 812 — fix `lib/evals/` rows; mark orphan helpers; add `lib/evals/helpers/alerts.ts` row. |
-| `docs/reference/API.md`                                                | B     | Lines 759-779 — add `userMode`, `intent`, `corpusVersion` to `/api/evals/run` schema. Verify both runner spread (`traffic-monitor.ts:51-52`) and sampler derivation (`sampler.ts:551`).                                                                                                                                                                                                                                                                                     |
-| `docs/operations/DEPLOYMENT.md`                                        | C     | Line 169 — evaluator count (5→7 with deterministic split). Line 170 — schema citation `:558-560` → `:560-563`.                                                                                                                                                                                                                                                                                                                                                              |
-| `.claude/rules/operations.md`                                          | C     | Line 11 — dashboard description (singular "Traffic Monitor section" → three suites). Line 13 — file list (add runners directory).                                                                                                                                                                                                                                                                                                                                           |
-| `README.md` + `docs/assets/demos/evals.{mp4,gif}` + `evals-poster.png` | D     | Embed eval-dashboard demo triplet matching the existing canvas/research/geo pattern (900×526 native, ~2 MB GIF). User records the source mp4; agent does ffmpeg conversion + README integration.                                                                                                                                                                                                                                                                            |
+| File                                                                   | Phase | What changes                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------------------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/architecture/OVERVIEW.md`                                        | A     | Lines 50, 51 (adjacent route mention), 88-89 — strip template-switcher / widget tree / `lib/evals/layout/` references; tighten the API-routes mention of evals.                                                                                                                                                                                                                                                                                                     |
+| `docs/reference/FILE-INDEX.md`                                         | A     | Line 124 — `/admin/evals` row description. Lines 326-336 — full rewrite of "Evals Dashboard Components" section + add `lib/evals/glossary.ts` row in Evals (app-side). Line 658 — delete `lib/actions/eval-preferences.ts` row. Line 799 — drop "+ layout models" framing. Lines 803, 806-807, 808-811, 812 — fix `lib/evals/` rows; mark orphan helpers; add `lib/evals/helpers/alerts.ts` row. A7 was superseded by the later `user_eval_preferences` table drop. |
+| `docs/reference/API.md`                                                | B     | Lines 759-779 — add `userMode`, `intent`, `corpusVersion` to `/api/evals/run` schema. Verify both runner spread (`traffic-monitor.ts:51-52`) and sampler derivation (`sampler.ts:551`).                                                                                                                                                                                                                                                                             |
+| `docs/operations/DEPLOYMENT.md`                                        | C     | Line 169 — evaluator count (5→7 with deterministic split). Line 170 — schema citation `:558-560` → `:560-563`.                                                                                                                                                                                                                                                                                                                                                      |
+| `.claude/rules/operations.md`                                          | C     | Line 11 — dashboard description (singular "Traffic Monitor section" → three suites). Line 13 — file list (add runners directory).                                                                                                                                                                                                                                                                                                                                   |
+| `README.md` + `docs/assets/demos/evals.{mp4,gif}` + `evals-poster.png` | D     | Embed eval-dashboard demo triplet matching the existing canvas/research/geo pattern (900×526 native, ~2 MB GIF). User records the source mp4; agent does ffmpeg conversion + README integration.                                                                                                                                                                                                                                                                    |
 
 ---
 
@@ -50,7 +52,7 @@ The five docs we're touching describe the _old_ world in several places. Each ta
 
 - Modify: `docs/architecture/OVERVIEW.md:50`
 
-- [ ] **Step 1: Verify code state**
+- [x] **Step 1: Verify code state**
 
 Open `app/(admin)/admin/evals/page.tsx` and confirm it calls `getEvalsDashboard(user.id)` and renders `EvalsDashboardV2` with no template-switcher and no layout-preference read.
 
@@ -60,7 +62,7 @@ cat "app/(admin)/admin/evals/page.tsx"
 
 Expected: `import { getEvalsDashboard }` (not `getEvalsDashboardWithLayout`), no reference to `setPreferredEvalsLayout` or `userEvalPreferences`.
 
-- [ ] **Step 2: Verify the doc claim is wrong**
+- [x] **Step 2: Verify the doc claim is wrong**
 
 Read line 50 of `docs/architecture/OVERVIEW.md`. The current text:
 
@@ -68,7 +70,7 @@ Read line 50 of `docs/architecture/OVERVIEW.md`. The current text:
 - `app/(admin)/` — admin surface gated by `ADMIN_USER_ID` (see `lib/auth/is-admin.ts`): currently `/admin/evals` (template-driven evals dashboard with persisted layout preference).
 ```
 
-- [ ] **Step 3: Replace with the new IA description**
+- [x] **Step 3: Replace with the new IA description**
 
 Edit `docs/architecture/OVERVIEW.md:50`:
 
@@ -92,13 +94,13 @@ Edit `docs/architecture/OVERVIEW.md:50`:
 
 A1 fixes line 50; line 51 has the same drift class — "API routes, including chat, suggestions … evals" lists `evals` as a generic group, but `/api/evals/run` is the only route there and it's secret-gated, not user-facing.
 
-- [ ] **Step 1: Read the current line**
+- [x] **Step 1: Read the current line**
 
 ```bash
 sed -n '51p' docs/architecture/OVERVIEW.md
 ```
 
-- [ ] **Step 2: Verify there's only one evals route**
+- [x] **Step 2: Verify there's only one evals route**
 
 ```bash
 ls app/api/evals/
@@ -106,7 +108,7 @@ ls app/api/evals/
 
 Expected: only `run/` (and possibly a co-located test). If others exist, adjust the new wording.
 
-- [ ] **Step 3: Edit line 51**
+- [x] **Step 3: Edit line 51**
 
 `old_string`:
 
@@ -126,7 +128,7 @@ Expected: only `run/` (and possibly a co-located test). If others exist, adjust 
 
 - Modify: `docs/architecture/OVERVIEW.md:88-89`
 
-- [ ] **Step 1: Verify the deletions**
+- [x] **Step 1: Verify the deletions**
 
 ```bash
 ls components/evals/widgets/ 2>&1
@@ -135,7 +137,7 @@ ls lib/evals/layout/ 2>&1
 
 Expected: both return "No such file or directory."
 
-- [ ] **Step 2: Confirm the new top-level orchestrator**
+- [x] **Step 2: Confirm the new top-level orchestrator**
 
 ```bash
 ls components/evals/dashboard-v2/dashboard.tsx
@@ -143,7 +145,7 @@ ls components/evals/dashboard-v2/dashboard.tsx
 
 Expected: file exists.
 
-- [ ] **Step 3: Replace the two table rows**
+- [x] **Step 3: Replace the two table rows**
 
 Edit `docs/architecture/OVERVIEW.md`:
 
@@ -167,11 +169,11 @@ Edit `docs/architecture/OVERVIEW.md`:
 
 - Modify: `docs/reference/FILE-INDEX.md:124`
 
-- [ ] **Step 1: Verify the current text is wrong**
+- [x] **Step 1: Verify the current text is wrong**
 
 Re-read `app/(admin)/admin/evals/page.tsx` (already done in A1). The page is no longer template-switcher-driven.
 
-- [ ] **Step 2: Edit the row**
+- [x] **Step 2: Edit the row**
 
 Edit `docs/reference/FILE-INDEX.md`:
 
@@ -195,7 +197,7 @@ Edit `docs/reference/FILE-INDEX.md`:
 
 This task replaces a stale 7-row table with a structured description of the three sibling directories (`dashboard-v2/`, `dashboard/`, `glossary/`).
 
-- [ ] **Step 1: Inventory the actual tree**
+- [x] **Step 1: Inventory the actual tree**
 
 ```bash
 ls components/evals/dashboard-v2/ components/evals/dashboard/ components/evals/glossary/
@@ -207,7 +209,7 @@ Confirm output matches the table you'll write. The expected files (test files ex
 - `dashboard/`: `activity-list.tsx`, `comparison-table.tsx`, `score-bar.tsx`, `score-feature.tsx`, `shared.ts`
 - `glossary/`: `aggregate-breakdown.tsx`, `defined-term.tsx`, `judge-label.tsx`, `score-cell.tsx`, `index.ts`
 
-- [ ] **Step 2: Spot-check each `dashboard-v2/` component's role**
+- [x] **Step 2: Spot-check each `dashboard-v2/` component's role**
 
 Open each of the ten `dashboard-v2/` files (excluding tests) and skim the top-level export and any JSDoc/comment to confirm the role you'll write. This is critical — the implementer writing this section MUST read each file rather than copy the table below verbatim, because component intent is the kind of thing that decays.
 
@@ -217,7 +219,7 @@ head -30 components/evals/dashboard-v2/view-switcher.tsx
 # ...repeat for each
 ```
 
-- [ ] **Step 3: Replace the section**
+- [x] **Step 3: Replace the section**
 
 Edit `docs/reference/FILE-INDEX.md`. Use the table below as a starting draft; **revise each Purpose cell to match what the file actually does** based on Step 2.
 
@@ -242,13 +244,13 @@ Edit `docs/reference/FILE-INDEX.md`. Use the table below as a starting draft; **
 ```
 ### Evals Dashboard Components
 
-The dashboard tree has three sibling directories: `dashboard-v2/` (current IA — Suites/History with per-suite drilldown), `dashboard/` (legacy primitives reused by v2), and `glossary/` (term-rendering helpers used in tooltips and label cells).
+The dashboard tree has three sibling directories: `dashboard-v2/` (current IA — "Evaluation Summary" with Suites/History views and per-suite drilldown), `dashboard/` (legacy primitives reused by v2), and `glossary/` (term-rendering helpers used in tooltips and label cells).
 
 | File                                                       | Purpose                                                                                                                                  |
 | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `components/evals/dashboard-v2/dashboard.tsx`              | Top-level orchestrator: handles the empty-state branch, owns the `TooltipProvider` wrap and CSS-driven enter animations, routes Suites/History via `?view=`, drills into a chosen suite via `?suite=`, and composes `EvaluatorBreakdown`, `CollapsibleComparison`, `CompactAlert`, plus legacy primitives `ActivityList`/`ScoreFeature` from `components/evals/dashboard/` |
+| `components/evals/dashboard-v2/dashboard.tsx`              | Top-level orchestrator for the "Evaluation Summary" surface: handles the empty-state branch, owns the `TooltipProvider` wrap and CSS-driven enter animations, routes Suites/History via `?view=`, drills into a chosen suite via `?suite=`, and composes `EvaluatorBreakdown`, `CollapsibleComparison`, `CompactAlert`, plus legacy primitives `ActivityList`/`ScoreFeature` from `components/evals/dashboard/` |
 | `components/evals/dashboard-v2/view-switcher.tsx`          | URL-state-driven `radiogroup` switcher between "Suites" (`?view=suites`) and "Run history" (`?view=history`)                             |
-| `components/evals/dashboard-v2/suite-selector.tsx`         | ARIA `tablist` for the per-suite drilldown. **Renames the suites for display:** `capability` → "Benchmarks", `trafficMonitor` → "Live traffic", `regression` → "Pinned checks" |
+| `components/evals/dashboard-v2/suite-selector.tsx`         | ARIA `tablist` for the per-suite drilldown. Reads suite display copy from `lib/evals/display.ts`: `capability` → "Test Suite", `trafficMonitor` → "Production Evals", `regression` → "Regression Tests" |
 | `components/evals/dashboard-v2/evaluator-breakdown.tsx`    | Per-evaluator score breakdown for a suite run; renders `AutoBadge` next to deterministic evaluators (`deterministic_prechecks`, `tool_usage`) |
 | `components/evals/dashboard-v2/collapsible-comparison.tsx` | Comparison panel between latest and prior runs (collapsible)                                                                             |
 | `components/evals/dashboard-v2/compact-alert.tsx`          | Compact alert banner for threshold-breach state, sourced from `lib/evals/helpers/alerts.ts:getLatestThresholdAlert`                      |
@@ -269,9 +271,9 @@ The dashboard tree has three sibling directories: `dashboard-v2/` (current IA �
 > **Note on test files:** the `dashboard-v2/`, `dashboard/`, and `glossary/` directories contain co-located `*.test.tsx` files (six in `dashboard-v2/` alone). They are **intentionally omitted** from this section — FILE-INDEX is selectively detailed and other component sections (e.g. `tool-ui/`) follow the same convention. Do not add them back.
 ```
 
-- [ ] **Step 4: After editing, re-read the section and confirm every `Purpose` cell matches what you saw in the file.** Fix any drift.
+- [x] **Step 4: After editing, re-read the section and confirm every `Purpose` cell matches what you saw in the file.** Fix any drift.
 
-- [ ] **Step 5: Add the missing `lib/evals/glossary.ts` row in the Evals (app-side) section**
+- [x] **Step 5: Add the missing `lib/evals/glossary.ts` row in the Evals (app-side) section**
 
 The `dashboard-v2/glossary/` UI imports from a sibling `lib/evals/glossary.ts` data module that is currently absent from `FILE-INDEX.md`. Confirm it exists:
 
@@ -301,7 +303,7 @@ Expected: file exists and is imported by `evaluator-breakdown.tsx:3`. Then edit 
 
 - Modify: `docs/reference/FILE-INDEX.md:658`
 
-- [ ] **Step 1: Verify the file is gone**
+- [x] **Step 1: Verify the file is gone**
 
 ```bash
 ls lib/actions/eval-preferences.ts 2>&1
@@ -309,7 +311,7 @@ ls lib/actions/eval-preferences.ts 2>&1
 
 Expected: "No such file or directory."
 
-- [ ] **Step 2: Delete the row**
+- [x] **Step 2: Delete the row**
 
 Edit `docs/reference/FILE-INDEX.md`:
 
@@ -332,7 +334,7 @@ Edit `docs/reference/FILE-INDEX.md`:
 
 - Modify: `docs/reference/FILE-INDEX.md:803, 806-807, 812`
 
-- [ ] **Step 1: Verify the export name**
+- [x] **Step 1: Verify the export name**
 
 ```bash
 grep -n "export async function getEvalsDashboard" lib/evals/queries.ts
@@ -346,7 +348,7 @@ grep -n "getEvalsDashboardWithLayout" lib/evals/queries.ts
 
 Expected: no matches.
 
-- [ ] **Step 2: Verify deleted files**
+- [x] **Step 2: Verify deleted files**
 
 ```bash
 ls lib/evals/layout/ 2>&1
@@ -355,7 +357,7 @@ ls lib/evals/helpers/combined-trend.ts 2>&1
 
 Expected: both "No such file or directory."
 
-- [ ] **Step 3: Confirm what `queries.ts` actually queries**
+- [x] **Step 3: Confirm what `queries.ts` actually queries**
 
 ```bash
 grep -n "from(.*)\|join(" lib/evals/queries.ts
@@ -363,7 +365,7 @@ grep -n "from(.*)\|join(" lib/evals/queries.ts
 
 Expected: only `eval_summaries`-derived queries (no `userEvalPreferences` joins).
 
-- [ ] **Step 3b: Fix the section-header framing at `FILE-INDEX.md:799`**
+- [x] **Step 3b: Fix the section-header framing at `FILE-INDEX.md:799`**
 
 The section header still says "Data access + layout models" but the layout system was deleted. Edit `docs/reference/FILE-INDEX.md`:
 
@@ -379,7 +381,7 @@ Data access + layout models backing the admin `/admin/evals` dashboard. The offl
 Data access and view helpers backing the admin `/admin/evals` dashboard. The offline cron that _writes_ these rows lives under `services/evals/`.
 ```
 
-- [ ] **Step 4: Edit row 803**
+- [x] **Step 4: Edit row 803**
 
 `old_string`:
 
@@ -393,7 +395,7 @@ Data access and view helpers backing the admin `/admin/evals` dashboard. The off
 | `lib/evals/queries.ts`                | Server-side queries over `eval_summaries` (`getEvalsDashboard`, capability/regression/traffic-monitor selectors)                  |
 ```
 
-- [ ] **Step 5: Delete rows 806, 807, 812**
+- [x] **Step 5: Delete rows 806, 807, 812**
 
 `old_string`:
 
@@ -425,7 +427,7 @@ Then for the `combined-trend.ts` row, replace it (and add a new `alerts.ts` row 
 | `lib/evals/helpers/alerts.ts`         | Builds dashboard alert payloads from threshold-breached snapshots; defines `DashboardAlert` shape         |
 ```
 
-- [ ] **Step 6: Verify `alerts.ts` exists and is wired into the dashboard**
+- [x] **Step 6: Verify `alerts.ts` exists and is wired into the dashboard**
 
 ```bash
 ls lib/evals/helpers/alerts.ts
@@ -434,7 +436,7 @@ grep -n "from.*helpers/alerts\|DashboardAlert" components/evals/dashboard-v2/das
 
 Expected: `alerts.ts` exists and `compact-alert.tsx` imports `getLatestThresholdAlert` from it.
 
-- [ ] **Step 7: Audit the remaining `lib/evals/helpers/*` rows for orphans**
+- [x] **Step 7: Audit the remaining `lib/evals/helpers/*` rows for orphans**
 
 PR #187 deleted the widget tree but left several `helpers/` files that those widgets used. Re-grep each surviving helper for **live** consumers (excluding `lib/evals/helpers/` itself, where they may cross-import):
 
@@ -478,41 +480,38 @@ For Strategy A, edit each row in `FILE-INDEX.md`:
 
 Adjust if your grep finds an unexpected consumer for any of these.
 
-### Task A7: Mark `user_eval_preferences` as orphan in FILE-INDEX schema row
+### Task A7: Superseded by `user_eval_preferences` table drop
 
 **Files:**
 
-- Modify: `docs/reference/FILE-INDEX.md:642`
+- Verify: `lib/db/schema.ts`
+- Verify: `drizzle/0023_drop_user_eval_preferences.sql`
 
-The plan's `eval-preferences.ts` deletion (A5) and `getEvalsDashboardWithLayout` removal (A6) leave `user_eval_preferences` as an orphan table — defined in `lib/db/schema.ts:625-648` but never read or written by live code. Until a follow-up plan physically drops the table, the FILE-INDEX schema row should not list it alongside live tables without qualification.
+The original plan expected a documentation-only orphan-table note. Later cleanup completed the stronger fix instead: `e10d0a1` removed the table and type from the active schema and added `drizzle/0023_drop_user_eval_preferences.sql`.
 
-- [ ] **Step 1: Confirm there are no live consumers**
+- [x] **Step 1: Confirm the active schema no longer declares the table**
 
 ```bash
-grep -rn "userEvalPreferences\|user_eval_preferences" lib/ app/ components/ services/ 2>&1
+rg -n "userEvalPreferences|user_eval_preferences" lib/db/schema.ts
 ```
 
-Expected: matches **only** in `lib/db/schema.ts` itself (the table definition, the `UserEvalPreference` type export, and any internal references within the schema file). If matches appear in `app/`, `components/`, `services/`, or anywhere else under `lib/` outside `schema.ts`, **stop** — the table has live consumers and this task should be skipped.
+Expected: no matches in `lib/db/schema.ts`.
 
-- [ ] **Step 2: Edit the schema row**
+- [x] **Step 2: Confirm the migration history records the drop**
 
-Edit `docs/reference/FILE-INDEX.md`:
-
-`old_string`:
-
-```
-| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `feedback`, `canvas_artifacts`, `eval_summaries`, `user_eval_preferences`, and `trending_suggestions_cache` with RLS policies |
+```bash
+cat drizzle/0023_drop_user_eval_preferences.sql
 ```
 
-`new_string`:
+Expected: drops the `users_manage_own_eval_preferences` policy and `user_eval_preferences` table.
 
-```
-| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `feedback`, `canvas_artifacts`, `eval_summaries`, and `trending_suggestions_cache` with RLS policies. Also still declares an orphan `user_eval_preferences` table left over from PR #187 — no live consumers; scheduled for removal in a follow-up |
-```
+- [x] **Step 3: Keep current docs free of orphan-table language**
+
+Current FILE-INDEX schema prose should list the active eval tables (`eval_summaries` and, after `a372c67`, `eval_case_results`) rather than describing `user_eval_preferences` as a remaining live or orphan schema object.
 
 ### Task A8: Verify and commit Phase A
 
-- [ ] **Step 1: Re-read all six edited locations**
+- [x] **Step 1: Re-read all six edited locations**
 
 Open `docs/architecture/OVERVIEW.md` (lines 45-95) and `docs/reference/FILE-INDEX.md` (lines 115-140, 320-360, 635-665, 795-815). Skim for stragglers — any remaining mention of `template-switcher`, `widgets/`, `layout/templates`, `eval-preferences`, `getEvalsDashboardWithLayout`, or unflagged mentions of `user_eval_preferences`.
 
@@ -520,15 +519,15 @@ Open `docs/architecture/OVERVIEW.md` (lines 45-95) and `docs/reference/FILE-INDE
 grep -n "template-switcher\|widgets/\|layout/templates\|eval-preferences\|getEvalsDashboardWithLayout" docs/architecture/OVERVIEW.md docs/reference/FILE-INDEX.md
 ```
 
-Expected: no matches. Then verify A7 landed:
+Expected: no matches. Then verify A7 remains superseded:
 
 ```bash
 grep -n "user_eval_preferences" docs/reference/FILE-INDEX.md
 ```
 
-Expected: exactly one match (the schema row, with the "orphan" qualification). If multiple matches or an unqualified mention, fix before committing.
+Expected: no matches in `docs/reference/FILE-INDEX.md`.
 
-- [ ] **Step 2: Run docs-only checks (no test suite to run)**
+- [x] **Step 2: Run docs-only checks (no test suite to run)**
 
 ```bash
 bun lint docs/ 2>&1 || true
@@ -537,7 +536,7 @@ bun format:check docs/architecture/OVERVIEW.md docs/reference/FILE-INDEX.md
 
 If `format:check` fails, run `bun format docs/architecture/OVERVIEW.md docs/reference/FILE-INDEX.md`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/architecture/OVERVIEW.md docs/reference/FILE-INDEX.md
@@ -565,7 +564,7 @@ EOF
 
 - Read: `app/api/evals/run/route.ts:7-26`
 
-- [ ] **Step 1: Read the schema**
+- [x] **Step 1: Read the schema**
 
 ```bash
 sed -n '7,26p' app/api/evals/run/route.ts
@@ -573,7 +572,7 @@ sed -n '7,26p' app/api/evals/run/route.ts
 
 Expected: a Zod schema with required `caseId`, `suite`, `conversation`, `searchMode`, `modelType` AND **optional** `userMode` (`'search' | 'research' | 'build'`), `intent` (string), `corpusVersion` (string).
 
-- [ ] **Step 2: Confirm replay use of these fields**
+- [x] **Step 2: Confirm replay use of these fields**
 
 The runner forwards what the sampler computed — the **derivation** of `intent` lives in the sampler, not the runner. Verify both ends:
 
@@ -598,7 +597,7 @@ This split matters for the API.md prose: the route accepts any string, the **sam
 
 - Modify: `docs/reference/API.md:759-779`
 
-- [ ] **Step 1: Edit the TypeScript block**
+- [x] **Step 1: Edit the TypeScript block**
 
 Edit `docs/reference/API.md`:
 
@@ -637,7 +636,7 @@ Edit `docs/reference/API.md`:
 }
 ```
 
-- [ ] **Step 2: Edit the field table**
+- [x] **Step 2: Edit the field table**
 
 `old_string`:
 
@@ -668,11 +667,11 @@ Edit `docs/reference/API.md`:
 
 ### Task B3: Verify and commit Phase B
 
-- [ ] **Step 1: Re-read the edited block**
+- [x] **Step 1: Re-read the edited block**
 
 Open `docs/reference/API.md` lines 750-800 and confirm both blocks match the route's Zod schema field-for-field.
 
-- [ ] **Step 2: Format check**
+- [x] **Step 2: Format check**
 
 ```bash
 bun format:check docs/reference/API.md
@@ -680,7 +679,7 @@ bun format:check docs/reference/API.md
 
 If it fails, run `bun format docs/reference/API.md`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/reference/API.md
@@ -704,7 +703,7 @@ EOF
 
 - Modify: `docs/operations/DEPLOYMENT.md:169`
 
-- [ ] **Step 1: Verify the count**
+- [x] **Step 1: Verify the count**
 
 ```bash
 ls services/evals/src/evaluators/ | grep -v test
@@ -713,7 +712,7 @@ grep -n "prechecks\|tool-usage\|faithfulness\|relevance\|response-quality\|safet
 
 Expected: `services/evals/src/evaluators/` contains 6 files — 5 LLM-judge (`citation-accuracy`, `faithfulness`, `relevance`, `response-quality`, `safety`) and 1 deterministic (`tool-usage`). The other deterministic evaluator, `prechecks`, lives at `services/evals/src/prechecks.ts` (sibling of `evaluators/`, not inside it). Total: 5 LLM-judge + 2 deterministic = 7. `.claude/rules/operations.md:10` confirms.
 
-- [ ] **Step 2: Edit line 169**
+- [x] **Step 2: Edit line 169**
 
 Edit `docs/operations/DEPLOYMENT.md`:
 
@@ -735,7 +734,7 @@ Edit `docs/operations/DEPLOYMENT.md`:
 
 - Modify: `docs/operations/DEPLOYMENT.md:170`
 
-- [ ] **Step 1: Verify the correct line**
+- [x] **Step 1: Verify the correct line**
 
 ```bash
 sed -n '558,565p' lib/db/schema.ts
@@ -743,7 +742,7 @@ sed -n '558,565p' lib/db/schema.ts
 
 Expected: line 558 is `export type Feedback`, lines 560-563 are the comment block "Note: Only SELECT RLS policy ...", line 564 is `export const evalSummaries`. The doc currently cites `:558-560` which lands one line short of the real comment.
 
-- [ ] **Step 2: Edit line 170**
+- [x] **Step 2: Edit line 170**
 
 Edit `docs/operations/DEPLOYMENT.md`:
 
@@ -765,7 +764,7 @@ Edit `docs/operations/DEPLOYMENT.md`:
 
 - Modify: `.claude/rules/operations.md:11`
 
-- [ ] **Step 1: Verify all three suites are first-class**
+- [x] **Step 1: Verify all three suites are first-class**
 
 ```bash
 grep -n "capability\|regression\|trafficMonitor" lib/evals/queries.ts | head
@@ -773,7 +772,7 @@ grep -n "capability\|regression\|trafficMonitor" lib/evals/queries.ts | head
 
 Expected: `getEvalsDashboard` returns `{ capability, regression, trafficMonitor, recentRuns }` — three peer suites, not "traffic monitor as a section."
 
-- [ ] **Step 2: Edit line 11**
+- [x] **Step 2: Edit line 11**
 
 Edit `.claude/rules/operations.md`:
 
@@ -797,7 +796,7 @@ Note both fixes in this single edit: `/evals` → `/admin/evals` (the route gate
 
 - Modify: `.claude/rules/operations.md:13`
 
-- [ ] **Step 1: Verify where the failure-label log lines actually live now**
+- [x] **Step 1: Verify where the failure-label log lines actually live now**
 
 ```bash
 grep -n "PHOENIX UNAVAILABLE\|DB WRITE FAILED" services/evals/src/runners/shared.ts
@@ -811,7 +810,7 @@ ls services/evals/src/orchestrator.ts services/evals/src/runners/{capability,reg
 
 Expected: all six files exist.
 
-- [ ] **Step 2: Edit line 13**
+- [x] **Step 2: Edit line 13**
 
 Edit `.claude/rules/operations.md`:
 
@@ -829,7 +828,7 @@ Edit `.claude/rules/operations.md`:
 
 ### Task C5: Verify and commit Phase C
 
-- [ ] **Step 1: Re-read both files**
+- [x] **Step 1: Re-read both files**
 
 Open `docs/operations/DEPLOYMENT.md` lines 160-180 and `.claude/rules/operations.md` lines 1-30. Confirm:
 
@@ -838,7 +837,7 @@ Open `docs/operations/DEPLOYMENT.md` lines 160-180 and `.claude/rules/operations
 - Dashboard description names three suites (operations.md:11) and uses `/admin/evals`.
 - File list includes orchestrator and runners (operations.md:13).
 
-- [ ] **Step 2: Format check**
+- [x] **Step 2: Format check**
 
 ```bash
 bun format:check docs/operations/DEPLOYMENT.md .claude/rules/operations.md
@@ -846,7 +845,7 @@ bun format:check docs/operations/DEPLOYMENT.md .claude/rules/operations.md
 
 Run `bun format` on either if it fails.
 
-- [ ] **Step 3: Confirm no lingering 5-evaluator references in operator docs**
+- [x] **Step 3: Confirm no lingering 5-evaluator references in operator docs**
 
 ```bash
 grep -rn "5 LLM-judge\|five LLM-judge\|5 evaluators" docs/ .claude/rules/
@@ -854,7 +853,7 @@ grep -rn "5 LLM-judge\|five LLM-judge\|5 evaluators" docs/ .claude/rules/
 
 Expected: no matches. If any appear in scope, fix them.
 
-- [ ] **Step 4: Final cross-file deletion-marker grep across all five edited files**
+- [x] **Step 4: Final cross-file deletion-marker grep across all five edited files**
 
 ```bash
 grep -n "template-switcher\|widgets/\|layout/templates\|eval-preferences\|getEvalsDashboardWithLayout" \
@@ -867,7 +866,7 @@ grep -n "template-switcher\|widgets/\|layout/templates\|eval-preferences\|getEva
 
 Expected: no matches. The earlier A8 grep covered only the two Phase A files; this one closes the loop across all five edits in this plan.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs/operations/DEPLOYMENT.md .claude/rules/operations.md
@@ -887,9 +886,11 @@ EOF
 
 ---
 
-## Phase D — Visual showcase of the eval dashboard
+## Phase D — Deferred visual showcase of the eval dashboard
 
-The eval dashboard is the kind of feature where prose underplays the value. This phase ships a triplet of assets matching the existing README convention — `evals.mp4` (source recording), `evals.gif` (animated display), `evals-poster.png` (static frame) — and wires them into a new "Continuous evals" subsection in `README.md`.
+**Status:** Deferred. The source recording `docs/assets/demos/evals.mp4` does not exist yet, so the asset conversion and README showcase cannot be completed from the repo alone.
+
+The eval dashboard is the kind of feature where prose underplays the value. This deferred phase would ship a triplet of assets matching the existing README convention — `evals.mp4` (source recording), `evals.gif` (animated display), `evals-poster.png` (static frame) — and wire them into a new "Continuous evals" subsection in `README.md`.
 
 **Workflow split:** the **user records the source `evals.mp4`** (the visual judgment + access to the dashboard sit with them); the **agent does conversion, integration, and verification** (mechanical work). This split mirrors the existing demo pipeline — every demo in `docs/assets/demos/` is a triplet (`<name>.mp4`, `<name>-poster.png`, `<name>.gif`) created from a single source `.mp4`.
 
@@ -1087,7 +1088,7 @@ After the closing `>` of that tag and the trailing blank line, insert:
 ```markdown
 ### Continuous evals
 
-A live-data admin dashboard surfaces the evaluator pipeline that scores every change: capability, regression, and traffic-monitor suites with per-suite drilldown, threshold alerts, and a run-history timeline. Backed by a Railway cron that scores sampled production traffic against an LLM judge and writes summaries to Postgres.
+A live-data admin dashboard surfaces the evaluator pipeline that scores every change: Test Suite, Production Evals, and Regression Tests with per-suite drilldown, threshold alerts, and a run-history timeline. Backed by a Railway cron that scores sampled production traffic against an LLM judge and writes summaries plus case diagnostics to Postgres.
 
 <img src="docs/assets/demos/evals.gif" alt="Polymorph continuous evals: three suites with per-suite drilldown, threshold alert, and run-history timeline" width="880">
 ```
@@ -1097,7 +1098,7 @@ A live-data admin dashboard surfaces the evaluator pipeline that scores every ch
 Edit `README.md`. Find the bullet list under `## Features`. The bullet "**Multi-provider AI**" exists at line 44. Append a new bullet **immediately after** it so the new bullet sits between "Multi-provider AI" and "Voice mode":
 
 ```
-- **Continuous evals** — LLM-judge scoring of capability, regression, and sampled production traffic, with a live admin dashboard, threshold alerts, and a Phoenix experiment per run
+- **Continuous evals** — LLM-judge scoring of Test Suite, Regression Tests, and sampled Production Evals traffic, with a live admin dashboard, threshold alerts, case diagnostics, and a Phoenix experiment per run
 ```
 
 - [ ] **Step 3: Verify the README still renders cleanly**
@@ -1174,10 +1175,10 @@ EOF
 
 ## Self-Review Checklist (run after writing all tasks)
 
-- [ ] **Spec coverage:** Every audit finding labeled "Critical drift" (#1-#8) maps to a task: A1 (#1), A2 (#2), A3 (#3), A4 (#4), A6 (#5), A5 (#6), C1 (#7), B2 (#8). The "Significant gaps" #10, #11, #13 map to C3, C4, C2. Gap #12 (six undocumented features) is explicitly out of scope and called out for follow-up. Audit-discovered gaps covered by: A1b (adjacent OVERVIEW.md:51 drift), A4 Step 5 (missing `lib/evals/glossary.ts` row), A6 Step 3b (`FILE-INDEX.md:799` "+ layout models" framing), A6 Step 7 (orphan helpers in `lib/evals/helpers/`), A7 (orphan `user_eval_preferences`).
-- [ ] **Prose accuracy (Phase A):** Every `dashboard-v2/` Purpose cell traces to actual code, not naming-based guesswork. Critical: `auto-badge.tsx` marks deterministic evaluators (per `evaluator-breakdown.tsx:14,29-30`), NOT cron-sourced runs. `suite-selector.tsx` renames suites for display (Benchmarks/Live traffic/Pinned checks). `compact-alert.tsx` only handles threshold breaches. `local-labels.ts` exists for the 2-column-row line-length workaround.
-- [ ] **Placeholder scan:** No "TBD," no "implement appropriate handling," no "similar to Task N." Each Edit step has both `old_string` and `new_string` complete.
-- [ ] **Type / signature consistency:** All references to `getEvalsDashboard` (no `WithLayout`), `dashboard-v2/`, `glossary/`, `runners/shared.ts:141,202`, `lib/db/schema.ts:560-563`, `sampler.ts:551` for `intent` derivation. No leftover references to `LayoutRenderer`, `template-switcher`, `widgets/registry`, `combined-trend`, or `gifsicle`.
+- [x] **Spec coverage:** Every audit finding labeled "Critical drift" (#1-#8) maps to a task: A1 (#1), A2 (#2), A3 (#3), A4 (#4), A6 (#5), A5 (#6), C1 (#7), B2 (#8). The "Significant gaps" #10, #11, #13 map to C3, C4, C2. Gap #12 (six undocumented features) is explicitly out of scope and called out for follow-up. Audit-discovered gaps covered by: A1b (adjacent OVERVIEW.md:51 drift), A4 Step 5 (missing `lib/evals/glossary.ts` row), A6 Step 3b (`FILE-INDEX.md:799` "+ layout models" framing), A6 Step 7 (orphan helpers in `lib/evals/helpers/`), A7 (superseded by the later `user_eval_preferences` table drop).
+- [x] **Prose accuracy (Phase A):** Every `dashboard-v2/` Purpose cell traces to actual code, not naming-based guesswork. Critical: `auto-badge.tsx` marks deterministic evaluators (per `evaluator-breakdown.tsx:14,29-30`), NOT cron-sourced runs. `suite-selector.tsx` uses shared display copy from `lib/evals/display.ts` (`Test Suite`, `Production Evals`, `Regression Tests`). `compact-alert.tsx` only handles threshold breaches. `local-labels.ts` exists for the 2-column-row line-length workaround.
+- [x] **Placeholder scan:** No "TBD," no "implement appropriate handling," no "similar to Task N." Each Edit step has both `old_string` and `new_string` complete.
+- [x] **Type / signature consistency:** All references to `getEvalsDashboard` (no `WithLayout`), `dashboard-v2/`, `glossary/`, `runners/shared.ts:141,202`, `lib/db/schema.ts:560-563`, `sampler.ts:551` for `intent` derivation. No leftover references to `LayoutRenderer`, `template-switcher`, `widgets/registry`, `combined-trend`, or `gifsicle`.
 - [ ] **Phase D quality bar:** Source `.mp4` exists at `docs/assets/demos/evals.mp4`. GIF is 900×526 native and ≤ 2.2 MB (matches heaviest existing demo). Poster PNG ≤ 350 KB. README markup uses `width="880"` and matches the existing `<img>` pattern (no `<picture>` for this commit). Threshold-breach alert visible in poster frame. No PII visible in any frame.
 - [ ] **Tooling sanity:** `which ffmpeg pngquant` both resolve. The plan does NOT depend on `gifsicle` (not installed) or `mcp__claude-in-chrome__gif_creator` (deferred MCP tool, schema unverified).
 
@@ -1196,5 +1197,5 @@ Each requires reading the feature code first to write accurate prose. Open as a 
 
 **Additional follow-ups from this plan's audit:**
 
-7. **Drop the orphan `user_eval_preferences` table.** Task A7 only updates the FILE-INDEX schema row; the table itself, the `UserEvalPreference` type, and any Drizzle migration history remain in `lib/db/schema.ts:625-648`. A separate migration-bearing plan should remove the table once we're confident no out-of-tree consumer (e.g. an old branch) still queries it.
-8. **Document undocumented `services/evals/src/` files.** `error.ts` (defines `EvalSummaryPersistError`) and `eval-summary.ts` are absent from `FILE-INDEX.md` lines 979-1003. Low-stakes additions but worth a sweep.
+7. **Completed after this plan:** Drop the orphan `user_eval_preferences` table. `e10d0a1` removed it from the active schema and added `drizzle/0023_drop_user_eval_preferences.sql`.
+8. **Completed after this plan:** Document `services/evals/src/error.ts` and `services/evals/src/eval-summary.ts` in `FILE-INDEX.md`.

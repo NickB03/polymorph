@@ -8,7 +8,7 @@ Offline LLM-judge evaluation pipeline running as a Railway cron service (every 4
 
 - Samples recent chats from Supabase Postgres (parameterized SQL)
 - Runs 7 evaluators: 2 deterministic (`prechecks`, `tool-usage`) + 5 LLM-judge (`faithfulness`, `relevance`, `response-quality`, `safety`, `citation-accuracy`) via `asExperimentEvaluator` shells
-- Pushes results to Phoenix as experiments **and** persists eval summaries to the `eval_summaries` Postgres table, which powers the admin `/admin/evals` dashboard across three peer suites (capability, regression, traffic-monitor)
+- Pushes results to Phoenix as experiments **and** persists aggregate rows to `eval_summaries` plus per-case diagnostics to `eval_case_results`, which power the admin `/admin/evals` dashboard across Test Suite, Production Evals, and Regression Tests
 - Two distinct failure labels in the Railway logs: `PHOENIX UNAVAILABLE` (Phoenix HTTP layer down, experiment creation failed — suite never reached the DB write) vs `DB WRITE FAILED` (Phoenix experiment succeeded but the Postgres write failed — only the dashboard row is missing, investigate Postgres connectivity / RLS role / `eval_summaries` table). Threshold-gating errors still throw even if the DB write fails.
 - Key files: `orchestrator.ts` (suite dispatch), `runners/shared.ts` (Phoenix experiment + DB-write helper; emits the two failure labels above), `runners/{capability,regression,smoke,traffic-monitor}.ts` (per-suite logic), `sampler.ts` (traffic-monitor chat sampling), `prechecks.ts`, `config.ts`, `evaluators/{faithfulness,relevance,response-quality,safety,citation-accuracy,tool-usage}.ts`
 
