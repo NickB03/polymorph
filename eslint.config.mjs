@@ -9,6 +9,8 @@ const eslintConfig = [
       'lib/db/migrations/**',
       'services/evals/node_modules/**',
       '.claude/**',
+      '.agents/**',
+      'skills/**',
       'public/canvas-vendor/**'
     ]
   },

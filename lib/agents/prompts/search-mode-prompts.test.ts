@@ -63,11 +63,13 @@ describe('search mode prompts', () => {
     ['chat', CHAT_MODE_PROMPT],
     ['research', RESEARCH_MODE_PROMPT]
   ])(
-    '%s prompt forbids pseudo display tool placeholders and requires prose fallback',
+    '%s prompt avoids pseudo display tool anti-examples and requires prose fallback',
     (_mode, prompt) => {
-      expect(prompt).toContain('Never write pseudo-tool text such as')
-      expect(prompt).toContain('displayTimeline(...)')
-      expect(prompt).toContain('If you cannot make a real display tool call')
+      expect(prompt).toContain('Use real display tool calls')
+      expect(prompt).not.toContain('displayTimeline(...)')
+      expect(prompt).not.toContain('fake tool placeholders')
+      expect(prompt).not.toContain('/* displayTimeline tool call */')
+      expect(prompt).toContain('If you cannot use a real display tool call')
       expect(prompt).toContain('continue with normal prose')
     }
   )

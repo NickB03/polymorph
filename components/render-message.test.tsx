@@ -1142,6 +1142,87 @@ displayTimeline({
     )
   })
 
+  it('suppresses json-comment display tool placeholders followed by fake calls', () => {
+    const consoleDebug = vi
+      .spyOn(console, 'debug')
+      .mockImplementation(() => undefined)
+
+    const message: UIMessage = {
+      id: 'assistant-timeline-json-comment-placeholder',
+      role: 'assistant',
+      metadata: {
+        modelId: 'gateway:xai/grok-4.1-fast-non-reasoning',
+        userMode: 'search'
+      },
+      parts: [
+        {
+          type: 'text',
+          text: `## Recent Milestones Timeline\n\nWaymo's growth accelerated quickly:\n\n\`\`\`json
+/* { "tool": "displayTimeline" } */
+displayTimeline({
+  id: "recent-milestones",
+  title: "Recent Milestones",
+  events: [{ id: "launch", date: "2025", title: "Launch" }]
+})
+\`\`\`\n\nThe rollout continued after these milestones.`
+        }
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.queryByText(/displayTimeline\(/i)).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(/"tool": "displayTimeline"/i)
+    ).not.toBeInTheDocument()
+    expect(screen.getByText(/The rollout continued/i)).toBeInTheDocument()
+    expect(consoleDebug).toHaveBeenCalledWith(
+      '[RenderMessage] Suppressed pseudo display tool placeholder',
+      expect.objectContaining({
+        messageId: 'assistant-timeline-json-comment-placeholder',
+        toolName: 'displayTimeline',
+        matchedPattern: 'fenced-json-comment-function-placeholder'
+      })
+    )
+  })
+
+  it('keeps legitimate code fences that only mention a display tool', () => {
+    const message: UIMessage = {
+      id: 'assistant-display-tool-code-docs',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'text',
+          text: `## Debugging Tool Names\n\nUse a constant when checking tool names:\n\n\`\`\`ts
+const toolName = "displayTimeline"
+console.log(toolName)
+\`\`\`\n\nThis is documentation, not a fake call.`
+        }
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByText(/displayTimeline/i)).toBeInTheDocument()
+    expect(screen.getByText(/This is documentation/i)).toBeInTheDocument()
+  })
+
   it('shows only the data-canvasArtifact card when failed creates with empty IDs precede a success', () => {
     const message: UIMessage = {
       id: 'assistant-1',

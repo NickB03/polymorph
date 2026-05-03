@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { createJudgeConfig } from '../../services/evals/src/judge-config'
 import {
   assertLocalDatabaseUrl,
   buildSeedEvalCaseResultRows,
@@ -37,6 +38,7 @@ describe('buildSeedEvalSummaryRows', () => {
 
   it('generates dashboard-safe values and stable local seed names', () => {
     const rows = buildSeedEvalSummaryRows(NOW)
+    const judgeConfig = createJudgeConfig()
 
     for (const row of rows) {
       expect(row.experimentName).toMatch(/^local-seed-/)
@@ -54,7 +56,16 @@ describe('buildSeedEvalSummaryRows', () => {
       expect(Object.keys(row.evaluatorScores).length).toBeGreaterThan(0)
       expect(row.appModelIds.length).toBeGreaterThan(0)
       expect(row.judgeProvider).toBe('openrouter')
-      expect(row.judgeModel).toBe('openai/gpt-4o')
+      expect(row.judgeModel).toBe(judgeConfig.judgeModel)
+      expect(row.judgeBaseUrl).toBe(judgeConfig.judgeBaseUrl ?? null)
+      expect(row.judgeSettings).toEqual({
+        temperature: 0,
+        topP: 1,
+        reasoning: {
+          enabled: judgeConfig.judgeReasoningEnabled,
+          maxTokens: judgeConfig.judgeReasoningMaxTokens
+        }
+      })
       expect(row.evaluatorTemplateVersion).toBe('v1')
     }
   })

@@ -1,6 +1,8 @@
 import { config as dotenvConfig } from 'dotenv'
 import postgres from 'postgres'
 
+import { createJudgeConfig } from '../services/evals/src/judge-config'
+
 dotenvConfig({ path: '.env.local', quiet: true })
 
 export const LOCAL_SEED_PREFIX = 'local-seed-'
@@ -83,10 +85,22 @@ const SUITE_ORDER: PersistedSuite[] = [
   'capability'
 ]
 
-const DEFAULT_JUDGE_SETTINGS = {
-  temperature: 0,
-  maxOutputTokens: 900,
-  reasoning: { enabled: false }
+function buildSeedJudgeMetadata() {
+  const judgeConfig = createJudgeConfig()
+
+  return {
+    judgeProvider: 'openrouter',
+    judgeModel: judgeConfig.judgeModel,
+    judgeBaseUrl: judgeConfig.judgeBaseUrl ?? null,
+    judgeSettings: {
+      temperature: 0,
+      topP: 1,
+      reasoning: {
+        enabled: judgeConfig.judgeReasoningEnabled,
+        maxTokens: judgeConfig.judgeReasoningMaxTokens
+      }
+    }
+  }
 }
 
 const FAILURE_MODE_BY_EVALUATOR: Record<string, SeedFailureMode> = {
@@ -315,6 +329,7 @@ export function buildSeedEvalSummaryRows(
   now = new Date()
 ): SeedEvalSummaryRow[] {
   const rows: SeedEvalSummaryRow[] = []
+  const judgeMetadata = buildSeedJudgeMetadata()
 
   for (let runIndex = 0; runIndex < 4; runIndex++) {
     for (let suiteIndex = 0; suiteIndex < SUITE_ORDER.length; suiteIndex++) {
@@ -341,10 +356,10 @@ export function buildSeedEvalSummaryRows(
             ? ['claude-3.5-sonnet', 'gpt-4.1-mini']
             : ['gpt-4.1-mini'],
         primaryAppModelId: suite === 'traffic-monitor' ? null : 'gpt-4.1-mini',
-        judgeProvider: 'openrouter',
-        judgeModel: 'openai/gpt-4o',
-        judgeBaseUrl: null,
-        judgeSettings: DEFAULT_JUDGE_SETTINGS,
+        judgeProvider: judgeMetadata.judgeProvider,
+        judgeModel: judgeMetadata.judgeModel,
+        judgeBaseUrl: judgeMetadata.judgeBaseUrl,
+        judgeSettings: judgeMetadata.judgeSettings,
         corpusVersion: 'v6',
         datasetVersion: `${fixture.datasetName}-version`,
         evaluatorTemplateVersion: 'v1',

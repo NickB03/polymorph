@@ -47,7 +47,7 @@ Polymorph is built on Next.js 16 (App Router) with React 19. A single chat API e
 **Route structure.** The App Router uses two groups to isolate surfaces:
 
 - `app/(chat)/` — default chat shell: `/` (root chat), `/search`, `/search/[id]`, `/demo/question-wizard`.
-- `app/(admin)/` — admin surface gated by `ADMIN_USER_ID` (see `lib/auth/is-admin.ts`): currently `/admin/evals` (two-view evals dashboard — "Suites" and "Run history" — with per-suite drilldown; URL state via `?view=suites|history` and `?suite=capability|trafficMonitor|regression`).
+- `app/(admin)/` — admin surface gated by `ADMIN_USER_ID` (see `lib/auth/is-admin.ts`): currently `/admin/evals` ("Evaluation Summary" dashboard with Suites and Run history views; per-suite drilldown for Test Suite, Production Evals, and Regression Tests; URL state via `?view=suites|history` and `?suite=capability|trafficMonitor|regression`).
 - `app/api/` — API routes, including chat, suggestions (+ `refresh` Vercel cron endpoint), the secret-gated `evals/run` replay endpoint, uploads, voice synthesis, canvas artifacts, and canvas asset proxying.
 - `app/auth/` — Supabase auth flows (login, sign-up, forgot-password, confirm, update-password, OAuth, error).
 
