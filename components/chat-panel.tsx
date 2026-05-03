@@ -55,6 +55,7 @@ interface ChatPanelProps {
   isVoiceActive?: boolean
   onStartVoice?: () => void
   onStopVoice?: () => void
+  isSoftKeyboardOpen?: boolean
 }
 
 export function ChatPanel({
@@ -75,7 +76,8 @@ export function ChatPanel({
   voiceState,
   isVoiceActive = false,
   onStartVoice,
-  onStopVoice
+  onStopVoice,
+  isSoftKeyboardOpen = false
 }: ChatPanelProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const isFirstRender = useRef(true)
@@ -86,7 +88,9 @@ export function ChatPanel({
   const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
   const voiceEnabled = isVoiceEnabled()
-  const shouldShowWordmark = messages.length === 0 && !isActionPanelActive
+  const shouldCollapseEmptyChrome = messages.length === 0 && isSoftKeyboardOpen
+  const shouldShowWordmark =
+    messages.length === 0 && !isActionPanelActive && !shouldCollapseEmptyChrome
 
   // Submit after a brief delay so React flushes the input state update first
   const submitPromptValue = (value: string) => {
@@ -450,8 +454,12 @@ export function ChatPanel({
             data-testid="empty-state-action-buttons"
             data-empty-chat-suggestions="true"
             className={cn(
-              'transition-[margin] duration-300',
-              isActionPanelActive ? 'order-first mb-2' : 'mt-2'
+              'transition-[margin,max-height,opacity] duration-300 overflow-hidden',
+              shouldCollapseEmptyChrome
+                ? 'mt-0 mb-0 max-h-0 opacity-0 pointer-events-none'
+                : isActionPanelActive
+                  ? 'order-first mb-2 max-h-[240px] opacity-100'
+                  : 'mt-2 max-h-[240px] opacity-100'
             )}
           >
             <ActionButtons

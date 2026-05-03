@@ -2,6 +2,11 @@
 
 import { useEffect } from 'react'
 
+import {
+  SOFT_KEYBOARD_CHANGE_EVENT,
+  type SoftKeyboardChangeDetail
+} from '@/hooks/use-soft-keyboard-open'
+
 const APP_VIEWPORT_HEIGHT_VAR = '--app-visual-viewport-height'
 const APP_KEYBOARD_INSET_VAR = '--app-keyboard-inset-height'
 const SOFT_KEYBOARD_ATTR = 'data-soft-keyboard'
@@ -9,6 +14,10 @@ const SOFT_KEYBOARD_OPEN_THRESHOLD_PX = 80
 
 function toCssPixels(value: number) {
   return `${Math.max(0, Math.round(value * 100) / 100)}px`
+}
+
+function dispatchSoftKeyboardChange(detail: SoftKeyboardChangeDetail) {
+  window.dispatchEvent(new CustomEvent(SOFT_KEYBOARD_CHANGE_EVENT, { detail }))
 }
 
 export function VisualViewportHeight() {
@@ -30,11 +39,16 @@ export function VisualViewportHeight() {
         toCssPixels(visibleHeight)
       )
       root.style.setProperty(APP_KEYBOARD_INSET_VAR, toCssPixels(keyboardInset))
-      if (keyboardInset > SOFT_KEYBOARD_OPEN_THRESHOLD_PX) {
+      const isKeyboardOpen = keyboardInset > SOFT_KEYBOARD_OPEN_THRESHOLD_PX
+      if (isKeyboardOpen) {
         root.setAttribute(SOFT_KEYBOARD_ATTR, 'open')
       } else {
         root.removeAttribute(SOFT_KEYBOARD_ATTR)
       }
+      dispatchSoftKeyboardChange({
+        open: isKeyboardOpen,
+        keyboardInset
+      })
     }
 
     syncViewportHeight()
@@ -49,6 +63,7 @@ export function VisualViewportHeight() {
       viewport?.removeEventListener('resize', syncViewportHeight)
       viewport?.removeEventListener('scroll', syncViewportHeight)
       root.removeAttribute(SOFT_KEYBOARD_ATTR)
+      dispatchSoftKeyboardChange({ open: false, keyboardInset: 0 })
     }
   }, [])
 

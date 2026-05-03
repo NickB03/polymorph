@@ -39,6 +39,7 @@ describe('VisualViewportHeight', () => {
   it('syncs the app viewport height from visualViewport for soft keyboards', () => {
     const addEventListener = vi.fn()
     const removeEventListener = vi.fn()
+    const handleKeyboardChange = vi.fn()
     installInnerHeight(844)
     installViewport({
       height: 512.5,
@@ -46,6 +47,7 @@ describe('VisualViewportHeight', () => {
       addEventListener,
       removeEventListener
     })
+    window.addEventListener('app-soft-keyboard-change', handleKeyboardChange)
 
     const { unmount } = render(<VisualViewportHeight />)
 
@@ -57,6 +59,11 @@ describe('VisualViewportHeight', () => {
       'data-soft-keyboard',
       'open'
     )
+    expect(handleKeyboardChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { open: true, keyboardInset: 331.5 }
+      })
+    )
     expect(addEventListener).toHaveBeenCalledWith(
       'resize',
       expect.any(Function)
@@ -67,6 +74,7 @@ describe('VisualViewportHeight', () => {
     )
 
     unmount()
+    window.removeEventListener('app-soft-keyboard-change', handleKeyboardChange)
 
     expect(removeEventListener).toHaveBeenCalledWith(
       'resize',
@@ -79,6 +87,8 @@ describe('VisualViewportHeight', () => {
   })
 
   it('falls back to window.innerHeight when visualViewport is unavailable', () => {
+    const handleKeyboardChange = vi.fn()
+    window.addEventListener('app-soft-keyboard-change', handleKeyboardChange)
     installInnerHeight(700)
     installViewport(undefined)
 
@@ -89,5 +99,11 @@ describe('VisualViewportHeight', () => {
       '--app-keyboard-inset-height': '0px'
     })
     expect(document.documentElement).not.toHaveAttribute('data-soft-keyboard')
+    expect(handleKeyboardChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { open: false, keyboardInset: 0 }
+      })
+    )
+    window.removeEventListener('app-soft-keyboard-change', handleKeyboardChange)
   })
 })

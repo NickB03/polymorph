@@ -123,6 +123,37 @@ describe('ChatPanel', () => {
     )
   })
 
+  it('collapses empty-state chrome while the soft keyboard is open', () => {
+    render(
+      <ChatPanel
+        chatId="chat-1"
+        input=""
+        handleInputChange={vi.fn()}
+        handleSubmit={e => e.preventDefault()}
+        status="ready"
+        messages={[]}
+        stop={vi.fn()}
+        append={vi.fn()}
+        showScrollToBottomButton={false}
+        scrollContainerRef={{ current: null }}
+        uploadedFiles={[]}
+        setUploadedFiles={vi.fn()}
+        isGuest
+        isSoftKeyboardOpen
+      />
+    )
+
+    expect(screen.getByTestId('empty-state-wordmark')).toHaveClass('opacity-0')
+    expect(screen.getByTestId('empty-state-wordmark')).toHaveClass('max-h-0')
+    expect(screen.getByTestId('empty-state-action-buttons')).toHaveClass(
+      'max-h-0'
+    )
+    expect(screen.getByTestId('empty-state-action-buttons')).toHaveClass(
+      'opacity-0'
+    )
+    expect(screen.getByRole('button', { name: /send message/i })).toBeVisible()
+  })
+
   it('moves prompt suggestions above the composer after a category is selected', () => {
     render(
       <ChatPanel

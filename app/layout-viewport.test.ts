@@ -44,7 +44,7 @@ describe('root viewport sizing', () => {
     )
   })
 
-  it('bottom-aligns the empty chat composer while the mobile keyboard is open', () => {
+  it('uses component state instead of global selectors for the keyboard-open composer layout', () => {
     const chatSource = fs.readFileSync(
       path.join(process.cwd(), 'components/chat.tsx'),
       'utf8'
@@ -59,14 +59,15 @@ describe('root viewport sizing', () => {
     )
 
     expect(chatSource).toContain('data-empty-chat-layout')
+    expect(chatSource).toContain('useSoftKeyboardOpen')
+    expect(chatSource).toContain('justify-end')
     expect(panelSource).toContain('data-empty-chat-suggestions')
-    expect(css).toContain(
+    expect(css).not.toContain(
       "html[data-soft-keyboard='open'] [data-empty-chat-layout='true']"
     )
-    expect(css).toContain('justify-content: flex-end')
-    expect(css).toContain(
+    expect(css).not.toContain('justify-content: flex-end')
+    expect(css).not.toContain(
       "html[data-soft-keyboard='open'] [data-empty-chat-suggestions='true']"
     )
-    expect(css).toContain('max-height: 0')
   })
 })
