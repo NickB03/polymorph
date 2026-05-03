@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 
 import {
@@ -19,9 +19,6 @@ import type { SuggestionCategory } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 import { Button } from './ui/button'
-
-// Constants for timing delays
-const FOCUS_OUT_DELAY_MS = 100 // Delay to ensure focus has actually moved
 
 interface ActionCategory {
   icon: LucideIcon
@@ -63,6 +60,7 @@ interface ActionButtonsProps {
   onSelectPrompt: (prompt: string, category: SuggestionCategory) => void
   onCategoryClick: (category: string) => void
   onBuildTemplateSelect?: (prompt: string) => void
+  onActiveViewChange?: (activeView: ActiveView) => void
   promptSamples: Record<SuggestionCategory, string[]>
   inputRef?: React.RefObject<HTMLTextAreaElement | null>
   canvasEnabled?: boolean
@@ -73,6 +71,7 @@ export function ActionButtons({
   onSelectPrompt,
   onCategoryClick,
   onBuildTemplateSelect,
+  onActiveViewChange,
   promptSamples,
   inputRef,
   canvasEnabled = false,
@@ -81,33 +80,41 @@ export function ActionButtons({
   const [activeView, setActiveView] = useState<ActiveView>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  const updateActiveView = useCallback(
+    (nextActiveView: ActiveView) => {
+      setActiveView(nextActiveView)
+      onActiveViewChange?.(nextActiveView)
+    },
+    [onActiveViewChange]
+  )
+
   const handleCategoryClick = (category: ActionCategory) => {
-    setActiveView(category.key)
+    updateActiveView(category.key)
     onCategoryClick(category.label)
   }
 
   const handleBuildClick = () => {
-    setActiveView('build')
+    updateActiveView('build')
   }
 
   const handlePromptClick = (prompt: string) => {
     if (activeView && activeView !== 'build') {
       const category = activeView
-      setActiveView(null)
+      updateActiveView(null)
       onSelectPrompt(prompt, category)
     }
   }
 
   const handleBuildTemplateClick = (template: BuildTemplate) => {
-    setActiveView(null)
+    updateActiveView(null)
     onBuildTemplateSelect?.(template.prompt)
   }
 
-  const resetToButtons = () => {
-    setActiveView(null)
-  }
+  const resetToButtons = useCallback(() => {
+    updateActiveView(null)
+  }, [updateActiveView])
 
-  // Handle Escape key and clicks outside (including focus loss)
+  // Handle Escape key and clicks outside
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && activeView) {
@@ -129,37 +136,21 @@ export function ActionButtons({
       }
     }
 
-    const handleFocusOut = () => {
-      // Check if focus is moving outside both the container and input
-      setTimeout(() => {
-        const activeElement = document.activeElement
-        if (
-          activeView &&
-          !containerRef.current?.contains(activeElement) &&
-          activeElement !== inputRef?.current
-        ) {
-          resetToButtons()
-        }
-      }, FOCUS_OUT_DELAY_MS)
-    }
-
     document.addEventListener('keydown', handleEscape)
     document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('focusout', handleFocusOut)
 
     return () => {
       document.removeEventListener('keydown', handleEscape)
       document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('focusout', handleFocusOut)
     }
-  }, [activeView, inputRef])
+  }, [activeView, inputRef, resetToButtons])
 
   const isBuildActive = activeView === 'build'
   const isSuggestionActive = activeView !== null && activeView !== 'build'
 
   const containerHeight = isBuildActive
-    ? 'min-h-[180px] h-auto sm:h-[220px]'
-    : 'min-h-[180px] h-auto sm:h-[180px]'
+    ? 'h-[220px]'
+    : 'h-[180px]'
 
   // Total number of pills for stagger animation
   const buildPillIndex = actionCategories.length
@@ -173,7 +164,7 @@ export function ActionButtons({
         className
       )}
     >
-      <div className="relative h-full">
+      <div className="relative h-full min-h-0">
         {/* Action buttons */}
         <div
           className={cn(

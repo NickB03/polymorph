@@ -82,6 +82,7 @@ export function ChatPanel({
   const [isComposing, setIsComposing] = useState(false) // Composition state
   const [enterDisabled, setEnterDisabled] = useState(false) // Disable Enter after composition ends
   const [isInputFocused, setIsInputFocused] = useState(false) // Track input focus
+  const [isActionPanelActive, setIsActionPanelActive] = useState(false)
   const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
   const voiceEnabled = isVoiceEnabled()
@@ -280,7 +281,7 @@ export function ChatPanel({
           inputRef.current?.blur()
         }}
         className={cn(
-          'max-w-full md:max-w-4xl w-full mx-auto relative transition-all duration-500 ease-out'
+          'max-w-full md:max-w-4xl w-full mx-auto relative flex flex-col transition-all duration-500 ease-out'
         )}
       >
         {/* Scroll to bottom button - only shown when showScrollToBottomButton is true */}
@@ -441,31 +442,41 @@ export function ChatPanel({
 
         {/* Action buttons for prompt suggestions */}
         {messages.length === 0 && (
-          <ActionButtons
-            promptSamples={suggestions}
-            canvasEnabled
-            onSelectPrompt={(message, category) => {
-              // Auto-switch to Research + Quality for research suggestions
-              if (category === 'research') {
-                syncSearchMode('research')
-                syncModelType('quality')
-              }
-              submitPromptValue(message)
-            }}
-            onBuildTemplateSelect={prompt => {
-              submitPromptValue(prompt)
-            }}
-            onCategoryClick={category => {
-              // Set the category in the input
-              handleInputChange({
-                target: { value: category }
-              } as React.ChangeEvent<HTMLTextAreaElement>)
-              // Focus the input
-              inputRef.current?.focus()
-            }}
-            inputRef={inputRef}
-            className="mt-2"
-          />
+          <div
+            data-testid="empty-state-action-buttons"
+            className={cn(
+              'transition-[margin] duration-300',
+              isActionPanelActive ? 'order-first mb-2' : 'mt-2'
+            )}
+          >
+            <ActionButtons
+              promptSamples={suggestions}
+              canvasEnabled
+              onActiveViewChange={activeView => {
+                setIsActionPanelActive(activeView !== null)
+              }}
+              onSelectPrompt={(message, category) => {
+                // Auto-switch to Research + Quality for research suggestions
+                if (category === 'research') {
+                  syncSearchMode('research')
+                  syncModelType('quality')
+                }
+                submitPromptValue(message)
+              }}
+              onBuildTemplateSelect={prompt => {
+                submitPromptValue(prompt)
+              }}
+              onCategoryClick={category => {
+                // Set the category in the input
+                handleInputChange({
+                  target: { value: category }
+                } as React.ChangeEvent<HTMLTextAreaElement>)
+                // Focus the input
+                inputRef.current?.focus()
+              }}
+              inputRef={inputRef}
+            />
+          </div>
         )}
       </form>
     </div>

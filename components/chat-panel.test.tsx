@@ -118,6 +118,52 @@ describe('ChatPanel', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /build/i })).toBeInTheDocument()
   })
+
+  it('moves prompt suggestions above the composer after a category is selected', () => {
+    render(
+      <ChatPanel
+        chatId="chat-1"
+        input=""
+        handleInputChange={vi.fn()}
+        handleSubmit={e => e.preventDefault()}
+        status="ready"
+        messages={[]}
+        stop={vi.fn()}
+        append={vi.fn()}
+        showScrollToBottomButton={false}
+        scrollContainerRef={{ current: null }}
+        uploadedFiles={[]}
+        setUploadedFiles={vi.fn()}
+        isGuest
+      />
+    )
+
+    const shelf = screen.getByTestId('empty-state-action-buttons')
+    expect(shelf).toHaveClass('mt-2')
+
+    fireEvent.click(screen.getByRole('button', { name: /compare/i }))
+
+    expect(
+      screen.getByRole('button', { name: /compare prompt/i })
+    ).toBeInTheDocument()
+    expect(shelf).toHaveClass('order-first')
+    expect(shelf).toHaveClass('mb-2')
+    expect(shelf).not.toHaveClass('mt-2')
+
+    vi.useFakeTimers()
+
+    fireEvent.blur(screen.getByLabelText(/message input/i))
+    fireEvent.focusOut(document)
+
+    vi.advanceTimersByTime(150)
+
+    expect(
+      screen.getByRole('button', { name: /compare prompt/i })
+    ).toBeInTheDocument()
+    expect(shelf).toHaveClass('order-first')
+
+    vi.useRealTimers()
+  })
 })
 
 describe('file-only submit', () => {

@@ -63404,7 +63404,6 @@
       "descendants": {
         "n:3JeEr": {
           "type": "text",
-          "id": "n:3JeEr",
           "name": "Breadcrumb Item",
           "fill": "$n:--muted-foreground",
           "content": "Breadcrumb Item",

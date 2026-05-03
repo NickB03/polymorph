@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ActionButtons } from './action-buttons'
@@ -58,11 +58,12 @@ describe('ActionButtons', () => {
 
     // Click the Build button to reveal the template grid
     act(() => {
-      screen.getByRole('button', { name: /build/i }).click()
+      fireEvent.click(screen.getByRole('button', { name: /build/i }))
     })
 
     const grid = container.querySelector('.grid')
     expect(grid).not.toBeNull()
     expect(grid!.className).toMatch(/\bgrid-cols-3\b/)
   })
+
 })

@@ -172,7 +172,7 @@ export function ChatCanvasShell({
   }, [isResizing])
 
   return (
-    <div className="flex-1 min-h-0 min-w-0 h-screen flex">
+    <div className="flex-1 min-h-0 min-w-0 h-app-viewport flex">
       <div
         ref={containerRef}
         className="relative flex flex-1 min-w-0 overflow-hidden"
