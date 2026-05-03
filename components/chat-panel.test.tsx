@@ -117,6 +117,130 @@ describe('ChatPanel', () => {
       screen.getByRole('button', { name: /research/i })
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /build/i })).toBeInTheDocument()
+    expect(screen.getByTestId('empty-state-action-buttons')).toHaveAttribute(
+      'data-empty-chat-suggestions',
+      'true'
+    )
+  })
+
+  it('collapses empty-state chrome while the soft keyboard is open', () => {
+    render(
+      <ChatPanel
+        chatId="chat-1"
+        input=""
+        handleInputChange={vi.fn()}
+        handleSubmit={e => e.preventDefault()}
+        status="ready"
+        messages={[]}
+        stop={vi.fn()}
+        append={vi.fn()}
+        showScrollToBottomButton={false}
+        scrollContainerRef={{ current: null }}
+        uploadedFiles={[]}
+        setUploadedFiles={vi.fn()}
+        isGuest
+        isSoftKeyboardOpen
+      />
+    )
+
+    expect(screen.getByTestId('empty-state-wordmark')).toHaveClass('opacity-0')
+    expect(screen.getByTestId('empty-state-wordmark')).toHaveClass('max-h-0')
+    expect(screen.getByTestId('empty-state-action-buttons')).toHaveClass(
+      'max-h-0'
+    )
+    expect(screen.getByTestId('empty-state-action-buttons')).toHaveClass(
+      'opacity-0'
+    )
+    expect(screen.getByRole('button', { name: /send message/i })).toBeVisible()
+  })
+
+  it('moves prompt suggestions above the composer after a category is selected', () => {
+    render(
+      <ChatPanel
+        chatId="chat-1"
+        input=""
+        handleInputChange={vi.fn()}
+        handleSubmit={e => e.preventDefault()}
+        status="ready"
+        messages={[]}
+        stop={vi.fn()}
+        append={vi.fn()}
+        showScrollToBottomButton={false}
+        scrollContainerRef={{ current: null }}
+        uploadedFiles={[]}
+        setUploadedFiles={vi.fn()}
+        isGuest
+      />
+    )
+
+    const wordmark = screen.getByTestId('empty-state-wordmark')
+    const shelf = screen.getByTestId('empty-state-action-buttons')
+    expect(wordmark).toHaveClass('opacity-100')
+    expect(shelf).toHaveClass('mt-2')
+
+    fireEvent.click(screen.getByRole('button', { name: /compare/i }))
+
+    expect(
+      screen.getByRole('button', { name: /compare prompt/i })
+    ).toBeInTheDocument()
+    expect(shelf).toHaveClass('order-first')
+    expect(shelf).toHaveClass('mb-2')
+    expect(shelf).not.toHaveClass('mt-2')
+    expect(wordmark).toHaveClass('opacity-0')
+    expect(wordmark).toHaveClass('max-h-0')
+    expect(wordmark).toHaveClass('pointer-events-none')
+
+    vi.useFakeTimers()
+
+    fireEvent.blur(screen.getByLabelText(/message input/i))
+    fireEvent.focusOut(document)
+
+    vi.advanceTimersByTime(150)
+
+    expect(
+      screen.getByRole('button', { name: /compare prompt/i })
+    ).toBeInTheDocument()
+    expect(shelf).toHaveClass('order-first')
+
+    vi.useRealTimers()
+  })
+
+  it('keeps selected prompt suggestions visible when the soft keyboard opens', () => {
+    const renderPanel = (isSoftKeyboardOpen = false) => (
+      <ChatPanel
+        chatId="chat-1"
+        input=""
+        handleInputChange={vi.fn()}
+        handleSubmit={e => e.preventDefault()}
+        status="ready"
+        messages={[]}
+        stop={vi.fn()}
+        append={vi.fn()}
+        showScrollToBottomButton={false}
+        scrollContainerRef={{ current: null }}
+        uploadedFiles={[]}
+        setUploadedFiles={vi.fn()}
+        isGuest
+        isSoftKeyboardOpen={isSoftKeyboardOpen}
+      />
+    )
+
+    const { rerender } = render(renderPanel())
+
+    fireEvent.click(screen.getByRole('button', { name: /research/i }))
+
+    const shelf = screen.getByTestId('empty-state-action-buttons')
+    expect(
+      screen.getByRole('button', { name: /research prompt/i })
+    ).toBeInTheDocument()
+    expect(shelf).toHaveClass('order-first')
+
+    rerender(renderPanel(true))
+
+    expect(shelf).toHaveClass('order-first')
+    expect(shelf).toHaveClass('opacity-100')
+    expect(shelf).not.toHaveClass('max-h-0')
+    expect(shelf).not.toHaveClass('pointer-events-none')
   })
 })
 

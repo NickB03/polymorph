@@ -9,6 +9,7 @@ import { createAppMetadata } from '@/lib/utils/app-metadata'
 import { Toaster } from '@/components/ui/sonner'
 
 import { ThemeProvider } from '@/components/theme-provider'
+import { VisualViewportHeight } from '@/components/visual-viewport-height'
 
 import './globals.css'
 import 'leaflet/dist/leaflet.css'
@@ -36,10 +37,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          'min-h-screen flex flex-col font-sans antialiased overflow-hidden pb-safe',
+          'h-app-viewport min-h-app-viewport flex flex-col font-sans antialiased overflow-hidden',
           fontSans.variable
         )}
       >
+        <VisualViewportHeight />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

@@ -41,6 +41,7 @@ import { syncSearchMode } from '@/lib/utils/search-mode'
 import { isVoiceEnabled } from '@/lib/voice/config'
 
 import { useFileDropzone } from '@/hooks/use-file-dropzone'
+import { useSoftKeyboardOpen } from '@/hooks/use-soft-keyboard-open'
 import { useVoiceConversation } from '@/hooks/use-voice-conversation'
 
 import { useSidebar } from '@/components/ui/sidebar'
@@ -70,6 +71,7 @@ export function Chat({
   const router = useRouter()
   const canvas = useCanvas()
   const { isMobile, setOpenMobile } = useSidebar()
+  const isSoftKeyboardOpen = useSoftKeyboardOpen()
 
   // Track the latest guest canvas token from streamed/persisted parts
   const guestCanvasTokenRef = useRef<string | undefined>(undefined)
@@ -871,11 +873,13 @@ export function Chat({
       <div
         className={cn(
           'relative flex h-full min-w-0 flex-1 flex-col transition-all duration-500 ease-out',
-          messages.length === 0
-            ? 'items-center justify-center pt-[10vh] md:pt-[8vh] md:pb-0'
-            : ''
+          messages.length === 0 &&
+            (isSoftKeyboardOpen
+              ? 'items-center justify-end pt-4 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] md:justify-center md:pt-[max(1rem,calc(8vh-var(--app-keyboard-inset-height,0px)))] md:pb-0'
+              : 'items-center justify-center pt-[max(1rem,calc(10vh-var(--app-keyboard-inset-height,0px)))] md:pt-[max(1rem,calc(8vh-var(--app-keyboard-inset-height,0px)))] md:pb-0')
         )}
         data-testid="full-chat"
+        data-empty-chat-layout={messages.length === 0 ? 'true' : undefined}
         onDragOver={dragHandlers.handleDragOver}
         onDragLeave={dragHandlers.handleDragLeave}
         onDrop={dragHandlers.handleDrop}
@@ -940,6 +944,7 @@ export function Chat({
           setUploadedFiles={setUploadedFiles}
           scrollContainerRef={scrollContainerRef}
           isGuest={isGuest}
+          isSoftKeyboardOpen={isSoftKeyboardOpen}
           {...(voiceEnabled
             ? {
                 voiceState: voiceConversation.voiceState,

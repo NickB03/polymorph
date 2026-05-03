@@ -88,6 +88,17 @@ describe('ChatCanvasShell', () => {
     mockCanvasContext.pendingWorkspace = null
   })
 
+  it('sizes the shell from the visual viewport rather than 100vh', () => {
+    const { container } = render(
+      <ChatCanvasShell>
+        <div data-testid="chat-content">Chat</div>
+      </ChatCanvasShell>
+    )
+
+    expect(container.firstElementChild).toHaveClass('h-app-viewport')
+    expect(container.firstElementChild).not.toHaveClass('h-screen')
+  })
+
   it('renders the shared chat subtree only once', () => {
     render(
       <ChatCanvasShell>

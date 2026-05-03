@@ -55,6 +55,7 @@ interface ChatPanelProps {
   isVoiceActive?: boolean
   onStartVoice?: () => void
   onStopVoice?: () => void
+  isSoftKeyboardOpen?: boolean
 }
 
 export function ChatPanel({
@@ -75,16 +76,22 @@ export function ChatPanel({
   voiceState,
   isVoiceActive = false,
   onStartVoice,
-  onStopVoice
+  onStopVoice,
+  isSoftKeyboardOpen = false
 }: ChatPanelProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const isFirstRender = useRef(true)
   const [isComposing, setIsComposing] = useState(false) // Composition state
   const [enterDisabled, setEnterDisabled] = useState(false) // Disable Enter after composition ends
   const [isInputFocused, setIsInputFocused] = useState(false) // Track input focus
+  const [isActionPanelActive, setIsActionPanelActive] = useState(false)
   const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
   const voiceEnabled = isVoiceEnabled()
+  const shouldCollapseEmptyChrome =
+    messages.length === 0 && isSoftKeyboardOpen && !isActionPanelActive
+  const shouldShowWordmark =
+    messages.length === 0 && !isActionPanelActive && !shouldCollapseEmptyChrome
 
   // Submit after a brief delay so React flushes the input state update first
   const submitPromptValue = (value: string) => {
@@ -251,6 +258,7 @@ export function ChatPanel({
 
   return (
     <div
+      data-empty-chat-panel={messages.length === 0 ? 'true' : undefined}
       className={cn(
         'w-full bg-background group/form-container shrink-0',
         messages.length > 0
@@ -260,9 +268,11 @@ export function ChatPanel({
     >
       {/* Wordmark - always rendered, fades out when messages appear */}
       <div
+        data-testid="empty-state-wordmark"
+        data-empty-chat-wordmark={messages.length === 0 ? 'true' : undefined}
         className={cn(
           'transition-all duration-500 ease-out overflow-hidden',
-          messages.length === 0
+          shouldShowWordmark
             ? 'mb-6 flex flex-col items-center gap-4 opacity-100 max-h-20 scale-100'
             : 'mb-0 flex flex-col items-center gap-4 opacity-0 max-h-0 scale-95 pointer-events-none'
         )}
@@ -280,7 +290,7 @@ export function ChatPanel({
           inputRef.current?.blur()
         }}
         className={cn(
-          'max-w-full md:max-w-4xl w-full mx-auto relative transition-all duration-500 ease-out'
+          'max-w-full md:max-w-4xl w-full mx-auto relative flex flex-col transition-all duration-500 ease-out'
         )}
       >
         {/* Scroll to bottom button - only shown when showScrollToBottomButton is true */}
@@ -441,31 +451,46 @@ export function ChatPanel({
 
         {/* Action buttons for prompt suggestions */}
         {messages.length === 0 && (
-          <ActionButtons
-            promptSamples={suggestions}
-            canvasEnabled
-            onSelectPrompt={(message, category) => {
-              // Auto-switch to Research + Quality for research suggestions
-              if (category === 'research') {
-                syncSearchMode('research')
-                syncModelType('quality')
-              }
-              submitPromptValue(message)
-            }}
-            onBuildTemplateSelect={prompt => {
-              submitPromptValue(prompt)
-            }}
-            onCategoryClick={category => {
-              // Set the category in the input
-              handleInputChange({
-                target: { value: category }
-              } as React.ChangeEvent<HTMLTextAreaElement>)
-              // Focus the input
-              inputRef.current?.focus()
-            }}
-            inputRef={inputRef}
-            className="mt-2"
-          />
+          <div
+            data-testid="empty-state-action-buttons"
+            data-empty-chat-suggestions="true"
+            className={cn(
+              'transition-[margin,max-height,opacity] duration-300 overflow-hidden',
+              shouldCollapseEmptyChrome
+                ? 'mt-0 mb-0 max-h-0 opacity-0 pointer-events-none'
+                : isActionPanelActive
+                  ? 'order-first mb-2 max-h-[240px] opacity-100'
+                  : 'mt-2 max-h-[240px] opacity-100'
+            )}
+          >
+            <ActionButtons
+              promptSamples={suggestions}
+              canvasEnabled
+              onActiveViewChange={activeView => {
+                setIsActionPanelActive(activeView !== null)
+              }}
+              onSelectPrompt={(message, category) => {
+                // Auto-switch to Research + Quality for research suggestions
+                if (category === 'research') {
+                  syncSearchMode('research')
+                  syncModelType('quality')
+                }
+                submitPromptValue(message)
+              }}
+              onBuildTemplateSelect={prompt => {
+                submitPromptValue(prompt)
+              }}
+              onCategoryClick={category => {
+                // Set the category in the input
+                handleInputChange({
+                  target: { value: category }
+                } as React.ChangeEvent<HTMLTextAreaElement>)
+                // Focus the input
+                inputRef.current?.focus()
+              }}
+              inputRef={inputRef}
+            />
+          </div>
         )}
       </form>
     </div>

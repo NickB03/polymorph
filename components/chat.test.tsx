@@ -11,6 +11,8 @@ import { buildChatRequestBody, getLatestGuestCanvasToken } from './chat-request'
 const mockUseChat = vi.fn()
 const mockUseVoiceConversation = vi.fn()
 const mockChatMessages = vi.fn((_props?: unknown) => null)
+const mockChatPanel = vi.fn((_props?: unknown) => null)
+const mockUseSoftKeyboardOpen = vi.fn(() => false)
 const mockToast = vi.fn()
 const mockToastError = vi.fn()
 const mockSidebar = {
@@ -130,6 +132,10 @@ vi.mock('@/hooks/use-voice-conversation', () => ({
   useVoiceConversation: () => mockUseVoiceConversation()
 }))
 
+vi.mock('@/hooks/use-soft-keyboard-open', () => ({
+  useSoftKeyboardOpen: () => mockUseSoftKeyboardOpen()
+}))
+
 vi.mock('./chat-messages', () => ({
   ChatMessages: (props: unknown) => {
     mockChatMessages(props)
@@ -138,7 +144,10 @@ vi.mock('./chat-messages', () => ({
 }))
 
 vi.mock('./chat-panel', () => ({
-  ChatPanel: () => null
+  ChatPanel: (props: unknown) => {
+    mockChatPanel(props)
+    return null
+  }
 }))
 
 vi.mock('./drag-overlay', () => ({
@@ -206,6 +215,9 @@ beforeEach(() => {
   mockUseChat.mockReset()
   mockUseVoiceConversation.mockReset()
   mockChatMessages.mockClear()
+  mockChatPanel.mockClear()
+  mockUseSoftKeyboardOpen.mockReset()
+  mockUseSoftKeyboardOpen.mockReturnValue(false)
   mockToast.mockReset()
   mockToastError.mockReset()
   mockUseVoiceConversation.mockReturnValue({
@@ -402,6 +414,23 @@ describe('buildChatRequestBody with guestCanvasToken', () => {
     })
 
     expect(result.body).toHaveProperty('guestCanvasToken', 'canvas-token-regen')
+  })
+})
+
+describe('Chat soft keyboard layout', () => {
+  it('bottom-aligns the empty chat and passes keyboard state to the composer while the soft keyboard is open', async () => {
+    mockUseSoftKeyboardOpen.mockReturnValue(true)
+    mockUseChat.mockReturnValue(makeUseChatReturnValue())
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat savedMessages={[]} />)
+
+    expect(screen.getByTestId('full-chat')).toHaveClass('justify-end')
+    expect(screen.getByTestId('full-chat')).not.toHaveClass('justify-center')
+    expect(mockChatPanel.mock.calls.at(-1)?.[0]).toMatchObject({
+      isSoftKeyboardOpen: true
+    })
   })
 })
 

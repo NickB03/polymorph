@@ -5,6 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --app-visual-viewport-height: 100dvh;
+  --app-keyboard-inset-height: 0px;
   --background: oklch(0.99 0 0);
   --foreground: oklch(0 0 0);
   --card: oklch(1 0 0);
@@ -766,6 +768,14 @@
 }
 @utility pr-safe {
   padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* App shell viewport utilities use VisualViewport on mobile keyboard resize. */
+@utility h-app-viewport {
+  height: var(--app-visual-viewport-height, 100dvh);
+}
+@utility min-h-app-viewport {
+  min-height: var(--app-visual-viewport-height, 100dvh);
 }
 
 /* Scrollbar hiding for horizontal scroll containers */
