@@ -53,8 +53,14 @@ describe('VisualViewportHeight', () => {
       '--app-visual-viewport-height': '512.5px',
       '--app-keyboard-inset-height': '331.5px'
     })
-    expect(addEventListener).toHaveBeenCalledWith('resize', expect.any(Function))
-    expect(addEventListener).toHaveBeenCalledWith('scroll', expect.any(Function))
+    expect(addEventListener).toHaveBeenCalledWith(
+      'resize',
+      expect.any(Function)
+    )
+    expect(addEventListener).toHaveBeenCalledWith(
+      'scroll',
+      expect.any(Function)
+    )
 
     unmount()
 

@@ -65,5 +65,4 @@ describe('ActionButtons', () => {
     expect(grid).not.toBeNull()
     expect(grid!.className).toMatch(/\bgrid-cols-3\b/)
   })
-
 })

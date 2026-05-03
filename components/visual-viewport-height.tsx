@@ -18,9 +18,15 @@ export function VisualViewportHeight() {
       const layoutHeight = window.innerHeight
       const visibleHeight = viewport?.height ?? layoutHeight
       const offsetTop = viewport?.offsetTop ?? 0
-      const keyboardInset = Math.max(0, layoutHeight - visibleHeight - offsetTop)
+      const keyboardInset = Math.max(
+        0,
+        layoutHeight - visibleHeight - offsetTop
+      )
 
-      root.style.setProperty(APP_VIEWPORT_HEIGHT_VAR, toCssPixels(visibleHeight))
+      root.style.setProperty(
+        APP_VIEWPORT_HEIGHT_VAR,
+        toCssPixels(visibleHeight)
+      )
       root.style.setProperty(APP_KEYBOARD_INSET_VAR, toCssPixels(keyboardInset))
     }
 
