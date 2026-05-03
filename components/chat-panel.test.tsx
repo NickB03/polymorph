@@ -204,6 +204,44 @@ describe('ChatPanel', () => {
 
     vi.useRealTimers()
   })
+
+  it('keeps selected prompt suggestions visible when the soft keyboard opens', () => {
+    const renderPanel = (isSoftKeyboardOpen = false) => (
+      <ChatPanel
+        chatId="chat-1"
+        input=""
+        handleInputChange={vi.fn()}
+        handleSubmit={e => e.preventDefault()}
+        status="ready"
+        messages={[]}
+        stop={vi.fn()}
+        append={vi.fn()}
+        showScrollToBottomButton={false}
+        scrollContainerRef={{ current: null }}
+        uploadedFiles={[]}
+        setUploadedFiles={vi.fn()}
+        isGuest
+        isSoftKeyboardOpen={isSoftKeyboardOpen}
+      />
+    )
+
+    const { rerender } = render(renderPanel())
+
+    fireEvent.click(screen.getByRole('button', { name: /research/i }))
+
+    const shelf = screen.getByTestId('empty-state-action-buttons')
+    expect(
+      screen.getByRole('button', { name: /research prompt/i })
+    ).toBeInTheDocument()
+    expect(shelf).toHaveClass('order-first')
+
+    rerender(renderPanel(true))
+
+    expect(shelf).toHaveClass('order-first')
+    expect(shelf).toHaveClass('opacity-100')
+    expect(shelf).not.toHaveClass('max-h-0')
+    expect(shelf).not.toHaveClass('pointer-events-none')
+  })
 })
 
 describe('file-only submit', () => {

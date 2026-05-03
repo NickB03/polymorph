@@ -88,7 +88,8 @@ export function ChatPanel({
   const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
   const voiceEnabled = isVoiceEnabled()
-  const shouldCollapseEmptyChrome = messages.length === 0 && isSoftKeyboardOpen
+  const shouldCollapseEmptyChrome =
+    messages.length === 0 && isSoftKeyboardOpen && !isActionPanelActive
   const shouldShowWordmark =
     messages.length === 0 && !isActionPanelActive && !shouldCollapseEmptyChrome
 
