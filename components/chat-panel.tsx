@@ -253,6 +253,7 @@ export function ChatPanel({
 
   return (
     <div
+      data-empty-chat-panel={messages.length === 0 ? 'true' : undefined}
       className={cn(
         'w-full bg-background group/form-container shrink-0',
         messages.length > 0
@@ -263,6 +264,7 @@ export function ChatPanel({
       {/* Wordmark - always rendered, fades out when messages appear */}
       <div
         data-testid="empty-state-wordmark"
+        data-empty-chat-wordmark={messages.length === 0 ? 'true' : undefined}
         className={cn(
           'transition-all duration-500 ease-out overflow-hidden',
           shouldShowWordmark
@@ -446,6 +448,7 @@ export function ChatPanel({
         {messages.length === 0 && (
           <div
             data-testid="empty-state-action-buttons"
+            data-empty-chat-suggestions="true"
             className={cn(
               'transition-[margin] duration-300',
               isActionPanelActive ? 'order-first mb-2' : 'mt-2'

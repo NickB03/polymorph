@@ -876,6 +876,7 @@ export function Chat({
             : ''
         )}
         data-testid="full-chat"
+        data-empty-chat-layout={messages.length === 0 ? 'true' : undefined}
         onDragOver={dragHandlers.handleDragOver}
         onDragLeave={dragHandlers.handleDragLeave}
         onDrop={dragHandlers.handleDrop}

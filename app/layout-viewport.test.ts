@@ -43,4 +43,30 @@ describe('root viewport sizing', () => {
       'items-center justify-center pt-[10vh] md:pt-[8vh] md:pb-0'
     )
   })
+
+  it('bottom-aligns the empty chat composer while the mobile keyboard is open', () => {
+    const chatSource = fs.readFileSync(
+      path.join(process.cwd(), 'components/chat.tsx'),
+      'utf8'
+    )
+    const panelSource = fs.readFileSync(
+      path.join(process.cwd(), 'components/chat-panel.tsx'),
+      'utf8'
+    )
+    const css = fs.readFileSync(
+      path.join(process.cwd(), 'app/globals.css'),
+      'utf8'
+    )
+
+    expect(chatSource).toContain('data-empty-chat-layout')
+    expect(panelSource).toContain('data-empty-chat-suggestions')
+    expect(css).toContain(
+      "html[data-soft-keyboard='open'] [data-empty-chat-layout='true']"
+    )
+    expect(css).toContain('justify-content: flex-end')
+    expect(css).toContain(
+      "html[data-soft-keyboard='open'] [data-empty-chat-suggestions='true']"
+    )
+    expect(css).toContain('max-height: 0')
+  })
 })

@@ -117,6 +117,10 @@ describe('ChatPanel', () => {
       screen.getByRole('button', { name: /research/i })
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /build/i })).toBeInTheDocument()
+    expect(screen.getByTestId('empty-state-action-buttons')).toHaveAttribute(
+      'data-empty-chat-suggestions',
+      'true'
+    )
   })
 
   it('moves prompt suggestions above the composer after a category is selected', () => {

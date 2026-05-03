@@ -53,6 +53,10 @@ describe('VisualViewportHeight', () => {
       '--app-visual-viewport-height': '512.5px',
       '--app-keyboard-inset-height': '331.5px'
     })
+    expect(document.documentElement).toHaveAttribute(
+      'data-soft-keyboard',
+      'open'
+    )
     expect(addEventListener).toHaveBeenCalledWith(
       'resize',
       expect.any(Function)
@@ -84,5 +88,6 @@ describe('VisualViewportHeight', () => {
       '--app-visual-viewport-height': '700px',
       '--app-keyboard-inset-height': '0px'
     })
+    expect(document.documentElement).not.toHaveAttribute('data-soft-keyboard')
   })
 })
