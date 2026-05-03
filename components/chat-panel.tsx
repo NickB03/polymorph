@@ -86,6 +86,7 @@ export function ChatPanel({
   const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
   const voiceEnabled = isVoiceEnabled()
+  const shouldShowWordmark = messages.length === 0 && !isActionPanelActive
 
   // Submit after a brief delay so React flushes the input state update first
   const submitPromptValue = (value: string) => {
@@ -261,9 +262,10 @@ export function ChatPanel({
     >
       {/* Wordmark - always rendered, fades out when messages appear */}
       <div
+        data-testid="empty-state-wordmark"
         className={cn(
           'transition-all duration-500 ease-out overflow-hidden',
-          messages.length === 0
+          shouldShowWordmark
             ? 'mb-6 flex flex-col items-center gap-4 opacity-100 max-h-20 scale-100'
             : 'mb-0 flex flex-col items-center gap-4 opacity-0 max-h-0 scale-95 pointer-events-none'
         )}

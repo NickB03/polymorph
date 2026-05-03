@@ -138,7 +138,9 @@ describe('ChatPanel', () => {
       />
     )
 
+    const wordmark = screen.getByTestId('empty-state-wordmark')
     const shelf = screen.getByTestId('empty-state-action-buttons')
+    expect(wordmark).toHaveClass('opacity-100')
     expect(shelf).toHaveClass('mt-2')
 
     fireEvent.click(screen.getByRole('button', { name: /compare/i }))
@@ -149,6 +151,9 @@ describe('ChatPanel', () => {
     expect(shelf).toHaveClass('order-first')
     expect(shelf).toHaveClass('mb-2')
     expect(shelf).not.toHaveClass('mt-2')
+    expect(wordmark).toHaveClass('opacity-0')
+    expect(wordmark).toHaveClass('max-h-0')
+    expect(wordmark).toHaveClass('pointer-events-none')
 
     vi.useFakeTimers()
 
