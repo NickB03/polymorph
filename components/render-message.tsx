@@ -97,6 +97,11 @@ const PSEUDO_DISPLAY_TOOL_PLACEHOLDER_PATTERNS = [
     matchedPattern: 'fenced-tool-code-function-placeholder',
     pattern:
       /```(?:json|javascript|js|typescript|ts|tsx)?\s*\n\s*(?:\/\*\s*tool_code\s*\*\/\s*\n\s*)?(display[A-Za-z]+)\s*\([\s\S]*?\n```/g
+  },
+  {
+    matchedPattern: 'fenced-json-comment-function-placeholder',
+    pattern:
+      /```(?:json|javascript|js|typescript|ts|tsx)?\s*\n\s*\/\*\s*\{[\s\S]*?["']tool["']\s*:\s*["'](display[A-Za-z]+)["'][\s\S]*?\}\s*\*\/\s*\n\s*\1\s*\([\s\S]*?\n```/g
   }
 ] as const
 
