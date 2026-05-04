@@ -44,6 +44,11 @@ const modules = [
     () => import('@/lib/tools/display-link-preview/index')
   ],
   [
+    'display-callout',
+    () => import('@/lib/tools/display-callout'),
+    () => import('@/lib/tools/display-callout/index')
+  ],
+  [
     'generate-image',
     () => import('@/lib/tools/generate-image'),
     () => import('@/lib/tools/generate-image/index')

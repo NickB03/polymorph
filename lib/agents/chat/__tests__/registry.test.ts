@@ -79,8 +79,8 @@ vi.mock('@/lib/tools/create-canvas-artifact/server', () => ({
   serverTool: toolWiringMocks.createServerTool
 }))
 
-vi.mock('@/lib/tools/display-callout', () => ({
-  displayCalloutTool: toolWiringMocks.staticTool
+vi.mock('@/lib/tools/display-callout/server', () => ({
+  serverTool: toolWiringMocks.staticTool
 }))
 
 vi.mock('@/lib/tools/display-chart', () => ({

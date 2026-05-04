@@ -2,7 +2,7 @@ import type { UIMessageStreamWriter } from 'ai'
 
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import { serverTool as createCanvasArtifactTool } from '@/lib/tools/create-canvas-artifact/server'
-import { displayCalloutTool } from '@/lib/tools/display-callout'
+import { serverTool as displayCalloutTool } from '@/lib/tools/display-callout/server'
 import { displayChartTool } from '@/lib/tools/display-chart'
 import { serverTool as displayCitationsTool } from '@/lib/tools/display-citations/server'
 import { displayGeoMapTool } from '@/lib/tools/display-geo-map'

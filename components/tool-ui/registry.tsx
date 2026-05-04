@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 
 import { tryRenderResult as tryRenderCreateCanvasArtifactResult } from '@/lib/tools/create-canvas-artifact/result'
+import { tryRenderResult as tryRenderDisplayCalloutResult } from '@/lib/tools/display-callout/result'
 import { tryRenderResult as tryRenderDisplayCitationsResult } from '@/lib/tools/display-citations/result'
 import { tryRenderResult as tryRenderDisplayLinkPreviewResult } from '@/lib/tools/display-link-preview/result'
 import { tryRenderResult as tryRenderGenerateImageResult } from '@/lib/tools/generate-image/result'
@@ -10,8 +11,6 @@ import { tryRenderResult as tryRenderUpdateCanvasArtifactResult } from '@/lib/to
 
 import { ToolCardMount } from '@/components/motion/tool-card-mount'
 
-import { Callout } from './callout/callout'
-import { safeParseSerializableCallout } from './callout/schema'
 import { Chart } from './chart/chart'
 import { safeParseSerializableChart } from './chart/schema'
 import { DataTable } from './data-table/data-table'
@@ -146,17 +145,7 @@ const entries: ToolUIEntry[] = [
   },
   {
     name: 'displayCallout',
-    tryRender: (output, partId) => {
-      const parsed = safeParseSerializableCallout(output)
-      if (!parsed) return null
-      return (
-        <ToolErrorBoundary toolName="Callout">
-          <ToolCardMount partId={partId}>
-            <Callout {...parsed} />
-          </ToolCardMount>
-        </ToolErrorBoundary>
-      )
-    }
+    tryRender: tryRenderDisplayCalloutResult
   },
   {
     name: 'displayTimeline',
