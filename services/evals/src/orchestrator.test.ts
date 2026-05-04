@@ -82,6 +82,9 @@ describe('runConfiguredModes', () => {
       'regression',
       'traffic-monitor'
     ])
+    expect(mockRunTrafficMonitorSuite).toHaveBeenCalledWith({
+      allowEmpty: true
+    })
     expect(mockRunSmokeSuite).toHaveBeenCalledTimes(1)
   })
 
@@ -120,6 +123,7 @@ describe('runConfiguredModes', () => {
     await expect(runConfiguredModes()).rejects.toThrow(
       'No chats found in lookback window for traffic-monitor run'
     )
+    expect(mockRunTrafficMonitorSuite).toHaveBeenCalledWith()
   })
 
   it('exits via threshold-breach message even when DB write fails during the same suite', async () => {

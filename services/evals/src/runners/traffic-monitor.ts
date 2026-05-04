@@ -28,18 +28,32 @@ import {
   runCasesConcurrently
 } from './shared'
 
+const NO_TRAFFIC_SAMPLES_MESSAGE =
+  '[evals] No chats found in lookback window for traffic-monitor run'
+
+interface TrafficMonitorRunOptions {
+  allowEmpty?: boolean
+}
+
 export function formatContext(sample: ChatSample): string {
   return formatEvalContext(sample)
 }
 
-export async function runTrafficMonitorSuite() {
+export async function runTrafficMonitorSuite(
+  options: TrafficMonitorRunOptions = {}
+) {
   console.log('[evals] Sampling recent chats...')
   const samples = await sampleRecentChats()
 
   if (samples.length === 0) {
-    throw new Error(
-      '[evals] No chats found in lookback window for traffic-monitor run'
-    )
+    if (options.allowEmpty) {
+      console.warn(
+        `${NO_TRAFFIC_SAMPLES_MESSAGE}; skipping traffic-monitor suite`
+      )
+      return null
+    }
+
+    throw new Error(NO_TRAFFIC_SAMPLES_MESSAGE)
   }
 
   console.log(`[evals] Sampled ${samples.length} chats`)
