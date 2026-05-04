@@ -7,6 +7,7 @@ import { tryRenderResult as tryRenderDisplayCalloutResult } from '@/lib/tools/di
 import { tryRenderResult as tryRenderDisplayCitationsResult } from '@/lib/tools/display-citations/result'
 import { tryRenderResult as tryRenderDisplayLinkPreviewResult } from '@/lib/tools/display-link-preview/result'
 import { tryRenderResult as tryRenderDisplayPlanResult } from '@/lib/tools/display-plan/result'
+import { tryRenderResult as tryRenderDisplayTableResult } from '@/lib/tools/display-table/result'
 import { tryRenderResult as tryRenderDisplayTimelineResult } from '@/lib/tools/display-timeline/result'
 import { tryRenderResult as tryRenderGenerateImageResult } from '@/lib/tools/generate-image/result'
 import { tryRenderResult as tryRenderUpdateCanvasArtifactResult } from '@/lib/tools/update-canvas-artifact/result'
@@ -15,8 +16,6 @@ import { ToolCardMount } from '@/components/motion/tool-card-mount'
 
 import { Chart } from './chart/chart'
 import { safeParseSerializableChart } from './chart/schema'
-import { DataTable } from './data-table/data-table'
-import { safeParseSerializableDataTable } from './data-table/schema'
 import { GeoMap } from './geo-map/geo-map'
 import { safeParseSerializableGeoMap } from './geo-map/schema'
 import { OptionList } from './option-list/option-list'
@@ -41,17 +40,7 @@ const entries: ToolUIEntry[] = [
   },
   {
     name: 'displayTable',
-    tryRender: (output, partId) => {
-      const parsed = safeParseSerializableDataTable(output)
-      if (!parsed) return null
-      return (
-        <ToolErrorBoundary toolName="DataTable">
-          <ToolCardMount partId={partId}>
-            <DataTable {...parsed} />
-          </ToolCardMount>
-        </ToolErrorBoundary>
-      )
-    }
+    tryRender: tryRenderDisplayTableResult
   },
   {
     name: 'competitorResearch',

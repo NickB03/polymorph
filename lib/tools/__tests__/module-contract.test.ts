@@ -59,6 +59,11 @@ const modules = [
     () => import('@/lib/tools/display-timeline/index')
   ],
   [
+    'display-table',
+    () => import('@/lib/tools/display-table'),
+    () => import('@/lib/tools/display-table/index')
+  ],
+  [
     'generate-image',
     () => import('@/lib/tools/generate-image'),
     () => import('@/lib/tools/generate-image/index')
