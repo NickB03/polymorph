@@ -418,6 +418,19 @@ describe('buildChatRequestBody with guestCanvasToken', () => {
 })
 
 describe('Chat soft keyboard layout', () => {
+  it('passes the sidebar breakpoint state to the composer', async () => {
+    mockSidebar.isMobile = true
+    mockUseChat.mockReturnValue(makeUseChatReturnValue())
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat savedMessages={[]} />)
+
+    expect(mockChatPanel.mock.calls.at(-1)?.[0]).toMatchObject({
+      isMobile: true
+    })
+  })
+
   it('bottom-aligns the empty chat and passes keyboard state to the composer while the soft keyboard is open', async () => {
     mockUseSoftKeyboardOpen.mockReturnValue(true)
     mockUseChat.mockReturnValue(makeUseChatReturnValue())

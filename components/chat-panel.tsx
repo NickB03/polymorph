@@ -56,6 +56,7 @@ interface ChatPanelProps {
   onStartVoice?: () => void
   onStopVoice?: () => void
   isSoftKeyboardOpen?: boolean
+  isMobile?: boolean
 }
 
 export function ChatPanel({
@@ -77,21 +78,27 @@ export function ChatPanel({
   isVoiceActive = false,
   onStartVoice,
   onStopVoice,
-  isSoftKeyboardOpen = false
+  isSoftKeyboardOpen = false,
+  isMobile = false
 }: ChatPanelProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const isFirstRender = useRef(true)
   const [isComposing, setIsComposing] = useState(false) // Composition state
   const [enterDisabled, setEnterDisabled] = useState(false) // Disable Enter after composition ends
   const [isInputFocused, setIsInputFocused] = useState(false) // Track input focus
-  const [isActionPanelActive, setIsActionPanelActive] = useState(false)
+  const [isMobileActionPanelActive, setIsMobileActionPanelActive] =
+    useState(false)
   const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
   const voiceEnabled = isVoiceEnabled()
   const shouldCollapseEmptyChrome =
-    messages.length === 0 && isSoftKeyboardOpen && !isActionPanelActive
+    messages.length === 0 &&
+    isMobile &&
+    isSoftKeyboardOpen &&
+    !isMobileActionPanelActive
   const shouldShowWordmark =
-    messages.length === 0 && !isActionPanelActive && !shouldCollapseEmptyChrome
+    messages.length === 0 &&
+    (!isMobile || (!isMobileActionPanelActive && !shouldCollapseEmptyChrome))
 
   // Submit after a brief delay so React flushes the input state update first
   const submitPromptValue = (value: string) => {
@@ -455,20 +462,29 @@ export function ChatPanel({
             data-testid="empty-state-action-buttons"
             data-empty-chat-suggestions="true"
             className={cn(
-              'transition-[margin,max-height,opacity] duration-300 overflow-hidden',
-              shouldCollapseEmptyChrome
-                ? 'mt-0 mb-0 max-h-0 opacity-0 pointer-events-none'
-                : isActionPanelActive
-                  ? 'order-first mb-2 max-h-[240px] opacity-100'
-                  : 'mt-2 max-h-[240px] opacity-100'
+              isMobile
+                ? [
+                    'transition-[margin,max-height,opacity] duration-300 overflow-hidden',
+                    shouldCollapseEmptyChrome
+                      ? 'mt-0 mb-0 max-h-0 opacity-0 pointer-events-none'
+                      : isMobileActionPanelActive
+                        ? 'order-first mb-2 max-h-[240px] opacity-100'
+                        : 'mt-2 max-h-[240px] opacity-100'
+                  ]
+                : 'mt-2'
             )}
           >
             <ActionButtons
               promptSamples={suggestions}
               canvasEnabled
-              onActiveViewChange={activeView => {
-                setIsActionPanelActive(activeView !== null)
-              }}
+              layout={isMobile ? 'mobile' : 'desktop'}
+              onActiveViewChange={
+                isMobile
+                  ? activeView => {
+                      setIsMobileActionPanelActive(activeView !== null)
+                    }
+                  : undefined
+              }
               onSelectPrompt={(message, category) => {
                 // Auto-switch to Research + Quality for research suggestions
                 if (category === 'research') {
