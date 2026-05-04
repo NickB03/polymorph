@@ -67,65 +67,15 @@ Real maps, directions, and reachability polygons rendered inline in the conversa
 
 ## Architecture
 
-```mermaid
-graph LR
-    User["👤 You"]
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/architecture.png">
+    <img alt="Polymorph architecture: a three-agent chat system (search, research, build) routes requests through a shared tool layer (core, generative-UI display, geo, canvas) to multi-provider search, the Vercel AI Gateway, and Postgres with Phoenix observability." src="docs/assets/architecture.png" width="960">
+  </picture>
+</div>
 
-    subgraph Agent["Polymorph Agent"]
-        direction TB
-        Orchestrator["Tool Loop Orchestrator"]
-        Reasoning["Multi-step Reasoning"]
-        Modes["Search / Research / Build"]
-        Orchestrator --> Reasoning --> Modes
-    end
-
-    subgraph Providers["AI Providers"]
-        direction TB
-        Gateway["Vercel AI Gateway"]
-        GatewayModels["Grok 4.1 Fast<br/>(Speed + Quality)"]
-        ImageGen["Gemini 2.5 Flash Image<br/>(inline generation)"]
-        Direct["OpenAI / Anthropic / Google / OpenAI-compatible / Ollama"]
-        Gateway --> GatewayModels
-        Gateway --> ImageGen
-    end
-
-    subgraph Search["Web Search"]
-        Brave["Brave"]
-        Tavily["Tavily"]
-        Exa["Exa"]
-    end
-
-    subgraph Geo["Spatial Tools"]
-        Geocode["geocodeAddress"]
-        Directions["getDirections"]
-        Isochrone["getIsochrone"]
-        StaticMap["getStaticMapImage<br/>Public URL"]
-    end
-
-    subgraph Response["Streaming Response"]
-        direction TB
-        GenUI["Generative UI"]
-        Tables["Tables"]
-        Charts["Charts"]
-        GeoMaps["Geo Maps"]
-        Timelines["Timelines"]
-        Citations["Citations"]
-        Canvas["Canvas Artifacts"]
-        GenUI --> Tables & Charts & GeoMaps & Timelines & Citations & Canvas
-    end
-
-    subgraph Data["Persistence"]
-        Supabase["Supabase PostgreSQL"]
-        Phoenix["Phoenix Observability"]
-    end
-
-    User --> Agent
-    Agent --> Providers
-    Agent --> Search
-    Agent --> Geo
-    Agent --> Response
-    Agent --> Data
-```
+<p align="center"><sub>Three-agent chat system with generative UI · See <a href="docs/architecture/OVERVIEW.md">architecture overview</a> for the full breakdown.</sub></p>
 
 ## Attribution
 
