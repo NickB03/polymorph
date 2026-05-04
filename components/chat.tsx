@@ -945,6 +945,7 @@ export function Chat({
           scrollContainerRef={scrollContainerRef}
           isGuest={isGuest}
           isSoftKeyboardOpen={isSoftKeyboardOpen}
+          isMobile={isMobile}
           {...(voiceEnabled
             ? {
                 voiceState: voiceConversation.voiceState,

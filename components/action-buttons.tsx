@@ -20,6 +20,9 @@ import { cn } from '@/lib/utils'
 
 import { Button } from './ui/button'
 
+// Constants for timing delays
+const FOCUS_OUT_DELAY_MS = 100 // Delay to ensure focus has actually moved
+
 interface ActionCategory {
   icon: LucideIcon
   label: string
@@ -55,6 +58,7 @@ const actionCategories: ActionCategory[] = [
 ]
 
 type ActiveView = SuggestionCategory | 'build' | null
+type ActionButtonsLayout = 'desktop' | 'mobile'
 
 interface ActionButtonsProps {
   onSelectPrompt: (prompt: string, category: SuggestionCategory) => void
@@ -64,6 +68,7 @@ interface ActionButtonsProps {
   promptSamples: Record<SuggestionCategory, string[]>
   inputRef?: React.RefObject<HTMLTextAreaElement | null>
   canvasEnabled?: boolean
+  layout?: ActionButtonsLayout
   className?: string
 }
 
@@ -75,6 +80,7 @@ export function ActionButtons({
   promptSamples,
   inputRef,
   canvasEnabled = false,
+  layout = 'desktop',
   className
 }: ActionButtonsProps) {
   const [activeView, setActiveView] = useState<ActiveView>(null)
@@ -136,19 +142,44 @@ export function ActionButtons({
       }
     }
 
+    const handleFocusOut = () => {
+      if (layout === 'mobile') return
+
+      // Check if focus is moving outside both the container and input
+      setTimeout(() => {
+        const activeElement = document.activeElement
+        if (
+          activeView &&
+          !containerRef.current?.contains(activeElement) &&
+          activeElement !== inputRef?.current
+        ) {
+          resetToButtons()
+        }
+      }, FOCUS_OUT_DELAY_MS)
+    }
+
     document.addEventListener('keydown', handleEscape)
     document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('focusout', handleFocusOut)
 
     return () => {
       document.removeEventListener('keydown', handleEscape)
       document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('focusout', handleFocusOut)
     }
-  }, [activeView, inputRef, resetToButtons])
+  }, [activeView, inputRef, layout, resetToButtons])
 
   const isBuildActive = activeView === 'build'
   const isSuggestionActive = activeView !== null && activeView !== 'build'
 
-  const containerHeight = isBuildActive ? 'h-[220px]' : 'h-[180px]'
+  const containerHeight =
+    layout === 'mobile'
+      ? isBuildActive
+        ? 'h-[220px]'
+        : 'h-[180px]'
+      : isBuildActive
+        ? 'min-h-[180px] h-auto sm:h-[220px]'
+        : 'min-h-[180px] h-auto sm:h-[180px]'
 
   // Total number of pills for stagger animation
   const buildPillIndex = actionCategories.length
@@ -162,7 +193,7 @@ export function ActionButtons({
         className
       )}
     >
-      <div className="relative h-full min-h-0">
+      <div className={cn('relative h-full', layout === 'mobile' && 'min-h-0')}>
         {/* Action buttons */}
         <div
           className={cn(

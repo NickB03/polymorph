@@ -140,6 +140,7 @@ describe('ChatPanel', () => {
         setUploadedFiles={vi.fn()}
         isGuest
         isSoftKeyboardOpen
+        isMobile
       />
     )
 
@@ -154,7 +155,7 @@ describe('ChatPanel', () => {
     expect(screen.getByRole('button', { name: /send message/i })).toBeVisible()
   })
 
-  it('moves prompt suggestions above the composer after a category is selected', () => {
+  it('moves mobile prompt suggestions above the composer after a category is selected', () => {
     render(
       <ChatPanel
         chatId="chat-1"
@@ -170,6 +171,7 @@ describe('ChatPanel', () => {
         uploadedFiles={[]}
         setUploadedFiles={vi.fn()}
         isGuest
+        isMobile
       />
     )
 
@@ -205,6 +207,40 @@ describe('ChatPanel', () => {
     vi.useRealTimers()
   })
 
+  it('keeps desktop prompt suggestions below the composer after a category is selected', () => {
+    render(
+      <ChatPanel
+        chatId="chat-1"
+        input=""
+        handleInputChange={vi.fn()}
+        handleSubmit={e => e.preventDefault()}
+        status="ready"
+        messages={[]}
+        stop={vi.fn()}
+        append={vi.fn()}
+        showScrollToBottomButton={false}
+        scrollContainerRef={{ current: null }}
+        uploadedFiles={[]}
+        setUploadedFiles={vi.fn()}
+        isGuest
+      />
+    )
+
+    const wordmark = screen.getByTestId('empty-state-wordmark')
+    const shelf = screen.getByTestId('empty-state-action-buttons')
+
+    fireEvent.click(screen.getByRole('button', { name: /compare/i }))
+
+    expect(
+      screen.getByRole('button', { name: /compare prompt/i })
+    ).toBeInTheDocument()
+    expect(shelf).toHaveClass('mt-2')
+    expect(shelf).not.toHaveClass('order-first')
+    expect(shelf).not.toHaveClass('mb-2')
+    expect(wordmark).toHaveClass('opacity-100')
+    expect(wordmark).not.toHaveClass('max-h-0')
+  })
+
   it('keeps selected prompt suggestions visible when the soft keyboard opens', () => {
     const renderPanel = (isSoftKeyboardOpen = false) => (
       <ChatPanel
@@ -222,6 +258,7 @@ describe('ChatPanel', () => {
         setUploadedFiles={vi.fn()}
         isGuest
         isSoftKeyboardOpen={isSoftKeyboardOpen}
+        isMobile
       />
     )
 
