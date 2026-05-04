@@ -1,5 +1,7 @@
 # GEMINI.md - Polymorph Project Context
 
+> **Purpose:** Architecture-first context for Google's Gemini CLI. Describes the system structure, technologies, and data flow. For workflow guidance (skill invocation, behavioral guardrails, investigation standards), see [`CLAUDE.md`](./CLAUDE.md). The two files intentionally diverge — keep architecture changes here, workflow changes there.
+
 ## Project Overview
 
 Polymorph is an AI platform with a generative UI for research, creation, and exploration. Research is its first capability, with code generation, image creation, and multimodal features expanding the platform.

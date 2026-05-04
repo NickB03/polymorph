@@ -2,8 +2,7 @@
 
 > **Audience:** Operator
 > **Prerequisites:** [Quickstart Guide](../getting-started/QUICKSTART.md)
-
-This guide covers running Polymorph with Docker for local development and self-hosted deployments.
+> **Scope:** Local development against a Supabase-CLI Postgres. Production deploys to Vercel ([Deployment Guide](DEPLOYMENT.md)); this guide is the alternative for running the same image on a developer machine without the Vercel build pipeline.
 
 ## Quick Start (Docker Compose)
 
@@ -40,10 +39,10 @@ docker compose up -d
 
 ### What starts in Docker Compose
 
-- `polymorph` app container
+- `polymorph` app container (built from `Dockerfile`; entrypoint runs `bun run migrate` on every container start before starting the server)
 - Redis (used for caching and rate limiting)
 
-**Note:** PostgreSQL, Authentication, and Storage are managed by the Supabase CLI (or Supabase Cloud in production).
+**Note:** PostgreSQL, Authentication, and Storage are managed by the Supabase CLI (or Supabase Cloud in production). The compose file rewrites `DATABASE_URL` to `host.docker.internal:44322` so the container can reach Supabase running on the host. All other environment variables flow through `env_file: .env.local`.
 
 ## Authentication posture in Docker
 

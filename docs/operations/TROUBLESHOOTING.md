@@ -200,16 +200,16 @@ const name = user?.name ?? 'default'
 
 ## Search Issues
 
-### Tavily API Errors
+### Search Provider API Errors
 
 **Symptoms:** Search tool fails with 401 or 403 errors. Console shows `Search API error:`.
 
 **Causes:**
 
-- Search provider API key is missing or invalid (e.g. `BRAVE_SEARCH_API_KEY`, `TAVILY_API_KEY`)
+- Search provider API key is missing or invalid (`BRAVE_SEARCH_API_KEY` for the default; `TAVILY_API_KEY` or `EXA_API_KEY` for fallbacks)
 - API rate limit exceeded on the search provider's end
 
-**Fix:** Verify your search API key is set correctly in `.env.local`. The default provider is Brave (`BRAVE_SEARCH_API_KEY`). If using Tavily, verify at [tavily.com](https://tavily.com).
+**Fix:** Verify your search API key is set correctly in `.env.local`. The default provider is Brave (`BRAVE_SEARCH_API_KEY`). If using Tavily, verify at [tavily.com](https://tavily.com); if using Exa, verify at [exa.ai](https://exa.ai).
 
 ### `SEARXNG_API_URL` Not Set
 

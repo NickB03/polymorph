@@ -48,7 +48,7 @@ Semantic aliases exist for tool callouts and status surfaces: `--info`, `--succe
 
 ### Typography
 
-The app loads `app/fonts/inter-latin-variable.woff2` through `next/font/local` as `--font-sans`. CSS also exposes `--font-serif: Georgia, serif` and `--font-mono: Geist Mono, monospace`.
+`app/globals.css` declares `--font-sans: var(--font-geist-sans), sans-serif`, `--font-serif: Georgia, serif`, and `--font-mono: var(--font-geist-mono), monospace`. The Geist Sans and Mono webfonts are loaded via the `geist` package's `next/font` exports in `app/layout.tsx` and applied to the body; globals.css then aliases the package's variable names to the Tailwind-friendly `--font-sans` / `--font-mono` tokens used throughout the app.
 
 - Default interface text: `font-sans`, neutral, direct, medium weight for controls.
 - Product wordmark: text-based `poly` + animated blue suffix. Do not replace it with an unrelated logo mark.
@@ -195,7 +195,9 @@ Motion sources are `app/globals.css` and `lib/motion/tokens.ts`.
 - `components/canvas/chat-canvas-shell.tsx`
 - `components/tool-ui/registry.tsx`
 - `components/tool-ui/*`
-- `components/evals/widgets/*`
+- `components/evals/dashboard-v2/*`
+- `components/evals/dashboard/*`
+- `components/evals/glossary/*`
 - `components/ui/*`
 - `lib/config/search-modes.ts`
 - `lib/motion/tokens.ts`

@@ -296,7 +296,6 @@ curl -X POST http://localhost:43100/api/feedback \
 Performs a SearXNG-powered web search with optional deep crawling and relevance scoring. Results are cached in Redis for 1 hour.
 
 **Authentication:** None
-**Dynamic:** `force-dynamic`
 
 > **Note:** This endpoint requires a self-hosted SearXNG instance. It is separate from the primary Brave search (and Tavily/Exa fallbacks) used by the chat agent tools.
 
@@ -362,7 +361,6 @@ Performs a SearXNG-powered web search with optional deep crawling and relevance 
 Returns trending topic suggestions for the homepage, grouped by category. Reads the `trending_suggestions_cache` Postgres singleton (updated daily by the Vercel cron at `/api/suggestions/refresh`) and blends dynamic suggestions with a static rotation fallback.
 
 **Authentication:** None
-**Dynamic:** `force-dynamic`
 
 #### Response
 
@@ -750,7 +748,7 @@ Proxies image search results for use in canvas artifacts. Performs a Brave image
 
 ### POST `/api/evals/run`
 
-Runs an evaluation chat through the researcher agent pipeline without creating or mutating persisted chat rows. Used by the evals service to replay test conversations, including sampled traffic-monitor target turns, and capture agent output. The `smoke` runner normally exercises `/api/chat` instead.
+Runs an evaluation chat through the chat agent pipeline without creating or mutating persisted chat rows. Used by the evals service to replay test conversations, including sampled traffic-monitor target turns, and capture agent output. The `smoke` runner normally exercises `/api/chat` instead.
 
 **Authentication:** Required (`x-eval-runner-secret` header must match `EVAL_RUNNER_SECRET` env var)
 

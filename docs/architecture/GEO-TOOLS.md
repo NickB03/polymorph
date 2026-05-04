@@ -98,7 +98,7 @@ The app degrades gracefully when some keys are absent: client maps fall back to 
 
 ## Key Files
 
-- [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts)
+- [`lib/agents/chat/factory.ts`](../../lib/agents/chat/factory.ts), [`lib/agents/chat/registry.ts`](../../lib/agents/chat/registry.ts), [`lib/agents/chat/toolset.ts`](../../lib/agents/chat/toolset.ts)
 - [`lib/agents/prompts/search-mode-prompts.ts`](../../lib/agents/prompts/search-mode-prompts.ts)
 - [`lib/tools/display-geo-map.ts`](../../lib/tools/display-geo-map.ts)
 - [`lib/tools/geocode-address.ts`](../../lib/tools/geocode-address.ts)

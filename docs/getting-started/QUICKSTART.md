@@ -9,7 +9,7 @@ Get Polymorph running locally from scratch.
 
 | Tool   | Version    | Install                          |
 | ------ | ---------- | -------------------------------- |
-| Bun    | v1.2.12+   | https://bun.sh                   |
+| Bun    | v1.3.9     | https://bun.sh                   |
 | Docker | Latest     | https://docs.docker.com/install/ |
 | Git    | Any recent | https://git-scm.com              |
 
@@ -99,7 +99,7 @@ If you have `ENABLE_GUEST_CHAT=true`, you can search without signing in.
 Here's the flow your search triggered:
 
 1. **Browser** sent a request to `/api/chat` via SSE
-2. **Researcher agent** (`lib/agents/researcher.ts`) received the query and selected tools
+2. **Chat agent** (`lib/agents/chat/factory.ts` via the registry in `lib/agents/chat/registry.ts`) received the query and selected tools — one of three agents (`search`, `research`, or `build`) based on the requested mode
 3. **Search tool** called Brave (or your configured provider) to find relevant web pages
 4. **Fetch tool** extracted content from top results
 5. **LLM** (via Vercel AI Gateway) synthesized an answer with citations

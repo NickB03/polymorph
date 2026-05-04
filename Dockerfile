@@ -1,14 +1,16 @@
 # Build stage - Use Node for Next.js 16 compatibility (Bun lacks worker_threads support on arm64)
 ARG NEXT_PUBLIC_APP_URL=https://polymorph-nb.vercel.app
+ARG BUN_VERSION=1.3.9
 
 FROM node:22-slim AS builder
 
 WORKDIR /app
 
 ARG NEXT_PUBLIC_APP_URL
+ARG BUN_VERSION
 
 # Install bun for dependency management
-RUN npm install -g bun
+RUN npm install -g bun@${BUN_VERSION}
 
 # Install dependencies (separated for better cache utilization)
 COPY package.json bun.lock ./
@@ -22,7 +24,7 @@ ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 RUN npm run build
 
 # Runtime stage
-FROM oven/bun:1.2.12 AS runner
+FROM oven/bun:${BUN_VERSION} AS runner
 WORKDIR /app
 
 ARG NEXT_PUBLIC_APP_URL

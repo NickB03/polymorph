@@ -211,16 +211,16 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 
 **Purpose:** Fast, focused answers. Optimized for simple questions that need 1-3 searches.
 
-| Property          | Value                                                                  |
-| ----------------- | ---------------------------------------------------------------------- |
-| Max steps         | 20                                                                     |
-| Search type       | Forced `optimized` (via `wrapSearchToolForChatMode`)                   |
-| Target tool calls | ~5                                                                     |
-| `todoWrite`       | Not available                                                          |
-| `displayPlan`     | Available                                                              |
-| `displayChart`    | Available                                                              |
-| `displayGeoMap`   | Available                                                              |
-| Geo helpers       | `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage` |
+| Property          | Value                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------- |
+| Max steps         | 20                                                                                  |
+| Search type       | Forced `optimized` (via `wrapSearchToolForChatMode` in `lib/agents/chat/search.ts`) |
+| Target tool calls | ~5                                                                                  |
+| `todoWrite`       | Not available                                                                       |
+| `displayPlan`     | Available                                                                           |
+| `displayChart`    | Available                                                                           |
+| `displayGeoMap`   | Available                                                                           |
+| Geo helpers       | `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`              |
 
 **How search wrapping works:** In chat mode, the search tool is wrapped by `wrapSearchToolForChatMode()`, which intercepts every call and forces `type: 'optimized'` regardless of what the LLM requests. This ensures the agent always gets content snippets directly from the search provider (Brave by default; Tavily/Exa when selected via `SEARCH_API`) rather than needing to fetch pages separately.
 
@@ -761,17 +761,30 @@ export const myTool = tool({
 3. Register the tool in `createChatAgentTools()` and add its name to the relevant active-tools array in `lib/agents/chat/search.ts`, `lib/agents/chat/research.ts`, or `lib/agents/chat/build.ts`:
 
 ```typescript
-import { myTool } from '../tools/my-tool'
+// lib/agents/chat/toolset.ts
+import { myTool } from '@/lib/tools/my-tool'
 
-// In the tools object:
-const tools: ResearcherTools = {
+export type ChatAgentTools = {
   // ... existing tools
-  myTool
+  myTool: typeof myTool
+} & ReturnType<typeof createTodoTools>
+
+export function createChatAgentTools(
+  {
+    /* ... */
+  }
+): ChatAgentTools {
+  return {
+    // ... existing tools
+    myTool
+  } as ChatAgentTools
 }
 
-// Add to activeToolsList for desired modes:
-case 'research':
-  activeToolsList = [/* ..., */ 'myTool']
+// lib/agents/chat/research.ts (or search.ts / build.ts)
+export const RESEARCH_AGENT_ACTIVE_TOOLS: (keyof ChatAgentTools)[] = [
+  // ... existing entries
+  'myTool'
+]
 ```
 
 4. For streaming tools, use the `async *execute` generator pattern:

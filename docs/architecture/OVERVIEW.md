@@ -56,7 +56,7 @@ graph TD
     Browser["Browser (React 19)"]
     NextApp["Next.js 16 App Router"]
     API["API Routes<br/>/api/chat"]
-    Agent["Researcher Agent<br/>(ToolLoopAgent)"]
+    Agent["Chat Agent<br/>(search / research / build,<br/>ToolLoopAgent)"]
     AI["AI Providers<br/>(Gateway, OpenAI, Anthropic,<br/>Google, Ollama)"]
     Search["Search Providers<br/>(Brave default,<br/>Tavily/Exa fallbacks,<br/>optional SearXNG/Firecrawl)"]
     DB["Supabase PostgreSQL<br/>(Drizzle ORM)"]
@@ -87,8 +87,8 @@ The default chat-agent search path is Brave with Tavily and Exa fallbacks. SearX
 | Admin surface layout     | [`app/(admin)/layout.tsx`](<../../app/(admin)/layout.tsx>) (admin role gate)                                                                                                                                |
 | Evals dashboard          | [`components/evals/dashboard-v2/dashboard.tsx`](../../components/evals/dashboard-v2/dashboard.tsx) (orchestrator) + sibling components in `components/evals/dashboard-v2/` and `components/evals/glossary/` |
 | Evals queries            | [`lib/evals/queries.ts`](../../lib/evals/queries.ts) (`getEvalsDashboard`, suite-specific selectors)                                                                                                        |
-| Agent orchestration      | [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts)                                                                                                                                                |
-| Image generation tool    | [`lib/tools/generate-image.ts`](../../lib/tools/generate-image.ts)                                                                                                                                          |
+| Agent factory            | [`lib/agents/chat/factory.ts`](../../lib/agents/chat/factory.ts) and [`lib/agents/chat/registry.ts`](../../lib/agents/chat/registry.ts) (`lib/agents/researcher.ts` is a compatibility shim)                |
+| Image generation tool    | [`lib/tools/generate-image/server.ts`](../../lib/tools/generate-image/server.ts)                                                                                                                            |
 | Authenticated streaming  | [`lib/streaming/create-chat-stream-response.ts`](../../lib/streaming/create-chat-stream-response.ts)                                                                                                        |
 | Guest streaming          | [`lib/streaming/create-ephemeral-chat-stream-response.ts`](../../lib/streaming/create-ephemeral-chat-stream-response.ts)                                                                                    |
 | Database schema          | [`lib/db/schema.ts`](../../lib/db/schema.ts)                                                                                                                                                                |
@@ -120,7 +120,8 @@ flowchart TD
     PrepareMsg["prepareMessages()<br/>(load/create chat,<br/>handle regeneration)"]
     CreateAgent["createResearcher()<br/>(configure tools + mode)"]
     ChatMode["Chat Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline"]
-    ResearchMode["Research Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>displayTable, displayChart,<br/>displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline, todoWrite"]
+    ResearchMode["Research Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>competitorResearch,<br/>displayTable, displayChart,<br/>displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline, todoWrite"]
+    BuildMode["Build Mode<br/>maxSteps=20<br/>same tools as Chat<br/>+ artifact-intake prompt<br/>(canvas tools registered<br/>conditionally by context)"]
     AgentStream["agent.stream()<br/>+ smoothStream(word)"]
     Parallel["Parallel operations:<br/>title + related questions<br/>+ persistence"]
     SSE["SSE Response to Client"]
@@ -146,12 +147,16 @@ flowchart TD
     PrepareMsg --> CreateAgent
     CreateAgent -->|searchMode=chat| ChatMode
     CreateAgent -->|searchMode=research| ResearchMode
+    CreateAgent -->|userMode=build OR intent=build| BuildMode
     ChatMode --> AgentStream
     ResearchMode --> AgentStream
+    BuildMode --> AgentStream
     AgentStream --> Parallel --> SSE
 ```
 
-The `createResearcher` function in [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts) wraps the Vercel AI SDK's `ToolLoopAgent`. In chat mode, the search tool is wrapped via `wrapSearchToolForChatMode` to force `type: 'optimized'` on every call, and the step limit is 20. In research mode, the agent has access to the `todoWrite` tool (when a stream writer is available) and can run up to 50 steps with full search type support (general + optimized).
+Three agents — `search`, `research`, and `build` — share a common factory at [`lib/agents/chat/factory.ts`](../../lib/agents/chat/factory.ts) and a shared toolset at [`lib/agents/chat/toolset.ts`](../../lib/agents/chat/toolset.ts). Each agent declares its own `*_AGENT_ACTIVE_TOOLS` array, system prompt, step limit, and `configureSearchTool` wrapper. `lib/agents/researcher.ts` is a thin compatibility shim that delegates to `createChatAgent` in [`lib/agents/chat/registry.ts`](../../lib/agents/chat/registry.ts).
+
+The agent is selected by [`resolveChatAgentId()`](../../lib/agents/chat/registry.ts): `searchMode === 'research'` routes to the research agent, `userMode === 'build'` (or `intent === 'build'`) routes to the build agent, and everything else routes to the search agent. The search and build agents force `type: 'optimized'` via `wrapSearchToolForChatMode` and run up to 20 steps; the research agent accepts the full search type set, runs up to 50 steps, and gains the `todoWrite` and `competitorResearch` tools. Canvas tools (`createCanvasArtifact`, `updateCanvasArtifact`, `readCanvasArtifact`) and `generateImage` are registered conditionally inside the factory when the matching context is present, regardless of agent.
 
 **Request body fields:**
 
@@ -170,7 +175,7 @@ The `createResearcher` function in [`lib/agents/researcher.ts`](../../lib/agents
 
 ## Tool System
 
-The researcher agent uses three categories of tools: **core tools** that perform actual research operations, **spatial helper tools** that compute map-ready data, and **display tools** that generate rich UI components inline in the chat.
+The chat agent system uses three categories of tools: **core tools** that perform actual research operations, **spatial helper tools** that compute map-ready data, and **display tools** that generate rich UI components inline in the chat.
 
 ```mermaid
 graph LR
@@ -227,31 +232,34 @@ graph LR
     isochrone --> ors
 ```
 
-### Tool Availability by Mode
+### Tool Availability by Agent
 
-| Tool                    |           Chat Mode            |          Research Mode          |
-| ----------------------- | :----------------------------: | :-----------------------------: |
-| `search`                | Yes (forced `type: optimized`) | Yes (full: general + optimized) |
-| `fetch`                 |              Yes               |               Yes               |
-| `displayPlan`           |              Yes               |               No                |
-| `displayTable`          |              Yes               |               Yes               |
-| `displayChart`          |              Yes               |               Yes               |
-| `displayGeoMap`         |              Yes               |               Yes               |
-| `geocodeAddress`        |              Yes               |               Yes               |
-| `getDirections`         |              Yes               |               Yes               |
-| `getIsochrone`          |              Yes               |               Yes               |
-| `getStaticMapImage`     |              Yes               |               Yes               |
-| `displayCitations`      |              Yes               |               Yes               |
-| `displayLinkPreview`    |              Yes               |               Yes               |
-| `displayOptionList`     |              Yes               |               Yes               |
-| `displayQuestionWizard` |              Yes               |               Yes               |
-| `displayCallout`        |              Yes               |               Yes               |
-| `displayTimeline`       |              Yes               |               Yes               |
-| `todoWrite`             |               No               |   Yes (when writer available)   |
-| `createCanvasArtifact`  |  Conditional (canvas context)  |  Conditional (canvas context)   |
-| `updateCanvasArtifact`  |  Conditional (canvas context)  |  Conditional (canvas context)   |
-| `readCanvasArtifact`    |  Conditional (canvas context)  |  Conditional (canvas context)   |
-| `generateImage`         |  Conditional (image context)   |   Conditional (image context)   |
+| Tool                    |          Search agent          |         Research agent          |          Build agent           |
+| ----------------------- | :----------------------------: | :-----------------------------: | :----------------------------: |
+| `search`                | Yes (forced `type: optimized`) | Yes (full: general + optimized) | Yes (forced `type: optimized`) |
+| `fetch`                 |              Yes               |               Yes               |              Yes               |
+| `competitorResearch`    |               No               |               Yes               |               No               |
+| `displayPlan`           |              Yes               |               No                |              Yes               |
+| `displayTable`          |              Yes               |               Yes               |              Yes               |
+| `displayChart`          |              Yes               |               Yes               |              Yes               |
+| `displayGeoMap`         |              Yes               |               Yes               |              Yes               |
+| `geocodeAddress`        |              Yes               |               Yes               |              Yes               |
+| `getDirections`         |              Yes               |               Yes               |              Yes               |
+| `getIsochrone`          |              Yes               |               Yes               |              Yes               |
+| `getStaticMapImage`     |              Yes               |               Yes               |              Yes               |
+| `displayCitations`      |              Yes               |               Yes               |              Yes               |
+| `displayLinkPreview`    |              Yes               |               Yes               |              Yes               |
+| `displayOptionList`     |              Yes               |               Yes               |              Yes               |
+| `displayQuestionWizard` |              Yes               |               Yes               |              Yes               |
+| `displayCallout`        |              Yes               |               Yes               |              Yes               |
+| `displayTimeline`       |              Yes               |               Yes               |              Yes               |
+| `todoWrite`             |               No               |   Yes (when writer available)   |               No               |
+| `createCanvasArtifact`  |  Conditional (canvas context)  |  Conditional (canvas context)   |  Conditional (canvas context)  |
+| `updateCanvasArtifact`  |  Conditional (canvas context)  |  Conditional (canvas context)   |  Conditional (canvas context)  |
+| `readCanvasArtifact`    |  Conditional (canvas context)  |  Conditional (canvas context)   |  Conditional (canvas context)  |
+| `generateImage`         |  Conditional (image context)   |   Conditional (image context)   |  Conditional (image context)   |
+
+The search and build agents share `SEARCH_AGENT_ACTIVE_TOOLS`; build adds the artifact-intake protocol to its system prompt but keeps the same active tool set.
 
 **Tool implementation details:**
 
@@ -815,7 +823,11 @@ The `current_setting('app.current_user_id', true)` call uses `true` as the secon
 | File                                                     | Purpose                                                                                                      |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `app/api/chat/route.ts`                                  | Main chat API endpoint (300s timeout, `force-dynamic`)                                                       |
-| `lib/agents/researcher.ts`                               | `ToolLoopAgent` orchestration with mode-specific configuration                                               |
+| `lib/agents/chat/factory.ts`                             | Shared `ToolLoopAgent` factory; canvas/image tools registered conditionally by context                       |
+| `lib/agents/chat/registry.ts`                            | Agent ID resolution (`resolveChatAgentId`) and dispatch (`createChatAgent`)                                  |
+| `lib/agents/chat/{search,research,build}.ts`             | Per-agent definitions: system prompt, active tools, step limit, search-tool wrapping                         |
+| `lib/agents/chat/toolset.ts`                             | `ChatAgentTools` type and the `createChatAgentTools()` factory shared by all three agents                    |
+| `lib/agents/researcher.ts`                               | Compatibility shim — delegates to `createChatAgent`                                                          |
 | `lib/agents/prompts/search-mode-prompts.ts`              | System prompts for chat/research modes                                                                       |
 | `lib/tools/search.ts`                                    | Multi-provider search tool with streaming generator                                                          |
 | `lib/tools/fetch.ts`                                     | Web content extraction (regular + API-based)                                                                 |
