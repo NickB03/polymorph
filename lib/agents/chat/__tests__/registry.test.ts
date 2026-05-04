@@ -103,8 +103,8 @@ vi.mock('@/lib/tools/display-option-list/server', () => ({
   serverTool: toolWiringMocks.staticTool
 }))
 
-vi.mock('@/lib/tools/display-plan', () => ({
-  displayPlanTool: toolWiringMocks.staticTool
+vi.mock('@/lib/tools/display-plan/server', () => ({
+  serverTool: toolWiringMocks.staticTool
 }))
 
 vi.mock('@/lib/tools/display-question-wizard/server', () => ({

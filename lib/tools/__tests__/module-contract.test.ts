@@ -49,6 +49,11 @@ const modules = [
     () => import('@/lib/tools/display-callout/index')
   ],
   [
+    'display-plan',
+    () => import('@/lib/tools/display-plan'),
+    () => import('@/lib/tools/display-plan/index')
+  ],
+  [
     'generate-image',
     () => import('@/lib/tools/generate-image'),
     () => import('@/lib/tools/generate-image/index')

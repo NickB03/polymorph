@@ -6,6 +6,7 @@ import { tryRenderResult as tryRenderCreateCanvasArtifactResult } from '@/lib/to
 import { tryRenderResult as tryRenderDisplayCalloutResult } from '@/lib/tools/display-callout/result'
 import { tryRenderResult as tryRenderDisplayCitationsResult } from '@/lib/tools/display-citations/result'
 import { tryRenderResult as tryRenderDisplayLinkPreviewResult } from '@/lib/tools/display-link-preview/result'
+import { tryRenderResult as tryRenderDisplayPlanResult } from '@/lib/tools/display-plan/result'
 import { tryRenderResult as tryRenderGenerateImageResult } from '@/lib/tools/generate-image/result'
 import { tryRenderResult as tryRenderUpdateCanvasArtifactResult } from '@/lib/tools/update-canvas-artifact/result'
 
@@ -19,8 +20,6 @@ import { GeoMap } from './geo-map/geo-map'
 import { safeParseSerializableGeoMap } from './geo-map/schema'
 import { OptionList } from './option-list/option-list'
 import { safeParseSerializableOptionList } from './option-list/schema'
-import { Plan } from './plan/plan'
-import { safeParseSerializablePlan } from './plan/schema'
 import { QuestionWizard } from './question-wizard/question-wizard'
 import { safeParseSerializableQuestionWizard } from './question-wizard/schema'
 import { safeParseSerializableTimeline } from './timeline/schema'
@@ -39,17 +38,7 @@ type ToolUIEntry = {
 const entries: ToolUIEntry[] = [
   {
     name: 'displayPlan',
-    tryRender: (output, partId) => {
-      const parsed = safeParseSerializablePlan(output)
-      if (!parsed) return null
-      return (
-        <ToolErrorBoundary toolName="Plan">
-          <ToolCardMount partId={partId}>
-            <Plan {...parsed} />
-          </ToolCardMount>
-        </ToolErrorBoundary>
-      )
-    }
+    tryRender: tryRenderDisplayPlanResult
   },
   {
     name: 'displayTable',

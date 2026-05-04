@@ -8,7 +8,7 @@ import { serverTool as displayCitationsTool } from '@/lib/tools/display-citation
 import { displayGeoMapTool } from '@/lib/tools/display-geo-map'
 import { serverTool as displayLinkPreviewTool } from '@/lib/tools/display-link-preview/server'
 import { serverTool as displayOptionListTool } from '@/lib/tools/display-option-list/server'
-import { displayPlanTool } from '@/lib/tools/display-plan'
+import { serverTool as displayPlanTool } from '@/lib/tools/display-plan/server'
 import { serverTool as displayQuestionWizardTool } from '@/lib/tools/display-question-wizard/server'
 import { displayTableTool } from '@/lib/tools/display-table'
 import { displayTimelineTool } from '@/lib/tools/display-timeline'
