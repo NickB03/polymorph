@@ -115,8 +115,8 @@ vi.mock('@/lib/tools/display-table', () => ({
   displayTableTool: toolWiringMocks.staticTool
 }))
 
-vi.mock('@/lib/tools/display-timeline', () => ({
-  displayTimelineTool: toolWiringMocks.staticTool
+vi.mock('@/lib/tools/display-timeline/server', () => ({
+  serverTool: toolWiringMocks.staticTool
 }))
 
 vi.mock('@/lib/tools/fetch/server', () => ({

@@ -54,6 +54,11 @@ const modules = [
     () => import('@/lib/tools/display-plan/index')
   ],
   [
+    'display-timeline',
+    () => import('@/lib/tools/display-timeline'),
+    () => import('@/lib/tools/display-timeline/index')
+  ],
+  [
     'generate-image',
     () => import('@/lib/tools/generate-image'),
     () => import('@/lib/tools/generate-image/index')

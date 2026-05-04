@@ -11,7 +11,7 @@ import { serverTool as displayOptionListTool } from '@/lib/tools/display-option-
 import { serverTool as displayPlanTool } from '@/lib/tools/display-plan/server'
 import { serverTool as displayQuestionWizardTool } from '@/lib/tools/display-question-wizard/server'
 import { displayTableTool } from '@/lib/tools/display-table'
-import { displayTimelineTool } from '@/lib/tools/display-timeline'
+import { serverTool as displayTimelineTool } from '@/lib/tools/display-timeline/server'
 import { fetchTool } from '@/lib/tools/fetch/server'
 import { serverTool as createGenerateImageTool } from '@/lib/tools/generate-image/server'
 import { geocodeAddressTool } from '@/lib/tools/geocode-address'

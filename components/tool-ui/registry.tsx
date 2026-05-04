@@ -7,6 +7,7 @@ import { tryRenderResult as tryRenderDisplayCalloutResult } from '@/lib/tools/di
 import { tryRenderResult as tryRenderDisplayCitationsResult } from '@/lib/tools/display-citations/result'
 import { tryRenderResult as tryRenderDisplayLinkPreviewResult } from '@/lib/tools/display-link-preview/result'
 import { tryRenderResult as tryRenderDisplayPlanResult } from '@/lib/tools/display-plan/result'
+import { tryRenderResult as tryRenderDisplayTimelineResult } from '@/lib/tools/display-timeline/result'
 import { tryRenderResult as tryRenderGenerateImageResult } from '@/lib/tools/generate-image/result'
 import { tryRenderResult as tryRenderUpdateCanvasArtifactResult } from '@/lib/tools/update-canvas-artifact/result'
 
@@ -22,8 +23,6 @@ import { OptionList } from './option-list/option-list'
 import { safeParseSerializableOptionList } from './option-list/schema'
 import { QuestionWizard } from './question-wizard/question-wizard'
 import { safeParseSerializableQuestionWizard } from './question-wizard/schema'
-import { safeParseSerializableTimeline } from './timeline/schema'
-import { Timeline } from './timeline/timeline'
 import {
   CompetitorResearchResult,
   safeParseCompetitorResearchResult
@@ -138,17 +137,7 @@ const entries: ToolUIEntry[] = [
   },
   {
     name: 'displayTimeline',
-    tryRender: (output, partId) => {
-      const parsed = safeParseSerializableTimeline(output)
-      if (!parsed) return null
-      return (
-        <ToolErrorBoundary toolName="Timeline">
-          <ToolCardMount partId={partId}>
-            <Timeline {...parsed} />
-          </ToolCardMount>
-        </ToolErrorBoundary>
-      )
-    }
+    tryRender: tryRenderDisplayTimelineResult
   },
   {
     name: 'generateImage',
