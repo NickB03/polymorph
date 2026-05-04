@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next'
-import localFont from 'next/font/local'
 
 import { Analytics } from '@vercel/analytics/next'
+import { GeistMono } from 'geist/font/mono'
+import { GeistSans } from 'geist/font/sans'
 
 import { cn } from '@/lib/utils'
 import { createAppMetadata } from '@/lib/utils/app-metadata'
@@ -13,12 +14,6 @@ import { VisualViewportHeight } from '@/components/visual-viewport-height'
 
 import './globals.css'
 import 'leaflet/dist/leaflet.css'
-
-const fontSans = localFont({
-  src: './fonts/inter-latin-variable.woff2',
-  variable: '--font-sans',
-  display: 'swap'
-})
 
 export const metadata: Metadata = createAppMetadata()
 
@@ -38,7 +33,8 @@ export default function RootLayout({
       <body
         className={cn(
           'h-app-viewport min-h-app-viewport flex flex-col font-sans antialiased overflow-hidden',
-          fontSans.variable
+          GeistSans.variable,
+          GeistMono.variable
         )}
       >
         <VisualViewportHeight />

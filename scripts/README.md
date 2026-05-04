@@ -1,6 +1,22 @@
 # Scripts
 
-This directory contains utility scripts for testing and development.
+This directory contains utility scripts for development, data backfill, and one-off operations.
+
+## backfill-chat-ui-message.ts
+
+One-shot migration script that backfills the canonical `messages.ui_message` projection on legacy rows. Runs over chats whose `ui_message` is null and reconstructs it from the persisted `parts` rows. Idempotent — re-runnable. Run after pulling a schema change that introduced or repaired `ui_message`; verify with the co-located test (`scripts/__tests__/backfill-chat-ui-message.test.ts`) before running against production.
+
+```bash
+bun run scripts/backfill-chat-ui-message.ts
+```
+
+## build-canvas-vendor.ts
+
+Populates `public/canvas-vendor/`, the vendor chunk loaded by the canvas iframe runtime. Run when canvas dependencies change or when `public/canvas-vendor/` is empty/stale. The output directory is excluded from ESLint (`eslint.config.mjs`), so this script is the source of truth for that bundle.
+
+```bash
+bun run build:canvas-vendor
+```
 
 ## seed-eval-summaries.ts
 

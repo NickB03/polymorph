@@ -8,7 +8,7 @@ By participating in this project, you are expected to uphold our [Code of Conduc
 
 ## Prerequisites
 
-- **Bun** (v1.2.12+ recommended, see `engines` in `package.json`)
+- **Bun** 1.3.9 (matches CI; the `engines` pin in `package.json` is older and is treated as a floor, not the target)
 - **Node.js** 18+
 - **Docker** (required for Supabase CLI local development)
 - **Git**
@@ -160,32 +160,22 @@ When adding new functionality, include tests where practical. Tests should focus
 
 ## Adding a New Tool
 
-The researcher agent uses tools to perform actions like searching and fetching. To add a new tool:
+Three chat agents (`search`, `research`, `build`) share a common toolset wired through `lib/agents/chat/`. Each agent declares its own `*_AGENT_ACTIVE_TOOLS` array; canvas and image tools are registered conditionally inside `factory.ts` based on context. To add a new tool:
 
-1. **Create the tool file** in `lib/tools/`:
+1. **Create the tool module.** Most tools live in their own directory under `lib/tools/<my-tool>/` with `schema.ts` (Zod input/output), `server.ts` (the `tool({ ... })` definition), and — if it renders inline — `client.tsx`, `result.tsx`, and `_adapter.tsx`. See `lib/tools/display-link-preview/` or `lib/tools/generate-image/` as templates. Single-file tools (e.g. `lib/tools/display-callout.ts`) are fine for tools without a separate UI surface.
 
-   ```typescript
-   // lib/tools/my-tool.ts
-   import { tool } from 'ai'
-   import { z } from 'zod'
+2. **Add the tool to the shared type and factory** in `lib/agents/chat/toolset.ts`:
+   - Add a property to the `ChatAgentTools` type.
+   - Import the tool and return it from `createChatAgentTools()`.
+   - For tools that need request-scoped context (a userId, canvas emitter, etc.), follow the pattern of `createCanvasArtifactTool(canvasToolContext)` — accept context as a factory arg in `CreateChatAgentToolsArgs`.
 
-   export const myTool = tool({
-     description: 'Description of what this tool does',
-     parameters: z.object({
-       input: z.string().describe('Input description')
-     }),
-     async execute({ input }) {
-       // Tool logic here
-       return { result: '...' }
-     }
-   })
-   ```
+3. **Activate the tool per agent.** Add the tool's key to the relevant `*_AGENT_ACTIVE_TOOLS` array in `lib/agents/chat/search.ts`, `research.ts`, or `build.ts` (or all three). Tools that should only appear when canvas or image-gen context is present go through the conditional `activeTools.push(...)` blocks in `lib/agents/chat/factory.ts` instead.
 
-2. **Register the tool** in `lib/agents/researcher.ts` by adding it to the `tools` object and the appropriate `activeToolsList` array for the search mode(s) where it should be available.
+4. **Wire the UI component** if the tool produces visible output. Add the renderer to `components/tool-ui/<my-tool>/`, register it in `components/tool-ui/registry.tsx`, and map the tool's raw output to component props via an `_adapter.tsx`. Existing examples like `components/tool-ui/citation/` and `components/tool-ui/geo-map/` show the full pattern.
 
-3. **Add a UI component** in `components/` if the tool produces visible output in the chat. Map the tool's output to a generative UI section component.
+5. **Persist new message-part types** in `lib/db/schema.ts` only if the tool needs a part shape that doesn't fit the existing `parts` table conventions. Most display tools don't need schema changes.
 
-4. **Update the database schema** in `lib/db/schema.ts` if the tool output needs to be persisted as a new message part type (add columns and check constraints to the `parts` table).
+> Note: `lib/agents/researcher.ts` is now a thin compatibility shim around `createChatAgent`. New tool registrations belong in `lib/agents/chat/`, not in `researcher.ts`.
 
 ## Architecture Reference
 

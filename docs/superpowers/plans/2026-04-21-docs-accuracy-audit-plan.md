@@ -92,7 +92,7 @@ Audit together because they cross-reference the same runtime paths.
 6. `docs/architecture/GENERATIVE-UI.md`
 7. `docs/architecture/GEO-TOOLS.md`
 8. `docs/architecture/DECISIONS.md`
-9. `docs/architecture/SKILLS-ROUTING.md`
+9. `docs/proposals/SKILLS-ROUTING.md` (relocated 2026-05-04)
 
 Primary source-of-truth files for this phase:
 

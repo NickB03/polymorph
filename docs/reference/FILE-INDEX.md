@@ -371,6 +371,7 @@ The `components/tool-ui/` directory contains generative UI components rendered b
 | `components/tool-ui/registry.tsx`                   | Tool UI compatibility facade mapping tool names to result renderers via schema validation  |
 | `components/tool-ui/tool-part-registry.tsx`         | Tool-part dispatcher; delegates migrated interactive tools to module-local client adapters |
 | `components/tool-ui/competitor-research-result.tsx` | Dedicated result component for the `competitorResearch` specialist                         |
+| `components/tool-ui/canvas-artifact-card.tsx`       | Inline chat card surfacing the current canvas artifact (status, preview, errors)           |
 | `components/tool-ui/tool-error-boundary.tsx`        | Error boundary component wrapping tool UI renders with fallback display                    |
 
 #### Callout Tool
@@ -877,11 +878,13 @@ Server-side compile pipeline, validation, service layer, and guest token support
 
 ## Scripts
 
-| File                                  | Purpose                                                                              |
-| ------------------------------------- | ------------------------------------------------------------------------------------ |
-| `scripts/backfill-chat-ui-message.ts` | Backfills canonical `messages.ui_message` for legacy rows reconstructed from `parts` |
-| `scripts/chat-cli.ts`                 | CLI script for testing the chat API endpoint from the terminal                       |
-| `scripts/README.md`                   | Documentation for available scripts                                                  |
+| File                                  | Purpose                                                                                                                                             |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/backfill-chat-ui-message.ts` | Backfills canonical `messages.ui_message` for legacy rows reconstructed from `parts`                                                                |
+| `scripts/build-canvas-vendor.ts`      | Populates `public/canvas-vendor/` (the vendor chunk used by the canvas iframe runtime); rebuild via `bun run build:canvas-vendor`                   |
+| `scripts/chat-cli.ts`                 | CLI script for testing the chat API endpoint from the terminal                                                                                      |
+| `scripts/seed-eval-summaries.ts`      | Seeds the `eval_summaries` table with synthetic data for `/admin/evals` development; wired as `bun run seed:evals` and `bun run seed:evals:dry-run` |
+| `scripts/README.md`                   | Documentation for available scripts                                                                                                                 |
 
 ---
 
@@ -933,7 +936,7 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 | `docs/architecture/OVERVIEW.md`                | System architecture with diagrams for agent pipeline, streaming, DB schema, and UI component tree                                                                                 |
 | `docs/architecture/GEO-TOOLS.md`               | Spatial tooling overview covering geocoding, directions, isochrones, static maps, and `displayGeoMap`                                                                             |
 | `docs/architecture/RESEARCH-AGENT.md`          | Research agent deep technical reference; ToolLoopAgent pattern, search modes, tool system, model selection, and context window management                                         |
-| `docs/architecture/SKILLS-ROUTING.md`          | Skills-routing architecture spec; deterministic skill selection, prompt enrichment, validation strategy, and non-prod rollout                                                     |
+| `docs/proposals/SKILLS-ROUTING.md`             | **Proposal** — skills-routing architecture spec; deterministic skill selection, prompt enrichment, validation strategy, non-prod rollout (not yet implemented)                    |
 | `docs/architecture/GENERATIVE-UI.md`           | Generative UI system architecture; display tools, Tool UI registry, adapter pattern, schema validation, and adding new tools                                                      |
 | `docs/architecture/STREAMING.md`               | Streaming architecture and SSE protocol documentation                                                                                                                             |
 | `docs/architecture/MODEL-CONFIGURATION.md`     | Guide for configuring AI model profiles (default, cloud, Ollama)                                                                                                                  |

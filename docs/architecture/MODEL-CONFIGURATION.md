@@ -3,7 +3,7 @@
 > **Audience:** Contributor | Operator
 > **Prerequisites:** [Architecture Overview](OVERVIEW.md)
 
-This document explains how Polymorph selects AI models for the researcher agent pipeline. It covers the configuration file format, the selection algorithm, provider registry, and how to add new models or providers.
+This document explains how Polymorph selects AI models for the chat agent pipeline (search, research, and build agents). It covers the configuration file format, the selection algorithm, provider registry, and how to add new models or providers.
 
 ## Table of Contents
 
@@ -20,12 +20,12 @@ This document explains how Polymorph selects AI models for the researcher agent 
 
 ## Overview
 
-Model selection sits between the chat API route (`app/api/chat/route.ts`) and the researcher agent (`lib/agents/researcher.ts`). When a user sends a message, the system determines which language model to use based on two dimensions:
+Model selection sits between the chat API route (`app/api/chat/route.ts`) and the chat agent factory (`lib/agents/chat/factory.ts`, dispatched via `lib/agents/chat/registry.ts`). When a user sends a message, the system determines which language model to use based on two dimensions:
 
 - **Search mode** (`chat` or `research`) — controls the agent's tool budget and research depth
 - **Model type** (`speed` or `quality`) — controls the cost/capability trade-off
 
-The resolved model is passed to the researcher agent, which uses it for all LLM calls during the tool loop. The selection logic lives in `lib/utils/model-selection.ts` and reads configuration from JSON files in `config/models/`. The same config file also supplies the `relatedQuestions` model used after answers and the `trendingSuggestions` model used by `/api/suggestions/refresh`.
+The resolved model is passed to the chat agent, which uses it for all LLM calls during the tool loop. The selection logic lives in `lib/utils/model-selection.ts` and reads configuration from JSON files in `config/models/`. The same config file also supplies the `relatedQuestions` model used after answers and the `trendingSuggestions` model used by `/api/suggestions/refresh`.
 
 ```
 User preferences (cookies)
@@ -40,7 +40,7 @@ User preferences (cookies)
   lib/utils/registry.ts  (provider availability)
         |
         v
-  Resolved Model  -->  Researcher Agent
+  Resolved Model  -->  Chat Agent (search / research / build)
 ```
 
 ---

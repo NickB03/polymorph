@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-04
+
 ### Added
 
 - App Router `(admin)/` and `(chat)/` route groups, with admin surface gated by `ADMIN_USER_ID`
-- Template-driven evals dashboard v2 with persisted per-user layout preference
 - Daily Vercel cron at `/api/suggestions/refresh` to refresh trending suggestions (Bearer-auth gated by `CRON_SECRET`)
 - Typed search-provider errors with `Retry-After` honoring and jittered exponential backoff
 - Inline image generation tool (`generateImage`, Gemini 2.5 Flash Image)
@@ -33,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed `ENABLE_LANGFUSE_TRACING` to `ENABLE_TRACING`
 - Replaced Langfuse environment variables with Phoenix equivalents (`PHOENIX_COLLECTOR_ENDPOINT`, `PHOENIX_PROJECT_NAME`, `PHOENIX_API_KEY`)
 - Updated start script to respect Railway `PORT` environment variable
-- Evals cron cadence messaging aligned with the actual Railway schedule (daily at 00:00 UTC)
+- Evals cron cadence messaging aligned with the actual Railway schedule (every 48 hours)
 - Canvas artifact system now provides validated React source compilation to persisted single-file HTML with live preview, version history, guest token continuity, and export support
 - Research Agent brand color now uses `text-accent-violet` token instead of `text-tip`
 - Progress tracker celebration glow uses `var(--success)` token via `color-mix()` instead of hardcoded emerald RGBA

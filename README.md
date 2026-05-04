@@ -12,7 +12,15 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 
-<br><br>
+<br>
+
+<p>
+  A conversation-first interface that expands into a multi-step research agent,
+  generative UI for inline data and maps, and a canvas workspace that compiles
+  single-file React artifacts live.
+</p>
+
+<br>
 
 <img src="docs/assets/demos/canvas.gif" alt="Polymorph Canvas: describe a UI and watch it compile live" width="880">
 
@@ -41,7 +49,7 @@ Real maps, directions, and reachability polygons rendered inline in the conversa
 - **Generative UI** — tables, charts, geo maps, timelines, citations, callouts, and link previews render inline
 - **Three conversation modes** — Search, Research, and Build share one chat surface with intent-aware prompting
 - **Geo intelligence** — interactive maps, real directions, reachability polygons, and static map images
-- **Multi-provider AI** — Gemini and Grok via Vercel AI Gateway, plus direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers
+- **Multi-provider AI** — Grok 4.1 Fast (speed and quality) via Vercel AI Gateway, with Gemini 2.5 Flash Image for inline generation, plus direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers
 - **Voice mode** — speech input and text-to-speech playback
 - **Guest access** — instant search without sign-up, rate-limited per IP in cloud deployments
 
@@ -59,9 +67,6 @@ Real maps, directions, and reachability polygons rendered inline in the conversa
 
 ## Architecture
 
-<details>
-<summary>View architecture diagram</summary>
-
 ```mermaid
 graph LR
     User["👤 You"]
@@ -77,9 +82,11 @@ graph LR
     subgraph Providers["AI Providers"]
         direction TB
         Gateway["Vercel AI Gateway"]
-        GatewayModels["Gemini 3 Flash / Grok 4.1 Fast Reasoning"]
+        GatewayModels["Grok 4.1 Fast<br/>(Speed + Quality)"]
+        ImageGen["Gemini 2.5 Flash Image<br/>(inline generation)"]
         Direct["OpenAI / Anthropic / Google / OpenAI-compatible / Ollama"]
         Gateway --> GatewayModels
+        Gateway --> ImageGen
     end
 
     subgraph Search["Web Search"]
@@ -119,8 +126,6 @@ graph LR
     Agent --> Response
     Agent --> Data
 ```
-
-</details>
 
 ## Attribution
 

@@ -1,6 +1,6 @@
 # Plan
 
-Renders a task plan card with a progress bar, todo items (pending, in-progress, completed, cancelled), staggered entrance animations, and collapsible overflow. Also exports a `Plan.Compact` variant without the header or progress bar.
+Renders a task plan card with a progress bar, todo items (`pending`, `in_progress`, `completed`, `cancelled`), staggered entrance animations, and collapsible overflow. Also exports a `Plan.Compact` variant without the header or progress bar.
 
 ## Files
 

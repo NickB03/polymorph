@@ -263,7 +263,7 @@ SEARCH_API=firecrawl
 
 ## Search in Chat vs Research Modes
 
-The researcher agent operates in two modes that affect how search works:
+The chat agent system has two search behaviors, applied per agent:
 
 | Aspect          | Chat Mode                        | Research Mode                                   |
 | --------------- | -------------------------------- | ----------------------------------------------- |
@@ -274,7 +274,7 @@ The researcher agent operates in two modes that affect how search works:
 
 \* `todoWrite` is available when a stream writer is present (i.e., during streaming responses).
 
-In **Chat Mode**, the search tool is wrapped by `wrapSearchToolForChatMode` (in `lib/agents/researcher.ts`) to force `type: "optimized"` on every call, ensuring fast content-rich results regardless of what the agent requests.
+In the **search** and **build** agents, the search tool is wrapped by `wrapSearchToolForChatMode` (in [`lib/agents/chat/search.ts`](../../lib/agents/chat/search.ts)) to force `type: "optimized"` on every call, ensuring fast content-rich results regardless of what the agent requests. The **research** agent skips this wrapper and accepts the full search type set.
 
 In **Research Mode**, the agent freely chooses between `type: "general"` and `type: "optimized"`, enabling multimedia search through Brave when configured.
 

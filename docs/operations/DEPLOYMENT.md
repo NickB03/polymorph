@@ -78,7 +78,7 @@ ORS_API_KEY=[YOUR_OPENROUTESERVICE_KEY]
 
 - App should respond on `/` and complete one end-to-end chat request
 - Database migrations must be applied (`bun run migrate`) before accepting traffic
-- **Docker/Railway deployments:** Consider moving `bun run migrate` from the Docker entrypoint to a Railway Pre-Deploy Command to avoid race conditions with multi-replica deployments. The entrypoint runs migrations on every container start; pre-deploy runs once between build and deploy.
+- **Self-hosted Docker deployments:** Consider moving `bun run migrate` from the Docker entrypoint to a one-shot pre-deploy step to avoid race conditions with multi-replica deployments. The entrypoint currently runs migrations on every container start. (Polymorph itself deploys to Vercel; only Phoenix and the `polymorph-evals` cron run on Railway.)
 - At least one configured model/provider must be enabled at runtime
 - Monitor `https://polymorph-nb.vercel.app/api/health` rather than raw deployment URLs. Deployment URLs may still be protected by Vercel Authentication.
 
@@ -125,10 +125,19 @@ Phoenix is a single stateful SQLite file. An unmounted or region-mismatched volu
 
    The entry must report `serviceId` equal to the `phoenix` service id **and** a region matching the phoenix deployment region (currently `us-east4`). Railway volumes are region-pinned and cannot cross regions; a region-mismatched attachment causes the next deploy to fail in ~7 seconds with `instances: []`.
 
-2. **Run the redeploy acid test.** Query `/v1/projects` (or `/v1/datasets`) with `PHOENIX_ADMIN_SECRET`, then `railway redeploy --service phoenix --yes`, then re-query. Relay IDs must be identical across the fresh container. If project counts or IDs reset, storage is ephemeral and the "restore" only appeared to work.
+2. **Run the redeploy acid test.** Query `/v1/projects` (or `/v1/datasets`) with `PHOENIX_ADMIN_SECRET`, then `railway redeploy --service phoenix --yes`, then re-query. Project IDs and counts must be identical across the fresh container. If they reset, storage is ephemeral and the "restore" only appeared to work.
 
    ```bash
-   curl -sS -o /dev/null -w "HTTP %{http_code}\n" https://phoenix-production-c6b5.up.railway.app/
+   PHOENIX_URL="https://phoenix-production-c6b5.up.railway.app"
+   AUTH="Authorization: Bearer $PHOENIX_ADMIN_SECRET"
+
+   # Pre-redeploy snapshot
+   curl -sS -H "$AUTH" "$PHOENIX_URL/v1/projects" | jq '.projects | length, .projects[0:3] | map(.id)'
+
+   railway redeploy --service phoenix --yes
+
+   # Post-redeploy snapshot — count and first IDs must match
+   curl -sS -H "$AUTH" "$PHOENIX_URL/v1/projects" | jq '.projects | length, .projects[0:3] | map(.id)'
    ```
 
 3. **Rotate client API keys last.** Phoenix API keys are rows in the same DB. If you rotate `PHOENIX_API_KEY` on Vercel and `polymorph-evals` before confirming persistence, a subsequent wipe will drop the token rows and surface as bulk `401` on `/v1/traces` and `/v1/datasets`.
@@ -197,24 +206,25 @@ These defaults are tuned for low-volume personal-project traffic. If you widen t
 
 **Required env vars:**
 
-| Variable                     | Value                                                              |
-| ---------------------------- | ------------------------------------------------------------------ |
-| `DATABASE_URL`               | Supabase Postgres connection string                                |
-| `EVAL_RUN_MODE`              | `traffic-monitor` for the scheduled production cron                |
-| `EVAL_RUNNER_URL`            | Production app URL for `/api/evals/run`                            |
-| `EVAL_RUNNER_SECRET`         | Shared secret that matches the app's `EVAL_RUNNER_SECRET`          |
-| `PHOENIX_HOST`               | `http://phoenix.railway.internal:6006`                             |
-| `PHOENIX_PUBLIC_URL`         | Public Phoenix URL used in persisted dashboard links               |
-| `PHOENIX_API_KEY`            | Phoenix System API key                                             |
-| `JUDGE_API_KEY`              | OpenRouter API key for the judge model (preferred)                 |
-| `OPENROUTER_API_KEY`         | Fallback; read by the OpenRouter SDK when `JUDGE_API_KEY` is unset |
-| `JUDGE_BASE_URL`             | `https://openrouter.ai/api/v1`                                     |
-| `JUDGE_MODEL`                | `google/gemini-3.1-flash-lite-preview` (default)                   |
-| `JUDGE_REASONING_ENABLED`    | `true` (default)                                                   |
-| `JUDGE_REASONING_MAX_TOKENS` | `1024` (default, positive integer)                                 |
-| `SAMPLE_SIZE`                | `10` (default)                                                     |
-| `LOOKBACK_HOURS`             | `48` (default)                                                     |
-| `EVAL_CASE_CONCURRENCY`      | `1` (default)                                                      |
+| Variable                        | Value                                                                                                           |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                  | Supabase Postgres connection string                                                                             |
+| `EVAL_RUN_MODE`                 | `traffic-monitor` for the scheduled production cron                                                             |
+| `EVAL_RUNNER_URL`               | Production app URL for `/api/evals/run`                                                                         |
+| `EVAL_RUNNER_SECRET`            | Shared secret that matches the app's `EVAL_RUNNER_SECRET`                                                       |
+| `PHOENIX_HOST`                  | `http://phoenix.railway.internal:6006`                                                                          |
+| `PHOENIX_PUBLIC_URL`            | Public Phoenix URL used in persisted dashboard links                                                            |
+| `PHOENIX_API_KEY`               | Phoenix System API key                                                                                          |
+| `JUDGE_API_KEY`                 | OpenRouter API key for the judge model (preferred)                                                              |
+| `OPENROUTER_API_KEY`            | Fallback; read by the OpenRouter SDK when `JUDGE_API_KEY` is unset                                              |
+| `JUDGE_BASE_URL`                | `https://openrouter.ai/api/v1`                                                                                  |
+| `JUDGE_MODEL`                   | `google/gemini-3.1-flash-lite-preview` (default)                                                                |
+| `JUDGE_REASONING_ENABLED`       | `true` (default)                                                                                                |
+| `JUDGE_REASONING_MAX_TOKENS`    | `1024` (default, positive integer)                                                                              |
+| `SAMPLE_SIZE`                   | `10` (default)                                                                                                  |
+| `LOOKBACK_HOURS`                | `48` (default)                                                                                                  |
+| `EVAL_CASE_CONCURRENCY`         | `1` (default)                                                                                                   |
+| `EVAL_EXIT_ON_THRESHOLD_BREACH` | `false` (default) — when `true`, the cron exits non-zero on threshold breach so Railway marks the run as failed |
 
 ### Rotating Phoenix API keys
 
