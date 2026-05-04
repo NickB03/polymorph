@@ -1,7 +1,7 @@
 import { convertToModelMessages, pruneMessages, readUIMessageStream } from 'ai'
 import { randomUUID } from 'crypto'
 
-import { researcher } from '@/lib/agents/researcher'
+import { createChatAgent } from '@/lib/agents/chat/registry'
 import { inlineFileUrls } from '@/lib/streaming/helpers/inline-file-urls'
 import { stripReasoningParts } from '@/lib/streaming/helpers/strip-reasoning-parts'
 import type { SearchResults } from '@/lib/types'
@@ -228,7 +228,7 @@ export async function runEvalChat({
   modelMessages = maybeTruncateMessages(modelMessages, model)
 
   const executeReplay = async () => {
-    const researchAgent = researcher({
+    const researchAgent = createChatAgent({
       model: modelId,
       modelConfig: model,
       correlationId,
