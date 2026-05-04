@@ -64,6 +64,11 @@ const modules = [
     () => import('@/lib/tools/display-table/index')
   ],
   [
+    'display-chart',
+    () => import('@/lib/tools/display-chart'),
+    () => import('@/lib/tools/display-chart/index')
+  ],
+  [
     'generate-image',
     () => import('@/lib/tools/generate-image'),
     () => import('@/lib/tools/generate-image/index')

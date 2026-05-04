@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 
 import { tryRenderResult as tryRenderCreateCanvasArtifactResult } from '@/lib/tools/create-canvas-artifact/result'
 import { tryRenderResult as tryRenderDisplayCalloutResult } from '@/lib/tools/display-callout/result'
+import { tryRenderResult as tryRenderDisplayChartResult } from '@/lib/tools/display-chart/result'
 import { tryRenderResult as tryRenderDisplayCitationsResult } from '@/lib/tools/display-citations/result'
 import { tryRenderResult as tryRenderDisplayLinkPreviewResult } from '@/lib/tools/display-link-preview/result'
 import { tryRenderResult as tryRenderDisplayPlanResult } from '@/lib/tools/display-plan/result'
@@ -14,8 +15,6 @@ import { tryRenderResult as tryRenderUpdateCanvasArtifactResult } from '@/lib/to
 
 import { ToolCardMount } from '@/components/motion/tool-card-mount'
 
-import { Chart } from './chart/chart'
-import { safeParseSerializableChart } from './chart/schema'
 import { GeoMap } from './geo-map/geo-map'
 import { safeParseSerializableGeoMap } from './geo-map/schema'
 import { OptionList } from './option-list/option-list'
@@ -58,17 +57,7 @@ const entries: ToolUIEntry[] = [
   },
   {
     name: 'displayChart',
-    tryRender: (output, partId) => {
-      const parsed = safeParseSerializableChart(output)
-      if (!parsed) return null
-      return (
-        <ToolErrorBoundary toolName="Chart">
-          <ToolCardMount partId={partId}>
-            <Chart {...parsed} />
-          </ToolCardMount>
-        </ToolErrorBoundary>
-      )
-    }
+    tryRender: tryRenderDisplayChartResult
   },
   {
     name: 'displayGeoMap',

@@ -83,8 +83,8 @@ vi.mock('@/lib/tools/display-callout/server', () => ({
   serverTool: toolWiringMocks.staticTool
 }))
 
-vi.mock('@/lib/tools/display-chart', () => ({
-  displayChartTool: toolWiringMocks.staticTool
+vi.mock('@/lib/tools/display-chart/server', () => ({
+  serverTool: toolWiringMocks.staticTool
 }))
 
 vi.mock('@/lib/tools/display-citations/server', () => ({
