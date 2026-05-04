@@ -79,12 +79,12 @@ vi.mock('@/lib/tools/create-canvas-artifact/server', () => ({
   serverTool: toolWiringMocks.createServerTool
 }))
 
-vi.mock('@/lib/tools/display-callout', () => ({
-  displayCalloutTool: toolWiringMocks.staticTool
+vi.mock('@/lib/tools/display-callout/server', () => ({
+  serverTool: toolWiringMocks.staticTool
 }))
 
-vi.mock('@/lib/tools/display-chart', () => ({
-  displayChartTool: toolWiringMocks.staticTool
+vi.mock('@/lib/tools/display-chart/server', () => ({
+  serverTool: toolWiringMocks.staticTool
 }))
 
 vi.mock('@/lib/tools/display-citations/server', () => ({
@@ -103,20 +103,20 @@ vi.mock('@/lib/tools/display-option-list/server', () => ({
   serverTool: toolWiringMocks.staticTool
 }))
 
-vi.mock('@/lib/tools/display-plan', () => ({
-  displayPlanTool: toolWiringMocks.staticTool
+vi.mock('@/lib/tools/display-plan/server', () => ({
+  serverTool: toolWiringMocks.staticTool
 }))
 
 vi.mock('@/lib/tools/display-question-wizard/server', () => ({
   serverTool: toolWiringMocks.staticTool
 }))
 
-vi.mock('@/lib/tools/display-table', () => ({
-  displayTableTool: toolWiringMocks.staticTool
+vi.mock('@/lib/tools/display-table/server', () => ({
+  serverTool: toolWiringMocks.staticTool
 }))
 
-vi.mock('@/lib/tools/display-timeline', () => ({
-  displayTimelineTool: toolWiringMocks.staticTool
+vi.mock('@/lib/tools/display-timeline/server', () => ({
+  serverTool: toolWiringMocks.staticTool
 }))
 
 vi.mock('@/lib/tools/fetch/server', () => ({

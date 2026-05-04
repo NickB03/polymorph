@@ -44,6 +44,31 @@ const modules = [
     () => import('@/lib/tools/display-link-preview/index')
   ],
   [
+    'display-callout',
+    () => import('@/lib/tools/display-callout'),
+    () => import('@/lib/tools/display-callout/index')
+  ],
+  [
+    'display-plan',
+    () => import('@/lib/tools/display-plan'),
+    () => import('@/lib/tools/display-plan/index')
+  ],
+  [
+    'display-timeline',
+    () => import('@/lib/tools/display-timeline'),
+    () => import('@/lib/tools/display-timeline/index')
+  ],
+  [
+    'display-table',
+    () => import('@/lib/tools/display-table'),
+    () => import('@/lib/tools/display-table/index')
+  ],
+  [
+    'display-chart',
+    () => import('@/lib/tools/display-chart'),
+    () => import('@/lib/tools/display-chart/index')
+  ],
+  [
     'generate-image',
     () => import('@/lib/tools/generate-image'),
     () => import('@/lib/tools/generate-image/index')
