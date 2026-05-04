@@ -8,7 +8,7 @@ By participating in this project, you are expected to uphold our [Code of Conduc
 
 ## Prerequisites
 
-- **Bun** 1.3.9 (matches CI; the `engines` pin in `package.json` is older and is treated as a floor, not the target)
+- **Bun** 1.3.9 (matches CI and the `engines` pin in `package.json`)
 - **Node.js** 18+
 - **Docker** (required for Supabase CLI local development)
 - **Git**

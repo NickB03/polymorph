@@ -9,7 +9,7 @@ Get Polymorph running locally from scratch.
 
 | Tool   | Version    | Install                          |
 | ------ | ---------- | -------------------------------- |
-| Bun    | v1.2.12+   | https://bun.sh                   |
+| Bun    | v1.3.9     | https://bun.sh                   |
 | Docker | Latest     | https://docs.docker.com/install/ |
 | Git    | Any recent | https://git-scm.com              |
 
