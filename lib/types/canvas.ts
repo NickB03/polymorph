@@ -96,12 +96,6 @@ export type CanvasArtifactVersionRow = {
   createdAt: Date
 }
 
-export type LegacyCanvasNotice = {
-  kind: 'legacy-unavailable'
-  artifactId: string
-  source: 'chat-history' | 'public-link' | 'guest-token'
-}
-
 export type GuestCanvasTokenPayload = {
   chatId: string
   artifactId: string

@@ -27,7 +27,6 @@ const mockCanvasContext = {
   isWorkspaceOpen: false,
   artifact: null,
   isLoading: false,
-  legacyNotice: null,
   pendingWorkspace: null,
   compileProgress: null,
   closeWorkspace: vi.fn()
@@ -84,7 +83,6 @@ describe('ChatCanvasShell', () => {
     mockCanvasContext.isWorkspaceOpen = false
     mockCanvasContext.artifact = null
     mockCanvasContext.isLoading = false
-    mockCanvasContext.legacyNotice = null
     mockCanvasContext.pendingWorkspace = null
   })
 

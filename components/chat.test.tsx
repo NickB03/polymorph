@@ -1,7 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { buildLegacyCanvasNotice } from '@/lib/canvas/legacy'
 import type { UIMessage } from '@/lib/types/ai'
 
 import type { CanvasContextValue } from './canvas/canvas-context'
@@ -26,13 +25,11 @@ const mockCanvasContext: CanvasContextValue = {
   artifact: null,
   isLoading: false,
   isWorkspaceOpen: false,
-  legacyNotice: null,
   guestCanvasToken: null,
   pendingWorkspace: null,
   compileProgress: null,
   openCanvasArtifact: vi.fn(),
   focusCanvasArtifact: vi.fn(),
-  openLegacyCanvasNotice: vi.fn(),
   closeWorkspace: vi.fn(),
   requestCanvasAiUpdate: vi.fn(),
   reloadArtifact: vi.fn(),
@@ -54,13 +51,11 @@ function resetCanvasContext() {
   mockCanvasContext.artifact = null
   mockCanvasContext.isLoading = false
   mockCanvasContext.isWorkspaceOpen = false
-  mockCanvasContext.legacyNotice = null
   mockCanvasContext.guestCanvasToken = null
   mockCanvasContext.pendingWorkspace = null
   mockCanvasContext.compileProgress = null
   mockCanvasContext.openCanvasArtifact = vi.fn()
   mockCanvasContext.focusCanvasArtifact = vi.fn()
-  mockCanvasContext.openLegacyCanvasNotice = vi.fn()
   mockCanvasContext.closeWorkspace = vi.fn()
   mockCanvasContext.requestCanvasAiUpdate = vi.fn()
   mockCanvasContext.reloadArtifact = vi.fn()
@@ -245,38 +240,6 @@ describe('Canvas namespace — Stage 1 migration regression', () => {
     const chatElements = screen.getAllByText('chat')
     expect(chatElements.length).toBeGreaterThanOrEqual(1)
     expect(chatElements[0]).toBeInTheDocument()
-  })
-
-  it('maps legacy artifact references to legacy notice state', () => {
-    expect(
-      buildLegacyCanvasNotice({
-        artifactId: 'legacy-artifact-1',
-        source: 'chat-history'
-      }).kind
-    ).toBe('legacy-unavailable')
-  })
-
-  it('preserves all fields in the legacy notice', () => {
-    const notice = buildLegacyCanvasNotice({
-      artifactId: 'abc-123',
-      source: 'public-link'
-    })
-
-    expect(notice).toEqual({
-      kind: 'legacy-unavailable',
-      artifactId: 'abc-123',
-      source: 'public-link'
-    })
-  })
-
-  it('handles guest-token source in legacy notice', () => {
-    const notice = buildLegacyCanvasNotice({
-      artifactId: 'guest-artifact-1',
-      source: 'guest-token'
-    })
-
-    expect(notice.kind).toBe('legacy-unavailable')
-    expect(notice.source).toBe('guest-token')
   })
 })
 
