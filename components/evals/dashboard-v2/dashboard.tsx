@@ -11,9 +11,10 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { ActivityList } from '@/components/evals/dashboard/activity-list'
 import { ScoreFeature } from '@/components/evals/dashboard/score-feature'
 
+import { getDefaultSuite, getPhoenixInsight } from './attention'
 import { CollapsibleComparison } from './collapsible-comparison'
-import { CompactAlert } from './compact-alert'
 import { EvaluatorBreakdown } from './evaluator-breakdown'
+import { PhoenixInsightStrip } from './phoenix-insight'
 import { SuiteSelector } from './suite-selector'
 import { isSuiteId, isView, type SuiteId, type View } from './url-state'
 import { useUrlState } from './use-url-state'
@@ -126,13 +127,8 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
   const cap = data.capability.latest
   const traf = data.trafficMonitor.latest
   const reg = data.regression.latest
-  const defaultSuite: SuiteId = cap
-    ? 'capability'
-    : traf
-      ? 'trafficMonitor'
-      : reg
-        ? 'regression'
-        : 'capability'
+  const defaultSuite = getDefaultSuite(data)
+  const insight = getPhoenixInsight(data)
   const previousMap: Record<SuiteId, EvalSummarySnapshot | null> = {
     capability: data.capability.previous,
     trafficMonitor: data.trafficMonitor.previous,
@@ -158,10 +154,16 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
       className="space-y-10 motion-safe:animate-content-enter"
       style={enter(60)}
     >
-      <CompactAlert data={data} />
+      {insight ? (
+        <PhoenixInsightStrip
+          insight={insight}
+          onReview={() => setActive(insight.suiteId)}
+        />
+      ) : null}
 
       <SuiteSelector
         active={selectedSuite}
+        attentionSuite={insight?.suiteId ?? null}
         onChange={setActive}
         snaps={snapMap}
       />

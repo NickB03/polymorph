@@ -14,10 +14,12 @@ const SUITE_TABS: ReadonlyArray<{
 
 export function SuiteSelector({
   active,
+  attentionSuite = null,
   onChange,
   snaps
 }: {
   active: SuiteId
+  attentionSuite?: SuiteId | null
   onChange: (id: SuiteId) => void
   snaps: Record<SuiteId, EvalSummarySnapshot | null>
 }) {
@@ -29,6 +31,7 @@ export function SuiteSelector({
     >
       {SUITE_TABS.map(tab => {
         const on = tab.id === active
+        const needsAttention = tab.id === attentionSuite
         const s = snaps[tab.id]
         const copy = getSuiteDisplayByDashboardId(tab.id)
         return (
@@ -42,7 +45,8 @@ export function SuiteSelector({
               'flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-colors',
               on
                 ? 'border-accent-blue/40 bg-accent-blue/5'
-                : 'border-border/60 bg-background hover:bg-muted/40'
+                : 'border-border/60 bg-background hover:bg-muted/40',
+              needsAttention && !on && 'border-warning-border bg-warning-bg/40'
             )}
           >
             <div className="flex w-full items-baseline justify-between gap-2">
@@ -58,6 +62,11 @@ export function SuiteSelector({
                 {s ? pct(s.overallScore) : '—'}
               </span>
             </div>
+            {needsAttention ? (
+              <span className="rounded-full border border-warning-border bg-background px-2 py-0.5 text-[10px] font-medium uppercase tracking-normal text-warning">
+                Needs attention
+              </span>
+            ) : null}
             <p className="text-xs leading-snug text-muted-foreground">
               {copy.tagline}
             </p>
