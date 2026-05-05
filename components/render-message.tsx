@@ -779,22 +779,6 @@ export function RenderMessage({
     } else if (part.type === 'data-canvasArtifactStatus') {
       // Status updates don't render a visible element in chat
       // (the card already shows the latest status)
-    } else if (part.type === 'tool-generateImage') {
-      const toolPart = part as { state?: string; output?: unknown }
-      if (toolPart.state === 'output-available' && toolPart.output) {
-        const element = renderDisplayToolElement(part, index)
-        if (element) {
-          flushBuffer(`seg-${index}`)
-          elements.push(
-            <Fragment key={`${messageId}-generate-image-${index}`}>
-              {element}
-            </Fragment>
-          )
-          return
-        }
-      }
-      // Streaming/pending state — push to buffer for process section
-      buffer.push(part)
     } else if (part.type === 'tool-readCanvasArtifact') {
       const toolPart = part as {
         state?: string
