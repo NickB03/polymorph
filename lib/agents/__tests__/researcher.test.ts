@@ -127,9 +127,8 @@ vi.mock('ai', async importOriginal => {
   }
 })
 
+import { createChatAgent } from '@/lib/agents/chat/registry'
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
-
-import { createResearcher } from '../researcher'
 
 const MockToolLoopAgent = vi.mocked(ToolLoopAgent)
 
@@ -145,9 +144,9 @@ const mockCanvasToolContext: CanvasToolContext = {
   }
 }
 
-describe('createResearcher', () => {
+describe('createChatAgent', () => {
   it('creates a researcher agent with default research mode', () => {
-    const agent = createResearcher({
+    const agent = createChatAgent({
       model: 'gateway:google/gemini-3-flash'
     })
 
@@ -179,7 +178,7 @@ describe('createResearcher', () => {
   it('configures chat mode with correct tools and step limit', () => {
     MockToolLoopAgent.mockClear()
 
-    createResearcher({
+    createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       searchMode: 'chat'
     })
@@ -204,7 +203,7 @@ describe('createResearcher', () => {
   it('routes build intent through chat tools with the artifact intake prefix', () => {
     MockToolLoopAgent.mockClear()
 
-    createResearcher({
+    createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       searchMode: 'chat',
       intent: 'build'
@@ -224,7 +223,7 @@ describe('createResearcher', () => {
     MockToolLoopAgent.mockClear()
 
     const mockWriter = {} as any
-    createResearcher({
+    createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       searchMode: 'research',
       writer: mockWriter
@@ -237,7 +236,7 @@ describe('createResearcher', () => {
   it('does not include todoWrite in research mode without writer', () => {
     MockToolLoopAgent.mockClear()
 
-    createResearcher({
+    createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       searchMode: 'research'
     })
@@ -250,7 +249,7 @@ describe('createResearcher', () => {
     MockToolLoopAgent.mockClear()
 
     const providerOptions = { temperature: 0.7 }
-    createResearcher({
+    createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       modelConfig: { providerOptions } as any
     })
@@ -262,7 +261,7 @@ describe('createResearcher', () => {
   it('includes telemetry configuration', () => {
     MockToolLoopAgent.mockClear()
 
-    createResearcher({
+    createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       parentTraceId: 'trace-123',
       searchMode: 'research'
@@ -277,7 +276,7 @@ describe('createResearcher', () => {
   it('sets instructions with current date', () => {
     MockToolLoopAgent.mockClear()
 
-    createResearcher({
+    createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       searchMode: 'chat'
     })
@@ -291,7 +290,7 @@ describe('createResearcher', () => {
   it('includes current canvas artifact state in instructions when available', () => {
     MockToolLoopAgent.mockClear()
 
-    createResearcher({
+    createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       canvasToolContext: {
         ...mockCanvasToolContext,
@@ -317,7 +316,7 @@ describe('createResearcher', () => {
       throw new Error('Invalid model')
     })
 
-    expect(() => createResearcher({ model: 'invalid-model' })).toThrow(
+    expect(() => createChatAgent({ model: 'invalid-model' })).toThrow(
       'Invalid model'
     )
   })
@@ -325,7 +324,7 @@ describe('createResearcher', () => {
   it('registers canvas tools when canvasToolContext is provided', () => {
     MockToolLoopAgent.mockClear()
 
-    const agent = createResearcher({
+    const agent = createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       canvasToolContext: mockCanvasToolContext
     })
@@ -343,7 +342,7 @@ describe('createResearcher', () => {
   it('does not register canvas tools when canvasToolContext is absent', () => {
     MockToolLoopAgent.mockClear()
 
-    const agent = createResearcher({
+    const agent = createChatAgent({
       model: 'gateway:google/gemini-3-flash'
     })
 
@@ -361,7 +360,7 @@ describe('createResearcher', () => {
     for (const searchMode of ['chat', 'research'] as const) {
       MockToolLoopAgent.mockClear()
 
-      createResearcher({
+      createChatAgent({
         model: 'gateway:google/gemini-3-flash',
         searchMode,
         canvasToolContext: mockCanvasToolContext
@@ -377,7 +376,7 @@ describe('createResearcher', () => {
   it('does not include old artifact tools', () => {
     MockToolLoopAgent.mockClear()
 
-    createResearcher({
+    createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       canvasToolContext: mockCanvasToolContext
     })
@@ -392,7 +391,7 @@ describe('createResearcher', () => {
   it('applies pacing wrapper to search tool', () => {
     MockToolLoopAgent.mockClear()
 
-    createResearcher({
+    createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       searchMode: 'research'
     })
@@ -406,7 +405,7 @@ describe('createResearcher', () => {
     for (const searchMode of ['chat', 'research'] as const) {
       MockToolLoopAgent.mockClear()
 
-      createResearcher({
+      createChatAgent({
         model: 'gateway:google/gemini-3-flash',
         searchMode
       })
@@ -420,12 +419,12 @@ describe('createResearcher', () => {
   it('creates request-local pacing per createResearcher call', () => {
     MockToolLoopAgent.mockClear()
 
-    const agent1 = createResearcher({
+    const agent1 = createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       searchMode: 'research'
     })
 
-    const agent2 = createResearcher({
+    const agent2 = createChatAgent({
       model: 'gateway:google/gemini-3-flash',
       searchMode: 'research'
     })
@@ -459,7 +458,7 @@ describe('createResearcher', () => {
         execute: underlyingExecute
       } as any)
 
-      createResearcher({
+      createChatAgent({
         model: 'gateway:google/gemini-3-flash',
         searchMode: 'research'
       })
@@ -498,7 +497,7 @@ describe('createResearcher', () => {
       const nextPromise = secondIter.next()
 
       // Abort during the cooldown; the abort listener resolves the wait,
-      // and the post-wait guard (researcher.ts:68) bails before dispatch.
+      // and the post-wait guard in the search tool pacing wrapper bails before dispatch.
       controller.abort()
 
       const step = await nextPromise

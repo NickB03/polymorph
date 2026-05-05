@@ -34,8 +34,8 @@ vi.mock('ai', async importOriginal => {
   }
 })
 
-vi.mock('@/lib/agents/researcher', () => ({
-  researcher: (...args: unknown[]) => mockResearcher(...args)
+vi.mock('@/lib/agents/chat/registry', () => ({
+  createChatAgent: (...args: unknown[]) => mockResearcher(...args)
 }))
 
 vi.mock('@/lib/utils/context-window', () => ({
