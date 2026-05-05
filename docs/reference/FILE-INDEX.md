@@ -288,7 +288,6 @@ Shared motion primitives used by the chat and Tool UI surfaces.
 | `components/canvas/canvas-editor.tsx`            | CodeMirror 6 editor for viewing and editing canvas artifact source                  |
 | `components/canvas/canvas-diagnostics-panel.tsx` | Panel displaying runtime errors and warnings from the preview iframe                |
 | `components/canvas/canvas-version-history.tsx`   | Version history panel with save, restore, and version listing                       |
-| `components/canvas/canvas-legacy-notice.tsx`     | Static notice shown when old sandbox artifact references are encountered            |
 
 ### Inspector Components
 
@@ -845,7 +844,6 @@ Server-side compile pipeline, validation, service layer, and guest token support
 | `lib/canvas/guest-token.ts`                               | HMAC-SHA256 guest token signing, verification, and rotation for scoped artifact access               |
 | `lib/canvas/tool-context.ts`                              | Context object passed to canvas AI tools with chat/artifact identity and guest token                 |
 | `lib/canvas/constants.ts`                                 | Canvas system constants (max source size, revision limits, compile timeouts)                         |
-| `lib/canvas/legacy.ts`                                    | Legacy artifact detection: maps old sandbox artifact references to a deterministic notice path       |
 
 ---
 

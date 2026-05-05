@@ -966,13 +966,12 @@ activeTools: [...existingTools, 'displayTimeline']
 
 ### Canvas / Inspector
 
-| File                                         | Purpose                                        |
-| -------------------------------------------- | ---------------------------------------------- |
-| `components/canvas/canvas-root.tsx`          | Provider + shell wrapper                       |
-| `components/canvas/canvas-context.tsx`       | React context for canvas/inspector state       |
-| `components/canvas/chat-canvas-shell.tsx`    | Resizable split-pane layout (desktop + mobile) |
-| `components/canvas/canvas-legacy-notice.tsx` | Legacy artifact unavailable notice             |
-| `components/inspector/inspector-panel.tsx`   | Panel chrome with icon + close                 |
+| File                                       | Purpose                                        |
+| ------------------------------------------ | ---------------------------------------------- |
+| `components/canvas/canvas-root.tsx`        | Provider + shell wrapper                       |
+| `components/canvas/canvas-context.tsx`     | React context for canvas/inspector state       |
+| `components/canvas/chat-canvas-shell.tsx`  | Resizable split-pane layout (desktop + mobile) |
+| `components/inspector/inspector-panel.tsx` | Panel chrome with icon + close                 |
 
 ### Types
 
