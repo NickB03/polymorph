@@ -18,9 +18,9 @@ export const CurrentUserAvatar = () => {
   return (
     <Avatar className="size-7">
       {image && <AvatarImage src={image} alt={initials} />}
-      <AvatarFallback>
+      <AvatarFallback className="bg-primary text-[0.6875rem] font-semibold leading-none text-primary-foreground ring-1 ring-border/60">
         {initials === '?' ? (
-          <User2 size={16} className="text-muted-foreground" />
+          <User2 size={16} className="text-primary-foreground" />
         ) : (
           initials
         )}

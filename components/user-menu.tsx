@@ -115,13 +115,16 @@ export default function UserMenu({
       <DropdownMenuTrigger asChild>
         <Button
           id={USER_MENU_TRIGGER_ID}
+          aria-label="Open user menu"
           variant="ghost"
           size="icon"
           className="relative rounded-full"
         >
-          <Avatar className="h-6 w-6">
+          <Avatar className="size-8">
             <AvatarImage src={avatarUrl} alt={userName} />
-            <AvatarFallback>{getInitials(userName, user.email)}</AvatarFallback>
+            <AvatarFallback className="bg-primary text-[0.6875rem] font-semibold leading-none text-primary-foreground ring-1 ring-border/60">
+              {getInitials(userName, user.email)}
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
