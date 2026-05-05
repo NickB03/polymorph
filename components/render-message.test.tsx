@@ -209,6 +209,15 @@ vi.mock('./tool-ui/registry', () => ({
       }
     }
 
+    if (
+      toolName === 'generateImage' &&
+      output &&
+      typeof output === 'object' &&
+      typeof (output as Record<string, unknown>).imageUrl === 'string'
+    ) {
+      return <div data-testid="generate-image-tool-ui" data-part-id={partId} />
+    }
+
     return null
   }
 }))
@@ -1568,6 +1577,45 @@ console.log(toolName)
     expect(
       screen.queryByTestId('legacy-artifact-notice')
     ).not.toBeInTheDocument()
+  })
+
+  it('renders tool-generateImage output through registry', () => {
+    const message: UIMessage = {
+      id: 'assistant-generate-image',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'text',
+          text: 'Here is your generated image:'
+        },
+        {
+          type: 'tool-generateImage',
+          toolCallId: 'gen-img-1',
+          state: 'output-available',
+          output: {
+            imageUrl: 'https://example.com/image.png',
+            filename: 'image.png',
+            mediaType: 'image/png',
+            description: 'A beautiful landscape'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('generate-image-tool-ui')).toHaveAttribute(
+      'data-part-id',
+      'gen-img-1'
+    )
   })
 
   it('renders displayQuestionWizard receipt state on reload (output-available via RenderMessage)', () => {

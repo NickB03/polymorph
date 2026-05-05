@@ -20,8 +20,6 @@ import {
   CanvasArtifactCard,
   tryParseCanvasArtifactCardData
 } from './tool-ui/canvas-artifact-card'
-import { GenerateImage } from './tool-ui/generate-image'
-import { safeParseSerializableGenerateImage } from './tool-ui/generate-image/schema'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
 import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
 import { tryRenderToolUI, tryRenderToolUIByName } from './tool-ui/registry'
@@ -784,14 +782,13 @@ export function RenderMessage({
     } else if (part.type === 'tool-generateImage') {
       const toolPart = part as { state?: string; output?: unknown }
       if (toolPart.state === 'output-available' && toolPart.output) {
-        const parsed = safeParseSerializableGenerateImage(toolPart.output)
-        if (parsed) {
+        const element = renderDisplayToolElement(part, index)
+        if (element) {
           flushBuffer(`seg-${index}`)
           elements.push(
-            <GenerateImage
-              key={`${messageId}-generate-image-${index}`}
-              {...parsed}
-            />
+            <Fragment key={`${messageId}-generate-image-${index}`}>
+              {element}
+            </Fragment>
           )
           return
         }
