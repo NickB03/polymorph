@@ -861,6 +861,10 @@ export function RenderMessage({
         return
       }
 
+      // History compat: messages created before canvas tools were statically registered
+      // may contain dynamic-tool parts for createCanvasArtifact / updateCanvasArtifact.
+      // This block mirrors the tool-createCanvasArtifact branch above for those older messages.
+      // Do not remove until confirmed that no live chat history contains these dynamic-tool parts.
       if (
         (dynamicToolPart.toolName === 'createCanvasArtifact' ||
           dynamicToolPart.toolName === 'updateCanvasArtifact') &&
