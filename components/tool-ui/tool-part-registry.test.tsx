@@ -134,6 +134,24 @@ describe('tool part registry interactive display tools', () => {
     })
   })
 
+  it('renders displayQuestionWizard loading skeleton when input-streaming', () => {
+    const node = renderToolPart({
+      toolName: 'displayQuestionWizard',
+      toolPart: {
+        state: 'input-streaming',
+        toolCallId: 'wiz-1'
+      },
+      messageId: 'message-1',
+      partIndex: 0,
+      isResearchMode: false
+    })
+
+    const { container } = render(<>{node}</>)
+
+    const placeholder = container.querySelector('.h-24.animate-pulse')
+    expect(placeholder).toBeInTheDocument()
+  })
+
   it('renders displayQuestionWizard output as submitted selections', () => {
     const node = renderToolPart({
       toolName: 'displayQuestionWizard',
