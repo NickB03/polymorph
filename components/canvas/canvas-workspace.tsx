@@ -44,7 +44,6 @@ import { ActivityFeedContent } from '@/components/activity/activity-panel'
 import { useCanvas } from './canvas-context'
 import { CanvasDiagnosticsPanel } from './canvas-diagnostics-panel'
 import { CanvasEditor } from './canvas-editor'
-import { CanvasLegacyNotice } from './canvas-legacy-notice'
 import { CanvasPreview } from './canvas-preview'
 import { CanvasVersionHistory } from './canvas-version-history'
 
@@ -240,11 +239,6 @@ export function CanvasWorkspace() {
         <Spinner className="h-6 w-6" />
       </div>
     )
-  }
-
-  // Legacy notice state
-  if (canvas.legacyNotice) {
-    return <CanvasLegacyNotice notice={canvas.legacyNotice} />
   }
 
   const artifact = canvas.artifact

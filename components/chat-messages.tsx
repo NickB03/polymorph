@@ -38,8 +38,6 @@ interface ChatMessagesProps {
   error?: Error | string | null | undefined
   /** Callback when a canvas artifact card is clicked */
   onCanvasArtifactClick?: (artifactId: string) => void
-  /** Callback when a legacy artifact part is encountered */
-  onLegacyArtifactClick?: (artifactId: string) => void
 }
 
 export function ChatMessages({
@@ -53,8 +51,7 @@ export function ChatMessages({
   onUpdateMessage,
   reload,
   error,
-  onCanvasArtifactClick,
-  onLegacyArtifactClick
+  onCanvasArtifactClick
 }: ChatMessagesProps) {
   // Track user-modified states (when user explicitly opens/closes)
   const [userModifiedStates, setUserModifiedStates] = useState<
@@ -197,7 +194,6 @@ export function ChatMessages({
                 citationMaps={allCitationMaps}
                 isResearchMode={false}
                 onCanvasArtifactClick={onCanvasArtifactClick}
-                onLegacyArtifactClick={onLegacyArtifactClick}
               />
             </div>
 
@@ -233,7 +229,6 @@ export function ChatMessages({
                     citationMaps={allCitationMaps}
                     isResearchMode={isLatestMessage && isResearchMode}
                     onCanvasArtifactClick={onCanvasArtifactClick}
-                    onLegacyArtifactClick={onLegacyArtifactClick}
                   />
                 </div>
               )

@@ -592,17 +592,6 @@ export function Chat({
     [canvas, closeArtifactSidebar]
   )
 
-  const handleLegacyArtifactClick = useCallback(
-    (artifactId: string) => {
-      closeArtifactSidebar()
-      canvas.openLegacyCanvasNotice({
-        artifactId,
-        source: 'chat-history'
-      })
-    },
-    [canvas, closeArtifactSidebar]
-  )
-
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)
   }
@@ -925,7 +914,6 @@ export function Chat({
           reload={handleReloadFrom}
           error={error}
           onCanvasArtifactClick={handleCanvasArtifactClick}
-          onLegacyArtifactClick={handleLegacyArtifactClick}
         />
         <ChatPanel
           chatId={chatId}

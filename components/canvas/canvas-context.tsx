@@ -11,10 +11,7 @@ import {
 } from 'react'
 
 import type { CanvasArtifactState } from '@/lib/canvas/service'
-import type {
-  CanvasCompileProgressPayload,
-  LegacyCanvasNotice
-} from '@/lib/types/canvas'
+import type { CanvasCompileProgressPayload } from '@/lib/types/canvas'
 
 export type PendingCanvasWorkspace = {
   artifactId: string
@@ -32,8 +29,6 @@ export type CanvasContextValue = {
   isLoading: boolean
   /** Whether the workspace panel should be open */
   isWorkspaceOpen: boolean
-  /** Legacy notice to display instead of a live workspace */
-  legacyNotice: LegacyCanvasNotice | null
   /** Guest token for unauthenticated artifact access */
   guestCanvasToken: string | null
   /** Workspace shell state before the artifact row exists */
@@ -50,11 +45,6 @@ export type CanvasContextValue = {
   ) => Promise<void>
   /** Focus an already-loaded artifact (no re-fetch) */
   focusCanvasArtifact: (artifactId: string) => void
-  /** Show a legacy notice for old artifact references */
-  openLegacyCanvasNotice: (input: {
-    artifactId: string
-    source: 'chat-history' | 'public-link' | 'guest-token'
-  }) => void
   /** Close the canvas workspace panel */
   closeWorkspace: () => void
   /** Entry point for "Ask AI to change it" */
@@ -114,9 +104,6 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   const [artifactId, setArtifactId] = useState<string | null>(null)
   const [artifact, setArtifact] = useState<CanvasArtifactState | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [legacyNotice, setLegacyNotice] = useState<LegacyCanvasNotice | null>(
-    null
-  )
   const [guestCanvasToken, setGuestCanvasToken] = useState<string | null>(null)
   const [pendingWorkspace, setPendingWorkspaceState] =
     useState<PendingCanvasWorkspace | null>(null)
@@ -137,18 +124,12 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   // during streaming as canvas state changes trigger re-renders).
   const openingRef = useRef<string | null>(null)
 
-  const isWorkspaceOpen = !!(
-    artifact ||
-    isLoading ||
-    legacyNotice ||
-    pendingWorkspace
-  )
+  const isWorkspaceOpen = !!(artifact || isLoading || pendingWorkspace)
 
   const clearWorkspaceState = useCallback(() => {
     setArtifact(null)
     setPendingWorkspaceState(null)
     setCompileProgressState(null)
-    setLegacyNotice(null)
   }, [])
 
   /** Apply an API response state and sync the rotated guest token if changed. */
@@ -218,8 +199,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       if (!id) return // Guard against empty artifactId
 
       if (artifact && artifact.artifactId === id) {
-        // Already loaded, just ensure workspace is visible
-        setLegacyNotice(null)
+        // Already loaded, no-op
         return
       }
       // Already fetching this artifact — don't re-trigger
@@ -231,30 +211,11 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
     [artifact, openCanvasArtifact]
   )
 
-  const openLegacyCanvasNotice = useCallback(
-    (input: {
-      artifactId: string
-      source: 'chat-history' | 'public-link' | 'guest-token'
-    }) => {
-      setArtifact(null)
-      setArtifactId(input.artifactId)
-      setIsLoading(false)
-      setPendingWorkspaceState(null)
-      setLegacyNotice({
-        kind: 'legacy-unavailable',
-        artifactId: input.artifactId,
-        source: input.source
-      })
-    },
-    []
-  )
-
   const closeWorkspace = useCallback(() => {
     openingRef.current = null
     setArtifact(null)
     setArtifactId(null)
     setIsLoading(false)
-    setLegacyNotice(null)
     setPendingWorkspaceState(null)
     setCompileProgressState(null)
   }, [])
@@ -276,13 +237,11 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       ) {
         setArtifact(null)
         setCompileProgressState(null)
-        setLegacyNotice(null)
       }
 
       setPendingWorkspaceState(workspace)
       if (workspace?.artifactId) {
         setArtifactId(workspace.artifactId)
-        setLegacyNotice(null)
       }
     },
     [artifactId, pendingWorkspace?.artifactId]
@@ -468,13 +427,11 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       artifact,
       isLoading,
       isWorkspaceOpen,
-      legacyNotice,
       guestCanvasToken,
       pendingWorkspace,
       compileProgress,
       openCanvasArtifact,
       focusCanvasArtifact,
-      openLegacyCanvasNotice,
       closeWorkspace,
       requestCanvasAiUpdate,
       reloadArtifact,
@@ -495,13 +452,11 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       artifact,
       isLoading,
       isWorkspaceOpen,
-      legacyNotice,
       guestCanvasToken,
       pendingWorkspace,
       compileProgress,
       openCanvasArtifact,
       focusCanvasArtifact,
-      openLegacyCanvasNotice,
       closeWorkspace,
       requestCanvasAiUpdate,
       reloadArtifact,

@@ -27,13 +27,11 @@ const mockCanvasContext: CanvasContextValue = {
   artifact: null,
   isLoading: false,
   isWorkspaceOpen: false,
-  legacyNotice: null,
   guestCanvasToken: null,
   pendingWorkspace: null,
   compileProgress: null,
   openCanvasArtifact: vi.fn(),
   focusCanvasArtifact: vi.fn(),
-  openLegacyCanvasNotice: vi.fn(),
   closeWorkspace: vi.fn(),
   requestCanvasAiUpdate: vi.fn(),
   reloadArtifact: vi.fn(),
@@ -233,7 +231,6 @@ function resetCanvasState() {
     artifact: null,
     isLoading: false,
     isWorkspaceOpen: false,
-    legacyNotice: null,
     guestCanvasToken: null,
     pendingWorkspace: null,
     compileProgress: null
@@ -274,23 +271,6 @@ describe('CanvasWorkspace', () => {
     render(<CanvasWorkspace />)
 
     expect(screen.getByTestId('canvas-loading')).toBeInTheDocument()
-  })
-
-  // ── Legacy notice ──────────────────────────────────────────────
-
-  it('shows the legacy notice instead of a workspace for legacy references', () => {
-    setCanvasState({
-      legacyNotice: {
-        kind: 'legacy-unavailable',
-        artifactId: 'old-art-1',
-        source: 'chat-history'
-      }
-    })
-
-    render(<CanvasWorkspace />)
-
-    expect(screen.getByTestId('canvas-legacy-notice')).toBeInTheDocument()
-    expect(screen.getByText(/legacy artifact unavailable/i)).toBeInTheDocument()
   })
 
   // ── Active workspace ───────────────────────────────────────────

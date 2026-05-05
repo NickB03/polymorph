@@ -124,70 +124,128 @@ vi.mock('./tool-ui/option-list/schema', () => ({
   safeParseSerializableOptionList: () => null
 }))
 
-vi.mock('./tool-ui/registry', () => ({
-  tryRenderToolUI: (output: unknown) => {
-    if (
-      output &&
-      typeof output === 'object' &&
-      typeof (output as Record<string, unknown>).id === 'string' &&
-      typeof (output as Record<string, unknown>).title === 'string' &&
-      Array.isArray((output as Record<string, unknown>).events)
-    ) {
-      return <div data-testid="timeline-tool-ui" data-source="json" />
-    }
-
-    return null
-  },
-  tryRenderToolUIByName: (
-    toolName: string,
-    output: unknown,
-    partId: string
-  ) => {
-    if (
-      toolName === 'displayTimeline' &&
-      output &&
-      typeof output === 'object' &&
-      typeof (output as Record<string, unknown>).id === 'string' &&
-      typeof (output as Record<string, unknown>).title === 'string' &&
-      Array.isArray((output as Record<string, unknown>).events)
-    ) {
-      return <div data-testid="timeline-tool-ui" data-source="tool" />
-    }
-
-    if (
-      toolName === 'competitorResearch' &&
-      output &&
-      typeof output === 'object' &&
-      typeof (output as Record<string, unknown>).summary === 'string' &&
-      Array.isArray((output as Record<string, unknown>).cards) &&
-      Array.isArray((output as Record<string, unknown>).matrix)
-    ) {
-      return (
-        <div data-testid="competitor-research-tool-ui" data-part-id={partId} />
-      )
-    }
-
-    if (
-      (toolName === 'createCanvasArtifact' ||
-        toolName === 'updateCanvasArtifact' ||
-        toolName === 'readCanvasArtifact') &&
-      output &&
-      typeof output === 'object'
-    ) {
-      const data = output as Record<string, unknown>
-      if (
-        typeof data.artifactId === 'string' &&
-        typeof data.chatId === 'string' &&
-        typeof data.title === 'string' &&
-        typeof data.status === 'string'
-      ) {
-        return <div data-testid="canvas-artifact-card" data-source="tool" />
-      }
-    }
-
-    return null
-  }
+vi.mock('./tool-ui/question-wizard/question-wizard', () => ({
+  QuestionWizard: ({
+    choice,
+    id
+  }: {
+    choice?: Record<string, unknown>
+    id: string
+  }) =>
+    choice != null ? (
+      <div
+        data-testid="question-wizard-receipt"
+        data-receipt="true"
+        data-tool-ui-id={id}
+        role="status"
+      >
+        Wizard receipt
+      </div>
+    ) : (
+      <div data-testid="question-wizard-interactive" data-tool-ui-id={id}>
+        Wizard interactive
+      </div>
+    )
 }))
+
+vi.mock('./tool-ui/registry', () => {
+  const registeredToolNames = new Set([
+    'displayPlan',
+    'displayTable',
+    'competitorResearch',
+    'displayChart',
+    'displayGeoMap',
+    'displayCitations',
+    'displayLinkPreview',
+    'displayOptionList',
+    'displayQuestionWizard',
+    'displayCallout',
+    'displayTimeline',
+    'generateImage',
+    'canvasArtifactCard',
+    'createCanvasArtifact',
+    'updateCanvasArtifact'
+  ])
+  return {
+    isRegisteredToolUI: (toolName: string) => registeredToolNames.has(toolName),
+    tryRenderToolUI: (output: unknown) => {
+      if (
+        output &&
+        typeof output === 'object' &&
+        typeof (output as Record<string, unknown>).id === 'string' &&
+        typeof (output as Record<string, unknown>).title === 'string' &&
+        Array.isArray((output as Record<string, unknown>).events)
+      ) {
+        return <div data-testid="timeline-tool-ui" data-source="json" />
+      }
+
+      return null
+    },
+    tryRenderToolUIByName: (
+      toolName: string,
+      output: unknown,
+      partId: string
+    ) => {
+      if (
+        toolName === 'displayTimeline' &&
+        output &&
+        typeof output === 'object' &&
+        typeof (output as Record<string, unknown>).id === 'string' &&
+        typeof (output as Record<string, unknown>).title === 'string' &&
+        Array.isArray((output as Record<string, unknown>).events)
+      ) {
+        return <div data-testid="timeline-tool-ui" data-source="tool" />
+      }
+
+      if (
+        toolName === 'competitorResearch' &&
+        output &&
+        typeof output === 'object' &&
+        typeof (output as Record<string, unknown>).summary === 'string' &&
+        Array.isArray((output as Record<string, unknown>).cards) &&
+        Array.isArray((output as Record<string, unknown>).matrix)
+      ) {
+        return (
+          <div
+            data-testid="competitor-research-tool-ui"
+            data-part-id={partId}
+          />
+        )
+      }
+
+      if (
+        (toolName === 'createCanvasArtifact' ||
+          toolName === 'updateCanvasArtifact' ||
+          toolName === 'readCanvasArtifact') &&
+        output &&
+        typeof output === 'object'
+      ) {
+        const data = output as Record<string, unknown>
+        if (
+          typeof data.artifactId === 'string' &&
+          typeof data.chatId === 'string' &&
+          typeof data.title === 'string' &&
+          typeof data.status === 'string'
+        ) {
+          return <div data-testid="canvas-artifact-card" data-source="tool" />
+        }
+      }
+
+      if (
+        toolName === 'generateImage' &&
+        output &&
+        typeof output === 'object' &&
+        typeof (output as Record<string, unknown>).imageUrl === 'string'
+      ) {
+        return (
+          <div data-testid="generate-image-tool-ui" data-part-id={partId} />
+        )
+      }
+
+      return null
+    }
+  }
+})
 
 vi.mock('./user-file-section', () => ({
   UserFileSection: () => null
@@ -1517,5 +1575,156 @@ console.log(toolName)
       'data-status',
       'compile_failed'
     )
+  })
+
+  it('does not render legacy-artifact-notice for data-artifact parts (branch removed)', () => {
+    const message: UIMessage = {
+      id: 'assistant-legacy',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'data-artifact',
+          data: { id: 'old-artifact-id' }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(
+      screen.queryByTestId('legacy-artifact-notice')
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders tool-generateImage output through registry', () => {
+    const message: UIMessage = {
+      id: 'assistant-generate-image',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'text',
+          text: 'Here is your generated image:'
+        },
+        {
+          type: 'tool-generateImage',
+          toolCallId: 'gen-img-1',
+          state: 'output-available',
+          output: {
+            imageUrl: 'https://example.com/image.png',
+            filename: 'image.png',
+            mediaType: 'image/png',
+            description: 'A beautiful landscape'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('generate-image-tool-ui')).toHaveAttribute(
+      'data-part-id',
+      'gen-img-1'
+    )
+  })
+
+  it('renders displayQuestionWizard receipt state on reload (output-available via RenderMessage)', () => {
+    const message: UIMessage = {
+      id: 'assistant-wizard-reload',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-displayQuestionWizard',
+          toolCallId: 'wiz-reload-1',
+          state: 'output-available',
+          input: {
+            id: 'project-intake',
+            steps: [
+              {
+                id: 'style',
+                title: 'Choose a style',
+                options: [
+                  { id: 'minimal', label: 'Minimal' },
+                  { id: 'editorial', label: 'Editorial' }
+                ],
+                selectionMode: 'single'
+              }
+            ],
+            submitLabel: 'Finish'
+          },
+          output: { style: 'minimal' }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    const receipt = screen.getByTestId('question-wizard-receipt')
+    expect(receipt).toBeInTheDocument()
+    expect(receipt).toHaveAttribute('data-receipt', 'true')
+  })
+
+  it('routes unregistered tool-* output-available parts to ResearchProcessSection (not inline placeholder)', () => {
+    const searchPart = {
+      type: 'tool-search',
+      toolCallId: 'search-1',
+      state: 'output-available',
+      input: { query: 'foo' },
+      output: {
+        query: 'foo',
+        results: [
+          { title: 'r1', url: 'https://example.com/1', content: 'snippet' }
+        ]
+      }
+    }
+
+    const message: UIMessage = {
+      id: 'assistant-search',
+      role: 'assistant',
+      parts: [searchPart as any]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(mockResearchProcessSection).toHaveBeenCalled()
+    const receivedParts = (
+      mockResearchProcessSection.mock.calls[0][0] as { parts: unknown[] }
+    ).parts
+    expect(receivedParts).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: 'tool-search' })])
+    )
+
+    expect(screen.queryByText(/output could not be rendered/i)).toBeNull()
   })
 })

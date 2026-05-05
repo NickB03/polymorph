@@ -20,11 +20,9 @@ import {
   CanvasArtifactCard,
   tryParseCanvasArtifactCardData
 } from './tool-ui/canvas-artifact-card'
-import { GenerateImage } from './tool-ui/generate-image'
-import { safeParseSerializableGenerateImage } from './tool-ui/generate-image/schema'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
 import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
-import { tryRenderToolUI, tryRenderToolUIByName } from './tool-ui/registry'
+import { isRegisteredToolUI, tryRenderToolUI } from './tool-ui/registry'
 import { renderToolPart } from './tool-ui/tool-part-registry'
 import { AnswerSection } from './answer-section'
 import { DynamicToolDisplay } from './dynamic-tool-display'
@@ -410,8 +408,6 @@ interface RenderMessageProps {
   isResearchMode?: boolean
   /** Callback when a canvas artifact card is clicked */
   onCanvasArtifactClick?: (artifactId: string) => void
-  /** Callback when a legacy artifact part is encountered */
-  onLegacyArtifactClick?: (artifactId: string) => void
 }
 
 export function RenderMessage({
@@ -428,8 +424,7 @@ export function RenderMessage({
   isLatestMessage = false,
   citationMaps = {},
   isResearchMode = false,
-  onCanvasArtifactClick,
-  onLegacyArtifactClick
+  onCanvasArtifactClick
 }: RenderMessageProps) {
   const metadata = message.metadata as UIMessageMetadata | undefined
 
@@ -537,8 +532,7 @@ export function RenderMessage({
       p.type === 'tool-createCanvasArtifact' ||
       p.type === 'tool-updateCanvasArtifact' ||
       p.type === 'data-canvasArtifact' ||
-      p.type === 'dynamic-tool' ||
-      (p.type as string) === 'data-artifact'
+      p.type === 'dynamic-tool'
     ) {
       seenVisible = true
     }
@@ -785,94 +779,15 @@ export function RenderMessage({
     } else if (part.type === 'data-canvasArtifactStatus') {
       // Status updates don't render a visible element in chat
       // (the card already shows the latest status)
-    } else if ((part.type as string) === 'data-artifact') {
-      // Legacy artifact parts — render a notice card
-      flushBuffer(`seg-${index}`)
-      const legacyData = (part as { data?: { id?: string } }).data
-      const legacyId = legacyData?.id ?? 'unknown'
-      elements.push(
-        <button
-          key={`${messageId}-legacy-artifact-${index}`}
-          type="button"
-          className="flex w-full items-center gap-3 rounded-lg border border-dashed border-border bg-card p-3 text-left text-sm text-muted-foreground"
-          onClick={
-            onLegacyArtifactClick
-              ? () => onLegacyArtifactClick(legacyId)
-              : undefined
-          }
-          data-testid="legacy-artifact-notice"
-          data-artifact-id={legacyId}
-        >
-          This artifact was created with a previous system and is no longer
-          available.
-        </button>
-      )
-    } else if (part.type === 'tool-generateImage') {
-      const toolPart = part as { state?: string; output?: unknown }
-      if (toolPart.state === 'output-available' && toolPart.output) {
-        const parsed = safeParseSerializableGenerateImage(toolPart.output)
-        if (parsed) {
-          flushBuffer(`seg-${index}`)
-          elements.push(
-            <GenerateImage
-              key={`${messageId}-generate-image-${index}`}
-              {...parsed}
-            />
-          )
-          return
-        }
-      }
-      // Streaming/pending state — push to buffer for process section
-      buffer.push(part)
-    } else if (part.type?.startsWith?.('tool-')) {
+    } else if (part.type === 'tool-readCanvasArtifact') {
       const toolPart = part as {
         state?: string
         output?: unknown
-        toolCallId?: string
       }
       if (toolPart.state === 'output-available') {
-        const toolName = part.type.substring(5)
-        if (toolName === 'readCanvasArtifact') {
-          if (isSuccessfulReadCanvasArtifactOutput(toolPart.output)) {
-            return
-          }
-
-          flushBuffer(`seg-${index}`)
-          elements.push(
-            <DynamicToolDisplay
-              key={`${messageId}-read-canvas-tool-${index}`}
-              part={toDynamicToolPart(
-                toolName,
-                part as ToolPartForDynamicFallback,
-                `${messageId}-tool-${index}`
-              )}
-            />
-          )
+        if (isSuccessfulReadCanvasArtifactOutput(toolPart.output)) {
           return
         }
-
-        const partId = toolPart.toolCallId ?? `${messageId}-tool-${index}`
-        const rendered = tryRenderToolUIByName(
-          toolName,
-          toolPart.output,
-          partId
-        )
-
-        if (rendered) {
-          flushBuffer(`seg-${index}`)
-          elements.push(
-            <Fragment key={`${messageId}-tool-ui-${index}`}>
-              {rendered}
-            </Fragment>
-          )
-          return
-        }
-      }
-
-      if (
-        part.type.substring(5) === 'readCanvasArtifact' &&
-        toolPart.state === 'output-error'
-      ) {
         flushBuffer(`seg-${index}`)
         elements.push(
           <DynamicToolDisplay
@@ -886,7 +801,46 @@ export function RenderMessage({
         )
         return
       }
-
+      if (toolPart.state === 'output-error') {
+        flushBuffer(`seg-${index}`)
+        elements.push(
+          <DynamicToolDisplay
+            key={`${messageId}-read-canvas-tool-${index}`}
+            part={toDynamicToolPart(
+              'readCanvasArtifact',
+              part as ToolPartForDynamicFallback,
+              `${messageId}-tool-${index}`
+            )}
+          />
+        )
+        return
+      }
+      buffer.push(part)
+    } else if (part.type?.startsWith?.('tool-')) {
+      const toolPart = part as {
+        state?: string
+        output?: unknown
+      }
+      const toolName = part.type.substring(5)
+      // Only dispatch through renderDisplayToolElement when the tool name is
+      // registered in the Tool UI registry. renderToolPart returns a
+      // "could not be rendered" placeholder for any output-available state,
+      // so unregistered tools (tool-search, tool-fetch, …) must fall through
+      // to the buffer → ResearchProcessSection path instead.
+      if (
+        isRegisteredToolUI(toolName) &&
+        toolPart.state === 'output-available' &&
+        toolPart.output
+      ) {
+        const element = renderDisplayToolElement(part, index)
+        if (element) {
+          flushBuffer(`seg-${index}`)
+          elements.push(
+            <Fragment key={`${messageId}-tool-ui-${index}`}>{element}</Fragment>
+          )
+          return
+        }
+      }
       buffer.push(part)
     } else if (part.type === 'reasoning' || part.type?.startsWith?.('data-')) {
       buffer.push(part)
@@ -901,6 +855,10 @@ export function RenderMessage({
         return
       }
 
+      // History compat: messages created before canvas tools were statically registered
+      // may contain dynamic-tool parts for createCanvasArtifact / updateCanvasArtifact.
+      // This block mirrors the tool-createCanvasArtifact branch above for those older messages.
+      // Do not remove until confirmed that no live chat history contains these dynamic-tool parts.
       if (
         (dynamicToolPart.toolName === 'createCanvasArtifact' ||
           dynamicToolPart.toolName === 'updateCanvasArtifact') &&
