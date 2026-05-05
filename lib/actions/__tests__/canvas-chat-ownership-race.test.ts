@@ -5,8 +5,7 @@ import {
   canvasArtifacts,
   canvasArtifactVersions,
   chats,
-  messages,
-  parts
+  messages
 } from '@/lib/db/schema'
 import type { StreamContext } from '@/lib/streaming/helpers/types'
 
@@ -15,7 +14,6 @@ type Row = Record<string, any>
 type MemoryStore = {
   chats: Row[]
   messages: Row[]
-  parts: Row[]
   canvasArtifacts: Row[]
   canvasArtifactVersions: Row[]
 }
@@ -75,7 +73,6 @@ function tableRows(store: MemoryStore, table: unknown) {
 
   if (tableName === 'chats') return store.chats
   if (tableName === 'messages') return store.messages
-  if (tableName === 'parts') return store.parts
   if (tableName === 'canvas_artifacts') return store.canvasArtifacts
   if (tableName === 'canvas_artifact_versions') {
     return store.canvasArtifactVersions
@@ -113,10 +110,6 @@ function columnProperty(tableName: string, columnName: string) {
     'messages.created_at': 'createdAt',
     'messages.updated_at': 'updatedAt',
     'messages.metadata': 'metadata',
-    'parts.id': 'id',
-    'parts.message_id': 'messageId',
-    'parts.order': 'order',
-    'parts.type': 'type',
     'canvas_artifacts.id': 'id',
     'canvas_artifacts.chat_id': 'chatId',
     'canvas_artifacts.user_id': 'userId',
@@ -172,13 +165,6 @@ function canReadRow(
     return !!chat && canReadRow(store, chat, chats, userId)
   }
 
-  if (tableName === 'parts') {
-    const message = store.messages.find(
-      candidate => candidate.id === row.messageId
-    )
-    return !!message && canReadRow(store, message, messages, userId)
-  }
-
   if (tableName === 'canvas_artifacts') {
     return row.userId === userId
   }
@@ -212,20 +198,6 @@ function assertWriteAccess(
 
   if (tableName === 'messages') {
     const chat = store.chats.find(candidate => candidate.id === row.chatId)
-    if (!chat || chat.userId !== userId) {
-      throw new Error('new row violates row-level security policy')
-    }
-    return
-  }
-
-  if (tableName === 'parts') {
-    const message = store.messages.find(
-      candidate => candidate.id === row.messageId
-    )
-    const chat = message
-      ? store.chats.find(candidate => candidate.id === message.chatId)
-      : null
-
     if (!chat || chat.userId !== userId) {
       throw new Error('new row violates row-level security policy')
     }
@@ -475,11 +447,7 @@ class InsertBuilder {
       const duplicate = rows.find(existing => {
         const tableName = tableNameOf(this.table)
 
-        if (
-          tableName === 'chats' ||
-          tableName === 'messages' ||
-          tableName === 'parts'
-        ) {
+        if (tableName === 'chats' || tableName === 'messages') {
           return existing.id === row.id
         }
 
@@ -604,7 +572,6 @@ function createMemoryDb(gate?: Gate | null) {
   const store: MemoryStore = {
     chats: [],
     messages: [],
-    parts: [],
     canvasArtifacts: [],
     canvasArtifactVersions: []
   }
@@ -634,11 +601,7 @@ function createMemoryDb(gate?: Gate | null) {
         new DeleteBuilder(store, table, currentUserId),
       query: {
         messages: {
-          findMany: async (input: {
-            where?: unknown
-            orderBy?: unknown[]
-            with?: { parts?: { orderBy?: unknown[] } }
-          }) => {
+          findMany: async (input: { where?: unknown; orderBy?: unknown[] }) => {
             const messageRows = applyOrdering(
               store.messages
                 .filter(row => canReadRow(store, row, messages, currentUserId))
@@ -646,17 +609,7 @@ function createMemoryDb(gate?: Gate | null) {
               input.orderBy ?? []
             )
 
-            return messageRows.map(messageRow => ({
-              ...clone(messageRow),
-              parts: applyOrdering(
-                store.parts
-                  .filter(partRow => partRow.messageId === messageRow.id)
-                  .filter(partRow =>
-                    canReadRow(store, partRow, parts, currentUserId)
-                  ),
-                input.with?.parts?.orderBy ?? []
-              ).map(clone)
-            }))
+            return messageRows.map(messageRow => clone(messageRow))
           }
         }
       }

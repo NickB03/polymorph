@@ -53,7 +53,6 @@ interface SampleMessageRow {
   createdAt?: unknown
   uiMessage?: unknown
   metadata?: unknown
-  textParts?: unknown
 }
 
 interface ChatSampleRow extends Record<string, unknown> {
@@ -73,8 +72,8 @@ interface ChatSampleRow extends Record<string, unknown> {
  *
  * Samples coherent target turns from recent chats for evaluation.
  *
- * The canonical source is messages.ui_message. Legacy parts are only used when
- * ui_message is unavailable, matching the app's chat-load behavior.
+ * The canonical source is messages.ui_message. Every row is expected to have
+ * a populated ui_message column.
  *
  * RLS note: This query must run as the DB owner (not app_user)
  * since the evals service needs cross-user read access.
@@ -109,40 +108,13 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
               AND user_message.id < assistant.id
             )
           )
-          AND (
-            user_message.ui_message IS NOT NULL OR EXISTS (
-              SELECT 1
-              FROM parts user_part
-              WHERE user_part.message_id = user_message.id
-                AND user_part.type = 'text'
-                AND user_part.text_text IS NOT NULL
-            )
-          )
+          AND user_message.ui_message IS NOT NULL
         ORDER BY user_message.created_at DESC, user_message.id DESC
         LIMIT 1
       ) target_user ON true
       WHERE assistant.role = 'assistant'
         AND assistant.created_at > NOW() - make_interval(hours => ${lookbackHours})
-        AND (
-          assistant.ui_message IS NOT NULL OR EXISTS (
-            SELECT 1
-            FROM parts assistant_part
-            WHERE assistant_part.message_id = assistant.id
-              AND assistant_part.type = 'text'
-              AND assistant_part.text_text IS NOT NULL
-          )
-        )
-        AND NOT EXISTS (
-          SELECT 1
-          FROM parts unsupported_part
-          WHERE unsupported_part.message_id = assistant.id
-            AND unsupported_part.type IN (
-              'tool-createCanvasArtifact',
-              'tool-updateCanvasArtifact',
-              'tool-readCanvasArtifact',
-              'tool-generateImage'
-            )
-        )
+        AND assistant.ui_message IS NOT NULL
         AND NOT EXISTS (
           SELECT 1
           FROM jsonb_array_elements(
@@ -179,20 +151,7 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
             'role', conversation_message.role,
             'createdAt', conversation_message.created_at,
             'uiMessage', conversation_message.ui_message,
-            'metadata', conversation_message.metadata,
-            'textParts', COALESCE(
-              (
-                SELECT json_agg(
-                  json_build_object('type', 'text', 'text', text_part.text_text)
-                  ORDER BY text_part."order"
-                )
-                FROM parts text_part
-                WHERE text_part.message_id = conversation_message.id
-                  AND text_part.type = 'text'
-                  AND text_part.text_text IS NOT NULL
-              ),
-              '[]'::json
-            )
+            'metadata', conversation_message.metadata
           )
           ORDER BY conversation_message.created_at, conversation_message.id
         )
@@ -210,43 +169,42 @@ export async function sampleRecentChats(): Promise<ChatSample[]> {
         'role', assistant_message.role,
         'createdAt', assistant_message.created_at,
         'uiMessage', assistant_message.ui_message,
-        'metadata', assistant_message.metadata,
-        'textParts', COALESCE(
-          (
-            SELECT json_agg(
-              json_build_object('type', 'text', 'text', text_part.text_text)
-              ORDER BY text_part."order"
-            )
-            FROM parts text_part
-            WHERE text_part.message_id = assistant_message.id
-              AND text_part.type = 'text'
-              AND text_part.text_text IS NOT NULL
-          ),
-          '[]'::json
-        )
+        'metadata', assistant_message.metadata
       ) AS target_assistant_message,
       (
-        SELECT json_agg(search_part.tool_search_output)
-        FROM parts search_part
-        WHERE search_part.message_id = sampled.target_assistant_message_id
-          AND search_part.type = 'tool-search'
-          AND search_part.tool_state = 'output-available'
-          AND search_part.tool_search_output IS NOT NULL
+        SELECT json_agg(p.part->'output')
+        FROM jsonb_array_elements(
+          CASE WHEN jsonb_typeof(assistant_message.ui_message->'parts') = 'array'
+               THEN assistant_message.ui_message->'parts'
+               ELSE '[]'::jsonb
+          END
+        ) AS p(part)
+        WHERE p.part->>'type' = 'tool-search'
+          AND p.part->>'state' = 'output-available'
+          AND p.part->'output' IS NOT NULL
       ) AS target_search_results,
       (
         SELECT json_agg(json_build_object(
-          'url', citation_part.source_url_url,
-          'title', citation_part.source_url_title
+          'url', p.part->>'url',
+          'title', p.part->>'title'
         ))
-        FROM parts citation_part
-        WHERE citation_part.message_id = sampled.target_assistant_message_id
-          AND citation_part.type = 'source-url'
+        FROM jsonb_array_elements(
+          CASE WHEN jsonb_typeof(assistant_message.ui_message->'parts') = 'array'
+               THEN assistant_message.ui_message->'parts'
+               ELSE '[]'::jsonb
+          END
+        ) AS p(part)
+        WHERE p.part->>'type' = 'source-url'
       ) AS target_citations,
       (
-        SELECT json_agg(DISTINCT COALESCE(tool_part.tool_dynamic_name, substring(tool_part.type from 6)))
-        FROM parts tool_part
-        WHERE tool_part.message_id = sampled.target_assistant_message_id
-          AND tool_part.type LIKE 'tool-%'
+        SELECT json_agg(DISTINCT substring(p.part->>'type' FROM 6))
+        FROM jsonb_array_elements(
+          CASE WHEN jsonb_typeof(assistant_message.ui_message->'parts') = 'array'
+               THEN assistant_message.ui_message->'parts'
+               ELSE '[]'::jsonb
+          END
+        ) AS p(part)
+        WHERE p.part->>'type' LIKE 'tool-%'
       ) AS target_tool_names
     FROM sampled_targets sampled
     JOIN messages assistant_message
@@ -298,13 +256,7 @@ function parseJsonArray(raw: unknown, field: string): unknown[] {
 
 function messageParts(message: SampleMessageRow): unknown[] {
   const uiMessage = asRecord(message.uiMessage)
-  const uiParts = uiMessage?.parts
-
-  if (Array.isArray(uiParts)) {
-    return uiParts
-  }
-
-  return parseJsonArray(message.textParts, 'text_parts')
+  return Array.isArray(uiMessage?.parts) ? (uiMessage.parts as unknown[]) : []
 }
 
 function metadataFor(message: SampleMessageRow): Record<string, unknown> {

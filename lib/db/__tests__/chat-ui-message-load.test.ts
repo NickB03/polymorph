@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { UIMessage } from '@/lib/types/ai'
-import type { DBMessagePartSelect } from '@/lib/types/message-persistence'
 
 const dbMocks = vi.hoisted(() => {
   const tx = {
@@ -46,54 +45,6 @@ import {
 } from '@/lib/db/actions'
 import { buildUIMessageFromDB } from '@/lib/utils/message-mapping'
 
-function makeTextPart(
-  overrides: Partial<DBMessagePartSelect> = {}
-): DBMessagePartSelect {
-  return {
-    id: 'part-1',
-    messageId: 'msg-1',
-    order: 0,
-    type: 'text',
-    text_text: 'legacy payload',
-    reasoning_text: null,
-    file_mediaType: null,
-    file_filename: null,
-    file_url: null,
-    source_url_sourceId: null,
-    source_url_url: null,
-    source_url_title: null,
-    source_document_sourceId: null,
-    source_document_mediaType: null,
-    source_document_title: null,
-    source_document_filename: null,
-    source_document_url: null,
-    source_document_snippet: null,
-    tool_toolCallId: null,
-    tool_state: null,
-    tool_errorText: null,
-    tool_search_input: null,
-    tool_search_output: null,
-    tool_fetch_input: null,
-    tool_fetch_output: null,
-    tool_question_input: null,
-    tool_question_output: null,
-    tool_todoWrite_input: null,
-    tool_todoWrite_output: null,
-    tool_todoRead_input: null,
-    tool_todoRead_output: null,
-    tool_dynamic_input: null,
-    tool_dynamic_output: null,
-    tool_dynamic_name: null,
-    tool_dynamic_type: null,
-    data_prefix: null,
-    data_content: null,
-    data_id: null,
-    providerMetadata: null,
-    createdAt: new Date('2026-04-24T12:00:00.000Z'),
-    ...overrides
-  } as DBMessagePartSelect
-}
-
 function mockChatSelect(chatRows: unknown[]) {
   const limit = vi.fn().mockResolvedValue(chatRows)
   const where = vi.fn(() => ({ limit }))
@@ -104,16 +55,6 @@ function mockChatSelect(chatRows: unknown[]) {
   return { from, limit, where }
 }
 
-function mockPartsSelect(partRows: unknown[]) {
-  const orderBy = vi.fn().mockResolvedValue(partRows)
-  const where = vi.fn(() => ({ orderBy }))
-  const from = vi.fn(() => ({ where }))
-
-  dbMocks.tx.select.mockReturnValueOnce({ from })
-
-  return { from, orderBy, where }
-}
-
 describe('canonical chat UIMessage loading', () => {
   beforeEach(() => {
     dbMocks.tx.delete.mockReset()
@@ -122,37 +63,31 @@ describe('canonical chat UIMessage loading', () => {
     dbMocks.tx.select.mockReset()
   })
 
-  it('buildUIMessageFromDB prefers row uiMessage parts over legacy parts', () => {
-    const rebuilt = buildUIMessageFromDB(
-      {
+  it('buildUIMessageFromDB returns the uiMessage parts', () => {
+    const rebuilt = buildUIMessageFromDB({
+      id: 'msg-1',
+      role: 'assistant',
+      uiMessage: {
         id: 'msg-1',
         role: 'assistant',
-        uiMessage: {
-          id: 'msg-1',
-          role: 'assistant',
-          parts: [{ type: 'text', text: 'canonical payload' }]
-        }
-      },
-      [makeTextPart({ text_text: 'legacy payload' })]
-    )
+        parts: [{ type: 'text', text: 'canonical payload' }]
+      }
+    })
 
     expect(rebuilt.parts).toEqual([{ type: 'text', text: 'canonical payload' }])
   })
 
-  it('buildUIMessageFromDB reconstructs from legacy parts when uiMessage is null', () => {
-    const rebuilt = buildUIMessageFromDB(
-      {
+  it('buildUIMessageFromDB throws when uiMessage is null', () => {
+    expect(() =>
+      buildUIMessageFromDB({
         id: 'msg-1',
         role: 'assistant',
         uiMessage: null
-      },
-      [makeTextPart({ text_text: 'legacy payload' })]
-    )
-
-    expect(rebuilt.parts).toEqual([{ type: 'text', text: 'legacy payload' }])
+      })
+    ).toThrow('Invariant: message msg-1 has no uiMessage')
   })
 
-  it('loadChatWithMessages returns canonical row parts before compatibility parts', async () => {
+  it('loadChatWithMessages returns canonical row parts', async () => {
     mockChatSelect([
       {
         id: 'chat-1',
@@ -171,8 +106,7 @@ describe('canonical chat UIMessage loading', () => {
           id: 'msg-1',
           role: 'assistant',
           parts: [{ type: 'text', text: 'canonical payload' }]
-        },
-        parts: [makeTextPart({ text_text: 'legacy payload' })]
+        }
       }
     ])
 
@@ -219,52 +153,6 @@ describe('canonical chat UIMessage loading', () => {
     )
   })
 
-  it('loadChatWithMessages queries compatibility parts only for legacy rows', async () => {
-    mockChatSelect([
-      {
-        id: 'chat-1',
-        title: 'Mixed chat',
-        userId: 'user-1',
-        visibility: 'private'
-      }
-    ])
-    mockPartsSelect([
-      makeTextPart({
-        id: 'part-legacy',
-        messageId: 'msg-legacy',
-        text_text: 'legacy payload'
-      })
-    ])
-    dbMocks.tx.query.messages.findMany.mockResolvedValue([
-      {
-        id: 'msg-canonical',
-        role: 'assistant',
-        createdAt: new Date('2026-04-24T12:00:00.000Z'),
-        metadata: null,
-        uiMessage: {
-          id: 'msg-canonical',
-          role: 'assistant',
-          parts: [{ type: 'text', text: 'canonical payload' }]
-        }
-      },
-      {
-        id: 'msg-legacy',
-        role: 'assistant',
-        createdAt: new Date('2026-04-24T12:01:00.000Z'),
-        metadata: null,
-        uiMessage: null
-      }
-    ])
-
-    const chat = await loadChatWithMessages('chat-1', 'user-1')
-
-    expect(chat?.messages.map(message => message.parts)).toEqual([
-      [{ type: 'text', text: 'canonical payload' }],
-      [{ type: 'text', text: 'legacy payload' }]
-    ])
-    expect(dbMocks.tx.select).toHaveBeenCalledTimes(2)
-  })
-
   it('loadChatWithMessages merges uiMessage metadata, row metadata, and createdAt', async () => {
     const createdAt = new Date('2026-04-24T12:00:00.000Z')
 
@@ -287,8 +175,7 @@ describe('canonical chat UIMessage loading', () => {
           role: 'assistant',
           parts: [{ type: 'text', text: 'canonical payload' }],
           metadata: { modelId: 'gateway:test-model' }
-        },
-        parts: []
+        }
       }
     ])
 
@@ -301,7 +188,7 @@ describe('canonical chat UIMessage loading', () => {
     })
   })
 
-  it('upsertMessage updates canonical uiMessage and clears legacy parts projection', async () => {
+  it('upsertMessage updates canonical uiMessage without touching parts table', async () => {
     const message: UIMessage & { chatId: string } = {
       id: 'msg-1',
       chatId: 'chat-1',
@@ -314,23 +201,13 @@ describe('canonical chat UIMessage loading', () => {
       onConflictDoUpdate: vi.fn(() => messageInsert),
       returning: vi.fn().mockResolvedValue([{ id: 'msg-1' }])
     }
-    const deleteParts = {
-      where: vi.fn().mockResolvedValue(undefined)
-    }
-    const partsInsert = {
-      values: vi.fn().mockResolvedValue(undefined)
-    }
 
-    dbMocks.tx.insert
-      .mockReturnValueOnce(messageInsert)
-      .mockReturnValueOnce(partsInsert)
-    dbMocks.tx.delete.mockReturnValueOnce(deleteParts)
+    dbMocks.tx.insert.mockReturnValueOnce(messageInsert)
 
     await upsertMessage(message, 'user-1')
 
     expect(dbMocks.tx.insert).toHaveBeenCalledTimes(1)
-    expect(dbMocks.tx.delete).toHaveBeenCalledTimes(1)
-    expect(deleteParts.where).toHaveBeenCalledTimes(1)
+    expect(dbMocks.tx.delete).toHaveBeenCalledTimes(0)
     expect(messageInsert.onConflictDoUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         set: expect.objectContaining({
@@ -359,14 +236,10 @@ describe('canonical chat UIMessage loading', () => {
       values: vi.fn(() => messageInsert),
       returning: vi.fn().mockResolvedValue([{ id: 'msg-1' }])
     }
-    const partsInsert = {
-      values: vi.fn().mockResolvedValue(undefined)
-    }
 
     dbMocks.tx.insert
       .mockReturnValueOnce(chatInsert)
       .mockReturnValueOnce(messageInsert)
-      .mockReturnValueOnce(partsInsert)
 
     await createChatWithFirstMessageTransaction({
       chatId: 'chat-1',

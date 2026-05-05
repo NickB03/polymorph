@@ -127,8 +127,7 @@ describe('sampleRecentChats', () => {
               parts: [{ type: 'text', text: 'first question' }],
               metadata: { userMode: 'search', modelType: 'speed' }
             },
-            metadata: { userMode: 'search', modelType: 'speed' },
-            textParts: [{ type: 'text', text: 'legacy first question' }]
+            metadata: { userMode: 'search', modelType: 'speed' }
           },
           {
             id: 'assistant-1',
@@ -139,8 +138,7 @@ describe('sampleRecentChats', () => {
               role: 'assistant',
               parts: [{ type: 'text', text: 'first answer' }]
             },
-            metadata: {},
-            textParts: [{ type: 'text', text: 'legacy first answer' }]
+            metadata: {}
           },
           {
             id: 'user-2',
@@ -160,8 +158,7 @@ describe('sampleRecentChats', () => {
               userMode: 'research',
               modelType: 'quality',
               modelId: 'original-model'
-            },
-            textParts: [{ type: 'text', text: 'legacy follow-up' }]
+            }
           }
         ],
         target_assistant_message: {
@@ -191,8 +188,7 @@ describe('sampleRecentChats', () => {
               }
             ]
           },
-          metadata: { modelId: 'assistant-model' },
-          textParts: [{ type: 'text', text: 'legacy target answer' }]
+          metadata: { modelId: 'assistant-model' }
         },
         target_search_results: null,
         target_citations: null,
@@ -263,8 +259,7 @@ describe('sampleRecentChats', () => {
               parts: [{ type: 'text', text: 'ui only question' }],
               metadata: { userMode: 'research', modelType: 'quality' }
             },
-            metadata: null,
-            textParts: null
+            metadata: null
           }
         ],
         target_assistant_message: {
@@ -297,8 +292,7 @@ describe('sampleRecentChats', () => {
               }
             ]
           },
-          metadata: null,
-          textParts: null
+          metadata: null
         },
         target_search_results: null,
         target_citations: null,
@@ -355,8 +349,7 @@ describe('sampleRecentChats', () => {
               parts: [{ type: 'text', text: 'draw this' }],
               metadata: { userMode: 'search' }
             },
-            metadata: null,
-            textParts: null
+            metadata: null
           }
         ],
         target_assistant_message: {
@@ -371,8 +364,7 @@ describe('sampleRecentChats', () => {
               { type: 'tool-generateImage', output: { status: 'completed' } }
             ]
           },
-          metadata: null,
-          textParts: null
+          metadata: null
         },
         target_search_results: null,
         target_citations: null,
@@ -383,48 +375,6 @@ describe('sampleRecentChats', () => {
     const samples = await sampleRecentChats()
 
     expect(samples).toHaveLength(0)
-  })
-
-  it('falls back to legacy text parts and labels missing mode metadata', async () => {
-    mockDbExecute.mockResolvedValueOnce([
-      {
-        chat_id: 'chat-legacy',
-        created_at: new Date('2026-04-22T12:00:00Z'),
-        target_user_message_id: 'user-legacy',
-        target_assistant_message_id: 'assistant-legacy',
-        conversation_messages: [
-          {
-            id: 'user-legacy',
-            role: 'user',
-            createdAt: '2026-04-22T11:05:00Z',
-            uiMessage: null,
-            metadata: null,
-            textParts: [{ type: 'text', text: 'legacy question' }]
-          }
-        ],
-        target_assistant_message: {
-          id: 'assistant-legacy',
-          role: 'assistant',
-          createdAt: '2026-04-22T11:06:00Z',
-          uiMessage: null,
-          metadata: null,
-          textParts: [{ type: 'text', text: 'legacy answer' }]
-        },
-        target_search_results: null,
-        target_citations: null,
-        target_tool_names: null
-      }
-    ])
-
-    const samples = await sampleRecentChats()
-
-    expect(samples[0]).toMatchObject({
-      userQuery: 'legacy question',
-      modelAnswer: 'legacy answer',
-      searchMode: 'chat',
-      modelType: 'speed'
-    })
-    expect(samples[0].metadataTags).toContain('mode_metadata_missing')
   })
 
   it('preserves build user mode as chat search mode with build intent', async () => {
@@ -453,8 +403,7 @@ describe('sampleRecentChats', () => {
               userMode: 'build',
               intent: 'build',
               modelType: 'quality'
-            },
-            textParts: [{ type: 'text', text: 'legacy build question' }]
+            }
           }
         ],
         target_assistant_message: {
@@ -466,8 +415,7 @@ describe('sampleRecentChats', () => {
             role: 'assistant',
             parts: [{ type: 'text', text: 'Here is a dashboard.' }]
           },
-          metadata: {},
-          textParts: [{ type: 'text', text: 'legacy build answer' }]
+          metadata: {}
         },
         target_search_results: null,
         target_citations: null,
@@ -504,8 +452,7 @@ describe('sampleRecentChats', () => {
               parts: [{ type: 'text', text: 'Build a pricing table' }],
               metadata: { modelType: 'speed' }
             },
-            metadata: { modelType: 'speed' },
-            textParts: [{ type: 'text', text: 'legacy question' }]
+            metadata: { modelType: 'speed' }
           }
         ],
         target_assistant_message: {
@@ -518,8 +465,7 @@ describe('sampleRecentChats', () => {
             parts: [{ type: 'text', text: 'Here is a pricing table.' }],
             metadata: { userMode: 'build' }
           },
-          metadata: { userMode: 'build' },
-          textParts: [{ type: 'text', text: 'legacy answer' }]
+          metadata: { userMode: 'build' }
         },
         target_search_results: null,
         target_citations: null,
@@ -550,18 +496,26 @@ describe('sampleRecentChats', () => {
             id: 'user-1',
             role: 'user',
             createdAt: '2026-04-28T00:00:00Z',
-            uiMessage: null,
-            metadata: { userMode: 'search' },
-            textParts: [{ type: 'text', text: 'hello' }]
+            uiMessage: {
+              id: 'user-1',
+              role: 'user',
+              parts: [{ type: 'text', text: 'hello' }],
+              metadata: { userMode: 'search' }
+            },
+            metadata: { userMode: 'search' }
           }
         ],
         target_assistant_message: {
           id: 'assistant-1',
           role: 'assistant',
           createdAt: '2026-04-28T00:00:01Z',
-          uiMessage: null,
-          metadata: { modelType: 'quality', modelId: 'openrouter:x/y' },
-          textParts: [{ type: 'text', text: 'hi' }]
+          uiMessage: {
+            id: 'assistant-1',
+            role: 'assistant',
+            parts: [{ type: 'text', text: 'hi' }],
+            metadata: { modelType: 'quality', modelId: 'openrouter:x/y' }
+          },
+          metadata: { modelType: 'quality', modelId: 'openrouter:x/y' }
         },
         target_search_results: null,
         target_citations: null,
@@ -586,9 +540,12 @@ describe('sampleRecentChats', () => {
             id: 'user-1',
             role: 'user',
             createdAt: '2026-04-28T00:00:00Z',
-            uiMessage: null,
-            metadata: {},
-            textParts: [{ type: 'text', text: 'make a chart' }]
+            uiMessage: {
+              id: 'user-1',
+              role: 'user',
+              parts: [{ type: 'text', text: 'make a chart' }]
+            },
+            metadata: {}
           }
         ]),
         target_assistant_message: JSON.stringify({
@@ -596,13 +553,14 @@ describe('sampleRecentChats', () => {
           role: 'assistant',
           createdAt: '2026-04-28T00:00:01Z',
           uiMessage: {
+            id: 'assistant-1',
+            role: 'assistant',
             parts: [
               { type: 'text', text: 'here you go' },
               { type: 'tool-createCanvasArtifact', output: { ok: true } }
             ]
           },
-          metadata: {},
-          textParts: [{ type: 'text', text: 'here you go' }]
+          metadata: {}
         }),
         target_search_results: null,
         target_citations: null,
@@ -626,18 +584,27 @@ describe('sampleRecentChats', () => {
             id: 'user-1',
             role: 'user',
             createdAt: '2026-04-28T00:00:00Z',
-            uiMessage: null,
-            metadata: {},
-            textParts: [{ type: 'text', text: 'draw a cat' }]
+            uiMessage: {
+              id: 'user-1',
+              role: 'user',
+              parts: [{ type: 'text', text: 'draw a cat' }]
+            },
+            metadata: {}
           }
         ]),
         target_assistant_message: JSON.stringify({
           id: 'assistant-1',
           role: 'assistant',
           createdAt: '2026-04-28T00:00:01Z',
-          uiMessage: null,
-          metadata: {},
-          textParts: [{ type: 'text', text: 'here is a cat' }]
+          uiMessage: {
+            id: 'assistant-1',
+            role: 'assistant',
+            parts: [
+              { type: 'text', text: 'here is a cat' },
+              { type: 'tool-generateImage', output: { status: 'completed' } }
+            ]
+          },
+          metadata: {}
         }),
         target_search_results: null,
         target_citations: null,
@@ -677,8 +644,7 @@ describe('sampleRecentChats', () => {
               role: 'user',
               parts: [{ type: 'text', text: 'shared query' }]
             },
-            metadata: null,
-            textParts: null
+            metadata: null
           }
         ],
         target_assistant_message: {
@@ -693,8 +659,7 @@ describe('sampleRecentChats', () => {
               { type: 'tool-search', output: sharedSearchOutput }
             ]
           },
-          metadata: null,
-          textParts: null
+          metadata: null
         },
         target_search_results: JSON.stringify([sharedSearchOutput]),
         target_citations: null,
