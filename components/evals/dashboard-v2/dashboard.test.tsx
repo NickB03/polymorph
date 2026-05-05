@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
@@ -221,6 +221,162 @@ describe('EvalsDashboardV2', () => {
 
     expect(screen.getAllByText('regression-dataset').length).toBeGreaterThan(0)
     expect(screen.getByText('Evaluator breakdown')).toBeInTheDocument()
+  })
+
+  it('defaults to a threshold-breached Production Evals suite while keeping Test Suite naming', () => {
+    const capability = snapshot({
+      id: 'capability-latest',
+      suite: 'capability',
+      datasetName: 'capability-dataset',
+      passRate: 0.92,
+      thresholdBreached: false
+    })
+    const trafficMonitor = snapshot({
+      id: 'traffic-latest',
+      suite: 'traffic-monitor',
+      datasetName: 'traffic-dataset',
+      passRate: 0.78,
+      threshold: 0.85,
+      thresholdBreached: true,
+      failedEvaluators: ['citation_accuracy'],
+      phoenixUrl:
+        'https://phoenix.example.com/datasets/traffic-dataset/compare?experimentId=traffic-experiment'
+    })
+
+    render(
+      <EvalsDashboardV2
+        data={{
+          ...EMPTY,
+          capability: {
+            latest: capability,
+            previous: null,
+            trend: [],
+            lastUpdated: capability.createdAt
+          },
+          trafficMonitor: {
+            latest: trafficMonitor,
+            previous: null,
+            trend: [],
+            lastUpdated: trafficMonitor.createdAt
+          },
+          recentRuns: [trafficMonitor, capability]
+        }}
+      />
+    )
+
+    expect(screen.getByText('Phoenix insight')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Production Evals is below threshold while Test Suite is healthy.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('tab', { name: /production evals/i })
+    ).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
+    expect(screen.getByRole('tab', { name: /test suite/i })).toHaveTextContent(
+      'Test Suite'
+    )
+  })
+
+  it('preserves an explicit populated suite URL even when another suite needs attention', () => {
+    mockSearchParamGet.mockImplementation(key =>
+      key === 'suite' ? 'capability' : null
+    )
+    const capability = snapshot({
+      id: 'capability-latest',
+      suite: 'capability',
+      datasetName: 'capability-dataset',
+      thresholdBreached: false
+    })
+    const trafficMonitor = snapshot({
+      id: 'traffic-latest',
+      suite: 'traffic-monitor',
+      datasetName: 'traffic-dataset',
+      passRate: 0.78,
+      threshold: 0.85,
+      thresholdBreached: true,
+      failedEvaluators: ['citation_accuracy']
+    })
+
+    render(
+      <EvalsDashboardV2
+        data={{
+          ...EMPTY,
+          capability: {
+            latest: capability,
+            previous: null,
+            trend: [],
+            lastUpdated: capability.createdAt
+          },
+          trafficMonitor: {
+            latest: trafficMonitor,
+            previous: null,
+            trend: [],
+            lastUpdated: trafficMonitor.createdAt
+          },
+          recentRuns: [trafficMonitor, capability]
+        }}
+      />
+    )
+
+    expect(screen.getByText('Phoenix insight')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /test suite/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    expect(screen.getAllByText('capability-dataset').length).toBeGreaterThan(0)
+  })
+
+  it('lets the Phoenix insight review button select the alerting suite', () => {
+    mockSearchParamGet.mockImplementation(key =>
+      key === 'suite' ? 'capability' : null
+    )
+    const capability = snapshot({
+      id: 'capability-latest',
+      suite: 'capability',
+      datasetName: 'capability-dataset',
+      thresholdBreached: false
+    })
+    const trafficMonitor = snapshot({
+      id: 'traffic-latest',
+      suite: 'traffic-monitor',
+      datasetName: 'traffic-dataset',
+      passRate: 0.78,
+      threshold: 0.85,
+      thresholdBreached: true,
+      failedEvaluators: ['citation_accuracy']
+    })
+
+    render(
+      <EvalsDashboardV2
+        data={{
+          ...EMPTY,
+          capability: {
+            latest: capability,
+            previous: null,
+            trend: [],
+            lastUpdated: capability.createdAt
+          },
+          trafficMonitor: {
+            latest: trafficMonitor,
+            previous: null,
+            trend: [],
+            lastUpdated: trafficMonitor.createdAt
+          },
+          recentRuns: [trafficMonitor, capability]
+        }}
+      />
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /review production evals/i })
+    )
+
+    expect(
+      screen.getByRole('tab', { name: /production evals/i })
+    ).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
   })
 
   it('counts capability, traffic monitor, and regression cases in the subtitle', () => {

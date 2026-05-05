@@ -161,11 +161,11 @@ export function EvaluatorBreakdown({
   )
 }
 
-type ReleaseStatus = 'READY' | 'WATCH' | 'BLOCKED'
+type DiagnosticStatus = 'READY' | 'WATCH' | 'BLOCKED'
 
 interface DiagnosticOverview {
-  releaseStatus: ReleaseStatus
-  releaseReason: string
+  status: DiagnosticStatus
+  reason: string
   newFailures: number
   fixedFailures: number
   stillFailing: number
@@ -205,8 +205,8 @@ function buildDiagnosticOverview(
 
   if (snap.thresholdBreached) {
     return {
-      releaseStatus: 'BLOCKED',
-      releaseReason: 'Threshold breached',
+      status: 'BLOCKED',
+      reason: 'Threshold breached',
       newFailures,
       fixedFailures,
       stillFailing,
@@ -222,8 +222,8 @@ function buildDiagnosticOverview(
     (largestDrop && largestDrop.delta <= -0.05)
   ) {
     return {
-      releaseStatus: 'WATCH',
-      releaseReason:
+      status: 'WATCH',
+      reason:
         newFailures > 0
           ? 'New failures found'
           : snap.failedCases > 0
@@ -238,8 +238,8 @@ function buildDiagnosticOverview(
   }
 
   return {
-    releaseStatus: 'READY',
-    releaseReason: 'No blocking failures',
+    status: 'READY',
+    reason: 'No blocking failures',
     newFailures,
     fixedFailures,
     stillFailing,
@@ -275,26 +275,27 @@ function DiagnosticsOverview({
   snap: EvalSummarySnapshot
   overview: DiagnosticOverview
 }) {
+  const statusCopy = getDiagnosticStatusCopy(snap, overview)
   const statusClass =
-    overview.releaseStatus === 'BLOCKED'
+    overview.status === 'BLOCKED'
       ? 'text-destructive'
-      : overview.releaseStatus === 'WATCH'
+      : overview.status === 'WATCH'
         ? 'text-accent-amber'
         : 'text-emerald-400'
 
   return (
     <div className="grid grid-cols-1 gap-3 border-t border-border/60 pt-4 xl:grid-cols-2">
-      <PanelBlock title="Release status">
+      <PanelBlock title={statusCopy.title}>
         <div className="flex items-baseline justify-between gap-3">
           <span className={cn('font-mono text-lg font-semibold', statusClass)}>
-            {overview.releaseStatus}
+            {statusCopy.status}
           </span>
           <span className="text-right text-xs text-muted-foreground">
-            {overview.releaseReason}
+            {statusCopy.reason}
           </span>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          Blocking cases:{' '}
+          {statusCopy.caseLabel}:{' '}
           <span className="font-mono text-foreground">{snap.failedCases}</span>
         </p>
       </PanelBlock>
@@ -380,6 +381,33 @@ function DiagnosticsOverview({
       </PanelBlock>
     </div>
   )
+}
+
+function getDiagnosticStatusCopy(
+  snap: EvalSummarySnapshot,
+  overview: DiagnosticOverview
+) {
+  if (snapshotSuiteKey(snap) === 'trafficMonitor') {
+    return {
+      title: 'Production status',
+      status:
+        overview.status === 'BLOCKED'
+          ? 'ALERT'
+          : overview.status === 'READY'
+            ? 'HEALTHY'
+            : 'WATCH',
+      reason:
+        overview.status === 'READY' ? 'No live breaches' : overview.reason,
+      caseLabel: 'Flagged cases'
+    }
+  }
+
+  return {
+    title: 'Release status',
+    status: overview.status,
+    reason: overview.reason,
+    caseLabel: 'Blocking cases'
+  }
 }
 
 function EvaluatorDiagnosticPanel({

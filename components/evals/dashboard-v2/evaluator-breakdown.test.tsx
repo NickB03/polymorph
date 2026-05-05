@@ -98,4 +98,20 @@ describe('EvaluatorBreakdown', () => {
     expect(screen.getAllByText('gpt-4.1-mini').length).toBeGreaterThan(0)
     expect(screen.getByText('openai/gpt-4o')).toBeInTheDocument()
   })
+
+  it('uses production monitoring copy for traffic monitor threshold breaches', () => {
+    renderBreakdown({
+      ...SNAP_WITH_FAILED,
+      id: 'traffic-latest',
+      suite: 'traffic-monitor',
+      failedCases: 6
+    })
+
+    expect(screen.getByText('Production status')).toBeInTheDocument()
+    expect(screen.getByText('ALERT')).toBeInTheDocument()
+    expect(screen.getByText('Flagged cases:')).toBeInTheDocument()
+    expect(screen.getByText('6')).toBeInTheDocument()
+    expect(screen.queryByText('Release status')).not.toBeInTheDocument()
+    expect(screen.queryByText('BLOCKED')).not.toBeInTheDocument()
+  })
 })
