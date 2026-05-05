@@ -124,6 +124,30 @@ vi.mock('./tool-ui/option-list/schema', () => ({
   safeParseSerializableOptionList: () => null
 }))
 
+vi.mock('./tool-ui/question-wizard/question-wizard', () => ({
+  QuestionWizard: ({
+    choice,
+    id
+  }: {
+    choice?: Record<string, unknown>
+    id: string
+  }) =>
+    choice != null ? (
+      <div
+        data-testid="question-wizard-receipt"
+        data-receipt="true"
+        data-tool-ui-id={id}
+        role="status"
+      >
+        Wizard receipt
+      </div>
+    ) : (
+      <div data-testid="question-wizard-interactive" data-tool-ui-id={id}>
+        Wizard interactive
+      </div>
+    )
+}))
+
 vi.mock('./tool-ui/registry', () => ({
   tryRenderToolUI: (output: unknown) => {
     if (
@@ -1517,5 +1541,76 @@ console.log(toolName)
       'data-status',
       'compile_failed'
     )
+  })
+
+  it('does not render legacy-artifact-notice for data-artifact parts (branch removed)', () => {
+    const message: UIMessage = {
+      id: 'assistant-legacy',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'data-artifact',
+          data: { id: 'old-artifact-id' }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(
+      screen.queryByTestId('legacy-artifact-notice')
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders displayQuestionWizard receipt state on reload (output-available via RenderMessage)', () => {
+    const message: UIMessage = {
+      id: 'assistant-wizard-reload',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-displayQuestionWizard',
+          toolCallId: 'wiz-reload-1',
+          state: 'output-available',
+          input: {
+            id: 'project-intake',
+            steps: [
+              {
+                id: 'style',
+                title: 'Choose a style',
+                options: [
+                  { id: 'minimal', label: 'Minimal' },
+                  { id: 'editorial', label: 'Editorial' }
+                ],
+                selectionMode: 'single'
+              }
+            ],
+            submitLabel: 'Finish'
+          },
+          output: { style: 'minimal' }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    const receipt = screen.getByTestId('question-wizard-receipt')
+    expect(receipt).toBeInTheDocument()
+    expect(receipt).toHaveAttribute('data-receipt', 'true')
   })
 })

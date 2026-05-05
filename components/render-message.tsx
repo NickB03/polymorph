@@ -410,8 +410,6 @@ interface RenderMessageProps {
   isResearchMode?: boolean
   /** Callback when a canvas artifact card is clicked */
   onCanvasArtifactClick?: (artifactId: string) => void
-  /** Callback when a legacy artifact part is encountered */
-  onLegacyArtifactClick?: (artifactId: string) => void
 }
 
 export function RenderMessage({
@@ -428,8 +426,7 @@ export function RenderMessage({
   isLatestMessage = false,
   citationMaps = {},
   isResearchMode = false,
-  onCanvasArtifactClick,
-  onLegacyArtifactClick
+  onCanvasArtifactClick
 }: RenderMessageProps) {
   const metadata = message.metadata as UIMessageMetadata | undefined
 
@@ -537,8 +534,7 @@ export function RenderMessage({
       p.type === 'tool-createCanvasArtifact' ||
       p.type === 'tool-updateCanvasArtifact' ||
       p.type === 'data-canvasArtifact' ||
-      p.type === 'dynamic-tool' ||
-      (p.type as string) === 'data-artifact'
+      p.type === 'dynamic-tool'
     ) {
       seenVisible = true
     }
@@ -785,28 +781,6 @@ export function RenderMessage({
     } else if (part.type === 'data-canvasArtifactStatus') {
       // Status updates don't render a visible element in chat
       // (the card already shows the latest status)
-    } else if ((part.type as string) === 'data-artifact') {
-      // Legacy artifact parts — render a notice card
-      flushBuffer(`seg-${index}`)
-      const legacyData = (part as { data?: { id?: string } }).data
-      const legacyId = legacyData?.id ?? 'unknown'
-      elements.push(
-        <button
-          key={`${messageId}-legacy-artifact-${index}`}
-          type="button"
-          className="flex w-full items-center gap-3 rounded-lg border border-dashed border-border bg-card p-3 text-left text-sm text-muted-foreground"
-          onClick={
-            onLegacyArtifactClick
-              ? () => onLegacyArtifactClick(legacyId)
-              : undefined
-          }
-          data-testid="legacy-artifact-notice"
-          data-artifact-id={legacyId}
-        >
-          This artifact was created with a previous system and is no longer
-          available.
-        </button>
-      )
     } else if (part.type === 'tool-generateImage') {
       const toolPart = part as { state?: string; output?: unknown }
       if (toolPart.state === 'output-available' && toolPart.output) {
