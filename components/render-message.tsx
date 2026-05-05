@@ -22,7 +22,7 @@ import {
 } from './tool-ui/canvas-artifact-card'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
 import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
-import { tryRenderToolUI } from './tool-ui/registry'
+import { isRegisteredToolUI, tryRenderToolUI } from './tool-ui/registry'
 import { renderToolPart } from './tool-ui/tool-part-registry'
 import { AnswerSection } from './answer-section'
 import { DynamicToolDisplay } from './dynamic-tool-display'
@@ -821,7 +821,17 @@ export function RenderMessage({
         state?: string
         output?: unknown
       }
-      if (toolPart.state === 'output-available' && toolPart.output) {
+      const toolName = part.type.substring(5)
+      // Only dispatch through renderDisplayToolElement when the tool name is
+      // registered in the Tool UI registry. renderToolPart returns a
+      // "could not be rendered" placeholder for any output-available state,
+      // so unregistered tools (tool-search, tool-fetch, …) must fall through
+      // to the buffer → ResearchProcessSection path instead.
+      if (
+        isRegisteredToolUI(toolName) &&
+        toolPart.state === 'output-available' &&
+        toolPart.output
+      ) {
         const element = renderDisplayToolElement(part, index)
         if (element) {
           flushBuffer(`seg-${index}`)
