@@ -22,7 +22,7 @@ import {
 } from './tool-ui/canvas-artifact-card'
 import { safeParseSerializableOptionList } from './tool-ui/option-list/schema'
 import type { TodoWriteOutput } from './tool-ui/plan/from-todo-write'
-import { tryRenderToolUI, tryRenderToolUIByName } from './tool-ui/registry'
+import { tryRenderToolUI } from './tool-ui/registry'
 import { renderToolPart } from './tool-ui/tool-part-registry'
 import { AnswerSection } from './answer-section'
 import { DynamicToolDisplay } from './dynamic-tool-display'
@@ -795,55 +795,15 @@ export function RenderMessage({
       }
       // Streaming/pending state — push to buffer for process section
       buffer.push(part)
-    } else if (part.type?.startsWith?.('tool-')) {
+    } else if (part.type === 'tool-readCanvasArtifact') {
       const toolPart = part as {
         state?: string
         output?: unknown
-        toolCallId?: string
       }
       if (toolPart.state === 'output-available') {
-        const toolName = part.type.substring(5)
-        if (toolName === 'readCanvasArtifact') {
-          if (isSuccessfulReadCanvasArtifactOutput(toolPart.output)) {
-            return
-          }
-
-          flushBuffer(`seg-${index}`)
-          elements.push(
-            <DynamicToolDisplay
-              key={`${messageId}-read-canvas-tool-${index}`}
-              part={toDynamicToolPart(
-                toolName,
-                part as ToolPartForDynamicFallback,
-                `${messageId}-tool-${index}`
-              )}
-            />
-          )
+        if (isSuccessfulReadCanvasArtifactOutput(toolPart.output)) {
           return
         }
-
-        const partId = toolPart.toolCallId ?? `${messageId}-tool-${index}`
-        const rendered = tryRenderToolUIByName(
-          toolName,
-          toolPart.output,
-          partId
-        )
-
-        if (rendered) {
-          flushBuffer(`seg-${index}`)
-          elements.push(
-            <Fragment key={`${messageId}-tool-ui-${index}`}>
-              {rendered}
-            </Fragment>
-          )
-          return
-        }
-      }
-
-      if (
-        part.type.substring(5) === 'readCanvasArtifact' &&
-        toolPart.state === 'output-error'
-      ) {
         flushBuffer(`seg-${index}`)
         elements.push(
           <DynamicToolDisplay
@@ -857,7 +817,36 @@ export function RenderMessage({
         )
         return
       }
-
+      if (toolPart.state === 'output-error') {
+        flushBuffer(`seg-${index}`)
+        elements.push(
+          <DynamicToolDisplay
+            key={`${messageId}-read-canvas-tool-${index}`}
+            part={toDynamicToolPart(
+              'readCanvasArtifact',
+              part as ToolPartForDynamicFallback,
+              `${messageId}-tool-${index}`
+            )}
+          />
+        )
+        return
+      }
+      buffer.push(part)
+    } else if (part.type?.startsWith?.('tool-')) {
+      const toolPart = part as {
+        state?: string
+        output?: unknown
+      }
+      if (toolPart.state === 'output-available' && toolPart.output) {
+        const element = renderDisplayToolElement(part, index)
+        if (element) {
+          flushBuffer(`seg-${index}`)
+          elements.push(
+            <Fragment key={`${messageId}-tool-ui-${index}`}>{element}</Fragment>
+          )
+          return
+        }
+      }
       buffer.push(part)
     } else if (part.type === 'reasoning' || part.type?.startsWith?.('data-')) {
       buffer.push(part)
