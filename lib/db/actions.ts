@@ -52,7 +52,7 @@ import {
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 import { incrementDbOperationCount } from '@/lib/utils/perf-tracking'
 
-import type { Chat, Message, Part } from './schema'
+import type { Chat, Message } from './schema'
 import {
   artifactRevisions,
   artifactRuntimeSessions,
@@ -61,54 +61,11 @@ import {
   canvasArtifactVersions,
   chats,
   generateId,
-  messages,
-  parts
+  messages
 } from './schema'
 import type { TxInstance } from './with-rls'
 import { withOptionalRLS, withRLS } from './with-rls'
 import { db } from '.'
-
-type CompatibilityPartsReader = Pick<TxInstance, 'select'>
-
-async function loadCompatibilityPartsByMessageId(
-  tx: CompatibilityPartsReader,
-  messageRows: Message[]
-): Promise<Map<string, Part[]>> {
-  const legacyMessageIds = messageRows
-    .filter(message => !message.uiMessage)
-    .map(message => message.id)
-
-  if (legacyMessageIds.length === 0) {
-    return new Map()
-  }
-
-  const compatibilityParts = await tx
-    .select()
-    .from(parts)
-    .where(inArray(parts.messageId, legacyMessageIds))
-    .orderBy(asc(parts.messageId), asc(parts.order))
-
-  const partsByMessageId = new Map<string, Part[]>()
-  for (const part of compatibilityParts) {
-    const existing = partsByMessageId.get(part.messageId)
-    if (existing) {
-      existing.push(part)
-    } else {
-      partsByMessageId.set(part.messageId, [part])
-    }
-  }
-
-  return partsByMessageId
-}
-
-function buildUIMessagesFromRows(
-  messageRows: Message[],
-  partsByMessageId: Map<string, Part[]>
-): UIMessage[] {
-  return messageRows.map(message =>
-    buildUIMessageFromDB(message, partsByMessageId.get(message.id) ?? [])
-  )
-}
 
 /**
  * Ensure a chat record exists for the given ID.
@@ -234,10 +191,6 @@ export async function upsertMessage(
       })
       .returning()
 
-    // 2. Clear any stale legacy projection rows for this message. New writes
-    // persist canonical UIMessage payloads only.
-    await tx.delete(parts).where(eq(parts.messageId, message.id))
-
     return dbMessage
   })
 
@@ -257,10 +210,8 @@ export async function loadChat(
       where: eq(messages.chatId, chatId),
       orderBy: [asc(messages.createdAt)]
     })
-    const compatibilityPartsByMessageId =
-      await loadCompatibilityPartsByMessageId(tx, result)
 
-    return buildUIMessagesFromRows(result, compatibilityPartsByMessageId)
+    return result.map(message => buildUIMessageFromDB(message))
   })
 }
 
@@ -548,11 +499,8 @@ export async function loadChatWithMessages(
       return null
     }
 
-    const compatibilityPartsByMessageId =
-      await loadCompatibilityPartsByMessageId(tx, messagesResult)
-    const uiMessages = buildUIMessagesFromRows(
-      messagesResult,
-      compatibilityPartsByMessageId
+    const uiMessages = messagesResult.map(message =>
+      buildUIMessageFromDB(message)
     )
     return { ...chat, messages: uiMessages }
   })

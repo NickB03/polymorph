@@ -94,10 +94,6 @@ import {
   competitorResearchToolName
 } from '@/lib/agents/chat/specialists/competitor-research'
 import { createChatAgentTools } from '@/lib/agents/chat/toolset'
-import {
-  mapDBPartToUIMessagePart,
-  mapUIMessagePartsToDBParts
-} from '@/lib/utils/message-mapping'
 
 import { tryRenderToolUIByName } from '@/components/tool-ui/registry'
 
@@ -171,51 +167,5 @@ describe('community portability proof', () => {
     expect(
       screen.getByRole('columnheader', { name: 'Reliability' })
     ).toBeInTheDocument()
-
-    const [dbPart] = mapUIMessagePartsToDBParts(
-      [
-        {
-          type: 'tool-competitorResearch',
-          toolCallId: 'call-portable-competitor-research',
-          state: 'output-available',
-          input,
-          output,
-          callProviderMetadata: {
-            provider: {
-              requestId: 'portable-proof'
-            }
-          }
-        } as any
-      ],
-      'msg-portable'
-    )
-
-    expect(dbPart).toMatchObject({
-      type: 'tool-dynamic',
-      tool_toolCallId: 'call-portable-competitor-research',
-      tool_state: 'output-available',
-      tool_dynamic_name: competitorResearchToolName,
-      tool_dynamic_type: 'dynamic',
-      tool_dynamic_input: input,
-      tool_dynamic_output: output,
-      providerMetadata: {
-        provider: {
-          requestId: 'portable-proof'
-        }
-      }
-    })
-
-    expect(mapDBPartToUIMessagePart(dbPart as any)).toMatchObject({
-      type: 'tool-competitorResearch',
-      toolCallId: 'call-portable-competitor-research',
-      state: 'output-available',
-      input,
-      output,
-      callProviderMetadata: {
-        provider: {
-          requestId: 'portable-proof'
-        }
-      }
-    })
   })
 })
