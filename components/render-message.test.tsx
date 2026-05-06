@@ -1131,6 +1131,55 @@ describe('RenderMessage', () => {
     ).toBeTruthy()
   })
 
+  it('places message actions after display tools deferred until after the first text', () => {
+    const message: UIMessage = {
+      id: 'assistant-actions-after-deferred-tool-ui',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-displayTimeline',
+          toolCallId: 'timeline-tool-1',
+          state: 'output-available',
+          output: {
+            id: 'recent-milestones',
+            title: 'Recent Milestones',
+            events: [
+              {
+                id: 'launch',
+                date: '2025',
+                title: 'Launch'
+              }
+            ]
+          }
+        } as any,
+        {
+          type: 'text',
+          text: 'Here is the timeline.'
+        }
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('answer-section')).toHaveAttribute(
+      'data-show-actions',
+      'false'
+    )
+    const tool = screen.getByTestId('timeline-tool-ui')
+    const actions = screen.getByTestId('message-actions')
+    expect(
+      tool.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
   it('places message actions after trailing readCanvasArtifact errors', () => {
     const message: UIMessage = {
       id: 'assistant-actions-after-read-error',

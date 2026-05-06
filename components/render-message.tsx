@@ -630,6 +630,7 @@ export function RenderMessage({
         key={`${messageId}-proc-${keySuffix}`}
         message={message}
         messageId={messageId}
+        processSectionId={`${messageId}-proc-${keySuffix}`}
         parts={buffer as Parameters<typeof ResearchProcessSection>[0]['parts']}
         getIsOpen={getIsOpen}
         onOpenChange={onOpenChange}
@@ -687,7 +688,9 @@ export function RenderMessage({
       // Flush accumulated non-text parts before rendering text
       flushBuffer(`seg-${index}`)
 
-      const isLastVisiblePart = !hasVisibleContentAfter[index]
+      const hasDeferredDisplayToolAfterText = deferredDisplayParts.length > 0
+      const isLastVisiblePart =
+        !hasVisibleContentAfter[index] && !hasDeferredDisplayToolAfterText
       const isStreamingComplete =
         status !== 'streaming' && status !== 'submitted'
       const shouldShowActions =

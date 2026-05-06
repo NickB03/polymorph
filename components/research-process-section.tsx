@@ -69,6 +69,7 @@ type Props = {
   addToolResult?: (params: { toolCallId: string; result: any }) => void
   isLatestMessage?: boolean
   parts?: MessagePart[]
+  processSectionId?: string
 }
 
 /**
@@ -308,9 +309,11 @@ export function ResearchProcessSection({
   status,
   addToolResult,
   isLatestMessage,
-  parts: partsOverride
+  parts: partsOverride,
+  processSectionId
 }: Props) {
   const allParts = (partsOverride ?? (message.parts || [])) as MessagePart[]
+  const sectionId = processSectionId ?? messageId
 
   // Filter out empty reasoning parts to avoid incorrect grouping
   const filteredParts = allParts.filter(p => !(isReasoningPart(p) && !p.text))
@@ -347,7 +350,7 @@ export function ResearchProcessSection({
         const needsParentCollapsible = totalParts >= 5
 
         // Parent collapsible ID
-        const parentId = `${messageId}-parent-${sidx}`
+        const parentId = `${sectionId}-parent-${sidx}`
         const parentContentId = `${parentId}-content`
         const isParentOpen = parentOpenStates[parentId] ?? false
 
@@ -357,11 +360,11 @@ export function ResearchProcessSection({
             style={{ '--enter-delay': `${sidx * 75}ms` } as React.CSSProperties}
           >
             {groups.map((grp, gidx) => (
-              <div key={`${messageId}-grp-${sidx}-${gidx}`}>
+              <div key={`${sectionId}-grp-${sidx}-${gidx}`}>
                 {grp.map((part, pidx) => {
                   const partId = isToolPart(part)
                     ? part.toolCallId
-                    : `${messageId}-${part.type}-${sidx}-${gidx}-${pidx}`
+                    : `${sectionId}-${part.type}-${sidx}-${gidx}-${pidx}`
 
                   return (
                     <RenderPart
@@ -393,7 +396,7 @@ export function ResearchProcessSection({
         if (needsParentCollapsible) {
           return (
             <Collapsible
-              key={`${messageId}-seg-${sidx}`}
+              key={`${sectionId}-seg-${sidx}`}
               open={isParentOpen}
               onOpenChange={open => {
                 setParentOpenStates(prev => ({ ...prev, [parentId]: open }))
@@ -426,7 +429,7 @@ export function ResearchProcessSection({
           )
         }
 
-        return <div key={`${messageId}-seg-${sidx}`}>{segmentContent}</div>
+        return <div key={`${sectionId}-seg-${sidx}`}>{segmentContent}</div>
       })}
     </div>
   )
