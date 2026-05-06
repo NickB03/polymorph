@@ -305,7 +305,7 @@ describe('RLS Policies Integration Tests', () => {
             chatId: msg.chatId,
             role: 'user',
             metadata: {},
-            uiMessage: null,
+            uiMessage: msg,
             createdAt: new Date(),
             updatedAt: null
           }

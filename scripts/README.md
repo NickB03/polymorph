@@ -1,14 +1,6 @@
 # Scripts
 
-This directory contains utility scripts for development, data backfill, and one-off operations.
-
-## backfill-chat-ui-message.ts
-
-One-shot migration script that backfills the canonical `messages.ui_message` projection on legacy rows. Runs over chats whose `ui_message` is null and reconstructs it from the persisted `parts` rows. Idempotent — re-runnable. Run after pulling a schema change that introduced or repaired `ui_message`; verify with the co-located test (`scripts/__tests__/backfill-chat-ui-message.test.ts`) before running against production.
-
-```bash
-bun run scripts/backfill-chat-ui-message.ts
-```
+This directory contains utility scripts for development and one-off operations.
 
 ## build-canvas-vendor.ts
 

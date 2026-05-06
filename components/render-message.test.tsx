@@ -358,7 +358,7 @@ describe('RenderMessage', () => {
     )
   })
 
-  it('renders a single artifact card when dynamic tool output and persisted artifact data both exist', () => {
+  it('renders dynamic canvas output and persisted artifact data independently', () => {
     const message: UIMessage = {
       id: 'assistant-1',
       role: 'assistant',
@@ -404,7 +404,7 @@ describe('RenderMessage', () => {
       />
     )
 
-    expect(screen.getAllByTestId('canvas-artifact-card')).toHaveLength(1)
+    expect(screen.getAllByTestId('canvas-artifact-card')).toHaveLength(2)
   })
 
   it('does not render readCanvasArtifact output as a duplicate canvas card during updates', () => {
@@ -729,8 +729,7 @@ describe('RenderMessage', () => {
     expect(handleClick).toHaveBeenCalledWith('artifact-1')
   })
 
-  it('renders a clickable artifact card from dynamic-tool when no data-canvasArtifact part exists', () => {
-    const handleClick = vi.fn()
+  it('renders dynamic canvas artifact tools through DynamicToolDisplay without canvas click wiring', () => {
     const message: UIMessage = {
       id: 'assistant-1',
       role: 'assistant',
@@ -759,14 +758,12 @@ describe('RenderMessage', () => {
         getIsOpen={() => false}
         onOpenChange={() => {}}
         onQuerySelect={() => {}}
-        onCanvasArtifactClick={handleClick}
+        onCanvasArtifactClick={vi.fn()}
       />
     )
 
     const card = screen.getByTestId('canvas-artifact-card')
     expect(card).toBeInTheDocument()
-    fireEvent.click(card)
-    expect(handleClick).toHaveBeenCalledWith('artifact-1')
   })
 
   it('suppresses tool-createCanvasArtifact when data-canvasArtifact exists for the same artifact', () => {
@@ -888,7 +885,7 @@ describe('RenderMessage', () => {
     expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
   })
 
-  it('suppresses dynamic-tool canvas cards with empty artifactId', () => {
+  it('delegates dynamic-tool canvas outputs with empty artifactId to DynamicToolDisplay', () => {
     const message: UIMessage = {
       id: 'assistant-1',
       role: 'assistant',
@@ -920,7 +917,7 @@ describe('RenderMessage', () => {
       />
     )
 
-    expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+    expect(screen.getByTestId('canvas-artifact-card')).toBeInTheDocument()
   })
 
   it('passes isLatestMessage through to ResearchProcessSection', () => {

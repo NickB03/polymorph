@@ -121,9 +121,7 @@ export async function persistStreamResults(
   }
 
   // Wait for title generation AFTER message is saved — title generation is a
-  // model API call that can take seconds and must never block message persistence,
-  // otherwise tool-result continuations fail because the assistant message isn't
-  // in the DB yet when prepareToolResultMessages loads the chat.
+  // model API call that can take seconds and must never block message persistence.
   const chatTitle = titlePromise ? await titlePromise : undefined
 
   // Update title after message is saved

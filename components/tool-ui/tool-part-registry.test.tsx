@@ -55,7 +55,7 @@ describe('tool part registry interactive display tools', () => {
   })
 
   it('renders displayOptionList input and submits the selected result', async () => {
-    const addToolResult = vi.fn()
+    const submitInteractiveToolOutput = vi.fn()
     const node = renderToolPart({
       toolName: 'displayOptionList',
       toolPart: {
@@ -66,7 +66,7 @@ describe('tool part registry interactive display tools', () => {
       messageId: 'message-1',
       partIndex: 0,
       isResearchMode: false,
-      addToolResult
+      submitInteractiveToolOutput
     })
 
     render(<>{node}</>)
@@ -74,9 +74,9 @@ describe('tool part registry interactive display tools', () => {
     await click(screen.getByRole('option', { name: /deep research/i }))
     await click(screen.getByRole('button', { name: /confirm/i }))
 
-    expect(addToolResult).toHaveBeenCalledWith({
+    expect(submitInteractiveToolOutput).toHaveBeenCalledWith({
       toolCallId: 'option-call',
-      result: 'deep'
+      output: 'deep'
     })
   })
 
@@ -101,7 +101,7 @@ describe('tool part registry interactive display tools', () => {
 
   it('renders displayQuestionWizard input and submits the wizard result', async () => {
     vi.useFakeTimers()
-    const addToolResult = vi.fn()
+    const submitInteractiveToolOutput = vi.fn()
     const node = renderToolPart({
       toolName: 'displayQuestionWizard',
       toolPart: {
@@ -112,7 +112,7 @@ describe('tool part registry interactive display tools', () => {
       messageId: 'message-1',
       partIndex: 0,
       isResearchMode: false,
-      addToolResult
+      submitInteractiveToolOutput
     })
 
     render(<>{node}</>)
@@ -125,9 +125,9 @@ describe('tool part registry interactive display tools', () => {
     await click(screen.getByRole('option', { name: /friendly/i }))
     await click(screen.getByRole('button', { name: /finish/i }))
 
-    expect(addToolResult).toHaveBeenCalledWith({
+    expect(submitInteractiveToolOutput).toHaveBeenCalledWith({
       toolCallId: 'wizard-call',
-      result: {
+      output: {
         style: 'minimal',
         tone: 'friendly'
       }

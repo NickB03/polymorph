@@ -12,7 +12,6 @@ interface ToolSectionProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
-  addToolResult?: (params: { toolCallId: string; result: any }) => void
   onQuerySelect: (query: string) => void
   borderless?: boolean
   isFirst?: boolean
@@ -24,7 +23,6 @@ export function ToolSection({
   isOpen,
   onOpenChange,
   status,
-  addToolResult,
   onQuerySelect,
   borderless = false,
   isFirst = false,

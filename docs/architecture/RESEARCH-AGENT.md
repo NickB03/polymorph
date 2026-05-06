@@ -63,7 +63,7 @@ flowchart TD
     end
 
     subgraph APILayer["API Route (app/api/chat/route.ts)"]
-        ParseBody["Parse body: message, chatId,<br/>trigger, isNewChat"]
+        ParseBody["Parse body: messages, chatId,<br/>trigger, isNewChat"]
         Auth["Authenticate user<br/>(getCurrentUserId)"]
         RateLimit["Rate limit check<br/>(guest: IP-based, auth: per-user)"]
         ReadCookies["Read cookies:<br/>searchMode, modelType"]
@@ -120,7 +120,7 @@ flowchart TD
 
 ### Pipeline Steps
 
-1. **HTTP Request**: The client sends `POST /api/chat` with the user's message, chat ID, trigger type, and search mode/model type from cookies.
+1. **HTTP Request**: The client sends `POST /api/chat` with the full AI SDK `UIMessage[]` history, chat ID, trigger type, and search mode/model type from cookies.
 
 2. **Authentication & Rate Limiting**: The API route authenticates the user via Supabase. Guest users are rate-limited by IP (Upstash Redis); authenticated users by overall chat limits.
 
@@ -385,7 +385,7 @@ All display tools share a common pattern: they accept structured input, validate
 | `displayCallout`        | Styled callout box for key information              | `id`, `variant`, `title` (optional), `content`                                                               | "This API was deprecated in v3"                                             |
 | `displayTimeline`       | Chronological event timeline                        | `id`, `title`, `events[]` with `id`, `date`, `title`, `category`                                             | "history of TypeScript", "timeline of SpaceX launches"                      |
 
-**`displayOptionList`** is unique: it has no `execute` function, so the frontend resolves it via `addToolResult` when the user makes a selection.
+**`displayOptionList`** is unique: it has no `execute` function, so the frontend resolves it through the native AI SDK `addToolOutput` flow when the user makes a selection.
 
 **`displayTable` format types:** `text`, `number`, `currency`, `percent`, `date`, `delta`, `boolean`, `link`, `badge`, `status`, `array` — each with type-specific options (e.g., currency code, decimal places, color maps).
 
@@ -398,7 +398,7 @@ Some tools are registered only when the request context provides the capabilitie
 
 ### Message Persistence Contract
 
-Chat messages use `messages.ui_message` as the canonical persisted `UIMessage`. New chat writes store that canonical payload only; the legacy `parts` table remains for compatibility reads of older rows and package-local eval fallback queries, while canonical upserts clear stale projections for the message being rewritten. Load paths call `buildUIMessageFromDB(messageRow, messageRow.parts ?? [])`, which prefers row-level `uiMessage` and reconstructs from `parts` only when `uiMessage` is null. `scripts/backfill-chat-ui-message.ts` provides the one-time backfill path for rows where `messages.ui_message IS NULL`.
+Chat messages use `messages.ui_message` as the canonical persisted `UIMessage`. The column is non-null in the active schema and load paths throw if that invariant is violated. Migration `0026_enforce_chat_ui_message.sql` aborts when null rows remain, then enforces `NOT NULL`; data cleanup must happen before deployment rather than through an automatic conversion script.
 
 ### Dynamic Tools
 
@@ -885,7 +885,6 @@ case 'my-provider':
 | `lib/tools/display-citations/`                           | Rich citation card display tool module                                |
 | `lib/tools/display-link-preview/`                        | Featured link preview display tool module                             |
 | `lib/tools/display-option-list/`                         | Interactive option list display tool module                           |
-| `scripts/backfill-chat-ui-message.ts`                    | Backfills canonical `messages.ui_message` from legacy `parts` rows    |
 | `lib/tools/search/providers/index.ts`                    | Search provider factory and type exports                              |
 | `lib/tools/search/providers/base.ts`                     | `SearchProvider` interface and `BaseSearchProvider` abstract class    |
 | `lib/tools/search/providers/brave.ts`                    | Brave search provider (default)                                       |

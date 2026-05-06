@@ -66,7 +66,10 @@ type Props = {
   onOpenChange: (id: string, open: boolean) => void
   onQuerySelect: (query: string) => void
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
-  addToolResult?: (params: { toolCallId: string; result: any }) => void
+  submitInteractiveToolOutput?: (params: {
+    toolCallId: string
+    output: any
+  }) => void
   isLatestMessage?: boolean
   parts?: MessagePart[]
   processSectionId?: string
@@ -188,7 +191,7 @@ function RenderPart({
   openSectionId,
   handleAccordionChange,
   status,
-  addToolResult,
+  submitInteractiveToolOutput,
   onQuerySelect,
   isLatestMessage
 }: {
@@ -205,7 +208,10 @@ function RenderPart({
   openSectionId: string | null
   handleAccordionChange: (id: string, open: boolean, isSingle: boolean) => void
   status?: any
-  addToolResult?: (params: { toolCallId: string; result: any }) => void
+  submitInteractiveToolOutput?: (params: {
+    toolCallId: string
+    output: any
+  }) => void
   onQuerySelect: (query: string) => void
   isLatestMessage?: boolean
 }) {
@@ -242,7 +248,6 @@ function RenderPart({
           handleAccordionChange(part.toolCallId, open, isSingle)
         }
         status={status}
-        addToolResult={addToolResult}
         onQuerySelect={onQuerySelect}
         borderless={!isSingle}
         isFirst={isFirstGroup && partIndex === 0}
@@ -307,7 +312,7 @@ export function ResearchProcessSection({
   onOpenChange,
   onQuerySelect,
   status,
-  addToolResult,
+  submitInteractiveToolOutput,
   isLatestMessage,
   parts: partsOverride,
   processSectionId
@@ -382,7 +387,7 @@ export function ResearchProcessSection({
                       openSectionId={openSectionId}
                       handleAccordionChange={handleAccordionChange}
                       status={status}
-                      addToolResult={addToolResult}
+                      submitInteractiveToolOutput={submitInteractiveToolOutput}
                       onQuerySelect={onQuerySelect}
                       isLatestMessage={isLatestMessage}
                     />

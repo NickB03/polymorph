@@ -52,7 +52,7 @@ describe('ResearchProcessSection', () => {
   const mockGetIsOpen = vi.fn()
   const mockOnOpenChange = vi.fn()
   const mockOnQuerySelect = vi.fn()
-  const mockAddToolResult = vi.fn()
+  const mockSubmitInteractiveToolOutput = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -535,7 +535,7 @@ describe('ResearchProcessSection', () => {
       )
     })
 
-    test('passes addToolResult prop correctly', () => {
+    test('passes submitInteractiveToolOutput prop correctly', () => {
       const toolPart: ToolPart = {
         type: 'tool-search',
         toolCallId: 'tool-1',
@@ -556,7 +556,7 @@ describe('ResearchProcessSection', () => {
           getIsOpen={mockGetIsOpen}
           onOpenChange={mockOnOpenChange}
           onQuerySelect={mockOnQuerySelect}
-          addToolResult={mockAddToolResult}
+          submitInteractiveToolOutput={mockSubmitInteractiveToolOutput}
         />
       )
 

@@ -26,7 +26,10 @@ type RenderToolPartArgs = {
   messageId: string
   partIndex: number
   status?: string
-  addToolResult?: (params: { toolCallId: string; result: unknown }) => void
+  submitInteractiveToolOutput?: (params: {
+    toolCallId: string
+    output: unknown
+  }) => void
 }
 
 function renderLoadingToolPlaceholder(messageId: string, partIndex: number) {
@@ -43,7 +46,7 @@ export function renderToolPart({
   messageId,
   partIndex,
   status,
-  addToolResult
+  submitInteractiveToolOutput
 }: RenderToolPartArgs): ReactNode | null {
   if (toolPart.state === 'output-available') {
     const parsed = safeParseSerializableOptionList(toolPart.input)
@@ -83,9 +86,9 @@ export function renderToolPart({
         {...parsed}
         onAction={(_actionId, selection) => {
           if (toolPart.toolCallId) {
-            addToolResult?.({
+            submitInteractiveToolOutput?.({
               toolCallId: toolPart.toolCallId,
-              result: selection
+              output: selection
             })
           }
         }}

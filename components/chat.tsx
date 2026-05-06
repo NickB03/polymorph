@@ -293,7 +293,7 @@ export function Chat({
         lowerMessage.includes('tool part') ||
         lowerMessage.includes('assistant message') ||
         lowerMessage.includes('toolcallid') ||
-        lowerMessage.includes('tool-result') ||
+        lowerMessage.includes('tool output') ||
         lowerMessage.includes('has no messages')
 
       if (isRateLimit) {
@@ -316,7 +316,7 @@ export function Chat({
           message: errorMessage
         })
       } else if (isToolError) {
-        // Tool-result continuation errors need persistent visibility — a toast
+        // Interactive tool-output errors need persistent visibility — a toast
         // auto-dismisses in ~4s and users miss it, leaving them with no feedback
         setErrorModal({
           open: true,
@@ -879,12 +879,12 @@ export function Chat({
           status={status}
           chatId={chatId}
           isGuest={isGuest}
-          addToolResult={({
+          submitInteractiveToolOutput={({
             toolCallId,
-            result
+            output
           }: {
             toolCallId: string
-            result: any
+            output: any
           }) => {
             let toolName = 'unknown'
             const matchedPart = messages
@@ -907,7 +907,7 @@ export function Chat({
               }
             }
 
-            addToolOutput({ tool: toolName, toolCallId, output: result })
+            addToolOutput({ tool: toolName, toolCallId, output })
           }}
           scrollContainerRef={scrollContainerRef}
           onUpdateMessage={handleUpdateAndReloadMessage}

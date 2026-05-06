@@ -400,7 +400,10 @@ interface RenderMessageProps {
   onQuerySelect: (query: string) => void
   chatId?: string
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
-  addToolResult?: (params: { toolCallId: string; result: any }) => void
+  submitInteractiveToolOutput?: (params: {
+    toolCallId: string
+    output: any
+  }) => void
   onUpdateMessage?: (messageId: string, newContent: string) => Promise<void>
   reload?: (messageId: string) => Promise<void | string | null | undefined>
   isLatestMessage?: boolean
@@ -418,7 +421,7 @@ export function RenderMessage({
   onQuerySelect,
   chatId,
   status,
-  addToolResult,
+  submitInteractiveToolOutput,
   onUpdateMessage,
   reload,
   isLatestMessage = false,
@@ -636,7 +639,7 @@ export function RenderMessage({
         onOpenChange={onOpenChange}
         onQuerySelect={onQuerySelect}
         status={status}
-        addToolResult={addToolResult}
+        submitInteractiveToolOutput={submitInteractiveToolOutput}
         isLatestMessage={isLatestMessage}
       />
     )
@@ -666,7 +669,7 @@ export function RenderMessage({
       partIndex,
       isResearchMode,
       status,
-      addToolResult
+      submitInteractiveToolOutput
     })
   }
 
@@ -940,58 +943,6 @@ export function RenderMessage({
         return
       }
 
-      // History compat: messages created before canvas tools were statically registered
-      // may contain dynamic-tool parts for createCanvasArtifact / updateCanvasArtifact.
-      // This block mirrors the tool-createCanvasArtifact branch above for those older messages.
-      // Do not remove until confirmed that no live chat history contains these dynamic-tool parts.
-      if (
-        (dynamicToolPart.toolName === 'createCanvasArtifact' ||
-          dynamicToolPart.toolName === 'updateCanvasArtifact') &&
-        dynamicToolPart.state === 'output-available' &&
-        dynamicToolPart.output &&
-        typeof dynamicToolPart.output === 'object'
-      ) {
-        const output = dynamicToolPart.output as { artifactId?: unknown }
-        // Skip failed creation attempts with no persisted artifact
-        if (typeof output.artifactId !== 'string' || !output.artifactId) {
-          return
-        }
-        if (latestPersistedCanvasArtifactPartIndexes.has(output.artifactId)) {
-          return // Already rendered via data-canvasArtifact — skip
-        }
-        // Render card directly with onClick wired up
-        const cardData = tryParseCanvasArtifactCardData(dynamicToolPart.output)
-        if (cardData) {
-          const latestStatus = latestCanvasArtifactStatuses.get(
-            cardData.artifactId
-          )
-          const latestStatusOverride =
-            latestStatus && latestStatus.sourceIndex > index
-              ? latestStatus
-              : undefined
-          elements.push(
-            <CanvasArtifactCard
-              key={`${messageId}-dynamic-tool-${index}`}
-              data={
-                latestStatusOverride
-                  ? {
-                      ...cardData,
-                      status: latestStatusOverride.status,
-                      draftRevision: latestStatusOverride.draftRevision,
-                      currentVersionId: latestStatusOverride.currentVersionId
-                    }
-                  : cardData
-              }
-              onClick={
-                onCanvasArtifactClick
-                  ? () => onCanvasArtifactClick(cardData.artifactId)
-                  : undefined
-              }
-            />
-          )
-          return
-        }
-      }
       elements.push(
         <DynamicToolDisplay
           key={`${messageId}-dynamic-tool-${index}`}

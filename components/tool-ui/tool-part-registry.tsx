@@ -33,7 +33,10 @@ type RenderToolPartArgs = {
   partIndex: number
   isResearchMode: boolean
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
-  addToolResult?: (params: { toolCallId: string; result: any }) => void
+  submitInteractiveToolOutput?: (params: {
+    toolCallId: string
+    output: any
+  }) => void
 }
 
 function renderUnavailableToolOutput(
@@ -67,7 +70,7 @@ export function renderToolPart({
   partIndex,
   isResearchMode,
   status,
-  addToolResult
+  submitInteractiveToolOutput
 }: RenderToolPartArgs): ReactNode | null {
   if (
     isResearchMode &&
@@ -86,7 +89,7 @@ export function renderToolPart({
       messageId,
       partIndex,
       status,
-      addToolResult
+      submitInteractiveToolOutput
     })
   }
 
@@ -95,7 +98,7 @@ export function renderToolPart({
       toolPart,
       messageId,
       partIndex,
-      addToolResult
+      submitInteractiveToolOutput
     })
   }
 

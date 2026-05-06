@@ -144,7 +144,7 @@ describe('createEphemeralChatStreamResponse', () => {
       modelType: 'speed',
       chatId: 'chat-1',
       guestCanvasToken: 'valid-token',
-      trigger: 'tool-result',
+      trigger: 'submit-message',
       agentFactory
     })
 
@@ -215,7 +215,7 @@ describe('createEphemeralChatStreamResponse', () => {
       searchMode: 'chat',
       modelType: 'speed',
       chatId: 'ghost-chat-id',
-      trigger: 'tool-result',
+      trigger: 'submit-message',
       agentFactory: vi.fn()
     })
 

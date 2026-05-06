@@ -4,7 +4,7 @@ import React from 'react'
 
 import { isRegisteredToolUI, tryRenderToolUIByName } from './tool-ui/registry'
 
-// This matches the structure from AI SDK v5
+// This matches the AI SDK UI dynamic tool part structure.
 type DynamicToolPart =
   | {
       type: 'dynamic-tool'

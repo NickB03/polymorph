@@ -1,5 +1,4 @@
 import type { CanvasArtifactStatusData, UIMessage } from '@/lib/types/ai'
-import { isInteractiveToolPart } from '@/lib/types/dynamic-tools'
 
 /**
  * Search messages for the most recent `data-canvasArtifactStatus` part
@@ -27,42 +26,6 @@ export function getLatestGuestCanvasToken(
   return undefined
 }
 
-function getToolResultContinuation(messages: UIMessage[], messageId?: string) {
-  const lastMessage = messages[messages.length - 1]
-  if (
-    !lastMessage ||
-    lastMessage.role !== 'assistant' ||
-    lastMessage.id !== messageId ||
-    !Array.isArray(lastMessage.parts)
-  ) {
-    return undefined
-  }
-
-  for (let index = lastMessage.parts.length - 1; index >= 0; index--) {
-    const part = lastMessage.parts[index] as {
-      type?: string
-      state?: string
-      toolCallId?: string
-      output?: unknown
-    }
-
-    if (
-      part.state === 'output-available' &&
-      isInteractiveToolPart(part) &&
-      typeof part.toolCallId === 'string' &&
-      part.toolCallId &&
-      'output' in part
-    ) {
-      return {
-        toolCallId: part.toolCallId,
-        output: part.output
-      }
-    }
-  }
-
-  return undefined
-}
-
 export function buildChatRequestBody({
   messages,
   trigger,
@@ -73,39 +36,21 @@ export function buildChatRequestBody({
   guestCanvasToken
 }: {
   messages: UIMessage[]
-  trigger: 'submit-message' | 'regenerate-message' | 'tool-result' | undefined
+  trigger: 'submit-message' | 'regenerate-message' | undefined
   messageId: string | undefined
   chatId: string
   isGuest: boolean
   savedMessagesCount: number
   guestCanvasToken?: string
 }) {
-  const lastMessage = messages[messages.length - 1]
-  const messageToRegenerate =
-    trigger === 'regenerate-message'
-      ? messages.find(message => message.id === messageId)
-      : undefined
-  const toolResult =
-    trigger === 'submit-message'
-      ? getToolResultContinuation(messages, messageId)
-      : undefined
-  const effectiveTrigger = toolResult ? 'tool-result' : trigger
-
   return {
     body: {
-      trigger: effectiveTrigger,
+      trigger,
       chatId,
       messageId,
       messages,
       ...(guestCanvasToken ? { guestCanvasToken } : {}),
-      ...(toolResult ? { toolResult } : {}),
-      ...(effectiveTrigger === 'regenerate-message' &&
-      messageToRegenerate?.role === 'user'
-        ? { message: messageToRegenerate }
-        : effectiveTrigger === 'submit-message'
-          ? { message: lastMessage }
-          : {}),
-      ...(effectiveTrigger === 'submit-message'
+      ...(trigger === 'submit-message'
         ? {
             isNewChat: messages.length === 1 && savedMessagesCount === 0
           }

@@ -91,7 +91,7 @@ describe('prepareMessages', () => {
         isNewChat: false
       }
 
-      const result = await prepareMessages(context, null)
+      const result = await prepareMessages(context)
 
       // Verify deleteMessagesFromIndex was called with correct message
       expect(deleteMessagesFromIndex).toHaveBeenCalledWith(
@@ -188,7 +188,7 @@ describe('prepareMessages', () => {
         isNewChat: false
       }
 
-      const result = await prepareMessages(context, null)
+      const result = await prepareMessages(context)
 
       // Verify correct messages deleted
       expect(deleteMessagesFromIndex).toHaveBeenCalledWith(
@@ -272,7 +272,7 @@ describe('prepareMessages', () => {
         chatId,
         role: 'user',
         metadata: {},
-        uiMessage: null,
+        uiMessage: editedMessage,
         createdAt: new Date(),
         updatedAt: new Date()
       })
@@ -292,7 +292,11 @@ describe('prepareMessages', () => {
         isNewChat: false
       }
 
-      const result = await prepareMessages(context, editedMessage)
+      const result = await prepareMessages(context, [
+        initialChat.messages[0]!,
+        initialChat.messages[1]!,
+        editedMessage
+      ])
 
       // Verify message was updated
       expect(upsertMessage).toHaveBeenCalledWith(chatId, editedMessage, userId)
@@ -335,12 +339,12 @@ describe('prepareMessages', () => {
         isNewChat: false
       }
 
-      await expect(prepareMessages(context, null)).rejects.toThrow(
+      await expect(prepareMessages(context)).rejects.toThrow(
         'No messages found'
       )
     })
 
-    it('should use fallback when message not found by ID', async () => {
+    it('throws when regenerate target is not found by ID', async () => {
       const initialChat: Chat & { messages: UIMessage[] } = {
         id: chatId,
         title: 'Test Chat',
@@ -361,23 +365,6 @@ describe('prepareMessages', () => {
         ]
       }
 
-      const updatedChat: Chat & { messages: UIMessage[] } = {
-        ...initialChat,
-        messages: [
-          {
-            id: 'msg-1',
-            role: 'user',
-            parts: [{ type: 'text', text: 'Question 1' }]
-          }
-        ]
-      }
-
-      vi.mocked(deleteMessagesFromIndex).mockResolvedValue({
-        success: true,
-        count: 1
-      })
-      vi.mocked(loadChat).mockResolvedValue(updatedChat)
-
       const context: StreamContext = {
         chatId,
         userId,
@@ -388,12 +375,11 @@ describe('prepareMessages', () => {
         isNewChat: false
       }
 
-      const result = await prepareMessages(context, null)
-
-      // Should fallback to last assistant message (msg-2)
-      expect(deleteMessagesFromIndex).toHaveBeenCalled()
-      expect(loadChat).toHaveBeenCalledWith(chatId, userId)
-      expect(result).toHaveLength(1)
+      await expect(prepareMessages(context)).rejects.toThrow(
+        'Message non-existent-id not found'
+      )
+      expect(deleteMessagesFromIndex).not.toHaveBeenCalled()
+      expect(loadChat).not.toHaveBeenCalled()
     })
   })
 
@@ -418,7 +404,7 @@ describe('prepareMessages', () => {
           chatId,
           role: 'user',
           metadata: {},
-          uiMessage: null,
+          uiMessage: newMessage,
           createdAt: new Date(),
           updatedAt: null
         }
@@ -434,7 +420,7 @@ describe('prepareMessages', () => {
         isNewChat: true
       }
 
-      const result = await prepareMessages(context, newMessage)
+      const result = await prepareMessages(context, [newMessage])
 
       // Verify message is returned immediately (optimistic)
       expect(result).toHaveLength(1)
@@ -475,7 +461,7 @@ describe('prepareMessages', () => {
         chatId,
         role: 'user',
         metadata: {},
-        uiMessage: null,
+        uiMessage: newMessage,
         createdAt: new Date(),
         updatedAt: null
       })
@@ -490,7 +476,7 @@ describe('prepareMessages', () => {
         isNewChat: false
       }
 
-      const result = await prepareMessages(context, newMessage)
+      const result = await prepareMessages(context, [newMessage])
 
       // Verify message was saved
       expect(upsertMessage).toHaveBeenCalledWith(chatId, newMessage, userId)
@@ -552,7 +538,7 @@ describe('prepareMessages', () => {
         chatId,
         role: 'user',
         metadata: {},
-        uiMessage: null,
+        uiMessage: newUserMessage,
         createdAt: new Date(),
         updatedAt: null
       })
@@ -567,7 +553,7 @@ describe('prepareMessages', () => {
         isNewChat: false
       }
 
-      const result = await prepareMessages(context, null, [
+      const result = await prepareMessages(context, [
         tamperedServerHistory,
         existingChat.messages[1]!,
         newUserMessage
@@ -577,7 +563,7 @@ describe('prepareMessages', () => {
       expect(result).toEqual([...existingChat.messages, newUserMessage])
     })
 
-    it('rejects assistant tool-output updates from submit-message client history', async () => {
+    it('persists native assistant tool-output updates from submit-message client history', async () => {
       const existingChat: Chat & { messages: UIMessage[] } = {
         id: chatId,
         title: 'Existing Chat',
@@ -641,14 +627,82 @@ describe('prepareMessages', () => {
         isNewChat: false
       }
 
-      await expect(
-        prepareMessages(context, null, [
-          existingChat.messages[0]!,
-          updatedAssistant
-        ])
-      ).rejects.toThrow(
-        'Existing chat submissions must end with a user message before streaming'
+      vi.mocked(upsertMessage).mockResolvedValue({
+        id: 'msg-2',
+        chatId,
+        role: 'assistant',
+        metadata: {},
+        uiMessage: updatedAssistant,
+        createdAt: new Date(),
+        updatedAt: null
+      })
+
+      const result = await prepareMessages(context, [
+        existingChat.messages[0]!,
+        updatedAssistant
+      ])
+
+      expect(upsertMessage).toHaveBeenCalledWith(
+        chatId,
+        updatedAssistant,
+        userId
       )
+      expect(result).toEqual([existingChat.messages[0], updatedAssistant])
+    })
+
+    it('rejects native assistant tool-output continuations when the server part is not awaiting input', async () => {
+      const existingChat: Chat & { messages: UIMessage[] } = {
+        id: chatId,
+        title: 'Existing Chat',
+        userId,
+        visibility: 'private',
+        createdAt: new Date(),
+        messages: [
+          {
+            id: 'msg-1',
+            role: 'assistant',
+            parts: [
+              {
+                type: 'tool-displayOptionList',
+                toolCallId: 'tool-1',
+                state: 'output-available',
+                input: {
+                  id: 'theme',
+                  options: [{ id: 'dark', label: 'Dark' }]
+                },
+                output: 'dark'
+              } as any
+            ]
+          }
+        ]
+      }
+
+      const updatedAssistant: UIMessage = {
+        id: 'msg-1',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool-displayOptionList',
+            toolCallId: 'tool-1',
+            state: 'output-available',
+            input: { id: 'theme', options: [{ id: 'dark', label: 'Dark' }] },
+            output: 'light'
+          } as any
+        ]
+      }
+
+      const context: StreamContext = {
+        chatId,
+        userId,
+        modelId: 'gpt-4',
+        trigger: 'submit-message',
+        initialChat: existingChat,
+        isNewChat: false
+      }
+
+      await expect(
+        prepareMessages(context, [updatedAssistant])
+      ).rejects.toThrow('not awaiting input')
       expect(upsertMessage).not.toHaveBeenCalled()
     })
   })

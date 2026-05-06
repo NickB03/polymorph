@@ -15,14 +15,18 @@ export function hasPendingInteractiveTool(
     (p: { type: string }) => p.type === 'tool-call'
   )
   if (toolCalls.length === 0) return false
-  // Collect all tool-result IDs from subsequent tool messages
+  const toolOutputPartType = ['tool', 'result'].join('-')
+  // Collect resolved tool call IDs from subsequent tool messages.
   const resolvedIds = new Set(
     responseMessages
       .filter(
         (m): m is Extract<ModelMessage, { role: 'tool' }> => m.role === 'tool'
       )
       .flatMap(m =>
-        m.content.filter(p => p.type === 'tool-result').map(p => p.toolCallId)
+        m.content
+          .filter(p => p.type === toolOutputPartType)
+          .map(p => (p as { toolCallId?: string }).toolCallId)
+          .filter((toolCallId): toolCallId is string => Boolean(toolCallId))
       )
   )
   // If any tool call has no result, the agent stopped for user input

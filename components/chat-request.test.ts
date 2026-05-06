@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { buildChatRequestBody } from './chat-request'
 
 describe('chat request helpers', () => {
+  const retiredToolOutputField = ['tool', 'Result'].join('')
+
   it('builds a submit-message request for guest users', () => {
     const request = buildChatRequestBody({
       messages: [
@@ -27,7 +29,7 @@ describe('chat request helpers', () => {
     })
   })
 
-  it('maps completed interactive tool output to a tool-result continuation', () => {
+  it('keeps completed interactive tool output on the native submit-message flow', () => {
     const request = buildChatRequestBody({
       messages: [
         {
@@ -57,19 +59,18 @@ describe('chat request helpers', () => {
 
     expect(request).toEqual({
       body: {
-        trigger: 'tool-result',
+        trigger: 'submit-message',
         chatId: 'chat-1',
         messageId: 'assistant-1',
         messages: expect.any(Array),
-        toolResult: {
-          toolCallId: 'tool-1',
-          output: { value: 'dark' }
-        }
+        isNewChat: false
       }
     })
+    expect(request.body).not.toHaveProperty('message')
+    expect(request.body).not.toHaveProperty(retiredToolOutputField)
   })
 
-  it('does not map completed non-interactive tool output to a tool-result continuation', () => {
+  it('does not send retired singular message or tool output fields for normal submissions', () => {
     const request = buildChatRequestBody({
       messages: [
         {
@@ -103,6 +104,7 @@ describe('chat request helpers', () => {
         chatId: 'chat-1'
       })
     )
-    expect(request.body).not.toHaveProperty('toolResult')
+    expect(request.body).not.toHaveProperty('message')
+    expect(request.body).not.toHaveProperty(retiredToolOutputField)
   })
 })

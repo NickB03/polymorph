@@ -35,7 +35,7 @@ interface UIMessage {
 interface ChatPayload {
   chatId: string
   trigger: 'submit-message' | 'regenerate-message'
-  message?: UIMessage
+  messages: UIMessage[]
   messageId?: string
   isNewChat?: boolean
 }
@@ -134,7 +134,8 @@ class ChatApiTester {
 
     const payload: ChatPayload = {
       chatId: this.config.chatId!,
-      trigger: this.config.trigger || 'submit-message'
+      trigger: this.config.trigger || 'submit-message',
+      messages: []
     }
 
     // Add message for submit trigger or messageId for regenerate
@@ -144,18 +145,15 @@ class ChatApiTester {
         process.exit(1)
       }
       payload.messageId = this.config.messageId
-      // Only include message if we're editing a user message
-      if (message && message !== DEFAULT_MESSAGE) {
-        // Use the same messageId for the edited message
-        const userMessage = this.createUserMessage(
-          message,
+      payload.messages = [
+        this.createUserMessage(
+          message || this.config.message,
           this.config.messageId
         )
-        payload.message = userMessage
-      }
+      ]
     } else {
       const userMessage = this.createUserMessage(message || this.config.message)
-      payload.message = userMessage
+      payload.messages = [userMessage]
       // Add isNewChat flag - always true for CLI since we generate new chatId each time
       payload.isNewChat = true
     }

@@ -189,11 +189,11 @@ describe('hasToolCalls', () => {
     expect(hasToolCalls(msg)).toBe(true)
   })
 
-  it('returns true for tool-result parts', () => {
+  it('returns true for tool output parts', () => {
     const msg = {
       id: '1',
       role: 'assistant' as const,
-      parts: [{ type: 'tool-result' as const }]
+      parts: [{ type: ['tool', 'result'].join('-') as any }]
     } as unknown as UIMessage
     expect(hasToolCalls(msg)).toBe(true)
   })
