@@ -98,6 +98,23 @@ describe('runSmokeSuite', () => {
     expect((init.headers as Record<string, string>).cookie).toContain(
       'modelType=speed'
     )
+    expect(typeof init.body).toBe('string')
+    const body = JSON.parse(init.body as string)
+    expect(body).toEqual(
+      expect.objectContaining({
+        chatId: expect.any(String),
+        trigger: 'submit-message',
+        isNewChat: true,
+        messages: [
+          {
+            role: 'user',
+            parts: [{ type: 'text', text: 'hello' }]
+          }
+        ]
+      })
+    )
+    expect(body).not.toHaveProperty('message')
+    expect(body).not.toHaveProperty('toolResult')
   })
 
   it('fails when response streams no text content', async () => {

@@ -243,7 +243,7 @@ export interface SkillSelectionInput {
   searchMode: SearchMode
   hasCanvasArtifact: boolean
   isGuest: boolean
-  trigger?: 'submit-message' | 'regenerate-message' | 'tool-result'
+  trigger?: 'submit-message' | 'regenerate-message'
 }
 
 export interface SkillSelectionResult {
@@ -302,7 +302,7 @@ Suggested initial matching behavior:
 
 The selector should return at most 2-3 skills in stable relevance order. If nothing matches, it should return an empty selection and preserve baseline behavior.
 
-`tool-result` continuations should be handled carefully: the selector should reason from the latest user-authored turn rather than trying to classify the tool payload itself.
+Interactive tool-output continuations should be handled carefully: the selector should reason from the latest user-authored turn rather than trying to classify the assistant tool payload itself.
 
 ---
 
@@ -422,7 +422,7 @@ Required coverage:
 - safe tool merging
 - step-cap enforcement
 - guest/auth stream integration
-- `tool-result` continuation behavior
+- interactive tool-output continuation behavior
 - flag-off baseline behavior
 
 ### Local Evaluation
@@ -436,7 +436,7 @@ Instead of a staged live rollout, maintain a fixed local evaluation corpus of ro
 - artifact/build requests
 - ambiguous routing
 - follow-up turns
-- tool-result continuations
+- interactive tool-output continuations
 
 For each prompt, compare baseline vs skills-enabled behavior and inspect:
 
