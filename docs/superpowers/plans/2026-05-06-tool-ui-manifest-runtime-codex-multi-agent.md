@@ -185,6 +185,104 @@ count(adjustments where Status in proposed, accepted) == 0
 
 If those two statements are not true, the scope is not done.
 
+## Verification And Approval Loop
+
+Use this loop for every worker return, every verification-agent return, and every final approval. It exists to prevent the recurring failure mode where an agent claims completion from inference, labels a real defect as a follow-up, or gives another worker permission to proceed while the plan is actually incomplete.
+
+### Required Evidence For Approval
+
+The orchestrator may mark a workstream `verified` only when all five evidence types are present:
+
+1. **Source evidence:** exact file paths and line references for the implemented contract.
+2. **Diff evidence:** `git diff --name-only` or equivalent reviewed by the orchestrator, proving the changed files match the ownership boundary.
+3. **Test evidence:** exact command output summary for the workstream gate, including pass/fail status.
+4. **Negative evidence:** explicit statement that required defect scans found no stale fixtures, unsafe staging, source placeholders, or missing docs for that workstream.
+5. **Adjustment evidence:** every deviation has an `ADJ-*` row with final status `patched`, `deferred`, `rejected`, or `superseded`.
+
+If any evidence type is missing, the workstream remains `needs_review`, `adjusting`, or `blocked`. It is not `verified`.
+
+### Invalid Completion Signals
+
+Any of these signals immediately rejects the completion claim:
+
+- The worker says “complete” but does not cite source files or changed files.
+- The worker says tests were “not run” without a concrete blocker and still recommends proceeding.
+- The worker acknowledges a defect but calls it a “follow-up” without an orchestrator-approved `deferred` adjustment row.
+- The worker infers behavior from the plan instead of verifying the current source.
+- The worker says a check is “likely” or “should” pass.
+- The worker uses broad wording such as “all good” without commands, file evidence, and scan results.
+- The worker changed files outside its ownership list without an adjustment row.
+- The worker marks a workstream done while any required gate is failing.
+- The worker proposes that another agent proceed while the current workstream has unresolved `proposed` or `accepted` adjustments.
+
+### Rework Loop
+
+When an invalid completion signal appears, the orchestrator must run this loop:
+
+```mermaid
+flowchart TD
+  A["Worker returns completion claim"] --> B["Orchestrator checks required evidence"]
+  B --> C{"All evidence present?"}
+  C -- "Yes" --> D["Run or confirm workstream gate locally"]
+  D --> E{"Gate passes and scans clean?"}
+  E -- "Yes" --> F["Mark workstream verified"]
+  E -- "No" --> G["Create or update ADJ row"]
+  C -- "No" --> G
+  G --> H["Set workstream to adjusting or blocked"]
+  H --> I["Patch main plan, companion prompt, or code as required"]
+  I --> J["Restart same workstream from source review"]
+  J --> A
+```
+
+The loop ends only at `verified`, `blocked`, `rejected`, or `superseded`. It never ends at “follow-up” unless an `ADJ-*` row explicitly records `deferred`, names the owner, and explains why the remaining issue is outside the current scope.
+
+### Defect Classification Rules
+
+Use these classifications when a worker finds a problem:
+
+| Worker finding                                  | Ledger status         | Adjustment status | Can dependent work proceed?                                                                 |
+| ----------------------------------------------- | --------------------- | ----------------- | ------------------------------------------------------------------------------------------- |
+| Failing required gate                           | adjusting             | accepted          | No                                                                                          |
+| Missing source verification                     | needs_review          | proposed          | No                                                                                          |
+| Defect in owned files                           | adjusting             | accepted          | No                                                                                          |
+| Defect outside owned files but blocks contract  | blocked               | accepted          | No                                                                                          |
+| Defect outside owned files and non-blocking     | verified or adjusting | deferred          | Yes, only after orchestrator records why                                                    |
+| Plan snippet stale but implementation can adapt | adjusting             | accepted          | No, patch prompt/plan first                                                                 |
+| Current code makes planned step unnecessary     | needs_review          | superseded        | Yes, after source evidence is recorded                                                      |
+| Worker changed out-of-scope files               | needs_review          | proposed          | No, review and either accept with adjustment or revert only the worker's out-of-scope edits |
+
+### Approval Prompt For Verification Agents
+
+Use this prompt when asking a verification agent to approve a workstream:
+
+```text
+You are verifying Workstream <letter>. Do not infer completion from the worker summary. Verify from source.
+
+Required output:
+1. Source evidence: exact files and line references for the implemented contract.
+2. Diff evidence: confirm changed files are inside the workstream ownership list.
+3. Test evidence: list exact commands run and pass/fail status.
+4. Negative evidence: list stale fixtures, unsafe staging, placeholders, missing docs, and server/client import scans relevant to this workstream.
+5. Approval decision: one of verified, adjusting, blocked, rejected, superseded.
+
+If any defect remains in the required contract, do not call it a follow-up. Mark adjusting or blocked and name the exact required fix.
+```
+
+### Approval Prompt For The Orchestrator
+
+Before marking a workstream `verified`, the parent Codex session should answer this checklist in the ledger notes:
+
+```text
+Source checked: yes/no, files:
+Changed files reviewed: yes/no, files:
+Required gate: pass/fail/skipped, command:
+Negative scans: pass/fail/skipped, commands:
+Open adjustments: none / ADJ-...
+Decision: verified / needs_review / adjusting / blocked / superseded
+```
+
+If any answer is `no`, `fail`, `skipped without blocker`, or `open adjustments`, the decision cannot be `verified`.
+
 ## Agent Roles
 
 ### Orchestrator
