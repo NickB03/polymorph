@@ -12,8 +12,16 @@ const mockRelatedQuestions = vi.hoisted(() => vi.fn())
 
 // Mock the child components
 vi.mock('../reasoning-section', () => ({
-  ReasoningSection: ({ content, isOpen, onOpenChange }: any) => (
-    <div data-testid="reasoning-section">
+  ReasoningSection: ({
+    content,
+    isOpen,
+    onOpenChange,
+    collapsibleContentId
+  }: any) => (
+    <div
+      data-collapsible-content-id={collapsibleContentId}
+      data-testid="reasoning-section"
+    >
       <button onClick={() => onOpenChange(!isOpen)}>
         {isOpen ? 'Close' : 'Open'} Reasoning
       </button>
@@ -402,6 +410,64 @@ describe('ResearchProcessSection', () => {
       // Data parts should render the DataSection component
       // Check that the component renders (not null)
       expect(container.firstChild).toBeInTheDocument()
+    })
+
+    test('uses process section ids to keep parts override controls unique', () => {
+      const buildParts = (prefix: string) =>
+        Array.from({ length: 5 }, (_, index) => ({
+          type: 'reasoning',
+          text: `${prefix} reasoning ${index}`
+        })) as ReasoningPart[]
+
+      const message = {
+        id: 'assistant-1',
+        role: 'assistant' as const,
+        parts: []
+      } as UIMessage
+
+      render(
+        <>
+          <ResearchProcessSection
+            message={message}
+            messageId={message.id}
+            processSectionId={`${message.id}-proc-seg-0`}
+            getIsOpen={mockGetIsOpen}
+            onOpenChange={mockOnOpenChange}
+            onQuerySelect={mockOnQuerySelect}
+            parts={buildParts('first')}
+          />
+          <ResearchProcessSection
+            message={message}
+            messageId={message.id}
+            processSectionId={`${message.id}-proc-seg-2`}
+            getIsOpen={mockGetIsOpen}
+            onOpenChange={mockOnOpenChange}
+            onQuerySelect={mockOnQuerySelect}
+            parts={buildParts('second')}
+          />
+        </>
+      )
+
+      const parentButtons = screen.getAllByRole('button', {
+        name: /Research Process \(5 steps\)/i
+      })
+      const parentControlIds = parentButtons.map(button =>
+        button.getAttribute('aria-controls')
+      )
+
+      expect(parentControlIds).toEqual([
+        'assistant-1-proc-seg-0-parent-0-content',
+        'assistant-1-proc-seg-2-parent-0-content'
+      ])
+      expect(new Set(parentControlIds).size).toBe(parentControlIds.length)
+
+      parentButtons.forEach(button => fireEvent.click(button))
+
+      const reasoningControlIds = screen
+        .getAllByTestId('reasoning-section')
+        .map(section => section.getAttribute('data-collapsible-content-id'))
+
+      expect(new Set(reasoningControlIds).size).toBe(reasoningControlIds.length)
     })
   })
 

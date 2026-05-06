@@ -10,8 +10,19 @@ const { mockResearchProcessSection } = vi.hoisted(() => ({
 }))
 
 vi.mock('./answer-section', () => ({
-  AnswerSection: ({ content }: { content: string }) => (
-    <div data-testid="answer-section">{content}</div>
+  AnswerSection: ({
+    content,
+    showActions
+  }: {
+    content: string
+    showActions?: boolean
+  }) => (
+    <div
+      data-show-actions={showActions ? 'true' : 'false'}
+      data-testid="answer-section"
+    >
+      {content}
+    </div>
   )
 }))
 
@@ -61,7 +72,7 @@ vi.mock('./dynamic-tool-display', () => ({
 }))
 
 vi.mock('./message-actions', () => ({
-  MessageActions: () => null
+  MessageActions: () => <div data-testid="message-actions" />
 }))
 
 vi.mock('./research-plan', () => ({
@@ -1053,6 +1064,160 @@ describe('RenderMessage', () => {
         )
       )
     ).toBe(false)
+  })
+
+  it('places message actions after trailing registered tool UI', () => {
+    const message: UIMessage = {
+      id: 'assistant-actions-after-tool-ui',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'text',
+          text: 'Competitive analysis is ready.'
+        },
+        {
+          type: 'tool-competitorResearch',
+          toolCallId: 'competitor-tool-1',
+          state: 'output-available',
+          output: {
+            summary: 'Alpha is stronger on reach; Beta is stronger on trust.',
+            cards: [
+              {
+                competitor: 'Alpha',
+                strengths: ['Reach'],
+                weaknesses: ['Trust']
+              },
+              {
+                competitor: 'Beta',
+                strengths: ['Trust'],
+                weaknesses: ['Reach']
+              }
+            ],
+            matrix: [
+              {
+                competitor: 'Alpha',
+                reach: 'High',
+                trust: 'Medium'
+              },
+              {
+                competitor: 'Beta',
+                reach: 'Medium',
+                trust: 'High'
+              }
+            ]
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('answer-section')).toHaveAttribute(
+      'data-show-actions',
+      'false'
+    )
+    const tool = screen.getByTestId('competitor-research-tool-ui')
+    const actions = screen.getByTestId('message-actions')
+    expect(
+      tool.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('places message actions after display tools deferred until after the first text', () => {
+    const message: UIMessage = {
+      id: 'assistant-actions-after-deferred-tool-ui',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-displayTimeline',
+          toolCallId: 'timeline-tool-1',
+          state: 'output-available',
+          output: {
+            id: 'recent-milestones',
+            title: 'Recent Milestones',
+            events: [
+              {
+                id: 'launch',
+                date: '2025',
+                title: 'Launch'
+              }
+            ]
+          }
+        } as any,
+        {
+          type: 'text',
+          text: 'Here is the timeline.'
+        }
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('answer-section')).toHaveAttribute(
+      'data-show-actions',
+      'false'
+    )
+    const tool = screen.getByTestId('timeline-tool-ui')
+    const actions = screen.getByTestId('message-actions')
+    expect(
+      tool.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('places message actions after trailing readCanvasArtifact errors', () => {
+    const message: UIMessage = {
+      id: 'assistant-actions-after-read-error',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'text',
+          text: 'I could not read the canvas artifact.'
+        },
+        {
+          type: 'tool-readCanvasArtifact',
+          state: 'output-error',
+          toolCallId: 'read-1',
+          input: { artifactId: 'artifact-1' },
+          errorText: 'Read failed'
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('answer-section')).toHaveAttribute(
+      'data-show-actions',
+      'false'
+    )
+    const tool = screen.getByTestId('dynamic-tool-display')
+    const actions = screen.getByTestId('message-actions')
+    expect(
+      tool.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
   })
 
   it('extracts valid fenced JSON timeline payloads from assistant text', () => {

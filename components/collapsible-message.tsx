@@ -25,6 +25,7 @@ interface CollapsibleMessageProps {
   renderLeft?: React.ReactNode
   chevronSize?: 'sm' | 'md'
   headerClickBehavior?: 'toggle' | 'inspect' | 'split'
+  collapsibleContentId?: string
 }
 
 export function CollapsibleMessage({
@@ -40,7 +41,8 @@ export function CollapsibleMessage({
   showSeparator = true,
   renderLeft,
   chevronSize = 'md',
-  headerClickBehavior = 'toggle'
+  headerClickBehavior = 'toggle',
+  collapsibleContentId
 }: CollapsibleMessageProps) {
   const content = children
 
@@ -118,6 +120,9 @@ export function CollapsibleMessage({
                 <CollapsibleTrigger asChild>
                   <button
                     type="button"
+                    {...(collapsibleContentId
+                      ? { 'aria-controls': collapsibleContentId }
+                      : {})}
                     className={cn(
                       'rounded-md group cursor-pointer hover:bg-accent/50',
                       variant === 'minimal' && 'p-0.5',
@@ -139,6 +144,9 @@ export function CollapsibleMessage({
                 <CollapsibleTrigger asChild>
                   <button
                     type="button"
+                    {...(collapsibleContentId
+                      ? { 'aria-controls': collapsibleContentId }
+                      : {})}
                     className="p-1 hover:bg-accent rounded-md transition-transform duration-200 group"
                     aria-label={isOpen ? 'Collapse' : 'Expand'}
                   >
@@ -147,7 +155,10 @@ export function CollapsibleMessage({
                 </CollapsibleTrigger>
               )}
             </div>
-            <CollapsibleContent className="data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down">
+            <CollapsibleContent
+              {...(collapsibleContentId ? { id: collapsibleContentId } : {})}
+              className="data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down"
+            >
               {showSeparator && variant === 'default' && (
                 <Separator className="mb-2 border-border/50" />
               )}

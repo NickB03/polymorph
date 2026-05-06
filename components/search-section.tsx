@@ -118,6 +118,7 @@ export function SearchSection({
       <CollapsibleMessage
         role="assistant"
         isCollapsible={true}
+        collapsibleContentId={`search-${tool.toolCallId}-content`}
         header={header}
         isOpen={isOpen}
         onOpenChange={onOpenChange}

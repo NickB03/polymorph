@@ -743,6 +743,7 @@ function DataTableAccordionCard({
 
   const stableRowId = getDataTableRowDomId(rowKey)
 
+  const triggerId = `row-${stableRowId}-trigger`
   const headingId = `row-${stableRowId}-heading`
   const detailsId = `row-${stableRowId}-details`
   const remainingPrimaryDataIds = remainingPrimaryColumns.map(
@@ -763,6 +764,7 @@ function DataTableAccordionCard({
     >
       <AccordionItem value={accordionItemId} className="group border-0">
         <AccordionTrigger
+          id={triggerId}
           className="group-data-[state=closed]:hover:bg-accent/50 active:bg-accent/50 group-data-[state=open]:bg-muted w-full rounded-none px-4 py-3 hover:no-underline"
           aria-controls={detailsId}
           aria-label={`${rowLabel}. ${secondary.length > 0 ? 'Expand for details' : ''}`}

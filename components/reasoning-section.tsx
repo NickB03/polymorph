@@ -23,6 +23,7 @@ export interface ReasoningSectionProps {
   isSingle?: boolean // Whether this is a single item or part of a group
   isFirst?: boolean
   isLast?: boolean
+  collapsibleContentId?: string
 }
 
 export function ReasoningSection({
@@ -33,7 +34,8 @@ export function ReasoningSection({
   variant = 'default',
   isSingle = true,
   isFirst = false,
-  isLast = false
+  isLast = false,
+  collapsibleContentId
 }: ReasoningSectionProps) {
   // Show a short preview when collapsed; switch to a generic label when expanded
   const HEADER_PREVIEW_CHARS = 120
@@ -120,6 +122,7 @@ export function ReasoningSection({
       <CollapsibleMessage
         role="assistant"
         isCollapsible={true}
+        collapsibleContentId={collapsibleContentId}
         header={reasoningHeader}
         isOpen={isOpen}
         onOpenChange={onOpenChange}
