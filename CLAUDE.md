@@ -34,6 +34,7 @@ These are load-bearing and not derivable by reading any single file:
 - **Phoenix tracing enforces HTTPS in production.** `instrumentation.ts` silently disables tracing if the collector endpoint is plain HTTP when any of `VERCEL_ENV=production`, `VERCEL_TARGET_ENV=production`, `RAILWAY_ENVIRONMENT=production`, or `NODE_ENV=production` is set.
 - **Privileged DB client bypasses RLS.** `lib/db/admin.ts` is the only path that may set/upsert rows on user-scoped tables without a session GUC. Used by the Vercel cron at `/api/suggestions/refresh` to write the singleton `trending_suggestions_cache`.
 - **Railway cron triggers:** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image but does **not** run the container CMD. Use the Railway dashboard redeploy button for an immediate one-off run.
+- **`services/evals/` is an independent bun package, not a workspace member.** `bun install` at the repo root does not install its dependencies. After a fresh checkout or new worktree, run `bun install` in **both** the repo root and `services/evals/`.
 
 ## Skill invocation policy
 
@@ -45,7 +46,6 @@ Users should not need to say the word "skill." Infer intent from normal requests
 - **Preparing for review** → `requesting-code-review`
 - **Applying review feedback** → `receiving-code-review`
 - **UI behavior changes / interaction regressions** → `webapp-testing`
-- **Canvas artifact issues** (preview iframe, compile pipeline, diagnostics) → `harden`
 - **Supabase/Postgres schema/query/perf changes** → `supabase-postgres-best-practices`
 - **Next.js App Router architecture decisions** → `nextjs-app-router-patterns`
 - **New page, major UI section, complex layout** → Pencil wireframe workflow (`.claude/rules/design-workflow.md`), then `frontend-design`
@@ -94,6 +94,7 @@ Claude should `Read` these only when the current task needs them.
 | Generative UI message parts                | `docs/architecture/GENERATIVE-UI.md`           |
 | Model configuration                        | `docs/architecture/MODEL-CONFIGURATION.md`     |
 | Search providers                           | `docs/architecture/SEARCH-PROVIDERS.md`        |
+| Geo / spatial tools                        | `docs/architecture/GEO-TOOLS.md`               |
 | Architecture decisions                     | `docs/architecture/DECISIONS.md`               |
 | Required config & env variables            | `docs/getting-started/CONFIGURATION.md`        |
 | Environment variables                      | `docs/getting-started/ENVIRONMENT.md`          |
