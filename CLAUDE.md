@@ -27,7 +27,7 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 
 These are load-bearing and not derivable by reading any single file:
 
-- **Row-Level Security.** Every user-scoped table in `lib/db/schema.ts` uses RLS keyed on `current_setting('app.current_user_id')`. Server code must set that GUC before querying or rows are invisible.
+- **Row-Level Security.** Every user-scoped table in `lib/db/schema.ts` uses RLS keyed on `current_setting('app.current_user_id', true)`. The `true` flag means a missing GUC returns NULL (not an error), so unset sessions don't throw — they silently return zero rows. Server code must set that GUC before querying.
 - **Tool UI is bespoke in this repo.** Do not default to `assistant-ui`, `Toolkit`, `tool-agent`, or stock `shadcn add` flows when adding a Tool UI component. Match the local pattern across `components/tool-ui/*`, `components/render-message.tsx`, `components/chat.tsx`, `components/chat-request.ts`, `lib/types/dynamic-tools.ts`, `lib/streaming/helpers/prepare-tool-result-messages.ts`, and `lib/agents/chat/*`. Only propose an assistant-ui runtime migration if the user explicitly asks for it.
 - **Canvas is one-artifact-per-chat.** `createCanvasArtifact` / `updateCanvasArtifact` / `readCanvasArtifact` are conditionally registered only when a canvas context is present. Compiled HTML lives in the DB and is served via `iframe.srcdoc`.
 - **Guest canvas tokens** are HMAC-SHA256 signed with `GUEST_CANVAS_SECRET` and rotate on every successful write.
