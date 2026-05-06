@@ -239,6 +239,72 @@ const SerializableDataTableSchemaContract = defineToolUiContract(
  */
 export type SerializableDataTable = z.infer<typeof SerializableDataTableSchema>
 
+const PREFERRED_ROW_ID_KEYS = [
+  'id',
+  'uuid',
+  'uid',
+  'slug',
+  'key',
+  'name',
+  'title',
+  'symbol',
+  'ticker'
+] as const
+
+function serializeRowIdCandidate(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed ? `string:${trimmed}` : null
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? `number:${value}` : null
+  }
+
+  if (typeof value === 'boolean') {
+    return `boolean:${value}`
+  }
+
+  return null
+}
+
+function isUniqueRowIdCandidate(
+  data: SerializableDataTable['data'],
+  key: string
+) {
+  if (data.length === 0) return false
+
+  const seen = new Set<string>()
+  for (const row of data) {
+    const candidate = serializeRowIdCandidate(row[key])
+    if (!candidate || seen.has(candidate)) return false
+    seen.add(candidate)
+  }
+
+  return true
+}
+
+function inferRowIdKey(
+  table: Pick<SerializableDataTable, 'columns' | 'data' | 'rowIdKey'>
+) {
+  if (table.rowIdKey) return table.rowIdKey
+
+  const dataKeys = new Set(table.data.flatMap(row => Object.keys(row)))
+  const orderedCandidates = [
+    ...PREFERRED_ROW_ID_KEYS.filter(key => dataKeys.has(key)),
+    ...table.columns.map(column => column.key),
+    ...dataKeys
+  ]
+
+  for (const key of new Set(orderedCandidates)) {
+    if (isUniqueRowIdCandidate(table.data, key)) {
+      return key
+    }
+  }
+
+  return undefined
+}
+
 /**
  * Validates and parses a DataTable payload from unknown data (e.g., LLM tool call result).
  *
@@ -284,11 +350,12 @@ export function parseSerializableDataTable(
   | 'locale'
 > {
   const res = SerializableDataTableSchemaContract.parse(input)
+  const rowIdKey = inferRowIdKey(res)
   return {
     ...res,
     columns: res.columns as unknown as Column<RowData>[],
     data: res.data as RowData[],
-    rowIdKey: res.rowIdKey as keyof RowData | undefined,
+    rowIdKey: rowIdKey as keyof RowData | undefined,
     defaultSort: res.defaultSort
       ? {
           by: res.defaultSort.by as keyof RowData | undefined,
@@ -322,11 +389,12 @@ export function safeParseSerializableDataTable(
 > | null {
   const res = SerializableDataTableSchemaContract.safeParse(input)
   if (!res) return null
+  const rowIdKey = inferRowIdKey(res)
   return {
     ...res,
     columns: res.columns as unknown as Column<RowData>[],
     data: res.data as RowData[],
-    rowIdKey: res.rowIdKey as keyof RowData | undefined,
+    rowIdKey: rowIdKey as keyof RowData | undefined,
     defaultSort: res.defaultSort
       ? {
           by: res.defaultSort.by as keyof RowData | undefined,

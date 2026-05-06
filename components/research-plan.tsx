@@ -19,6 +19,11 @@ interface ResearchPlanProps {
   completedToolCalls?: number
   hasActiveToolCall?: boolean
   isComplete?: boolean
+  messageId?: string
+}
+
+function toDomIdSegment(value: string) {
+  return encodeURIComponent(value).replace(/%/g, '_')
 }
 
 /**
@@ -52,7 +57,8 @@ export function ResearchPlan({
   hasError,
   completedToolCalls,
   hasActiveToolCall,
-  isComplete
+  isComplete,
+  messageId
 }: ResearchPlanProps) {
   const [userExpanded, setUserExpanded] = useState<boolean | null>(null)
 
@@ -118,6 +124,7 @@ export function ResearchPlan({
         <CollapsibleMessage
           role="assistant"
           isCollapsible
+          collapsibleContentId={`research-plan-${toDomIdSegment(messageId ?? validated.id)}-content`}
           header={header}
           isOpen={isOpen}
           onOpenChange={open => setUserExpanded(open)}

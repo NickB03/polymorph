@@ -220,6 +220,7 @@ function RenderPart({
         content={{ reasoning: part.text, isDone: !hasNext }}
         isOpen={isOpen}
         onOpenChange={open => handleAccordionChange(partId, open, isSingle)}
+        collapsibleContentId={`reasoning-${partId}-content`}
         isSingle={isSingle}
         isFirst={isFirstGroup && partIndex === 0}
         isLast={isLastGroup && partIndex === groupLength - 1}
@@ -347,6 +348,7 @@ export function ResearchProcessSection({
 
         // Parent collapsible ID
         const parentId = `${messageId}-parent-${sidx}`
+        const parentContentId = `${parentId}-content`
         const isParentOpen = parentOpenStates[parentId] ?? false
 
         const segmentContent = (
@@ -400,6 +402,7 @@ export function ResearchProcessSection({
               <CollapsibleTrigger asChild>
                 <button
                   type="button"
+                  aria-controls={parentContentId}
                   className="flex items-center px-1 py-0.5 gap-2 text-sm rounded-lg group"
                 >
                   <span className="font-medium text-muted-foreground group-hover:text-muted-foreground/70">
@@ -413,7 +416,10 @@ export function ResearchProcessSection({
                   />
                 </button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down">
+              <CollapsibleContent
+                id={parentContentId}
+                className="data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down"
+              >
                 <div className="pt-2">{segmentContent}</div>
               </CollapsibleContent>
             </Collapsible>

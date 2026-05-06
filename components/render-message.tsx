@@ -519,21 +519,102 @@ export function RenderMessage({
     )
   }
 
+  const isVisibleContentPart = (
+    part: NonNullable<UIMessage['parts']>[number],
+    index: number
+  ) => {
+    if (part.type === 'text' || part.type?.startsWith?.('tool-display')) {
+      return true
+    }
+
+    if (part.type === 'tool-readCanvasArtifact') {
+      const toolPart = part as { state?: string; output?: unknown }
+      return (
+        toolPart.state === 'output-error' ||
+        (toolPart.state === 'output-available' &&
+          !isSuccessfulReadCanvasArtifactOutput(toolPart.output))
+      )
+    }
+
+    if (
+      part.type === 'tool-createCanvasArtifact' ||
+      part.type === 'tool-updateCanvasArtifact'
+    ) {
+      const toolPart = part as { state?: string; output?: unknown }
+      if (
+        toolPart.state !== 'output-available' ||
+        !toolPart.output ||
+        typeof toolPart.output !== 'object'
+      ) {
+        return false
+      }
+      const artifactId = (toolPart.output as { artifactId?: unknown })
+        .artifactId
+      return (
+        typeof artifactId === 'string' &&
+        artifactId.length > 0 &&
+        !latestPersistedCanvasArtifactPartIndexes.has(artifactId)
+      )
+    }
+
+    if (part.type === 'data-canvasArtifact') {
+      const canvasData = (part as { data?: CanvasArtifactData }).data
+      return (
+        !!canvasData?.artifactId &&
+        latestPersistedCanvasArtifactPartIndexes.get(canvasData.artifactId) ===
+          index
+      )
+    }
+
+    if (part.type === 'dynamic-tool') {
+      const dynamicToolPart = part as DynamicToolPart
+      if (
+        dynamicToolPart.toolName === 'readCanvasArtifact' &&
+        dynamicToolPart.state === 'output-available' &&
+        isSuccessfulReadCanvasArtifactOutput(dynamicToolPart.output)
+      ) {
+        return false
+      }
+
+      if (
+        (dynamicToolPart.toolName === 'createCanvasArtifact' ||
+          dynamicToolPart.toolName === 'updateCanvasArtifact') &&
+        dynamicToolPart.state === 'output-available' &&
+        dynamicToolPart.output &&
+        typeof dynamicToolPart.output === 'object'
+      ) {
+        const artifactId = (dynamicToolPart.output as { artifactId?: unknown })
+          .artifactId
+        return (
+          typeof artifactId === 'string' &&
+          artifactId.length > 0 &&
+          !latestPersistedCanvasArtifactPartIndexes.has(artifactId)
+        )
+      }
+
+      return true
+    }
+
+    if (part.type?.startsWith?.('tool-')) {
+      const toolPart = part as { state?: string; output?: unknown }
+      const toolName = part.type.substring(5)
+      return (
+        isRegisteredToolUI(toolName) &&
+        toolPart.state === 'output-available' &&
+        !!toolPart.output
+      )
+    }
+
+    return false
+  }
+
   // Pre-compute: for each text part, whether there's any visible content after it.
   // Single reverse pass avoids O(n²) slice+some inside the render loop.
   const hasVisibleContentAfter = new Array<boolean>(renderParts.length)
   let seenVisible = false
   for (let i = renderParts.length - 1; i >= 0; i--) {
     hasVisibleContentAfter[i] = seenVisible
-    const p = renderParts[i]
-    if (
-      p.type === 'text' ||
-      p.type?.startsWith?.('tool-display') ||
-      p.type === 'tool-createCanvasArtifact' ||
-      p.type === 'tool-updateCanvasArtifact' ||
-      p.type === 'data-canvasArtifact' ||
-      p.type === 'dynamic-tool'
-    ) {
+    if (isVisibleContentPart(renderParts[i], i)) {
       seenVisible = true
     }
   }
@@ -683,6 +764,7 @@ export function RenderMessage({
             completedToolCalls={todoScan.completedToolCalls}
             hasActiveToolCall={todoScan.hasActiveToolCall}
             isComplete={isLatestMessage ? !isChatLoading(status) : true}
+            messageId={messageId}
           />
         )
       }
