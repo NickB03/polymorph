@@ -41,7 +41,13 @@ These are load-bearing and not derivable by reading any single file:
 Users should not need to say the word "skill." Infer intent from normal requests and invoke project-scoped skills automatically:
 
 - **Bug, test failure, unexpected behavior** → `systematic-debugging`
-- **Multi-step feature, refactor, migration** → `writing-plans` (before implementation)
+- **Multi-step feature, refactor, migration** → `writing-plans` first; then choose execution mode by tier (see memory `feedback_execution_mode.md`):
+  - **Tier 1** (1-3 tasks): inline single-session
+  - **Tier 2** (4-8 tasks): Claude picks between inline-with-`/compact` and `subagent-driven-development` — this is a tactical call, not a scope call, so make it directly. Only surface to the user if the choice has scope implications (e.g., a subagent run will materially change cost or wall-clock).
+  - **Tier 3** (9+ tasks): `subagent-driven-development` (sequential subagent + 2-stage review per task)
+  - Complete via `finishing-a-development-branch`
+- **Independent parallel research** (multi-source investigation, codebase audit) → `dispatching-parallel-agents` — read-only work only; **never** for implementation
+- **Long session showing context-rot symptoms** (forgetting earlier decisions, looping, file confusion) → see memory `project_context_management.md`; `/compact` proactively at 50% displayed (UI under-reports usage ~2x in 1M mode)
 - **Before claiming done / opening PR** → `verification-before-completion`
 - **Preparing for review** → `requesting-code-review`
 - **Applying review feedback** → `receiving-code-review`
@@ -52,7 +58,7 @@ Users should not need to say the word "skill." Infer intent from normal requests
 - **Any creative/visual work** → `brainstorming` (before wireframing or implementation)
 
 **Precedence:** process/quality skills first (debugging/planning/verification/review), then domain skills (Next.js, Supabase, testing). When multiple apply, order:
-`systematic-debugging` → `writing-plans` → domain skill(s) → `verification-before-completion` → review skill(s).
+`systematic-debugging` → `writing-plans` → execution mode (inline or `subagent-driven-development`) → domain skill(s) → `verification-before-completion` → review skill(s) → `finishing-a-development-branch`.
 
 For ambiguous tasks, begin with: _"Select and invoke any relevant skills before answering, then proceed."_
 
