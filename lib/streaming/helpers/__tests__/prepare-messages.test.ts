@@ -503,6 +503,10 @@ describe('prepareMessages', () => {
           {
             id: 'msg-2',
             role: 'assistant',
+            metadata: {
+              correlationId: 'server-correlation',
+              modelId: 'server-model'
+            },
             parts: [
               {
                 type: 'tool-displayOptionList',
@@ -600,6 +604,9 @@ describe('prepareMessages', () => {
       const updatedAssistant: UIMessage = {
         id: 'msg-2',
         role: 'assistant',
+        metadata: {
+          correlationId: 'client-correlation'
+        },
         parts: [
           {
             type: 'tool-displayOptionList',
@@ -642,12 +649,70 @@ describe('prepareMessages', () => {
         updatedAssistant
       ])
 
+      const mergedAssistant = {
+        ...existingChat.messages[1]!,
+        parts: updatedAssistant.parts
+      }
+
       expect(upsertMessage).toHaveBeenCalledWith(
         chatId,
-        updatedAssistant,
+        mergedAssistant,
         userId
       )
-      expect(result).toEqual([existingChat.messages[0], updatedAssistant])
+      expect(result).toEqual([existingChat.messages[0], mergedAssistant])
+    })
+
+    it('treats duplicate native assistant tool-output continuations as idempotent', async () => {
+      const assistant: UIMessage = {
+        id: 'msg-2',
+        role: 'assistant',
+        metadata: {
+          correlationId: 'server-correlation'
+        },
+        parts: [
+          {
+            type: 'tool-displayOptionList',
+            toolCallId: 'tool-1',
+            state: 'output-available',
+            input: {
+              id: 'theme',
+              options: [{ id: 'dark', label: 'Dark' }]
+            },
+            output: 'dark'
+          } as any
+        ]
+      }
+      const existingChat: Chat & { messages: UIMessage[] } = {
+        id: chatId,
+        title: 'Existing Chat',
+        userId,
+        visibility: 'private',
+        createdAt: new Date(),
+        messages: [
+          {
+            id: 'msg-1',
+            role: 'user',
+            parts: [{ type: 'text', text: 'Need your preference' }]
+          },
+          assistant
+        ]
+      }
+      const context: StreamContext = {
+        chatId,
+        userId,
+        modelId: 'gpt-4',
+        trigger: 'submit-message',
+        initialChat: existingChat,
+        isNewChat: false
+      }
+
+      const result = await prepareMessages(context, [
+        existingChat.messages[0]!,
+        assistant
+      ])
+
+      expect(upsertMessage).not.toHaveBeenCalled()
+      expect(result).toEqual(existingChat.messages)
     })
 
     it('rejects native assistant tool-output continuations when the server part is not awaiting input', async () => {

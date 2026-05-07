@@ -15,6 +15,10 @@ import { hasNativeInteractiveToolOutput } from './native-tool-output-continuatio
 import type { StreamContext } from './types'
 
 type SerializableRecord = Record<string, unknown>
+type ToolOutputPart = {
+  state?: string
+  output?: unknown
+}
 
 function canonicalize(value: unknown): unknown {
   if (Array.isArray(value)) {
@@ -44,6 +48,15 @@ function removeToolOutputFields(part: unknown) {
     ...rest
   } = part as SerializableRecord
   return rest
+}
+
+function hasPersistedInteractiveToolOutput(parts: UIMessage['parts']) {
+  return parts?.some(
+    part =>
+      isInteractiveToolPart(part) &&
+      (part as ToolOutputPart).state === 'output-available' &&
+      'output' in (part as ToolOutputPart)
+  )
 }
 
 async function prepareNativeInteractiveToolOutputMessages(
@@ -135,11 +148,23 @@ async function prepareNativeInteractiveToolOutputMessages(
   }
 
   if (changedPartIndex === -1) {
+    if (hasPersistedInteractiveToolOutput(persistedAssistant.parts)) {
+      perfLog(
+        'prepareMessages - native tool output already persisted; returning existing messages'
+      )
+      return initialChat.messages
+    }
+
     throw new Error('No interactive tool output update found')
   }
 
-  await upsertMessage(chatId, requestedAssistant, userId)
-  return [...initialChat.messages.slice(0, -1), requestedAssistant]
+  const mergedAssistant: UIMessage = {
+    ...persistedAssistant,
+    parts: requestedAssistant.parts
+  }
+
+  await upsertMessage(chatId, mergedAssistant, userId)
+  return [...initialChat.messages.slice(0, -1), mergedAssistant]
 }
 
 export async function prepareMessages(

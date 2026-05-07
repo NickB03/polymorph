@@ -37,6 +37,14 @@ import type { StreamContext } from './helpers/types'
 import { createCanvasEmitter } from './helpers/write-canvas-data'
 import { BaseStreamConfig } from './types'
 
+const NATIVE_TOOL_OUTPUT_RETRY_DELAY_MS = 200
+
+function waitForNativeToolOutputRetry() {
+  return new Promise(resolve =>
+    setTimeout(resolve, NATIVE_TOOL_OUTPUT_RETRY_DELAY_MS)
+  )
+}
+
 export async function createChatStreamResponse(
   config: BaseStreamConfig
 ): Promise<Response> {
@@ -124,10 +132,27 @@ export async function createChatStreamResponse(
         'prepareMessages completed (native tool output pre-stream)',
         prepareStart
       )
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Invalid tool output'
-      return jsonError('TOOL_ERROR', message, 400)
+    } catch {
+      perfLog(
+        '[native-tool-output] prepareMessages failed, retrying after direct DB reload'
+      )
+      await waitForNativeToolOutputRetry()
+
+      try {
+        const retryStart = performance.now()
+        context.initialChat = await loadChatWithMessages(chatId, userId)
+        prefetchedMessages = await prepareMessages(context, requestMessages)
+        perfTime(
+          'prepareMessages completed after native tool output retry',
+          retryStart
+        )
+      } catch (retryError) {
+        const message =
+          retryError instanceof Error
+            ? retryError.message
+            : 'Invalid tool output'
+        return jsonError('TOOL_ERROR', message, 400)
+      }
     }
   }
 

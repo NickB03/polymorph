@@ -32,7 +32,7 @@ interface ChatMessagesProps {
   isGuest?: boolean
   submitInteractiveToolOutput?: (params: {
     toolCallId: string
-    output: any
+    output: unknown
   }) => void
   /** Ref for the scroll container */
   scrollContainerRef: React.RefObject<HTMLDivElement | null>

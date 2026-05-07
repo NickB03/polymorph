@@ -402,7 +402,7 @@ interface RenderMessageProps {
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   submitInteractiveToolOutput?: (params: {
     toolCallId: string
-    output: any
+    output: unknown
   }) => void
   onUpdateMessage?: (messageId: string, newContent: string) => Promise<void>
   reload?: (messageId: string) => Promise<void | string | null | undefined>
@@ -941,6 +941,56 @@ export function RenderMessage({
         isSuccessfulReadCanvasArtifactOutput(dynamicToolPart.output)
       ) {
         return
+      }
+
+      if (
+        (dynamicToolPart.toolName === 'createCanvasArtifact' ||
+          dynamicToolPart.toolName === 'updateCanvasArtifact') &&
+        dynamicToolPart.state === 'output-available' &&
+        dynamicToolPart.output &&
+        typeof dynamicToolPart.output === 'object'
+      ) {
+        const artifactId = (dynamicToolPart.output as { artifactId?: unknown })
+          .artifactId
+        if (
+          typeof artifactId === 'string' &&
+          artifactId.length > 0 &&
+          !latestPersistedCanvasArtifactPartIndexes.has(artifactId)
+        ) {
+          const cardData = tryParseCanvasArtifactCardData(
+            dynamicToolPart.output
+          )
+          if (cardData) {
+            const latestStatus = latestCanvasArtifactStatuses.get(
+              cardData.artifactId
+            )
+            const latestStatusOverride =
+              latestStatus && latestStatus.sourceIndex > index
+                ? latestStatus
+                : undefined
+            elements.push(
+              <CanvasArtifactCard
+                key={`${messageId}-dynamic-canvas-tool-${index}`}
+                data={
+                  latestStatusOverride
+                    ? {
+                        ...cardData,
+                        status: latestStatusOverride.status,
+                        draftRevision: latestStatusOverride.draftRevision,
+                        currentVersionId: latestStatusOverride.currentVersionId
+                      }
+                    : cardData
+                }
+                onClick={
+                  onCanvasArtifactClick
+                    ? () => onCanvasArtifactClick(cardData.artifactId)
+                    : undefined
+                }
+              />
+            )
+            return
+          }
+        }
       }
 
       elements.push(

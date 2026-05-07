@@ -99,9 +99,9 @@ describe('canonical chat UIMessage loading', () => {
       'utf8'
     )
 
-    expect(schemaSource).toContain(
-      "uiMessage: jsonb('ui_message').$type<UIMessage>().notNull()"
-    )
+    expect(schemaSource).toMatch(/uiMessage:\s*jsonb\('ui_message'\)/)
+    expect(schemaSource).toMatch(/uiMessage:[\s\S]*\$type<UIMessage>\(\)/)
+    expect(schemaSource).toMatch(/uiMessage:[\s\S]*\.notNull\(\)/)
     expect(migrationSource).toContain(
       'IF EXISTS (SELECT 1 FROM "messages" WHERE "ui_message" IS NULL)'
     )

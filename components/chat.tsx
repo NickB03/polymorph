@@ -884,9 +884,8 @@ export function Chat({
             output
           }: {
             toolCallId: string
-            output: any
+            output: unknown
           }) => {
-            let toolName = 'unknown'
             const matchedPart = messages
               .flatMap(m => m.parts ?? [])
               .find(
@@ -896,15 +895,17 @@ export function Chat({
                     isDynamicToolPart(p)) &&
                   p.toolCallId === toolCallId
               )
-            if (matchedPart) {
-              if (
-                isToolCallPart(matchedPart) ||
-                isDynamicToolPart(matchedPart)
-              ) {
-                toolName = matchedPart.toolName
-              } else if (isToolTypePart(matchedPart)) {
-                toolName = matchedPart.type.substring(5) // Remove 'tool-' prefix
-              }
+            if (!matchedPart) {
+              return
+            }
+
+            let toolName: string
+            if (isToolCallPart(matchedPart) || isDynamicToolPart(matchedPart)) {
+              toolName = matchedPart.toolName
+            } else if (isToolTypePart(matchedPart)) {
+              toolName = matchedPart.type.substring(5) // Remove 'tool-' prefix
+            } else {
+              return
             }
 
             addToolOutput({ tool: toolName, toolCallId, output })

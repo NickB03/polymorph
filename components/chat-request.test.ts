@@ -4,6 +4,7 @@ import { buildChatRequestBody } from './chat-request'
 
 describe('chat request helpers', () => {
   const retiredToolOutputField = ['tool', 'Result'].join('')
+  const retiredHyphenatedToolOutputField = 'tool-result'
 
   it('builds a submit-message request for guest users', () => {
     const request = buildChatRequestBody({
@@ -68,6 +69,7 @@ describe('chat request helpers', () => {
     })
     expect(request.body).not.toHaveProperty('message')
     expect(request.body).not.toHaveProperty(retiredToolOutputField)
+    expect(request.body).not.toHaveProperty(retiredHyphenatedToolOutputField)
   })
 
   it('does not send retired singular message or tool output fields for normal submissions', () => {
@@ -106,5 +108,6 @@ describe('chat request helpers', () => {
     )
     expect(request.body).not.toHaveProperty('message')
     expect(request.body).not.toHaveProperty(retiredToolOutputField)
+    expect(request.body).not.toHaveProperty(retiredHyphenatedToolOutputField)
   })
 })

@@ -35,7 +35,7 @@ type RenderToolPartArgs = {
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   submitInteractiveToolOutput?: (params: {
     toolCallId: string
-    output: any
+    output: unknown
   }) => void
 }
 

@@ -68,7 +68,7 @@ type Props = {
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   submitInteractiveToolOutput?: (params: {
     toolCallId: string
-    output: any
+    output: unknown
   }) => void
   isLatestMessage?: boolean
   parts?: MessagePart[]
@@ -210,7 +210,7 @@ function RenderPart({
   status?: any
   submitInteractiveToolOutput?: (params: {
     toolCallId: string
-    output: any
+    output: unknown
   }) => void
   onQuerySelect: (query: string) => void
   isLatestMessage?: boolean

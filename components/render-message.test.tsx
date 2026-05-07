@@ -729,7 +729,8 @@ describe('RenderMessage', () => {
     expect(handleClick).toHaveBeenCalledWith('artifact-1')
   })
 
-  it('renders dynamic canvas artifact tools through DynamicToolDisplay without canvas click wiring', () => {
+  it('renders clickable dynamic canvas artifact cards when no data part exists', () => {
+    const handleClick = vi.fn()
     const message: UIMessage = {
       id: 'assistant-1',
       role: 'assistant',
@@ -758,12 +759,14 @@ describe('RenderMessage', () => {
         getIsOpen={() => false}
         onOpenChange={() => {}}
         onQuerySelect={() => {}}
-        onCanvasArtifactClick={vi.fn()}
+        onCanvasArtifactClick={handleClick}
       />
     )
 
     const card = screen.getByTestId('canvas-artifact-card')
     expect(card).toBeInTheDocument()
+    fireEvent.click(card)
+    expect(handleClick).toHaveBeenCalledWith('artifact-1')
   })
 
   it('suppresses tool-createCanvasArtifact when data-canvasArtifact exists for the same artifact', () => {

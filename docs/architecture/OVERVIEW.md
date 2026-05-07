@@ -342,7 +342,7 @@ sequenceDiagram
 
 - **Related questions** are streamed incrementally as `data-relatedQuestions` parts with status transitions: `loading` -> `streaming` (with incremental question list) -> `success` (final validated list). Uses Zod schema validation via `relatedSchema`.
 
-- **Message preparation** (`prepareMessages`) handles three scenarios:
+- **Message preparation** (`prepareMessages`) handles four scenarios:
   1. **New chat**: Creates chat + saves first message optimistically in the background via `context.pendingInitialSave`
   2. **Existing chat**: Loads history and appends the new message
   3. **Native interactive output**: Validates one registered interactive tool part moving from `input-available` to `output-available`
