@@ -90,7 +90,7 @@ describe('tool part registry interactive display tools', () => {
   })
 
   it('keeps displayOptionList Clear local instead of submitting an empty tool result', async () => {
-    const addToolResult = vi.fn()
+    const submitInteractiveToolOutput = vi.fn()
     const node = renderToolPart({
       toolName: 'displayOptionList',
       toolPart: {
@@ -101,7 +101,7 @@ describe('tool part registry interactive display tools', () => {
       messageId: 'message-1',
       partIndex: 0,
       isResearchMode: false,
-      addToolResult
+      submitInteractiveToolOutput
     })
 
     render(<>{node}</>)
@@ -109,7 +109,7 @@ describe('tool part registry interactive display tools', () => {
     await click(screen.getByRole('option', { name: /deep research/i }))
     await click(screen.getByRole('button', { name: /clear/i }))
 
-    expect(addToolResult).not.toHaveBeenCalled()
+    expect(submitInteractiveToolOutput).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: /confirm/i })).toBeDisabled()
   })
 
