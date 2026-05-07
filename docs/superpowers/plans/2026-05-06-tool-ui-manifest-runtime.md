@@ -3067,6 +3067,8 @@ git add -- \
   docs/architecture/RESEARCH-AGENT.md \
   docs/architecture/OVERVIEW.md \
   docs/reference/FILE-INDEX.md \
+  docs/superpowers/plans/2026-05-06-tool-ui-manifest-runtime-codex-multi-agent.md \
+  docs/superpowers/plans/2026-05-06-tool-ui-manifest-runtime.md \
   GEMINI.md \
   lib/tools/tool-ui/community-sources.ts \
   lib/tools/tool-ui/metadata.ts \

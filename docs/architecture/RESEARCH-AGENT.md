@@ -211,16 +211,17 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 
 **Purpose:** Fast, focused answers. Optimized for simple questions that need 1-3 searches.
 
-| Property          | Value                                                                               |
-| ----------------- | ----------------------------------------------------------------------------------- |
-| Max steps         | 20                                                                                  |
-| Search type       | Forced `optimized` (via `wrapSearchToolForChatMode` in `lib/agents/chat/search.ts`) |
-| Target tool calls | ~5                                                                                  |
-| `todoWrite`       | Not available                                                                       |
-| `displayPlan`     | Available                                                                           |
-| `displayChart`    | Available                                                                           |
-| `displayGeoMap`   | Available                                                                           |
-| Geo helpers       | `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`              |
+| Property               | Value                                                                               |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| Max steps              | 20                                                                                  |
+| Search type            | Forced `optimized` (via `wrapSearchToolForChatMode` in `lib/agents/chat/search.ts`) |
+| Target tool calls      | ~5                                                                                  |
+| `todoWrite`            | Not available                                                                       |
+| `displayPlan`          | Available                                                                           |
+| `displayChart`         | Available                                                                           |
+| `displayGeoMap`        | Available                                                                           |
+| `displayAgentArtifact` | Available                                                                           |
+| Geo helpers            | `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`              |
 
 **How search wrapping works:** In chat mode, the search tool is wrapped by `wrapSearchToolForChatMode()`, which intercepts every call and forces `type: 'optimized'` regardless of what the LLM requests. This ensures the agent always gets content snippets directly from the search provider (Brave by default; Tavily/Exa when selected via `SEARCH_API`) rather than needing to fetch pages separately.
 
@@ -232,23 +233,24 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 - Prohibits use of fetch on search results (only on user-provided URLs)
 - Requires all responses to use inline citations `[number](#toolCallId)`
 
-**Active tools:** `search`, `fetch`, `displayPlan`, `displayTable`, `displayChart`, `displayGeoMap`, `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`
+**Active tools:** `search`, `fetch`, `displayPlan`, `displayTable`, `displayChart`, `displayGeoMap`, `displayCitations`, `displayLinkPreview`, `displayAgentArtifact`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`, `getDirections`, `geocodeAddress`, `getIsochrone`, `getStaticMapImage`
 
 ### Research Mode
 
 **Purpose:** Thorough, multi-step research. For complex queries that need systematic investigation.
 
-| Property             | Value                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| Max steps            | 50                                                                     |
-| Search type          | Full (general + optimized)                                             |
-| Target tool calls    | ~20                                                                    |
-| `todoWrite`          | Available (when writer present)                                        |
-| `displayChart`       | Available                                                              |
-| `displayGeoMap`      | Available                                                              |
-| Geo helpers          | `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage` |
-| `competitorResearch` | Available for structured market/vendor/company/product comparisons     |
-| `displayPlan`        | Not in `activeTools`                                                   |
+| Property               | Value                                                                  |
+| ---------------------- | ---------------------------------------------------------------------- |
+| Max steps              | 50                                                                     |
+| Search type            | Full (general + optimized)                                             |
+| Target tool calls      | ~20                                                                    |
+| `todoWrite`            | Available (when writer present)                                        |
+| `displayChart`         | Available                                                              |
+| `displayGeoMap`        | Available                                                              |
+| `displayAgentArtifact` | Available                                                              |
+| Geo helpers            | `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage` |
+| `competitorResearch`   | Available for structured market/vendor/company/product comparisons     |
+| `displayPlan`          | Not in `activeTools`                                                   |
 
 **System prompt behavior:**
 
@@ -259,7 +261,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 - Allows fetching top 2-3 sources for deeper content analysis
 - Uses `competitorResearch` for structured market, vendor, company, or product comparisons when the user asks for competitor-style analysis
 
-**Active tools:** `search`, `fetch`, `competitorResearch`, `displayTable`, `displayChart`, `displayGeoMap`, `geocodeAddress`, `getDirections`, `getIsochrone`, `getStaticMapImage`, `displayCitations`, `displayLinkPreview`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`, `todoWrite` (conditional)
+**Active tools:** `search`, `fetch`, `competitorResearch`, `displayTable`, `displayChart`, `displayGeoMap`, `displayCitations`, `displayLinkPreview`, `displayAgentArtifact`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline`, `getDirections`, `geocodeAddress`, `getIsochrone`, `getStaticMapImage`, `todoWrite` (conditional)
 
 ### Mode Comparison
 
@@ -271,6 +273,7 @@ The agent operates in one of two modes, selected by the user via a cookie prefer
 | `displayPlan`                | Available                    | Not in active tools                   |
 | `competitorResearch`         | Not available                | Available                             |
 | `displayGeoMap`              | Available                    | Available                             |
+| `displayAgentArtifact`       | Available                    | Available                             |
 | Geo helper tools             | Available                    | Available                             |
 | Fetch from search results    | Discouraged by prompt        | Encouraged for top sources            |
 | Target efficiency            | ~5 tool calls                | ~20 tool calls                        |
@@ -370,7 +373,7 @@ For the end-to-end compose-first flow, see [Geo & Spatial Tools](GEO-TOOLS.md).
 
 ### Display Tools
 
-All display tools share a common pattern: they accept structured input, validate it with Zod schemas, and return the input as output (`execute: async params => params`). Migrated high-friction tools use per-tool modules under `lib/tools/<tool-name>/` with `schema.ts`, `server.ts`, optional `client.tsx`, optional `result.tsx`, and `index.ts`. The actual rendering happens through `components/tool-ui/tool-part-registry.tsx` for interactive tools and `components/tool-ui/registry.tsx` for output/result rendering.
+Display tools are exposed through the Tool UI manifest runtime. `lib/tools/tool-ui/metadata.ts` records each tool's name, kind, and mode availability; `lib/tools/tool-ui/server-catalog.ts` exposes the server tools to the chat toolset; `components/tool-ui/renderer-catalog.tsx` renders passive outputs; and `components/tool-ui/interactive-renderer-catalog.tsx` renders client-resolved interactive parts. Passive display tools accept structured input, validate it with Zod schemas, and return the input as output (`execute: async params => params`). Interactive display tools declare an `outputSchema` and wait for the client to submit user output before the model continues.
 
 | Tool                    | Purpose                                             | Key input fields                                                                                             | Trigger examples                                                            |
 | ----------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
@@ -385,7 +388,7 @@ All display tools share a common pattern: they accept structured input, validate
 | `displayCallout`        | Styled callout box for key information              | `id`, `variant`, `title` (optional), `content`                                                               | "This API was deprecated in v3"                                             |
 | `displayTimeline`       | Chronological event timeline                        | `id`, `title`, `events[]` with `id`, `date`, `title`, `category`                                             | "history of TypeScript", "timeline of SpaceX launches"                      |
 
-**`displayOptionList`** is unique: it has no `execute` function, so the frontend resolves it through the native AI SDK `addToolOutput` flow when the user makes a selection.
+**`displayOptionList`** and **`displayQuestionWizard`** have no `execute` function. Their module-local renderers receive the local `submitInteractiveToolOutput` callback; `components/chat.tsx` bridges that callback to AI SDK `addToolOutput({ tool, toolCallId, output })`; and the next request carries the updated AI SDK `messages` history through `components/chat-request.ts` and `lib/streaming/helpers/prepare-messages.ts`, which validates the output before persistence.
 
 **`displayTable` format types:** `text`, `number`, `currency`, `percent`, `date`, `delta`, `boolean`, `link`, `badge`, `status`, `array` — each with type-specific options (e.g., currency code, decimal places, color maps).
 
@@ -799,19 +802,13 @@ async *execute({ param }) {
 
 ### Adding a New Display Tool
 
-1. Create the tool in `lib/tools/display-my-component.ts` with a Zod schema and passthrough execute:
+Use the manifest-driven path in [Generative UI](GENERATIVE-UI.md#adding-a-new-display-tool). For the research agent, the important integration points are:
 
-```typescript
-export const displayMyComponentTool = tool({
-  description: 'When to use this display tool',
-  inputSchema: MyComponentSchema,
-  execute: async params => params
-})
-```
-
-2. Register it in the agent (same steps as core tools above)
-
-3. Create a React component in `components/tool-ui/` and register it in the tool UI registry
+1. Add the server tool through `lib/tools/tool-ui/server-catalog.ts`, not by scattering display tool imports through every agent definition.
+2. Add exactly one `TOOL_UI_TOOL_METADATA` row in `lib/tools/tool-ui/metadata.ts`. `getToolUiToolNamesForMode('search')`, `getToolUiToolNamesForMode('research')`, and `getToolUiToolNamesForMode('build')` control display-tool availability for each agent mode.
+3. Add passive renderers to `components/tool-ui/renderer-catalog.tsx` and interactive renderers to `components/tool-ui/interactive-renderer-catalog.tsx`. The registry facade should keep working without a direct edit for every manifest-managed tool.
+4. Keep prompt guidance in `lib/agents/prompts/search-mode-prompts.ts` aligned with the tool's intended trigger conditions.
+5. For interactive tools, keep the user-output path local until the bridge: module-local renderers call `submitInteractiveToolOutput`, `components/chat.tsx` bridges to AI SDK `addToolOutput({ tool, toolCallId, output })`, and the server continuation receives the updated AI SDK `messages` history.
 
 ### Modifying System Prompts
 
@@ -878,6 +875,11 @@ case 'my-provider':
 | `lib/tools/search.ts`                                    | Multi-provider search tool with streaming and citation mapping        |
 | `lib/tools/fetch.ts`                                     | Web content extraction (regular HTML + API-based for PDFs)            |
 | `lib/tools/todo.ts`                                      | Session-scoped task tracking with content-based merge                 |
+| `lib/tools/tool-ui/metadata.ts`                          | Tool UI manifest metadata for display-tool mode availability          |
+| `lib/tools/tool-ui/server-catalog.ts`                    | Server-only catalog exposing manifest display tools to the toolset    |
+| `components/tool-ui/renderer-catalog.tsx`                | Client renderer catalog for passive manifest display outputs          |
+| `components/tool-ui/interactive-renderer-catalog.tsx`    | Client renderer catalog for interactive display tool parts            |
+| `lib/tools/tool-ui/client-output-validation.ts`          | Validates client-resolved interactive outputs before persistence      |
 | `lib/tools/dynamic.ts`                                   | Dynamic/MCP tool factory                                              |
 | `lib/tools/display-plan.ts`                              | Step-by-step guide display tool                                       |
 | `lib/tools/display-table.ts`                             | Sortable data table display tool                                      |

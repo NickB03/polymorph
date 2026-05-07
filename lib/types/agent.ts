@@ -21,90 +21,60 @@ export type ResearcherUIMessage = InferAgentUIMessage<ResearcherAgent>
 // Infer UI tools type for researcher agent
 export type ResearcherUITools = InferUITools<ResearcherTools>
 
+type ResearcherToolInvocationMap = {
+  [ToolName in keyof ResearcherTools]: UIToolInvocation<
+    ResearcherTools[ToolName]
+  >
+}
+
 // Tool invocation types for each tool
-export type SearchToolInvocation = UIToolInvocation<ResearcherTools['search']>
-export type FetchToolInvocation = UIToolInvocation<ResearcherTools['fetch']>
-export type TodoWriteToolInvocation = UIToolInvocation<
-  ResearcherTools['todoWrite']
->
-export type DisplayPlanToolInvocation = UIToolInvocation<
-  ResearcherTools['displayPlan']
->
-export type DisplayTableToolInvocation = UIToolInvocation<
-  ResearcherTools['displayTable']
->
-export type DisplayChartToolInvocation = UIToolInvocation<
-  ResearcherTools['displayChart']
->
-export type DisplayGeoMapToolInvocation = UIToolInvocation<
-  ResearcherTools['displayGeoMap']
->
-export type GetDirectionsToolInvocation = UIToolInvocation<
-  ResearcherTools['getDirections']
->
-export type GeocodeAddressToolInvocation = UIToolInvocation<
-  ResearcherTools['geocodeAddress']
->
-export type GetIsochroneToolInvocation = UIToolInvocation<
-  ResearcherTools['getIsochrone']
->
-export type GetStaticMapImageToolInvocation = UIToolInvocation<
-  ResearcherTools['getStaticMapImage']
->
-export type DisplayCitationsToolInvocation = UIToolInvocation<
-  ResearcherTools['displayCitations']
->
-export type DisplayLinkPreviewToolInvocation = UIToolInvocation<
-  ResearcherTools['displayLinkPreview']
->
-export type DisplayOptionListToolInvocation = UIToolInvocation<
-  ResearcherTools['displayOptionList']
->
-export type DisplayQuestionWizardToolInvocation = UIToolInvocation<
-  ResearcherTools['displayQuestionWizard']
->
-export type DisplayCalloutToolInvocation = UIToolInvocation<
-  ResearcherTools['displayCallout']
->
-export type DisplayTimelineToolInvocation = UIToolInvocation<
-  ResearcherTools['displayTimeline']
->
-export type CreateCanvasArtifactToolInvocation = UIToolInvocation<
-  ResearcherTools['createCanvasArtifact']
->
-export type UpdateCanvasArtifactToolInvocation = UIToolInvocation<
-  ResearcherTools['updateCanvasArtifact']
->
-export type ReadCanvasArtifactToolInvocation = UIToolInvocation<
-  ResearcherTools['readCanvasArtifact']
->
-export type GenerateImageToolInvocation = UIToolInvocation<
-  ResearcherTools['generateImage']
->
+export type SearchToolInvocation = ResearcherToolInvocationMap['search']
+export type FetchToolInvocation = ResearcherToolInvocationMap['fetch']
+export type TodoWriteToolInvocation = ResearcherToolInvocationMap['todoWrite']
+export type DisplayPlanToolInvocation =
+  ResearcherToolInvocationMap['displayPlan']
+export type DisplayTableToolInvocation =
+  ResearcherToolInvocationMap['displayTable']
+export type DisplayChartToolInvocation =
+  ResearcherToolInvocationMap['displayChart']
+export type DisplayGeoMapToolInvocation =
+  ResearcherToolInvocationMap['displayGeoMap']
+export type GetDirectionsToolInvocation =
+  ResearcherToolInvocationMap['getDirections']
+export type GeocodeAddressToolInvocation =
+  ResearcherToolInvocationMap['geocodeAddress']
+export type GetIsochroneToolInvocation =
+  ResearcherToolInvocationMap['getIsochrone']
+export type GetStaticMapImageToolInvocation =
+  ResearcherToolInvocationMap['getStaticMapImage']
+export type DisplayCitationsToolInvocation =
+  ResearcherToolInvocationMap['displayCitations']
+export type DisplayLinkPreviewToolInvocation =
+  ResearcherToolInvocationMap['displayLinkPreview']
+export type DisplayAgentArtifactToolInvocation =
+  ResearcherToolInvocationMap['displayAgentArtifact']
+export type DisplayOptionListToolInvocation =
+  ResearcherToolInvocationMap['displayOptionList']
+export type DisplayQuestionWizardToolInvocation =
+  ResearcherToolInvocationMap['displayQuestionWizard']
+export type DisplayCalloutToolInvocation =
+  ResearcherToolInvocationMap['displayCallout']
+export type DisplayTimelineToolInvocation =
+  ResearcherToolInvocationMap['displayTimeline']
+export type CreateCanvasArtifactToolInvocation =
+  ResearcherToolInvocationMap['createCanvasArtifact']
+export type UpdateCanvasArtifactToolInvocation =
+  ResearcherToolInvocationMap['updateCanvasArtifact']
+export type ReadCanvasArtifactToolInvocation =
+  ResearcherToolInvocationMap['readCanvasArtifact']
+export type GenerateImageToolInvocation =
+  ResearcherToolInvocationMap['generateImage']
+export type CompetitorResearchToolInvocation =
+  ResearcherToolInvocationMap['competitorResearch']
 
 // Union type for all tool invocations
 export type ResearcherToolInvocation =
-  | SearchToolInvocation
-  | FetchToolInvocation
-  | TodoWriteToolInvocation
-  | DisplayPlanToolInvocation
-  | DisplayTableToolInvocation
-  | DisplayChartToolInvocation
-  | DisplayGeoMapToolInvocation
-  | GetDirectionsToolInvocation
-  | GeocodeAddressToolInvocation
-  | GetIsochroneToolInvocation
-  | GetStaticMapImageToolInvocation
-  | DisplayCitationsToolInvocation
-  | DisplayLinkPreviewToolInvocation
-  | DisplayOptionListToolInvocation
-  | DisplayQuestionWizardToolInvocation
-  | DisplayCalloutToolInvocation
-  | DisplayTimelineToolInvocation
-  | CreateCanvasArtifactToolInvocation
-  | UpdateCanvasArtifactToolInvocation
-  | ReadCanvasArtifactToolInvocation
-  | GenerateImageToolInvocation
+  ResearcherToolInvocationMap[keyof ResearcherToolInvocationMap]
 
 // Helper type to extract tool names
 export type ResearcherToolName = keyof ResearcherTools

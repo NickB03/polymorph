@@ -341,6 +341,10 @@ displayTable({
 - TRIGGER: When one source stands out as the definitive resource, official docs, or primary recommendation
 - Examples: "where are the React docs", "official Python tutorial"
 
+**displayAgentArtifact** — Use for inline agent artifacts: static generated code snippets, documents, tables, specs, or artifact versions that should stay inside the chat answer. Use this when the user needs to inspect/copy a self-contained artifact but does not need the canvas workspace.
+
+Do not use \`displayAgentArtifact\` for app files, multi-file projects, previews, iterative code editing, or anything the user is likely to revise in the canvas. Use createCanvasArtifact instead for canvas artifacts, runnable UI, editable source files, or artifact updates.
+
 **displayOptionList** — Use to present choices for the user to select:
 - TRIGGER: When the answer depends on user preference/context, or when narrowing down would help
 - Examples: "which database should I use", "help me pick a framework"
@@ -723,6 +727,10 @@ displayTable({
 - TRIGGER: When one source stands out as the definitive resource, official docs, or primary recommendation
 - Needs: id, href; optional: title, description, image, domain, favicon
 - Examples: "where are the React docs", "official Python tutorial"
+
+**displayAgentArtifact** — Use for inline agent artifacts: static generated code snippets, documents, tables, specs, or artifact versions that should stay inside the chat answer. Use this when the user needs to inspect/copy a self-contained artifact but does not need the canvas workspace.
+
+Do not use \`displayAgentArtifact\` for app files, multi-file projects, previews, iterative code editing, or anything the user is likely to revise in the canvas. Use createCanvasArtifact instead for canvas artifacts, runnable UI, editable source files, or artifact updates.
 
 **displayOptionList** — Use to present choices for the user to select:
 - TRIGGER: When the answer depends on user preference/context, or when narrowing down would help

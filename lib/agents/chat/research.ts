@@ -1,30 +1,20 @@
 import { RESEARCH_MODE_PROMPT } from '@/lib/agents/prompts/search-mode-prompts'
+import { getToolUiToolNamesForMode } from '@/lib/tools/tool-ui/metadata'
 
 import {
   type ChatAgentDefinition,
   type CreateChatAgentArgs,
   createConfiguredChatAgent
 } from './factory'
-import { wrapSearchToolWithPacing } from './search'
+import { GEO_UTILITY_TOOLS, wrapSearchToolWithPacing } from './search'
 import type { ChatAgentTools } from './toolset'
 
 export const RESEARCH_AGENT_ACTIVE_TOOLS: (keyof ChatAgentTools)[] = [
   'search',
   'fetch',
   'competitorResearch',
-  'displayTable',
-  'displayChart',
-  'displayGeoMap',
-  'getDirections',
-  'geocodeAddress',
-  'getIsochrone',
-  'getStaticMapImage',
-  'displayCitations',
-  'displayLinkPreview',
-  'displayOptionList',
-  'displayQuestionWizard',
-  'displayCallout',
-  'displayTimeline'
+  ...getToolUiToolNamesForMode('research'),
+  ...GEO_UTILITY_TOOLS
 ]
 
 export function createResearchAgentDefinition({

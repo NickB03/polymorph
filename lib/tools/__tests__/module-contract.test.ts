@@ -34,6 +34,11 @@ const modules = [
     () => import('@/lib/tools/display-question-wizard/index')
   ],
   [
+    'display-agent-artifact',
+    () => import('@/lib/tools/display-agent-artifact'),
+    () => import('@/lib/tools/display-agent-artifact/index')
+  ],
+  [
     'display-citations',
     () => import('@/lib/tools/display-citations'),
     () => import('@/lib/tools/display-citations/index')

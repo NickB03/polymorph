@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { getInteractiveToolPartTypes } from '@/lib/tools/tool-ui/metadata'
+
+import { interactiveToolRendererEntries } from './interactive-renderer-catalog'
 import { renderToolPart } from './tool-part-registry'
 
 const optionListInput = {
@@ -52,6 +55,12 @@ async function click(element: Element) {
 describe('tool part registry interactive display tools', () => {
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  it('keeps interactive renderer names aligned with metadata', () => {
+    expect(
+      interactiveToolRendererEntries.map(entry => `tool-${entry.name}`)
+    ).toEqual(getInteractiveToolPartTypes())
   })
 
   it('renders displayOptionList input and submits the selected result', async () => {

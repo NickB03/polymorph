@@ -2,6 +2,7 @@ import {
   ARTIFACT_INTAKE_PROTOCOL,
   CHAT_MODE_PROMPT
 } from '@/lib/agents/prompts/search-mode-prompts'
+import { getToolUiToolNamesForMode } from '@/lib/tools/tool-ui/metadata'
 
 import {
   type ChatAgentDefinition,
@@ -9,10 +10,11 @@ import {
   createConfiguredChatAgent
 } from './factory'
 import {
-  SEARCH_AGENT_ACTIVE_TOOLS,
+  GEO_UTILITY_TOOLS,
   wrapSearchToolForChatMode,
   wrapSearchToolWithPacing
 } from './search'
+import type { ChatAgentTools } from './toolset'
 
 function isEvalMode(experimentalContext: unknown): boolean {
   return (
@@ -22,6 +24,13 @@ function isEvalMode(experimentalContext: unknown): boolean {
   )
 }
 
+export const BUILD_AGENT_ACTIVE_TOOLS: (keyof ChatAgentTools)[] = [
+  'search',
+  'fetch',
+  ...getToolUiToolNamesForMode('build'),
+  ...GEO_UTILITY_TOOLS
+]
+
 export function createBuildAgentDefinition({
   experimentalContext
 }: Pick<CreateChatAgentArgs, 'experimentalContext'> = {}): ChatAgentDefinition {
@@ -30,7 +39,7 @@ export function createBuildAgentDefinition({
     systemPrompt: isEvalMode(experimentalContext)
       ? CHAT_MODE_PROMPT
       : `${ARTIFACT_INTAKE_PROTOCOL}${CHAT_MODE_PROMPT}`,
-    activeTools: SEARCH_AGENT_ACTIVE_TOOLS,
+    activeTools: BUILD_AGENT_ACTIVE_TOOLS,
     maxSteps: 20,
     configureSearchTool: originalTool =>
       wrapSearchToolWithPacing(wrapSearchToolForChatMode(originalTool))

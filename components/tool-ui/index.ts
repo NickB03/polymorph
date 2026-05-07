@@ -1,4 +1,11 @@
 // Components
+export type { SerializableAgentArtifact } from './agent-artifact'
+export { AgentArtifact } from './agent-artifact'
+export {
+  parseSerializableAgentArtifact,
+  safeParseSerializableAgentArtifact,
+  SerializableAgentArtifactSchema
+} from './agent-artifact'
 export type { CalloutProps, SerializableCallout } from './callout'
 export { Callout } from './callout'
 export type {
@@ -47,4 +54,8 @@ export type { SerializableTimeline, TimelineProps } from './timeline'
 export { Timeline } from './timeline'
 
 // Registry
-export { tryRenderToolUI, tryRenderToolUIByName } from './registry'
+export {
+  isRegisteredToolUI,
+  tryRenderToolUI,
+  tryRenderToolUIByName
+} from './registry'

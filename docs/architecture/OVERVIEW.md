@@ -7,20 +7,20 @@ This document describes the internal architecture of Polymorph — an AI platfor
 
 ## Tech Stack
 
-| Category  | Technology                                                                                                                        |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Framework | Next.js 16 (App Router)                                                                                                           |
-| Runtime   | Bun                                                                                                                               |
-| Language  | TypeScript (strict mode)                                                                                                          |
-| Database  | PostgreSQL via Supabase + Drizzle ORM                                                                                             |
-| Auth      | Supabase Auth                                                                                                                     |
-| AI        | Vercel AI SDK + AI Gateway                                                                                                        |
-| Search    | Brave (default), Tavily/Exa fallbacks, optional SearXNG/Firecrawl providers                                                       |
-| Artifacts | Canvas artifact compiler + workspace (single-file HTML preview/export)                                                            |
-| Styling   | Tailwind CSS v4 + shadcn/ui                                                                                                       |
-| Testing   | Vitest                                                                                                                            |
-| Tracing   | Arize Phoenix                                                                                                                     |
-| Gen UI    | 10 display tools (tables, charts, geo maps, timelines, citations, callouts, plans, link previews, option lists, question wizards) |
+| Category  | Technology                                                                                                                                         |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework | Next.js 16 (App Router)                                                                                                                            |
+| Runtime   | Bun                                                                                                                                                |
+| Language  | TypeScript (strict mode)                                                                                                                           |
+| Database  | PostgreSQL via Supabase + Drizzle ORM                                                                                                              |
+| Auth      | Supabase Auth                                                                                                                                      |
+| AI        | Vercel AI SDK + AI Gateway                                                                                                                         |
+| Search    | Brave (default), Tavily/Exa fallbacks, optional SearXNG/Firecrawl providers                                                                        |
+| Artifacts | Canvas artifact compiler + workspace (single-file HTML preview/export)                                                                             |
+| Styling   | Tailwind CSS v4 + shadcn/ui                                                                                                                        |
+| Testing   | Vitest                                                                                                                                             |
+| Tracing   | Arize Phoenix                                                                                                                                      |
+| Gen UI    | 11 display tools (tables, charts, geo maps, timelines, citations, callouts, plans, link previews, agent artifacts, option lists, question wizards) |
 
 ## Table of Contents
 
@@ -119,8 +119,8 @@ flowchart TD
     AuthStream["createChatStreamResponse()"]
     PrepareMsg["prepareMessages()<br/>(load/create chat,<br/>handle regeneration)"]
     CreateAgent["createResearcher()<br/>(configure tools + mode)"]
-    ChatMode["Chat Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline"]
-    ResearchMode["Research Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>competitorResearch,<br/>displayTable, displayChart,<br/>displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline, todoWrite"]
+    ChatMode["Chat Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayAgentArtifact,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline"]
+    ResearchMode["Research Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>competitorResearch,<br/>displayTable, displayChart,<br/>displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayAgentArtifact,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline, todoWrite"]
     BuildMode["Build Mode<br/>maxSteps=20<br/>same tools as Chat<br/>+ artifact-intake prompt<br/>(canvas tools registered<br/>conditionally by context)"]
     AgentStream["agent.stream()<br/>+ smoothStream(word)"]
     Parallel["Parallel operations:<br/>title + related questions<br/>+ persistence"]
@@ -197,6 +197,7 @@ graph LR
         geoMap["displayGeoMap<br/>Interactive geo maps"]
         citations["displayCitations<br/>Rich source lists"]
         linkPreview["displayLinkPreview<br/>Link preview cards"]
+        agentArtifact["displayAgentArtifact<br/>Inline agent artifacts"]
         optionList["displayOptionList<br/>Interactive option lists"]
         questionWizard["displayQuestionWizard<br/>Structured question flows"]
         callout["displayCallout<br/>Styled callout boxes"]
@@ -247,6 +248,7 @@ graph LR
 | `getStaticMapImage`     |              Yes               |               Yes               |              Yes               |
 | `displayCitations`      |              Yes               |               Yes               |              Yes               |
 | `displayLinkPreview`    |              Yes               |               Yes               |              Yes               |
+| `displayAgentArtifact`  |              Yes               |               Yes               |              Yes               |
 | `displayOptionList`     |              Yes               |               Yes               |              Yes               |
 | `displayQuestionWizard` |              Yes               |               Yes               |              Yes               |
 | `displayCallout`        |              Yes               |               Yes               |              Yes               |

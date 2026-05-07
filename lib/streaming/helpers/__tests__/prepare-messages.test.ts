@@ -715,6 +715,77 @@ describe('prepareMessages', () => {
       expect(result).toEqual(existingChat.messages)
     })
 
+    it('rejects invalid native client-resolved tool output before persistence', async () => {
+      const existingChat: Chat & { messages: UIMessage[] } = {
+        id: chatId,
+        title: 'Existing Chat',
+        userId,
+        visibility: 'private',
+        createdAt: new Date(),
+        messages: [
+          {
+            id: 'msg-1',
+            role: 'user',
+            parts: [{ type: 'text', text: 'Need your preference' }]
+          },
+          {
+            id: 'msg-2',
+            role: 'assistant',
+            parts: [
+              {
+                type: 'tool-displayOptionList',
+                toolCallId: 'tool-1',
+                state: 'input-available',
+                input: {
+                  id: 'theme',
+                  options: [
+                    { id: 'dark', label: 'Dark' },
+                    { id: 'light', label: 'Light' }
+                  ]
+                }
+              } as any
+            ]
+          }
+        ]
+      }
+
+      const updatedAssistant: UIMessage = {
+        id: 'msg-2',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool-displayOptionList',
+            toolCallId: 'tool-1',
+            state: 'output-available',
+            input: {
+              id: 'theme',
+              options: [
+                { id: 'dark', label: 'Dark' },
+                { id: 'light', label: 'Light' }
+              ]
+            },
+            output: { invalid: true }
+          } as any
+        ]
+      }
+
+      const context: StreamContext = {
+        chatId,
+        userId,
+        modelId: 'gpt-4',
+        trigger: 'submit-message',
+        messageId: undefined,
+        initialChat: existingChat,
+        isNewChat: false
+      }
+
+      await expect(
+        prepareMessages(context, [existingChat.messages[0]!, updatedAssistant])
+      ).rejects.toThrow(/Invalid output for displayOptionList/)
+
+      expect(upsertMessage).not.toHaveBeenCalled()
+    })
+
     it('rejects native assistant tool-output continuations when the server part is not awaiting input', async () => {
       const existingChat: Chat & { messages: UIMessage[] } = {
         id: chatId,

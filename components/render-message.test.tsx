@@ -168,6 +168,7 @@ vi.mock('./tool-ui/registry', () => {
     'displayGeoMap',
     'displayCitations',
     'displayLinkPreview',
+    'displayAgentArtifact',
     'displayOptionList',
     'displayQuestionWizard',
     'displayCallout',
@@ -197,6 +198,19 @@ vi.mock('./tool-ui/registry', () => {
       output: unknown,
       partId: string
     ) => {
+      if (
+        toolName === 'displayAgentArtifact' &&
+        output &&
+        typeof output === 'object' &&
+        typeof (output as Record<string, unknown>).id === 'string' &&
+        typeof (output as Record<string, unknown>).title === 'string' &&
+        typeof (output as Record<string, unknown>).content === 'string'
+      ) {
+        return (
+          <div data-testid="agent-artifact-tool-ui" data-part-id={partId} />
+        )
+      }
+
       if (
         toolName === 'displayTimeline' &&
         output &&
@@ -996,6 +1010,51 @@ describe('RenderMessage', () => {
     expect(screen.getByTestId('timeline-tool-ui')).toHaveAttribute(
       'data-source',
       'tool'
+    )
+  })
+
+  it('renders displayAgentArtifact output after canonical message reload', () => {
+    const message: UIMessage = {
+      id: 'assistant-agent-artifact-tool',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'text',
+          text: 'Here is the inline artifact:'
+        },
+        {
+          type: 'tool-displayAgentArtifact',
+          toolCallId: 'artifact-tool-1',
+          state: 'output-available',
+          input: {
+            id: 'artifact-1',
+            title: 'API Schema',
+            artifactType: 'code',
+            content: 'export const schema = {}'
+          },
+          output: {
+            id: 'artifact-1',
+            title: 'API Schema',
+            artifactType: 'code',
+            content: 'export const schema = {}'
+          }
+        } as any
+      ]
+    }
+
+    render(
+      <RenderMessage
+        message={message}
+        messageId={message.id}
+        getIsOpen={() => false}
+        onOpenChange={() => {}}
+        onQuerySelect={() => {}}
+      />
+    )
+
+    expect(screen.getByTestId('agent-artifact-tool-ui')).toHaveAttribute(
+      'data-part-id',
+      'artifact-tool-1'
     )
   })
 
@@ -1828,11 +1887,20 @@ console.log(toolName)
                   { id: 'editorial', label: 'Editorial' }
                 ],
                 selectionMode: 'single'
+              },
+              {
+                id: 'tone',
+                title: 'Choose a tone',
+                options: [
+                  { id: 'friendly', label: 'Friendly' },
+                  { id: 'formal', label: 'Formal' }
+                ],
+                selectionMode: 'single'
               }
             ],
             submitLabel: 'Finish'
           },
-          output: { style: 'minimal' }
+          output: { style: 'minimal', tone: 'friendly' }
         } as any
       ]
     }

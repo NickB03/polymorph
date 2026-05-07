@@ -2,6 +2,7 @@ import { stepCountIs, ToolLoopAgent, type UIMessageStreamWriter } from 'ai'
 
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import { createSearchTool } from '@/lib/tools/search/server'
+import { INTERACTIVE_TOOL_UI_TOOL_NAMES } from '@/lib/tools/tool-ui/metadata'
 import type { ModelType } from '@/lib/types/model-type'
 import type { Model } from '@/lib/types/models'
 import type { SearchMode, UserMode } from '@/lib/types/search'
@@ -44,10 +45,9 @@ export type ChatAgentDefinition = {
   ) => ReturnType<typeof createSearchTool>
 }
 
-const INTERACTIVE_TOOLS: (keyof ChatAgentTools)[] = [
-  'displayOptionList',
-  'displayQuestionWizard'
-]
+const INTERACTIVE_TOOLS = new Set<keyof ChatAgentTools>(
+  INTERACTIVE_TOOL_UI_TOOL_NAMES as readonly (keyof ChatAgentTools)[]
+)
 
 export function createConfiguredChatAgent(
   args: CreateChatAgentArgs,
@@ -83,9 +83,7 @@ export function createConfiguredChatAgent(
     }
 
     if (isEvalMode) {
-      activeTools = activeTools.filter(
-        tool => !INTERACTIVE_TOOLS.includes(tool)
-      )
+      activeTools = activeTools.filter(tool => !INTERACTIVE_TOOLS.has(tool))
       console.log(
         `[ChatAgent:${definition.agentId}] Eval mode: removed interactive tools, active=[${activeTools.join(', ')}]`
       )
