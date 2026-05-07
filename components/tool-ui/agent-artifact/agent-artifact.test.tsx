@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AgentArtifact } from '..'
@@ -7,13 +7,14 @@ const writeText = vi.fn()
 
 beforeEach(() => {
   writeText.mockReset()
+  writeText.mockResolvedValue(undefined)
   Object.assign(navigator, {
     clipboard: { writeText }
   })
 })
 
 describe('AgentArtifact', () => {
-  it('switches tabs, copies active version content, and shows metadata', () => {
+  it('switches tabs, copies active version content, and shows metadata', async () => {
     render(
       <AgentArtifact
         id="artifact-1"
@@ -50,11 +51,40 @@ describe('AgentArtifact', () => {
       screen.getByRole('button', { name: 'Copy artifact content' })
     )
 
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Copied artifact content' })
+      ).toBeInTheDocument()
+    })
     expect(writeText).toHaveBeenCalledWith('current version content')
     expect(screen.getByText('test-model')).toBeInTheDocument()
     expect(screen.getByText('120 tokens')).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: 'Download artifact content' })
     ).toHaveAttribute('download', 'component-spec.md')
+  })
+
+  it('handles denied clipboard writes without surfacing an unhandled rejection', async () => {
+    writeText.mockRejectedValueOnce(new Error('write denied'))
+
+    render(
+      <AgentArtifact
+        id="artifact-2"
+        title="Clipboard Test"
+        artifactType="document"
+        content="blocked content"
+      />
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Copy artifact content' })
+    )
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('blocked content')
+    })
+    expect(
+      screen.getByRole('button', { name: 'Copy artifact content' })
+    ).toBeInTheDocument()
   })
 })

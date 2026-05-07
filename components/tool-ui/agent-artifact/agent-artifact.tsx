@@ -80,9 +80,17 @@ export function AgentArtifact({
   const Icon = artifactIcons[artifactType]
 
   function copyContent() {
-    void navigator.clipboard?.writeText(activeContent)
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1500)
+    const clipboard = navigator.clipboard
+    if (!clipboard?.writeText) return
+
+    void Promise.resolve(clipboard.writeText(activeContent))
+      .then(() => {
+        setCopied(true)
+        window.setTimeout(() => setCopied(false), 1500)
+      })
+      .catch(() => {
+        setCopied(false)
+      })
   }
 
   const table = artifactType === 'table' ? parseTable(activeContent) : null
