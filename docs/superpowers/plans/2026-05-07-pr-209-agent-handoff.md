@@ -12,11 +12,13 @@ Branch: `codex/tool-ui-manifest-runtime`
 
 Base: `main` at `3ce4a5b67d5577dab6d8026b1e41765593fe06a2`
 
-Head: `ec0817a77e2f2a3bafcb88f5a668e60f319da627`
+Head: use `gh pr view 209 --repo NickB03/polymorph --json headRefOid`.
+This handoff was synced from `5ce40069bf6dd29803acf5e616312e0057081fe9`
+before the local `displayOptionList` Clear-action follow-up.
 
 State: open draft PR. GitHub reports `mergeStateStatus: CLEAN`.
 
-Latest checks on head `ec0817a` are green:
+Latest checks before the Clear-action follow-up were green:
 
 - Build
 - Format Check
@@ -68,11 +70,11 @@ gh pr checks 209 --repo NickB03/polymorph
 ## Recent Commit Stack
 
 ```text
+5ce4006 docs: add pr 209 agent handoff
 ec0817a fix: validate interactive tool selections
 77bf7b8 feat: add manifest-driven tool ui runtime
 4c2f2b docs: add multi-agent verification loop
 ac6a103 docs: add tool ui manifest execution plans
-3ce4a5b chore: alias CLAUDE.md to AGENTS.md for Codex compatibility (#208)
 ```
 
 ## What This PR Does
@@ -102,6 +104,9 @@ The proof component/tool added by this PR is `displayAgentArtifact`:
 
 The latest review fix on `ec0817a` validates client-resolved interactive tool outputs against the original tool input before persistence. This blocks invalid option ids, missing wizard steps, duplicate ids, and min/max selection violations from being persisted by `prepareToolResultMessages`.
 
+The Clear-action follow-up keeps `displayOptionList` Clear local in the client
+adapter and submits only Confirm as a tool-result continuation.
+
 ## Key Documents
 
 Read these first:
@@ -117,7 +122,7 @@ Read these first:
 
 ## Verification Already Run
 
-Local verification after the latest fix:
+Local verification after the Clear-action follow-up:
 
 ```bash
 bun run test -- lib/streaming/helpers/__tests__/prepare-tool-result-messages.test.ts components/chat-request.test.ts components/tool-ui/tool-part-registry.test.tsx
@@ -125,9 +130,9 @@ bun typecheck
 bun lint
 ```
 
-Focused local result: 27 tests passed. `bun typecheck` and `bun lint` exited cleanly.
+Focused local result: 28 tests passed. `bun typecheck` and `bun lint` exited cleanly.
 
-GitHub verification on PR 209 head `ec0817a`:
+Previous GitHub verification on PR 209 code head `ec0817a`:
 
 - Build passed
 - Format Check passed
@@ -143,6 +148,7 @@ One review finding was confirmed and fixed:
 
 - `lib/tools/tool-ui/client-output-validation.ts` now does input-aware validation for `displayOptionList` and `displayQuestionWizard`.
 - `lib/streaming/helpers/__tests__/prepare-tool-result-messages.test.ts` includes regression tests for invalid option ids, missing required wizard steps, and min/max violations before persistence.
+- `lib/tools/display-option-list/client.tsx` now submits only `confirm` actions to `addToolResult`; `components/tool-ui/tool-part-registry.test.tsx` covers Clear staying local instead of persisting an empty result.
 
 No other confirmed findings are open in this handoff.
 
@@ -152,14 +158,14 @@ No other confirmed findings are open in this handoff.
 - The PR remains draft. Do not mark ready or merge unless the user explicitly asks.
 - CodeRabbit skipped because draft. If automated review is desired, either request a review explicitly or move the PR out of draft when approved.
 - `displayAgentArtifact` is an adapted non-commercial upstream port. The local README states the project owner clarified Polymorph is personal/non-commercial; revisit licensing before commercial use.
-- Server validation now rejects empty `displayOptionList` / wizard selections when the corresponding input requires selections. If a user can click a UI "Clear" action on a required option list and submit it, that will fail server-side; fix the UI only if this becomes an actual product issue.
+- Server validation rejects malformed or incomplete interactive continuations. The required `displayOptionList` Clear-action path stays local and no longer submits an empty result.
 
 ## Next Steps
 
 1. Start in `/Users/nick/.codex/worktrees/6220/vana-v2`.
 2. Re-check `git status --short --branch` and `gh pr checks 209 --repo NickB03/polymorph`.
 3. Review any new PR comments or check failures against source before acting.
-4. If the user asks for another review, audit exact PR head `ec0817a` or newer, not local `main`.
+4. If the user asks for another review, audit the exact PR head from GitHub, not local `main`.
 5. If more fixes are needed, keep scope to PR 209 Tool UI runtime surfaces and rerun:
 
 ```bash

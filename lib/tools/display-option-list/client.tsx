@@ -84,7 +84,9 @@ export function renderToolPart({
       <OptionList
         key={`${messageId}-display-tool-${partIndex}`}
         {...parsed}
-        onAction={(_actionId, selection) => {
+        onAction={(actionId, selection) => {
+          if (actionId !== 'confirm') return
+
           if (toolPart.toolCallId) {
             submitInteractiveToolOutput?.({
               toolCallId: toolPart.toolCallId,
