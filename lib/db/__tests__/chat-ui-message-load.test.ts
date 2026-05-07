@@ -140,6 +140,87 @@ describe('canonical chat UIMessage loading', () => {
     ])
   })
 
+  it('loadChatWithMessages preserves manifest tool ui parts from canonical rows', async () => {
+    const parts = [
+      {
+        type: 'tool-displayAgentArtifact',
+        toolCallId: 'artifact-call-1',
+        state: 'output-available',
+        input: {
+          id: 'artifact-1',
+          title: 'API Schema',
+          artifactType: 'code',
+          content: 'export const schema = {}'
+        },
+        output: {
+          id: 'artifact-1',
+          title: 'API Schema',
+          artifactType: 'code',
+          content: 'export const schema = {}'
+        }
+      },
+      {
+        type: 'tool-displayQuestionWizard',
+        toolCallId: 'wizard-call-1',
+        state: 'output-available',
+        input: {
+          id: 'project-settings',
+          steps: [
+            {
+              id: 'style',
+              title: 'Style',
+              options: [{ id: 'minimal', label: 'Minimal' }]
+            },
+            {
+              id: 'tone',
+              title: 'Tone',
+              options: [{ id: 'friendly', label: 'Friendly' }]
+            }
+          ]
+        },
+        output: { style: 'minimal', tone: 'friendly' }
+      }
+    ]
+
+    mockChatSelect([
+      {
+        id: 'chat-1',
+        title: 'Canonical chat',
+        userId: 'user-1',
+        visibility: 'private'
+      }
+    ])
+    dbMocks.tx.query.messages.findMany.mockResolvedValue([
+      {
+        id: 'msg-1',
+        role: 'assistant',
+        createdAt: new Date('2026-04-24T12:00:00.000Z'),
+        metadata: null,
+        uiMessage: {
+          id: 'msg-1',
+          role: 'assistant',
+          parts
+        }
+      }
+    ])
+
+    const chat = await loadChatWithMessages('chat-1', 'user-1')
+
+    expect(chat?.messages[0]?.parts).toEqual(parts)
+    expect(chat?.messages[0]?.parts[0]).toMatchObject({
+      toolCallId: 'artifact-call-1',
+      state: 'output-available',
+      input: expect.objectContaining({ title: 'API Schema' }),
+      output: expect.objectContaining({ artifactType: 'code' })
+    })
+    expect(chat?.messages[0]?.parts[1]).toMatchObject({
+      toolCallId: 'wizard-call-1',
+      state: 'output-available',
+      input: expect.objectContaining({ id: 'project-settings' }),
+      output: { style: 'minimal', tone: 'friendly' }
+    })
+  })
+
   it('loadChatWithMessages does not query compatibility parts when every row has uiMessage', async () => {
     mockChatSelect([
       {

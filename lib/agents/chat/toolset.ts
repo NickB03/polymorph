@@ -2,16 +2,6 @@ import type { UIMessageStreamWriter } from 'ai'
 
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import { serverTool as createCanvasArtifactTool } from '@/lib/tools/create-canvas-artifact/server'
-import { serverTool as displayCalloutTool } from '@/lib/tools/display-callout/server'
-import { serverTool as displayChartTool } from '@/lib/tools/display-chart/server'
-import { serverTool as displayCitationsTool } from '@/lib/tools/display-citations/server'
-import { displayGeoMapTool } from '@/lib/tools/display-geo-map'
-import { serverTool as displayLinkPreviewTool } from '@/lib/tools/display-link-preview/server'
-import { serverTool as displayOptionListTool } from '@/lib/tools/display-option-list/server'
-import { serverTool as displayPlanTool } from '@/lib/tools/display-plan/server'
-import { serverTool as displayQuestionWizardTool } from '@/lib/tools/display-question-wizard/server'
-import { serverTool as displayTableTool } from '@/lib/tools/display-table/server'
-import { serverTool as displayTimelineTool } from '@/lib/tools/display-timeline/server'
 import { fetchTool } from '@/lib/tools/fetch/server'
 import { serverTool as createGenerateImageTool } from '@/lib/tools/generate-image/server'
 import { geocodeAddressTool } from '@/lib/tools/geocode-address'
@@ -21,6 +11,10 @@ import { getStaticMapImageTool } from '@/lib/tools/get-static-map-image'
 import { serverTool as readCanvasArtifactTool } from '@/lib/tools/read-canvas-artifact/server'
 import { createSearchTool } from '@/lib/tools/search/server'
 import { createTodoTools } from '@/lib/tools/todo'
+import {
+  createToolUiServerTools,
+  type ToolUiServerTools
+} from '@/lib/tools/tool-ui/server-catalog'
 import { serverTool as updateCanvasArtifactTool } from '@/lib/tools/update-canvas-artifact/server'
 
 import { createCompetitorResearchTool } from './specialists/competitor-research'
@@ -30,26 +24,17 @@ type ImageToolContext = { userId: string; chatId: string }
 export type ChatAgentTools = {
   search: ReturnType<typeof createSearchTool>
   fetch: typeof fetchTool
-  displayPlan: typeof displayPlanTool
-  displayTable: typeof displayTableTool
-  displayChart: typeof displayChartTool
-  displayGeoMap: typeof displayGeoMapTool
   getDirections: typeof getDirectionsTool
   geocodeAddress: typeof geocodeAddressTool
   getIsochrone: typeof getIsochroneTool
   getStaticMapImage: typeof getStaticMapImageTool
-  displayCitations: typeof displayCitationsTool
-  displayLinkPreview: typeof displayLinkPreviewTool
-  displayOptionList: typeof displayOptionListTool
-  displayQuestionWizard: typeof displayQuestionWizardTool
-  displayCallout: typeof displayCalloutTool
-  displayTimeline: typeof displayTimelineTool
   createCanvasArtifact: ReturnType<typeof createCanvasArtifactTool>
   updateCanvasArtifact: ReturnType<typeof updateCanvasArtifactTool>
   readCanvasArtifact: ReturnType<typeof readCanvasArtifactTool>
   generateImage: ReturnType<typeof createGenerateImageTool>
   competitorResearch: ReturnType<typeof createCompetitorResearchTool>
-} & ReturnType<typeof createTodoTools>
+} & ToolUiServerTools &
+  ReturnType<typeof createTodoTools>
 
 type CreateChatAgentToolsArgs = {
   model: string
@@ -81,6 +66,7 @@ export function createChatAgentTools({
   searchTool
 }: CreateChatAgentToolsArgs): ChatAgentTools {
   const todoTools = createTodoTools()
+  const toolUiTools = createToolUiServerTools()
   const activeSearchTool = searchTool ?? createSearchTool(model)
   const competitorResearchTool = createCompetitorResearchTool({
     searchTool: activeSearchTool,
@@ -104,20 +90,11 @@ export function createChatAgentTools({
     search: activeSearchTool,
     fetch: fetchTool,
     competitorResearch: competitorResearchTool,
-    displayPlan: displayPlanTool,
-    displayTable: displayTableTool,
-    displayChart: displayChartTool,
-    displayGeoMap: displayGeoMapTool,
     getDirections: getDirectionsTool,
     geocodeAddress: geocodeAddressTool,
     getIsochrone: getIsochroneTool,
     getStaticMapImage: getStaticMapImageTool,
-    displayCitations: displayCitationsTool,
-    displayLinkPreview: displayLinkPreviewTool,
-    displayOptionList: displayOptionListTool,
-    displayQuestionWizard: displayQuestionWizardTool,
-    displayCallout: displayCalloutTool,
-    displayTimeline: displayTimelineTool,
+    ...toolUiTools,
     ...todoTools,
     ...canvasTools,
     ...imageTools

@@ -51,4 +51,62 @@ describe('message mapping canonical UIMessage storage', () => {
       traceId: 'trace-1'
     })
   })
+
+  it('round-trips manifest tool parts through canonical uiMessage mapping', () => {
+    const parts = [
+      {
+        type: 'tool-displayAgentArtifact',
+        toolCallId: 'artifact-call-1',
+        state: 'output-available',
+        input: {
+          id: 'artifact-1',
+          title: 'API Schema',
+          artifactType: 'code',
+          content: 'export const schema = {}'
+        },
+        output: {
+          id: 'artifact-1',
+          title: 'API Schema',
+          artifactType: 'code',
+          content: 'export const schema = {}'
+        }
+      },
+      {
+        type: 'tool-displayQuestionWizard',
+        toolCallId: 'wizard-call-1',
+        state: 'output-available',
+        input: {
+          id: 'project-settings',
+          steps: [
+            {
+              id: 'style',
+              title: 'Style',
+              options: [{ id: 'minimal', label: 'Minimal' }]
+            },
+            {
+              id: 'tone',
+              title: 'Tone',
+              options: [{ id: 'friendly', label: 'Friendly' }]
+            }
+          ]
+        },
+        output: { style: 'minimal', tone: 'friendly' }
+      }
+    ] as any
+
+    const mapped = mapUIMessageToDBMessage({
+      id: 'msg-1',
+      chatId: 'chat-1',
+      role: 'assistant',
+      parts
+    })
+
+    const rebuilt = buildUIMessageFromDB({
+      id: 'msg-1',
+      role: 'assistant',
+      uiMessage: mapped.uiMessage
+    })
+
+    expect(rebuilt.parts).toEqual(parts)
+  })
 })

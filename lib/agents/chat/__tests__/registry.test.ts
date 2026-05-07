@@ -33,6 +33,11 @@ const toolWiringMocks = vi.hoisted(() => {
   return {
     rawSearchTool,
     configuredSearchTool,
+    interactiveToolNames: [
+      'displayOptionList',
+      'displayQuestionWizard',
+      'displayCallout'
+    ],
     staticTool: { execute: vi.fn() },
     createSearchTool: vi.fn(() => rawSearchTool),
     createServerTool: vi.fn(() => ({ execute: vi.fn() })),
@@ -65,6 +70,10 @@ vi.mock('ai', () => ({
 
 vi.mock('@/lib/tools/search/server', () => ({
   createSearchTool: toolWiringMocks.createSearchTool
+}))
+
+vi.mock('@/lib/tools/tool-ui/metadata', () => ({
+  INTERACTIVE_TOOL_UI_TOOL_NAMES: toolWiringMocks.interactiveToolNames
 }))
 
 vi.mock('@/lib/utils/registry', () => ({
@@ -276,5 +285,35 @@ describe('chat agent registry', () => {
       2
     )
     expect(toolWiringMocks.rawSearchTool.execute).not.toHaveBeenCalled()
+  })
+
+  it('removes metadata-defined interactive tools in eval mode', () => {
+    const definition: ChatAgentDefinition = {
+      agentId: 'search',
+      systemPrompt: 'Search agent',
+      activeTools: [
+        'search',
+        'displayTable',
+        'displayOptionList',
+        'displayQuestionWizard',
+        'displayCallout'
+      ],
+      maxSteps: 20,
+      configureSearchTool: vi.fn(
+        () => toolWiringMocks.configuredSearchTool as any
+      )
+    }
+
+    createConfiguredChatAgent(
+      {
+        model: 'gateway:google/gemini-3-flash',
+        experimentalContext: { executionMode: 'eval' }
+      },
+      definition
+    )
+
+    const agentConfig = toolWiringMocks.ToolLoopAgent.mock.calls[0]?.[0] as any
+
+    expect(agentConfig.activeTools).toEqual(['search', 'displayTable'])
   })
 })

@@ -59,6 +59,14 @@ describe('search mode prompts', () => {
     )
   })
 
+  it('teaches displayAgentArtifact as inline output distinct from canvas artifacts', () => {
+    for (const prompt of [CHAT_MODE_PROMPT, RESEARCH_MODE_PROMPT]) {
+      expect(prompt).toContain('displayAgentArtifact')
+      expect(prompt).toContain('inline agent artifact')
+      expect(prompt).toContain('Use createCanvasArtifact instead')
+    }
+  })
+
   it.each([
     ['chat', CHAT_MODE_PROMPT],
     ['research', RESEARCH_MODE_PROMPT]

@@ -116,7 +116,7 @@ Display tools transition quickly through these states since their `execute` func
 
 ## Display Tools (Server)
 
-Display tools are defined either as flat re-exports (`lib/tools/display-*.ts`) or as per-tool modules under `lib/tools/<tool-name>/`. New and migrated high-friction tools use the module shape:
+Display tools are defined either as legacy flat shims (`lib/tools/display-*.ts`) or as per-tool modules under `lib/tools/<tool-name>/`. New and migrated high-friction tools use the module shape and are exposed through the manifest catalog in `lib/tools/tool-ui/*`:
 
 ```text
 lib/tools/<tool-name>/
@@ -127,7 +127,7 @@ lib/tools/<tool-name>/
   index.ts     public module contract
 ```
 
-Server-side agent code imports `serverTool` from `server.ts` so it does not pull client renderers into the agent runtime. The flat files remain compatibility re-exports for older imports.
+Server-side agent code imports `serverTool` from `server.ts` so it does not pull client renderers into the agent runtime. `lib/tools/tool-ui/server-catalog.ts` collects those server tools for the chat toolset, while `components/tool-ui/renderer-catalog.tsx` and `components/tool-ui/interactive-renderer-catalog.tsx` own client rendering. The flat files remain compatibility re-exports for older imports.
 
 Display tools do not perform any computation. They serve as a structured output channel for the AI agent. The agent fills in the schema, and the frontend renders it.
 
@@ -141,8 +141,9 @@ Display tools do not perform any computation. They serve as a structured output 
 | `displayGeoMap`         | `lib/tools/display-geo-map.ts`       | Leaflet-based geo maps with markers, routes, polygons, and clustering |      Yes       |
 | `displayCitations`      | `lib/tools/display-citations/`       | Rich source citation lists                                            |      Yes       |
 | `displayLinkPreview`    | `lib/tools/display-link-preview/`    | Link preview cards                                                    |      Yes       |
+| `displayAgentArtifact`  | `lib/tools/display-agent-artifact/`  | Inline agent artifacts with preview/code/raw tabs                     |      Yes       |
 | `displayOptionList`     | `lib/tools/display-option-list/`     | Interactive option lists                                              |       No       |
-| `displayQuestionWizard` | `lib/tools/display-question-wizard/` | Multi-step guided question flows                                      |      Yes       |
+| `displayQuestionWizard` | `lib/tools/display-question-wizard/` | Multi-step guided question flows                                      |       No       |
 | `displayCallout`        | `lib/tools/display-callout.ts`       | Styled callout boxes                                                  |      Yes       |
 | `displayTimeline`       | `lib/tools/display-timeline.ts`      | Chronological event timelines                                         |      Yes       |
 
@@ -152,7 +153,7 @@ All tools with `execute` use the same passthrough pattern:
 execute: async params => params
 ```
 
-**`displayOptionList`** is the exception — it has no `execute` function because it is a **frontend tool**. The AI sends the tool call input, the module-local `client.tsx` renders an interactive option list, the user makes a selection, and the chat parent submits the selection through the AI SDK `addToolOutput` flow. `displayQuestionWizard` also owns its interactive client behavior in its module-local `client.tsx`.
+**`displayOptionList`** and **`displayQuestionWizard`** are client-resolved tools. They have no `execute` function because the AI sends the tool call input, the module-local `client.tsx` renders the interactive surface, the user responds through the local `submitInteractiveToolOutput` callback, and `components/chat.tsx` bridges that callback to AI SDK `addToolOutput({ tool, toolCallId, output })`.
 
 ### Schema example (displayTable)
 
@@ -176,7 +177,7 @@ const FormatSchema = z.discriminatedUnion('kind', [
 
 This allows the AI to specify exactly how each column should be formatted — currencies, percentages, status badges, links — and the DataTable component renders them accordingly.
 
-**Source files:** [`lib/tools/display-plan.ts`](../../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../../lib/tools/display-chart.ts), [`lib/tools/display-geo-map.ts`](../../lib/tools/display-geo-map.ts), [`lib/tools/display-citations/`](../../lib/tools/display-citations), [`lib/tools/display-link-preview/`](../../lib/tools/display-link-preview), [`lib/tools/display-option-list/`](../../lib/tools/display-option-list), [`lib/tools/display-question-wizard/`](../../lib/tools/display-question-wizard), [`lib/tools/display-callout.ts`](../../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../../lib/tools/display-timeline.ts)
+**Source files:** [`lib/tools/display-plan.ts`](../../lib/tools/display-plan.ts), [`lib/tools/display-table.ts`](../../lib/tools/display-table.ts), [`lib/tools/display-chart.ts`](../../lib/tools/display-chart.ts), [`lib/tools/display-geo-map.ts`](../../lib/tools/display-geo-map.ts), [`lib/tools/display-citations/`](../../lib/tools/display-citations), [`lib/tools/display-link-preview/`](../../lib/tools/display-link-preview), [`lib/tools/display-agent-artifact/`](../../lib/tools/display-agent-artifact), [`lib/tools/display-option-list/`](../../lib/tools/display-option-list), [`lib/tools/display-question-wizard/`](../../lib/tools/display-question-wizard), [`lib/tools/display-callout.ts`](../../lib/tools/display-callout.ts), [`lib/tools/display-timeline.ts`](../../lib/tools/display-timeline.ts)
 
 ### Mode-specific tool availability
 
@@ -192,6 +193,7 @@ The chat agent registry exposes different tools depending on the resolved agent 
 | `displayGeoMap`         |    Yes    |             Yes             |
 | `displayCitations`      |    Yes    |             Yes             |
 | `displayLinkPreview`    |    Yes    |             Yes             |
+| `displayAgentArtifact`  |    Yes    |             Yes             |
 | `displayOptionList`     |    Yes    |             Yes             |
 | `displayQuestionWizard` |    Yes    |             Yes             |
 | `displayCallout`        |    Yes    |             Yes             |
@@ -260,7 +262,7 @@ Currently supported on `OptionList` and extensible to other components via the s
 
 ## Tool UI Registry
 
-The registry (`components/tool-ui/registry.tsx`) is the central mapping between tool names and their React component renderers. It exports three functions:
+The registry (`components/tool-ui/registry.tsx`) is a compatibility facade over the manifest renderer catalogs. Passive display outputs are registered in `components/tool-ui/renderer-catalog.tsx`; interactive tool parts are registered in `components/tool-ui/interactive-renderer-catalog.tsx`; additional result tools can still be surfaced through the facade without moving browser-only code into the server runtime. The facade exports three functions:
 
 All rendered tool cards now pass through a small motion shell:
 
@@ -289,27 +291,23 @@ Iterates over all registered entries and returns the first successful schema mat
 
 Returns `true` if the tool name has a registered entry. Used by `DynamicToolDisplay` to decide whether to show the rich component or the generic tool debug view.
 
-### Registry entries
+### Renderer catalog entries
 
-Each entry has a `name` and a `tryRender` function that validates and renders:
+Each manifest display entry has a `name` and a `tryRender` function that validates and renders:
 
 ```ts
-const entries: ToolUIEntry[] = [
+const toolUiRendererEntries: ToolUiRendererEntry[] = [
   {
     name: 'displayPlan',
-    tryRender: output => {
-      const parsed = safeParseSerializablePlan(output)
-      if (!parsed) return null
-      return <Plan {...parsed} />
-    }
-  },
-  // ... displayTable, displayChart, displayGeoMap, displayCitations, displayLinkPreview, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline
+    tryRender: tryRenderDisplayPlanResult
+  }
+  // ... displayTable, displayChart, displayGeoMap, displayCitations, displayLinkPreview, displayAgentArtifact, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline
 ]
 ```
 
 The `tryRender` pattern ensures that invalid or corrupted tool output gracefully returns `null` instead of crashing the UI.
 
-**Source file:** [`components/tool-ui/registry.tsx`](../../components/tool-ui/registry.tsx)
+**Source files:** [`components/tool-ui/registry.tsx`](../../components/tool-ui/registry.tsx), [`components/tool-ui/renderer-catalog.tsx`](../../components/tool-ui/renderer-catalog.tsx), [`components/tool-ui/interactive-renderer-catalog.tsx`](../../components/tool-ui/interactive-renderer-catalog.tsx)
 
 ---
 
@@ -585,6 +583,19 @@ A rich link preview card with image, title, and description.
 - Keyboard accessible (Enter/Space to navigate)
 - Href sanitization for security
 
+### AgentArtifact (`components/tool-ui/agent-artifact/`)
+
+An inline artifact viewer for static generated code snippets, documents, tables, specs, or versioned artifact content that should remain in the chat instead of the canvas workspace.
+
+**Props:** `id`, `title`, `artifactType`, `content`, `language`, `versions`, `currentVersion`, `metadata`
+
+**Features:**
+
+- Preview, code, and raw tabs
+- Copy action and download-friendly content URL
+- Optional version selection through `currentVersion`
+- Metadata display for model, token count, size, and generation time
+
 ### Callout (`components/tool-ui/callout/`)
 
 A styled callout box for highlighting critical information with variant-specific iconography and color.
@@ -752,11 +763,11 @@ Each part is dispatched via `RenderPart`:
 
 ## How to Add a New Generative UI Tool
 
-Follow these steps to add a new display tool (e.g., `displayTimeline`):
+### Adding a New Display Tool
 
-### Before you start: integration mode for this repo
+Polymorph uses one local AI SDK v6 plus Tool UI manifest contract. It does not use `assistant-ui` `Toolkit`, Agent Kit runtime, or upstream Tool UI runtime wiring for the main chat runtime.
 
-Polymorph does **not** use `assistant-ui` `Toolkit` wiring for its chat runtime. New Tool UI work should follow the local AI SDK + bespoke renderer path that already exists in the repo.
+For passive display tools, add:
 
 - Do **not** start with `tool-agent`, `npx shadcn add @tool-ui/...`, or an `assistant-ui` migration unless the user explicitly asks for that.
 - First inspect the existing integration points:
@@ -769,146 +780,87 @@ Polymorph does **not** use `assistant-ui` `Toolkit` wiring for its chat runtime.
   - `lib/agents/chat/toolset.ts`, the relevant `lib/agents/chat/*` agent definition, and any prompt files that must actually cause the model to call the tool
 - Reuse the existing naming pattern (`displayX`, `generateImage`, canvas tools) unless there is a deliberate reason to change the contract.
 - For interactive tools, registry registration is not enough. Add a module-local `client.tsx`, delegate it from `components/tool-ui/tool-part-registry.tsx`, cover the native `addToolOutput` continuation, and test the exact `tool-*` part shape.
-- For passive display tools, the minimum path is usually: `schema.ts` -> `server.ts` -> optional `result.tsx` -> registry facade -> agent activation -> prompt usage/tests.
+- For passive display tools, the minimum path is usually:
 
-### Step 1: Define the server-side tool
+1. `components/tool-ui/<component>/schema.ts`
+2. `components/tool-ui/<component>/<component>.tsx`
+3. `components/tool-ui/<component>/index.tsx`
+4. `lib/tools/display-<component>/schema.ts`
+5. `lib/tools/display-<component>/server.ts`
+6. `lib/tools/display-<component>/result.tsx`
+7. `lib/tools/display-<component>/index.ts`
+8. `lib/tools/display-<component>.ts` compatibility re-export when older flat imports need to keep working
+9. One community-source row in `lib/tools/tool-ui/community-sources.ts` when the component source is not purely local
+10. One metadata row in `lib/tools/tool-ui/metadata.ts`
+11. One server row in `lib/tools/tool-ui/server-catalog.ts`
+12. One renderer row in `components/tool-ui/renderer-catalog.tsx`
+13. Prompt guidance in `lib/agents/prompts/search-mode-prompts.ts`
+14. Focused tests for schema, module contract, registry rendering, prompt usage, and agent availability
 
-Create `lib/tools/display-timeline/schema.ts` and `lib/tools/display-timeline/server.ts`, then keep `lib/tools/display-timeline.ts` as a compatibility re-export if an older flat import already exists:
+For interactive tools, also add:
 
-```ts
-// lib/tools/display-timeline/server.ts
-import { tool } from 'ai'
-import { z } from 'zod'
+1. `lib/tools/display-<component>/client.tsx`
+2. One renderer row in `components/tool-ui/interactive-renderer-catalog.tsx`
+3. A result schema that represents the value passed from the module-local renderer to `submitInteractiveToolOutput`
+4. Request and continuation tests covering `components/chat-request.ts` and `lib/streaming/helpers/prepare-messages.ts`
 
-const DisplayTimelineSchema = z.object({
-  id: z.string().min(1).describe('Unique identifier for this timeline'),
-  title: z.string().describe('Timeline title'),
-  events: z
-    .array(
-      z.object({
-        date: z.string().describe('Date or time label'),
-        title: z.string().describe('Event title'),
-        description: z.string().optional().describe('Event details')
-      })
-    )
-    .min(1)
-    .describe('Timeline events in chronological order')
-})
+The core rule: if a tool requires user input before the model continues, it is an `interactive-display` tool in `lib/tools/tool-ui/metadata.ts`. If the model can emit the final payload directly and the server tool returns that payload, it is a `passive-display` tool.
 
-export const serverTool = tool({
-  description:
-    'Display a timeline of events. Use when presenting chronological sequences, project milestones, or historical events.',
-  inputSchema: DisplayTimelineSchema,
-  execute: async params => params
-})
+#### Npm-First Source Boundary
+
+Do not start by adding a second runtime (`assistant-ui`, `tool-agent`, Agent Kit runtime, or direct shadcn registry installation) unless the feature explicitly calls for an official runtime migration.
+
+For community components with npm packages and documented public exports:
+
+1. Add the npm package to `package.json` and `bun.lock`.
+2. Import only public package exports, for example `@assistant-ui/react`, `@assistant-ui/react-ai-sdk`, or another documented package entrypoint.
+3. Put Polymorph mapping in local files such as `components/tool-ui/<component>/_adapter.tsx`, `lib/tools/display-<component>/result.tsx`, metadata rows, schemas, and prompt guidance.
+4. Add a `sourceType: 'npm'` entry in `lib/tools/tool-ui/community-sources.ts` with `packageName`, `packageVersion`, `license`, `publicImports`, `docsUrl`, `adapterFiles`, and `runtimeNotes`.
+5. Add or update tests that fail if an adapter imports package internals such as `dist/*`, `internal/*`, `src/*`, or vendored component paths.
+
+For community components without a usable npm/public export surface, inspect upstream files and licenses first, then adapt the serializable schema and component into the local manifest contract. Those ports must be recorded with `sourceType: 'ported'` and explicit copied/adapted file lists.
+
+#### License-Aware Community Porting Record
+
+For any community component port, record this information in the component folder README or the architecture docs:
+
+- Upstream project and source URL.
+- Upstream license and whether the current personal/non-commercial usage is allowed.
+- Upstream runtime dependencies and which ones were adopted, replaced, or avoided.
+- Files copied as-is, files adapted, and files rewritten for the local runtime.
+- Runtime deviations from upstream behavior.
+- Adapter dependencies provided by `components/tool-ui/<component>/_adapter.tsx` or module-local imports.
+
+Use a source-separated rewrite only if future commercial use, relicensing, or upstream license terms make copying/adaptation inappropriate.
+
+#### Npm Upgrade Workflow
+
+When a source entry has `sourceType: 'npm'`, upgrades should use this sequence:
+
+```bash
+bun outdated <package-name>
+bun update <package-name>
+bun run test -- --run lib/tools/tool-ui/__tests__/community-sources.test.ts components/tool-ui/registry.test.tsx lib/tools/tool-ui/__tests__/server-catalog.test.ts
+bun run typecheck
 ```
 
-### Step 2: Create the component directory
+Expected: package update succeeds, adapter/renderer tests pass, and typecheck passes. If upstream changed its public API, update only the local adapter files named in the community-source record and keep package source untouched.
 
-Create the following files under `components/tool-ui/timeline/`:
+#### Repeatability Acceptance Criteria
 
-**`_adapter.tsx`** — re-export host dependencies:
+A new passive display tool is repeatable when:
 
-```tsx
-export { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-export { cn } from '@/lib/utils'
-```
-
-**`schema.ts`** — define the serializable schema and contract:
-
-```ts
-import { z } from 'zod'
-import { defineToolUiContract } from '../shared/contract'
-import { ToolUIIdSchema } from '../shared/schema'
-
-export const SerializableTimelineSchema = z.object({
-  id: ToolUIIdSchema,
-  title: z.string().min(1),
-  events: z
-    .array(
-      z.object({
-        date: z.string(),
-        title: z.string(),
-        description: z.string().optional()
-      })
-    )
-    .min(1)
-})
-
-export type SerializableTimeline = z.infer<typeof SerializableTimelineSchema>
-
-const contract = defineToolUiContract('Timeline', SerializableTimelineSchema)
-export const parseSerializableTimeline = contract.parse
-export const safeParseSerializableTimeline = contract.safeParse
-```
-
-**`timeline.tsx`** — the React component:
-
-```tsx
-'use client'
-import { Card, CardContent, CardHeader, CardTitle, cn } from './_adapter'
-import type { SerializableTimeline } from './schema'
-
-export function Timeline({
-  id,
-  title,
-  events,
-  className
-}: SerializableTimeline & { className?: string }) {
-  return (
-    <Card
-      className={cn('w-full max-w-xl', className)}
-      data-tool-ui-id={id}
-      data-slot="timeline"
-    >
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>{/* Your timeline rendering logic */}</CardContent>
-    </Card>
-  )
-}
-```
-
-### Step 3: Register in the Tool UI registry
-
-Add the entry to `components/tool-ui/registry.tsx`:
-
-```tsx
-import { Timeline } from './timeline/timeline'
-import { safeParseSerializableTimeline } from './timeline/schema'
-
-// Add to the entries array:
-{
-  name: 'displayTimeline',
-  tryRender: output => {
-    const parsed = safeParseSerializableTimeline(output)
-    if (!parsed) return null
-    return <Timeline {...parsed} />
-  }
-}
-```
-
-### Step 4: Add the tool to the agent
-
-In `lib/agents/chat/toolset.ts`, import the server tool from the module-local `server.ts`, then add the tool name to the desired agent definition in `lib/agents/chat/search.ts`, `lib/agents/chat/research.ts`, or `lib/agents/chat/build.ts`:
-
-```ts
-import { serverTool as displayTimelineTool } from '@/lib/tools/display-timeline/server'
-
-// In the tools object:
-displayTimeline: displayTimelineTool
-
-// In the activeTools array for chat/research mode:
-activeTools: [...existingTools, 'displayTimeline']
-```
-
-### Step 5: Verify
-
-1. Run `bun typecheck` to ensure type safety
-2. Run `bun dev` and test by prompting the AI to create a timeline
-3. Verify the component renders during streaming (skeleton) and after completion (full component)
-4. Verify the component handles invalid output gracefully (returns null, shows fallback)
+- The model-facing Zod schema lives in `lib/tools/display-<component>/schema.ts`.
+- The render-facing serializable schema lives in `components/tool-ui/<component>/schema.ts`.
+- The two schemas intentionally match or have a documented adapter in `result.tsx`.
+- Any non-local source has a `lib/tools/tool-ui/community-sources.ts` entry. Npm entries import public package exports only; ported entries name copied and adapted files.
+- `TOOL_UI_TOOL_METADATA` contains exactly one row for the tool.
+- `createToolUiServerTools()` exposes the server tool.
+- `toolUiRendererEntries` exposes the result renderer.
+- `getToolUiToolNamesForMode(mode)` controls agent availability.
+- `components/tool-ui/registry.tsx` does not need direct edits for the tool.
+- Passive tools use `execute: async params => params`.
+- Interactive tools have a `client.tsx` renderer and call the local `submitInteractiveToolOutput` callback; `components/chat.tsx` bridges that callback to AI SDK `addToolOutput({ tool, toolCallId, output })`, and the next request carries the updated AI SDK `messages` history through `components/chat-request.ts` and `lib/streaming/helpers/prepare-messages.ts`.
 
 ---
 
@@ -916,42 +868,57 @@ activeTools: [...existingTools, 'displayTimeline']
 
 ### Display tools (server)
 
-| File                              | Purpose                                  |
-| --------------------------------- | ---------------------------------------- |
-| `lib/tools/display-plan.ts`       | Plan tool definition + schema            |
-| `lib/tools/display-table.ts`      | DataTable tool definition + schema       |
-| `lib/tools/display-chart.ts`      | Chart tool definition + schema           |
-| `lib/tools/display-citations/`    | Citations tool module + result adapter   |
-| `lib/tools/display-link-preview/` | LinkPreview tool module + result adapter |
-| `lib/tools/display-option-list/`  | OptionList tool module (no execute)      |
-| `lib/tools/display-callout.ts`    | Callout tool definition + schema         |
-| `lib/tools/display-timeline.ts`   | Timeline tool definition + schema        |
+| File                                | Purpose                                    |
+| ----------------------------------- | ------------------------------------------ |
+| `lib/tools/display-plan.ts`         | Plan tool definition + schema              |
+| `lib/tools/display-table.ts`        | DataTable tool definition + schema         |
+| `lib/tools/display-chart.ts`        | Chart tool definition + schema             |
+| `lib/tools/display-citations/`      | Citations tool module + result adapter     |
+| `lib/tools/display-link-preview/`   | LinkPreview tool module + result adapter   |
+| `lib/tools/display-agent-artifact/` | AgentArtifact tool module + result adapter |
+| `lib/tools/display-option-list/`    | OptionList tool module (no execute)        |
+| `lib/tools/display-callout.ts`      | Callout tool definition + schema           |
+| `lib/tools/display-timeline.ts`     | Timeline tool definition + schema          |
+
+### Tool UI manifest runtime
+
+| File                                                  | Purpose                                                                     |
+| ----------------------------------------------------- | --------------------------------------------------------------------------- |
+| `lib/tools/tool-ui/metadata.ts`                       | Tool UI manifest metadata for tool names, mode availability, and tool kinds |
+| `lib/tools/tool-ui/community-sources.ts`              | Community source inventory for npm packages, ports, licenses, and adapters  |
+| `lib/tools/tool-ui/server.ts`                         | Helpers for passive passthrough and client-resolved AI SDK display tools    |
+| `lib/tools/tool-ui/server-catalog.ts`                 | Server-only catalog mapping manifest display tools to AI SDK server tools   |
+| `lib/tools/tool-ui/client-output-validation.ts`       | Validates client-resolved interactive outputs before server persistence     |
+| `components/tool-ui/renderer-catalog.tsx`             | Client renderer catalog for manifest display tool outputs                   |
+| `components/tool-ui/interactive-renderer-catalog.tsx` | Client renderer catalog for interactive display tool parts                  |
 
 ### Tool UI components (client)
 
-| File                                               | Purpose                              |
-| -------------------------------------------------- | ------------------------------------ |
-| `components/tool-ui/registry.tsx`                  | Central tool name -> component map   |
-| `components/tool-ui/plan/plan.tsx`                 | Plan component with progress         |
-| `components/tool-ui/plan/schema.ts`                | Plan Zod schema + contract           |
-| `components/tool-ui/data-table/data-table.tsx`     | DataTable with sort + responsive     |
-| `components/tool-ui/data-table/schema.ts`          | DataTable Zod schema + contract      |
-| `components/tool-ui/data-table/formatters.tsx`     | Column value formatting              |
-| `components/tool-ui/chart/chart.tsx`               | Chart component (bar/line)           |
-| `components/tool-ui/chart/schema.ts`               | Chart Zod schema + contract          |
-| `components/tool-ui/citation/citation-list.tsx`    | CitationList with variants           |
-| `components/tool-ui/citation/schema.ts`            | Citation Zod schema + contract       |
-| `components/tool-ui/link-preview/link-preview.tsx` | LinkPreview card                     |
-| `components/tool-ui/link-preview/schema.ts`        | LinkPreview Zod schema + contract    |
-| `components/tool-ui/option-list/option-list.tsx`   | Interactive OptionList               |
-| `components/tool-ui/option-list/schema.ts`         | OptionList Zod schema + contract     |
-| `components/tool-ui/callout/callout.tsx`           | Callout component with variants      |
-| `components/tool-ui/callout/schema.ts`             | Callout Zod schema + contract        |
-| `components/tool-ui/timeline/timeline.tsx`         | Timeline component with events       |
-| `components/tool-ui/timeline/schema.ts`            | Timeline Zod schema + contract       |
-| `components/tool-ui/shared/schema.ts`              | Shared base schemas (id, role, etc.) |
-| `components/tool-ui/shared/contract.ts`            | `defineToolUiContract` helper        |
-| `components/tool-ui/*/_adapter.tsx`                | Host dependency adapters             |
+| File                                                   | Purpose                                                                     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `components/tool-ui/registry.tsx`                      | Compatibility facade over renderer catalogs and additional result renderers |
+| `components/tool-ui/plan/plan.tsx`                     | Plan component with progress                                                |
+| `components/tool-ui/plan/schema.ts`                    | Plan Zod schema + contract                                                  |
+| `components/tool-ui/data-table/data-table.tsx`         | DataTable with sort + responsive                                            |
+| `components/tool-ui/data-table/schema.ts`              | DataTable Zod schema + contract                                             |
+| `components/tool-ui/data-table/formatters.tsx`         | Column value formatting                                                     |
+| `components/tool-ui/chart/chart.tsx`                   | Chart component (bar/line)                                                  |
+| `components/tool-ui/chart/schema.ts`                   | Chart Zod schema + contract                                                 |
+| `components/tool-ui/citation/citation-list.tsx`        | CitationList with variants                                                  |
+| `components/tool-ui/citation/schema.ts`                | Citation Zod schema + contract                                              |
+| `components/tool-ui/link-preview/link-preview.tsx`     | LinkPreview card                                                            |
+| `components/tool-ui/link-preview/schema.ts`            | LinkPreview Zod schema + contract                                           |
+| `components/tool-ui/agent-artifact/agent-artifact.tsx` | AgentArtifact viewer with tabs, copy, and metadata                          |
+| `components/tool-ui/agent-artifact/schema.ts`          | AgentArtifact Zod schema + contract                                         |
+| `components/tool-ui/option-list/option-list.tsx`       | Interactive OptionList                                                      |
+| `components/tool-ui/option-list/schema.ts`             | OptionList Zod schema + contract                                            |
+| `components/tool-ui/callout/callout.tsx`               | Callout component with variants                                             |
+| `components/tool-ui/callout/schema.ts`                 | Callout Zod schema + contract                                               |
+| `components/tool-ui/timeline/timeline.tsx`             | Timeline component with events                                              |
+| `components/tool-ui/timeline/schema.ts`                | Timeline Zod schema + contract                                              |
+| `components/tool-ui/shared/schema.ts`                  | Shared base schemas (id, role, etc.)                                        |
+| `components/tool-ui/shared/contract.ts`                | `defineToolUiContract` helper                                               |
+| `components/tool-ui/*/_adapter.tsx`                    | Host dependency adapters                                                    |
 
 ### Rendering pipeline
 

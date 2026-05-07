@@ -94,6 +94,7 @@ import {
   competitorResearchToolName
 } from '@/lib/agents/chat/specialists/competitor-research'
 import { createChatAgentTools } from '@/lib/agents/chat/toolset'
+import { getToolUiToolNamesForMode } from '@/lib/tools/tool-ui/metadata'
 
 import { tryRenderToolUIByName } from '@/components/tool-ui/registry'
 
@@ -124,6 +125,9 @@ describe('community portability proof', () => {
     expect(definition.activeTools).not.toContain('unknownCommunityGlue')
     expect(createSearchAgentDefinition().activeTools).not.toContain(
       competitorResearchToolName
+    )
+    expect(createBuildAgentDefinition().activeTools).toEqual(
+      expect.arrayContaining(getToolUiToolNamesForMode('build'))
     )
     expect(createBuildAgentDefinition().activeTools).not.toContain(
       competitorResearchToolName

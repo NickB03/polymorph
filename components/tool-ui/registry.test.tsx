@@ -7,7 +7,10 @@ vi.mock('./geo-map/geo-map', () => ({
   )
 }))
 
-import { tryRenderToolUIByName } from './registry'
+import { TOOL_UI_TOOL_METADATA } from '@/lib/tools/tool-ui/metadata'
+
+import { isRegisteredToolUI, tryRenderToolUIByName } from './registry'
+import { toolUiRendererEntries } from './renderer-catalog'
 
 const canvasArtifactOutput = {
   artifactId: 'art-1',
@@ -28,6 +31,21 @@ const geoMapOutput = {
 }
 
 describe('tool UI registry', () => {
+  it('keeps renderer catalog names aligned with Tool UI metadata', () => {
+    expect(toolUiRendererEntries.map(entry => entry.name)).toEqual(
+      TOOL_UI_TOOL_METADATA.map(tool => tool.name)
+    )
+  })
+
+  it('reports registered Tool UI and additional result renderers', () => {
+    expect(isRegisteredToolUI('displayTable')).toBe(true)
+    expect(isRegisteredToolUI('displayGeoMap')).toBe(true)
+    expect(isRegisteredToolUI('competitorResearch')).toBe(true)
+    expect(isRegisteredToolUI('generateImage')).toBe(true)
+    expect(isRegisteredToolUI('readCanvasArtifact')).toBe(false)
+    expect(isRegisteredToolUI('unknownTool')).toBe(false)
+  })
+
   it('renders displayGeoMap output through the geo map component', () => {
     const node = tryRenderToolUIByName(
       'displayGeoMap',
@@ -45,6 +63,41 @@ describe('tool UI registry', () => {
       'displayGeoMap',
       { id: 'missing-markers' },
       'test-part-id'
+    )
+
+    expect(node).toBeNull()
+  })
+
+  it('renders displayAgentArtifact output through the artifact component', () => {
+    const node = tryRenderToolUIByName(
+      'displayAgentArtifact',
+      {
+        id: 'artifact-1',
+        title: 'API Schema',
+        artifactType: 'code',
+        content: 'export const schema = z.object({ name: z.string() })',
+        language: 'typescript',
+        metadata: {
+          model: 'test-model',
+          tokens: 42,
+          size: '1 KB'
+        }
+      },
+      'artifact-part'
+    )
+
+    render(<>{node}</>)
+
+    expect(screen.getByText('API Schema')).toBeInTheDocument()
+    expect(screen.getByText('typescript')).toBeInTheDocument()
+    expect(screen.getByText(/schema = z.object/)).toBeInTheDocument()
+  })
+
+  it('returns null for invalid displayAgentArtifact output', () => {
+    const node = tryRenderToolUIByName(
+      'displayAgentArtifact',
+      { id: 'artifact-1', content: 'missing title' },
+      'artifact-part'
     )
 
     expect(node).toBeNull()

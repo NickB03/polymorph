@@ -30,7 +30,7 @@ describe('chat request helpers', () => {
     })
   })
 
-  it('keeps completed interactive tool output on the native submit-message flow', () => {
+  it('keeps completed displayOptionList output on the native submit-message flow', () => {
     const request = buildChatRequestBody({
       messages: [
         {
@@ -46,7 +46,14 @@ describe('chat request helpers', () => {
               type: 'tool-displayOptionList',
               toolCallId: 'tool-1',
               state: 'output-available',
-              output: { value: 'dark' }
+              input: {
+                id: 'theme',
+                options: [
+                  { id: 'dark', label: 'Dark' },
+                  { id: 'light', label: 'Light' }
+                ]
+              },
+              output: 'dark'
             }
           ]
         }
@@ -70,6 +77,62 @@ describe('chat request helpers', () => {
     expect(request.body).not.toHaveProperty('message')
     expect(request.body).not.toHaveProperty(retiredToolOutputField)
     expect(request.body).not.toHaveProperty(retiredHyphenatedToolOutputField)
+  })
+
+  it('keeps completed displayQuestionWizard output on the native submit-message flow', () => {
+    const request = buildChatRequestBody({
+      messages: [
+        {
+          id: 'user-1',
+          role: 'user',
+          parts: [{ type: 'text', text: 'choose project settings' }]
+        },
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          parts: [
+            {
+              type: 'tool-displayQuestionWizard',
+              toolCallId: 'wizard-1',
+              state: 'output-available',
+              input: {
+                id: 'project-settings',
+                steps: [
+                  {
+                    id: 'style',
+                    title: 'Style',
+                    options: [{ id: 'minimal', label: 'Minimal' }]
+                  },
+                  {
+                    id: 'density',
+                    title: 'Density',
+                    options: [{ id: 'compact', label: 'Compact' }]
+                  }
+                ]
+              },
+              output: { style: 'minimal', density: 'compact' }
+            }
+          ]
+        }
+      ] as any,
+      trigger: 'submit-message',
+      messageId: 'assistant-1',
+      chatId: 'chat-1',
+      isGuest: false,
+      savedMessagesCount: 2
+    })
+
+    expect(request.body).toEqual(
+      expect.objectContaining({
+        trigger: 'submit-message',
+        chatId: 'chat-1',
+        messageId: 'assistant-1',
+        messages: expect.any(Array),
+        isNewChat: false
+      })
+    )
+    expect(request.body).not.toHaveProperty('message')
+    expect(request.body).not.toHaveProperty(retiredToolOutputField)
   })
 
   it('does not send retired singular message or tool output fields for normal submissions', () => {

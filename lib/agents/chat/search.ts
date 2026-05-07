@@ -2,6 +2,7 @@ import { tool } from 'ai'
 
 import { CHAT_MODE_PROMPT } from '@/lib/agents/prompts/search-mode-prompts'
 import { createSearchTool } from '@/lib/tools/search/server'
+import { getToolUiToolNamesForMode } from '@/lib/tools/tool-ui/metadata'
 
 import {
   type ChatAgentDefinition,
@@ -10,23 +11,18 @@ import {
 } from './factory'
 import type { ChatAgentTools } from './toolset'
 
-export const SEARCH_AGENT_ACTIVE_TOOLS: (keyof ChatAgentTools)[] = [
-  'search',
-  'fetch',
-  'displayPlan',
-  'displayTable',
-  'displayChart',
-  'displayGeoMap',
+export const GEO_UTILITY_TOOLS = [
   'getDirections',
   'geocodeAddress',
   'getIsochrone',
-  'getStaticMapImage',
-  'displayCitations',
-  'displayLinkPreview',
-  'displayOptionList',
-  'displayQuestionWizard',
-  'displayCallout',
-  'displayTimeline'
+  'getStaticMapImage'
+] satisfies (keyof ChatAgentTools)[]
+
+export const SEARCH_AGENT_ACTIVE_TOOLS: (keyof ChatAgentTools)[] = [
+  'search',
+  'fetch',
+  ...getToolUiToolNamesForMode('search'),
+  ...GEO_UTILITY_TOOLS
 ]
 
 export function wrapSearchToolWithPacing<

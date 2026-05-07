@@ -4,27 +4,13 @@ import { Fragment, type ReactNode } from 'react'
 
 import { UseChatHelpers } from '@ai-sdk/react'
 
-import { renderToolPart as renderDisplayOptionListToolPart } from '@/lib/tools/display-option-list/client'
-import { toolName as displayOptionListToolName } from '@/lib/tools/display-option-list/schema'
-import { renderToolPart as renderDisplayQuestionWizardToolPart } from '@/lib/tools/display-question-wizard/client'
-import { toolName as displayQuestionWizardToolName } from '@/lib/tools/display-question-wizard/schema'
 import type { UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
 
+import {
+  type DisplayToolPart,
+  tryRenderInteractiveToolPart
+} from './interactive-renderer-catalog'
 import { tryRenderToolUIByName } from './registry'
-
-type ToolPartState =
-  | 'input-streaming'
-  | 'input-available'
-  | 'output-available'
-  | 'output-error'
-
-type DisplayToolPart = {
-  state?: ToolPartState
-  input?: unknown
-  output?: unknown
-  toolCallId?: string
-  errorText?: string
-}
 
 type RenderToolPartArgs = {
   toolName: string
@@ -83,23 +69,16 @@ export function renderToolPart({
     )
   }
 
-  if (toolName === displayOptionListToolName) {
-    return renderDisplayOptionListToolPart({
-      toolPart,
-      messageId,
-      partIndex,
-      status,
-      submitInteractiveToolOutput
-    })
-  }
-
-  if (toolName === displayQuestionWizardToolName) {
-    return renderDisplayQuestionWizardToolPart({
-      toolPart,
-      messageId,
-      partIndex,
-      submitInteractiveToolOutput
-    })
+  const interactiveRendered = tryRenderInteractiveToolPart({
+    toolName,
+    toolPart,
+    messageId,
+    partIndex,
+    status,
+    submitInteractiveToolOutput
+  })
+  if (interactiveRendered) {
+    return interactiveRendered
   }
 
   if (toolPart.state === 'output-available' && toolPart.output) {

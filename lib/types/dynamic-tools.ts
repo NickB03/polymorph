@@ -2,6 +2,8 @@
  * Type definitions for dynamic tools
  */
 
+import { INTERACTIVE_TOOL_PART_TYPES } from '@/lib/tools/tool-ui/metadata'
+
 // MCP Client interface
 export interface MCPClient {
   connect(): Promise<void>
@@ -75,10 +77,7 @@ export function isToolCallPart(
 }
 
 // Tool types that require user interaction (client-side confirmation)
-const INTERACTIVE_TOOL_TYPES = new Set([
-  'tool-displayOptionList',
-  'tool-displayQuestionWizard'
-])
+const INTERACTIVE_TOOL_TYPES = new Set<string>(INTERACTIVE_TOOL_PART_TYPES)
 
 export function isInteractiveToolPart(
   part: unknown

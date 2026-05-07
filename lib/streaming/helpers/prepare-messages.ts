@@ -7,6 +7,7 @@ import {
 } from '@/lib/actions/chat'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import { generateId } from '@/lib/db/schema'
+import { validateClientResolvedToolOutput } from '@/lib/tools/tool-ui/client-output-validation'
 import type { UIMessage } from '@/lib/types/ai'
 import { isInteractiveToolPart } from '@/lib/types/dynamic-tools'
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
@@ -92,6 +93,7 @@ async function prepareNativeInteractiveToolOutputMessages(
   }
 
   let changedPartIndex = -1
+  let assistantToPersist = requestedAssistant
 
   for (let index = 0; index < requestedAssistant.parts.length; index++) {
     const requestedPart = requestedAssistant.parts[index]
@@ -145,6 +147,30 @@ async function prepareNativeInteractiveToolOutputMessages(
         `Tool part with toolCallId ${toolCallId} changed fields other than output`
       )
     }
+
+    const outputValidation = validateClientResolvedToolOutput(
+      persistedPart,
+      (requestedPart as { output: unknown }).output
+    )
+
+    if (!outputValidation.success) {
+      throw new Error(
+        `Invalid output for ${outputValidation.toolName}: ${outputValidation.message}`
+      )
+    }
+
+    const updatedParts = requestedAssistant.parts.map((part, partIndex) => {
+      if (partIndex !== changedPartIndex) return part
+      return {
+        ...part,
+        output: outputValidation.output
+      }
+    }) as typeof requestedAssistant.parts
+
+    assistantToPersist = {
+      ...requestedAssistant,
+      parts: updatedParts
+    }
   }
 
   if (changedPartIndex === -1) {
@@ -160,7 +186,7 @@ async function prepareNativeInteractiveToolOutputMessages(
 
   const mergedAssistant: UIMessage = {
     ...persistedAssistant,
-    parts: requestedAssistant.parts
+    parts: assistantToPersist.parts
   }
 
   await upsertMessage(chatId, mergedAssistant, userId)

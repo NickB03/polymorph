@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { getInteractiveToolPartTypes } from '@/lib/tools/tool-ui/metadata'
+
+import { interactiveToolRendererEntries } from './interactive-renderer-catalog'
 import { renderToolPart } from './tool-part-registry'
 
 const optionListInput = {
@@ -54,6 +57,12 @@ describe('tool part registry interactive display tools', () => {
     vi.useRealTimers()
   })
 
+  it('keeps interactive renderer names aligned with metadata', () => {
+    expect(
+      interactiveToolRendererEntries.map(entry => `tool-${entry.name}`)
+    ).toEqual(getInteractiveToolPartTypes())
+  })
+
   it('renders displayOptionList input and submits the selected result', async () => {
     const submitInteractiveToolOutput = vi.fn()
     const node = renderToolPart({
@@ -78,6 +87,30 @@ describe('tool part registry interactive display tools', () => {
       toolCallId: 'option-call',
       output: 'deep'
     })
+  })
+
+  it('keeps displayOptionList Clear local instead of submitting an empty tool result', async () => {
+    const submitInteractiveToolOutput = vi.fn()
+    const node = renderToolPart({
+      toolName: 'displayOptionList',
+      toolPart: {
+        state: 'input-available',
+        input: optionListInput,
+        toolCallId: 'option-call'
+      },
+      messageId: 'message-1',
+      partIndex: 0,
+      isResearchMode: false,
+      submitInteractiveToolOutput
+    })
+
+    render(<>{node}</>)
+
+    await click(screen.getByRole('option', { name: /deep research/i }))
+    await click(screen.getByRole('button', { name: /clear/i }))
+
+    expect(submitInteractiveToolOutput).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: /confirm/i })).toBeDisabled()
   })
 
   it('renders displayOptionList output as the selected choice', () => {
