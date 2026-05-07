@@ -30,6 +30,67 @@ describe('prepareMessages', () => {
     vi.clearAllMocks()
   })
 
+  function makeInteractiveChat(toolPart: Record<string, unknown>) {
+    return {
+      id: chatId,
+      title: 'Existing Chat',
+      userId,
+      visibility: 'private',
+      createdAt: new Date(),
+      messages: [
+        {
+          id: 'msg-1',
+          role: 'user',
+          parts: [{ type: 'text', text: 'Need your preference' }]
+        },
+        {
+          id: 'msg-2',
+          role: 'assistant',
+          parts: [toolPart as any]
+        }
+      ]
+    } as Chat & { messages: UIMessage[] }
+  }
+
+  async function expectNativeInteractiveOutputRejection({
+    toolPart,
+    output,
+    message
+  }: {
+    toolPart: Record<string, unknown>
+    output: unknown
+    message: RegExp
+  }) {
+    const existingChat = makeInteractiveChat(toolPart)
+    const updatedAssistant: UIMessage = {
+      id: 'msg-2',
+      role: 'assistant',
+      parts: [
+        {
+          ...toolPart,
+          state: 'output-available',
+          output
+        } as any
+      ]
+    }
+
+    const context: StreamContext = {
+      chatId,
+      userId,
+      modelId: 'gpt-4',
+      trigger: 'submit-message',
+      messageId: undefined,
+      initialChat: existingChat,
+      isNewChat: false
+    }
+
+    await expect(
+      prepareMessages(context, [existingChat.messages[0]!, updatedAssistant])
+    ).rejects.toThrow(message)
+
+    expect(upsertMessage).not.toHaveBeenCalled()
+  }
+
   describe('regenerate-message trigger', () => {
     it('should reload chat after deleting assistant message', async () => {
       // Setup: Chat with 4 messages
@@ -784,6 +845,94 @@ describe('prepareMessages', () => {
       ).rejects.toThrow(/Invalid output for displayOptionList/)
 
       expect(upsertMessage).not.toHaveBeenCalled()
+    })
+
+    it('rejects native displayOptionList output with an unknown option id before persistence', async () => {
+      await expectNativeInteractiveOutputRejection({
+        toolPart: {
+          type: 'tool-displayOptionList',
+          toolCallId: 'tool-1',
+          state: 'input-available',
+          input: {
+            id: 'theme',
+            options: [
+              { id: 'dark', label: 'Dark' },
+              { id: 'light', label: 'Light' }
+            ],
+            selectionMode: 'single'
+          }
+        },
+        output: 'neon',
+        message: /Invalid output for displayOptionList/
+      })
+    })
+
+    it('rejects native displayOptionList output outside min and max selections before persistence', async () => {
+      const toolPart = {
+        type: 'tool-displayOptionList',
+        toolCallId: 'tool-1',
+        state: 'input-available',
+        input: {
+          id: 'features',
+          options: [
+            { id: 'chat', label: 'Chat' },
+            { id: 'search', label: 'Search' },
+            { id: 'canvas', label: 'Canvas' }
+          ],
+          selectionMode: 'multi',
+          minSelections: 2,
+          maxSelections: 2
+        }
+      }
+
+      await expectNativeInteractiveOutputRejection({
+        toolPart,
+        output: ['chat'],
+        message: /Invalid output for displayOptionList/
+      })
+
+      await expectNativeInteractiveOutputRejection({
+        toolPart,
+        output: ['chat', 'search', 'canvas'],
+        message: /Invalid output for displayOptionList/
+      })
+    })
+
+    it('rejects native displayQuestionWizard output with missing steps or unknown options before persistence', async () => {
+      const toolPart = {
+        type: 'tool-displayQuestionWizard',
+        toolCallId: 'wizard-1',
+        state: 'input-available',
+        input: {
+          id: 'project-settings',
+          steps: [
+            {
+              id: 'style',
+              title: 'Style',
+              options: [{ id: 'minimal', label: 'Minimal' }],
+              selectionMode: 'single'
+            },
+            {
+              id: 'tone',
+              title: 'Tone',
+              options: [{ id: 'friendly', label: 'Friendly' }],
+              selectionMode: 'single'
+            }
+          ]
+        }
+      }
+
+      await expectNativeInteractiveOutputRejection({
+        toolPart,
+        output: { style: 'minimal' },
+        message: /Invalid output for displayQuestionWizard/
+      })
+
+      await expectNativeInteractiveOutputRejection({
+        toolPart,
+        output: { style: 'minimal', tone: 'formal' },
+        message: /Invalid output for displayQuestionWizard/
+      })
     })
 
     it('rejects native assistant tool-output continuations when the server part is not awaiting input', async () => {
