@@ -103,6 +103,15 @@ describe('canonical chat UIMessage loading', () => {
     expect(schemaSource).toMatch(/uiMessage:[\s\S]*\$type<UIMessage>\(\)/)
     expect(schemaSource).toMatch(/uiMessage:[\s\S]*\.notNull\(\)/)
     expect(migrationSource).toContain(
+      'UPDATE "messages"\nSET "ui_message" = jsonb_strip_nulls'
+    )
+    expect(migrationSource).toContain("'parts', '[]'::jsonb")
+    expect(migrationSource.indexOf('UPDATE "messages"')).toBeLessThan(
+      migrationSource.indexOf(
+        'ALTER TABLE "messages" ALTER COLUMN "ui_message" SET NOT NULL'
+      )
+    )
+    expect(migrationSource).toContain(
       'IF EXISTS (SELECT 1 FROM "messages" WHERE "ui_message" IS NULL)'
     )
     expect(migrationSource).toContain(
