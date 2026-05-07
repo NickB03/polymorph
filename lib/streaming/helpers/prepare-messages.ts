@@ -8,13 +8,167 @@ import {
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import { generateId } from '@/lib/db/schema'
 import type { UIMessage } from '@/lib/types/ai'
+import { isInteractiveToolPart } from '@/lib/types/dynamic-tools'
 import { perfLog, perfTime } from '@/lib/utils/perf-logging'
 
+import { hasNativeInteractiveToolOutput } from './native-tool-output-continuation'
 import type { StreamContext } from './types'
+
+type SerializableRecord = Record<string, unknown>
+type ToolOutputPart = {
+  state?: string
+  output?: unknown
+}
+
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(canonicalize)
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as SerializableRecord)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, entry]) => [key, canonicalize(entry)])
+    )
+  }
+  return value
+}
+
+function isEqualSerializable(left: unknown, right: unknown): boolean {
+  return (
+    JSON.stringify(canonicalize(left)) === JSON.stringify(canonicalize(right))
+  )
+}
+
+function removeToolOutputFields(part: unknown) {
+  const {
+    state: _state,
+    output: _output,
+    errorText: _errorText,
+    ...rest
+  } = part as SerializableRecord
+  return rest
+}
+
+function hasPersistedInteractiveToolOutput(parts: UIMessage['parts']) {
+  return parts?.some(
+    part =>
+      isInteractiveToolPart(part) &&
+      (part as ToolOutputPart).state === 'output-available' &&
+      'output' in (part as ToolOutputPart)
+  )
+}
+
+async function prepareNativeInteractiveToolOutputMessages(
+  context: StreamContext,
+  requestMessages: UIMessage[]
+): Promise<UIMessage[]> {
+  const { chatId, userId, initialChat } = context
+  const requestedAssistant = requestMessages[requestMessages.length - 1]
+  const persistedAssistant = initialChat?.messages.at(-1)
+
+  if (!initialChat || !persistedAssistant) {
+    throw new Error('Chat not found or has no messages')
+  }
+
+  if (
+    requestedAssistant.role !== 'assistant' ||
+    persistedAssistant.role !== 'assistant' ||
+    requestedAssistant.id !== persistedAssistant.id
+  ) {
+    throw new Error(
+      'Tool output continuations must update the latest assistant message'
+    )
+  }
+
+  if (
+    !Array.isArray(requestedAssistant.parts) ||
+    !Array.isArray(persistedAssistant.parts) ||
+    requestedAssistant.parts.length !== persistedAssistant.parts.length
+  ) {
+    throw new Error(
+      'Tool output continuation changed the assistant message shape'
+    )
+  }
+
+  let changedPartIndex = -1
+
+  for (let index = 0; index < requestedAssistant.parts.length; index++) {
+    const requestedPart = requestedAssistant.parts[index]
+    const persistedPart = persistedAssistant.parts[index]
+
+    if (isEqualSerializable(requestedPart, persistedPart)) {
+      continue
+    }
+
+    if (changedPartIndex !== -1) {
+      throw new Error(
+        'Only one interactive tool output may be submitted at a time'
+      )
+    }
+
+    changedPartIndex = index
+
+    if (!isInteractiveToolPart(persistedPart)) {
+      throw new Error('Updated tool part is not an interactive tool')
+    }
+
+    if (!isInteractiveToolPart(requestedPart)) {
+      throw new Error(
+        'Updated tool output must keep the original tool part type'
+      )
+    }
+
+    const toolCallId = persistedPart.toolCallId
+    const persistedState = (persistedPart as { state?: string }).state
+    const requestedState = (requestedPart as { state?: string }).state
+
+    if (persistedState !== 'input-available') {
+      throw new Error(
+        `Tool part with toolCallId ${toolCallId} is not awaiting input (state: ${persistedState})`
+      )
+    }
+
+    if (requestedState !== 'output-available' || !('output' in requestedPart)) {
+      throw new Error(
+        `Tool part with toolCallId ${toolCallId} must submit output-available output`
+      )
+    }
+
+    if (
+      !isEqualSerializable(
+        removeToolOutputFields(requestedPart),
+        removeToolOutputFields(persistedPart)
+      )
+    ) {
+      throw new Error(
+        `Tool part with toolCallId ${toolCallId} changed fields other than output`
+      )
+    }
+  }
+
+  if (changedPartIndex === -1) {
+    if (hasPersistedInteractiveToolOutput(persistedAssistant.parts)) {
+      perfLog(
+        'prepareMessages - native tool output already persisted; returning existing messages'
+      )
+      return initialChat.messages
+    }
+
+    throw new Error('No interactive tool output update found')
+  }
+
+  const mergedAssistant: UIMessage = {
+    ...persistedAssistant,
+    parts: requestedAssistant.parts
+  }
+
+  await upsertMessage(chatId, mergedAssistant, userId)
+  return [...initialChat.messages.slice(0, -1), mergedAssistant]
+}
 
 export async function prepareMessages(
   context: StreamContext,
-  message: UIMessage | null,
   requestMessages?: UIMessage[]
 ): Promise<UIMessage[]> {
   const { chatId, userId, trigger, messageId, initialChat, isNewChat } = context
@@ -31,24 +185,10 @@ export async function prepareMessages(
       throw new Error('No messages found')
     }
 
-    let messageIndex = currentChat.messages.findIndex(m => m.id === messageId)
+    const messageIndex = currentChat.messages.findIndex(m => m.id === messageId)
 
-    // Fallback: If message not found by ID, try to find by position
     if (messageIndex === -1) {
-      const lastAssistantIndex = currentChat.messages.findLastIndex(
-        m => m.role === 'assistant'
-      )
-      const lastUserIndex = currentChat.messages.findLastIndex(
-        m => m.role === 'user'
-      )
-
-      if (lastAssistantIndex >= 0 || lastUserIndex >= 0) {
-        messageIndex = Math.max(lastAssistantIndex, lastUserIndex)
-      } else {
-        throw new Error(
-          `Message ${messageId} not found and no fallback available`
-        )
-      }
+      throw new Error(`Message ${messageId} not found`)
     }
 
     const targetMessage = currentChat.messages[messageIndex]
@@ -61,8 +201,11 @@ export async function prepareMessages(
       )
     } else {
       // User message edit
-      if (message && message.id === messageId) {
-        await upsertMessage(chatId, message, userId)
+      const editedMessage = requestMessages?.find(
+        entry => entry.id === messageId && entry.role === 'user'
+      )
+      if (editedMessage) {
+        await upsertMessage(chatId, editedMessage, userId)
       }
       const messagesToDelete = currentChat.messages.slice(messageIndex + 1)
       if (messagesToDelete.length > 0) {
@@ -79,10 +222,7 @@ export async function prepareMessages(
         if (entry.id) return entry
         return {
           ...entry,
-          id:
-            index === requestMessages.length - 1
-              ? message?.id || generateId()
-              : generateId()
+          id: generateId()
         }
       })
 
@@ -90,6 +230,26 @@ export async function prepareMessages(
 
       if (!lastMessage) {
         throw new Error('No messages provided')
+      }
+
+      if (lastMessage.role === 'assistant') {
+        if (hasNativeInteractiveToolOutput(normalizedMessages)) {
+          const toolOutputStart = performance.now()
+          const toolOutputMessages =
+            await prepareNativeInteractiveToolOutputMessages(
+              context,
+              normalizedMessages
+            )
+          perfTime(
+            'prepareMessages - Total (native tool output)',
+            toolOutputStart
+          )
+          return toolOutputMessages
+        }
+
+        throw new Error(
+          'Existing chat submissions must end with a user message before streaming'
+        )
       }
 
       if (isNewChat) {
@@ -156,65 +316,6 @@ export async function prepareMessages(
       return updatedChat?.messages || [persistableLastMessage]
     }
 
-    // Handle normal message submission
-    if (!message) {
-      throw new Error('No message provided')
-    }
-
-    const messageWithId = {
-      ...message,
-      id: message.id || generateId()
-    }
-
-    // Optimize for new chats: create chat and save message together
-    if (isNewChat) {
-      // Persist the chat and first message optimistically in the background
-      const createStart = performance.now()
-      const persistencePromise = createChatWithFirstMessage(
-        chatId,
-        messageWithId,
-        userId,
-        DEFAULT_CHAT_TITLE
-      )
-        .then(result => {
-          perfTime('createChatWithFirstMessage completed', createStart)
-          perfTime('prepareMessages - Total', startTime)
-          return result
-        })
-        .catch(error => {
-          console.error('Error creating chat with first message:', error)
-          throw error
-        })
-
-      context.pendingInitialSave = persistencePromise
-      context.pendingInitialUserMessage = messageWithId
-
-      perfTime('prepareMessages - Return (optimistic)', startTime)
-      return [messageWithId]
-    }
-
-    // For existing chats
-    if (!initialChat) {
-      const createStart = performance.now()
-      await createChat(chatId, DEFAULT_CHAT_TITLE, userId)
-      perfTime('createChat completed', createStart)
-    }
-
-    const upsertStart = performance.now()
-    await upsertMessage(chatId, messageWithId, userId)
-    perfTime('upsertMessage completed', upsertStart)
-
-    // If we have initialChat, append the new message instead of fetching all messages
-    if (initialChat && initialChat.messages) {
-      perfTime('prepareMessages - Total (using cached chat)', startTime)
-      return [...initialChat.messages, messageWithId]
-    }
-
-    // Fallback to fetching if no initialChat
-    const loadStart = performance.now()
-    const updatedChat = await loadChat(chatId, userId)
-    perfTime('loadChat (fallback) completed', loadStart)
-    perfTime('prepareMessages - Total', startTime)
-    return updatedChat?.messages || [messageWithId]
+    throw new Error('messages are required')
   }
 }

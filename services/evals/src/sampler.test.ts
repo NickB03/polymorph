@@ -241,7 +241,7 @@ describe('sampleRecentChats', () => {
     expect(samples[0].metadataTags).toContain('user-mode:research')
   })
 
-  it('samples ui_message-only rows without legacy parts projections', async () => {
+  it('samples ui_message-only rows without sidecar part projections', async () => {
     mockDbExecute.mockResolvedValueOnce([
       {
         chat_id: 'chat-ui-only',
@@ -616,7 +616,7 @@ describe('sampleRecentChats', () => {
     expect(samples).toHaveLength(0)
   })
 
-  it('dedupes search results when ui_message and legacy parts carry the same payload', async () => {
+  it('dedupes search results when repeated persisted payloads carry the same output', async () => {
     const sharedSearchOutput = {
       query: 'shared query',
       results: [

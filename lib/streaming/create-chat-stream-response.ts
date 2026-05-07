@@ -28,25 +28,28 @@ import { perfLog, perfTime } from '../utils/perf-logging'
 
 import { hasPendingInteractiveTool } from './helpers/has-pending-interactive-tool'
 import { inlineFileUrls } from './helpers/inline-file-urls'
+import { hasNativeInteractiveToolOutput } from './helpers/native-tool-output-continuation'
 import { persistStreamResults } from './helpers/persist-stream-results'
 import { prepareMessages } from './helpers/prepare-messages'
-import {
-  prepareToolResultMessages,
-  ToolResultValidationError
-} from './helpers/prepare-tool-result-messages'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
 import type { StreamContext } from './helpers/types'
 import { createCanvasEmitter } from './helpers/write-canvas-data'
 import { BaseStreamConfig } from './types'
 
+const NATIVE_TOOL_OUTPUT_RETRY_DELAY_MS = 200
+
+function waitForNativeToolOutputRetry() {
+  return new Promise(resolve =>
+    setTimeout(resolve, NATIVE_TOOL_OUTPUT_RETRY_DELAY_MS)
+  )
+}
+
 export async function createChatStreamResponse(
   config: BaseStreamConfig
 ): Promise<Response> {
   const {
-    message,
     messages: requestMessages,
-    toolResult,
     model,
     chatId,
     userId,
@@ -70,13 +73,13 @@ export async function createChatStreamResponse(
   let initialChat = null
   if (!isNewChat) {
     const loadChatStart = performance.now()
-    if (toolResult) {
-      // Tool-result continuations bypass the unstable_cache layer to avoid a
+    if (hasNativeInteractiveToolOutput(requestMessages)) {
+      // Native client-side tool outputs bypass the unstable_cache layer to avoid a
       // race where a premature revalidateTag re-fetches stale data before
       // onFinish has persisted the latest assistant message.
       initialChat = await loadChatWithMessages(chatId, userId)
       perfTime(
-        'loadChatWithMessages (direct DB, tool-result) completed',
+        'loadChatWithMessages (direct DB, native tool output) completed',
         loadChatStart
       )
     } else {
@@ -117,38 +120,45 @@ export async function createChatStreamResponse(
   // Declare titlePromise in outer scope for onFinish access
   let titlePromise: Promise<string> | undefined
 
-  // For tool-result continuations, prepare messages before creating the stream
-  // so we can pass originalMessages to createUIMessageStream. This ensures the
-  // server reuses the existing assistant message ID in the stream's start chunk,
-  // preventing the client SDK from pushing a duplicate message.
+  const isNativeToolOutputContinuation =
+    hasNativeInteractiveToolOutput(requestMessages)
   let prefetchedMessages: UIMessage[] | undefined
-  if (toolResult) {
+
+  if (isNativeToolOutputContinuation) {
     try {
       const prepareStart = performance.now()
-      console.log(
-        `[tool-result] prepareToolResultMessages: chatId=${chatId}, toolCallId=${toolResult.toolCallId}`
+      prefetchedMessages = await prepareMessages(context, requestMessages)
+      perfTime(
+        'prepareMessages completed (native tool output pre-stream)',
+        prepareStart
       )
-      prefetchedMessages = await prepareToolResultMessages(context, toolResult)
-      console.log(
-        `[tool-result] prepareToolResultMessages OK: ${prefetchedMessages.length} messages`
+    } catch {
+      perfLog(
+        '[native-tool-output] prepareMessages failed, retrying after direct DB reload'
       )
-      perfTime('prepareToolResultMessages completed (pre-stream)', prepareStart)
-    } catch (error) {
-      if (error instanceof ToolResultValidationError) {
-        console.error(
-          `[tool-result] Validation error: chatId=${chatId}, ${error.message}`
+      await waitForNativeToolOutputRetry()
+
+      try {
+        const retryStart = performance.now()
+        context.initialChat = await loadChatWithMessages(chatId, userId)
+        prefetchedMessages = await prepareMessages(context, requestMessages)
+        perfTime(
+          'prepareMessages completed after native tool output retry',
+          retryStart
         )
-        return jsonError('TOOL_ERROR', error.message, 400)
+      } catch (retryError) {
+        const message =
+          retryError instanceof Error
+            ? retryError.message
+            : 'Invalid tool output'
+        return jsonError('TOOL_ERROR', message, 400)
       }
-      throw error
     }
   }
 
   // Create the stream
   const stream = createUIMessageStream<UIMessage>({
-    ...(prefetchedMessages || requestMessages
-      ? { originalMessages: prefetchedMessages || requestMessages }
-      : {}),
+    originalMessages: requestMessages,
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
       await withOtelRootSpan(
         {
@@ -170,22 +180,9 @@ export async function createChatStreamResponse(
           try {
             // Prepare messages for the model
             const prepareStart = performance.now()
-            let messagesToModel: UIMessage[]
-            if (prefetchedMessages) {
-              messagesToModel = prefetchedMessages
-              perfLog(
-                'prepareMessages - Using prefetched messages for tool-result'
-              )
-            } else {
-              perfLog(
-                `prepareMessages - Invoked: trigger=${trigger}, isNewChat=${isNewChat}`
-              )
-              messagesToModel = await prepareMessages(
-                context,
-                message,
-                requestMessages
-              )
-            }
+            const messagesToModel =
+              prefetchedMessages ??
+              (await prepareMessages(context, requestMessages))
             perfTime('prepareMessages completed (stream)', prepareStart)
 
             const validatedMessages =
@@ -290,11 +287,6 @@ export async function createChatStreamResponse(
             }
 
             const llmStart = performance.now()
-            if (toolResult) {
-              console.log(
-                `[tool-result] chatAgent.stream: chatId=${chatId}, model=${context.modelId}, ${modelMessages.length} model messages`
-              )
-            }
             perfLog(
               `chatAgent.stream - Start: model=${context.modelId}, searchMode=${searchMode}`
             )
@@ -327,9 +319,11 @@ export async function createChatStreamResponse(
             const responseMessages = (await result.response).messages
             perfTime('chatAgent.stream completed', llmStart)
 
-            // Generate related questions (skip for tool-result continuations and pending interactive tools)
+            // Generate related questions unless this request is resuming from a
+            // client-side interactive tool output or the response is waiting on
+            // another interactive tool.
             if (
-              trigger !== 'tool-result' &&
+              !isNativeToolOutputContinuation &&
               !hasPendingInteractiveTool(responseMessages) &&
               responseMessages &&
               responseMessages.length > 0

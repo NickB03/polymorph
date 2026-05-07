@@ -23,6 +23,7 @@ import { maybeTruncateMessages } from '../utils/context-window'
 
 import { hasPendingInteractiveTool } from './helpers/has-pending-interactive-tool'
 import { inlineFileUrls } from './helpers/inline-file-urls'
+import { hasNativeInteractiveToolOutput } from './helpers/native-tool-output-continuation'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import { stripReasoningParts } from './helpers/strip-reasoning-parts'
 import { createCanvasEmitter } from './helpers/write-canvas-data'
@@ -70,8 +71,7 @@ export async function createEphemeralChatStreamResponse(
 
   const stream = createUIMessageStream<UIMessage>({
     // Pass originalMessages so handleUIMessageStreamFinish reuses the
-    // assistant message ID on tool-result continuations (prevents duplicate
-    // messages on the client when the last message is already assistant).
+    // assistant message ID on native client-side tool-output continuations.
     originalMessages: messages,
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
       const executeBody = async () => {
@@ -173,7 +173,7 @@ export async function createEphemeralChatStreamResponse(
 
         const responseMessages = (await result.response).messages
         if (
-          trigger !== 'tool-result' &&
+          !hasNativeInteractiveToolOutput(messages) &&
           responseMessages &&
           responseMessages.length > 0 &&
           !hasPendingInteractiveTool(responseMessages)

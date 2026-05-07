@@ -51,7 +51,7 @@ Key characteristics:
 - Persists user messages and AI responses to the database via `persistStreamResults`
 - Generates chat titles in parallel for new conversations
 - Creates Phoenix traces for observability when tracing is enabled
-- Handles `submit-message`, `regenerate-message`, and `tool-result` triggers
+- Handles `submit-message` and `regenerate-message` triggers; interactive tool output continues through the native AI SDK `addToolOutput` submit flow
 
 ### Ephemeral Streams (`create-ephemeral-chat-stream-response.ts`)
 
@@ -72,7 +72,7 @@ Key characteristics:
 
 | Feature                   | Authenticated                     | Ephemeral                      |
 | ------------------------- | --------------------------------- | ------------------------------ |
-| Database persistence      | Yes (chat, messages, parts)       | No                             |
+| Database persistence      | Yes (chat, canonical messages)    | No                             |
 | Chat ownership check      | Yes (403 if mismatch)             | No                             |
 | Title generation          | Yes (parallel, new chats only)    | No                             |
 | Related questions         | Yes                               | Yes                            |
@@ -92,14 +92,14 @@ Here is the step-by-step flow of a single chat request from the moment the clien
 
 ### 1. Client Sends Message
 
-The React `Chat` component (`components/chat.tsx`) uses the AI SDK's `useChat` hook with a `DefaultChatTransport` configured to POST to `/api/chat`. The transport's `prepareSendMessagesRequest` attaches `chatId`, `trigger`, `messageId`, `isNewChat`, and (for guests) the full messages array.
+The React `Chat` component (`components/chat.tsx`) uses the AI SDK's `useChat` hook with a `DefaultChatTransport` configured to POST to `/api/chat`. The transport's `prepareSendMessagesRequest` attaches `chatId`, `trigger`, `messageId`, `isNewChat`, and the full `messages` array.
 
 ### 2. API Route Receives Request
 
 `app/api/chat/route.ts` (POST handler, `maxDuration = 300` seconds):
 
 1. Parses the request body
-2. Validates trigger-specific fields (`message` for submit, `messageId` for regenerate)
+2. Validates the AI SDK v6 body (`messages` must be a non-empty array; `messageId` is required for regenerate)
 3. Checks if the request originates from a share page (blocked with 403)
 4. Authenticates the user via `getCurrentUserId()`
 5. Determines guest status and enforces rate limits (`checkAndEnforceGuestLimit` or `checkAndEnforceOverallChatLimit`)
@@ -127,7 +127,7 @@ The Vercel AI SDK's `createUIMessageStream` is called with an `execute` callback
 
 ### 7. Message Preparation
 
-Inside `execute`, `prepareMessages(context, message)` resolves the full conversation history. See [Message Preparation](#message-preparation) for details. The resulting `UIMessage[]` is then:
+Inside `execute`, `prepareMessages(context, messages)` resolves the full conversation history. See [Message Preparation](#message-preparation) for details. The resulting `UIMessage[]` is then:
 
 1. Stripped of reasoning parts (for OpenAI models, to avoid Responses API compatibility issues)
 2. Converted to `ModelMessage[]` via `convertToModelMessages`
@@ -235,7 +235,7 @@ sequenceDiagram
     participant Related as Related Questions
     participant Persist as persistStreamResults
 
-    Client->>Route: POST /api/chat {message, chatId, trigger}
+    Client->>Route: POST /api/chat {messages, chatId, trigger}
     Route->>Auth: getCurrentUserId()
     Auth-->>Route: userId | null
 
@@ -256,7 +256,7 @@ sequenceDiagram
 
     Note over Stream: execute callback begins
 
-    Stream->>Prepare: prepareMessages(context, message)
+    Stream->>Prepare: prepareMessages(context, messages)
 
     alt New chat (submit-message)
         Prepare->>DB: createChatWithFirstMessage() [async, non-blocking]
@@ -287,7 +287,7 @@ sequenceDiagram
         Agent->>Tools: execute tool
         Tools-->>Agent: tool result (streaming)
         Agent-->>Smooth: tool result chunks
-        Smooth-->>Client: SSE: tool-call + tool-result events
+        Smooth-->>Client: SSE: tool call + tool output events
         Agent->>LLM: continue with tool results
     end
 
@@ -331,7 +331,7 @@ The `prepareMessages` function (`lib/streaming/helpers/prepare-messages.ts`) res
 
 For new chats (`isNewChat === true`), the function takes an optimistic approach:
 
-1. Assigns an ID to the message if it does not have one
+1. Assigns an ID to the latest user message if it does not have one
 2. Fires `createChatWithFirstMessage()` as a background promise (stored on `context.pendingInitialSave`)
 3. Returns `[userMessage]` immediately without waiting for the database write
 
@@ -351,9 +351,13 @@ For existing chats:
 When the user regenerates a response:
 
 1. Loads the chat (uses cached `initialChat` if available)
-2. Finds the target message by ID (with a fallback to the last assistant/user message)
+2. Finds the target message by ID
 3. If the target is an assistant message: deletes it and all subsequent messages, returns the remaining history
 4. If the target is a user message (edit + regenerate): updates the message content, deletes everything after it, returns the updated history
+
+### Native Interactive Tool Output
+
+Interactive display tools use the AI SDK v6 continuation path: the client calls `addToolOutput`, the SDK updates the assistant `UIMessage` tool part to `output-available`, and the next request arrives as a normal `submit-message` with the updated `messages` array. The server validates that the latest persisted message is the same assistant message and that exactly one registered interactive tool part moved from `input-available` to `output-available`.
 
 ### Post-Preparation Processing
 
@@ -527,7 +531,7 @@ The Vercel AI SDK's UI message stream protocol sends events in SSE format. Each 
 | `start`                     | Stream begins                      | Metadata: `{ traceId, searchMode, modelId }` |
 | `text-delta`                | Incremental text chunk             | `{ textDelta: "word " }`                     |
 | `tool-call`                 | Agent invokes a tool               | `{ toolCallId, toolName, args }`             |
-| `tool-result`               | Tool execution result              | `{ toolCallId, result }`                     |
+| Tool output                 | Tool execution result              | Tool call ID plus output payload             |
 | `tool-call-streaming-start` | Tool call begins streaming         | `{ toolCallId, toolName }`                   |
 | `tool-call-delta`           | Streaming tool call argument chunk | `{ toolCallId, argsTextDelta }`              |
 | `data-relatedQuestions`     | Related questions update           | `{ id, status, questions? }`                 |

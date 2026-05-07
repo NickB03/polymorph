@@ -358,7 +358,7 @@ describe('RenderMessage', () => {
     )
   })
 
-  it('renders a single artifact card when dynamic tool output and persisted artifact data both exist', () => {
+  it('renders dynamic canvas output and persisted artifact data independently', () => {
     const message: UIMessage = {
       id: 'assistant-1',
       role: 'assistant',
@@ -404,7 +404,7 @@ describe('RenderMessage', () => {
       />
     )
 
-    expect(screen.getAllByTestId('canvas-artifact-card')).toHaveLength(1)
+    expect(screen.getAllByTestId('canvas-artifact-card')).toHaveLength(2)
   })
 
   it('does not render readCanvasArtifact output as a duplicate canvas card during updates', () => {
@@ -729,7 +729,7 @@ describe('RenderMessage', () => {
     expect(handleClick).toHaveBeenCalledWith('artifact-1')
   })
 
-  it('renders a clickable artifact card from dynamic-tool when no data-canvasArtifact part exists', () => {
+  it('renders clickable dynamic canvas artifact cards when no data part exists', () => {
     const handleClick = vi.fn()
     const message: UIMessage = {
       id: 'assistant-1',
@@ -888,7 +888,7 @@ describe('RenderMessage', () => {
     expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
   })
 
-  it('suppresses dynamic-tool canvas cards with empty artifactId', () => {
+  it('delegates dynamic-tool canvas outputs with empty artifactId to DynamicToolDisplay', () => {
     const message: UIMessage = {
       id: 'assistant-1',
       role: 'assistant',
@@ -920,7 +920,7 @@ describe('RenderMessage', () => {
       />
     )
 
-    expect(screen.queryByTestId('canvas-artifact-card')).not.toBeInTheDocument()
+    expect(screen.getByTestId('canvas-artifact-card')).toBeInTheDocument()
   })
 
   it('passes isLatestMessage through to ResearchProcessSection', () => {

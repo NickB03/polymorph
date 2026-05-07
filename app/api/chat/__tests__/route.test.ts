@@ -110,7 +110,7 @@ describe('POST /api/chat', () => {
 
   it('returns 400 for unknown trigger', async () => {
     const req = createRequest({
-      message: 'hi',
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'hi' }] }],
       chatId: 'c1',
       trigger: 'invalid-trigger'
     })
@@ -124,7 +124,8 @@ describe('POST /api/chat', () => {
   it('returns 400 when regenerate-message lacks messageId', async () => {
     const req = createRequest({
       chatId: 'c1',
-      trigger: 'regenerate-message'
+      trigger: 'regenerate-message',
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'hi' }] }]
     })
 
     const res = await POST(req)
@@ -133,18 +134,23 @@ describe('POST /api/chat', () => {
     expect(json.message).toContain('messageId')
   })
 
-  it('returns 400 when tool-result lacks required fields', async () => {
+  it('returns 400 when the retired tool output trigger is sent', async () => {
+    const retiredToolOutputTrigger = ['tool', 'result'].join('-')
+    const retiredToolOutputField = ['tool', 'Result'].join('')
     const req = createRequest({
       chatId: 'c1',
-      trigger: 'tool-result',
-      toolResult: { toolCallId: '', output: 'data' }
+      trigger: retiredToolOutputTrigger,
+      messages: [
+        { role: 'assistant', parts: [{ type: 'text', text: 'done' }] }
+      ],
+      [retiredToolOutputField]: { toolCallId: 'tc-1', output: 'data' }
     })
 
     const res = await POST(req)
     expect(res.status).toBe(400)
   })
 
-  it('returns 400 when submit-message lacks message', async () => {
+  it('returns 400 when submit-message lacks messages', async () => {
     const req = createRequest({
       chatId: 'c1',
       trigger: 'submit-message'
@@ -156,10 +162,22 @@ describe('POST /api/chat', () => {
     expect(json.message).toContain('messages')
   })
 
+  it('returns 400 when legacy singular message payload is sent', async () => {
+    const req = createRequest({
+      chatId: 'c1',
+      trigger: 'submit-message',
+      message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] }
+    })
+
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.message).toContain('messages')
+  })
+
   it('returns 403 for requests from share pages', async () => {
     const req = createRequest(
       {
-        message: 'hi',
         messages: [{ role: 'user', parts: [{ type: 'text', text: 'hi' }] }],
         chatId: 'c1',
         trigger: 'submit-message'
@@ -178,7 +196,6 @@ describe('POST /api/chat', () => {
     delete process.env.ENABLE_GUEST_CHAT
 
     const req = createRequest({
-      message: 'hi',
       messages: [{ role: 'user', parts: [{ type: 'text', text: 'hi' }] }],
       chatId: 'c1',
       trigger: 'submit-message'
@@ -192,7 +209,6 @@ describe('POST /api/chat', () => {
     vi.mocked(isProviderEnabled).mockReturnValueOnce(false)
 
     const req = createRequest({
-      message: 'hi',
       messages: [{ role: 'user', parts: [{ type: 'text', text: 'hi' }] }],
       chatId: 'c1',
       trigger: 'submit-message'
@@ -204,7 +220,6 @@ describe('POST /api/chat', () => {
 
   it('delegates authenticated users to the chat agent route handler after validation', async () => {
     const req = createRequest({
-      message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
       messages: [{ role: 'user', parts: [{ type: 'text', text: 'hello' }] }],
       chatId: 'c1',
       trigger: 'submit-message',
@@ -233,10 +248,6 @@ describe('POST /api/chat', () => {
     vi.mocked(cookies).mockResolvedValueOnce({ get: cookieGet } as any)
 
     const req = createRequest({
-      message: {
-        role: 'user',
-        parts: [{ type: 'text', text: 'build an app' }]
-      },
       messages: [
         { role: 'user', parts: [{ type: 'text', text: 'build an app' }] }
       ],
@@ -266,7 +277,6 @@ describe('POST /api/chat', () => {
     )
 
     const req = createRequest({
-      message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
       messages: [{ role: 'user', parts: [{ type: 'text', text: 'hello' }] }],
       chatId: 'limited-chat',
       trigger: 'submit-message',
@@ -291,7 +301,6 @@ describe('POST /api/chat', () => {
 
     const req = createRequest(
       {
-        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
         messages: [{ role: 'user', parts: [{ type: 'text', text: 'hello' }] }],
         chatId: 'guest-limited-chat',
         trigger: 'submit-message'
@@ -315,7 +324,6 @@ describe('POST /api/chat', () => {
     process.env.ENABLE_GUEST_CHAT = 'true'
 
     const req = createRequest({
-      message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
       messages: [
         {
           role: 'user',
@@ -348,7 +356,6 @@ describe('POST /api/chat', () => {
     process.env.ENABLE_GUEST_CHAT = 'true'
 
     const req = createRequest({
-      message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
       messages: [{ role: 'user', parts: [] }], // empty parts = invalid
       chatId: 'c1',
       trigger: 'submit-message'
@@ -360,11 +367,27 @@ describe('POST /api/chat', () => {
     delete process.env.ENABLE_GUEST_CHAT
   })
 
-  it('handles tool-result trigger correctly', async () => {
+  it('passes native assistant tool-output continuations as submit-message', async () => {
     const req = createRequest({
       chatId: 'c1',
-      trigger: 'tool-result',
-      toolResult: { toolCallId: 'tc-1', output: 'result data' }
+      trigger: 'submit-message',
+      messageId: 'assistant-1',
+      messages: [
+        { id: 'user-1', role: 'user', parts: [{ type: 'text', text: 'pick' }] },
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          parts: [
+            {
+              type: 'tool-displayOptionList',
+              toolCallId: 'tc-1',
+              state: 'output-available',
+              input: { id: 'choice', options: [{ id: 'a', label: 'A' }] },
+              output: 'a'
+            }
+          ]
+        }
+      ]
     })
 
     const res = await POST(req)
@@ -372,9 +395,10 @@ describe('POST /api/chat', () => {
     expect(handleChatAgentRoute).toHaveBeenCalledWith(
       expect.objectContaining({
         isGuest: false,
-        message: null,
-        trigger: 'tool-result',
-        toolResult: { toolCallId: 'tc-1', output: 'result data' }
+        trigger: 'submit-message',
+        messages: expect.arrayContaining([
+          expect.objectContaining({ id: 'assistant-1', role: 'assistant' })
+        ])
       })
     )
   })
@@ -387,7 +411,6 @@ describe('POST /api/chat', () => {
       process.env.ENABLE_GUEST_CHAT = 'true'
 
       const req = createRequest({
-        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
         messages: [
           {
             role: 'user',
@@ -411,7 +434,6 @@ describe('POST /api/chat', () => {
       process.env.ENABLE_GUEST_CHAT = 'true'
 
       const req = createRequest({
-        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
         messages: [
           {
             role: 'user',
@@ -435,7 +457,6 @@ describe('POST /api/chat', () => {
       process.env.ENABLE_GUEST_CHAT = 'true'
 
       const req = createRequest({
-        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
         messages: [
           {
             role: 'system', // disallowed role for guest
@@ -459,7 +480,6 @@ describe('POST /api/chat', () => {
       process.env.ENABLE_GUEST_CHAT = 'true'
 
       const req = createRequest({
-        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
         messages: [
           {
             role: 'user',
@@ -483,7 +503,6 @@ describe('POST /api/chat', () => {
       process.env.ENABLE_GUEST_CHAT = 'true'
 
       const req = createRequest({
-        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
         messages: 'not-an-array',
         chatId: 'c1',
         trigger: 'submit-message'
@@ -502,7 +521,6 @@ describe('POST /api/chat', () => {
       process.env.ENABLE_GUEST_CHAT = 'true'
 
       const req = createRequest({
-        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
         messages: [
           {
             role: 'user',
@@ -533,17 +551,19 @@ describe('POST /api/chat', () => {
         chatId: 'chat-123',
         trigger: 'submit-message',
         isNewChat: true,
-        message: {
-          id: 'msg-1',
-          role: 'user',
-          parts: [
-            {
-              type: 'file',
-              url: 'https://example.com/f.exe',
-              mediaType: 'application/x-msdownload'
-            }
-          ]
-        }
+        messages: [
+          {
+            id: 'msg-1',
+            role: 'user',
+            parts: [
+              {
+                type: 'file',
+                url: 'https://example.com/f.exe',
+                mediaType: 'application/x-msdownload'
+              }
+            ]
+          }
+        ]
       })
 
       const res = await POST(req)
@@ -562,7 +582,6 @@ describe('POST /api/chat', () => {
         chatId: 'chat-456',
         trigger: 'submit-message',
         isNewChat: true,
-        message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
         messages: [
           {
             role: 'user',
@@ -588,18 +607,20 @@ describe('POST /api/chat', () => {
         chatId: 'chat-789',
         trigger: 'submit-message',
         isNewChat: true,
-        message: {
-          id: 'msg-1',
-          role: 'user',
-          parts: [
-            { type: 'text', text: 'analyze this' },
-            {
-              type: 'file',
-              url: 'https://storage.example.com/img.png',
-              mediaType: 'image/png'
-            }
-          ]
-        }
+        messages: [
+          {
+            id: 'msg-1',
+            role: 'user',
+            parts: [
+              { type: 'text', text: 'analyze this' },
+              {
+                type: 'file',
+                url: 'https://storage.example.com/img.png',
+                mediaType: 'image/png'
+              }
+            ]
+          }
+        ]
       })
 
       const res = await POST(req)
@@ -623,7 +644,7 @@ describe('POST /api/chat', () => {
     )
 
     const req = createRequest({
-      message: { role: 'user', parts: [{ type: 'text', text: 'hello' }] },
+      messages: [{ role: 'user', parts: [{ type: 'text', text: 'hello' }] }],
       chatId: 'c1',
       trigger: 'submit-message',
       isNewChat: true

@@ -50,7 +50,6 @@ describe('handleChatAgentRoute', () => {
 
     const response = await handleChatAgentRoute({
       isGuest: false,
-      message: userMessage,
       messages: [userMessage],
       model: makeModel(),
       chatId: 'chat-1',
@@ -66,7 +65,6 @@ describe('handleChatAgentRoute', () => {
     await expect(response.text()).resolves.toBe('authenticated-stream')
     expect(createChatStreamResponse).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: userMessage,
         messages: [userMessage],
         model: expect.objectContaining({ id: 'gemini-3-flash' }),
         chatId: 'chat-1',
@@ -115,7 +113,6 @@ describe('handleChatAgentRoute', () => {
 
     const response = await handleChatAgentRoute({
       isGuest: true,
-      message: userMessage,
       messages: [userMessage],
       model: makeModel(),
       chatId: 'guest-chat-1',
@@ -173,7 +170,6 @@ describe('handleChatAgentRoute', () => {
 
     await handleChatAgentRoute({
       isGuest: false,
-      message: userMessage,
       messages: [userMessage],
       model: makeModel(),
       chatId: 'build-chat',

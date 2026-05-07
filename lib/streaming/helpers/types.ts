@@ -6,7 +6,7 @@ export interface StreamContext {
   userId: string
   modelId: string
   messageId?: string
-  trigger?: 'submit-message' | 'regenerate-message' | 'tool-result'
+  trigger?: 'submit-message' | 'regenerate-message'
   initialChat: (Chat & { messages: UIMessage[] }) | null
   abortSignal?: AbortSignal
   correlationId?: string

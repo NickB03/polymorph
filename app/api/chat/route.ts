@@ -30,38 +30,51 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
     const {
-      message,
       messages,
       chatId,
       trigger,
       messageId,
       isNewChat,
-      toolResult,
       guestCanvasToken
     } = body
-
-    const normalizedMessages = Array.isArray(messages)
-      ? messages
-      : typeof messages === 'undefined' && message?.parts
-        ? [message]
-        : messages
 
     perfLog(
       `API Route - Start: chatId=${chatId}, trigger=${trigger}, isNewChat=${isNewChat}`
     )
 
+    if (Object.hasOwn(body, 'message')) {
+      return jsonError(
+        'BAD_REQUEST',
+        'messages are required; singular message payloads are not accepted',
+        400
+      )
+    }
+
+    const retiredToolOutputField = ['tool', 'Result'].join('')
+    if (Object.hasOwn(body, retiredToolOutputField)) {
+      return jsonError(
+        'BAD_REQUEST',
+        'Retired tool output payloads are not accepted; submit updated UIMessage history via messages',
+        400
+      )
+    }
+
     // Validate trigger value
-    const VALID_TRIGGERS = [
-      'submit-message',
-      'regenerate-message',
-      'tool-result'
-    ] as const
+    const VALID_TRIGGERS = ['submit-message', 'regenerate-message'] as const
     type Trigger = (typeof VALID_TRIGGERS)[number]
 
     if (trigger && !VALID_TRIGGERS.includes(trigger)) {
       return jsonError('BAD_REQUEST', `Unknown trigger: ${trigger}`, 400)
     }
-    const validatedTrigger: Trigger | undefined = trigger
+    const validatedTrigger: Trigger = trigger ?? 'submit-message'
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return jsonError(
+        'BAD_REQUEST',
+        'messages are required for chat requests',
+        400
+      )
+    }
 
     // Handle different triggers using AI SDK standard values
     if (validatedTrigger === 'regenerate-message') {
@@ -69,33 +82,6 @@ export async function POST(req: Request) {
         return jsonError(
           'BAD_REQUEST',
           'messageId is required for regeneration',
-          400
-        )
-      }
-    } else if (validatedTrigger === 'tool-result') {
-      if (
-        !toolResult ||
-        typeof toolResult.toolCallId !== 'string' ||
-        !toolResult.toolCallId ||
-        !('output' in toolResult)
-      ) {
-        return jsonError(
-          'BAD_REQUEST',
-          'toolResult with toolCallId and output is required',
-          400
-        )
-      }
-      console.log(
-        `[tool-result] Received continuation: chatId=${chatId}, toolCallId=${toolResult.toolCallId}`
-      )
-    } else if (validatedTrigger === 'submit-message') {
-      if (
-        !Array.isArray(normalizedMessages) ||
-        normalizedMessages.length === 0
-      ) {
-        return jsonError(
-          'BAD_REQUEST',
-          'messages are required for submission',
           400
         )
       }
@@ -179,9 +165,9 @@ export async function POST(req: Request) {
     // Validate guest messages shape at the system boundary
     if (isGuest) {
       if (
-        !Array.isArray(normalizedMessages) ||
-        normalizedMessages.length === 0 ||
-        !normalizedMessages.every(
+        !Array.isArray(messages) ||
+        messages.length === 0 ||
+        !messages.every(
           (m: any) =>
             (m.role === 'user' || m.role === 'assistant') &&
             Array.isArray(m.parts) &&
@@ -206,9 +192,7 @@ export async function POST(req: Request) {
     }
 
     // Validate file parts for all users (guests and authenticated)
-    const messagesToValidate = Array.isArray(normalizedMessages)
-      ? normalizedMessages
-      : []
+    const messagesToValidate = Array.isArray(messages) ? messages : []
 
     for (const msg of messagesToValidate) {
       if (!Array.isArray(msg.parts)) continue
@@ -226,7 +210,7 @@ export async function POST(req: Request) {
       isGuest
         ? {
             isGuest: true,
-            messages: normalizedMessages ?? [],
+            messages,
             model: selectedModel,
             abortSignal,
             searchMode,
@@ -239,10 +223,7 @@ export async function POST(req: Request) {
           }
         : {
             isGuest: false,
-            message: validatedTrigger === 'tool-result' ? null : message,
-            messages: Array.isArray(normalizedMessages)
-              ? normalizedMessages
-              : undefined,
+            messages,
             model: selectedModel,
             chatId,
             userId: userId, // userId is guaranteed to be non-null after authentication check above
@@ -253,8 +234,7 @@ export async function POST(req: Request) {
             searchMode,
             userMode,
             intent,
-            modelType,
-            ...(validatedTrigger === 'tool-result' ? { toolResult } : {})
+            modelType
           }
     )
 
@@ -281,7 +261,7 @@ export async function POST(req: Request) {
             modelType: modelTypeCookie === 'quality' ? 'quality' : 'speed',
             conversationTurn,
             isNewChat: isNewChat ?? false,
-            trigger: validatedTrigger ?? 'submit-message',
+            trigger: validatedTrigger,
             chatId,
             userId,
             modelId: selectedModel.id

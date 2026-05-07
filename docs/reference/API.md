@@ -43,7 +43,7 @@ Unauthenticated requests to protected endpoints receive a `401 Unauthorized` res
 
 ### POST `/api/chat`
 
-The primary chat endpoint. Accepts a user message and returns a Server-Sent Events (SSE) stream containing the AI-generated response with tool results, search data, and reasoning.
+The primary chat endpoint. Accepts the AI SDK `UIMessage[]` history and returns a Server-Sent Events (SSE) stream containing the AI-generated response with tool outputs, search data, and reasoning.
 
 **Authentication:** Required (or guest mode enabled)
 **Timeout:** 300 seconds (`maxDuration = 300`)
@@ -53,30 +53,23 @@ The primary chat endpoint. Accepts a user message and returns a Server-Sent Even
 
 ```typescript
 {
-  message: UIMessage           // Required for trigger="submit-message"
-  messages?: UIMessage[]       // Full message history (used for guest/ephemeral chats)
+  messages: UIMessage[]        // Required full UIMessage history
   chatId: string               // Chat session identifier
-  trigger: string              // "submit-message" | "regenerate-message" | "tool-result"
+  trigger?: string             // "submit-message" | "regenerate-message"
   messageId?: string           // Required for trigger="regenerate-message"
   isNewChat?: boolean          // Whether this is the first message in a chat
-  toolResult?: {               // Required for trigger="tool-result"
-    toolCallId: string
-    output: unknown
-  }
   guestCanvasToken?: string    // HMAC-signed token for guest canvas artifact continuity
 }
 ```
 
-| Field              | Type          | Required    | Description                                                                                                                   |
-| ------------------ | ------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `message`          | `UIMessage`   | Conditional | The current message object. Required when `trigger` is `"submit-message"`; usually present for regenerate requests.           |
-| `messages`         | `UIMessage[]` | No          | Full conversation history. Used for guest/ephemeral streaming.                                                                |
-| `chatId`           | `string`      | Yes         | Unique identifier for the chat session.                                                                                       |
-| `trigger`          | `string`      | Yes         | Action type: `"submit-message"`, `"regenerate-message"`, or `"tool-result"` for interactive tool continuations.               |
-| `messageId`        | `string`      | Conditional | ID of the message to regenerate. Required when `trigger` is `"regenerate-message"`.                                           |
-| `isNewChat`        | `boolean`     | No          | Indicates a new chat session. Affects analytics tracking.                                                                     |
-| `toolResult`       | `object`      | Conditional | Tool result payload with `toolCallId` and `output`. Required when `trigger` is `"tool-result"`.                               |
-| `guestCanvasToken` | `string`      | No          | HMAC-SHA256 signed token for guest canvas artifact continuity. Passed through to canvas tools for guest session verification. |
+| Field              | Type          | Required    | Description                                                                                                                        |
+| ------------------ | ------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `messages`         | `UIMessage[]` | Yes         | Full AI SDK v6 conversation history. Interactive tool continuations use the updated assistant message produced by `addToolOutput`. |
+| `chatId`           | `string`      | Yes         | Unique identifier for the chat session.                                                                                            |
+| `trigger`          | `string`      | No          | Action type: `"submit-message"` or `"regenerate-message"`. Defaults to `"submit-message"`.                                         |
+| `messageId`        | `string`      | Conditional | ID of the message to regenerate. Required when `trigger` is `"regenerate-message"`.                                                |
+| `isNewChat`        | `boolean`     | No          | Indicates a new chat session. Affects analytics tracking.                                                                          |
+| `guestCanvasToken` | `string`      | No          | HMAC-SHA256 signed token for guest canvas artifact continuity. Passed through to canvas tools for guest session verification.      |
 
 #### Cookies Read
 
@@ -93,14 +86,14 @@ The response is a streaming SSE connection. Message parts (text, search results,
 
 #### Error Responses
 
-| Status                      | Condition                                                                                                                                  |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `400 Bad Request`           | Missing `message` for submit trigger, missing `messageId` for regenerate trigger, or missing/invalid `toolResult` for tool-result trigger. |
-| `401 Unauthorized`          | No authenticated user and guest mode is disabled.                                                                                          |
-| `403 Forbidden`             | Request originated from a `/share/` page. Chat API is blocked on share pages.                                                              |
-| `404 Not Found`             | Selected AI provider is not enabled in the registry.                                                                                       |
-| `429 Too Many Requests`     | Authenticated user exceeded daily chat limit or guest rate limit exceeded in cloud deployments.                                            |
-| `500 Internal Server Error` | Unexpected server error during processing.                                                                                                 |
+| Status                      | Condition                                                                                                                                             |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400 Bad Request`           | Missing/non-array `messages`, singular-message payloads, retired tool-continuation payloads, unknown triggers, or missing `messageId` for regenerate. |
+| `401 Unauthorized`          | No authenticated user and guest mode is disabled.                                                                                                     |
+| `403 Forbidden`             | Request originated from a `/share/` page. Chat API is blocked on share pages.                                                                         |
+| `404 Not Found`             | Selected AI provider is not enabled in the registry.                                                                                                  |
+| `429 Too Many Requests`     | Authenticated user exceeded daily chat limit or guest rate limit exceeded in cloud deployments.                                                       |
+| `500 Internal Server Error` | Unexpected server error during processing.                                                                                                            |
 
 #### Example
 
@@ -109,7 +102,13 @@ curl -X POST http://localhost:43100/api/chat \
   -H "Content-Type: application/json" \
   -H "Cookie: <supabase-auth-cookies>" \
   -d '{
-    "message": "What is quantum computing?",
+    "messages": [
+      {
+        "id": "msg_user_1",
+        "role": "user",
+        "parts": [{ "type": "text", "text": "What is quantum computing?" }]
+      }
+    ],
     "chatId": "clx1abc123def456",
     "trigger": "submit-message",
     "isNewChat": true

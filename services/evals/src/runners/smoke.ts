@@ -134,6 +134,10 @@ export async function runSmokeSuite() {
 
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), config.smokeTimeoutMs)
+    const userMessage = {
+      role: 'user',
+      parts: [{ type: 'text', text: prompt }]
+    }
 
     try {
       const response = await fetch(`${config.appUrl}/api/chat`, {
@@ -144,10 +148,7 @@ export async function runSmokeSuite() {
           cookie: buildCookieHeader(cookies)
         },
         body: JSON.stringify({
-          message: {
-            role: 'user',
-            parts: [{ type: 'text', text: prompt }]
-          },
+          messages: [userMessage],
           chatId: crypto.randomUUID(),
           trigger: 'submit-message',
           isNewChat: true

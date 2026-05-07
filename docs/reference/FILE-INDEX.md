@@ -643,9 +643,8 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/streaming/create-ephemeral-chat-stream-response.ts` | Guest/anonymous chat streaming; no persistence, context pruning only                                                |
 | `lib/streaming/eval-chat-runner.ts`                      | Runs eval chats through the researcher agent without persistence; used by `/api/evals/run`                          |
 | `lib/streaming/types.ts`                                 | TypeScript interfaces for stream configuration (BaseStreamConfig)                                                   |
-| `lib/streaming/helpers/prepare-messages.ts`              | Prepares messages for streaming by loading chat history and handling new/existing chats                             |
+| `lib/streaming/helpers/prepare-messages.ts`              | Prepares canonical AI SDK `UIMessage` history, including native interactive output continuations                    |
 | `lib/streaming/helpers/persist-stream-results.ts`        | Persists streamed response messages and chat title to the database                                                  |
-| `lib/streaming/helpers/prepare-tool-result-messages.ts`  | Handles tool result continuation messages; rebuilds state from DB to prevent prompt injection                       |
 | `lib/streaming/helpers/has-pending-interactive-tool.ts`  | Checks if the response has pending interactive tools awaiting user input                                            |
 | `lib/streaming/helpers/inline-file-urls.ts`              | Downloads HTTPS file URLs and inlines them as binary data for providers that cannot fetch externally                |
 | `lib/streaming/helpers/stream-related-questions.ts`      | Generates and streams related follow-up questions alongside the main response                                       |
@@ -654,16 +653,15 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Database
 
-| File                  | Purpose                                                                                                                                                                                                                                                                                          |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages`, `parts`, `feedback`, `canvas_artifacts`, `eval_summaries`, `eval_case_results`, and `trending_suggestions_cache` with RLS policies, including eval summary metadata columns (`judge_*`, corpus/dataset/template versions, app SHA, sample/lookback) |
-| `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                                                                                                                                                                                                  |
-| `lib/db/relations.ts` | Drizzle relation definitions (chats -> messages -> parts)                                                                                                                                                                                                                                        |
-| `lib/db/actions.ts`   | Database CRUD operations with RLS; writes canonical `messages.ui_message`, clears stale legacy projections, and reads `parts` only for compatibility fallback rows                                                                                                                               |
-| `lib/db/admin.ts`     | Privileged DB client factory (`getPrivilegedDb`) bypassing RLS for cron/service writes (e.g., suggestions refresh)                                                                                                                                                                               |
-| `lib/db/constants.ts` | Database constants (query limits, default values)                                                                                                                                                                                                                                                |
-| `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                                                                                                                                                                                                          |
-| `lib/db/migrate.ts`   | Standalone migration runner script using Drizzle Kit                                                                                                                                                                                                                                             |
+| File                  | Purpose                                                                                                                                                                                                                                                                                                                      |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages` with non-null canonical `ui_message`, `feedback`, `canvas_artifacts`, `eval_summaries`, `eval_case_results`, and `trending_suggestions_cache` with RLS policies, including eval summary metadata columns (`judge_*`, corpus/dataset/template versions, app SHA, sample/lookback) |
+| `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                                                                                                                                                                                                                              |
+| `lib/db/actions.ts`   | Database CRUD operations with RLS; writes and reads canonical `messages.ui_message` payloads                                                                                                                                                                                                                                 |
+| `lib/db/admin.ts`     | Privileged DB client factory (`getPrivilegedDb`) bypassing RLS for cron/service writes (e.g., suggestions refresh)                                                                                                                                                                                                           |
+| `lib/db/constants.ts` | Database constants (query limits, default values)                                                                                                                                                                                                                                                                            |
+| `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                                                                                                                                                                                                                                      |
+| `lib/db/migrate.ts`   | Standalone migration runner script using Drizzle Kit                                                                                                                                                                                                                                                                         |
 
 ### Server Actions
 
@@ -877,13 +875,12 @@ Server-side compile pipeline, validation, service layer, and guest token support
 
 ## Scripts
 
-| File                                  | Purpose                                                                                                                                             |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts/backfill-chat-ui-message.ts` | Backfills canonical `messages.ui_message` for legacy rows reconstructed from `parts`                                                                |
-| `scripts/build-canvas-vendor.ts`      | Populates `public/canvas-vendor/` (the vendor chunk used by the canvas iframe runtime); rebuild via `bun run build:canvas-vendor`                   |
-| `scripts/chat-cli.ts`                 | CLI script for testing the chat API endpoint from the terminal                                                                                      |
-| `scripts/seed-eval-summaries.ts`      | Seeds the `eval_summaries` table with synthetic data for `/admin/evals` development; wired as `bun run seed:evals` and `bun run seed:evals:dry-run` |
-| `scripts/README.md`                   | Documentation for available scripts                                                                                                                 |
+| File                             | Purpose                                                                                                                                             |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/build-canvas-vendor.ts` | Populates `public/canvas-vendor/` (the vendor chunk used by the canvas iframe runtime); rebuild via `bun run build:canvas-vendor`                   |
+| `scripts/chat-cli.ts`            | CLI script for testing the chat API endpoint from the terminal                                                                                      |
+| `scripts/seed-eval-summaries.ts` | Seeds the `eval_summaries` table with synthetic data for `/admin/evals` development; wired as `bun run seed:evals` and `bun run seed:evals:dry-run` |
+| `scripts/README.md`              | Documentation for available scripts                                                                                                                 |
 
 ---
 
@@ -893,17 +890,15 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 
 | File                                                     | Purpose                                                         |
 | -------------------------------------------------------- | --------------------------------------------------------------- |
-| `drizzle/schema.ts`                                      | Drizzle schema re-export (used by Drizzle Kit)                  |
-| `drizzle/relations.ts`                                   | Drizzle relations re-export (used by Drizzle Kit)               |
 | `drizzle/0000_black_lifeguard.sql`                       | Initial migration: creates chats, messages tables               |
 | `drizzle/0001_thin_supreme_intelligence.sql`             | Adds visibility column to chats                                 |
-| `drizzle/0002_material_crystal.sql`                      | Adds parts table for structured message storage                 |
+| `drizzle/0002_material_crystal.sql`                      | Historical sidecar message storage migration                    |
 | `drizzle/0003_heavy_whirlwind.sql`                       | Adds indexes for query performance                              |
 | `drizzle/0004_natural_wallow.sql`                        | Adds feedback metadata to messages                              |
 | `drizzle/0005_awesome_riptide.sql`                       | Adds RLS policies for multi-user security                       |
 | `drizzle/0006_brainy_wrecking_crew.sql`                  | Refines RLS policies and adds public chat visibility            |
-| `drizzle/0007_illegal_mephistopheles.sql`                | Adds file attachment columns to parts                           |
-| `drizzle/0008_glamorous_riptide.sql`                     | Adds check constraints for part type validation                 |
+| `drizzle/0007_illegal_mephistopheles.sql`                | Historical file attachment columns for sidecar message storage  |
+| `drizzle/0008_glamorous_riptide.sql`                     | Historical check constraints for sidecar message storage        |
 | `drizzle/0009_thankful_may_parker.sql`                   | Adds feedback table for site-wide feedback                      |
 | `drizzle/0010_lonely_kang.sql`                           | Adds metadata and search mode columns                           |
 | `drizzle/0011_tearful_marauders.sql`                     | Adds artifacts, artifact revisions, and runtime sessions tables |
@@ -1002,7 +997,7 @@ Offline evaluation pipeline (`services/evals/`) for measuring search quality via
 | `services/evals/src/orchestrator.ts`                 | Orchestrates eval suite execution by dispatching to the configured run mode                                                                                                               |
 | `services/evals/src/retry.ts`                        | Exponential backoff retry with `maxAttempts >= 1` validation                                                                                                                              |
 | `services/evals/src/retry.test.ts`                   | Tests for retry utility including zero-attempts edge case                                                                                                                                 |
-| `services/evals/src/sampler.ts`                      | Samples coherent target turns from recent chats with parameterized SQL; reconstructs canonical UI messages and falls back to legacy parts/citation metadata                               |
+| `services/evals/src/sampler.ts`                      | Samples coherent target turns from recent chats with parameterized SQL using canonical UI messages and citation metadata                                                                  |
 | `services/evals/src/types.ts`                        | TypeScript type definitions for eval suites, run modes, cases, and results; exports `PersistedEvalSuite` (`Exclude<EvalSuite, 'smoke'>`)                                                  |
 | `services/evals/src/evaluators/citation-accuracy.ts` | Citation accuracy evaluator — checks if citations match source content and claims                                                                                                         |
 | `services/evals/src/evaluators/faithfulness.ts`      | Faithfulness evaluator — checks if answers are grounded in search results                                                                                                                 |
@@ -1024,57 +1019,56 @@ Offline evaluation pipeline (`services/evals/`) for measuring search quality via
 
 Test files are co-located with their source files using `__tests__/` directories.
 
-| File                                                                    | Purpose                                                                                    |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `app/api/chat/__tests__/route.test.ts`                                  | Tests for the chat API route                                                               |
-| `app/api/feedback/__tests__/route.test.ts`                              | Tests for the feedback API route                                                           |
-| `app/api/suggestions/__tests__/route.test.ts`                           | Tests for the suggestions API route                                                        |
-| `app/api/advanced-search/__tests__/route.test.ts`                       | Tests for the advanced search API route                                                    |
-| `components/mode-selector.test.tsx`                                     | Tests for the three-mode selector                                                          |
-| `components/__tests__/research-process-section.test.tsx`                | Tests for the research process section component                                           |
-| `components/chat-request.test.ts`                                       | Tests for chat request utilities                                                           |
-| `components/chat.test.tsx`                                              | Tests for the main chat component                                                          |
-| `components/motion/pill-presence.test.tsx`                              | Tests for mode-pill presence and swap behavior                                             |
-| `components/motion/stagger-list.test.tsx`                               | Tests for capped timeline staggering                                                       |
-| `components/motion/tool-card-mount.test.tsx`                            | Tests for new-vs-hydrated tool-card animation                                              |
-| `components/tool-ui/competitor-research-result.test.tsx`                | Tests the dedicated `competitorResearch` result renderer                                   |
-| `components/tool-ui/geo-map/__tests__/schema-mirror.test.ts`            | Tests the mirrored geo-map schema contract                                                 |
-| `components/tool-ui/geo-map/__tests__/schema.test.ts`                   | Tests geo-map schema parsing and validation                                                |
-| `components/tool-ui/tool-part-registry.test.tsx`                        | Tests module-local interactive dispatch for option list and question wizard tools          |
-| `lib/actions/__tests__/chat.test.ts`                                    | Tests for chat server actions                                                              |
-| `lib/actions/__tests__/feedback.test.ts`                                | Tests for feedback server actions                                                          |
-| `lib/agents/__tests__/generate-trending-suggestions.test.ts`            | Tests for trending suggestions generation                                                  |
-| `lib/agents/__tests__/researcher.test.ts`                               | Tests for the researcher agent                                                             |
-| `lib/agents/__tests__/title-generator.test.ts`                          | Tests for chat title generation                                                            |
-| `lib/agents/chat/__tests__/community-portability.test.ts`               | Tests research activation, toolset execution, Tool UI rendering, and dynamic mapping       |
-| `lib/agents/chat/__tests__/specialists.test.ts`                         | Tests specialist schemas, active tool registration, and live specialist execution          |
-| `lib/db/__tests__/chat-ui-message-load.test.ts`                         | Tests canonical `uiMessage` load preference, fallback, metadata merge, and upsert behavior |
-| `lib/db/__tests__/rls-policies.integration.test.ts`                     | Integration tests for RLS policy enforcement                                               |
-| `lib/db/__tests__/with-rls.test.ts`                                     | Tests for RLS helper functions                                                             |
-| `lib/motion/hydration-boundary.test.tsx`                                | Tests initial tool-part tracking for motion                                                |
-| `lib/motion/part-ids.test.ts`                                           | Tests tool-part ID extraction from message data                                            |
-| `lib/motion/tokens.test.ts`                                             | Tests motion token snapshots                                                               |
-| `lib/motion/variants.test.ts`                                           | Tests reduced-motion variant resolution                                                    |
-| `lib/rate-limit/__tests__/guest-limit.test.ts`                          | Tests for guest rate limiting logic                                                        |
-| `lib/rate-limit/__tests__/rate-limit-fallback.test.ts`                  | Tests for rate limit fallback behavior                                                     |
-| `lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts` | Tests for ephemeral streaming                                                              |
-| `lib/streaming/__tests__/prune-messages-integration.test.ts`            | Integration tests for message pruning                                                      |
-| `lib/streaming/helpers/__tests__/prepare-messages.test.ts`              | Tests for message preparation                                                              |
-| `lib/tools/__tests__/module-contract.test.ts`                           | Tests migrated tool folders and compatibility shims expose the stable module contract      |
-| `lib/tools/__tests__/display-geo-map.test.ts`                           | Tests geo-map tool validation and passthrough                                              |
-| `lib/tools/__tests__/fetch.test.ts`                                     | Tests for the fetch tool                                                                   |
-| `lib/tools/__tests__/geocode-address.test.ts`                           | Tests geocoding result normalization and errors                                            |
-| `lib/tools/__tests__/get-directions.test.ts`                            | Tests directions routing outputs and edge cases                                            |
-| `lib/tools/__tests__/get-isochrone.test.ts`                             | Tests isochrone polygon generation and failures                                            |
-| `lib/tools/__tests__/get-static-map-image.test.ts`                      | Tests static map URL generation                                                            |
-| `scripts/__tests__/backfill-chat-ui-message.test.ts`                    | Tests legacy parts reconstruction for the `messages.ui_message` backfill                   |
-| `lib/tools/maptiler/__tests__/client.test.ts`                           | Tests MapTiler client configuration and URL building                                       |
-| `lib/tools/search/providers/__tests__/providers.test.ts`                | Tests for search provider implementations                                                  |
-| `lib/utils/__tests__/citation.test.ts`                                  | Tests for citation extraction and processing                                               |
-| `lib/utils/__tests__/context-window.test.ts`                            | Tests for token counting and message truncation                                            |
-| `lib/utils/__tests__/domain.test.ts`                                    | Tests for domain name extraction                                                           |
-| `lib/utils/__tests__/message-mapping-display-tools.test.ts`             | Tests for display tool message mapping                                                     |
-| `lib/utils/__tests__/message-utils.test.ts`                             | Tests for message utility functions                                                        |
-| `lib/utils/__tests__/model-selection.test.ts`                           | Tests for model resolution logic                                                           |
-| `lib/utils/__tests__/retry.test.ts`                                     | Tests for retry utility                                                                    |
-| `lib/utils/__tests__/search-config.test.ts`                             | Tests for search configuration                                                             |
+| File                                                                    | Purpose                                                                                        |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `app/api/chat/__tests__/route.test.ts`                                  | Tests for the chat API route                                                                   |
+| `app/api/feedback/__tests__/route.test.ts`                              | Tests for the feedback API route                                                               |
+| `app/api/suggestions/__tests__/route.test.ts`                           | Tests for the suggestions API route                                                            |
+| `app/api/advanced-search/__tests__/route.test.ts`                       | Tests for the advanced search API route                                                        |
+| `components/mode-selector.test.tsx`                                     | Tests for the three-mode selector                                                              |
+| `components/__tests__/research-process-section.test.tsx`                | Tests for the research process section component                                               |
+| `components/chat-request.test.ts`                                       | Tests for chat request utilities                                                               |
+| `components/chat.test.tsx`                                              | Tests for the main chat component                                                              |
+| `components/motion/pill-presence.test.tsx`                              | Tests for mode-pill presence and swap behavior                                                 |
+| `components/motion/stagger-list.test.tsx`                               | Tests for capped timeline staggering                                                           |
+| `components/motion/tool-card-mount.test.tsx`                            | Tests for new-vs-hydrated tool-card animation                                                  |
+| `components/tool-ui/competitor-research-result.test.tsx`                | Tests the dedicated `competitorResearch` result renderer                                       |
+| `components/tool-ui/geo-map/__tests__/schema-mirror.test.ts`            | Tests the mirrored geo-map schema contract                                                     |
+| `components/tool-ui/geo-map/__tests__/schema.test.ts`                   | Tests geo-map schema parsing and validation                                                    |
+| `components/tool-ui/tool-part-registry.test.tsx`                        | Tests module-local interactive dispatch for option list and question wizard tools              |
+| `lib/actions/__tests__/chat.test.ts`                                    | Tests for chat server actions                                                                  |
+| `lib/actions/__tests__/feedback.test.ts`                                | Tests for feedback server actions                                                              |
+| `lib/agents/__tests__/generate-trending-suggestions.test.ts`            | Tests for trending suggestions generation                                                      |
+| `lib/agents/__tests__/researcher.test.ts`                               | Tests for the researcher agent                                                                 |
+| `lib/agents/__tests__/title-generator.test.ts`                          | Tests for chat title generation                                                                |
+| `lib/agents/chat/__tests__/community-portability.test.ts`               | Tests research activation, toolset execution, Tool UI rendering, and dynamic mapping           |
+| `lib/agents/chat/__tests__/specialists.test.ts`                         | Tests specialist schemas, active tool registration, and live specialist execution              |
+| `lib/db/__tests__/chat-ui-message-load.test.ts`                         | Tests canonical `uiMessage` loading, non-null enforcement, metadata merge, and upsert behavior |
+| `lib/db/__tests__/rls-policies.integration.test.ts`                     | Integration tests for RLS policy enforcement                                                   |
+| `lib/db/__tests__/with-rls.test.ts`                                     | Tests for RLS helper functions                                                                 |
+| `lib/motion/hydration-boundary.test.tsx`                                | Tests initial tool-part tracking for motion                                                    |
+| `lib/motion/part-ids.test.ts`                                           | Tests tool-part ID extraction from message data                                                |
+| `lib/motion/tokens.test.ts`                                             | Tests motion token snapshots                                                                   |
+| `lib/motion/variants.test.ts`                                           | Tests reduced-motion variant resolution                                                        |
+| `lib/rate-limit/__tests__/guest-limit.test.ts`                          | Tests for guest rate limiting logic                                                            |
+| `lib/rate-limit/__tests__/rate-limit-fallback.test.ts`                  | Tests for rate limit fallback behavior                                                         |
+| `lib/streaming/__tests__/create-ephemeral-chat-stream-response.test.ts` | Tests for ephemeral streaming                                                                  |
+| `lib/streaming/__tests__/prune-messages-integration.test.ts`            | Integration tests for message pruning                                                          |
+| `lib/streaming/helpers/__tests__/prepare-messages.test.ts`              | Tests for message preparation                                                                  |
+| `lib/tools/__tests__/module-contract.test.ts`                           | Tests migrated tool folders and compatibility shims expose the stable module contract          |
+| `lib/tools/__tests__/display-geo-map.test.ts`                           | Tests geo-map tool validation and passthrough                                                  |
+| `lib/tools/__tests__/fetch.test.ts`                                     | Tests for the fetch tool                                                                       |
+| `lib/tools/__tests__/geocode-address.test.ts`                           | Tests geocoding result normalization and errors                                                |
+| `lib/tools/__tests__/get-directions.test.ts`                            | Tests directions routing outputs and edge cases                                                |
+| `lib/tools/__tests__/get-isochrone.test.ts`                             | Tests isochrone polygon generation and failures                                                |
+| `lib/tools/__tests__/get-static-map-image.test.ts`                      | Tests static map URL generation                                                                |
+| `lib/tools/maptiler/__tests__/client.test.ts`                           | Tests MapTiler client configuration and URL building                                           |
+| `lib/tools/search/providers/__tests__/providers.test.ts`                | Tests for search provider implementations                                                      |
+| `lib/utils/__tests__/citation.test.ts`                                  | Tests for citation extraction and processing                                                   |
+| `lib/utils/__tests__/context-window.test.ts`                            | Tests for token counting and message truncation                                                |
+| `lib/utils/__tests__/domain.test.ts`                                    | Tests for domain name extraction                                                               |
+| `lib/utils/__tests__/message-mapping-display-tools.test.ts`             | Tests for display tool message mapping                                                         |
+| `lib/utils/__tests__/message-utils.test.ts`                             | Tests for message utility functions                                                            |
+| `lib/utils/__tests__/model-selection.test.ts`                           | Tests for model resolution logic                                                               |
+| `lib/utils/__tests__/retry.test.ts`                                     | Tests for retry utility                                                                        |
+| `lib/utils/__tests__/search-config.test.ts`                             | Tests for search configuration                                                                 |

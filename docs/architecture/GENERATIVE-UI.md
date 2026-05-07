@@ -116,7 +116,7 @@ Display tools transition quickly through these states since their `execute` func
 
 ## Display Tools (Server)
 
-Display tools are defined either as legacy flat shims (`lib/tools/display-*.ts`) or as per-tool modules under `lib/tools/<tool-name>/`. New and migrated high-friction tools use the module shape:
+Display tools are defined either as flat re-exports (`lib/tools/display-*.ts`) or as per-tool modules under `lib/tools/<tool-name>/`. New and migrated high-friction tools use the module shape:
 
 ```text
 lib/tools/<tool-name>/
@@ -152,7 +152,7 @@ All tools with `execute` use the same passthrough pattern:
 execute: async params => params
 ```
 
-**`displayOptionList`** is the exception — it has no `execute` function because it is a **frontend tool**. The AI sends the tool call input, the module-local `client.tsx` renders an interactive option list, the user makes a selection, and `addToolResult` sends the selection back to the AI as the tool result. `displayQuestionWizard` also owns its interactive client behavior in its module-local `client.tsx`.
+**`displayOptionList`** is the exception — it has no `execute` function because it is a **frontend tool**. The AI sends the tool call input, the module-local `client.tsx` renders an interactive option list, the user makes a selection, and the chat parent submits the selection through the AI SDK `addToolOutput` flow. `displayQuestionWizard` also owns its interactive client behavior in its module-local `client.tsx`.
 
 ### Schema example (displayTable)
 
@@ -469,7 +469,7 @@ This produces an interleaved layout:
 When the dispatcher encounters a part with a `tool-display*` type prefix:
 
 1. It flushes any buffered parts first
-2. For `displayOptionList` and `displayQuestionWizard`: delegates to the tool module's `renderToolPart()` client adapter, which owns parsing, local component state, and `addToolResult` submission
+2. For `displayOptionList` and `displayQuestionWizard`: delegates to the tool module's `renderToolPart()` client adapter, which owns parsing, local component state, and app-local interactive output submission
 3. For all other display tools and dedicated result tools: calls `tryRenderToolUIByName(toolName, output)` from the registry, which delegates migrated result tools to their module-local `tryRenderResult()` adapters
 4. During `input-streaming` and `input-available` states: shows an animated skeleton placeholder
 
@@ -635,9 +635,9 @@ An interactive option list that pauses the AI conversation for user input.
 **Interactive flow:**
 
 1. AI calls `displayOptionList` (no `execute` function)
-2. Frontend renders interactive OptionList with `addToolResult` callback
+2. Frontend renders interactive OptionList with a `submitInteractiveToolOutput` callback
 3. User selects option(s) and clicks Confirm
-4. `addToolResult({ toolCallId, result: selection })` sends result back to AI
+4. The chat parent calls `addToolOutput({ tool, toolCallId, output: selection })`
 5. AI continues with the user's selection
 6. On reload, the component renders in receipt mode showing the confirmed selection
 
@@ -664,7 +664,7 @@ sequenceDiagram
     OL-->>User: Show options with checkboxes
 
     User->>OL: Select option(s), click Confirm
-    OL->>SDK: addToolResult({toolCallId, result: selection})
+    OL->>SDK: addToolOutput({tool, toolCallId, output: selection})
 
     SDK->>Agent: Tool result = user's selection
     Agent->>Agent: Continue with selection context
@@ -763,12 +763,12 @@ Polymorph does **not** use `assistant-ui` `Toolkit` wiring for its chat runtime.
   - `components/tool-ui/*` for component shape, schema contracts, and adapters
   - `components/tool-ui/registry.tsx` for output rendering and compatibility facade registration
   - `components/tool-ui/tool-part-registry.tsx` for tool-part dispatch
-  - `lib/tools/<tool-name>/client.tsx` for interactive rendering and `addToolResult` handling
+  - `lib/tools/<tool-name>/client.tsx` for interactive rendering and app-local output submission
   - `components/chat.tsx` and `components/chat-request.ts` for request/continuation plumbing
-  - `lib/types/dynamic-tools.ts` and `lib/streaming/helpers/prepare-tool-result-messages.ts` for interactive tool state transitions
+  - `lib/types/dynamic-tools.ts` and `lib/streaming/helpers/prepare-messages.ts` for interactive tool state transitions
   - `lib/agents/chat/toolset.ts`, the relevant `lib/agents/chat/*` agent definition, and any prompt files that must actually cause the model to call the tool
 - Reuse the existing naming pattern (`displayX`, `generateImage`, canvas tools) unless there is a deliberate reason to change the contract.
-- For interactive tools, registry registration is not enough. Add a module-local `client.tsx`, delegate it from `components/tool-ui/tool-part-registry.tsx`, cover tool-result continuation, and test the exact `tool-*` part shape.
+- For interactive tools, registry registration is not enough. Add a module-local `client.tsx`, delegate it from `components/tool-ui/tool-part-registry.tsx`, cover the native `addToolOutput` continuation, and test the exact `tool-*` part shape.
 - For passive display tools, the minimum path is usually: `schema.ts` -> `server.ts` -> optional `result.tsx` -> registry facade -> agent activation -> prompt usage/tests.
 
 ### Step 1: Define the server-side tool

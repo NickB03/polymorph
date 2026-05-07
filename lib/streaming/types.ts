@@ -8,8 +8,6 @@ import { ModelType } from '../types/model-type'
 import { Model } from '../types/models'
 import { SearchMode, UserMode } from '../types/search'
 
-import type { ToolResultDelta } from './helpers/prepare-tool-result-messages'
-
 export type ChatStreamAgentFactoryArgs = {
   modelId: string
   writer?: UIMessageStreamWriter
@@ -26,12 +24,11 @@ export type ChatStreamAgentFactory = (
 ) => ChatAgent
 
 export interface BaseStreamConfig {
-  message: UIMessage | null
-  messages?: UIMessage[]
+  messages: UIMessage[]
   model: Model
   chatId: string
   userId: string
-  trigger?: 'submit-message' | 'regenerate-message' | 'tool-result'
+  trigger?: 'submit-message' | 'regenerate-message'
   messageId?: string
   abortSignal?: AbortSignal
   isNewChat?: boolean
@@ -39,6 +36,5 @@ export interface BaseStreamConfig {
   userMode?: UserMode
   intent?: string
   modelType?: ModelType
-  toolResult?: ToolResultDelta
   agentFactory: ChatStreamAgentFactory
 }

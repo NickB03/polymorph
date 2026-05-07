@@ -104,7 +104,7 @@ Every chat request follows a single path through the API route into the streamin
 ```mermaid
 flowchart TD
     POST["POST /api/chat"]
-    Parse["Parse request body<br/>(message, chatId, trigger)"]
+    Parse["Parse request body<br/>(messages, chatId, trigger)"]
     Auth["getCurrentUserId()"]
     ShareCheck{"Referer is /share/?"}
     GuestCheck{"userId exists?"}
@@ -160,16 +160,14 @@ The agent is selected by [`resolveChatAgentId()`](../../lib/agents/chat/registry
 
 **Request body fields:**
 
-| Field              | Purpose                                                  |
-| ------------------ | -------------------------------------------------------- |
-| `message`          | The user's message (required for `submit-message`)       |
-| `messages`         | Full message history (used by ephemeral/guest path)      |
-| `chatId`           | Chat identifier                                          |
-| `trigger`          | `submit-message`, `regenerate-message`, or `tool-result` |
-| `messageId`        | Target message ID (required for `regenerate-message`)    |
-| `isNewChat`        | Optimization flag to skip loading existing chat          |
-| `toolResult`       | Tool call continuation data (required for `tool-result`) |
-| `guestCanvasToken` | HMAC-signed token for guest canvas artifact continuity   |
+| Field              | Purpose                                                |
+| ------------------ | ------------------------------------------------------ |
+| `messages`         | Full AI SDK v6 `UIMessage[]` history                   |
+| `chatId`           | Chat identifier                                        |
+| `trigger`          | `submit-message` or `regenerate-message`               |
+| `messageId`        | Target message ID (required for `regenerate-message`)  |
+| `isNewChat`        | Optimization flag to skip loading existing chat        |
+| `guestCanvasToken` | HMAC-signed token for guest canvas artifact continuity |
 
 ---
 
@@ -296,7 +294,7 @@ sequenceDiagram
     participant Related as Related Questions
     participant DB as PostgreSQL
 
-    Client->>API: HTTP POST (message, chatId)
+    Client->>API: HTTP POST (messages, chatId)
     API->>Stream: createUIMessageStream()
 
     rect rgb(240, 248, 255)
@@ -344,10 +342,11 @@ sequenceDiagram
 
 - **Related questions** are streamed incrementally as `data-relatedQuestions` parts with status transitions: `loading` -> `streaming` (with incremental question list) -> `success` (final validated list). Uses Zod schema validation via `relatedSchema`.
 
-- **Message preparation** (`prepareMessages`) handles three scenarios:
+- **Message preparation** (`prepareMessages`) handles four scenarios:
   1. **New chat**: Creates chat + saves first message optimistically in the background via `context.pendingInitialSave`
   2. **Existing chat**: Loads history and appends the new message
-  3. **Regeneration**: Deletes messages from the target index and returns truncated history
+  3. **Native interactive output**: Validates one registered interactive tool part moving from `input-available` to `output-available`
+  4. **Regeneration**: Deletes messages from the target index and returns truncated history
 
 - **Context window management**: Before sending to the LLM, messages pass through `pruneMessages` (removes old reasoning and tool calls) and `truncateMessages` (enforces model-specific token limits).
 
@@ -375,7 +374,7 @@ sequenceDiagram
 
 ## Database Schema
 
-The database uses Drizzle ORM with Supabase PostgreSQL. The schema follows a three-level hierarchy: **chats** contain **messages**, and messages contain **parts**. Legacy artifact tables remain in the schema for data continuity but are no longer part of the active architecture. A separate **feedback** table stores user feedback.
+The database uses Drizzle ORM with Supabase PostgreSQL. The active chat schema stores **chats** and their canonical **messages**. Each message row owns a non-null `ui_message` JSONB payload containing the AI SDK `UIMessage`; there is no sidecar message-part table in the active contract. A separate **feedback** table stores user feedback.
 
 ```mermaid
 erDiagram
@@ -393,34 +392,8 @@ erDiagram
         varchar role "NOT NULL (user | assistant)"
         timestamp created_at "NOT NULL, default now()"
         timestamp updated_at "nullable"
+        jsonb ui_message "NOT NULL canonical UIMessage"
         jsonb metadata "optional (traceId, searchMode, modelId)"
-    }
-
-    parts {
-        varchar id PK "cuid2, 191 chars"
-        varchar message_id FK "NOT NULL, CASCADE DELETE"
-        integer order "NOT NULL"
-        varchar type "NOT NULL"
-        text text_text "for type=text"
-        text reasoning_text "for type=reasoning"
-        varchar file_media_type "for type=file"
-        varchar file_filename "for type=file"
-        text file_url "for type=file"
-        varchar source_url_source_id "source URL parts"
-        text source_url_url "source URL parts"
-        text source_url_title "source URL parts"
-        json tool_search_input "search tool I/O"
-        json tool_search_output "search tool I/O"
-        json tool_fetch_input "fetch tool I/O"
-        json tool_fetch_output "fetch tool I/O"
-        json tool_todoWrite_input "todo tool I/O"
-        json tool_todoWrite_output "todo tool I/O"
-        json tool_dynamic_input "MCP/dynamic tools"
-        json tool_dynamic_output "MCP/dynamic tools"
-        varchar tool_tool_call_id "tool call identifier"
-        varchar tool_state "lifecycle state"
-        json data_content "generic data parts"
-        json provider_metadata "provider-specific"
     }
 
     artifacts {
@@ -458,42 +431,34 @@ erDiagram
     }
 
     chats ||--o{ messages : "has many"
-    messages ||--o{ parts : "has many"
     chats ||--o{ artifacts : "has many"
     artifacts ||--o{ artifact_revisions : "has many"
 ```
 
 ### Schema details
 
-- The `parts` table is a **wide table** — it stores all message part types (text, reasoning, file, source URL, source document, tool calls, todo, dynamic tools, data parts) using nullable columns with check constraints per type:
-  - `type = 'text'` requires `text_text IS NOT NULL`
-  - `type = 'reasoning'` requires `reasoning_text IS NOT NULL`
-  - `type = 'file'` requires `file_media_type`, `file_filename`, and `file_url`
-  - `type LIKE 'tool-%'` requires `tool_tool_call_id` and `tool_state`
-  - `tool_state` must be one of: `input-streaming`, `input-available`, `output-available`, `output-error`
+- `messages.ui_message` is the canonical persisted AI SDK `UIMessage` and is enforced as `NOT NULL`.
 
 - IDs are generated with **cuid2** (191 char max) via `@paralleldrive/cuid2`
 
-- **Cascade deletes** propagate from chats through messages to parts
+- **Cascade deletes** propagate from chats through messages
 
 - All tables use **Row-Level Security** (see [RLS Policy Chain](#rls-policy-chain))
 
 ### Indexes
 
-| Table              | Index                                           | Purpose                          |
-| ------------------ | ----------------------------------------------- | -------------------------------- |
-| chats              | `chats_user_id_idx`                             | User's chat list                 |
-| chats              | `chats_user_id_created_at_idx`                  | Sorted chat list                 |
-| chats              | `chats_created_at_idx`                          | Global recency ordering          |
-| chats              | `chats_id_user_id_idx`                          | RLS subquery from messages/parts |
-| messages           | `messages_chat_id_idx`                          | Load messages by chat            |
-| messages           | `messages_chat_id_created_at_idx`               | Ordered message load             |
-| parts              | `parts_message_id_idx`                          | Load parts by message            |
-| parts              | `parts_message_id_order_idx`                    | Ordered part load                |
-| artifacts          | `artifacts_chat_id_idx`                         | Artifacts by chat                |
-| artifact_revisions | `artifact_revisions_artifact_id_created_at_idx` | Ordered revisions per artifact   |
-| feedback           | `feedback_user_id_idx`                          | Feedback by user                 |
-| feedback           | `feedback_created_at_idx`                       | Feedback by recency              |
+| Table              | Index                                           | Purpose                        |
+| ------------------ | ----------------------------------------------- | ------------------------------ |
+| chats              | `chats_user_id_idx`                             | User's chat list               |
+| chats              | `chats_user_id_created_at_idx`                  | Sorted chat list               |
+| chats              | `chats_created_at_idx`                          | Global recency ordering        |
+| chats              | `chats_id_user_id_idx`                          | RLS subquery from messages     |
+| messages           | `messages_chat_id_idx`                          | Load messages by chat          |
+| messages           | `messages_chat_id_created_at_idx`               | Ordered message load           |
+| artifacts          | `artifacts_chat_id_idx`                         | Artifacts by chat              |
+| artifact_revisions | `artifact_revisions_artifact_id_created_at_idx` | Ordered revisions per artifact |
+| feedback           | `feedback_user_id_idx`                          | Feedback by user               |
+| feedback           | `feedback_created_at_idx`                       | Feedback by recency            |
 
 **Source file:** [`lib/db/schema.ts`](../../lib/db/schema.ts)
 
@@ -701,7 +666,7 @@ From [`config/models/default.json`](../../config/models/default.json):
 
 ## Tool State Lifecycle
 
-Each tool invocation progresses through a defined set of states tracked by the `tool_state` column in the `parts` table. The search and fetch tools use the `async *execute` generator pattern to yield intermediate states.
+Each tool invocation progresses through AI SDK tool-part states inside the canonical `UIMessage.parts` array. The search and fetch tools use the `async *execute` generator pattern to yield intermediate states.
 
 ```mermaid
 stateDiagram-v2
@@ -734,17 +699,11 @@ stateDiagram-v2
 
 **Display tools** have a simpler lifecycle — their `execute` function simply returns the input as output, so they transition quickly through `input-streaming` -> `input-available` -> `output-available`.
 
-**Database constraint** enforces valid states:
-
-```sql
-tool_state IN ('input-streaming', 'input-available', 'output-available', 'output-error')
-```
-
 ---
 
 ## RLS Policy Chain
 
-Row-Level Security (RLS) is enabled on all seven tables. Policies use `current_setting('app.current_user_id', true)` to identify the current user, which is set by the application layer before each database operation.
+Row-Level Security (RLS) is enabled on the user-owned application tables. Policies use `current_setting('app.current_user_id', true)` to identify the current user, which is set by the application layer before each database operation.
 
 ```mermaid
 graph TD
@@ -760,11 +719,6 @@ graph TD
     subgraph MessagesRLS["messages table"]
         OwnMessages["users_manage_chat_messages<br/>USING: EXISTS subquery into chats<br/>WHERE chats.user_id = current_user_id<br/>FOR: ALL operations"]
         PublicMessages["public_chat_messages_readable<br/>USING: EXISTS subquery into chats<br/>WHERE visibility = 'public'<br/>FOR: SELECT only"]
-    end
-
-    subgraph PartsRLS["parts table"]
-        OwnParts["users_manage_message_parts<br/>USING: EXISTS subquery joining<br/>messages + chats<br/>WHERE chats.user_id = current_user_id<br/>FOR: ALL operations"]
-        PublicParts["public_chat_parts_readable<br/>USING: EXISTS subquery joining<br/>messages + chats<br/>WHERE visibility = 'public'<br/>FOR: SELECT only"]
     end
 
     subgraph ArtifactsRLS["artifacts table"]
@@ -783,10 +737,8 @@ graph TD
 
     AppLayer --> ChatsRLS
     OwnChats -->|"Ownership propagates via subquery"| OwnMessages
-    OwnMessages -->|"Ownership propagates via subquery"| OwnParts
     OwnArtifacts -->|"Ownership propagates via subquery"| OwnRevisions
     PublicChats -->|"Public access via subquery"| PublicMessages
-    PublicMessages -->|"Public access via subquery"| PublicParts
 ```
 
 ### Policy details
@@ -797,13 +749,11 @@ The RLS chain cascades through the table hierarchy:
 
 2. **messages**: Access is granted via `EXISTS` subquery checking if the parent chat belongs to the current user. Public chat messages are readable via a similar subquery checking `visibility = 'public'`.
 
-3. **parts**: Access requires a two-table join — from `parts` through `messages` to `chats` — checking ownership or public visibility.
+3. **artifacts**: Users can perform all operations on artifacts where `user_id = current_user_id`.
 
-4. **artifacts**: Users can perform all operations on artifacts where `user_id = current_user_id`.
+4. **artifact_revisions**: Access is granted via `EXISTS` subquery checking if the parent artifact belongs to the current user.
 
-5. **artifact_revisions**: Access is granted via `EXISTS` subquery checking if the parent artifact belongs to the current user.
-
-6. **feedback**: Open access — anyone can insert and read feedback.
+5. **feedback**: Open access — anyone can insert and read feedback.
 
 ### Implementation details
 
@@ -811,8 +761,8 @@ The `current_setting('app.current_user_id', true)` call uses `true` as the secon
 
 **Performance indexes** support the RLS subqueries:
 
-- `chats_id_user_id_idx` — composite index on `(id, user_id)` for fast ownership checks from messages/parts
-- `messages_chat_id_idx` — supports the `EXISTS` subquery from the parts table
+- `chats_id_user_id_idx` — composite index on `(id, user_id)` for fast ownership checks from messages
+- `messages_chat_id_idx` — supports ordered message loads by chat
 
 **Source file:** [`lib/db/schema.ts`](../../lib/db/schema.ts)
 

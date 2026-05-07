@@ -228,7 +228,7 @@ describe('Chat Actions', () => {
         chatId: mockChat.id,
         role: 'user',
         metadata: {},
-        uiMessage: null,
+        uiMessage: message,
         createdAt: new Date(),
         updatedAt: null
       }
@@ -282,7 +282,7 @@ describe('Chat Actions', () => {
           chatId,
           role: 'user' as const,
           metadata: {},
-          uiMessage: null,
+          uiMessage: message,
           createdAt: new Date(),
           updatedAt: null
         }
@@ -330,7 +330,7 @@ describe('Chat Actions', () => {
         chatId,
         role: 'assistant',
         metadata: {},
-        uiMessage: null,
+        uiMessage: message,
         createdAt: new Date(),
         updatedAt: null
       }
@@ -364,7 +364,7 @@ describe('Chat Actions', () => {
         chatId,
         role: 'user',
         metadata: {},
-        uiMessage: null,
+        uiMessage: message,
         createdAt: new Date(),
         updatedAt: null
       }

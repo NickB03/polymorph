@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { UIMessage } from '@/lib/types/ai'
@@ -85,6 +87,27 @@ describe('canonical chat UIMessage loading', () => {
         uiMessage: null
       })
     ).toThrow('Invariant: message msg-1 has no uiMessage')
+  })
+
+  it('active schema and migration enforce uiMessage as non-null', () => {
+    const schemaSource = readFileSync(
+      join(process.cwd(), 'lib/db/schema.ts'),
+      'utf8'
+    )
+    const migrationSource = readFileSync(
+      join(process.cwd(), 'drizzle/0026_enforce_chat_ui_message.sql'),
+      'utf8'
+    )
+
+    expect(schemaSource).toMatch(/uiMessage:\s*jsonb\('ui_message'\)/)
+    expect(schemaSource).toMatch(/uiMessage:[\s\S]*\$type<UIMessage>\(\)/)
+    expect(schemaSource).toMatch(/uiMessage:[\s\S]*\.notNull\(\)/)
+    expect(migrationSource).toContain(
+      'IF EXISTS (SELECT 1 FROM "messages" WHERE "ui_message" IS NULL)'
+    )
+    expect(migrationSource).toContain(
+      'ALTER TABLE "messages" ALTER COLUMN "ui_message" SET NOT NULL'
+    )
   })
 
   it('loadChatWithMessages returns canonical row parts', async () => {
@@ -221,7 +244,7 @@ describe('canonical chat UIMessage loading', () => {
     )
   })
 
-  it('createChatWithFirstMessageTransaction persists first message without legacy parts projection', async () => {
+  it('createChatWithFirstMessageTransaction persists first message without sidecar projections', async () => {
     const message: UIMessage = {
       id: 'msg-1',
       role: 'user',

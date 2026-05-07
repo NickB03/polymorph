@@ -719,7 +719,7 @@ describe('authenticated new chat canvas ownership race', () => {
       isNewChat: true
     }
 
-    const preparedMessages = await prepareMessages(streamContext, userMessage)
+    const preparedMessages = await prepareMessages(streamContext, [userMessage])
 
     expect(preparedMessages).toEqual([userMessage])
     expect(streamContext.pendingInitialSave).toBeDefined()

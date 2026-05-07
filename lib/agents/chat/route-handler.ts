@@ -12,11 +12,10 @@ import type { SearchMode, UserMode } from '@/lib/types/search'
 
 import type { CreateChatAgentArgs } from './factory'
 
-type ChatRouteTrigger = 'submit-message' | 'regenerate-message' | 'tool-result'
+type ChatRouteTrigger = 'submit-message' | 'regenerate-message'
 
 type BaseValidatedRouteContext = {
-  message: UIMessage | null
-  messages?: UIMessage[]
+  messages: UIMessage[]
   model: Model
   chatId: string
   trigger?: ChatRouteTrigger
@@ -32,14 +31,11 @@ type BaseValidatedRouteContext = {
 type AuthenticatedRouteContext = BaseValidatedRouteContext & {
   isGuest: false
   userId: string
-  toolResult?: Parameters<typeof createChatStreamResponse>[0]['toolResult']
 }
 
-type GuestRouteContext = Omit<BaseValidatedRouteContext, 'message'> & {
+type GuestRouteContext = BaseValidatedRouteContext & {
   isGuest: true
   userId?: undefined
-  messages: UIMessage[]
-  message?: UIMessage | null
   guestCanvasToken?: string
 }
 
@@ -114,7 +110,6 @@ export async function handleChatAgentRoute(
   }
 
   return createChatStreamResponse({
-    message: context.message,
     messages: context.messages,
     model: context.model,
     chatId: context.chatId,
@@ -127,7 +122,6 @@ export async function handleChatAgentRoute(
     userMode: context.userMode,
     intent: context.intent,
     modelType: context.modelType,
-    toolResult: context.toolResult,
     agentFactory
   })
 }

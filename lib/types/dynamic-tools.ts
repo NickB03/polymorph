@@ -18,7 +18,7 @@ export interface DynamicToolConfig {
   mcpClient?: MCPClient
 }
 
-// Dynamic tool part types matching AI SDK v5
+// Dynamic tool part types matching AI SDK UI dynamic tool parts.
 export type DynamicToolPart =
   | DynamicToolPartInputStreaming
   | DynamicToolPartInputAvailable

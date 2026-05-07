@@ -293,7 +293,7 @@ export function Chat({
         lowerMessage.includes('tool part') ||
         lowerMessage.includes('assistant message') ||
         lowerMessage.includes('toolcallid') ||
-        lowerMessage.includes('tool-result') ||
+        lowerMessage.includes('tool output') ||
         lowerMessage.includes('has no messages')
 
       if (isRateLimit) {
@@ -316,7 +316,7 @@ export function Chat({
           message: errorMessage
         })
       } else if (isToolError) {
-        // Tool-result continuation errors need persistent visibility — a toast
+        // Interactive tool-output errors need persistent visibility — a toast
         // auto-dismisses in ~4s and users miss it, leaving them with no feedback
         setErrorModal({
           open: true,
@@ -879,14 +879,13 @@ export function Chat({
           status={status}
           chatId={chatId}
           isGuest={isGuest}
-          addToolResult={({
+          submitInteractiveToolOutput={({
             toolCallId,
-            result
+            output
           }: {
             toolCallId: string
-            result: any
+            output: unknown
           }) => {
-            let toolName = 'unknown'
             const matchedPart = messages
               .flatMap(m => m.parts ?? [])
               .find(
@@ -896,18 +895,20 @@ export function Chat({
                     isDynamicToolPart(p)) &&
                   p.toolCallId === toolCallId
               )
-            if (matchedPart) {
-              if (
-                isToolCallPart(matchedPart) ||
-                isDynamicToolPart(matchedPart)
-              ) {
-                toolName = matchedPart.toolName
-              } else if (isToolTypePart(matchedPart)) {
-                toolName = matchedPart.type.substring(5) // Remove 'tool-' prefix
-              }
+            if (!matchedPart) {
+              return
             }
 
-            addToolOutput({ tool: toolName, toolCallId, output: result })
+            let toolName: string
+            if (isToolCallPart(matchedPart) || isDynamicToolPart(matchedPart)) {
+              toolName = matchedPart.toolName
+            } else if (isToolTypePart(matchedPart)) {
+              toolName = matchedPart.type.substring(5) // Remove 'tool-' prefix
+            } else {
+              return
+            }
+
+            addToolOutput({ tool: toolName, toolCallId, output })
           }}
           scrollContainerRef={scrollContainerRef}
           onUpdateMessage={handleUpdateAndReloadMessage}

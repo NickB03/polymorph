@@ -30,7 +30,10 @@ interface ChatMessagesProps {
   status: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   chatId?: string
   isGuest?: boolean
-  addToolResult?: (params: { toolCallId: string; result: any }) => void
+  submitInteractiveToolOutput?: (params: {
+    toolCallId: string
+    output: unknown
+  }) => void
   /** Ref for the scroll container */
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   onUpdateMessage?: (messageId: string, newContent: string) => Promise<void>
@@ -46,7 +49,7 @@ export function ChatMessages({
   status,
   chatId,
   isGuest = false,
-  addToolResult,
+  submitInteractiveToolOutput,
   scrollContainerRef,
   onUpdateMessage,
   reload,
@@ -188,7 +191,7 @@ export function ChatMessages({
                 onQuerySelect={onQuerySelect}
                 chatId={chatId}
                 status={status}
-                addToolResult={addToolResult}
+                submitInteractiveToolOutput={submitInteractiveToolOutput}
                 onUpdateMessage={onUpdateMessage}
                 reload={reload}
                 citationMaps={allCitationMaps}
@@ -222,7 +225,7 @@ export function ChatMessages({
                     onQuerySelect={onQuerySelect}
                     chatId={chatId}
                     status={status}
-                    addToolResult={addToolResult}
+                    submitInteractiveToolOutput={submitInteractiveToolOutput}
                     onUpdateMessage={onUpdateMessage}
                     reload={reload}
                     isLatestMessage={isLatestMessage}
