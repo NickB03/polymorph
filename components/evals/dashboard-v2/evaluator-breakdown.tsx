@@ -260,7 +260,7 @@ function DiagnosticsOverview({
       ? 'text-destructive'
       : overview.status === 'WATCH'
         ? 'text-accent-amber'
-        : 'text-emerald-400'
+        : 'text-success'
 
   return (
     <div className="grid grid-cols-1 gap-3 border-t border-border/60 pt-4 xl:grid-cols-2">
