@@ -25,6 +25,7 @@ import { deltaPts, pct } from '@/components/evals/dashboard/shared'
 import { ScoreCell } from '@/components/evals/glossary'
 
 import { AutoBadge } from './auto-badge'
+import { Delta } from './delta'
 import { localLabel } from './local-labels'
 
 const DETERMINISTIC_KEYS = new Set(['deterministic_prechecks', 'tool_usage'])
@@ -415,8 +416,8 @@ function EvaluatorDiagnosticPanel({
         <h4 className="text-sm font-semibold tracking-tight">
           {localLabel(evaluatorName)} diagnostics
         </h4>
-        <span className="font-mono text-xs text-muted-foreground">
-          Delta vs previous: {delta == null ? 'Unknown' : deltaPts(delta)}
+        <span className="text-xs text-muted-foreground">
+          Delta vs previous: <Delta value={delta} />
         </span>
       </div>
 

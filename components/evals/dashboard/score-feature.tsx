@@ -10,7 +10,8 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 
-import { deltaPts, pct } from '@/components/evals/dashboard/shared'
+import { pct } from '@/components/evals/dashboard/shared'
+import { Delta } from '@/components/evals/dashboard-v2/delta'
 import { AggregateBreakdown, DefinedTerm } from '@/components/evals/glossary'
 
 export function ScoreFeature({
@@ -121,8 +122,8 @@ export function ScoreFeature({
         </div>
         <div className="space-y-1">
           <dt className="text-xs text-muted-foreground">Change · 48h</dt>
-          <dd className="font-mono text-sm font-medium tabular-nums">
-            {deltaPts(delta) ?? '—'}
+          <dd className="text-sm font-medium">
+            <Delta value={delta} />
           </dd>
         </div>
         <div className="space-y-1">
