@@ -98,7 +98,7 @@ export function EvaluatorBreakdown({
                 }
                 selected={selected}
               >
-                <span className="-mx-2 grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_44px] items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/40">
+                <span className="-mx-2 grid grid-cols-[minmax(0,1.5fr)_minmax(0,2fr)_44px] items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/40">
                   <span className="flex min-w-0 items-center gap-2">
                     <span
                       className={cn(
