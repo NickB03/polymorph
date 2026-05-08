@@ -93,7 +93,7 @@ describe('EvalsDashboardV2', () => {
   it('renders the header in any state', () => {
     render(<EvalsDashboardV2 data={EMPTY} />)
     expect(
-      screen.getByRole('heading', { level: 1, name: /evaluation summary/i })
+      screen.getByRole('heading', { level: 1, name: /^evaluation$/i })
     ).toBeInTheDocument()
     expect(screen.queryByText(/polymorph/i)).not.toBeInTheDocument()
   })
@@ -101,7 +101,7 @@ describe('EvalsDashboardV2', () => {
   it('renders the populated state without crashing', () => {
     render(<EvalsDashboardV2 data={POPULATED} />)
     expect(
-      screen.getByRole('heading', { level: 1, name: /evaluation summary/i })
+      screen.getByRole('heading', { level: 1, name: /^evaluation$/i })
     ).toBeInTheDocument()
   })
 
@@ -419,7 +419,40 @@ describe('EvalsDashboardV2', () => {
     )
 
     expect(
-      screen.getByText(/10 cases scored in the last 48h/i)
+      screen.getByText(
+        (_, el) =>
+          el?.tagName === 'P' &&
+          (el.textContent ?? '').includes('10') &&
+          /cases scored in the last 48h/i.test(el.textContent ?? '')
+      )
     ).toBeInTheDocument()
+  })
+
+  it('renders a READY status pill when no suite is in trouble', () => {
+    render(<EvalsDashboardV2 data={POPULATED} />)
+    expect(screen.getByTestId('overall-status-pill')).toHaveTextContent(/READY/)
+  })
+
+  it('renders a BLOCKED status pill when any suite breaches threshold', () => {
+    const breached = snapshot({
+      thresholdBreached: true,
+      failedEvaluators: ['faithfulness']
+    })
+    render(
+      <EvalsDashboardV2
+        data={{
+          ...POPULATED,
+          capability: {
+            latest: breached,
+            previous: null,
+            trend: [],
+            lastUpdated: breached.createdAt
+          }
+        }}
+      />
+    )
+    expect(screen.getByTestId('overall-status-pill')).toHaveTextContent(
+      /BLOCKED/
+    )
   })
 })

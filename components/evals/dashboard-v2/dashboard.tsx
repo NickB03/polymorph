@@ -4,7 +4,9 @@ import { type CSSProperties, useEffect } from 'react'
 
 import { formatDistanceToNow } from 'date-fns'
 
+import { getOverallStatus, type SuiteStatus } from '@/lib/evals/helpers/status'
 import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
+import { cn } from '@/lib/utils'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 
@@ -97,29 +99,50 @@ function Header({
   const reg = data.regression.latest
   const totalCases =
     (cap?.totalCases ?? 0) + (traf?.totalCases ?? 0) + (reg?.totalCases ?? 0)
+  const overallStatus = getOverallStatus(data)
 
   return (
     <header
-      className="space-y-6 border-b border-border/60 pb-6 motion-safe:animate-content-enter"
+      className="space-y-3 border-b border-border/60 pb-6 motion-safe:animate-content-enter"
       style={enter(0)}
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-3">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            Evaluation Summary
-          </h1>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">Evaluation</h1>
+          <StatusPill status={overallStatus} />
         </div>
         {hideSwitcher ? null : (
           <ViewSwitcher value={view} onChange={onChange} />
         )}
       </div>
-      <div className="space-y-2">
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          {getViewDescription(view)} {totalCases} cases scored in the last 48h ·
-          last sync {lastSync}.
-        </p>
-      </div>
+      <p className="text-base leading-relaxed text-muted-foreground">
+        {getViewDescription(view)}{' '}
+        <span className="font-mono tabular-nums text-foreground">
+          {totalCases}
+        </span>{' '}
+        cases scored in the last 48h · last sync {lastSync}.
+      </p>
     </header>
+  )
+}
+
+const STATUS_PILL_STYLE: Record<SuiteStatus, string> = {
+  READY: 'bg-success-bg text-success border-success-border',
+  WATCH: 'bg-warning-bg text-warning border-warning-border',
+  BLOCKED: 'bg-destructive/10 text-destructive border-destructive/30'
+}
+
+function StatusPill({ status }: { status: SuiteStatus }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-xs font-semibold uppercase tracking-wide',
+        STATUS_PILL_STYLE[status]
+      )}
+      data-testid="overall-status-pill"
+    >
+      {status}
+    </span>
   )
 }
 
