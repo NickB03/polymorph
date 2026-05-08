@@ -47,6 +47,7 @@ describe('PhoenixInsightStrip', () => {
       'href',
       'https://phoenix.example.com/datasets/traffic-sample-48h/compare?experimentId=traffic-monitor-2026-05-05'
     )
+    expect(screen.getByTestId('phoenix-alert-icon')).toBeInTheDocument()
   })
 
   it('calls onReview when the review button is clicked', () => {
@@ -59,5 +60,18 @@ describe('PhoenixInsightStrip', () => {
     )
 
     expect(onReview).toHaveBeenCalledTimes(1)
+  })
+
+  it('renders the destructive palette when severity is "blocked"', () => {
+    render(
+      <PhoenixInsightStrip
+        insight={INSIGHT}
+        onReview={() => {}}
+        severity="blocked"
+      />
+    )
+    expect(screen.getByTestId('phoenix-insight')).toHaveClass(
+      'border-destructive'
+    )
   })
 })

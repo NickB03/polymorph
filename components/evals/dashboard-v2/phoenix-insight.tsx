@@ -1,4 +1,4 @@
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { AlertTriangle, ArrowRight } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
@@ -7,35 +7,64 @@ import { pct } from '@/components/evals/dashboard/shared'
 import type { PhoenixInsight } from './attention'
 import { localLabel } from './local-labels'
 
+type Severity = 'watch' | 'blocked'
+
+const PALETTE: Record<
+  Severity,
+  { container: string; rail: string; icon: string; cta: string }
+> = {
+  watch: {
+    container: 'border-warning-border bg-warning-bg',
+    rail: 'bg-warning',
+    icon: 'text-warning',
+    cta: 'bg-warning text-warning-foreground hover:bg-warning/90 focus-visible:ring-warning'
+  },
+  blocked: {
+    container: 'border-destructive bg-destructive/10',
+    rail: 'bg-destructive',
+    icon: 'text-destructive',
+    cta: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive'
+  }
+}
+
 export function PhoenixInsightStrip({
   insight,
   onReview,
+  severity = 'watch',
   className
 }: {
   insight: PhoenixInsight
   onReview: () => void
+  severity?: Severity
   className?: string
 }) {
   const failingJudges =
     insight.alert.failedEvaluators.length > 0
       ? insight.alert.failedEvaluators.map(localLabel).join(', ')
       : 'No specific judges listed'
+  const palette = PALETTE[severity]
 
   return (
     <section
       aria-labelledby="phoenix-insight-title"
       className={cn(
-        'rounded-xl border border-warning-border bg-warning-bg px-4 py-3 text-sm',
+        'relative overflow-hidden rounded-xl border py-3 pl-4 pr-4 text-sm',
+        palette.container,
         className
       )}
       data-testid="phoenix-insight"
     >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <span
+        aria-hidden
+        className={cn('absolute inset-y-0 left-0 w-1', palette.rail)}
+      />
+      <div className="flex flex-col gap-3 pl-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 space-y-1">
           <div className="flex items-center gap-2">
-            <Sparkles
+            <AlertTriangle
               aria-hidden="true"
-              className="size-4 shrink-0 text-warning"
+              data-testid="phoenix-alert-icon"
+              className={cn('size-4 shrink-0', palette.icon)}
             />
             <h2
               id="phoenix-insight-title"
@@ -58,7 +87,7 @@ export function PhoenixInsightStrip({
               href={insight.alert.phoenixUrl}
               rel="noreferrer"
               target="_blank"
-              className="inline-flex h-9 items-center rounded-md px-3 text-xs font-medium text-warning underline-offset-4 hover:underline"
+              className="inline-flex h-9 items-center rounded-md px-3 text-xs font-medium text-foreground underline-offset-4 hover:underline"
             >
               Open Phoenix
             </a>
@@ -66,7 +95,10 @@ export function PhoenixInsightStrip({
           <button
             type="button"
             onClick={onReview}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className={cn(
+              'inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              palette.cta
+            )}
           >
             {insight.actionLabel}
             <ArrowRight aria-hidden="true" className="size-3.5" />

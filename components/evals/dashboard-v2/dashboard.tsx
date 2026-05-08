@@ -181,6 +181,9 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
         <PhoenixInsightStrip
           insight={insight}
           onReview={() => setActive(insight.suiteId)}
+          severity={
+            snapMap[insight.suiteId]?.thresholdBreached ? 'blocked' : 'watch'
+          }
         />
       ) : null}
 
