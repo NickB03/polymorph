@@ -13,6 +13,7 @@ import {
 import { formatAppModelSummary } from '@/lib/evals/display'
 import { EVALUATOR_DISPLAY_ORDER } from '@/lib/evals/evaluator-labels'
 import { snapshotSuiteKey } from '@/lib/evals/glossary'
+import { getSuiteStatus, type SuiteStatus } from '@/lib/evals/helpers/status'
 import type {
   EvalCaseResultSnapshot,
   EvalSummarySnapshot
@@ -161,7 +162,7 @@ export function EvaluatorBreakdown({
   )
 }
 
-type DiagnosticStatus = 'READY' | 'WATCH' | 'BLOCKED'
+type DiagnosticStatus = SuiteStatus
 
 interface DiagnosticOverview {
   status: DiagnosticStatus
@@ -203,43 +204,21 @@ function buildDiagnosticOverview(
     .sort(scoreAscending)
     .slice(0, 3)
 
-  if (snap.thresholdBreached) {
-    return {
-      status: 'BLOCKED',
-      reason: 'Threshold breached',
-      newFailures,
-      fixedFailures,
-      stillFailing,
-      largestDrop,
-      worstFailures
-    }
-  }
-
-  if (
-    snap.failedCases > 0 ||
-    snap.failedEvaluators.length > 0 ||
-    newFailures > 0 ||
-    (largestDrop && largestDrop.delta <= -0.05)
-  ) {
-    return {
-      status: 'WATCH',
-      reason:
-        newFailures > 0
+  const status = getSuiteStatus(snap, previous)
+  const reason =
+    status === 'BLOCKED'
+      ? 'Threshold breached'
+      : status === 'WATCH'
+        ? newFailures > 0
           ? 'New failures found'
           : snap.failedCases > 0
             ? 'Failures below block threshold'
-            : 'Score dropped',
-      newFailures,
-      fixedFailures,
-      stillFailing,
-      largestDrop,
-      worstFailures
-    }
-  }
+            : 'Score dropped'
+        : 'No blocking failures'
 
   return {
-    status: 'READY',
-    reason: 'No blocking failures',
+    status,
+    reason,
     newFailures,
     fixedFailures,
     stillFailing,
