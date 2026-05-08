@@ -1,27 +1,50 @@
 'use client'
 
+import { ChartLine, Gauge, type LucideIcon, ShieldCheck } from 'lucide-react'
+
 import { getSuiteDisplayByDashboardId } from '@/lib/evals/display'
+import { getSuiteStatus, type SuiteStatus } from '@/lib/evals/helpers/status'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
 import { pct } from '@/components/evals/dashboard/shared'
 
+import { Delta } from './delta'
+import { ScoopCard, type ScoopTint } from './scoop-card'
 import type { SuiteId } from './url-state'
 
-const SUITE_TABS: ReadonlyArray<{
+const TAB_META: ReadonlyArray<{
   id: SuiteId
-}> = [{ id: 'capability' }, { id: 'trafficMonitor' }, { id: 'regression' }]
+  Icon: LucideIcon
+  eyebrow: string
+}> = [
+  { id: 'capability', Icon: ChartLine, eyebrow: 'CAPABILITY' },
+  { id: 'trafficMonitor', Icon: Gauge, eyebrow: 'PRODUCTION' },
+  { id: 'regression', Icon: ShieldCheck, eyebrow: 'REGRESSION' }
+]
+
+const TINT_FOR: Record<SuiteStatus, ScoopTint> = {
+  READY: 'ready',
+  WATCH: 'watch',
+  BLOCKED: 'blocked'
+}
 
 export function SuiteSelector({
   active,
   attentionSuite = null,
   onChange,
-  snaps
+  snaps,
+  previous = {
+    capability: null,
+    trafficMonitor: null,
+    regression: null
+  }
 }: {
   active: SuiteId
   attentionSuite?: SuiteId | null
   onChange: (id: SuiteId) => void
   snaps: Record<SuiteId, EvalSummarySnapshot | null>
+  previous?: Record<SuiteId, EvalSummarySnapshot | null>
 }) {
   return (
     <div
@@ -29,50 +52,59 @@ export function SuiteSelector({
       aria-label="Evaluation suite"
       className="grid grid-cols-1 gap-3 sm:grid-cols-3"
     >
-      {SUITE_TABS.map(tab => {
-        const on = tab.id === active
-        const needsAttention = tab.id === attentionSuite
-        const s = snaps[tab.id]
-        const copy = getSuiteDisplayByDashboardId(tab.id)
+      {TAB_META.map(({ id, Icon, eyebrow }) => {
+        const isActive = id === active
+        const isAttention = id === attentionSuite
+        const snap = snaps[id]
+        const prev = previous[id]
+        const copy = getSuiteDisplayByDashboardId(id)
+        const status: SuiteStatus = snap ? getSuiteStatus(snap, prev) : 'READY'
+        const delta =
+          snap && prev ? snap.overallScore - prev.overallScore : null
+
         return (
           <button
-            key={tab.id}
+            key={id}
             role="tab"
-            aria-selected={on}
+            aria-selected={isActive}
             type="button"
-            onClick={() => onChange(tab.id)}
+            onClick={() => onChange(id)}
             className={cn(
-              'flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-colors',
-              on
-                ? 'border-accent-blue/40 bg-accent-blue/5'
-                : 'border-border/60 bg-background hover:bg-muted/40',
-              needsAttention && !on && 'border-warning-border bg-warning-bg/40'
+              'rounded-2xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}
           >
-            <div className="flex w-full items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold tracking-tight">
-                {copy.label}
-              </span>
-              <span
-                className={cn(
-                  'font-mono text-base font-semibold tabular-nums',
-                  s?.thresholdBreached ? 'text-destructive' : 'text-foreground'
-                )}
-              >
-                {s ? pct(s.overallScore) : '—'}
-              </span>
-            </div>
-            {needsAttention ? (
-              <span className="rounded-full border border-warning-border bg-background px-2 py-0.5 text-[10px] font-medium uppercase tracking-normal text-warning">
-                Needs attention
-              </span>
-            ) : null}
-            <p className="text-xs leading-snug text-muted-foreground">
-              {copy.tagline}
-            </p>
-            <p className="text-xs leading-snug text-muted-foreground/80">
-              {copy.action}
-            </p>
+            <ScoopCard
+              tint={TINT_FOR[status]}
+              size="lg"
+              active={isActive}
+              icon={<Icon aria-hidden className="size-10" strokeWidth={1.5} />}
+            >
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {eyebrow}
+                  </span>
+                  {isAttention ? (
+                    <span className="rounded-full bg-warning px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning-foreground">
+                      ATTENTION
+                    </span>
+                  ) : null}
+                </div>
+                <div
+                  className={cn(
+                    'font-mono text-3xl font-semibold tabular-nums',
+                    status === 'BLOCKED' && 'text-destructive',
+                    status === 'WATCH' && 'text-accent-amber'
+                  )}
+                >
+                  {snap ? pct(snap.overallScore) : '—'}
+                </div>
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-muted-foreground">{copy.label}</span>
+                  <Delta value={delta} />
+                </div>
+              </div>
+            </ScoopCard>
           </button>
         )
       })}

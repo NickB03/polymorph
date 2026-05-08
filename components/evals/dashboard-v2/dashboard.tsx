@@ -189,6 +189,7 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
         attentionSuite={insight?.suiteId ?? null}
         onChange={setActive}
         snaps={snapMap}
+        previous={previousMap}
       />
 
       {activeSnap ? (
