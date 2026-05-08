@@ -3,6 +3,7 @@
 import { getSuiteDisplay } from '@/lib/evals/display'
 import { DEFINITIONS, snapshotSuiteKey } from '@/lib/evals/glossary'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
+import { cn } from '@/lib/utils'
 
 import {
   Tooltip,
@@ -10,6 +11,7 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 
+import { getScoreStatus } from '@/components/evals/dashboard/score-bar'
 import { pct } from '@/components/evals/dashboard/shared'
 import { Delta } from '@/components/evals/dashboard-v2/delta'
 import { AggregateBreakdown, DefinedTerm } from '@/components/evals/glossary'
@@ -34,6 +36,24 @@ export function ScoreFeature({
   const suiteKey = snapshotSuiteKey(cap)
   const suiteCopy = getSuiteDisplay(cap.suite)
   const definition = DEFINITIONS[suiteKey]
+
+  const status = getScoreStatus({
+    value: cap.overallScore,
+    threshold: cap.threshold,
+    failed: cap.thresholdBreached
+  })
+  const ringStroke =
+    status === 'on-track'
+      ? 'var(--accent-blue)'
+      : status === 'near-threshold'
+        ? 'var(--accent-amber)'
+        : 'var(--destructive)'
+  const valueColor =
+    status === 'on-track'
+      ? 'text-foreground'
+      : status === 'near-threshold'
+        ? 'text-accent-amber'
+        : 'text-destructive'
 
   return (
     <section className="flex h-full flex-col gap-6">
@@ -78,7 +98,7 @@ export function ScoreFeature({
                 cx="100"
                 cy="100"
                 r={r}
-                style={{ stroke: 'var(--accent-blue)' }}
+                style={{ stroke: ringStroke }}
                 strokeWidth="10"
                 strokeDasharray={C}
                 strokeDashoffset={offset}
@@ -88,7 +108,12 @@ export function ScoreFeature({
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-mono text-5xl font-semibold tabular-nums">
+              <span
+                className={cn(
+                  'font-mono text-5xl font-semibold tabular-nums',
+                  valueColor
+                )}
+              >
                 {pct(score)}
               </span>
               <span className="mt-1 text-xs text-muted-foreground">
