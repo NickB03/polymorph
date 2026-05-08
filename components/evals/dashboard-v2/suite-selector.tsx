@@ -7,8 +7,6 @@ import { getSuiteStatus, type SuiteStatus } from '@/lib/evals/helpers/status'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
-import { pct } from '@/components/evals/dashboard/shared'
-
 import { Delta } from './delta'
 import { ScoopCard, type ScoopTint } from './scoop-card'
 import type { SuiteId } from './url-state'
@@ -67,11 +65,10 @@ export function SuiteSelector({
             key={id}
             role="tab"
             aria-selected={isActive}
+            aria-label={copy.label}
             type="button"
             onClick={() => onChange(id)}
-            className={cn(
-              'rounded-2xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-            )}
+            className="rounded-2xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <ScoopCard
               tint={TINT_FOR[status]}
@@ -79,29 +76,37 @@ export function SuiteSelector({
               active={isActive}
               icon={<Icon aria-hidden className="size-10" strokeWidth={1.5} />}
             >
-              <div className="space-y-1.5">
+              <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     {eyebrow}
                   </span>
                   {isAttention ? (
-                    <span className="rounded-full bg-warning px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning-foreground">
+                    <span className="rounded-full bg-warning px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-warning-foreground">
                       ATTENTION
                     </span>
                   ) : null}
                 </div>
                 <div
                   className={cn(
-                    'font-mono text-3xl font-semibold tabular-nums',
+                    'font-mono text-5xl font-semibold leading-none tabular-nums',
                     status === 'BLOCKED' && 'text-destructive',
                     status === 'WATCH' && 'text-accent-amber'
                   )}
                 >
-                  {snap ? pct(snap.overallScore) : '—'}
+                  {snap ? snap.overallScore.toFixed(2) : '—'}
                 </div>
-                <div className="flex items-center justify-between gap-2 text-xs">
-                  <span className="text-muted-foreground">{copy.label}</span>
-                  <Delta value={delta} />
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  {snap == null ? (
+                    <span>—</span>
+                  ) : delta != null ? (
+                    <>
+                      <Delta value={delta} />
+                      <span>pts · {snap.totalCases} cases</span>
+                    </>
+                  ) : (
+                    <span>{snap.totalCases} cases</span>
+                  )}
                 </div>
               </div>
             </ScoopCard>

@@ -44,9 +44,9 @@ describe('SuiteSelector', () => {
       />
     )
     expect(screen.getByRole('tab', { name: /test suite/i })).toBeInTheDocument()
-    expect(screen.getByText('88%')).toBeInTheDocument()
-    expect(screen.getByText('82%')).toBeInTheDocument()
-    expect(screen.getByText('91%')).toBeInTheDocument()
+    expect(screen.getByText('0.88')).toBeInTheDocument()
+    expect(screen.getByText('0.82')).toBeInTheDocument()
+    expect(screen.getByText('0.91')).toBeInTheDocument()
   })
 
   it('marks the active tab with aria-selected and the accent-blue ring', () => {

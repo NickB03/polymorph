@@ -274,9 +274,9 @@ describe('EvalsDashboardV2', () => {
       screen.getByRole('tab', { name: /production evals/i })
     ).toHaveAttribute('aria-selected', 'true')
     expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
-    expect(screen.getByRole('tab', { name: /test suite/i })).toHaveTextContent(
-      'Test Suite'
-    )
+    expect(
+      screen.getByRole('tab', { name: /test suite/i })
+    ).toHaveAccessibleName('Test Suite')
   })
 
   it('preserves an explicit populated suite URL even when another suite needs attention', () => {

@@ -16,16 +16,16 @@ const SIZE_CLASS: Record<
   ScoopSize,
   { card: string; scoop: string; iconSlot: string }
 > = {
-  // Suite tab: 140px tall, 240×180 ellipse anchored at (-70, -60)
+  // Suite tab: 140px tall, ~140px circle clipped to the icon area
   lg: {
-    card: 'min-h-[140px] p-5',
-    scoop: 'h-60 w-45 -left-[70px] -top-[60px]',
+    card: 'min-h-[140px] gap-5 p-6',
+    scoop: 'h-[180px] w-[140px] -left-[60px] -top-[20px]',
     iconSlot: 'size-12'
   },
-  // KPI tile: 90px tall, 120×80 ellipse anchored at (-25, -30)
+  // KPI tile: 92px tall, ~88px circle clipped to the icon area
   sm: {
-    card: 'min-h-[90px] p-3.5',
-    scoop: 'h-30 w-20 -left-[25px] -top-[30px]',
+    card: 'min-h-[92px] gap-3 p-4',
+    scoop: 'h-[120px] w-[88px] -left-[36px] -top-[14px]',
     iconSlot: 'size-7'
   }
 }

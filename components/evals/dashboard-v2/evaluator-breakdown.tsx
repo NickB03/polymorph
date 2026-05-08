@@ -21,7 +21,7 @@ import type {
 import { cn } from '@/lib/utils'
 
 import { ScoreBar } from '@/components/evals/dashboard/score-bar'
-import { deltaPts, pct } from '@/components/evals/dashboard/shared'
+import { deltaPts } from '@/components/evals/dashboard/shared'
 import { ScoreCell } from '@/components/evals/glossary'
 
 import { AutoBadge } from './auto-badge'
@@ -73,7 +73,7 @@ export function EvaluatorBreakdown({
         </p>
       </div>
 
-      <ul className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
+      <ul className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/60">
         {evaluators.map(key => {
           const v = snap.evaluatorScores[key]
           if (v == null) return null
@@ -83,6 +83,9 @@ export function EvaluatorBreakdown({
             caseResultsForEvaluator(snap, key)
           )
           const selected = key === selectedKey
+          const prevScore = previous?.evaluatorScores[key] ?? null
+          const evaluatorDelta =
+            prevScore == null || v == null ? null : v - prevScore
           return (
             <li key={key}>
               <ScoreCell
@@ -98,18 +101,20 @@ export function EvaluatorBreakdown({
                 }
                 selected={selected}
               >
-                <span className="-mx-2 grid grid-cols-[minmax(0,1.5fr)_minmax(0,2fr)_44px] items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/40">
-                  <span className="flex min-w-0 items-center gap-2">
+                <span className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,3fr)_56px_64px] items-center gap-4 px-4 py-4 text-sm transition-colors hover:bg-muted/30">
+                  <span className="flex min-w-0 flex-col gap-0.5">
                     <span
                       className={cn(
-                        'truncate',
+                        'truncate font-medium',
                         isFailed ? 'text-destructive' : 'text-foreground',
-                        selected && 'font-medium'
+                        selected && 'font-semibold'
                       )}
                     >
                       {localLabel(key)}
                     </span>
-                    {isAuto ? <AutoBadge /> : null}
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      {isAuto ? <AutoBadge /> : <span>LLM-judge</span>}
+                    </span>
                   </span>
                   <ScoreBar
                     failed={isFailed}
@@ -118,11 +123,14 @@ export function EvaluatorBreakdown({
                   />
                   <span
                     className={cn(
-                      'text-right font-mono text-xs tabular-nums',
+                      'text-right font-mono text-sm font-medium tabular-nums',
                       isFailed ? 'text-destructive' : 'text-foreground'
                     )}
                   >
-                    {pct(v)}
+                    {v.toFixed(2)}
+                  </span>
+                  <span className="flex justify-end">
+                    <Delta value={evaluatorDelta} />
                   </span>
                 </span>
               </ScoreCell>
@@ -316,7 +324,7 @@ function DiagnosticsOverview({
                   {FAILURE_MODE_LABELS[result.failureMode]}
                 </span>
                 <span className="text-right font-mono tabular-nums">
-                  {result.score == null ? 'err' : pct(result.score)}
+                  {result.score == null ? 'err' : result.score.toFixed(2)}
                 </span>
                 {result.phoenixUrl ? (
                   <a
@@ -465,7 +473,7 @@ function EvaluatorDiagnosticPanel({
                       {FAILURE_MODE_LABELS[result.failureMode]}
                     </span>
                     <span className="font-mono text-muted-foreground">
-                      {result.score == null ? 'error' : pct(result.score)}
+                      {result.score == null ? 'error' : result.score.toFixed(2)}
                     </span>
                     {result.phoenixUrl ? (
                       <a

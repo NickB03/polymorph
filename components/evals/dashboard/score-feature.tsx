@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/tooltip'
 
 import { getScoreStatus } from '@/components/evals/dashboard/score-bar'
-import { pct } from '@/components/evals/dashboard/shared'
 import { KpiStrip } from '@/components/evals/dashboard-v2/kpi-strip'
 import { AggregateBreakdown, DefinedTerm } from '@/components/evals/glossary'
 
@@ -51,34 +50,42 @@ export function ScoreFeature({
         ? 'text-accent-amber'
         : 'text-destructive'
 
+  const thresholdGap =
+    cap.threshold == null ? null : (cap.overallScore - cap.threshold) * 100
+  const belowThresholdLabel =
+    thresholdGap != null && thresholdGap < 0
+      ? `Below threshold by ${Math.abs(Math.round(thresholdGap))} points`
+      : null
+
   return (
-    <section className="flex h-full flex-col gap-6">
-      <div className="space-y-1">
-        <div className="flex items-baseline justify-between gap-3">
+    <section className="flex h-full flex-col gap-5 rounded-2xl border border-border/60 bg-background p-6">
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Active suite
+          </span>
           <h2 className="text-base font-semibold tracking-tight">
             <DefinedTerm def={definition}>{suiteCopy.label}</DefinedTerm>
           </h2>
-          <span className="text-xs italic text-muted-foreground">
-            on demand
-          </span>
         </div>
-        {hideTagline ? null : (
-          <p className="text-xs leading-snug text-muted-foreground">
-            {suiteCopy.tagline}
-          </p>
-        )}
+        <span className="text-xs italic text-muted-foreground">on demand</span>
       </div>
+      {hideTagline ? null : (
+        <p className="-mt-3 text-xs leading-snug text-muted-foreground">
+          {suiteCopy.tagline}
+        </p>
+      )}
 
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             type="button"
-            className="relative mx-auto flex h-56 w-56 cursor-help appearance-none items-center justify-center border-0 bg-transparent p-0 font-[inherit] text-inherit transition-opacity hover:opacity-90"
+            className="relative mx-auto flex h-60 w-60 cursor-help appearance-none items-center justify-center border-0 bg-transparent p-0 font-[inherit] text-inherit transition-opacity hover:opacity-90"
           >
             <svg
               className="h-full w-full -rotate-90"
               viewBox="0 0 200 200"
-              aria-label={`${suiteCopy.label} score: ${pct(score)}. Focus or hover for per-judge breakdown.`}
+              aria-label={`${suiteCopy.label} score: ${score.toFixed(2)}. Focus or hover for per-judge breakdown.`}
               role="img"
             >
               <circle
@@ -86,8 +93,8 @@ export function ScoreFeature({
                 cy="100"
                 r={r}
                 stroke="currentColor"
-                strokeWidth="10"
-                className="text-border"
+                strokeWidth="22"
+                className="text-muted"
                 fill="none"
               />
               <circle
@@ -95,7 +102,7 @@ export function ScoreFeature({
                 cy="100"
                 r={r}
                 style={{ stroke: ringStroke }}
-                strokeWidth="10"
+                strokeWidth="22"
                 strokeDasharray={C}
                 strokeDashoffset={offset}
                 strokeLinecap="round"
@@ -110,11 +117,17 @@ export function ScoreFeature({
                   valueColor
                 )}
               >
-                {pct(score)}
+                {score.toFixed(2)}
               </span>
-              <span className="mt-1 text-xs text-muted-foreground">
-                aggregate
-              </span>
+              {cap.threshold != null ? (
+                <span className="mt-1 text-xs text-muted-foreground">
+                  vs threshold {cap.threshold.toFixed(2)}
+                </span>
+              ) : (
+                <span className="mt-1 text-xs text-muted-foreground">
+                  aggregate
+                </span>
+              )}
             </div>
           </button>
         </TooltipTrigger>
@@ -133,6 +146,12 @@ export function ScoreFeature({
           />
         </TooltipContent>
       </Tooltip>
+
+      {belowThresholdLabel ? (
+        <p className="-mt-3 text-center text-xs font-medium text-destructive">
+          {belowThresholdLabel}
+        </p>
+      ) : null}
 
       <KpiStrip snap={cap} previous={previous} />
 
