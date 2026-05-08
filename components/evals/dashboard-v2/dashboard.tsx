@@ -35,7 +35,7 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
     return (
       <TooltipProvider delayDuration={200}>
         <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-8 lg:px-12">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-8 sm:px-8 lg:px-12">
             <Header
               view="suites"
               onChange={() => {}}
@@ -61,7 +61,7 @@ function DashboardWithViews({ data }: { data: EvalsDashboardData }) {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-8 lg:px-12">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-8 sm:px-8 lg:px-12">
           <Header view={view} onChange={setView} data={data} />
 
           {view === 'suites' ? <SuitesView data={data} /> : null}
@@ -174,7 +174,7 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
 
   return (
     <div
-      className="space-y-10 motion-safe:animate-content-enter"
+      className="space-y-8 motion-safe:animate-content-enter"
       style={enter(60)}
     >
       {insight ? (
@@ -196,7 +196,7 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
       />
 
       {activeSnap ? (
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <ScoreFeature
               cap={activeSnap}

@@ -491,7 +491,7 @@ function EvaluatorDiagnosticPanel({
                       No judge reasoning was recorded for this case.
                     </p>
                   )}
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span>Label {result.label ?? 'Unknown'}</span>
                     <span>App model {result.appModelId ?? 'Unknown'}</span>
                     <span>Trace {result.otelTraceId ?? 'Unknown'}</span>
@@ -548,7 +548,7 @@ function Metadata({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 space-y-0.5">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="truncate font-mono text-[11px] text-foreground">
+      <dd className="truncate font-mono text-xs text-foreground">
         {value || 'Unknown'}
       </dd>
     </div>
