@@ -22,7 +22,7 @@ describe('DefinedTerm', () => {
 describe('JudgeLabel', () => {
   it('renders the human-readable judge label', () => {
     render(withTooltip(<JudgeLabel judgeKey="faithfulness" />))
-    expect(screen.getByText('Groundedness')).toBeInTheDocument()
+    expect(screen.getByText('Faithfulness')).toBeInTheDocument()
   })
 
   it('renders unknown keys as raw text without tooltip wrapper', () => {

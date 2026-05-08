@@ -15,14 +15,27 @@ const RANK: Record<SuiteStatus, number> = {
 
 const EVALUATOR_DROP_THRESHOLD = -0.05
 
+// Below-threshold tolerance: a suite scoring within 10 points of the threshold
+// is WATCH; deeper drops are BLOCKED. The wire's reference case (−7 pts on a
+// 0.85 threshold) sits inside this band.
+const BLOCKED_THRESHOLD_GAP = -0.1
+
 export function getSuiteStatus(
   snap: EvalSummarySnapshot,
   previous: EvalSummarySnapshot | null
 ): SuiteStatus {
-  if (snap.thresholdBreached) return 'BLOCKED'
+  const thresholdGap =
+    snap.threshold == null ? null : snap.overallScore - snap.threshold
+  if (thresholdGap != null && thresholdGap < BLOCKED_THRESHOLD_GAP) {
+    return 'BLOCKED'
+  }
+  if (snap.thresholdBreached && thresholdGap == null) return 'BLOCKED'
 
+  const belowThreshold =
+    (thresholdGap != null && thresholdGap < 0) || snap.thresholdBreached
   const largestDrop = getLargestEvaluatorDrop(snap, previous)
   if (
+    belowThreshold ||
     snap.failedCases > 0 ||
     snap.failedEvaluators.length > 0 ||
     (largestDrop !== null && largestDrop <= EVALUATOR_DROP_THRESHOLD)

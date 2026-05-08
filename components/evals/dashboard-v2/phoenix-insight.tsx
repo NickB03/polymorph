@@ -2,10 +2,7 @@ import { AlertTriangle, ArrowRight } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
-import { pct } from '@/components/evals/dashboard/shared'
-
 import type { PhoenixInsight } from './attention'
-import { localLabel } from './local-labels'
 
 type Severity = 'watch' | 'blocked'
 
@@ -38,10 +35,6 @@ export function PhoenixInsightStrip({
   severity?: Severity
   className?: string
 }) {
-  const failingJudges =
-    insight.alert.failedEvaluators.length > 0
-      ? insight.alert.failedEvaluators.map(localLabel).join(', ')
-      : 'No specific judges listed'
   const palette = PALETTE[severity]
 
   return (
@@ -75,23 +68,9 @@ export function PhoenixInsightStrip({
           </div>
           <p className="font-medium text-foreground">{insight.summary}</p>
           <p className="text-muted-foreground">{insight.interpretation}</p>
-          <p className="text-xs text-muted-foreground">
-            {pct(insight.alert.passRate)} pass rate ·{' '}
-            {pct(insight.alert.threshold)} threshold · {failingJudges}
-          </p>
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {insight.alert.phoenixUrl ? (
-            <a
-              href={insight.alert.phoenixUrl}
-              rel="noreferrer"
-              target="_blank"
-              className="inline-flex h-9 items-center rounded-md px-3 text-xs font-medium text-foreground underline-offset-4 hover:underline"
-            >
-              Open Phoenix
-            </a>
-          ) : null}
           <button
             type="button"
             onClick={onReview}

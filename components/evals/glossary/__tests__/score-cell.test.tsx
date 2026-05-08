@@ -20,11 +20,11 @@ describe('ScoreCell', () => {
         threshold={0.8}
         failed={false}
       >
-        <span>Groundedness row</span>
+        <span>Faithfulness row</span>
       </ScoreCell>
     )
 
-    const trigger = screen.getByText('Groundedness row').parentElement!
+    const trigger = screen.getByText('Faithfulness row').parentElement!
     expect(trigger).toHaveClass('block', 'w-full', 'cursor-help')
     expect(trigger).toHaveClass('focus-visible:ring-2')
     expect(trigger).toHaveAttribute('tabindex', '0')
@@ -34,13 +34,13 @@ describe('ScoreCell', () => {
     expect(trigger).toHaveAttribute('aria-valuenow', '90')
     expect(trigger).toHaveAttribute(
       'aria-valuetext',
-      'Groundedness score 90%, on track, 80% threshold, 10 cases'
+      'Faithfulness score 90%, on track, 80% threshold, 10 cases'
     )
 
     fireEvent.focus(trigger)
 
     await waitFor(() => {
-      expect(screen.getAllByText('Groundedness · 90%').length).toBeGreaterThan(
+      expect(screen.getAllByText('Faithfulness · 90%').length).toBeGreaterThan(
         0
       )
     })

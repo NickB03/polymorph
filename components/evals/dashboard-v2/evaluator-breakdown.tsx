@@ -45,6 +45,14 @@ export function EvaluatorBreakdown({
   )
   const defaultEvaluator =
     evaluators.find(key => failed.has(key)) ?? evaluators[0] ?? null
+  const worstEvaluator = evaluators.reduce<string | null>((acc, key) => {
+    const score = snap.evaluatorScores[key]
+    if (score == null) return acc
+    if (acc == null) return key
+    const accScore = snap.evaluatorScores[acc]
+    if (accScore == null || score < accScore) return key
+    return acc
+  }, null)
   const [selectedEvaluator, setSelectedEvaluator] = useState<{
     evaluatorName: EvaluatorName
     snapId: string
@@ -114,6 +122,7 @@ export function EvaluatorBreakdown({
                     </span>
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       {isAuto ? <AutoBadge /> : <span>LLM-judge</span>}
+                      {key === worstEvaluator ? <span>· worst</span> : null}
                     </span>
                   </span>
                   <ScoreBar

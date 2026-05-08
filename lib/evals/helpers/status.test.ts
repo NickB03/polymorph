@@ -24,9 +24,40 @@ const BASE: EvalSummarySnapshot = {
 }
 
 describe('getSuiteStatus', () => {
-  it('returns BLOCKED when thresholdBreached is true', () => {
+  it('returns BLOCKED when score is more than 10 points below threshold', () => {
     expect(
-      getSuiteStatus({ ...BASE, thresholdBreached: true }, null)
+      getSuiteStatus(
+        {
+          ...BASE,
+          overallScore: 0.7,
+          threshold: 0.85,
+          thresholdBreached: true
+        },
+        null
+      )
+    ).toBe<SuiteStatus>('BLOCKED')
+  })
+
+  it('returns WATCH when score is within tolerance below threshold', () => {
+    expect(
+      getSuiteStatus(
+        {
+          ...BASE,
+          overallScore: 0.78,
+          threshold: 0.85,
+          thresholdBreached: true
+        },
+        null
+      )
+    ).toBe<SuiteStatus>('WATCH')
+  })
+
+  it('returns BLOCKED when threshold breach has no threshold metadata', () => {
+    expect(
+      getSuiteStatus(
+        { ...BASE, threshold: null, thresholdBreached: true },
+        null
+      )
     ).toBe<SuiteStatus>('BLOCKED')
   })
 
@@ -53,7 +84,13 @@ describe('getSuiteStatus', () => {
 
 describe('getOverallStatus', () => {
   const SUITE = (status: SuiteStatus): EvalSummarySnapshot => {
-    if (status === 'BLOCKED') return { ...BASE, thresholdBreached: true }
+    if (status === 'BLOCKED')
+      return {
+        ...BASE,
+        overallScore: 0.7,
+        threshold: 0.85,
+        thresholdBreached: true
+      }
     if (status === 'WATCH') return { ...BASE, failedCases: 1 }
     return BASE
   }

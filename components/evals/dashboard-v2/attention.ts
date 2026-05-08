@@ -2,11 +2,14 @@ import {
   type DashboardAlert,
   getLatestThresholdAlert
 } from '@/lib/evals/helpers/alerts'
+import { getSuiteStatus, type SuiteStatus } from '@/lib/evals/helpers/status'
 import type {
   EvalsDashboardData,
+  EvalSummarySnapshot,
   PersistedDashboardSuite
 } from '@/lib/evals/types'
 
+import { localLabel } from './local-labels'
 import type { SuiteId } from './url-state'
 
 const DASHBOARD_SUITE_BY_PERSISTED: Record<PersistedDashboardSuite, SuiteId> = {
@@ -47,34 +50,68 @@ export function getPhoenixInsight(
   if (!alert) return null
 
   const suiteId = persistedSuiteToDashboardSuite(alert.suite)
-  const healthyTestSuite =
-    suiteId !== 'capability' &&
-    data.capability.latest !== null &&
-    !data.capability.latest.thresholdBreached
+  const previous = getPreviousSnapshot(data, suiteId)
+  const latest = getLatestSnapshot(data, suiteId)
+  const drop = getLargestEvaluatorDrop(latest, previous)
+
+  const summary = drop
+    ? `${localLabel(drop.evaluatorName)} on ${alert.suiteLabel} dropped ${Math.abs(Math.round(drop.delta * 100))} pts vs. previous run`
+    : `${alert.suiteLabel} is below threshold.`
+
+  const status = latest ? getSuiteStatus(latest, previous) : 'BLOCKED'
 
   return {
     alert,
     suiteId,
-    summary: healthyTestSuite
-      ? `${alert.suiteLabel} is below threshold while Test Suite is healthy.`
-      : `${alert.suiteLabel} is below threshold.`,
-    interpretation: getInsightInterpretation(suiteId, healthyTestSuite),
-    actionLabel: `Review ${alert.suiteLabel}`
+    summary,
+    interpretation: getInsightInterpretation(status),
+    actionLabel: 'Review'
   }
 }
 
-function getInsightInterpretation(suiteId: SuiteId, healthyTestSuite: boolean) {
-  if (suiteId === 'trafficMonitor' && healthyTestSuite) {
-    return 'This points to live-traffic drift rather than a broad baseline regression.'
-  }
+function getLatestSnapshot(
+  data: EvalsDashboardData,
+  suiteId: SuiteId
+): EvalSummarySnapshot | null {
+  if (suiteId === 'capability') return data.capability.latest
+  if (suiteId === 'trafficMonitor') return data.trafficMonitor.latest
+  return data.regression.latest
+}
 
-  if (suiteId === 'trafficMonitor') {
-    return 'Start with recent production traces and failed judge examples.'
-  }
+function getPreviousSnapshot(
+  data: EvalsDashboardData,
+  suiteId: SuiteId
+): EvalSummarySnapshot | null {
+  if (suiteId === 'capability') return data.capability.previous
+  if (suiteId === 'trafficMonitor') return data.trafficMonitor.previous
+  return data.regression.previous
+}
 
-  if (suiteId === 'regression') {
-    return 'Known guardrail cases need attention before release.'
+function getLargestEvaluatorDrop(
+  snap: EvalSummarySnapshot | null,
+  previous: EvalSummarySnapshot | null
+): { evaluatorName: string; delta: number } | null {
+  if (!snap || !previous) return null
+  let largest: { evaluatorName: string; delta: number } | null = null
+  for (const [evaluatorName, currentScore] of Object.entries(
+    snap.evaluatorScores
+  )) {
+    const previousScore = previous.evaluatorScores[evaluatorName]
+    if (currentScore == null || previousScore == null) continue
+    const delta = currentScore - previousScore
+    if (delta < 0 && (!largest || delta < largest.delta)) {
+      largest = { evaluatorName, delta }
+    }
   }
+  return largest
+}
 
-  return 'The controlled Test Suite needs attention before shipping changes.'
+function getInsightInterpretation(status: SuiteStatus): string {
+  if (status === 'BLOCKED') {
+    return 'Threshold breached — review the worst-failing cases below.'
+  }
+  if (status === 'WATCH') {
+    return 'Threshold not breached — keeping at WATCH. Review the worst-failing cases below.'
+  }
+  return 'Threshold not breached. Review the worst-failing cases below.'
 }

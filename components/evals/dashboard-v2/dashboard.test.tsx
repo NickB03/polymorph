@@ -144,7 +144,7 @@ describe('EvalsDashboardV2', () => {
 
     expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
     expect(
-      screen.getByRole('tab', { name: /production evals/i })
+      screen.getByRole('tab', { name: /traffic monitor/i })
     ).toHaveAttribute('aria-selected', 'true')
   })
 
@@ -191,7 +191,7 @@ describe('EvalsDashboardV2', () => {
     expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
     expect(screen.getByText('Evaluator breakdown')).toBeInTheDocument()
     expect(
-      screen.getByRole('tab', { name: /production evals/i })
+      screen.getByRole('tab', { name: /traffic monitor/i })
     ).toHaveAttribute('aria-selected', 'true')
   })
 
@@ -266,12 +266,10 @@ describe('EvalsDashboardV2', () => {
 
     expect(screen.getByText('Phoenix insight')).toBeInTheDocument()
     expect(
-      screen.getByText(
-        'Production Evals is below threshold while Test Suite is healthy.'
-      )
+      screen.getByText(/Traffic Monitor is below threshold/i)
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('tab', { name: /production evals/i })
+      screen.getByRole('tab', { name: /traffic monitor/i })
     ).toHaveAttribute('aria-selected', 'true')
     expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
     expect(
@@ -369,12 +367,10 @@ describe('EvalsDashboardV2', () => {
       />
     )
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /review production evals/i })
-    )
+    fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
 
     expect(
-      screen.getByRole('tab', { name: /production evals/i })
+      screen.getByRole('tab', { name: /traffic monitor/i })
     ).toHaveAttribute('aria-selected', 'true')
     expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
   })
@@ -423,7 +419,7 @@ describe('EvalsDashboardV2', () => {
         (_, el) =>
           el?.tagName === 'P' &&
           (el.textContent ?? '').includes('10') &&
-          /cases scored in the last 48h/i.test(el.textContent ?? '')
+          /cases scored · in last 48h/i.test(el.textContent ?? '')
       )
     ).toBeInTheDocument()
   })
@@ -433,8 +429,10 @@ describe('EvalsDashboardV2', () => {
     expect(screen.getByTestId('overall-status-pill')).toHaveTextContent(/READY/)
   })
 
-  it('renders a BLOCKED status pill when any suite breaches threshold', () => {
+  it('renders a BLOCKED status pill when a suite is far below threshold', () => {
     const breached = snapshot({
+      overallScore: 0.6,
+      threshold: 0.85,
       thresholdBreached: true,
       failedEvaluators: ['faithfulness']
     })

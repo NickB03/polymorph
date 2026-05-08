@@ -6,14 +6,14 @@ import { PhoenixInsightStrip } from './phoenix-insight'
 
 const INSIGHT: PhoenixInsight = {
   suiteId: 'trafficMonitor',
-  summary: 'Production Evals is below threshold while Test Suite is healthy.',
+  summary: 'Faithfulness on Traffic Monitor dropped 6 pts vs. previous run',
   interpretation:
-    'This points to live-traffic drift rather than a broad baseline regression.',
-  actionLabel: 'Review Production Evals',
+    'Threshold not breached — keeping at WATCH. Review the worst-failing cases below.',
+  actionLabel: 'Review',
   alert: {
     snapshotId: 'traffic-latest',
     suite: 'traffic-monitor',
-    suiteLabel: 'Production Evals',
+    suiteLabel: 'Traffic Monitor',
     experimentName: 'traffic-monitor-2026-05-05',
     datasetName: 'traffic-sample-48h',
     passRate: 0.78,
@@ -27,26 +27,20 @@ const INSIGHT: PhoenixInsight = {
 }
 
 describe('PhoenixInsightStrip', () => {
-  it('renders the explanation, score context, and Phoenix experiment link', () => {
+  it('renders the explanation', () => {
     render(<PhoenixInsightStrip insight={INSIGHT} onReview={() => {}} />)
 
     expect(screen.getByText('Phoenix insight')).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Production Evals is below threshold while Test Suite is healthy.'
+        'Faithfulness on Traffic Monitor dropped 6 pts vs. previous run'
       )
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'This points to live-traffic drift rather than a broad baseline regression.'
+        'Threshold not breached — keeping at WATCH. Review the worst-failing cases below.'
       )
     ).toBeInTheDocument()
-    expect(screen.getByText(/78% pass rate/i)).toBeInTheDocument()
-    expect(screen.getByText(/85% threshold/i)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /open phoenix/i })).toHaveAttribute(
-      'href',
-      'https://phoenix.example.com/datasets/traffic-sample-48h/compare?experimentId=traffic-monitor-2026-05-05'
-    )
     expect(screen.getByTestId('phoenix-alert-icon')).toBeInTheDocument()
   })
 
@@ -55,9 +49,7 @@ describe('PhoenixInsightStrip', () => {
 
     render(<PhoenixInsightStrip insight={INSIGHT} onReview={onReview} />)
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /review production evals/i })
-    )
+    fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
 
     expect(onReview).toHaveBeenCalledTimes(1)
   })

@@ -2,6 +2,7 @@
 
 import { getSuiteDisplay } from '@/lib/evals/display'
 import { DEFINITIONS, snapshotSuiteKey } from '@/lib/evals/glossary'
+import { getSuiteStatus } from '@/lib/evals/helpers/status'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
@@ -12,7 +13,6 @@ import {
 } from '@/components/ui/tooltip'
 
 import { getScoreStatus } from '@/components/evals/dashboard/score-bar'
-import { KpiStrip } from '@/components/evals/dashboard-v2/kpi-strip'
 import { AggregateBreakdown, DefinedTerm } from '@/components/evals/glossary'
 
 export function ScoreFeature({
@@ -56,6 +56,9 @@ export function ScoreFeature({
     thresholdGap != null && thresholdGap < 0
       ? `Below threshold by ${Math.abs(Math.round(thresholdGap))} points`
       : null
+  const suiteStatus = getSuiteStatus(cap, previous)
+  const belowThresholdColor =
+    suiteStatus === 'BLOCKED' ? 'text-destructive' : 'text-accent-amber'
 
   return (
     <section className="flex h-full flex-col gap-5 rounded-2xl border border-border/60 bg-background p-6">
@@ -68,7 +71,6 @@ export function ScoreFeature({
             <DefinedTerm def={definition}>{suiteCopy.label}</DefinedTerm>
           </h2>
         </div>
-        <span className="text-xs italic text-muted-foreground">on demand</span>
       </div>
       {hideTagline ? null : (
         <p className="-mt-3 text-xs leading-snug text-muted-foreground">
@@ -148,12 +150,15 @@ export function ScoreFeature({
       </Tooltip>
 
       {belowThresholdLabel ? (
-        <p className="-mt-3 text-center text-xs font-medium text-destructive">
+        <p
+          className={cn(
+            '-mt-3 text-center text-xs font-medium',
+            belowThresholdColor
+          )}
+        >
           {belowThresholdLabel}
         </p>
       ) : null}
-
-      <KpiStrip snap={cap} previous={previous} />
 
       <div className="space-y-1 text-xs text-muted-foreground">
         <p className="truncate">

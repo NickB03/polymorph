@@ -33,7 +33,7 @@ export function ComparisonTable({
             <DefinedTerm def={DEFINITIONS.benchmarks}>Test Suite</DefinedTerm>{' '}
             vs{' '}
             <DefinedTerm def={DEFINITIONS.trafficMonitor}>
-              Production Evals
+              Traffic Monitor
             </DefinedTerm>
             . <DefinedTerm def={DEFINITIONS.delta}>Δ</DefinedTerm> flags judges
             where production underperforms the test suite by &gt;7 points.
@@ -45,7 +45,7 @@ export function ComparisonTable({
         <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_64px] items-center gap-4 border-b border-border/60 px-5 py-3 text-xs font-medium text-muted-foreground">
           <span>Judge</span>
           <span>Test Suite</span>
-          <span>Production Evals</span>
+          <span>Traffic Monitor</span>
           <span className="text-right">Δ pts</span>
         </div>
 

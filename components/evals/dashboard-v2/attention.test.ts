@@ -76,7 +76,7 @@ describe('eval dashboard attention helpers', () => {
     expect(getPhoenixInsight(dashboardData)).toBeNull()
   })
 
-  it('uses Production Evals as the default when live traffic breaches threshold', () => {
+  it('uses Production Evals as the default and emits WATCH copy when breach is shallow', () => {
     const capability = snapshot({
       id: 'capability-latest',
       suite: 'capability',
@@ -90,6 +90,8 @@ describe('eval dashboard attention helpers', () => {
       datasetName: 'traffic-dataset',
       passRate: 0.78,
       threshold: 0.85,
+      // Shallow gap (0.78 vs 0.85) — within BLOCKED_THRESHOLD_GAP, so WATCH.
+      overallScore: 0.78,
       thresholdBreached: true,
       failedEvaluators: ['citation_accuracy'],
       phoenixUrl:
@@ -115,16 +117,14 @@ describe('eval dashboard attention helpers', () => {
 
     expect(getDefaultSuite(dashboardData)).toBe('trafficMonitor')
     expect(insight?.suiteId).toBe('trafficMonitor')
-    expect(insight?.summary).toBe(
-      'Production Evals is below threshold while Test Suite is healthy.'
-    )
+    expect(insight?.summary).toBe('Traffic Monitor is below threshold.')
     expect(insight?.interpretation).toBe(
-      'This points to live-traffic drift rather than a broad baseline regression.'
+      'Threshold not breached — keeping at WATCH. Review the worst-failing cases below.'
     )
-    expect(insight?.actionLabel).toBe('Review Production Evals')
+    expect(insight?.actionLabel).toBe('Review')
   })
 
-  it('uses Regression Tests as the default when regression guardrails breach threshold', () => {
+  it('emits BLOCKED copy when regression guardrails fall well below threshold', () => {
     const capability = snapshot({
       id: 'capability-latest',
       suite: 'capability',
@@ -136,6 +136,8 @@ describe('eval dashboard attention helpers', () => {
       datasetName: 'regression-dataset',
       passRate: 0.7,
       threshold: 0.9,
+      // Deep gap (0.7 vs 0.9) — exceeds BLOCKED_THRESHOLD_GAP, so BLOCKED.
+      overallScore: 0.7,
       thresholdBreached: true,
       failedEvaluators: ['response_quality']
     })
@@ -159,11 +161,9 @@ describe('eval dashboard attention helpers', () => {
 
     expect(getDefaultSuite(dashboardData)).toBe('regression')
     expect(insight?.suiteId).toBe('regression')
-    expect(insight?.summary).toBe(
-      'Regression Tests is below threshold while Test Suite is healthy.'
-    )
+    expect(insight?.summary).toBe('Regression Tests is below threshold.')
     expect(insight?.interpretation).toBe(
-      'Known guardrail cases need attention before release.'
+      'Threshold breached — review the worst-failing cases below.'
     )
   })
 })

@@ -61,7 +61,7 @@ describe('SuiteSelector', () => {
         }}
       />
     )
-    const active = screen.getByRole('tab', { name: /production evals/i })
+    const active = screen.getByRole('tab', { name: /traffic monitor/i })
     expect(active).toHaveAttribute('aria-selected', 'true')
     expect(active.querySelector('[data-testid="scoop-card-root"]')).toHaveClass(
       'ring-accent-blue'
@@ -101,7 +101,7 @@ describe('SuiteSelector', () => {
         }}
       />
     )
-    fireEvent.click(screen.getByRole('tab', { name: /production evals/i }))
+    fireEvent.click(screen.getByRole('tab', { name: /traffic monitor/i }))
     expect(onChange).toHaveBeenCalledWith('trafficMonitor')
   })
 })

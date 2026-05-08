@@ -101,7 +101,7 @@ describe('ActivityList', () => {
     expect(rows[0]).toHaveTextContent('Test Suite')
     expect(rows[0]).toHaveTextContent('90%')
     expect(rows[0]).toHaveTextContent('+6')
-    expect(rows[1]).toHaveTextContent('Production Evals')
+    expect(rows[1]).toHaveTextContent('Traffic Monitor')
     expect(rows[1]).toHaveTextContent('80%')
     expect(rows[2]).toHaveTextContent('Test Suite')
     expect(rows[2]).toHaveTextContent('84%')
@@ -122,7 +122,7 @@ describe('ActivityList', () => {
     expect(meters[0]).toHaveClass('block', 'w-full')
     expect(meters[0]).toHaveAttribute(
       'aria-valuetext',
-      'Groundedness score 90%, on track, 80% threshold, 10 cases'
+      'Faithfulness score 90%, on track, 80% threshold, 10 cases'
     )
 
     const scoreBars = screen.getAllByTestId('score-bar')

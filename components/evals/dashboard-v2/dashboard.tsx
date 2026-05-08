@@ -4,7 +4,11 @@ import { type CSSProperties, useEffect } from 'react'
 
 import { formatDistanceToNow } from 'date-fns'
 
-import { getOverallStatus, type SuiteStatus } from '@/lib/evals/helpers/status'
+import {
+  getOverallStatus,
+  getSuiteStatus,
+  type SuiteStatus
+} from '@/lib/evals/helpers/status'
 import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
@@ -16,6 +20,7 @@ import { ScoreFeature } from '@/components/evals/dashboard/score-feature'
 import { getDefaultSuite, getPhoenixInsight } from './attention'
 import { CollapsibleComparison } from './collapsible-comparison'
 import { EvaluatorBreakdown } from './evaluator-breakdown'
+import { KpiStrip } from './kpi-strip'
 import { PhoenixInsightStrip } from './phoenix-insight'
 import { SuiteSelector } from './suite-selector'
 import { isSuiteId, isView, type SuiteId, type View } from './url-state'
@@ -34,7 +39,8 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
   if (!cap && !traf && !reg) {
     return (
       <TooltipProvider delayDuration={200}>
-        <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
+        <div className="flex flex-1 min-h-0 min-w-0 flex-col overflow-y-auto">
+          <TopBar lastSyncText={getLastSyncText(data)} />
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-8 sm:px-8 lg:px-12">
             <Header
               view="suites"
@@ -43,7 +49,7 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
               hideSwitcher
             />
             <p className="rounded-2xl border border-dashed border-border/60 bg-muted/10 p-12 text-center text-sm text-muted-foreground">
-              No evaluation runs have landed yet. The next Production Evals cron
+              No evaluation runs have landed yet. The next Traffic Monitor cron
               will populate this page.
             </p>
           </div>
@@ -55,12 +61,35 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
   return <DashboardWithViews data={data} />
 }
 
+function getLastSyncText(data: EvalsDashboardData): string {
+  const lastSyncIso = data.trafficMonitor.lastUpdated
+  return lastSyncIso
+    ? formatDistanceToNow(new Date(lastSyncIso), { addSuffix: true })
+    : 'never'
+}
+
+function TopBar({ lastSyncText }: { lastSyncText: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border/60 bg-background px-4 py-3 sm:px-8 lg:px-12">
+      <div className="flex items-baseline gap-3 text-sm">
+        <span className="font-medium text-foreground">Evals</span>
+        <span className="text-muted-foreground">Last sync {lastSyncText}</span>
+      </div>
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-success-border bg-success-bg px-2.5 py-0.5 text-xs font-medium text-success">
+        <span aria-hidden className="size-1.5 rounded-full bg-success" />
+        production
+      </span>
+    </div>
+  )
+}
+
 function DashboardWithViews({ data }: { data: EvalsDashboardData }) {
   const [view, setView] = useUrlState('view', 'suites', isView)
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
+      <div className="flex flex-1 min-h-0 min-w-0 flex-col overflow-y-auto">
+        <TopBar lastSyncText={getLastSyncText(data)} />
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-8 sm:px-8 lg:px-12">
           <Header view={view} onChange={setView} data={data} />
 
@@ -90,10 +119,7 @@ function Header({
   data: EvalsDashboardData
   hideSwitcher?: boolean
 }) {
-  const lastSyncIso = data.trafficMonitor.lastUpdated
-  const lastSync = lastSyncIso
-    ? formatDistanceToNow(new Date(lastSyncIso), { addSuffix: true })
-    : 'never'
+  const lastSync = getLastSyncText(data)
   const cap = data.capability.latest
   const traf = data.trafficMonitor.latest
   const reg = data.regression.latest
@@ -116,11 +142,11 @@ function Header({
         )}
       </div>
       <p className="text-base leading-relaxed text-muted-foreground">
-        {getViewDescription(view)}{' '}
+        {getViewDescription(view)} ·{' '}
         <span className="font-mono tabular-nums text-foreground">
           {totalCases}
         </span>{' '}
-        cases scored in the last 48h · last sync {lastSync}.
+        cases scored · in last 48h · last sync {lastSync}
       </p>
     </header>
   )
@@ -182,7 +208,13 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
           insight={insight}
           onReview={() => setActive(insight.suiteId)}
           severity={
-            snapMap[insight.suiteId]?.thresholdBreached ? 'blocked' : 'watch'
+            snapMap[insight.suiteId] &&
+            getSuiteStatus(
+              snapMap[insight.suiteId]!,
+              previousMap[insight.suiteId]
+            ) === 'BLOCKED'
+              ? 'blocked'
+              : 'watch'
           }
         />
       ) : null}
@@ -197,12 +229,13 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
 
       {activeSnap ? (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-          <div className="lg:col-span-4">
+          <div className="flex flex-col gap-3 lg:col-span-4">
             <ScoreFeature
               cap={activeSnap}
               previous={previousMap[selectedSuite]}
               hideTagline
             />
+            <KpiStrip snap={activeSnap} previous={previousMap[selectedSuite]} />
           </div>
           <div className="lg:col-span-8">
             <EvaluatorBreakdown

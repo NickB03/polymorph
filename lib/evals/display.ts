@@ -30,7 +30,7 @@ export const SUITE_DISPLAY: Record<PersistedDashboardSuite, SuiteDisplayCopy> =
       id: 'trafficMonitor',
       persisted: 'traffic-monitor',
       glossaryKey: 'trafficMonitor',
-      label: 'Production Evals',
+      label: 'Traffic Monitor',
       tagline: 'Sampled user traffic · real-world behavior · drift detection',
       action: 'Catch issues in the wild and monitor live performance',
       definition:

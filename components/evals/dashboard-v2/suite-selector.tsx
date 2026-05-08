@@ -17,7 +17,7 @@ const TAB_META: ReadonlyArray<{
   eyebrow: string
 }> = [
   { id: 'capability', Icon: ChartLine, eyebrow: 'CAPABILITY' },
-  { id: 'trafficMonitor', Icon: Gauge, eyebrow: 'PRODUCTION' },
+  { id: 'trafficMonitor', Icon: Gauge, eyebrow: 'TRAFFIC MONITOR' },
   { id: 'regression', Icon: ShieldCheck, eyebrow: 'REGRESSION' }
 ]
 

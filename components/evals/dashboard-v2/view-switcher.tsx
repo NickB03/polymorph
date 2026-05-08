@@ -12,7 +12,7 @@ const VIEWS: ReadonlyArray<{
   {
     id: 'suites',
     label: 'Suites',
-    description: 'How each dataset is scoring right now.'
+    description: 'How each suite is scoring right now.'
   },
   {
     id: 'history',
