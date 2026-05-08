@@ -13,7 +13,7 @@ import {
 
 import { getScoreStatus } from '@/components/evals/dashboard/score-bar'
 import { pct } from '@/components/evals/dashboard/shared'
-import { Delta } from '@/components/evals/dashboard-v2/delta'
+import { KpiStrip } from '@/components/evals/dashboard-v2/kpi-strip'
 import { AggregateBreakdown, DefinedTerm } from '@/components/evals/glossary'
 
 export function ScoreFeature({
@@ -26,13 +26,9 @@ export function ScoreFeature({
   hideTagline?: boolean
 }) {
   const score = Math.max(0, Math.min(1, cap.overallScore))
-  const previousScore = previous
-    ? Math.max(0, Math.min(1, previous.overallScore))
-    : null
   const r = 80
   const C = 2 * Math.PI * r
   const offset = C * (1 - score)
-  const delta = previousScore === null ? null : score - previousScore
   const suiteKey = snapshotSuiteKey(cap)
   const suiteCopy = getSuiteDisplay(cap.suite)
   const definition = DEFINITIONS[suiteKey]
@@ -138,26 +134,7 @@ export function ScoreFeature({
         </TooltipContent>
       </Tooltip>
 
-      <dl className="grid grid-cols-3 gap-4 text-xs">
-        <div className="space-y-1">
-          <dt className="text-xs text-muted-foreground">Pass rate</dt>
-          <dd className="font-mono text-sm font-medium tabular-nums">
-            {pct(cap.passRate)}
-          </dd>
-        </div>
-        <div className="space-y-1">
-          <dt className="text-xs text-muted-foreground">Change · 48h</dt>
-          <dd className="text-sm font-medium">
-            <Delta value={delta} />
-          </dd>
-        </div>
-        <div className="space-y-1">
-          <dt className="text-xs text-muted-foreground">Cases</dt>
-          <dd className="font-mono text-sm font-medium tabular-nums">
-            {cap.totalCases}
-          </dd>
-        </div>
-      </dl>
+      <KpiStrip snap={cap} previous={previous} />
 
       <div className="space-y-1 text-xs text-muted-foreground">
         <p className="truncate">
