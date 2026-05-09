@@ -125,8 +125,8 @@ export function SuiteSelector({
                 ) : null}
                 <Icon
                   aria-hidden
-                  className={cn('size-16', STATUS_COLOR[status])}
-                  strokeWidth={2.25}
+                  className={cn('size-14', STATUS_COLOR[status])}
+                  strokeWidth={1.5}
                 />
               </div>
               <div className="flex flex-col items-center justify-center gap-2.5 px-4">
