@@ -63,9 +63,7 @@ describe('SuiteSelector', () => {
     )
     const active = screen.getByRole('tab', { name: /traffic monitor/i })
     expect(active).toHaveAttribute('aria-selected', 'true')
-    expect(active.querySelector('[data-testid="scoop-card-root"]')).toHaveClass(
-      'ring-accent-blue'
-    )
+    expect(active).toHaveClass('border-accent-blue')
   })
 
   it('renders an ATTENTION chip on the suite flagged for attention', () => {

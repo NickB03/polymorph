@@ -1,30 +1,43 @@
 'use client'
 
-import { ChartLine, Gauge, type LucideIcon, ShieldCheck } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  ChartLine,
+  Gauge,
+  type LucideIcon,
+  Minus,
+  ShieldCheck
+} from 'lucide-react'
 
 import { getSuiteDisplayByDashboardId } from '@/lib/evals/display'
 import { getSuiteStatus, type SuiteStatus } from '@/lib/evals/helpers/status'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
-import { Delta } from './delta'
-import { ScoopCard, type ScoopTint } from './scoop-card'
+import { deltaPts } from '@/components/evals/dashboard/shared'
+
 import type { SuiteId } from './url-state'
 
 const TAB_META: ReadonlyArray<{
   id: SuiteId
   Icon: LucideIcon
-  eyebrow: string
 }> = [
-  { id: 'capability', Icon: ChartLine, eyebrow: 'CAPABILITY' },
-  { id: 'trafficMonitor', Icon: Gauge, eyebrow: 'TRAFFIC MONITOR' },
-  { id: 'regression', Icon: ShieldCheck, eyebrow: 'REGRESSION' }
+  { id: 'capability', Icon: ChartLine },
+  { id: 'trafficMonitor', Icon: Gauge },
+  { id: 'regression', Icon: ShieldCheck }
 ]
 
-const TINT_FOR: Record<SuiteStatus, ScoopTint> = {
-  READY: 'ready',
-  WATCH: 'watch',
-  BLOCKED: 'blocked'
+const SCOOP_BG: Record<SuiteStatus, string> = {
+  READY: 'bg-success/40',
+  WATCH: 'bg-warning/30',
+  BLOCKED: 'bg-destructive/15'
+}
+
+const STATUS_COLOR: Record<SuiteStatus, string> = {
+  READY: 'text-foreground',
+  WATCH: 'text-warning',
+  BLOCKED: 'text-destructive'
 }
 
 export function SuiteSelector({
@@ -50,7 +63,7 @@ export function SuiteSelector({
       aria-label="Evaluation suite"
       className="grid grid-cols-1 gap-3 sm:grid-cols-3"
     >
-      {TAB_META.map(({ id, Icon, eyebrow }) => {
+      {TAB_META.map(({ id, Icon }) => {
         const isActive = id === active
         const isAttention = id === attentionSuite
         const snap = snaps[id]
@@ -60,56 +73,98 @@ export function SuiteSelector({
         const delta =
           snap && prev ? snap.overallScore - prev.overallScore : null
 
+        const direction =
+          delta == null ? null : delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
+        const DeltaIcon =
+          direction === 'up'
+            ? ArrowUp
+            : direction === 'down'
+              ? ArrowDown
+              : Minus
+        const deltaColor =
+          direction === 'up'
+            ? 'text-success'
+            : direction === 'down'
+              ? 'text-destructive'
+              : 'text-muted-foreground'
+
         return (
           <button
             key={id}
+            data-testid="suite-card"
             role="tab"
             aria-selected={isActive}
             aria-label={copy.label}
             type="button"
             onClick={() => onChange(id)}
-            className="rounded-2xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={cn(
+              'relative h-[160px] overflow-hidden rounded-[14px] border-2 bg-card text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              isActive ? 'border-accent-blue' : 'border-border'
+            )}
           >
-            <ScoopCard
-              tint={TINT_FOR[status]}
-              size="lg"
-              active={isActive}
-              icon={<Icon aria-hidden className="size-10" strokeWidth={1.5} />}
-            >
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {eyebrow}
+            <span
+              aria-hidden
+              className={cn(
+                'pointer-events-none absolute -left-[90px] top-1/2 h-[200px] w-[200px] -translate-y-1/2 rounded-full',
+                SCOOP_BG[status]
+              )}
+            />
+            <div className="relative z-[1] grid h-full grid-cols-[110px_1fr] items-center">
+              <div className="flex flex-col items-center justify-center gap-3">
+                {isAttention ? (
+                  <span
+                    className={cn(
+                      'text-[13px] font-bold uppercase leading-none tracking-[0.08em]',
+                      STATUS_COLOR[status]
+                    )}
+                  >
+                    ATTENTION
                   </span>
-                  {isAttention ? (
-                    <span className="rounded-full bg-warning px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-warning-foreground">
-                      ATTENTION
-                    </span>
-                  ) : null}
-                </div>
-                <div
-                  className={cn(
-                    'font-mono text-5xl font-semibold leading-none tabular-nums',
-                    status === 'BLOCKED' && 'text-destructive',
-                    status === 'WATCH' && 'text-accent-amber'
-                  )}
-                >
+                ) : null}
+                <Icon
+                  aria-hidden
+                  className={cn('size-16', STATUS_COLOR[status])}
+                  strokeWidth={2.25}
+                />
+              </div>
+              <div className="flex flex-col items-center justify-center gap-2.5 px-4">
+                <span className="text-[22px] font-semibold leading-none tracking-tight text-muted-foreground">
+                  {copy.label}
+                </span>
+                <span className="text-[64px] font-extrabold leading-none tracking-tight tabular-nums text-foreground">
                   {snap ? snap.overallScore.toFixed(2) : '—'}
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                </span>
+                <div className="flex items-center gap-1.5 text-[14px] leading-none">
                   {snap == null ? (
-                    <span>—</span>
-                  ) : delta != null ? (
+                    <span className="text-muted-foreground">—</span>
+                  ) : delta != null && direction != null ? (
                     <>
-                      <Delta value={delta} />
-                      <span>pts · {snap.totalCases} cases</span>
+                      <span
+                        data-direction={direction}
+                        className={cn(
+                          'inline-flex items-center gap-1 font-bold tabular-nums',
+                          deltaColor
+                        )}
+                      >
+                        <DeltaIcon
+                          aria-hidden
+                          className="size-3.5"
+                          strokeWidth={2.5}
+                        />
+                        <span>{deltaPts(delta)} pts</span>
+                      </span>
+                      <span className="text-muted-foreground">
+                        · {snap.totalCases} cases
+                      </span>
                     </>
                   ) : (
-                    <span>{snap.totalCases} cases</span>
+                    <span className="text-muted-foreground">
+                      {snap.totalCases} cases
+                    </span>
                   )}
                 </div>
               </div>
-            </ScoopCard>
+            </div>
           </button>
         )
       })}
