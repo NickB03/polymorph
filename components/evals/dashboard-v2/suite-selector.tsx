@@ -1,21 +1,11 @@
 'use client'
 
-import {
-  ArrowDown,
-  ArrowUp,
-  ChartLine,
-  Gauge,
-  type LucideIcon,
-  Minus,
-  ShieldCheck
-} from 'lucide-react'
+import { Gauge, ListChecks, type LucideIcon, ShieldCheck } from 'lucide-react'
 
 import { getSuiteDisplayByDashboardId } from '@/lib/evals/display'
 import { getSuiteStatus, type SuiteStatus } from '@/lib/evals/helpers/status'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
-
-import { deltaPts } from '@/components/evals/dashboard/shared'
 
 import type { SuiteId } from './url-state'
 
@@ -23,7 +13,7 @@ const TAB_META: ReadonlyArray<{
   id: SuiteId
   Icon: LucideIcon
 }> = [
-  { id: 'capability', Icon: ChartLine },
+  { id: 'capability', Icon: ListChecks },
   { id: 'trafficMonitor', Icon: Gauge },
   { id: 'regression', Icon: ShieldCheck }
 ]
@@ -35,9 +25,21 @@ const SCOOP_BG: Record<SuiteStatus, string> = {
 }
 
 const STATUS_COLOR: Record<SuiteStatus, string> = {
-  READY: 'text-foreground',
+  READY: 'text-success',
   WATCH: 'text-warning',
   BLOCKED: 'text-destructive'
+}
+
+const VOCAB: Record<SuiteStatus, string> = {
+  READY: 'Healthy',
+  WATCH: 'Caution',
+  BLOCKED: 'Failing'
+}
+
+const DOT_STYLE: Record<SuiteStatus, string> = {
+  READY: 'bg-success',
+  WATCH: 'bg-warning',
+  BLOCKED: 'bg-destructive'
 }
 
 export function SuiteSelector({
