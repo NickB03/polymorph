@@ -75,21 +75,6 @@ export function SuiteSelector({
         const delta =
           snap && prev ? snap.overallScore - prev.overallScore : null
 
-        const direction =
-          delta == null ? null : delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
-        const DeltaIcon =
-          direction === 'up'
-            ? ArrowUp
-            : direction === 'down'
-              ? ArrowDown
-              : Minus
-        const deltaColor =
-          direction === 'up'
-            ? 'text-success'
-            : direction === 'down'
-              ? 'text-destructive'
-              : 'text-muted-foreground'
-
         return (
           <button
             key={id}
@@ -129,40 +114,41 @@ export function SuiteSelector({
                   strokeWidth={1.5}
                 />
               </div>
-              <div className="flex flex-col items-center justify-center gap-2.5 px-4">
-                <span className="text-[22px] font-semibold leading-none tracking-tight text-muted-foreground">
+              <div className="flex flex-col items-center justify-center gap-2 px-4">
+                <span className="text-[18px] font-semibold leading-none tracking-tight text-muted-foreground">
                   {copy.label}
                 </span>
-                <span className="text-[64px] font-extrabold leading-none tracking-tight tabular-nums text-foreground">
-                  {snap ? snap.overallScore.toFixed(2) : '—'}
+                <span className="font-mono text-[44px] font-extrabold leading-none tracking-tight tabular-nums text-foreground">
+                  {snap ? `${Math.round(snap.overallScore * 100)}%` : '—'}
                 </span>
-                <div className="flex items-center gap-1.5 text-[14px] leading-none">
+                <div className="flex items-center gap-1.5 text-[12px] leading-none">
                   {snap == null ? (
                     <span className="text-muted-foreground">—</span>
-                  ) : delta != null && direction != null ? (
+                  ) : (
                     <>
                       <span
-                        data-direction={direction}
+                        aria-hidden
                         className={cn(
-                          'inline-flex items-center gap-1 font-bold tabular-nums',
-                          deltaColor
+                          'inline-block size-1.5 rounded-full',
+                          DOT_STYLE[status]
                         )}
-                      >
-                        <DeltaIcon
-                          aria-hidden
-                          className="size-3.5"
-                          strokeWidth={2.5}
-                        />
-                        <span>{deltaPts(delta)} pts</span>
+                      />
+                      <span className={cn('font-medium', STATUS_COLOR[status])}>
+                        {VOCAB[status]}
                       </span>
-                      <span className="text-muted-foreground">
-                        · {snap.totalCases} cases
+                      {delta != null ? (
+                        <>
+                          <span className="text-muted-foreground">·</span>
+                          <span className="text-muted-foreground tabular-nums">
+                            {`${delta >= 0 ? '+' : ''}${Math.round(delta * 100)} pts`}
+                          </span>
+                        </>
+                      ) : null}
+                      <span className="text-muted-foreground">·</span>
+                      <span className="text-muted-foreground tabular-nums">
+                        {snap.totalCases} cases
                       </span>
                     </>
-                  ) : (
-                    <span className="text-muted-foreground">
-                      {snap.totalCases} cases
-                    </span>
                   )}
                 </div>
               </div>
