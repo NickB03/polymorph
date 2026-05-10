@@ -40,7 +40,7 @@ export function ScoreFeature({
   const suiteStatus = getSuiteStatus(cap, previous)
   const tokens = STATUS_TOKENS[suiteStatus]
   const ringStroke = tokens.cssVar
-  const valueColor = suiteStatus === 'READY' ? 'text-foreground' : tokens.fg
+  const valueColor = tokens.fgAttention ?? 'text-foreground'
 
   const thresholdGap =
     cap.threshold == null ? null : (cap.overallScore - cap.threshold) * 100

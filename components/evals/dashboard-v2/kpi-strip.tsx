@@ -29,8 +29,7 @@ export function KpiStrip({
     previous == null ? null : snap.overallScore - previous.overallScore
 
   const suiteStatus = getSuiteStatus(snap, previous)
-  const passColor =
-    suiteStatus === 'READY' ? undefined : STATUS_TOKENS[suiteStatus].fg
+  const passColor = STATUS_TOKENS[suiteStatus].fgAttention
 
   return (
     <div className="grid grid-cols-3 gap-3">

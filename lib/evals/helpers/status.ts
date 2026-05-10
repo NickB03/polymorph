@@ -11,22 +11,21 @@ export type SuiteStatus = 'READY' | 'WATCH' | 'BLOCKED'
  * Canonical design tokens for each SuiteStatus. Use this map to avoid
  * duplicating status → color/label mappings across dashboard components.
  *
- * `fg`      — Tailwind text utility (e.g. 'text-success')
- * `bg`      — Tailwind bg utility for tinted surfaces (e.g. 'bg-success/10')
- * `border`  — Tailwind border utility (e.g. 'border-success/30')
- * `ring`    — Tailwind ring utility for focus rings
- * `dot`     — Tailwind bg utility for the small status dot
- * `scoopBg` — Tailwind bg for the ellipse scoop (slightly bolder alpha)
- * `pill`    — Combined bg + fg + border string for pill badges
- * `label`   — Human-readable status label
- * `cssVar`  — CSS variable reference for SVG stroke (cannot use Tailwind here)
+ * `fg`           — Status color, always. Use for status chips, dots, labels.
+ * `fgAttention`  — Status color only when attention-worthy. Falsy for READY,
+ *                  so callers can fall back to their own neutral (e.g. score
+ *                  numbers that should stay neutral when healthy).
+ * `dot`          — Tailwind bg utility for the small status dot
+ * `scoopBg`      — Tailwind bg for the ellipse scoop (slightly bolder alpha)
+ * `pill`         — Combined bg + fg + border string for pill badges
+ * `label`        — Human-readable status label
+ * `cssVar`       — CSS variable reference for SVG stroke (cannot use Tailwind here)
  */
 export const STATUS_TOKENS: Record<
   SuiteStatus,
   {
     fg: string
-    bg: string
-    border: string
+    fgAttention: string | undefined
     dot: string
     scoopBg: string
     pill: string
@@ -36,18 +35,17 @@ export const STATUS_TOKENS: Record<
 > = {
   READY: {
     fg: 'text-success',
-    bg: 'bg-success/10',
-    border: 'border-success/30',
+    fgAttention: undefined,
     dot: 'bg-success',
     scoopBg: 'bg-success/40',
     pill: 'bg-success/10 text-success border-success/30',
     label: 'Healthy',
+    // Brand exception: healthy donut ring stays blue, not green.
     cssVar: 'var(--accent-blue)'
   },
   WATCH: {
     fg: 'text-warning',
-    bg: 'bg-warning/10',
-    border: 'border-warning/30',
+    fgAttention: 'text-warning',
     dot: 'bg-warning',
     scoopBg: 'bg-warning/30',
     pill: 'bg-warning/10 text-warning border-warning/30',
@@ -56,8 +54,7 @@ export const STATUS_TOKENS: Record<
   },
   BLOCKED: {
     fg: 'text-destructive',
-    bg: 'bg-destructive/10',
-    border: 'border-destructive/30',
+    fgAttention: 'text-destructive',
     dot: 'bg-destructive',
     scoopBg: 'bg-destructive/15',
     pill: 'bg-destructive/10 text-destructive border-destructive/30',
