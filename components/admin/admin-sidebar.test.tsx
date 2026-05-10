@@ -38,7 +38,9 @@ describe('AdminSidebar', () => {
     mockUsePathname.mockReturnValue('/admin/evals')
     renderInProvider(<AdminSidebar />)
 
-    expect(screen.getByRole('link', { name: /evals/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /evaluations/i })
+    ).toBeInTheDocument()
     expect(screen.getByText(/feedback/i)).toBeInTheDocument()
     expect(screen.getByText(/traffic/i)).toBeInTheDocument()
     expect(screen.getByText(/users/i)).toBeInTheDocument()
@@ -58,7 +60,7 @@ describe('AdminSidebar', () => {
     mockUsePathname.mockReturnValue('/admin/evals')
     renderInProvider(<AdminSidebar />)
 
-    const evalsLink = screen.getByRole('link', { name: /evals/i })
+    const evalsLink = screen.getByRole('link', { name: /evaluations/i })
     expect(evalsLink).toHaveAttribute('data-active', 'true')
   })
 
