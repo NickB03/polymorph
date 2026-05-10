@@ -14,31 +14,31 @@ describe('ScoopCard', () => {
     expect(screen.getByText('body content')).toBeInTheDocument()
   })
 
-  it('applies the success-bg tint class for ready status', () => {
+  it('applies the success fill for ready status', () => {
     render(
       <ScoopCard tint="ready" icon={<span>i</span>}>
         body
       </ScoopCard>
     )
-    expect(screen.getByTestId('scoop')).toHaveClass('bg-success-bg')
+    expect(screen.getByTestId('scoop')).toHaveClass('bg-success/20')
   })
 
-  it('applies the warning-bg tint class for watch status', () => {
+  it('applies the warning fill for watch status', () => {
     render(
       <ScoopCard tint="watch" icon={<span>i</span>}>
         body
       </ScoopCard>
     )
-    expect(screen.getByTestId('scoop')).toHaveClass('bg-warning-bg')
+    expect(screen.getByTestId('scoop')).toHaveClass('bg-warning/25')
   })
 
-  it('applies destructive tint for blocked status', () => {
+  it('applies destructive fill for blocked status', () => {
     render(
       <ScoopCard tint="blocked" icon={<span>i</span>}>
         body
       </ScoopCard>
     )
-    expect(screen.getByTestId('scoop')).toHaveClass('bg-destructive/15')
+    expect(screen.getByTestId('scoop')).toHaveClass('bg-destructive/25')
   })
 
   it('applies muted tint for neutral / informational tiles', () => {
@@ -47,7 +47,7 @@ describe('ScoopCard', () => {
         body
       </ScoopCard>
     )
-    expect(screen.getByTestId('scoop')).toHaveClass('bg-muted')
+    expect(screen.getByTestId('scoop')).toHaveClass('bg-muted/60')
   })
 
   it('marks the active card with an accent-blue ring', () => {
