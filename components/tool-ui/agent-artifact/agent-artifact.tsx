@@ -114,15 +114,22 @@ function parseTable(content: string) {
   return parseMarkdownTable(content) ?? parseCsvTable(content)
 }
 
-function getDownloadFilename(
-  title: string,
-  artifactType: string,
-  language?: string
-) {
-  const slug = title
+function slugify(value: string) {
+  return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+}
+
+function getDownloadFilename(
+  title: string,
+  artifactType: string,
+  language?: string,
+  versionLabel?: string
+) {
+  const titleSlug = slugify(title) || 'artifact'
+  const versionSlug = versionLabel ? slugify(versionLabel) : ''
+  const slug = versionSlug ? `${titleSlug}-${versionSlug}` : titleSlug
   const extension =
     artifactType === 'table'
       ? 'csv'
@@ -132,7 +139,7 @@ function getDownloadFilename(
           ? 'ts'
           : 'txt'
 
-  return `${slug || 'artifact'}.${extension}`
+  return `${slug}.${extension}`
 }
 
 export function AgentArtifact({
@@ -174,9 +181,12 @@ export function AgentArtifact({
     () => `data:text/plain;charset=utf-8,${encodeURIComponent(activeContent)}`,
     [activeContent]
   )
+  const downloadVersionLabel =
+    versions && versions.length > 1 ? activeVersion?.label : undefined
   const downloadFilename = useMemo(
-    () => getDownloadFilename(title, artifactType, language),
-    [artifactType, language, title]
+    () =>
+      getDownloadFilename(title, artifactType, language, downloadVersionLabel),
+    [artifactType, downloadVersionLabel, language, title]
   )
   const Icon = artifactIcons[artifactType]
 

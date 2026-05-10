@@ -61,7 +61,7 @@ describe('AgentArtifact', () => {
     expect(screen.getByText('120 tokens')).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: 'Download artifact content' })
-    ).toHaveAttribute('download', 'component-spec.md')
+    ).toHaveAttribute('download', 'component-spec-version-2.md')
   })
 
   it('handles denied clipboard writes without surfacing an unhandled rejection', async () => {
