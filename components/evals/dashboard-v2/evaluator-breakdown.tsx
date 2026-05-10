@@ -69,19 +69,18 @@ export function EvaluatorBreakdown({
   )
 
   return (
-    <section className="flex h-full flex-col gap-5 rounded-2xl border border-border/60 bg-background p-6">
+    <section className="flex h-full flex-col gap-5 rounded-xl border border-border bg-card p-6">
       <div className="space-y-1">
         <h3 className="text-base font-semibold tracking-tight">
           Evaluator breakdown
         </h3>
         <p className="text-xs leading-snug text-muted-foreground">
-          One row per evaluator. Rows tagged <AutoBadge /> are deterministic
-          rules that gate eligibility — the rest are LLM judges. Hover any row
-          for the judge’s definition and threshold status.
+          Each row scores one quality check on this run. Longer bars are better;
+          red rows fell below the pass mark.
         </p>
       </div>
 
-      <ul className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/60">
+      <ul className="divide-y divide-border border-t border-border">
         {evaluators.map(key => {
           const v = snap.evaluatorScores[key]
           if (v == null) return null
@@ -109,7 +108,7 @@ export function EvaluatorBreakdown({
                 }
                 selected={selected}
               >
-                <span className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,3fr)_56px_64px] items-center gap-4 px-4 py-4 text-sm transition-colors hover:bg-muted/30">
+                <span className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,3fr)_56px_64px] items-center gap-4 px-4 py-3 text-sm transition-colors hover:bg-muted/30">
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span
                       className={cn(
@@ -158,7 +157,7 @@ export function EvaluatorBreakdown({
         />
       ) : null}
 
-      <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 border-t border-border/60 pt-4 text-xs text-muted-foreground">
+      <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 border-t border-border pt-4 text-xs text-muted-foreground">
         <span>
           Experiment <span className="font-mono">{snap.experimentName}</span>
         </span>
@@ -277,11 +276,11 @@ function DiagnosticsOverview({
     overview.status === 'BLOCKED'
       ? 'text-destructive'
       : overview.status === 'WATCH'
-        ? 'text-accent-amber'
+        ? 'text-warning'
         : 'text-success'
 
   return (
-    <div className="grid grid-cols-1 gap-3 border-t border-border/60 pt-4 xl:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 border-t border-border pt-4 xl:grid-cols-2">
       <PanelBlock title={statusCopy.title}>
         <div className="flex items-baseline justify-between gap-3">
           <span className={cn('font-mono text-lg font-semibold', statusClass)}>
@@ -428,7 +427,7 @@ function EvaluatorDiagnosticPanel({
   const modes = failureModeCounts(caseResultsForEvaluator(snap, evaluatorName))
 
   return (
-    <div className="rounded-lg border border-border/60 bg-muted/15 p-4">
+    <div className="rounded-lg border border-border bg-muted/40 p-4">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
         <h4 className="text-sm font-semibold tracking-tight">
           {localLabel(evaluatorName)} diagnostics
@@ -474,7 +473,7 @@ function EvaluatorDiagnosticPanel({
               {failedCases.map(result => (
                 <li
                   key={`${result.caseId}-${result.evaluatorName}`}
-                  className="rounded-md border border-border/50 bg-background/60 p-3"
+                  className="rounded-md border border-border bg-background/80 p-3"
                 >
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                     <span className="font-mono">{result.caseId}</span>
@@ -535,7 +534,7 @@ function PanelBlock({
   children: ReactNode
 }) {
   return (
-    <div className="rounded-lg border border-border/50 bg-muted/15 p-3">
+    <div className="rounded-lg border border-border bg-muted/40 p-3">
       <h4 className="mb-2 text-xs font-medium text-muted-foreground">
         {title}
       </h4>
