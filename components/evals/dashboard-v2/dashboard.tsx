@@ -7,6 +7,7 @@ import { formatDistanceToNow } from 'date-fns'
 import {
   getOverallStatus,
   getSuiteStatus,
+  STATUS_TOKENS,
   type SuiteStatus
 } from '@/lib/evals/helpers/status'
 import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
@@ -146,18 +147,12 @@ function Header({
   )
 }
 
-const STATUS_PILL_STYLE: Record<SuiteStatus, string> = {
-  READY: 'bg-success/10 text-success border-success/30',
-  WATCH: 'bg-warning/10 text-warning border-warning/30',
-  BLOCKED: 'bg-destructive/10 text-destructive border-destructive/30'
-}
-
 function StatusPill({ status }: { status: SuiteStatus }) {
   return (
     <span
       className={cn(
         'inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-xs font-semibold uppercase tracking-wide',
-        STATUS_PILL_STYLE[status]
+        STATUS_TOKENS[status].pill
       )}
       data-testid="overall-status-pill"
     >

@@ -4,7 +4,7 @@ import { type ReactNode } from 'react'
 
 import { getSuiteDisplay } from '@/lib/evals/display'
 import { DEFINITIONS, snapshotSuiteKey } from '@/lib/evals/glossary'
-import { getSuiteStatus } from '@/lib/evals/helpers/status'
+import { getSuiteStatus, STATUS_TOKENS } from '@/lib/evals/helpers/status'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
@@ -38,18 +38,9 @@ export function ScoreFeature({
   const definition = DEFINITIONS[suiteKey]
 
   const suiteStatus = getSuiteStatus(cap, previous)
-  const ringStroke =
-    suiteStatus === 'BLOCKED'
-      ? 'var(--destructive)'
-      : suiteStatus === 'WATCH'
-        ? 'var(--warning)'
-        : 'var(--accent-blue)'
-  const valueColor =
-    suiteStatus === 'BLOCKED'
-      ? 'text-destructive'
-      : suiteStatus === 'WATCH'
-        ? 'text-warning'
-        : 'text-foreground'
+  const tokens = STATUS_TOKENS[suiteStatus]
+  const ringStroke = tokens.cssVar
+  const valueColor = suiteStatus === 'READY' ? 'text-foreground' : tokens.fg
 
   const thresholdGap =
     cap.threshold == null ? null : (cap.overallScore - cap.threshold) * 100

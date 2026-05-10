@@ -7,6 +7,65 @@ import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
  */
 export type SuiteStatus = 'READY' | 'WATCH' | 'BLOCKED'
 
+/**
+ * Canonical design tokens for each SuiteStatus. Use this map to avoid
+ * duplicating status → color/label mappings across dashboard components.
+ *
+ * `fg`      — Tailwind text utility (e.g. 'text-success')
+ * `bg`      — Tailwind bg utility for tinted surfaces (e.g. 'bg-success/10')
+ * `border`  — Tailwind border utility (e.g. 'border-success/30')
+ * `ring`    — Tailwind ring utility for focus rings
+ * `dot`     — Tailwind bg utility for the small status dot
+ * `scoopBg` — Tailwind bg for the ellipse scoop (slightly bolder alpha)
+ * `pill`    — Combined bg + fg + border string for pill badges
+ * `label`   — Human-readable status label
+ * `cssVar`  — CSS variable reference for SVG stroke (cannot use Tailwind here)
+ */
+export const STATUS_TOKENS: Record<
+  SuiteStatus,
+  {
+    fg: string
+    bg: string
+    border: string
+    dot: string
+    scoopBg: string
+    pill: string
+    label: string
+    cssVar: string
+  }
+> = {
+  READY: {
+    fg: 'text-success',
+    bg: 'bg-success/10',
+    border: 'border-success/30',
+    dot: 'bg-success',
+    scoopBg: 'bg-success/40',
+    pill: 'bg-success/10 text-success border-success/30',
+    label: 'Healthy',
+    cssVar: 'var(--accent-blue)'
+  },
+  WATCH: {
+    fg: 'text-warning',
+    bg: 'bg-warning/10',
+    border: 'border-warning/30',
+    dot: 'bg-warning',
+    scoopBg: 'bg-warning/30',
+    pill: 'bg-warning/10 text-warning border-warning/30',
+    label: 'Caution',
+    cssVar: 'var(--warning)'
+  },
+  BLOCKED: {
+    fg: 'text-destructive',
+    bg: 'bg-destructive/10',
+    border: 'border-destructive/30',
+    dot: 'bg-destructive',
+    scoopBg: 'bg-destructive/15',
+    pill: 'bg-destructive/10 text-destructive border-destructive/30',
+    label: 'Failing',
+    cssVar: 'var(--destructive)'
+  }
+}
+
 const RANK: Record<SuiteStatus, number> = {
   READY: 0,
   WATCH: 1,

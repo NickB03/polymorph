@@ -3,7 +3,11 @@
 import { Gauge, ListChecks, type LucideIcon, ShieldCheck } from 'lucide-react'
 
 import { getSuiteDisplayByDashboardId } from '@/lib/evals/display'
-import { getSuiteStatus, type SuiteStatus } from '@/lib/evals/helpers/status'
+import {
+  getSuiteStatus,
+  STATUS_TOKENS,
+  type SuiteStatus
+} from '@/lib/evals/helpers/status'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
@@ -17,30 +21,6 @@ const TAB_META: ReadonlyArray<{
   { id: 'trafficMonitor', Icon: Gauge },
   { id: 'regression', Icon: ShieldCheck }
 ]
-
-const SCOOP_BG: Record<SuiteStatus, string> = {
-  READY: 'bg-success/40',
-  WATCH: 'bg-warning/30',
-  BLOCKED: 'bg-destructive/15'
-}
-
-const STATUS_COLOR: Record<SuiteStatus, string> = {
-  READY: 'text-success',
-  WATCH: 'text-warning',
-  BLOCKED: 'text-destructive'
-}
-
-const VOCAB: Record<SuiteStatus, string> = {
-  READY: 'Healthy',
-  WATCH: 'Caution',
-  BLOCKED: 'Failing'
-}
-
-const DOT_STYLE: Record<SuiteStatus, string> = {
-  READY: 'bg-success',
-  WATCH: 'bg-warning',
-  BLOCKED: 'bg-destructive'
-}
 
 export function SuiteSelector({
   active,
@@ -93,7 +73,7 @@ export function SuiteSelector({
               aria-hidden
               className={cn(
                 'pointer-events-none absolute -left-[90px] top-1/2 h-[200px] w-[200px] -translate-y-1/2 rounded-full',
-                SCOOP_BG[status]
+                STATUS_TOKENS[status].scoopBg
               )}
             />
             <div className="relative z-[1] grid h-full grid-cols-[110px_1fr] items-center">
@@ -102,7 +82,7 @@ export function SuiteSelector({
                   <span
                     className={cn(
                       'text-[13px] font-bold uppercase leading-none tracking-[0.08em]',
-                      STATUS_COLOR[status]
+                      STATUS_TOKENS[status].fg
                     )}
                   >
                     ATTENTION
@@ -110,7 +90,7 @@ export function SuiteSelector({
                 ) : null}
                 <Icon
                   aria-hidden
-                  className={cn('size-14', STATUS_COLOR[status])}
+                  className={cn('size-14', STATUS_TOKENS[status].fg)}
                   strokeWidth={1.5}
                 />
               </div>
@@ -130,11 +110,13 @@ export function SuiteSelector({
                         aria-hidden
                         className={cn(
                           'inline-block size-1.5 rounded-full',
-                          DOT_STYLE[status]
+                          STATUS_TOKENS[status].dot
                         )}
                       />
-                      <span className={cn('font-medium', STATUS_COLOR[status])}>
-                        {VOCAB[status]}
+                      <span
+                        className={cn('font-medium', STATUS_TOKENS[status].fg)}
+                      >
+                        {STATUS_TOKENS[status].label}
                       </span>
                       {delta != null ? (
                         <>
