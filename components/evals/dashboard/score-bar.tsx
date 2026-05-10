@@ -4,7 +4,7 @@ export type ScoreBarStatus = 'on-track' | 'near-threshold' | 'below-threshold'
 
 const STATUS_FILL_CLASS: Record<ScoreBarStatus, string> = {
   'on-track': 'bg-success',
-  'near-threshold': 'bg-accent-amber',
+  'near-threshold': 'bg-warning',
   'below-threshold': 'bg-destructive'
 }
 
@@ -71,7 +71,7 @@ export function ScoreBar({
       data-testid="score-bar"
     >
       <span
-        className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-muted/60"
+        className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-muted"
         data-testid="score-bar-track"
       >
         <span

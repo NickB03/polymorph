@@ -41,15 +41,15 @@ export function ComparisonTable({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border/60 bg-background">
-        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_64px] items-center gap-4 border-b border-border/60 px-5 py-3 text-xs font-medium text-muted-foreground">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_64px] items-center gap-4 border-b border-border bg-muted/30 px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           <span>Judge</span>
           <span>Test Suite</span>
           <span>Traffic Monitor</span>
           <span className="text-right">Δ pts</span>
         </div>
 
-        <ul className="divide-y divide-border/60">
+        <ul className="divide-y divide-border">
           {EVALUATOR_DISPLAY_ORDER.map(key => {
             const c = cap.evaluatorScores[key]
             const t = traf.evaluatorScores[key]
@@ -128,7 +128,7 @@ function SeverityDot({ severity }: { severity: Severity }) {
     severity === 'alarm'
       ? 'bg-destructive'
       : severity === 'watch'
-        ? 'bg-accent-amber'
+        ? 'bg-warning'
         : 'bg-transparent'
   return (
     <span aria-hidden className={cn('size-1.5 rounded-full', colorClass)} />

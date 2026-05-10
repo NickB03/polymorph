@@ -79,8 +79,8 @@ export function ActivityList({ data }: { data: EvalsDashboardData }) {
           newest first
         </span>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-border/60 bg-background">
-        <div className="hidden grid-cols-[140px_minmax(0,1fr)_96px_120px_120px_72px_24px] gap-4 border-b border-border/60 bg-muted/20 px-5 py-2 text-xs font-medium text-muted-foreground sm:grid">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="hidden grid-cols-[140px_minmax(0,1fr)_96px_120px_120px_72px_24px] gap-4 border-b border-border bg-muted/30 px-5 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid">
           <span>When</span>
           <span>Suite</span>
           <span className="text-right">Score</span>
@@ -89,7 +89,7 @@ export function ActivityList({ data }: { data: EvalsDashboardData }) {
           <span className="text-right">Δ pts</span>
           <span aria-hidden />
         </div>
-        <ul className="divide-y divide-border/60">
+        <ul className="divide-y divide-border">
           {rows.map(({ id, suite, snap, deltaPct }) => {
             const open = expanded === id
             return (
@@ -148,7 +148,7 @@ export function ActivityList({ data }: { data: EvalsDashboardData }) {
 function ExpandedRow({ snap }: { snap: EvalSummarySnapshot }) {
   const suiteKey = snapshotSuiteKey(snap)
   return (
-    <div className="border-t border-border/60 bg-muted/20 px-5 py-4">
+    <div className="border-t border-border bg-muted/40 px-5 py-4">
       <p className="mb-3 text-xs font-medium text-muted-foreground">
         Per-judge scores · failure-mode signals
       </p>

@@ -39,7 +39,7 @@ describe('ScoreBar', () => {
       'data-score-status',
       'near-threshold'
     )
-    expect(screen.getByTestId('score-bar-fill')).toHaveClass('bg-accent-amber')
+    expect(screen.getByTestId('score-bar-fill')).toHaveClass('bg-warning')
   })
 
   it('treats an explicit failure as below threshold', () => {
