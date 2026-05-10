@@ -11,6 +11,7 @@ import {
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
+import { Delta } from './delta'
 import type { SuiteId } from './url-state'
 
 const TAB_META: ReadonlyArray<{
@@ -121,9 +122,7 @@ export function SuiteSelector({
                       {delta != null ? (
                         <>
                           <span className="text-muted-foreground">·</span>
-                          <span className="text-muted-foreground tabular-nums">
-                            {`${delta >= 0 ? '+' : ''}${Math.round(delta * 100)} pts`}
-                          </span>
+                          <Delta value={delta} />
                         </>
                       ) : null}
                       <span className="text-muted-foreground">·</span>

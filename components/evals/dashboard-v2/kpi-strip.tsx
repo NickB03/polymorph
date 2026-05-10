@@ -1,16 +1,14 @@
 import { type ReactNode } from 'react'
 
-import {
-  CircleCheckBig,
-  Layers,
-  type LucideIcon,
-  TrendingDown
-} from 'lucide-react'
+import { Activity, CircleCheckBig, Layers, type LucideIcon } from 'lucide-react'
 
+import { getSuiteStatus, STATUS_TOKENS } from '@/lib/evals/helpers/status'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
 import { pct } from '@/components/evals/dashboard/shared'
+
+import { Delta } from './delta'
 
 type ItemTone = 'success' | 'warning' | 'info'
 
@@ -30,7 +28,9 @@ export function KpiStrip({
   const delta =
     previous == null ? null : snap.overallScore - previous.overallScore
 
-  const deltaInfo = formatDelta(delta)
+  const suiteStatus = getSuiteStatus(snap, previous)
+  const passColor =
+    suiteStatus === 'READY' ? undefined : STATUS_TOKENS[suiteStatus].fg
 
   return (
     <div className="grid grid-cols-3 gap-3">
@@ -39,14 +39,13 @@ export function KpiStrip({
         tone="success"
         label="PASS"
         value={pct(snap.passRate)}
-        valueClass={snap.thresholdBreached ? 'text-destructive' : undefined}
+        valueClass={passColor}
       />
       <Item
-        Icon={TrendingDown}
+        Icon={Activity}
         tone="warning"
         label="Δ 48H"
-        value={deltaInfo.text}
-        valueClass={deltaInfo.color}
+        value={<Delta value={delta} />}
       />
       <Item
         Icon={Layers}
@@ -56,16 +55,6 @@ export function KpiStrip({
       />
     </div>
   )
-}
-
-function formatDelta(value: number | null): { text: string; color: string } {
-  if (value == null) return { text: '—', color: 'text-muted-foreground' }
-  const r = Math.round(value * 100)
-  if (r === 0) return { text: '0 pts', color: 'text-muted-foreground' }
-  return {
-    text: `${r > 0 ? '+' : ''}${r} pts`,
-    color: r > 0 ? 'text-success' : 'text-destructive'
-  }
 }
 
 function Item({
