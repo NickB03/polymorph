@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
 
 import {
+  getAlertedSuite,
   getDefaultSuite,
-  getFirstAvailableSuite,
-  getPhoenixInsight
+  getFirstAvailableSuite
 } from './attention'
 
 const BASE_SNAPSHOT: EvalSummarySnapshot = {
@@ -73,10 +73,10 @@ describe('eval dashboard attention helpers', () => {
 
     expect(getFirstAvailableSuite(dashboardData)).toBe('capability')
     expect(getDefaultSuite(dashboardData)).toBe('capability')
-    expect(getPhoenixInsight(dashboardData)).toBeNull()
+    expect(getAlertedSuite(dashboardData)).toBeNull()
   })
 
-  it('uses Production Evals as the default and emits WATCH copy when breach is shallow', () => {
+  it('uses Production Evals as the default when traffic-monitor has a threshold breach', () => {
     const capability = snapshot({
       id: 'capability-latest',
       suite: 'capability',
@@ -90,7 +90,6 @@ describe('eval dashboard attention helpers', () => {
       datasetName: 'traffic-dataset',
       passRate: 0.78,
       threshold: 0.85,
-      // Shallow gap (0.78 vs 0.85) — within BLOCKED_THRESHOLD_GAP, so WATCH.
       overallScore: 0.78,
       thresholdBreached: true,
       failedEvaluators: ['citation_accuracy'],
@@ -113,18 +112,11 @@ describe('eval dashboard attention helpers', () => {
       recentRuns: [trafficMonitor, capability]
     })
 
-    const insight = getPhoenixInsight(dashboardData)
-
     expect(getDefaultSuite(dashboardData)).toBe('trafficMonitor')
-    expect(insight?.suiteId).toBe('trafficMonitor')
-    expect(insight?.summary).toBe('Traffic Monitor is below threshold.')
-    expect(insight?.interpretation).toBe(
-      'Threshold not breached — keeping at WATCH. Review the worst-failing cases below.'
-    )
-    expect(insight?.actionLabel).toBe('Review')
+    expect(getAlertedSuite(dashboardData)).toBe('trafficMonitor')
   })
 
-  it('emits BLOCKED copy when regression guardrails fall well below threshold', () => {
+  it('uses regression as the default when regression guardrails fall below threshold', () => {
     const capability = snapshot({
       id: 'capability-latest',
       suite: 'capability',
@@ -136,7 +128,6 @@ describe('eval dashboard attention helpers', () => {
       datasetName: 'regression-dataset',
       passRate: 0.7,
       threshold: 0.9,
-      // Deep gap (0.7 vs 0.9) — exceeds BLOCKED_THRESHOLD_GAP, so BLOCKED.
       overallScore: 0.7,
       thresholdBreached: true,
       failedEvaluators: ['response_quality']
@@ -157,13 +148,7 @@ describe('eval dashboard attention helpers', () => {
       recentRuns: [regression, capability]
     })
 
-    const insight = getPhoenixInsight(dashboardData)
-
     expect(getDefaultSuite(dashboardData)).toBe('regression')
-    expect(insight?.suiteId).toBe('regression')
-    expect(insight?.summary).toBe('Regression Tests is below threshold.')
-    expect(insight?.interpretation).toBe(
-      'Threshold breached — review the worst-failing cases below.'
-    )
+    expect(getAlertedSuite(dashboardData)).toBe('regression')
   })
 })
