@@ -90,6 +90,10 @@ function parseMarkdownTable(content: string): ParsedTable | null {
   return null
 }
 
+// Naive CSV parser: splits on bare commas and does not handle quoted fields
+// (e.g. values containing commas or newlines). The Markdown-table parser runs
+// first (parseMarkdownTable), so this path is only reached for raw CSV input.
+// If quoted-field CSV support is needed, replace with a proper CSV library.
 function parseCsvTable(content: string): ParsedTable | null {
   const rows = content
     .trim()
