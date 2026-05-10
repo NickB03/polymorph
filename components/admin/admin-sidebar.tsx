@@ -5,20 +5,22 @@ import { usePathname } from 'next/navigation'
 
 import {
   Activity,
+  ArrowLeft,
   ChartColumnIncreasing,
   Flag,
-  Gauge,
   MessageSquare,
   Settings,
-  Sparkles,
   Users
 } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
 
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -34,9 +36,7 @@ type AdminNavItem = {
 }
 
 const ADMIN_NAV_ITEMS: AdminNavItem[] = [
-  { label: 'Evals', href: '/admin/evals', icon: ChartColumnIncreasing },
-  { label: 'Users', href: '/admin/users', icon: Users, disabled: true },
-  { label: 'Usage', href: '/admin/usage', icon: Gauge, disabled: true },
+  { label: 'Evaluations', href: '/admin/evals', icon: ChartColumnIncreasing },
   {
     label: 'Feedback',
     href: '/admin/feedback',
@@ -44,48 +44,69 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     disabled: true
   },
   { label: 'Traffic', href: '/admin/traffic', icon: Activity, disabled: true },
+  { label: 'Users', href: '/admin/users', icon: Users, disabled: true },
   { label: 'Flags', href: '/admin/flags', icon: Flag, disabled: true },
   { label: 'Settings', href: '/admin/settings', icon: Settings, disabled: true }
 ]
 
 export function AdminSidebar() {
   const pathname = usePathname()
-  const visibleItems = ADMIN_NAV_ITEMS.filter(item => !item.disabled)
 
   return (
     <Sidebar side="left" variant="sidebar" collapsible="offcanvas">
-      <SidebarHeader className="flex flex-row items-center justify-between px-2 py-3">
-        <div className="flex items-center gap-2">
-          <Sparkles
-            aria-hidden
-            className="size-4 text-[color:var(--accent-blue)]"
-          />
-          <span className="text-sm font-semibold tracking-tight text-foreground select-none">
-            Polymorph Admin
+      <SidebarHeader className="flex flex-row justify-between items-center">
+        <Link href="/" className="flex items-center px-2 py-3">
+          <span className="text-xl font-semibold tracking-tight text-foreground select-none">
+            pm
           </span>
-        </div>
+        </Link>
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-3">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link href="/" className="flex items-center gap-2">
+                <ArrowLeft className="size-4" />
+                <span>Back to chat</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+
         <SidebarGroup>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
           <SidebarMenu>
-            {visibleItems.map(item => {
+            {ADMIN_NAV_ITEMS.map(item => {
               const active =
                 pathname === item.href ||
                 (pathname?.startsWith(`${item.href}/`) ?? false)
               const Icon = item.icon
               return (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={active}>
-                    <Link
-                      href={item.href}
-                      data-active={active ? 'true' : 'false'}
-                      className="flex items-center gap-2"
+                  {item.disabled ? (
+                    <SidebarMenuButton
+                      isActive={active}
+                      disabled
+                      aria-disabled
+                      tabIndex={-1}
+                      className="cursor-default opacity-50"
                     >
                       <Icon className="size-4" />
                       <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
+                    </SidebarMenuButton>
+                  ) : (
+                    <SidebarMenuButton asChild isActive={active}>
+                      <Link
+                        href={item.href}
+                        data-active={active ? 'true' : 'false'}
+                        className="flex items-center gap-2"
+                      >
+                        <Icon className="size-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               )
             })}

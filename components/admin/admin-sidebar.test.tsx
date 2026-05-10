@@ -34,30 +34,24 @@ function renderInProvider(ui: React.ReactElement) {
 }
 
 describe('AdminSidebar', () => {
-  it('renders only the enabled admin nav items', () => {
+  it('renders all admin nav items', () => {
     mockUsePathname.mockReturnValue('/admin/evals')
     renderInProvider(<AdminSidebar />)
 
     expect(screen.getByRole('link', { name: /evals/i })).toBeInTheDocument()
-    expect(
-      screen.queryByRole('link', { name: /users/i })
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('link', { name: /usage/i })
-    ).not.toBeInTheDocument()
-    expect(screen.queryByText(/feedback/i)).not.toBeInTheDocument()
-    expect(screen.queryByText(/^traffic$/i)).not.toBeInTheDocument()
-    expect(screen.queryByText(/flags/i)).not.toBeInTheDocument()
-    expect(screen.queryByText(/settings/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/feedback/i)).toBeInTheDocument()
+    expect(screen.getByText(/traffic/i)).toBeInTheDocument()
+    expect(screen.getByText(/users/i)).toBeInTheDocument()
+    expect(screen.getByText(/flags/i)).toBeInTheDocument()
+    expect(screen.getByText(/settings/i)).toBeInTheDocument()
   })
 
-  it('does not render a back-to-chat link', () => {
+  it('renders a back-to-chat link at the top', () => {
     mockUsePathname.mockReturnValue('/admin/evals')
     renderInProvider(<AdminSidebar />)
 
-    expect(
-      screen.queryByRole('link', { name: /back to chat/i })
-    ).not.toBeInTheDocument()
+    const backLink = screen.getByRole('link', { name: /back to chat/i })
+    expect(backLink).toHaveAttribute('href', '/')
   })
 
   it('marks the nav item matching the current pathname as active', () => {
@@ -68,10 +62,11 @@ describe('AdminSidebar', () => {
     expect(evalsLink).toHaveAttribute('data-active', 'true')
   })
 
-  it('shows the Polymorph Admin header', () => {
+  it('links the pm wordmark back to the home page', () => {
     mockUsePathname.mockReturnValue('/admin/evals')
     renderInProvider(<AdminSidebar />)
 
-    expect(screen.getByText(/polymorph admin/i)).toBeInTheDocument()
+    const home = screen.getByRole('link', { name: /^pm$/i })
+    expect(home).toHaveAttribute('href', '/')
   })
 })
