@@ -5,6 +5,7 @@ import { formatEvalContext } from '../eval-output'
 import { persistEvalSummary } from '../eval-summary'
 import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
+import { createNoToolPlaceholdersExperimentEvaluator } from '../evaluators/no-tool-placeholders'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
 import { createSafetyExperimentEvaluator } from '../evaluators/safety'
@@ -103,6 +104,7 @@ export async function runTrafficMonitorSuite(
   const evaluators = buildExperimentEvaluators({
     prechecks: createDeterministicPrecheckEvaluator,
     toolUsage: createToolUsageExperimentEvaluator,
+    noToolPlaceholders: createNoToolPlaceholdersExperimentEvaluator,
     faithfulness: createFaithfulnessExperimentEvaluator,
     relevance: createRelevanceExperimentEvaluator,
     responseQuality: createResponseQualityExperimentEvaluator,

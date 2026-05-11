@@ -25,6 +25,7 @@ import { runEvalCase } from '../eval-runner-client'
 import { EVALUATOR_TEMPLATE_VERSION, persistEvalSummary } from '../eval-summary'
 import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
+import { createNoToolPlaceholdersExperimentEvaluator } from '../evaluators/no-tool-placeholders'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
 import { createSafetyExperimentEvaluator } from '../evaluators/safety'
@@ -114,6 +115,7 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
   const evaluators = buildExperimentEvaluators({
     prechecks: createDeterministicPrecheckEvaluator,
     toolUsage: createToolUsageExperimentEvaluator,
+    noToolPlaceholders: createNoToolPlaceholdersExperimentEvaluator,
     faithfulness: createFaithfulnessExperimentEvaluator,
     relevance: createRelevanceExperimentEvaluator,
     responseQuality: createResponseQualityExperimentEvaluator,
@@ -328,6 +330,7 @@ function wrapEvaluatorWithRetry(evaluator: Evaluator): Evaluator {
 export interface EvaluatorFactories {
   prechecks: () => Evaluator
   toolUsage: () => Evaluator
+  noToolPlaceholders: () => Evaluator
   faithfulness: (model: LanguageModel) => Evaluator
   relevance: (model: LanguageModel) => Evaluator
   responseQuality: (model: LanguageModel) => Evaluator
@@ -342,6 +345,7 @@ export function buildExperimentEvaluators(
   const {
     prechecks,
     toolUsage,
+    noToolPlaceholders,
     faithfulness,
     relevance,
     responseQuality,
@@ -352,6 +356,7 @@ export function buildExperimentEvaluators(
   return [
     prechecks(),
     toolUsage(),
+    noToolPlaceholders(),
     wrapEvaluatorWithRetry(faithfulness(model)),
     wrapEvaluatorWithRetry(relevance(model)),
     wrapEvaluatorWithRetry(responseQuality(model)),
