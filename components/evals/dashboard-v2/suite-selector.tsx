@@ -25,7 +25,6 @@ const TAB_META: ReadonlyArray<{
 
 export function SuiteSelector({
   active,
-  attentionSuite = null,
   onChange,
   snaps,
   previous = {
@@ -35,7 +34,6 @@ export function SuiteSelector({
   }
 }: {
   active: SuiteId
-  attentionSuite?: SuiteId | null
   onChange: (id: SuiteId) => void
   snaps: Record<SuiteId, EvalSummarySnapshot | null>
   previous?: Record<SuiteId, EvalSummarySnapshot | null>
@@ -48,7 +46,6 @@ export function SuiteSelector({
     >
       {TAB_META.map(({ id, Icon }) => {
         const isActive = id === active
-        const isAttention = id === attentionSuite
         const snap = snaps[id]
         const prev = previous[id]
         const copy = getSuiteDisplayByDashboardId(id)
@@ -79,16 +76,6 @@ export function SuiteSelector({
             />
             <div className="relative z-[1] grid h-full grid-cols-[110px_1fr] items-center">
               <div className="flex flex-col items-center justify-center gap-3">
-                {isAttention ? (
-                  <span
-                    className={cn(
-                      'text-[13px] font-bold uppercase leading-none tracking-[0.08em]',
-                      STATUS_TOKENS[status].fg
-                    )}
-                  >
-                    ATTENTION
-                  </span>
-                ) : null}
                 <Icon
                   aria-hidden
                   className={cn('size-14', STATUS_TOKENS[status].fg)}

@@ -33,7 +33,7 @@ export function Delta({
   const direction: Direction =
     rounded > 0 ? 'up' : rounded < 0 ? 'down' : 'flat'
   const Icon = ICON[direction]
-  const text = deltaPts(value)
+  const text = direction === 'flat' ? null : deltaPts(value)
 
   return (
     <span
@@ -49,7 +49,7 @@ export function Delta({
         className="size-3"
         data-testid={`delta-icon-${direction}`}
       />
-      <span>{text}</span>
+      {text != null ? <span>{text}</span> : null}
     </span>
   )
 }

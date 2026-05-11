@@ -66,26 +66,6 @@ describe('SuiteSelector', () => {
     expect(active).toHaveClass('border-accent-blue')
   })
 
-  it('renders an ATTENTION chip on the suite flagged for attention', () => {
-    render(
-      <SuiteSelector
-        active="capability"
-        attentionSuite="trafficMonitor"
-        onChange={() => {}}
-        snaps={{
-          capability: SNAP(),
-          trafficMonitor: SNAP({
-            suite: 'traffic-monitor',
-            thresholdBreached: true,
-            failedEvaluators: ['citation_accuracy']
-          }),
-          regression: SNAP({ suite: 'regression' })
-        }}
-      />
-    )
-    expect(screen.getByText(/ATTENTION/i)).toBeInTheDocument()
-  })
-
   it('calls onChange with the suite id when a tab is clicked', () => {
     const onChange = vi.fn()
     render(
