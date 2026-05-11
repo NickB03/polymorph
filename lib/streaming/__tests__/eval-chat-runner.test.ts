@@ -232,7 +232,6 @@ describe('runEvalChat', () => {
         modelType: 'quality',
         telemetryEnabled: false,
         correlationId: expect.any(String),
-        parentTraceId: expect.any(String),
         experimentalContext: expect.objectContaining({
           caseId: 'traffic-1',
           suite: 'traffic-monitor',

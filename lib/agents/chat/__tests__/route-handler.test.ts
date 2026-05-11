@@ -82,8 +82,7 @@ describe('handleChatAgentRoute', () => {
     const agent = streamConfig.agentFactory({
       modelId: 'gateway:google/gemini-3-flash',
       correlationId: 'corr-1',
-      otelTraceId: 'otel-1',
-      parentTraceId: 'trace-1'
+      otelTraceId: 'otel-1'
     })
     expect(agent).toBe(registryMocks.mockAgent)
     expect(registryMocks.resolveChatAgentId).toHaveBeenCalledWith({
@@ -100,8 +99,7 @@ describe('handleChatAgentRoute', () => {
         userMode: 'research',
         modelType: 'quality',
         correlationId: 'corr-1',
-        otelTraceId: 'otel-1',
-        parentTraceId: 'trace-1'
+        otelTraceId: 'otel-1'
       })
     )
     expect(createEphemeralChatStreamResponse).not.toHaveBeenCalled()
@@ -184,7 +182,7 @@ describe('handleChatAgentRoute', () => {
     const streamConfig = vi.mocked(createChatStreamResponse).mock.calls[0][0]
     streamConfig.agentFactory({
       modelId: 'gateway:google/gemini-3-flash',
-      parentTraceId: 'trace-build'
+      correlationId: 'trace-build'
     })
 
     expect(registryMocks.resolveChatAgentId).toHaveBeenCalledWith({
@@ -200,7 +198,7 @@ describe('handleChatAgentRoute', () => {
         userMode: 'build',
         intent: 'build',
         modelType: 'quality',
-        parentTraceId: 'trace-build'
+        correlationId: 'trace-build'
       })
     )
   })

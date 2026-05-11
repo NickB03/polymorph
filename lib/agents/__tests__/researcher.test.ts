@@ -263,7 +263,7 @@ describe('createChatAgent', () => {
 
     createChatAgent({
       model: 'gateway:google/gemini-3-flash',
-      parentTraceId: 'trace-123',
+      correlationId: 'trace-123',
       searchMode: 'research'
     })
 

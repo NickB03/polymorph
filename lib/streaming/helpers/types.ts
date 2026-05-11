@@ -11,8 +11,6 @@ export interface StreamContext {
   abortSignal?: AbortSignal
   correlationId?: string
   otelTraceId?: string
-  /** Legacy compatibility for older helper call sites. */
-  parentTraceId?: string
   isNewChat?: boolean
   pendingInitialSave?: Promise<{ chat: Chat; message: Message }>
   pendingInitialUserMessage?: UIMessage

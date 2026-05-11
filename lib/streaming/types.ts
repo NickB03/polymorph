@@ -13,8 +13,6 @@ export type ChatStreamAgentFactoryArgs = {
   writer?: UIMessageStreamWriter
   correlationId?: string
   otelTraceId?: string
-  /** Legacy compatibility for older factory implementations. */
-  parentTraceId?: string
   canvasToolContext?: CanvasToolContext
   imageToolContext?: { userId: string; chatId: string }
 }

@@ -174,7 +174,6 @@ vi.mock('./tool-ui/registry', () => {
     'displayCallout',
     'displayTimeline',
     'generateImage',
-    'canvasArtifactCard',
     'createCanvasArtifact',
     'updateCanvasArtifact'
   ])

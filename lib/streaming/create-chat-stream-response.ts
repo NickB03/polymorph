@@ -226,7 +226,6 @@ export async function createChatStreamResponse(
               writer,
               correlationId,
               otelTraceId,
-              parentTraceId: correlationId,
               canvasToolContext,
               imageToolContext: { userId, chatId }
             })
