@@ -21,7 +21,7 @@ const PLACEHOLDER_PATTERNS: { name: string; pattern: RegExp }[] = [
   {
     name: 'fenced-json-comment-function',
     pattern:
-      /```(?:json|javascript|js|typescript|ts|tsx)?\s*\n\s*\/\*\s*\{[\s\S]*?["']tool["']\s*:\s*["'](display[A-Za-z]+)["'][\s\S]*?\}\s*\*\/\s*\n/
+      /```(?:json|javascript|js|typescript|ts|tsx)?\s*\n\s*\/\*\s*\{[\s\S]*?["']tool["']\s*:\s*["'](display[A-Za-z]+)["'][\s\S]*?\}\s*\*\/\s*\n\s*\1\s*\([\s\S]*?\n```/
   }
 ]
 
