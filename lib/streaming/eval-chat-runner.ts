@@ -233,7 +233,6 @@ export async function runEvalChat({
       modelConfig: model,
       correlationId,
       otelTraceId,
-      parentTraceId: correlationId,
       searchMode,
       userMode,
       intent,

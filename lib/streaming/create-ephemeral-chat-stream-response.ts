@@ -135,7 +135,6 @@ export async function createEphemeralChatStreamResponse(
           writer,
           correlationId,
           otelTraceId,
-          parentTraceId: correlationId,
           canvasToolContext,
           ...(chatId
             ? {

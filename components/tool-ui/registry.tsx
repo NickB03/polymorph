@@ -44,10 +44,6 @@ const additionalResultRendererEntries: ResultRendererEntry[] = [
     tryRender: tryRenderGenerateImageResult
   },
   {
-    name: 'canvasArtifactCard',
-    tryRender: tryRenderCreateCanvasArtifactResult
-  },
-  {
     name: 'createCanvasArtifact',
     tryRender: tryRenderCreateCanvasArtifactResult
   },
