@@ -14,28 +14,122 @@ const artifactIcons = {
   chart: Code2
 }
 
-function parseTable(content: string) {
+type ParsedTable = {
+  headers: string[]
+  body: string[][]
+}
+
+function splitMarkdownTableRow(row: string) {
+  return row
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map(cell => cell.trim())
+}
+
+function isMarkdownTableSeparator(row: string) {
+  const cells = splitMarkdownTableRow(row)
+
+  return (
+    cells.length > 1 &&
+    cells.every(cell => /^:?-{3,}:?$/.test(cell.replace(/\s/g, '')))
+  )
+}
+
+function findNextNonBlankLineIndex(lines: string[], startIndex: number) {
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    if (lines[index]) return index
+  }
+
+  return -1
+}
+
+function parseMarkdownTable(content: string): ParsedTable | null {
+  const lines = content.split('\n').map(line => line.trim())
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const headerLine = lines[index]
+    if (!headerLine?.includes('|')) continue
+
+    const headers = splitMarkdownTableRow(headerLine)
+    if (headers.length < 2) continue
+
+    const separatorIndex = findNextNonBlankLineIndex(lines, index)
+    if (
+      separatorIndex === -1 ||
+      !isMarkdownTableSeparator(lines[separatorIndex] ?? '')
+    ) {
+      continue
+    }
+
+    const body: string[][] = []
+    for (const line of lines.slice(separatorIndex + 1)) {
+      if (!line) {
+        if (body.length > 0) break
+        continue
+      }
+
+      if (!line.includes('|')) {
+        if (body.length > 0) break
+        continue
+      }
+
+      const cells = splitMarkdownTableRow(line)
+      if (cells.length < 2) {
+        if (body.length > 0) break
+        continue
+      }
+
+      body.push(cells)
+    }
+
+    return { headers, body }
+  }
+
+  return null
+}
+
+// Naive CSV parser: splits on bare commas and does not handle quoted fields
+// (e.g. values containing commas or newlines). The Markdown-table parser runs
+// first (parseMarkdownTable), so this path is only reached for raw CSV input.
+// If quoted-field CSV support is needed, replace with a proper CSV library.
+function parseCsvTable(content: string): ParsedTable | null {
   const rows = content
     .trim()
     .split('\n')
     .filter(Boolean)
     .map(row => row.split(',').map(cell => cell.trim()))
 
+  const headers = rows[0] ?? []
+  if (headers.length < 2) return null
+
   return {
-    headers: rows[0] ?? [],
+    headers,
     body: rows.slice(1)
   }
+}
+
+function parseTable(content: string) {
+  return parseMarkdownTable(content) ?? parseCsvTable(content)
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 function getDownloadFilename(
   title: string,
   artifactType: string,
-  language?: string
+  language?: string,
+  versionLabel?: string
 ) {
-  const slug = title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
+  const titleSlug = slugify(title) || 'artifact'
+  const versionSlug = versionLabel ? slugify(versionLabel) : ''
+  const slug = versionSlug ? `${titleSlug}-${versionSlug}` : titleSlug
   const extension =
     artifactType === 'table'
       ? 'csv'
@@ -45,7 +139,7 @@ function getDownloadFilename(
           ? 'ts'
           : 'txt'
 
-  return `${slug || 'artifact'}.${extension}`
+  return `${slug}.${extension}`
 }
 
 export function AgentArtifact({
@@ -60,22 +154,39 @@ export function AgentArtifact({
 }: SerializableAgentArtifact) {
   const [tab, setTab] = useState<'preview' | 'code' | 'raw'>('preview')
   const [copied, setCopied] = useState(false)
+  const [selectedVersionOverride, setSelectedVersionOverride] = useState<
+    string | undefined
+  >()
+  const defaultVersionId = currentVersion ?? versions?.[versions.length - 1]?.id
+  const selectedVersionId = versions?.some(
+    version => version.id === selectedVersionOverride
+  )
+    ? selectedVersionOverride
+    : defaultVersionId
 
   const activeContent = useMemo(() => {
-    if (!versions?.length || !currentVersion) return content
+    if (!versions?.length || !selectedVersionId) return content
     return (
-      versions.find(version => version.id === currentVersion)?.content ??
+      versions.find(version => version.id === selectedVersionId)?.content ??
       content
     )
-  }, [content, currentVersion, versions])
+  }, [content, selectedVersionId, versions])
+  const activeVersion = useMemo(
+    () => versions?.find(version => version.id === selectedVersionId),
+    [selectedVersionId, versions]
+  )
+  const versionLabel = activeVersion?.label ?? currentVersion
 
   const downloadHref = useMemo(
     () => `data:text/plain;charset=utf-8,${encodeURIComponent(activeContent)}`,
     [activeContent]
   )
+  const downloadVersionLabel =
+    versions && versions.length > 1 ? activeVersion?.label : undefined
   const downloadFilename = useMemo(
-    () => getDownloadFilename(title, artifactType, language),
-    [artifactType, language, title]
+    () =>
+      getDownloadFilename(title, artifactType, language, downloadVersionLabel),
+    [artifactType, downloadVersionLabel, language, title]
   )
   const Icon = artifactIcons[artifactType]
 
@@ -195,7 +306,37 @@ export function AgentArtifact({
       </div>
 
       <footer className="flex flex-wrap items-center gap-2 border-t px-3 py-2 text-xs text-muted-foreground">
-        {currentVersion ? <span>{currentVersion}</span> : null}
+        {versions?.length ? (
+          <div className="flex flex-wrap items-center gap-1">
+            {versions.map(version => {
+              const isActive = version.id === selectedVersionId
+
+              return (
+                <button
+                  key={version.id}
+                  type="button"
+                  aria-label={
+                    isActive
+                      ? `Current version ${version.label}`
+                      : `Show ${version.label}`
+                  }
+                  aria-pressed={isActive}
+                  className={cn(
+                    'rounded px-1.5 py-0.5 font-medium transition-colors',
+                    isActive
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
+                  onClick={() => setSelectedVersionOverride(version.id)}
+                >
+                  {version.label}
+                </button>
+              )
+            })}
+          </div>
+        ) : versionLabel ? (
+          <span>{versionLabel}</span>
+        ) : null}
         {metadata?.model ? <span>{metadata.model}</span> : null}
         {typeof metadata?.tokens === 'number' ? (
           <span>{metadata.tokens.toLocaleString()} tokens</span>

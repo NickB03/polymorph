@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
 
 import {
+  getAlertedSuite,
   getDefaultSuite,
-  getFirstAvailableSuite,
-  getPhoenixInsight
+  getFirstAvailableSuite
 } from './attention'
 
 const BASE_SNAPSHOT: EvalSummarySnapshot = {
@@ -73,10 +73,10 @@ describe('eval dashboard attention helpers', () => {
 
     expect(getFirstAvailableSuite(dashboardData)).toBe('capability')
     expect(getDefaultSuite(dashboardData)).toBe('capability')
-    expect(getPhoenixInsight(dashboardData)).toBeNull()
+    expect(getAlertedSuite(dashboardData)).toBeNull()
   })
 
-  it('uses Production Evals as the default when live traffic breaches threshold', () => {
+  it('uses Production Evals as the default when traffic-monitor has a threshold breach', () => {
     const capability = snapshot({
       id: 'capability-latest',
       suite: 'capability',
@@ -90,6 +90,7 @@ describe('eval dashboard attention helpers', () => {
       datasetName: 'traffic-dataset',
       passRate: 0.78,
       threshold: 0.85,
+      overallScore: 0.78,
       thresholdBreached: true,
       failedEvaluators: ['citation_accuracy'],
       phoenixUrl:
@@ -111,20 +112,11 @@ describe('eval dashboard attention helpers', () => {
       recentRuns: [trafficMonitor, capability]
     })
 
-    const insight = getPhoenixInsight(dashboardData)
-
     expect(getDefaultSuite(dashboardData)).toBe('trafficMonitor')
-    expect(insight?.suiteId).toBe('trafficMonitor')
-    expect(insight?.summary).toBe(
-      'Production Evals is below threshold while Test Suite is healthy.'
-    )
-    expect(insight?.interpretation).toBe(
-      'This points to live-traffic drift rather than a broad baseline regression.'
-    )
-    expect(insight?.actionLabel).toBe('Review Production Evals')
+    expect(getAlertedSuite(dashboardData)).toBe('trafficMonitor')
   })
 
-  it('uses Regression Tests as the default when regression guardrails breach threshold', () => {
+  it('uses regression as the default when regression guardrails fall below threshold', () => {
     const capability = snapshot({
       id: 'capability-latest',
       suite: 'capability',
@@ -136,6 +128,7 @@ describe('eval dashboard attention helpers', () => {
       datasetName: 'regression-dataset',
       passRate: 0.7,
       threshold: 0.9,
+      overallScore: 0.7,
       thresholdBreached: true,
       failedEvaluators: ['response_quality']
     })
@@ -155,15 +148,7 @@ describe('eval dashboard attention helpers', () => {
       recentRuns: [regression, capability]
     })
 
-    const insight = getPhoenixInsight(dashboardData)
-
     expect(getDefaultSuite(dashboardData)).toBe('regression')
-    expect(insight?.suiteId).toBe('regression')
-    expect(insight?.summary).toBe(
-      'Regression Tests is below threshold while Test Suite is healthy.'
-    )
-    expect(insight?.interpretation).toBe(
-      'Known guardrail cases need attention before release.'
-    )
+    expect(getAlertedSuite(dashboardData)).toBe('regression')
   })
 })

@@ -21,7 +21,7 @@ export function CollapsibleComparison({
 }) {
   return (
     <Collapsible defaultOpen className="group">
-      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-2xl border border-border/60 bg-background px-5 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background group-data-[state=open]:hidden">
+      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-5 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background group-data-[state=open]:hidden">
         <span className="text-sm font-medium">
           Where test and production diverge
         </span>

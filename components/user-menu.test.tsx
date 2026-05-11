@@ -102,13 +102,11 @@ describe('UserMenu', () => {
     render(<UserMenu user={user as never} isAdmin />)
 
     expect(screen.getByText('Admin')).toBeInTheDocument()
-    expect(screen.getByText('Evals')).toBeInTheDocument()
   })
 
   it('hides the admin section for non-admin users', () => {
     render(<UserMenu user={user as never} isAdmin={false} />)
 
     expect(screen.queryByText('Admin')).not.toBeInTheDocument()
-    expect(screen.queryByText('Evals')).not.toBeInTheDocument()
   })
 })

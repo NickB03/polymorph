@@ -93,7 +93,7 @@ describe('EvalsDashboardV2', () => {
   it('renders the header in any state', () => {
     render(<EvalsDashboardV2 data={EMPTY} />)
     expect(
-      screen.getByRole('heading', { level: 1, name: /evaluation summary/i })
+      screen.getByRole('heading', { level: 1, name: /^evaluation$/i })
     ).toBeInTheDocument()
     expect(screen.queryByText(/polymorph/i)).not.toBeInTheDocument()
   })
@@ -101,7 +101,7 @@ describe('EvalsDashboardV2', () => {
   it('renders the populated state without crashing', () => {
     render(<EvalsDashboardV2 data={POPULATED} />)
     expect(
-      screen.getByRole('heading', { level: 1, name: /evaluation summary/i })
+      screen.getByRole('heading', { level: 1, name: /^evaluation$/i })
     ).toBeInTheDocument()
   })
 
@@ -144,7 +144,7 @@ describe('EvalsDashboardV2', () => {
 
     expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
     expect(
-      screen.getByRole('tab', { name: /production evals/i })
+      screen.getByRole('tab', { name: /traffic monitor/i })
     ).toHaveAttribute('aria-selected', 'true')
   })
 
@@ -191,7 +191,7 @@ describe('EvalsDashboardV2', () => {
     expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
     expect(screen.getByText('Evaluator breakdown')).toBeInTheDocument()
     expect(
-      screen.getByRole('tab', { name: /production evals/i })
+      screen.getByRole('tab', { name: /traffic monitor/i })
     ).toHaveAttribute('aria-selected', 'true')
   })
 
@@ -264,19 +264,13 @@ describe('EvalsDashboardV2', () => {
       />
     )
 
-    expect(screen.getByText('Phoenix insight')).toBeInTheDocument()
     expect(
-      screen.getByText(
-        'Production Evals is below threshold while Test Suite is healthy.'
-      )
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('tab', { name: /production evals/i })
+      screen.getByRole('tab', { name: /traffic monitor/i })
     ).toHaveAttribute('aria-selected', 'true')
     expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
-    expect(screen.getByRole('tab', { name: /test suite/i })).toHaveTextContent(
-      'Test Suite'
-    )
+    expect(
+      screen.getByRole('tab', { name: /test suite/i })
+    ).toHaveAccessibleName('Test Suite')
   })
 
   it('preserves an explicit populated suite URL even when another suite needs attention', () => {
@@ -320,63 +314,11 @@ describe('EvalsDashboardV2', () => {
       />
     )
 
-    expect(screen.getByText('Phoenix insight')).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /test suite/i })).toHaveAttribute(
       'aria-selected',
       'true'
     )
     expect(screen.getAllByText('capability-dataset').length).toBeGreaterThan(0)
-  })
-
-  it('lets the Phoenix insight review button select the alerting suite', () => {
-    mockSearchParamGet.mockImplementation(key =>
-      key === 'suite' ? 'capability' : null
-    )
-    const capability = snapshot({
-      id: 'capability-latest',
-      suite: 'capability',
-      datasetName: 'capability-dataset',
-      thresholdBreached: false
-    })
-    const trafficMonitor = snapshot({
-      id: 'traffic-latest',
-      suite: 'traffic-monitor',
-      datasetName: 'traffic-dataset',
-      passRate: 0.78,
-      threshold: 0.85,
-      thresholdBreached: true,
-      failedEvaluators: ['citation_accuracy']
-    })
-
-    render(
-      <EvalsDashboardV2
-        data={{
-          ...EMPTY,
-          capability: {
-            latest: capability,
-            previous: null,
-            trend: [],
-            lastUpdated: capability.createdAt
-          },
-          trafficMonitor: {
-            latest: trafficMonitor,
-            previous: null,
-            trend: [],
-            lastUpdated: trafficMonitor.createdAt
-          },
-          recentRuns: [trafficMonitor, capability]
-        }}
-      />
-    )
-
-    fireEvent.click(
-      screen.getByRole('button', { name: /review production evals/i })
-    )
-
-    expect(
-      screen.getByRole('tab', { name: /production evals/i })
-    ).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getAllByText('traffic-dataset').length).toBeGreaterThan(0)
   })
 
   it('counts capability, traffic monitor, and regression cases in the subtitle', () => {
@@ -419,7 +361,42 @@ describe('EvalsDashboardV2', () => {
     )
 
     expect(
-      screen.getByText(/10 cases scored in the last 48h/i)
+      screen.getByText(
+        (_, el) =>
+          el?.tagName === 'P' &&
+          (el.textContent ?? '').includes('10') &&
+          /cases scored · in last 48h/i.test(el.textContent ?? '')
+      )
     ).toBeInTheDocument()
+  })
+
+  it('renders a READY status pill when no suite is in trouble', () => {
+    render(<EvalsDashboardV2 data={POPULATED} />)
+    expect(screen.getByTestId('overall-status-pill')).toHaveTextContent(/READY/)
+  })
+
+  it('renders a BLOCKED status pill when a suite is far below threshold', () => {
+    const breached = snapshot({
+      overallScore: 0.6,
+      threshold: 0.85,
+      thresholdBreached: true,
+      failedEvaluators: ['faithfulness']
+    })
+    render(
+      <EvalsDashboardV2
+        data={{
+          ...POPULATED,
+          capability: {
+            latest: breached,
+            previous: null,
+            trend: [],
+            lastUpdated: breached.createdAt
+          }
+        }}
+      />
+    )
+    expect(screen.getByTestId('overall-status-pill')).toHaveTextContent(
+      /BLOCKED/
+    )
   })
 })

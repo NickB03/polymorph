@@ -13,6 +13,7 @@ import {
 import { formatAppModelSummary } from '@/lib/evals/display'
 import { EVALUATOR_DISPLAY_ORDER } from '@/lib/evals/evaluator-labels'
 import { snapshotSuiteKey } from '@/lib/evals/glossary'
+import { getSuiteStatus, type SuiteStatus } from '@/lib/evals/helpers/status'
 import type {
   EvalCaseResultSnapshot,
   EvalSummarySnapshot
@@ -20,10 +21,11 @@ import type {
 import { cn } from '@/lib/utils'
 
 import { ScoreBar } from '@/components/evals/dashboard/score-bar'
-import { deltaPts, pct } from '@/components/evals/dashboard/shared'
+import { deltaPts } from '@/components/evals/dashboard/shared'
 import { ScoreCell } from '@/components/evals/glossary'
 
 import { AutoBadge } from './auto-badge'
+import { Delta } from './delta'
 import { localLabel } from './local-labels'
 
 const DETERMINISTIC_KEYS = new Set(['deterministic_prechecks', 'tool_usage'])
@@ -43,6 +45,14 @@ export function EvaluatorBreakdown({
   )
   const defaultEvaluator =
     evaluators.find(key => failed.has(key)) ?? evaluators[0] ?? null
+  const worstEvaluator = evaluators.reduce<string | null>((acc, key) => {
+    const score = snap.evaluatorScores[key]
+    if (score == null) return acc
+    if (acc == null) return key
+    const accScore = snap.evaluatorScores[acc]
+    if (accScore == null || score < accScore) return key
+    return acc
+  }, null)
   const [selectedEvaluator, setSelectedEvaluator] = useState<{
     evaluatorName: EvaluatorName
     snapId: string
@@ -59,19 +69,18 @@ export function EvaluatorBreakdown({
   )
 
   return (
-    <section className="flex h-full flex-col gap-5 rounded-2xl border border-border/60 bg-background p-6">
+    <section className="flex h-full flex-col gap-5 rounded-xl border border-border bg-card p-6">
       <div className="space-y-1">
         <h3 className="text-base font-semibold tracking-tight">
           Evaluator breakdown
         </h3>
         <p className="text-xs leading-snug text-muted-foreground">
-          One row per evaluator. Rows tagged <AutoBadge /> are deterministic
-          rules that gate eligibility — the rest are LLM judges. Hover any row
-          for the judge’s definition and threshold status.
+          Each row scores one quality check on this run. Longer bars are better;
+          red rows fell below the pass mark.
         </p>
       </div>
 
-      <ul className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
+      <ul className="divide-y divide-border border-t border-border">
         {evaluators.map(key => {
           const v = snap.evaluatorScores[key]
           if (v == null) return null
@@ -81,6 +90,9 @@ export function EvaluatorBreakdown({
             caseResultsForEvaluator(snap, key)
           )
           const selected = key === selectedKey
+          const prevScore = previous?.evaluatorScores[key] ?? null
+          const evaluatorDelta =
+            prevScore == null || v == null ? null : v - prevScore
           return (
             <li key={key}>
               <ScoreCell
@@ -96,18 +108,21 @@ export function EvaluatorBreakdown({
                 }
                 selected={selected}
               >
-                <span className="-mx-2 grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_44px] items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted/40">
-                  <span className="flex min-w-0 items-center gap-2">
+                <span className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,3fr)_56px_64px] items-center gap-4 px-4 py-3 text-sm transition-colors hover:bg-muted/30">
+                  <span className="flex min-w-0 flex-col gap-0.5">
                     <span
                       className={cn(
-                        'truncate',
+                        'truncate font-medium',
                         isFailed ? 'text-destructive' : 'text-foreground',
-                        selected && 'font-medium'
+                        selected && 'font-semibold'
                       )}
                     >
                       {localLabel(key)}
                     </span>
-                    {isAuto ? <AutoBadge /> : null}
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      {isAuto ? <AutoBadge /> : <span>LLM-judge</span>}
+                      {key === worstEvaluator ? <span>· worst</span> : null}
+                    </span>
                   </span>
                   <ScoreBar
                     failed={isFailed}
@@ -116,11 +131,14 @@ export function EvaluatorBreakdown({
                   />
                   <span
                     className={cn(
-                      'text-right font-mono text-xs tabular-nums',
+                      'text-right font-mono text-sm font-medium tabular-nums',
                       isFailed ? 'text-destructive' : 'text-foreground'
                     )}
                   >
-                    {pct(v)}
+                    {v.toFixed(2)}
+                  </span>
+                  <span className="flex justify-end">
+                    <Delta value={evaluatorDelta} />
                   </span>
                 </span>
               </ScoreCell>
@@ -139,7 +157,7 @@ export function EvaluatorBreakdown({
         />
       ) : null}
 
-      <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 border-t border-border/60 pt-4 text-xs text-muted-foreground">
+      <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 border-t border-border pt-4 text-xs text-muted-foreground">
         <span>
           Experiment <span className="font-mono">{snap.experimentName}</span>
         </span>
@@ -161,7 +179,7 @@ export function EvaluatorBreakdown({
   )
 }
 
-type DiagnosticStatus = 'READY' | 'WATCH' | 'BLOCKED'
+type DiagnosticStatus = SuiteStatus
 
 interface DiagnosticOverview {
   status: DiagnosticStatus
@@ -203,43 +221,21 @@ function buildDiagnosticOverview(
     .sort(scoreAscending)
     .slice(0, 3)
 
-  if (snap.thresholdBreached) {
-    return {
-      status: 'BLOCKED',
-      reason: 'Threshold breached',
-      newFailures,
-      fixedFailures,
-      stillFailing,
-      largestDrop,
-      worstFailures
-    }
-  }
-
-  if (
-    snap.failedCases > 0 ||
-    snap.failedEvaluators.length > 0 ||
-    newFailures > 0 ||
-    (largestDrop && largestDrop.delta <= -0.05)
-  ) {
-    return {
-      status: 'WATCH',
-      reason:
-        newFailures > 0
+  const status = getSuiteStatus(snap, previous)
+  const reason =
+    status === 'BLOCKED'
+      ? 'Threshold breached'
+      : status === 'WATCH'
+        ? newFailures > 0
           ? 'New failures found'
           : snap.failedCases > 0
             ? 'Failures below block threshold'
-            : 'Score dropped',
-      newFailures,
-      fixedFailures,
-      stillFailing,
-      largestDrop,
-      worstFailures
-    }
-  }
+            : 'Score dropped'
+        : 'No blocking failures'
 
   return {
-    status: 'READY',
-    reason: 'No blocking failures',
+    status,
+    reason,
     newFailures,
     fixedFailures,
     stillFailing,
@@ -280,11 +276,11 @@ function DiagnosticsOverview({
     overview.status === 'BLOCKED'
       ? 'text-destructive'
       : overview.status === 'WATCH'
-        ? 'text-accent-amber'
-        : 'text-emerald-400'
+        ? 'text-warning'
+        : 'text-success'
 
   return (
-    <div className="grid grid-cols-1 gap-3 border-t border-border/60 pt-4 xl:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 border-t border-border pt-4 xl:grid-cols-2">
       <PanelBlock title={statusCopy.title}>
         <div className="flex items-baseline justify-between gap-3">
           <span className={cn('font-mono text-lg font-semibold', statusClass)}>
@@ -336,7 +332,7 @@ function DiagnosticsOverview({
                   {FAILURE_MODE_LABELS[result.failureMode]}
                 </span>
                 <span className="text-right font-mono tabular-nums">
-                  {result.score == null ? 'err' : pct(result.score)}
+                  {result.score == null ? 'err' : result.score.toFixed(2)}
                 </span>
                 {result.phoenixUrl ? (
                   <a
@@ -431,13 +427,13 @@ function EvaluatorDiagnosticPanel({
   const modes = failureModeCounts(caseResultsForEvaluator(snap, evaluatorName))
 
   return (
-    <div className="rounded-lg border border-border/60 bg-muted/15 p-4">
+    <div className="rounded-lg border border-border bg-muted/40 p-4">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
         <h4 className="text-sm font-semibold tracking-tight">
           {localLabel(evaluatorName)} diagnostics
         </h4>
-        <span className="font-mono text-xs text-muted-foreground">
-          Delta vs previous: {delta == null ? 'Unknown' : deltaPts(delta)}
+        <span className="text-xs text-muted-foreground">
+          Delta vs previous: <Delta value={delta} />
         </span>
       </div>
 
@@ -477,7 +473,7 @@ function EvaluatorDiagnosticPanel({
               {failedCases.map(result => (
                 <li
                   key={`${result.caseId}-${result.evaluatorName}`}
-                  className="rounded-md border border-border/50 bg-background/60 p-3"
+                  className="rounded-md border border-border bg-background/80 p-3"
                 >
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                     <span className="font-mono">{result.caseId}</span>
@@ -485,7 +481,7 @@ function EvaluatorDiagnosticPanel({
                       {FAILURE_MODE_LABELS[result.failureMode]}
                     </span>
                     <span className="font-mono text-muted-foreground">
-                      {result.score == null ? 'error' : pct(result.score)}
+                      {result.score == null ? 'error' : result.score.toFixed(2)}
                     </span>
                     {result.phoenixUrl ? (
                       <a
@@ -511,7 +507,7 @@ function EvaluatorDiagnosticPanel({
                       No judge reasoning was recorded for this case.
                     </p>
                   )}
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span>Label {result.label ?? 'Unknown'}</span>
                     <span>App model {result.appModelId ?? 'Unknown'}</span>
                     <span>Trace {result.otelTraceId ?? 'Unknown'}</span>
@@ -538,7 +534,7 @@ function PanelBlock({
   children: ReactNode
 }) {
   return (
-    <div className="rounded-lg border border-border/50 bg-muted/15 p-3">
+    <div className="rounded-lg border border-border bg-muted/40 p-3">
       <h4 className="mb-2 text-xs font-medium text-muted-foreground">
         {title}
       </h4>
@@ -568,7 +564,7 @@ function Metadata({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 space-y-0.5">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="truncate font-mono text-[11px] text-foreground">
+      <dd className="truncate font-mono text-xs text-foreground">
         {value || 'Unknown'}
       </dd>
     </div>

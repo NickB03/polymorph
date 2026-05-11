@@ -24,7 +24,7 @@ export function severityText(s: Severity) {
     case 'ok':
       return 'text-foreground'
     case 'watch':
-      return 'text-accent-amber'
+      return 'text-warning'
     case 'alarm':
       return 'text-destructive'
   }

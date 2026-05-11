@@ -1,27 +1,42 @@
 'use client'
 
+import { Gauge, ListChecks, type LucideIcon, ShieldCheck } from 'lucide-react'
+
 import { getSuiteDisplayByDashboardId } from '@/lib/evals/display'
+import {
+  getSuiteStatus,
+  STATUS_TOKENS,
+  type SuiteStatus
+} from '@/lib/evals/helpers/status'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
 import { cn } from '@/lib/utils'
 
-import { pct } from '@/components/evals/dashboard/shared'
-
+import { Delta } from './delta'
 import type { SuiteId } from './url-state'
 
-const SUITE_TABS: ReadonlyArray<{
+const TAB_META: ReadonlyArray<{
   id: SuiteId
-}> = [{ id: 'capability' }, { id: 'trafficMonitor' }, { id: 'regression' }]
+  Icon: LucideIcon
+}> = [
+  { id: 'capability', Icon: ListChecks },
+  { id: 'trafficMonitor', Icon: Gauge },
+  { id: 'regression', Icon: ShieldCheck }
+]
 
 export function SuiteSelector({
   active,
-  attentionSuite = null,
   onChange,
-  snaps
+  snaps,
+  previous = {
+    capability: null,
+    trafficMonitor: null,
+    regression: null
+  }
 }: {
   active: SuiteId
-  attentionSuite?: SuiteId | null
   onChange: (id: SuiteId) => void
   snaps: Record<SuiteId, EvalSummarySnapshot | null>
+  previous?: Record<SuiteId, EvalSummarySnapshot | null>
 }) {
   return (
     <div
@@ -29,50 +44,83 @@ export function SuiteSelector({
       aria-label="Evaluation suite"
       className="grid grid-cols-1 gap-3 sm:grid-cols-3"
     >
-      {SUITE_TABS.map(tab => {
-        const on = tab.id === active
-        const needsAttention = tab.id === attentionSuite
-        const s = snaps[tab.id]
-        const copy = getSuiteDisplayByDashboardId(tab.id)
+      {TAB_META.map(({ id, Icon }) => {
+        const isActive = id === active
+        const snap = snaps[id]
+        const prev = previous[id]
+        const copy = getSuiteDisplayByDashboardId(id)
+        const status: SuiteStatus = snap ? getSuiteStatus(snap, prev) : 'READY'
+        const delta =
+          snap && prev ? snap.overallScore - prev.overallScore : null
+
         return (
           <button
-            key={tab.id}
+            key={id}
+            data-testid="suite-card"
             role="tab"
-            aria-selected={on}
+            aria-selected={isActive}
+            aria-label={copy.label}
             type="button"
-            onClick={() => onChange(tab.id)}
+            onClick={() => onChange(id)}
             className={cn(
-              'flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-colors',
-              on
-                ? 'border-accent-blue/40 bg-accent-blue/5'
-                : 'border-border/60 bg-background hover:bg-muted/40',
-              needsAttention && !on && 'border-warning-border bg-warning-bg/40'
+              'relative h-[160px] overflow-hidden rounded-[14px] border-2 bg-card text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              isActive ? 'border-accent-blue' : 'border-border'
             )}
           >
-            <div className="flex w-full items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold tracking-tight">
-                {copy.label}
-              </span>
-              <span
-                className={cn(
-                  'font-mono text-base font-semibold tabular-nums',
-                  s?.thresholdBreached ? 'text-destructive' : 'text-foreground'
-                )}
-              >
-                {s ? pct(s.overallScore) : '—'}
-              </span>
+            <span
+              aria-hidden
+              className={cn(
+                'pointer-events-none absolute -left-[90px] top-1/2 h-[200px] w-[200px] -translate-y-1/2 rounded-full',
+                STATUS_TOKENS[status].scoopBg
+              )}
+            />
+            <div className="relative z-[1] grid h-full grid-cols-[110px_1fr] items-center">
+              <div className="flex flex-col items-center justify-center gap-3">
+                <Icon
+                  aria-hidden
+                  className={cn('size-14', STATUS_TOKENS[status].fg)}
+                  strokeWidth={1.5}
+                />
+              </div>
+              <div className="flex flex-col items-center justify-center gap-2 px-4">
+                <span className="text-[18px] font-semibold leading-none tracking-tight text-muted-foreground">
+                  {copy.label}
+                </span>
+                <span className="font-mono text-[44px] font-extrabold leading-none tracking-tight tabular-nums text-foreground">
+                  {snap ? `${Math.round(snap.overallScore * 100)}%` : '—'}
+                </span>
+                <div className="flex items-center gap-1.5 text-[12px] leading-none">
+                  {snap == null ? (
+                    <span className="text-muted-foreground">—</span>
+                  ) : (
+                    <>
+                      <span
+                        aria-hidden
+                        className={cn(
+                          'inline-block size-1.5 rounded-full',
+                          STATUS_TOKENS[status].dot
+                        )}
+                      />
+                      <span
+                        className={cn('font-medium', STATUS_TOKENS[status].fg)}
+                      >
+                        {STATUS_TOKENS[status].label}
+                      </span>
+                      {delta != null ? (
+                        <>
+                          <span className="text-muted-foreground">·</span>
+                          <Delta value={delta} />
+                        </>
+                      ) : null}
+                      <span className="text-muted-foreground">·</span>
+                      <span className="text-muted-foreground tabular-nums">
+                        {snap.totalCases} cases
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
-            {needsAttention ? (
-              <span className="rounded-full border border-warning-border bg-background px-2 py-0.5 text-[10px] font-medium uppercase tracking-normal text-warning">
-                Needs attention
-              </span>
-            ) : null}
-            <p className="text-xs leading-snug text-muted-foreground">
-              {copy.tagline}
-            </p>
-            <p className="text-xs leading-snug text-muted-foreground/80">
-              {copy.action}
-            </p>
           </button>
         )
       })}

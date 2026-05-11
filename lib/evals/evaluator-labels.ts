@@ -1,11 +1,11 @@
 const EVALUATOR_LABELS = {
-  deterministic_prechecks: 'Eligibility Checks',
-  tool_usage: 'Tool Usage Quality',
-  faithfulness: 'Groundedness',
+  deterministic_prechecks: 'Prechecks',
+  tool_usage: 'Tool Usage',
+  faithfulness: 'Faithfulness',
   relevance: 'Relevance',
-  response_quality: 'Answer Quality',
+  response_quality: 'Response Quality',
   safety: 'Safety',
-  citation_accuracy: 'Citation Correctness'
+  citation_accuracy: 'Citation Accuracy'
 } as const
 
 const EVALUATOR_COLORS = {
@@ -32,16 +32,18 @@ export function getEvaluatorLabel(key: string) {
   )
 }
 
-// Display order for evaluator grids. Intentionally differs from the
-// insertion order of EVALUATOR_LABELS (which leads with deterministic checks).
+// Display order for evaluator grids. Mirrors the wireframe ordering:
+// LLM judges first, deterministic auto-rules last. Safety is kept in the
+// list (after the wire's six visible rows) for data integrity even though
+// the wire doesn't show it.
 export const EVALUATOR_DISPLAY_ORDER: Array<keyof typeof EVALUATOR_LABELS> = [
   'faithfulness',
-  'relevance',
-  'safety',
   'response_quality',
   'citation_accuracy',
+  'relevance',
+  'deterministic_prechecks',
   'tool_usage',
-  'deterministic_prechecks'
+  'safety'
 ]
 
 export function getEvaluatorColor(key: string) {

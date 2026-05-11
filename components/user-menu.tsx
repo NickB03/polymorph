@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation'
 
 import { User } from '@supabase/supabase-js'
 import {
-  ChartColumnIncreasing,
   Link2,
   LogOut,
   MessageSquare,
   Palette,
+  Shield,
   Trash2
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -200,11 +200,10 @@ export default function UserMenu({
         {isAdmin ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Admin</DropdownMenuLabel>
             <DropdownMenuItem asChild>
               <Link href="/admin/evals">
-                <ChartColumnIncreasing className="mr-2 h-4 w-4" />
-                <span>Evals</span>
+                <Shield className="mr-2 h-4 w-4" />
+                <span>Admin</span>
               </Link>
             </DropdownMenuItem>
           </>

@@ -15,14 +15,6 @@ const DASHBOARD_SUITE_BY_PERSISTED: Record<PersistedDashboardSuite, SuiteId> = {
   'traffic-monitor': 'trafficMonitor'
 }
 
-export interface PhoenixInsight {
-  alert: DashboardAlert
-  suiteId: SuiteId
-  summary: string
-  interpretation: string
-  actionLabel: string
-}
-
 export function persistedSuiteToDashboardSuite(
   suite: PersistedDashboardSuite
 ): SuiteId {
@@ -36,45 +28,17 @@ export function getFirstAvailableSuite(data: EvalsDashboardData): SuiteId {
   return 'capability'
 }
 
-export function getDefaultSuite(data: EvalsDashboardData): SuiteId {
-  return getPhoenixInsight(data)?.suiteId ?? getFirstAvailableSuite(data)
-}
-
-export function getPhoenixInsight(
-  data: EvalsDashboardData
-): PhoenixInsight | null {
-  const alert = getLatestThresholdAlert(data)
+/**
+ * Returns the suite Phoenix flagged with a threshold alert, or null if no
+ * alert exists. Only `.suiteId` is read by production callers; the full
+ * `PhoenixInsight` shape was removed when phoenix-insight.tsx was deleted.
+ */
+export function getAlertedSuite(data: EvalsDashboardData): SuiteId | null {
+  const alert: DashboardAlert | null = getLatestThresholdAlert(data)
   if (!alert) return null
-
-  const suiteId = persistedSuiteToDashboardSuite(alert.suite)
-  const healthyTestSuite =
-    suiteId !== 'capability' &&
-    data.capability.latest !== null &&
-    !data.capability.latest.thresholdBreached
-
-  return {
-    alert,
-    suiteId,
-    summary: healthyTestSuite
-      ? `${alert.suiteLabel} is below threshold while Test Suite is healthy.`
-      : `${alert.suiteLabel} is below threshold.`,
-    interpretation: getInsightInterpretation(suiteId, healthyTestSuite),
-    actionLabel: `Review ${alert.suiteLabel}`
-  }
+  return persistedSuiteToDashboardSuite(alert.suite)
 }
 
-function getInsightInterpretation(suiteId: SuiteId, healthyTestSuite: boolean) {
-  if (suiteId === 'trafficMonitor' && healthyTestSuite) {
-    return 'This points to live-traffic drift rather than a broad baseline regression.'
-  }
-
-  if (suiteId === 'trafficMonitor') {
-    return 'Start with recent production traces and failed judge examples.'
-  }
-
-  if (suiteId === 'regression') {
-    return 'Known guardrail cases need attention before release.'
-  }
-
-  return 'The controlled Test Suite needs attention before shipping changes.'
+export function getDefaultSuite(data: EvalsDashboardData): SuiteId {
+  return getAlertedSuite(data) ?? getFirstAvailableSuite(data)
 }

@@ -4,12 +4,12 @@ import { localLabel } from './local-labels'
 
 describe('localLabel', () => {
   it('uses canonical label for deterministic_prechecks', () => {
-    expect(localLabel('deterministic_prechecks')).toBe('Eligibility Checks')
+    expect(localLabel('deterministic_prechecks')).toBe('Prechecks')
   })
 
   it('falls through to canonical label for non-overridden keys', () => {
-    expect(localLabel('faithfulness')).toBe('Groundedness')
-    expect(localLabel('tool_usage')).toBe('Tool Usage Quality')
+    expect(localLabel('faithfulness')).toBe('Faithfulness')
+    expect(localLabel('tool_usage')).toBe('Tool Usage')
   })
 
   it('falls through for unknown keys', () => {

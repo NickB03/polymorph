@@ -4,17 +4,24 @@ import { type CSSProperties, useEffect } from 'react'
 
 import { formatDistanceToNow } from 'date-fns'
 
+import {
+  getOverallStatus,
+  getSuiteStatus,
+  STATUS_TOKENS,
+  type SuiteStatus
+} from '@/lib/evals/helpers/status'
 import type { EvalsDashboardData, EvalSummarySnapshot } from '@/lib/evals/types'
+import { cn } from '@/lib/utils'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 import { ActivityList } from '@/components/evals/dashboard/activity-list'
 import { ScoreFeature } from '@/components/evals/dashboard/score-feature'
 
-import { getDefaultSuite, getPhoenixInsight } from './attention'
+import { getDefaultSuite } from './attention'
 import { CollapsibleComparison } from './collapsible-comparison'
 import { EvaluatorBreakdown } from './evaluator-breakdown'
-import { PhoenixInsightStrip } from './phoenix-insight'
+import { KpiStrip } from './kpi-strip'
 import { SuiteSelector } from './suite-selector'
 import { isSuiteId, isView, type SuiteId, type View } from './url-state'
 import { useUrlState } from './use-url-state'
@@ -32,16 +39,16 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
   if (!cap && !traf && !reg) {
     return (
       <TooltipProvider delayDuration={200}>
-        <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-8 lg:px-12">
+        <div className="flex flex-1 min-h-0 min-w-0 flex-col overflow-y-auto">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-8 sm:px-8 lg:px-12">
             <Header
               view="suites"
               onChange={() => {}}
               data={data}
               hideSwitcher
             />
-            <p className="rounded-2xl border border-dashed border-border/60 bg-muted/10 p-12 text-center text-sm text-muted-foreground">
-              No evaluation runs have landed yet. The next Production Evals cron
+            <p className="rounded-xl border border-dashed border-border bg-card p-12 text-center text-sm text-muted-foreground">
+              No evaluation runs have landed yet. The next Traffic Monitor cron
               will populate this page.
             </p>
           </div>
@@ -53,16 +60,35 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
   return <DashboardWithViews data={data} />
 }
 
+function getLastSyncText(data: EvalsDashboardData): string {
+  const lastSyncIso = data.trafficMonitor.lastUpdated
+  return lastSyncIso
+    ? formatDistanceToNow(new Date(lastSyncIso), { addSuffix: true })
+    : 'never'
+}
+
 function DashboardWithViews({ data }: { data: EvalsDashboardData }) {
   const [view, setView] = useUrlState('view', 'suites', isView)
+  const defaultSuite = getDefaultSuite(data)
+  const [activeSuite, setActiveSuite] = useUrlState(
+    'suite',
+    defaultSuite,
+    isSuiteId
+  )
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-16 pt-12 sm:px-8 lg:px-12">
+      <div className="flex flex-1 min-h-0 min-w-0 flex-col overflow-y-auto">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-8 sm:px-8 lg:px-12">
           <Header view={view} onChange={setView} data={data} />
 
-          {view === 'suites' ? <SuitesView data={data} /> : null}
+          {view === 'suites' ? (
+            <SuitesView
+              data={data}
+              active={activeSuite}
+              setActive={setActiveSuite}
+            />
+          ) : null}
           {view === 'history' ? (
             <div
               className="motion-safe:animate-content-enter"
@@ -88,47 +114,66 @@ function Header({
   data: EvalsDashboardData
   hideSwitcher?: boolean
 }) {
-  const lastSyncIso = data.trafficMonitor.lastUpdated
-  const lastSync = lastSyncIso
-    ? formatDistanceToNow(new Date(lastSyncIso), { addSuffix: true })
-    : 'never'
+  const lastSync = getLastSyncText(data)
   const cap = data.capability.latest
   const traf = data.trafficMonitor.latest
   const reg = data.regression.latest
   const totalCases =
     (cap?.totalCases ?? 0) + (traf?.totalCases ?? 0) + (reg?.totalCases ?? 0)
+  const overallStatus = getOverallStatus(data)
 
   return (
     <header
-      className="space-y-6 border-b border-border/60 pb-6 motion-safe:animate-content-enter"
+      className="space-y-3 border-b border-border pb-6 motion-safe:animate-content-enter"
       style={enter(0)}
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-3">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            Evaluation Summary
-          </h1>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">Evaluation</h1>
+          <StatusPill status={overallStatus} />
         </div>
         {hideSwitcher ? null : (
           <ViewSwitcher value={view} onChange={onChange} />
         )}
       </div>
-      <div className="space-y-2">
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          {getViewDescription(view)} {totalCases} cases scored in the last 48h ·
-          last sync {lastSync}.
-        </p>
-      </div>
+      <p className="text-base leading-relaxed text-muted-foreground">
+        {getViewDescription(view)} ·{' '}
+        <span className="font-mono tabular-nums text-foreground">
+          {totalCases}
+        </span>{' '}
+        cases scored · in last 48h · last sync {lastSync}
+      </p>
     </header>
   )
 }
 
-function SuitesView({ data }: { data: EvalsDashboardData }) {
+function StatusPill({ status }: { status: SuiteStatus }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-xs font-semibold uppercase tracking-wide',
+        STATUS_TOKENS[status].pill
+      )}
+      data-testid="overall-status-pill"
+    >
+      {status}
+    </span>
+  )
+}
+
+function SuitesView({
+  data,
+  active,
+  setActive
+}: {
+  data: EvalsDashboardData
+  active: SuiteId
+  setActive: (next: SuiteId) => void
+}) {
   const cap = data.capability.latest
   const traf = data.trafficMonitor.latest
   const reg = data.regression.latest
   const defaultSuite = getDefaultSuite(data)
-  const insight = getPhoenixInsight(data)
   const previousMap: Record<SuiteId, EvalSummarySnapshot | null> = {
     capability: data.capability.previous,
     trafficMonitor: data.trafficMonitor.previous,
@@ -139,7 +184,6 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
     trafficMonitor: traf,
     regression: reg
   }
-  const [active, setActive] = useUrlState('suite', defaultSuite, isSuiteId)
   const selectedSuite = snapMap[active] ? active : defaultSuite
   const activeSnap = snapMap[selectedSuite]
 
@@ -151,30 +195,29 @@ function SuitesView({ data }: { data: EvalsDashboardData }) {
 
   return (
     <div
-      className="space-y-10 motion-safe:animate-content-enter"
+      className="space-y-8 motion-safe:animate-content-enter"
       style={enter(60)}
     >
-      {insight ? (
-        <PhoenixInsightStrip
-          insight={insight}
-          onReview={() => setActive(insight.suiteId)}
-        />
-      ) : null}
-
       <SuiteSelector
         active={selectedSuite}
-        attentionSuite={insight?.suiteId ?? null}
         onChange={setActive}
         snaps={snapMap}
+        previous={previousMap}
       />
 
       {activeSnap ? (
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <ScoreFeature
               cap={activeSnap}
               previous={previousMap[selectedSuite]}
               hideTagline
+              footer={
+                <KpiStrip
+                  snap={activeSnap}
+                  previous={previousMap[selectedSuite]}
+                />
+              }
             />
           </div>
           <div className="lg:col-span-8">

@@ -74,7 +74,7 @@ function renderBreakdown(snap: EvalSummarySnapshot) {
 describe('EvaluatorBreakdown', () => {
   it('renders failed evaluators in the destructive color', () => {
     renderBreakdown(SNAP_WITH_FAILED)
-    const failed = screen.getByText('Groundedness')
+    const failed = screen.getByText('Faithfulness')
     expect(failed).toHaveClass('text-destructive')
   })
 
@@ -91,7 +91,7 @@ describe('EvaluatorBreakdown', () => {
     expect(screen.getByText('BLOCKED')).toBeInTheDocument()
     expect(screen.getByText('Worst failing cases')).toBeInTheDocument()
     expect(screen.getAllByText('case-1').length).toBeGreaterThan(0)
-    expect(screen.getByText('Groundedness diagnostics')).toBeInTheDocument()
+    expect(screen.getByText('Faithfulness diagnostics')).toBeInTheDocument()
     expect(
       screen.getByText('The answer contradicted retrieved context.')
     ).toBeInTheDocument()
