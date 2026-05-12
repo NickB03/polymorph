@@ -61,7 +61,13 @@ Semantic aliases exist for tool callouts and status surfaces: `--info`, `--succe
 - Base radius is `--radius: 0.5rem`.
 - Default buttons are `rounded-md`; icon and mode controls often become `rounded-full`.
 - Composer shell uses `rounded-3xl` with muted fill and input border.
-- Cards use `rounded-lg border bg-card shadow-xs`; tool UI and thumbnails often use `rounded-xl`.
+- Radius scale by element role:
+  - Outer card frames (tool UI containers, thumbnails, artifact cards): `rounded-xl`
+  - Inner list rows, scroll regions, secondary containers inside a card: `rounded-lg`
+  - Code blocks, icon boxes, dense list items: `rounded-md`
+  - Avatars, progress dots, status indicators: `rounded-full`
+  - Composer shell: `rounded-3xl` (intentional, see Composer guidance below)
+    Pair card frames with `border bg-card shadow-xs` unless the surface is intentionally borderless.
 - Touch and click targets should be at least `h-11` or `size-11` for primary controls.
 - Shadows are subtle. Prefer border and surface contrast first; use `shadow-xs`, `shadow-md`, or focused rings sparingly.
 
