@@ -29,9 +29,10 @@ function renderUnavailableToolOutput(
   messageId: string,
   partIndex: number,
   toolName: string,
-  errorText?: string
+  options?: { isError?: boolean; errorText?: string }
 ) {
-  const isError = Boolean(errorText)
+  const isError = options?.isError ?? false
+  const errorText = options?.errorText
   return (
     <div
       key={`${messageId}-display-tool-${partIndex}`}
@@ -112,12 +113,10 @@ export function renderToolPart({
   }
 
   if (toolPart.state === 'output-error') {
-    return renderUnavailableToolOutput(
-      messageId,
-      partIndex,
-      toolName,
-      toolPart.errorText
-    )
+    return renderUnavailableToolOutput(messageId, partIndex, toolName, {
+      isError: true,
+      errorText: toolPart.errorText
+    })
   }
 
   if (
