@@ -82,9 +82,21 @@ export function ForgotPasswordForm({
                     required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={
+                      error ? 'forgot-password-error' : undefined
+                    }
                   />
                 </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
+                {error && (
+                  <p
+                    id="forgot-password-error"
+                    role="alert"
+                    className="text-sm text-destructive"
+                  >
+                    {error}
+                  </p>
+                )}
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? 'Sending...' : 'Send reset email'}
                 </Button>

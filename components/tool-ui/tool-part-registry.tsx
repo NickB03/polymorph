@@ -35,6 +35,7 @@ function renderUnavailableToolOutput(
   return (
     <div
       key={`${messageId}-display-tool-${partIndex}`}
+      role={isError ? 'alert' : undefined}
       className={
         isError
           ? 'rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm'
@@ -47,7 +48,7 @@ function renderUnavailableToolOutput(
           : `${toolName} output could not be rendered`}
       </div>
       {errorText && (
-        <div className="mt-1 text-xs text-muted-foreground">{errorText}</div>
+        <div className="mt-1 text-xs text-foreground">{errorText}</div>
       )}
     </div>
   )
