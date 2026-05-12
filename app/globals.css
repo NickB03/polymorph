@@ -447,7 +447,9 @@
   animation: shimmer-gradient 1.8s ease-in-out infinite;
 }
 
-/* Respect user's motion preference */
+/* Respect user's motion preference. Catchall first, then per-surface rules
+   that override it for animations that should render as a static end state
+   rather than a fast snap. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -455,6 +457,25 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Skeleton shimmer becomes a static muted bar, no scanning gradient. */
+  .skeleton-shimmer {
+    animation: none !important;
+    background: var(--muted) !important;
+  }
+
+  /* Dot-wave loader becomes static dots at rest opacity. */
+  .dot-wave {
+    animation: none !important;
+  }
+
+  /* Collapsibles snap rather than briefly animating to height. */
+  [class~='animate-collapse-down'],
+  [class~='animate-collapse-up'],
+  [class~='animate-accordion-down'],
+  [class~='animate-accordion-up'] {
+    animation: none !important;
   }
 }
 
