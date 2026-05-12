@@ -208,7 +208,7 @@ export function AgentArtifact({
 
   return (
     <section
-      className="overflow-hidden rounded-lg border bg-background text-sm shadow-sm"
+      className="overflow-hidden rounded-xl border bg-background text-sm shadow-sm"
       data-tool-ui-id={id}
       data-slot="agent-artifact"
     >
