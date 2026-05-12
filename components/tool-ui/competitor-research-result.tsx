@@ -52,7 +52,7 @@ export function CompetitorResearchResult({
   return (
     <section
       aria-label="Competitor research result"
-      className="flex w-full max-w-3xl flex-col gap-4 rounded-md border bg-background p-4"
+      className="flex w-full max-w-3xl flex-col gap-4 rounded-xl border bg-background p-4"
     >
       <div className="space-y-1">
         <p className="text-xs font-medium tracking-normal text-muted-foreground uppercase">

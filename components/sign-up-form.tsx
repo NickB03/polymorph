@@ -92,6 +92,8 @@ export function SignUpForm({
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? 'signup-error' : undefined}
                 />
               </div>
               <div className="grid gap-2">
@@ -106,6 +108,8 @@ export function SignUpForm({
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? 'signup-error' : undefined}
                 />
               </div>
               <div className="grid gap-2">
@@ -120,9 +124,19 @@ export function SignUpForm({
                   required
                   value={repeatPassword}
                   onChange={e => setRepeatPassword(e.target.value)}
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? 'signup-error' : undefined}
                 />
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && (
+                <p
+                  id="signup-error"
+                  role="alert"
+                  className="text-sm text-destructive"
+                >
+                  {error}
+                </p>
+              )}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Creating account...' : 'Sign Up'}
               </Button>

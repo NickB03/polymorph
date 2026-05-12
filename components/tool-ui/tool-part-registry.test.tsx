@@ -207,3 +207,43 @@ describe('tool part registry interactive display tools', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Formal')
   })
 })
+
+describe('tool part registry error vs unavailable discrimination', () => {
+  it('surfaces an output-error part as an alert even when errorText is missing', () => {
+    const node = renderToolPart({
+      toolName: 'someTool',
+      toolPart: {
+        state: 'output-error'
+      },
+      messageId: 'message-1',
+      partIndex: 0,
+      isResearchMode: false
+    })
+
+    render(<>{node}</>)
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent('someTool failed')
+    expect(alert.className).toMatch(/border-destructive/)
+  })
+
+  it('renders output-available without a registered renderer as a muted placeholder, not an alert', () => {
+    const node = renderToolPart({
+      toolName: 'unknownTool',
+      toolPart: {
+        state: 'output-available',
+        output: { foo: 'bar' }
+      },
+      messageId: 'message-1',
+      partIndex: 0,
+      isResearchMode: false
+    })
+
+    render(<>{node}</>)
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(
+      screen.getByText('unknownTool output could not be rendered')
+    ).toBeInTheDocument()
+  })
+})

@@ -28,14 +28,29 @@ type RenderToolPartArgs = {
 function renderUnavailableToolOutput(
   messageId: string,
   partIndex: number,
-  toolName: string
+  toolName: string,
+  options?: { isError?: boolean; errorText?: string }
 ) {
+  const isError = options?.isError ?? false
+  const errorText = options?.errorText
   return (
     <div
       key={`${messageId}-display-tool-${partIndex}`}
-      className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground"
+      role={isError ? 'alert' : undefined}
+      className={
+        isError
+          ? 'rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm'
+          : 'rounded-lg border border-dashed p-3 text-sm text-muted-foreground'
+      }
     >
-      {toolName} output could not be rendered
+      <div className={isError ? 'font-medium text-destructive' : undefined}>
+        {isError
+          ? `${toolName} failed`
+          : `${toolName} output could not be rendered`}
+      </div>
+      {errorText && (
+        <div className="mt-1 text-xs text-foreground">{errorText}</div>
+      )}
     </div>
   )
 }
@@ -98,7 +113,10 @@ export function renderToolPart({
   }
 
   if (toolPart.state === 'output-error') {
-    return renderUnavailableToolOutput(messageId, partIndex, toolName)
+    return renderUnavailableToolOutput(messageId, partIndex, toolName, {
+      isError: true,
+      errorText: toolPart.errorText
+    })
   }
 
   if (

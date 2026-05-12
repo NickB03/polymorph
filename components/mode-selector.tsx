@@ -174,7 +174,7 @@ export function ModeSelector() {
             aria-label={`Clear ${activeConfig.label} mode`}
             onClick={handleClearActive}
             className={cn(
-              'inline-flex items-center justify-center h-8 w-8 mr-1 rounded-full transition-colors cursor-pointer ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+              'inline-flex items-center justify-center h-8 w-8 mr-1 rounded-full transition-colors cursor-pointer ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               styles.close
             )}
           >

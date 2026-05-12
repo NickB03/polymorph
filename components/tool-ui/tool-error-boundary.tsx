@@ -31,7 +31,7 @@ export class ToolErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="rounded-lg border border-dashed border-muted-foreground/25 px-3 py-2 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed border-muted-foreground/25 px-3 py-2 text-sm text-muted-foreground">
           Failed to render {this.props.toolName}
         </div>
       )
