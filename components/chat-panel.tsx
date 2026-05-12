@@ -306,7 +306,7 @@ export function ChatPanel({
             type="button"
             variant="outline"
             size="icon"
-            className="absolute -top-10 right-4 z-20 size-8 rounded-full shadow-md"
+            className="absolute -top-12 right-4 z-20 size-10 rounded-full shadow-md"
             onClick={handleScrollToBottom}
             title="Scroll to bottom"
           >
