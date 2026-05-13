@@ -447,6 +447,37 @@
   animation: shimmer-gradient 1.8s ease-in-out infinite;
 }
 
+/* One-shot gradient sweep applied to the textarea while an AI-suggested
+   prompt is typing in. The bright accent-blue band slides across the text
+   so it reads as "AI is filling this in" rather than user input. */
+@utility suggestion-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--foreground) 0%,
+    var(--foreground) 35%,
+    color-mix(in oklch, var(--accent-blue), white 18%) 50%,
+    var(--foreground) 65%,
+    var(--foreground) 100%
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--accent-blue);
+  animation: suggestion-shimmer-sweep var(--suggestion-shimmer-duration, 700ms)
+    ease-out forwards;
+}
+
+@keyframes suggestion-shimmer-sweep {
+  0% {
+    background-position: 180% 0;
+  }
+  100% {
+    background-position: -40% 0;
+  }
+}
+
 /* Respect user's motion preference. Catchall first, then per-surface rules
    that override it for animations that should render as a static end state
    rather than a fast snap. */
@@ -463,6 +494,16 @@
   .skeleton-shimmer {
     animation: none !important;
     background: var(--muted) !important;
+  }
+
+  /* Suggestion-shimmer drops the gradient text effect — JS path also
+     short-circuits to set-and-submit, so the class normally won't apply,
+     but this matches the per-surface override pattern. */
+  .suggestion-shimmer {
+    animation: none !important;
+    background: none !important;
+    color: var(--foreground) !important;
+    -webkit-text-fill-color: var(--foreground) !important;
   }
 
   /* Dot-wave loader becomes static dots at rest opacity. */

@@ -88,6 +88,8 @@ export function ChatPanel({
   const [isInputFocused, setIsInputFocused] = useState(false) // Track input focus
   const [isMobileActionPanelActive, setIsMobileActionPanelActive] =
     useState(false)
+  const [isSuggestionAnimating, setIsSuggestionAnimating] = useState(false)
+  const suggestionRafRef = useRef<number | null>(null)
   const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
   const voiceEnabled = isVoiceEnabled()
@@ -100,17 +102,74 @@ export function ChatPanel({
     messages.length === 0 &&
     (!isMobile || (!isMobileActionPanelActive && !shouldCollapseEmptyChrome))
 
-  // Submit after a brief delay so React flushes the input state update first
-  const submitPromptValue = (value: string) => {
-    handleInputChange({
-      target: { value }
-    } as React.ChangeEvent<HTMLTextAreaElement>)
-    setTimeout(() => {
-      inputRef.current?.form?.requestSubmit()
-      setIsInputFocused(false)
-      inputRef.current?.blur()
-    }, INPUT_UPDATE_DELAY_MS)
-  }
+  const setInputValue = useCallback(
+    (value: string) => {
+      handleInputChange({
+        target: { value }
+      } as React.ChangeEvent<HTMLTextAreaElement>)
+    },
+    [handleInputChange]
+  )
+
+  const requestSubmitInput = useCallback(() => {
+    inputRef.current?.form?.requestSubmit()
+    setIsInputFocused(false)
+    inputRef.current?.blur()
+  }, [])
+
+  // Reveal an AI-suggested prompt with a typewriter sweep, then submit. The
+  // animation makes it clear the text was inserted by the suggestion system
+  // rather than typed by the user.
+  const animateSuggestionPrompt = useCallback(
+    (value: string) => {
+      if (suggestionRafRef.current !== null) {
+        cancelAnimationFrame(suggestionRafRef.current)
+        suggestionRafRef.current = null
+      }
+
+      const prefersReducedMotion =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+      if (prefersReducedMotion || value.length === 0) {
+        setInputValue(value)
+        setTimeout(requestSubmitInput, INPUT_UPDATE_DELAY_MS)
+        return
+      }
+
+      setIsSuggestionAnimating(true)
+      const totalDurationMs = Math.min(900, 240 + value.length * 11)
+      const startTime = performance.now()
+
+      const tick = (now: number) => {
+        const progress = Math.min(1, (now - startTime) / totalDurationMs)
+        const eased = 1 - Math.pow(1 - progress, 2.2)
+        const charCount = Math.max(1, Math.floor(value.length * eased))
+        setInputValue(value.slice(0, charCount))
+
+        if (progress < 1) {
+          suggestionRafRef.current = requestAnimationFrame(tick)
+        } else {
+          suggestionRafRef.current = null
+          setInputValue(value)
+          setIsSuggestionAnimating(false)
+          setTimeout(requestSubmitInput, INPUT_UPDATE_DELAY_MS)
+        }
+      }
+
+      suggestionRafRef.current = requestAnimationFrame(tick)
+    },
+    [setInputValue, requestSubmitInput]
+  )
+
+  useEffect(
+    () => () => {
+      if (suggestionRafRef.current !== null) {
+        cancelAnimationFrame(suggestionRafRef.current)
+      }
+    },
+    []
+  )
 
   const handleCompositionStart = () => setIsComposing(true)
 
@@ -336,7 +395,12 @@ export function ChatPanel({
             spellCheck={false}
             value={input}
             disabled={isLoading || isToolInvocationInProgress()}
-            className="resize-none w-full min-h-14 bg-transparent border-0 p-4 text-base placeholder:text-muted-foreground focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+            readOnly={isSuggestionAnimating}
+            aria-busy={isSuggestionAnimating || undefined}
+            className={cn(
+              'resize-none w-full min-h-14 bg-transparent border-0 p-4 text-base placeholder:text-muted-foreground focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
+              isSuggestionAnimating && 'suggestion-shimmer pointer-events-none'
+            )}
             onChange={handleInputChange}
             onPaste={handlePaste}
             onKeyDown={e => {
@@ -491,10 +555,10 @@ export function ChatPanel({
                   syncSearchMode('research')
                   syncModelType('quality')
                 }
-                submitPromptValue(message)
+                animateSuggestionPrompt(message)
               }}
               onBuildTemplateSelect={prompt => {
-                submitPromptValue(prompt)
+                animateSuggestionPrompt(prompt)
               }}
               onCategoryClick={category => {
                 // Set the category in the input
