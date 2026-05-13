@@ -90,6 +90,7 @@ export function ChatPanel({
     useState(false)
   const [isSuggestionAnimating, setIsSuggestionAnimating] = useState(false)
   const suggestionRafRef = useRef<number | null>(null)
+  const submitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { suggestions } = useTrendingSuggestions()
   const isLoading = isChatLoading(status)
   const voiceEnabled = isVoiceEnabled()
@@ -126,6 +127,10 @@ export function ChatPanel({
         cancelAnimationFrame(suggestionRafRef.current)
         suggestionRafRef.current = null
       }
+      if (submitTimeoutRef.current !== null) {
+        clearTimeout(submitTimeoutRef.current)
+        submitTimeoutRef.current = null
+      }
 
       const prefersReducedMotion =
         typeof window !== 'undefined' &&
@@ -133,7 +138,10 @@ export function ChatPanel({
 
       if (prefersReducedMotion || value.length === 0) {
         setInputValue(value)
-        setTimeout(requestSubmitInput, INPUT_UPDATE_DELAY_MS)
+        submitTimeoutRef.current = setTimeout(() => {
+          submitTimeoutRef.current = null
+          requestSubmitInput()
+        }, INPUT_UPDATE_DELAY_MS)
         return
       }
 
@@ -153,7 +161,10 @@ export function ChatPanel({
           suggestionRafRef.current = null
           setInputValue(value)
           setIsSuggestionAnimating(false)
-          setTimeout(requestSubmitInput, INPUT_UPDATE_DELAY_MS)
+          submitTimeoutRef.current = setTimeout(() => {
+            submitTimeoutRef.current = null
+            requestSubmitInput()
+          }, INPUT_UPDATE_DELAY_MS)
         }
       }
 
@@ -162,14 +173,16 @@ export function ChatPanel({
     [setInputValue, requestSubmitInput]
   )
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    return () => {
       if (suggestionRafRef.current !== null) {
         cancelAnimationFrame(suggestionRafRef.current)
       }
-    },
-    []
-  )
+      if (submitTimeoutRef.current !== null) {
+        clearTimeout(submitTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleCompositionStart = () => setIsComposing(true)
 
