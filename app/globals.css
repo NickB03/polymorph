@@ -470,11 +470,16 @@
     animation: none !important;
   }
 
-  /* Collapsibles snap rather than briefly animating to height. */
-  [class~='animate-collapse-down'],
-  [class~='animate-collapse-up'],
-  [class~='animate-accordion-down'],
-  [class~='animate-accordion-up'] {
+  /* Collapsibles snap rather than briefly animating to height.
+     Use [class*=...] so the rule matches variant-prefixed forms like
+     `data-[state=open]:animate-collapse-down`, which Tailwind v4 emits
+     as a single compound class token rather than a separate `animate-*`
+     class. The earlier [class~=...] form only matched whitespace-separated
+     standalone tokens and never fired against the variant-prefixed
+     usage in collapsible-message.tsx, research-process-section.tsx, or
+     ui/accordion.tsx. */
+  [class*='animate-collapse-'],
+  [class*='animate-accordion-'] {
     animation: none !important;
   }
 }
