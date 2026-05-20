@@ -13,13 +13,23 @@ import {
 import { formatAppModelSummary } from '@/lib/evals/display'
 import { EVALUATOR_DISPLAY_ORDER } from '@/lib/evals/evaluator-labels'
 import { snapshotSuiteKey } from '@/lib/evals/glossary'
-import { getSuiteStatus, type SuiteStatus } from '@/lib/evals/helpers/status'
+import {
+  getSuiteStatus,
+  STATUS_TOKENS,
+  type SuiteStatus
+} from '@/lib/evals/helpers/status'
 import type {
   EvalCaseResultSnapshot,
   EvalSummarySnapshot
 } from '@/lib/evals/types'
+import { useReducedMotion } from '@/lib/motion/use-reduced-motion'
 import { cn } from '@/lib/utils'
 
+import { RadarArea } from '@/components/charts/radar-area'
+import { RadarAxis } from '@/components/charts/radar-axis'
+import { RadarChart } from '@/components/charts/radar-chart'
+import { RadarGrid } from '@/components/charts/radar-grid'
+import { RadarLabels } from '@/components/charts/radar-labels'
 import { ScoreBar } from '@/components/evals/dashboard/score-bar'
 import { deltaPts } from '@/components/evals/dashboard/shared'
 import { ScoreCell } from '@/components/evals/glossary'
@@ -68,6 +78,25 @@ export function EvaluatorBreakdown({
     [snap, previous]
   )
 
+  const reducedMotion = useReducedMotion()
+  const radarStatus = getSuiteStatus(snap, previous ?? null)
+  const radarColor = STATUS_TOKENS[radarStatus].cssVar
+
+  const radarMetrics = evaluators.map(key => ({
+    key,
+    label: localLabel(key)
+  }))
+  const radarValues = Object.fromEntries(
+    evaluators.map(key => [key, (snap.evaluatorScores[key] ?? 0) * 100])
+  )
+  const radarData = [
+    {
+      label: 'This run',
+      color: radarColor,
+      values: radarValues
+    }
+  ]
+
   return (
     <section className="flex h-full flex-col gap-5 rounded-xl border border-border bg-card p-6">
       <div className="space-y-1">
@@ -79,6 +108,24 @@ export function EvaluatorBreakdown({
           red rows fell below the pass mark.
         </p>
       </div>
+
+      {evaluators.length >= 3 ? (
+        <div className="flex justify-center" data-testid="evaluator-radar">
+          <RadarChart
+            data={radarData}
+            metrics={radarMetrics}
+            size={240}
+            levels={4}
+            margin={48}
+            animate={!reducedMotion}
+          >
+            <RadarGrid showLabels={false} />
+            <RadarAxis />
+            <RadarLabels offset={20} fontSize={10} />
+            <RadarArea index={0} showPoints showGlow />
+          </RadarChart>
+        </div>
+      ) : null}
 
       <ul className="divide-y divide-border border-t border-border">
         {evaluators.map(key => {
