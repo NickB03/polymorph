@@ -14,6 +14,7 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 
+import { Gauge } from '@/components/charts/gauge'
 import { AggregateBreakdown, DefinedTerm } from '@/components/evals/glossary'
 
 import { pct } from './shared'
@@ -30,17 +31,14 @@ export function ScoreFeature({
   footer?: ReactNode
 }) {
   const score = Math.max(0, Math.min(1, cap.overallScore))
-  const r = 80
-  const C = 2 * Math.PI * r
-  const offset = C * (1 - score)
+  const scorePercent = Math.round(score * 100)
   const suiteKey = snapshotSuiteKey(cap)
   const suiteCopy = getSuiteDisplay(cap.suite)
   const definition = DEFINITIONS[suiteKey]
 
   const suiteStatus = getSuiteStatus(cap, previous)
   const tokens = STATUS_TOKENS[suiteStatus]
-  const ringStroke = tokens.cssVar
-  const valueColor = tokens.fgAttention ?? 'text-foreground'
+  const gaugeFill = tokens.cssVar
 
   const thresholdGap =
     cap.threshold == null ? null : (cap.overallScore - cap.threshold) * 100
@@ -71,65 +69,19 @@ export function ScoreFeature({
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="relative mx-auto flex h-44 w-44 cursor-help appearance-none items-center justify-center border-0 bg-transparent p-0 font-[inherit] text-inherit transition-opacity hover:opacity-90"
+              aria-label={`${suiteCopy.label} score: ${pct(score)}. Focus or hover for per-judge breakdown.`}
+              className="mx-auto flex h-44 w-44 cursor-help appearance-none items-center justify-center border-0 bg-transparent p-0 font-[inherit] text-inherit transition-opacity hover:opacity-90"
             >
-              <svg
-                className="h-full w-full -rotate-90"
-                viewBox="0 0 200 200"
-                aria-label={`${suiteCopy.label} score: ${pct(score)}. Focus or hover for per-judge breakdown.`}
-                role="img"
-              >
-                <circle
-                  cx="100"
-                  cy="100"
-                  r={r}
-                  stroke="currentColor"
-                  strokeWidth="22"
-                  className="text-muted"
-                  fill="none"
-                />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r={r}
-                  style={{ stroke: ringStroke }}
-                  strokeWidth="22"
-                  strokeDasharray={C}
-                  strokeDashoffset={offset}
-                  strokeLinecap="butt"
-                  fill="none"
-                  className="motion-safe:transition-[stroke-dashoffset] motion-safe:duration-700"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span
-                  className={cn(
-                    'font-mono text-4xl font-semibold tabular-nums',
-                    valueColor
-                  )}
-                >
-                  {pct(score)}
-                </span>
-                {cap.threshold == null ? (
-                  <span className="mt-1 text-xs text-muted-foreground">
-                    aggregate
-                  </span>
-                ) : isBelowThreshold ? (
-                  <span
-                    className={cn(
-                      'mt-1 text-xs font-medium',
-                      belowThresholdColor
-                    )}
-                  >
-                    {Math.abs(Math.round(thresholdGap))} pts below{' '}
-                    {pct(cap.threshold)}
-                  </span>
-                ) : (
-                  <span className="mt-1 text-xs text-muted-foreground">
-                    vs threshold {pct(cap.threshold)}
-                  </span>
-                )}
-              </div>
+              <Gauge
+                value={scorePercent}
+                centerValue={scorePercent}
+                suffix="%"
+                defaultLabel={suiteCopy.label}
+                activeFill={gaugeFill}
+                inactiveFillOpacity={0.3}
+                width={176}
+                height={176}
+              />
             </button>
           </TooltipTrigger>
           <TooltipContent
@@ -147,6 +99,23 @@ export function ScoreFeature({
             />
           </TooltipContent>
         </Tooltip>
+
+        {cap.threshold == null ? (
+          <p className="text-center text-xs text-muted-foreground">aggregate</p>
+        ) : isBelowThreshold ? (
+          <p
+            className={cn(
+              'text-center text-xs font-medium',
+              belowThresholdColor
+            )}
+          >
+            {Math.abs(Math.round(thresholdGap))} pts below {pct(cap.threshold)}
+          </p>
+        ) : (
+          <p className="text-center text-xs text-muted-foreground">
+            vs threshold {pct(cap.threshold)}
+          </p>
+        )}
       </div>
       {footer ? <div className="px-5 pb-5 pt-2">{footer}</div> : null}
     </section>
