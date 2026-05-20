@@ -48,9 +48,18 @@ describe('ScoreFeature', () => {
     expect(screen.getByText(/vs threshold 85%/)).toBeInTheDocument()
   })
 
-  it('renders below-threshold copy when score is below threshold', () => {
+  it('renders below-threshold copy in warning color when within watch band', () => {
     renderFeature({ ...SNAP, overallScore: 0.8, thresholdBreached: true })
-    expect(screen.getByText(/pts below 85%/)).toBeInTheDocument()
+    const caption = screen.getByText(/pts below 85%/)
+    expect(caption).toBeInTheDocument()
+    expect(caption).toHaveClass('text-warning')
+  })
+
+  it('renders below-threshold copy in destructive color when score breaches block band', () => {
+    renderFeature({ ...SNAP, overallScore: 0.7, thresholdBreached: true })
+    const caption = screen.getByText(/pts below 85%/)
+    expect(caption).toBeInTheDocument()
+    expect(caption).toHaveClass('text-destructive')
   })
 
   it('renders aggregate copy when threshold is null', () => {
