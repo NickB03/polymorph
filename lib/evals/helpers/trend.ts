@@ -3,12 +3,6 @@ import type {
   PersistedDashboardSuite
 } from '@/lib/evals/types'
 
-const SUITE_KEYS: PersistedDashboardSuite[] = [
-  'capability',
-  'traffic-monitor',
-  'regression'
-]
-
 const SUITE_ALIAS: Record<
   PersistedDashboardSuite,
   'capability' | 'trafficMonitor' | 'regression'
@@ -49,5 +43,3 @@ export function buildTrendSeries(
     (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
   )
 }
-
-export const TREND_SUITES = SUITE_KEYS

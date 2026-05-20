@@ -14,12 +14,13 @@ import {
   getEvaluatorLabel
 } from '@/lib/evals/evaluator-labels'
 import { snapshotSuiteKey } from '@/lib/evals/glossary'
-import { buildTrendSeries } from '@/lib/evals/helpers/trend'
+import { buildTrendSeries, type TrendPoint } from '@/lib/evals/helpers/trend'
 import type {
   EvalsDashboardData,
   EvalSummarySnapshot,
   PersistedDashboardSuite
 } from '@/lib/evals/types'
+import { useReducedMotion } from '@/lib/motion/use-reduced-motion'
 import { cn } from '@/lib/utils'
 
 import { Area, AreaChart } from '@/components/charts/area-chart'
@@ -65,6 +66,7 @@ function buildRows(data: EvalsDashboardData): Row[] {
 export function ActivityList({ data }: { data: EvalsDashboardData }) {
   const rows = buildRows(data)
   const trendPoints = buildTrendSeries(data.recentRuns)
+  const reducedMotion = useReducedMotion()
   const [expanded, setExpanded] = useState<string | null>(rows[0]?.id ?? null)
 
   if (rows.length === 0) return null
@@ -95,6 +97,7 @@ export function ActivityList({ data }: { data: EvalsDashboardData }) {
             xDataKey="createdAt"
             aspectRatio="5 / 1"
             margin={{ top: 8, right: 16, bottom: 24, left: 32 }}
+            animationDuration={reducedMotion ? 0 : undefined}
           >
             <Grid horizontal />
             <Area
@@ -115,12 +118,7 @@ export function ActivityList({ data }: { data: EvalsDashboardData }) {
             <XAxis />
             <ChartTooltip
               rows={point => {
-                const p = point as {
-                  createdAt: Date
-                  capability: number | null
-                  trafficMonitor: number | null
-                  regression: number | null
-                }
+                const p = point as unknown as TrendPoint
                 const out: Array<{
                   color: string
                   label: string
