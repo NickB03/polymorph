@@ -78,25 +78,6 @@ export function EvaluatorBreakdown({
     [snap, previous]
   )
 
-  const reducedMotion = useReducedMotion()
-  const radarStatus = getSuiteStatus(snap, previous ?? null)
-  const radarColor = STATUS_TOKENS[radarStatus].cssVar
-
-  const radarMetrics = evaluators.map(key => ({
-    key,
-    label: localLabel(key)
-  }))
-  const radarValues = Object.fromEntries(
-    evaluators.map(key => [key, (snap.evaluatorScores[key] ?? 0) * 100])
-  )
-  const radarData = [
-    {
-      label: 'This run',
-      color: radarColor,
-      values: radarValues
-    }
-  ]
-
   return (
     <section className="flex h-full flex-col gap-5 rounded-xl border border-border bg-card p-6">
       <div className="space-y-1">
@@ -110,21 +91,11 @@ export function EvaluatorBreakdown({
       </div>
 
       {evaluators.length >= 3 ? (
-        <div className="flex justify-center" data-testid="evaluator-radar">
-          <RadarChart
-            data={radarData}
-            metrics={radarMetrics}
-            size={240}
-            levels={4}
-            margin={48}
-            animate={!reducedMotion}
-          >
-            <RadarGrid showLabels={false} />
-            <RadarAxis />
-            <RadarLabels offset={20} fontSize={10} />
-            <RadarArea index={0} showPoints showGlow />
-          </RadarChart>
-        </div>
+        <EvaluatorRadar
+          snap={snap}
+          previous={previous ?? null}
+          evaluators={evaluators}
+        />
       ) : null}
 
       <ul className="divide-y divide-border border-t border-border">
@@ -223,6 +194,50 @@ export function EvaluatorBreakdown({
         ) : null}
       </div>
     </section>
+  )
+}
+
+function EvaluatorRadar({
+  snap,
+  previous,
+  evaluators
+}: {
+  snap: EvalSummarySnapshot
+  previous: EvalSummarySnapshot | null
+  evaluators: string[]
+}) {
+  const reducedMotion = useReducedMotion()
+  const status = getSuiteStatus(snap, previous)
+  const data = [
+    {
+      label: 'This run',
+      color: STATUS_TOKENS[status].cssVar,
+      values: Object.fromEntries(
+        evaluators.map(key => [
+          key,
+          (snap.evaluatorScores[key] as number) * 100
+        ])
+      )
+    }
+  ]
+  const metrics = evaluators.map(key => ({ key, label: localLabel(key) }))
+
+  return (
+    <div className="flex justify-center" data-testid="evaluator-radar">
+      <RadarChart
+        data={data}
+        metrics={metrics}
+        size={240}
+        levels={4}
+        margin={48}
+        animate={!reducedMotion}
+      >
+        <RadarGrid showLabels={false} />
+        <RadarAxis />
+        <RadarLabels offset={20} fontSize={10} />
+        <RadarArea index={0} showPoints showGlow />
+      </RadarChart>
+    </div>
   )
 }
 

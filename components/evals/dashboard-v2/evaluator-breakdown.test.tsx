@@ -153,16 +153,8 @@ describe('EvaluatorBreakdown', () => {
   })
 
   it('renders a radar chart with every populated evaluator label', () => {
-    render(
-      <TooltipProvider>
-        <EvaluatorBreakdown
-          snap={FIXTURE_WITH_ALL_EVALUATORS}
-          previous={null}
-        />
-      </TooltipProvider>
-    )
+    renderBreakdown(FIXTURE_WITH_ALL_EVALUATORS)
     for (const key of EVALUATOR_DISPLAY_ORDER) {
-      if (FIXTURE_WITH_ALL_EVALUATORS.evaluatorScores[key] == null) continue
       expect(screen.getAllByText(localLabel(key)).length).toBeGreaterThan(1)
     }
   })
