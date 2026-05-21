@@ -40,7 +40,7 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
     return (
       <TooltipProvider delayDuration={200}>
         <div className="flex flex-1 min-h-0 min-w-0 flex-col overflow-y-auto">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-8 sm:px-8 lg:px-12">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-14 sm:px-8 sm:pt-8 lg:px-12">
             <Header
               view="suites"
               onChange={() => {}}
@@ -79,7 +79,7 @@ function DashboardWithViews({ data }: { data: EvalsDashboardData }) {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex flex-1 min-h-0 min-w-0 flex-col overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-8 sm:px-8 lg:px-12">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-14 sm:px-8 sm:pt-8 lg:px-12">
           <Header view={view} onChange={setView} data={data} />
 
           {view === 'suites' ? (
