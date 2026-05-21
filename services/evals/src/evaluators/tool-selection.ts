@@ -42,7 +42,7 @@ ${input.model_answer}
 
 Label:`
 
-type Label = 'correct' | 'wrong' | 'missing' | 'not_required'
+export type Label = 'correct' | 'wrong' | 'missing' | 'not_required'
 
 function scoreFor(label: Label): number | null {
   if (label === 'correct') return 1.0
@@ -50,22 +50,35 @@ function scoreFor(label: Label): number | null {
   return null
 }
 
-function parseLabel(text: string): Label {
-  const normalized = text.trim().toLowerCase()
-  if (normalized.startsWith('correct')) return 'correct'
-  if (normalized.startsWith('wrong')) return 'wrong'
-  if (normalized.startsWith('missing')) return 'missing'
-  return 'not_required'
+export class ToolSelectionParseError extends Error {
+  constructor(text: string) {
+    super(
+      `tool_selection judge returned an unrecognized label: ${JSON.stringify(text)}`
+    )
+    this.name = 'ToolSelectionParseError'
+  }
 }
 
-interface ToolSelectionInput {
+export function parseLabel(text: string): Label {
+  const firstWord = text
+    .trim()
+    .toLowerCase()
+    .split(/[\s,.:;—-]/)[0]
+  if (firstWord === 'correct') return 'correct'
+  if (firstWord === 'wrong') return 'wrong'
+  if (firstWord === 'missing') return 'missing'
+  if (firstWord === 'not_required' || firstWord === 'not') return 'not_required'
+  throw new ToolSelectionParseError(text)
+}
+
+export interface ToolSelectionInput {
   query: string
   available_tools: string[]
   tools_called: string[]
   model_answer: string
 }
 
-interface ToolSelectionOutput {
+export interface ToolSelectionOutput {
   toolNames: string[]
   modelAnswer: string
 }
