@@ -12,7 +12,7 @@ const EVALUATOR_LABELS = {
 const EVALUATOR_COLORS = {
   deterministic_prechecks: 'var(--chart-1)',
   tool_usage: 'var(--chart-2)',
-  tool_selection: 'var(--chart-2)',
+  tool_selection: 'hsl(262 52% 47%)',
   faithfulness: 'var(--chart-3)',
   relevance: 'var(--chart-4)',
   response_quality: 'var(--chart-5)',

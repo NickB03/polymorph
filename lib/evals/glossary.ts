@@ -116,7 +116,9 @@ export const SCORE_INSIGHTS: Record<SuiteKey, Record<string, ScoreInsight>> = {
       total: 0,
       failureModes: [
         mode('Wrong tool chosen when a more specific one was available.'),
-        mode('Tool called when a direct answer was more appropriate.')
+        mode(
+          'Display tool used for a factual lookup instead of search or fetch.'
+        )
       ]
     },
     deterministic_prechecks: {
