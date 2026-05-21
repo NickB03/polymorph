@@ -3,15 +3,15 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-import { createToolSelectionExperimentEvaluator } from './tool-selection'
+import {
+  createToolSelectionExperimentEvaluator,
+  type ToolSelectionInput
+} from './tool-selection'
 
-interface LabeledFixture {
+interface LabeledFixture extends ToolSelectionInput {
   case_id: string
-  user_query: string
-  available_tools: string[]
-  tools_called: string[]
-  model_answer: string
   human_label: 'correct_tool' | 'wrong_tool' | 'missing_tool' | 'no_tool_needed'
+  rationale?: string
 }
 
 const HUMAN_TO_JUDGE_LABEL: Record<LabeledFixture['human_label'], string> = {
@@ -40,6 +40,8 @@ describe.skipIf(!apiKey)(
         baseURL: process.env.JUDGE_BASE_URL ?? 'https://openrouter.ai/api/v1',
         apiKey
       })
+      // Pinned for stable, reproducible measurements — intentionally not the
+      // production default (services/evals/src/judge-config.ts may drift).
       const judgeModel = provider('google/gemini-2.0-flash-lite-001')
       const evaluator = createToolSelectionExperimentEvaluator(judgeModel)
 
@@ -47,7 +49,7 @@ describe.skipIf(!apiKey)(
         fixtures.map(async fx => {
           const result = await evaluator.evaluate({
             input: {
-              query: fx.user_query,
+              query: fx.query,
               available_tools: fx.available_tools,
               tools_called: fx.tools_called,
               model_answer: fx.model_answer
@@ -66,14 +68,22 @@ describe.skipIf(!apiKey)(
       const negatives = results.filter(r =>
         ['wrong', 'missing'].includes(r.expectedLabel)
       )
+      const notRequired = results.filter(
+        r => r.expectedLabel === 'not_required'
+      )
 
       const tp = positives.filter(r => r.judgeLabel === 'correct').length
       const tn = negatives.filter(r =>
         ['wrong', 'missing'].includes(r.judgeLabel as string)
       ).length
+      const tnReq = notRequired.filter(
+        r => r.judgeLabel === 'not_required'
+      ).length
 
       const tpr = positives.length === 0 ? 1 : tp / positives.length
       const tnr = negatives.length === 0 ? 1 : tn / negatives.length
+      const notRequiredRate =
+        notRequired.length === 0 ? 1 : tnReq / notRequired.length
 
       const mismatches = results.filter(r => r.judgeLabel !== r.expectedLabel)
       if (mismatches.length > 0) {
@@ -89,6 +99,9 @@ describe.skipIf(!apiKey)(
 
       expect(tpr).toBeGreaterThanOrEqual(0.8)
       expect(tnr).toBeGreaterThanOrEqual(0.8)
+      // Lower threshold because the not_required class has only 3 fixtures;
+      // 2/3 (0.66) keeps the gate meaningful without making it deterministic-flap.
+      expect(notRequiredRate).toBeGreaterThanOrEqual(0.66)
     }, 120_000)
   }
 )
