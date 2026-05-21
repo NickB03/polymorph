@@ -29,6 +29,7 @@ import { createNoToolPlaceholdersExperimentEvaluator } from '../evaluators/no-to
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
 import { createSafetyExperimentEvaluator } from '../evaluators/safety'
+import { createToolSelectionExperimentEvaluator } from '../evaluators/tool-selection'
 import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { createJudgeModel, JUDGE_DEFAULT_SETTINGS } from '../judge-model'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
@@ -116,6 +117,7 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     prechecks: createDeterministicPrecheckEvaluator,
     toolUsage: createToolUsageExperimentEvaluator,
     noToolPlaceholders: createNoToolPlaceholdersExperimentEvaluator,
+    toolSelection: createToolSelectionExperimentEvaluator,
     faithfulness: createFaithfulnessExperimentEvaluator,
     relevance: createRelevanceExperimentEvaluator,
     responseQuality: createResponseQualityExperimentEvaluator,
@@ -331,6 +333,7 @@ export interface EvaluatorFactories {
   prechecks: () => Evaluator
   toolUsage: () => Evaluator
   noToolPlaceholders: () => Evaluator
+  toolSelection: (model: LanguageModel) => Evaluator
   faithfulness: (model: LanguageModel) => Evaluator
   relevance: (model: LanguageModel) => Evaluator
   responseQuality: (model: LanguageModel) => Evaluator
@@ -346,6 +349,7 @@ export function buildExperimentEvaluators(
     prechecks,
     toolUsage,
     noToolPlaceholders,
+    toolSelection,
     faithfulness,
     relevance,
     responseQuality,
@@ -357,6 +361,7 @@ export function buildExperimentEvaluators(
     prechecks(),
     toolUsage(),
     noToolPlaceholders(),
+    wrapEvaluatorWithRetry(toolSelection(model)),
     wrapEvaluatorWithRetry(faithfulness(model)),
     wrapEvaluatorWithRetry(relevance(model)),
     wrapEvaluatorWithRetry(responseQuality(model)),

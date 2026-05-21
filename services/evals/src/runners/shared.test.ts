@@ -144,6 +144,14 @@ vi.mock('../evaluators/tool-usage', () => ({
   }))
 }))
 
+vi.mock('../evaluators/tool-selection', () => ({
+  createToolSelectionExperimentEvaluator: vi.fn(() => ({
+    name: 'tool_selection',
+    kind: 'LLM',
+    evaluate: vi.fn()
+  }))
+}))
+
 vi.mock('../evaluators/safety', () => ({
   createSafetyExperimentEvaluator: vi.fn(() => ({
     name: 'safety',
@@ -648,6 +656,11 @@ describe('buildExperimentEvaluators', () => {
         kind: 'CODE',
         evaluate: () => ({ label: 'pass', score: 1 })
       }),
+      toolSelection: () => ({
+        name: 'tool_selection',
+        kind: 'LLM',
+        evaluate: () => ({ label: 'correct', score: 1 })
+      }),
       faithfulness: () => ({
         name: 'faithfulness',
         kind: 'LLM',
@@ -676,14 +689,15 @@ describe('buildExperimentEvaluators', () => {
       model: {} as LanguageModel
     })
 
-    expect(evaluators).toHaveLength(8)
+    expect(evaluators).toHaveLength(9)
     expect(evaluators[0].name).toBe('deterministic_prechecks')
     expect(evaluators[1].name).toBe('tool_usage')
     expect(evaluators[2].name).toBe('no_tool_placeholders')
-    expect(evaluators[3].name).toBe('faithfulness')
+    expect(evaluators[3].name).toBe('tool_selection')
+    expect(evaluators[4].name).toBe('faithfulness')
 
     // The faithfulness evaluator should retry and eventually succeed
-    const resultPromise = evaluators[3].evaluate({} as any)
+    const resultPromise = evaluators[4].evaluate({} as any)
     await vi.advanceTimersByTimeAsync(2000) // first retry delay
     await vi.advanceTimersByTimeAsync(4000) // second retry delay
     const result = await resultPromise
