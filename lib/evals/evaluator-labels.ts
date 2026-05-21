@@ -1,6 +1,7 @@
 const EVALUATOR_LABELS = {
   deterministic_prechecks: 'Prechecks',
   tool_usage: 'Tool Usage',
+  tool_selection: 'Tool Selection',
   faithfulness: 'Faithfulness',
   relevance: 'Relevance',
   response_quality: 'Response Quality',
@@ -11,6 +12,7 @@ const EVALUATOR_LABELS = {
 const EVALUATOR_COLORS = {
   deterministic_prechecks: 'var(--chart-1)',
   tool_usage: 'var(--chart-2)',
+  tool_selection: 'var(--chart-2)',
   faithfulness: 'var(--chart-3)',
   relevance: 'var(--chart-4)',
   response_quality: 'var(--chart-5)',
@@ -43,6 +45,7 @@ export const EVALUATOR_DISPLAY_ORDER: Array<keyof typeof EVALUATOR_LABELS> = [
   'relevance',
   'deterministic_prechecks',
   'tool_usage',
+  'tool_selection',
   'safety'
 ]
 

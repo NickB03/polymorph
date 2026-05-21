@@ -35,6 +35,7 @@ export const DEFINITIONS = {
   citation_accuracy:
     'Do the citations actually support the claims they accompany?',
   tool_usage: 'Did the agent use the right tools at the right time?',
+  tool_selection: 'Was the most appropriate tool chosen for the user query?',
   deterministic_prechecks:
     'Mechanical eligibility checks that gate whether a case is valid for scoring.'
 } as const
@@ -46,6 +47,7 @@ const JUDGE_DEFINITIONS: Record<string, string> = {
   response_quality: DEFINITIONS.response_quality,
   citation_accuracy: DEFINITIONS.citation_accuracy,
   tool_usage: DEFINITIONS.tool_usage,
+  tool_selection: DEFINITIONS.tool_selection,
   deterministic_prechecks: DEFINITIONS.deterministic_prechecks
 }
 
@@ -107,6 +109,14 @@ export const SCORE_INSIGHTS: Record<SuiteKey, Record<string, ScoreInsight>> = {
       failureModes: [
         mode('Used search when the prompt could be answered directly.'),
         mode('Skipped a tool call when current data was required.')
+      ]
+    },
+    tool_selection: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Wrong tool chosen when a more specific one was available.'),
+        mode('Tool called when a direct answer was more appropriate.')
       ]
     },
     deterministic_prechecks: {
@@ -171,6 +181,14 @@ export const SCORE_INSIGHTS: Record<SuiteKey, Record<string, ScoreInsight>> = {
         mode('Called a tool but ignored or overrode its result.')
       ]
     },
+    tool_selection: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Chose a broad tool when a precise specialist tool existed.'),
+        mode('Tool selected did not match the query intent or data type.')
+      ]
+    },
     deterministic_prechecks: {
       passed: 0,
       total: 0,
@@ -227,6 +245,14 @@ export const SCORE_INSIGHTS: Record<SuiteKey, Record<string, ScoreInsight>> = {
       failureModes: [
         mode('Known tool-routing case chose the wrong tool.'),
         mode('Pinned no-tool case triggered unnecessary retrieval.')
+      ]
+    },
+    tool_selection: {
+      passed: 0,
+      total: 0,
+      failureModes: [
+        mode('Previously fixed tool-choice mistake reappeared.'),
+        mode('Pinned query now selects a less specific tool than expected.')
       ]
     },
     deterministic_prechecks: {
