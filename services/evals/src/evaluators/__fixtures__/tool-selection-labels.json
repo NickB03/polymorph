@@ -1,0 +1,293 @@
+[
+  {
+    "case_id": "synthetic-correct-001",
+    "user_query": "What's the current weather in Tokyo?",
+    "available_tools": [
+      "search",
+      "fetch",
+      "geocodeAddress",
+      "getDirections",
+      "displayCallout"
+    ],
+    "tools_called": ["search"],
+    "model_answer": "Tokyo is currently 18°C and partly cloudy, per weather.com.",
+    "human_label": "correct_tool",
+    "rationale": "Fresh factual lookup; search is the right primitive."
+  },
+  {
+    "case_id": "synthetic-correct-002",
+    "user_query": "Find me three competitors for Notion and compare their pricing.",
+    "available_tools": [
+      "search",
+      "fetch",
+      "competitorResearch",
+      "displayTable"
+    ],
+    "tools_called": ["competitorResearch", "displayTable"],
+    "model_answer": "Notion competitors: Coda ($10/user/mo), Obsidian (free), ClickUp ($7/user/mo). See table.",
+    "human_label": "correct_tool",
+    "rationale": "Multi-source competitive analysis is the competitorResearch specialist's job; displayTable renders the comparison."
+  },
+  {
+    "case_id": "synthetic-correct-003",
+    "user_query": "How long does it take to drive from San Francisco to Los Angeles?",
+    "available_tools": [
+      "geocodeAddress",
+      "getDirections",
+      "getIsochrone",
+      "displayGeoMap"
+    ],
+    "tools_called": ["geocodeAddress", "getDirections"],
+    "model_answer": "About 6 hours and 5 minutes, 383 miles via I-5.",
+    "human_label": "correct_tool",
+    "rationale": "Routing query; geocode the cities then call getDirections — exactly right."
+  },
+  {
+    "case_id": "synthetic-correct-004",
+    "user_query": "Show me a map of the area within 15 minutes drive of the Empire State Building.",
+    "available_tools": ["geocodeAddress", "getIsochrone", "displayGeoMap"],
+    "tools_called": ["geocodeAddress", "getIsochrone", "displayGeoMap"],
+    "model_answer": "Here is the 15-minute drive isochrone from the Empire State Building.",
+    "human_label": "correct_tool",
+    "rationale": "Drive-time polygon is the isochrone tool's purpose; displayGeoMap renders it."
+  },
+  {
+    "case_id": "synthetic-correct-005",
+    "user_query": "Tell me a short joke.",
+    "available_tools": ["search", "displayCallout"],
+    "tools_called": [],
+    "model_answer": "Why don't scientists trust atoms? Because they make up everything.",
+    "human_label": "correct_tool",
+    "rationale": "Pure conversational request; no tool needed — correctly answered from priors."
+  },
+  {
+    "case_id": "synthetic-correct-006",
+    "user_query": "What's 47 times 31?",
+    "available_tools": ["search"],
+    "tools_called": [],
+    "model_answer": "47 × 31 = 1457.",
+    "human_label": "correct_tool",
+    "rationale": "Basic arithmetic; no tool needed."
+  },
+  {
+    "case_id": "synthetic-correct-007",
+    "user_query": "Fetch the README from https://github.com/openai/openai-python and summarize it.",
+    "available_tools": ["search", "fetch"],
+    "tools_called": ["fetch"],
+    "model_answer": "The openai-python README documents the official OpenAI Python client...",
+    "human_label": "correct_tool",
+    "rationale": "Direct URL retrieval; fetch is the right primitive, not search."
+  },
+  {
+    "case_id": "synthetic-correct-008",
+    "user_query": "What are the latest changes to React 19?",
+    "available_tools": ["search", "fetch", "displayCitations"],
+    "tools_called": ["search", "displayCitations"],
+    "model_answer": "React 19 introduces server actions, the use() hook, and improved hydration. [1][2]",
+    "human_label": "correct_tool",
+    "rationale": "Fresh tech-news lookup with citations rendered — appropriate composition."
+  },
+  {
+    "case_id": "synthetic-correct-009",
+    "user_query": "Walk me through a plan to migrate from Redux to Zustand.",
+    "available_tools": ["displayPlan", "search"],
+    "tools_called": ["displayPlan"],
+    "model_answer": "Step 1: install zustand. Step 2: create a store. Step 3: ...",
+    "human_label": "correct_tool",
+    "rationale": "Multi-step plan request matches displayPlan's purpose; no live data needed."
+  },
+  {
+    "case_id": "synthetic-correct-010",
+    "user_query": "What's the capital of France?",
+    "available_tools": ["search"],
+    "tools_called": [],
+    "model_answer": "Paris.",
+    "human_label": "correct_tool",
+    "rationale": "Stable fact in training data; no tool call required."
+  },
+  {
+    "case_id": "synthetic-correct-011",
+    "user_query": "Get directions from the Brooklyn Bridge to JFK Airport.",
+    "available_tools": ["geocodeAddress", "getDirections", "displayGeoMap"],
+    "tools_called": ["geocodeAddress", "getDirections", "displayGeoMap"],
+    "model_answer": "Brooklyn Bridge to JFK: 22 minutes, 14 miles via I-678.",
+    "human_label": "correct_tool",
+    "rationale": "Routing query; the three-tool combo is the canonical pattern."
+  },
+  {
+    "case_id": "synthetic-correct-012",
+    "user_query": "Compare the latest iPhone and Pixel side by side.",
+    "available_tools": ["search", "displayTable", "displayChart"],
+    "tools_called": ["search", "displayTable"],
+    "model_answer": "Here is a side-by-side comparison of iPhone 16 Pro and Pixel 9 Pro specs.",
+    "human_label": "correct_tool",
+    "rationale": "Fresh-data lookup followed by structured table; right composition."
+  },
+  {
+    "case_id": "synthetic-wrong-001",
+    "user_query": "What's the current weather in Tokyo?",
+    "available_tools": ["search", "displayPlan", "displayCallout"],
+    "tools_called": ["displayCallout"],
+    "model_answer": "Here is information about Tokyo weather.",
+    "human_label": "wrong_tool",
+    "rationale": "Display tool emits UI but doesn't fetch data; should have called search."
+  },
+  {
+    "case_id": "synthetic-wrong-002",
+    "user_query": "How long does it take to drive from SF to LA?",
+    "available_tools": [
+      "geocodeAddress",
+      "getDirections",
+      "getStaticMapImage",
+      "displayGeoMap"
+    ],
+    "tools_called": ["getStaticMapImage"],
+    "model_answer": "Here is a map of California.",
+    "human_label": "wrong_tool",
+    "rationale": "Static map image doesn't return drive time; getDirections is the right choice."
+  },
+  {
+    "case_id": "synthetic-wrong-003",
+    "user_query": "Look up biographical details for Albert Einstein.",
+    "available_tools": ["search", "geocodeAddress", "fetch"],
+    "tools_called": ["geocodeAddress"],
+    "model_answer": "I could not find an address for Albert Einstein.",
+    "human_label": "wrong_tool",
+    "rationale": "Geocode only resolves real addresses, not biographical entities."
+  },
+  {
+    "case_id": "synthetic-wrong-004",
+    "user_query": "Update the chart in my canvas to use a logarithmic y-axis.",
+    "available_tools": ["search", "updateCanvasArtifact", "readCanvasArtifact"],
+    "tools_called": ["search"],
+    "model_answer": "Here are some articles about logarithmic chart axes.",
+    "human_label": "wrong_tool",
+    "rationale": "User wants to modify an existing canvas; canvas tools are the right path, not search."
+  },
+  {
+    "case_id": "synthetic-wrong-005",
+    "user_query": "Show me the time in Sydney right now.",
+    "available_tools": ["search", "geocodeAddress"],
+    "tools_called": ["geocodeAddress"],
+    "model_answer": "Sydney is at -33.87°, 151.21°.",
+    "human_label": "wrong_tool",
+    "rationale": "Time-of-day question; geocode returns coordinates, not time. Search is appropriate."
+  },
+  {
+    "case_id": "synthetic-wrong-006",
+    "user_query": "Plan a weekend trip to Paris.",
+    "available_tools": ["displayPlan", "displayTimeline", "displayChart"],
+    "tools_called": ["displayChart"],
+    "model_answer": "Here is a chart of Paris attractions.",
+    "human_label": "wrong_tool",
+    "rationale": "A trip plan is best rendered with displayPlan or displayTimeline; a chart is a poor fit."
+  },
+  {
+    "case_id": "synthetic-wrong-007",
+    "user_query": "What's a good URL for documentation on Next.js routing?",
+    "available_tools": ["search", "displayLinkPreview", "geocodeAddress"],
+    "tools_called": ["geocodeAddress"],
+    "model_answer": "The address for Next.js routing is not a real location.",
+    "human_label": "wrong_tool",
+    "rationale": "URL lookup is a search task; geocode is unrelated."
+  },
+  {
+    "case_id": "synthetic-wrong-008",
+    "user_query": "Which display components are most cited by users?",
+    "available_tools": ["search", "displayCitations", "displayTable"],
+    "tools_called": ["displayCitations"],
+    "model_answer": "Here are the citations.",
+    "human_label": "wrong_tool",
+    "rationale": "displayCitations renders sources but doesn't aggregate analytics; this is a data question that needed search or a different surface."
+  },
+  {
+    "case_id": "synthetic-wrong-009",
+    "user_query": "Set a 25-minute pomodoro timer.",
+    "available_tools": ["setTodos", "displayCallout", "search"],
+    "tools_called": ["search"],
+    "model_answer": "Here are articles about pomodoro timers.",
+    "human_label": "wrong_tool",
+    "rationale": "User wants a task action, not information; this assistant has no timer tool — should respond conversationally, not search."
+  },
+  {
+    "case_id": "synthetic-wrong-010",
+    "user_query": "Geocode San Francisco and tell me when sunset is there tonight.",
+    "available_tools": ["geocodeAddress", "search"],
+    "tools_called": ["geocodeAddress"],
+    "model_answer": "San Francisco is at 37.77°N, 122.42°W.",
+    "human_label": "wrong_tool",
+    "rationale": "Got the geocode call right but skipped the search needed for sunset time — half-correct tool selection counts as wrong overall."
+  },
+  {
+    "case_id": "synthetic-wrong-011",
+    "user_query": "Show me a question wizard to help me decide between hosting platforms.",
+    "available_tools": ["displayQuestionWizard", "displayTable", "search"],
+    "tools_called": ["displayTable"],
+    "model_answer": "Here is a comparison table of hosting platforms.",
+    "human_label": "wrong_tool",
+    "rationale": "User explicitly asked for a question wizard; displayQuestionWizard exists and fits."
+  },
+  {
+    "case_id": "synthetic-wrong-012",
+    "user_query": "Render a chart of these numbers: 5, 8, 12, 4, 9.",
+    "available_tools": ["displayChart", "displayTable", "displayPlan"],
+    "tools_called": ["displayPlan"],
+    "model_answer": "Step 1: take 5. Step 2: take 8. Step 3: take 12.",
+    "human_label": "wrong_tool",
+    "rationale": "Explicit chart request; displayChart is the right surface, not displayPlan."
+  },
+  {
+    "case_id": "synthetic-missing-001",
+    "user_query": "What is the current price of Bitcoin?",
+    "available_tools": ["search", "fetch", "displayCallout"],
+    "tools_called": [],
+    "model_answer": "Bitcoin is around $30,000 based on my training data.",
+    "human_label": "missing_tool",
+    "rationale": "Live market price; model answered from stale priors without calling search."
+  },
+  {
+    "case_id": "synthetic-missing-002",
+    "user_query": "What time zone is Hong Kong in?",
+    "available_tools": ["geocodeAddress", "search"],
+    "tools_called": [],
+    "model_answer": "Hong Kong is in UTC+8.",
+    "human_label": "missing_tool",
+    "rationale": "Even though the answer happens to be correct, fresh-info questions about live state should call search to ground the response."
+  },
+  {
+    "case_id": "synthetic-missing-003",
+    "user_query": "Who won the most recent Super Bowl?",
+    "available_tools": ["search", "displayCitations"],
+    "tools_called": [],
+    "model_answer": "The most recent Super Bowl was won by the Kansas City Chiefs.",
+    "human_label": "missing_tool",
+    "rationale": "Post-knowledge-cutoff sports query; should have called search to verify."
+  },
+  {
+    "case_id": "synthetic-not_required-001",
+    "user_query": "Hi, how are you?",
+    "available_tools": ["search", "displayCallout"],
+    "tools_called": [],
+    "model_answer": "I'm doing well, thanks for asking. How can I help?",
+    "human_label": "no_tool_needed",
+    "rationale": "Greeting; no tool call appropriate."
+  },
+  {
+    "case_id": "synthetic-not_required-002",
+    "user_query": "What can you help me with?",
+    "available_tools": ["search", "displayCallout", "displayPlan"],
+    "tools_called": [],
+    "model_answer": "I can answer questions, search the web, look up directions, render charts and tables, and more.",
+    "human_label": "no_tool_needed",
+    "rationale": "Meta-question about capabilities; no tool needed."
+  },
+  {
+    "case_id": "synthetic-not_required-003",
+    "user_query": "Thanks, that was helpful.",
+    "available_tools": ["search", "displayCallout"],
+    "tools_called": [],
+    "model_answer": "You're welcome. Let me know if anything else comes up.",
+    "human_label": "no_tool_needed",
+    "rationale": "Closing/acknowledgment; conversational only."
+  }
+]
