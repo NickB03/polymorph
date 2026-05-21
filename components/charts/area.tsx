@@ -90,6 +90,14 @@ export function Area({
     [dataKey, yScale]
   )
 
+  // LOCAL PATCH (not upstream bklit): render missing values as gaps, not 0.
+  // buildTrendSeries emits null for suites that didn't run at a timestamp; without
+  // this predicate visx draws those points at y=0, creating false "0% craters".
+  const isDefined = useCallback(
+    (d: Record<string, unknown>) => typeof d[dataKey] === 'number',
+    [dataKey]
+  )
+
   /** Polyline chord lengths along data order (no DOM); used for highlight dash math */
   const chordMetrics = useMemo(() => {
     const cumulative: number[] = [0]
@@ -326,6 +334,7 @@ export function Area({
             <AreaClosed
               curve={curve}
               data={data}
+              defined={isDefined}
               fill={`url(#${gradientId})`}
               x={d => xScale(xAccessor(d)) ?? 0}
               y={getY}
@@ -338,6 +347,7 @@ export function Area({
             <LinePath
               curve={curve}
               data={data}
+              defined={isDefined}
               innerRef={pathRef}
               stroke={`url(#${strokeGradientId})`}
               strokeLinecap="round"
