@@ -22,7 +22,7 @@
 
 <br>
 
-<video src="https://github.com/user-attachments/assets/5d638ccd-a781-4b3d-847d-e58796238576" controls muted playsinline width="880"></video>
+<img src="docs/assets/demos/polymorph-demo.gif" alt="Polymorph demo: canvas artifacts, generative UI, conversational workflows, and the evals dashboard" width="880">
 
 <p><sub>Polymorph end to end — canvas artifacts, generative UI, conversational workflows, and the evals dashboard.</sub></p>
 
