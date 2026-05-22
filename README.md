@@ -22,25 +22,11 @@
 
 <br>
 
-<img src="docs/assets/demos/canvas.gif" alt="Polymorph Canvas: describe a UI and watch it compile live" width="880">
+<video src="https://github.com/user-attachments/assets/REPLACE-WITH-UPLOAD-URL" controls muted playsinline width="880"></video>
 
-<p><sub>Describe a UI. Watch it compile live.</sub></p>
+<p><sub>Polymorph end to end — canvas artifacts, generative UI, conversational workflows, and the evals dashboard.</sub></p>
 
 </div>
-
-## See it in action
-
-### Multi-step research agent
-
-Parallel web queries with reasoning across sources, synthesized into a sourced answer with inline citations.
-
-<img src="docs/assets/demos/research.gif" alt="Polymorph research mode: parallel web queries and synthesized answer" width="880">
-
-### Geo intelligence
-
-Real maps, directions, and reachability polygons rendered inline in the conversation — not links to a third-party site.
-
-<img src="docs/assets/demos/geo.gif" alt="Polymorph geo intelligence: interactive maps and data tables inline" width="880">
 
 ## Features
 
