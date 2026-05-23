@@ -107,6 +107,15 @@ export function Area({
       if (!(d0 && d1)) {
         continue
       }
+      // LOCAL PATCH: skip segments where either endpoint is null/missing so the
+      // chord total matches the rendered (gap-aware) line length. Without this,
+      // the hover highlight stroke-dasharray reserves length for phantom
+      // drop-to-zero segments that aren't actually rendered, producing
+      // misaligned highlights on sparse trend series.
+      if (!isDefined(d0) || !isDefined(d1)) {
+        cumulative.push(total)
+        continue
+      }
       const x0 = xScale(xAccessor(d0)) ?? 0
       const x1 = xScale(xAccessor(d1)) ?? 0
       const y0 = getY(d0)
@@ -115,7 +124,7 @@ export function Area({
       cumulative.push(total)
     }
     return { cumulative, total }
-  }, [data, xScale, xAccessor, getY])
+  }, [data, xScale, xAccessor, getY, isDefined])
 
   const approximateLengthAtX = useCallback(
     (targetX: number) => {

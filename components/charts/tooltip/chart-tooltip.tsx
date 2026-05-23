@@ -179,16 +179,26 @@ export function ChartTooltip({
           width="100%"
         >
           <g transform={`translate(${margin.left},${margin.top})`}>
-            {lines.map(line => (
-              <TooltipDot
-                color={line.stroke}
-                key={line.dataKey}
-                strokeColor={chartCssVars.background}
-                visible={visible}
-                x={tooltipData?.xPositions?.[line.dataKey] ?? x}
-                y={tooltipData?.yPositions[line.dataKey] ?? 0}
-              />
-            ))}
+            {lines.map(line => {
+              // LOCAL PATCH: useChartInteraction omits series from yPositions
+              // when the hovered datum's value is null. Hide the dot for those
+              // series instead of falling back to y=0 (which would stack
+              // phantom dots along the chart's bottom edge).
+              const dotY = tooltipData?.yPositions[line.dataKey]
+              if (dotY == null) {
+                return null
+              }
+              return (
+                <TooltipDot
+                  color={line.stroke}
+                  key={line.dataKey}
+                  strokeColor={chartCssVars.background}
+                  visible={visible}
+                  x={tooltipData?.xPositions?.[line.dataKey] ?? x}
+                  y={dotY}
+                />
+              )
+            })}
           </g>
         </svg>
       )}
