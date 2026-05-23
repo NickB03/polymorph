@@ -71,6 +71,7 @@ export function parseLabel(text: string): Label {
   throw new ToolSelectionParseError(text)
 }
 
+/** Vocabulary the judge prompt expects (snake_case). */
 export interface ToolSelectionInput {
   query: string
   available_tools: string[]
@@ -78,9 +79,11 @@ export interface ToolSelectionInput {
   model_answer: string
 }
 
+/** Shape of the per-case output the evaluator receives from the eval pipeline
+ * (matches `EvalRunResult` in services/evals/src/types.ts). */
 export interface ToolSelectionOutput {
   toolNames: string[]
-  modelAnswer: string
+  answerText: string
 }
 
 export function createToolSelectionExperimentEvaluator(model: LanguageModel) {
@@ -94,14 +97,21 @@ export function createToolSelectionExperimentEvaluator(model: LanguageModel) {
       input: Record<string, unknown>
       output: unknown
     }) => {
-      const typedInput = input as unknown as ToolSelectionInput
+      // Pipeline shape: EvalDatasetInput exposes `availableTools` (camelCase),
+      // EvalRunResult exposes `answerText` (camelCase). The judge prompt below
+      // uses snake_case `available_tools` / `model_answer` because that's the
+      // vocabulary the prompt template encodes.
+      const typedInput = input as unknown as {
+        query: string
+        availableTools: string[]
+      }
       const typedOutput = output as unknown as ToolSelectionOutput
 
       const judgeInput: ToolSelectionInput = {
         query: typedInput.query,
-        available_tools: typedInput.available_tools,
+        available_tools: typedInput.availableTools,
         tools_called: typedOutput.toolNames,
-        model_answer: typedOutput.modelAnswer
+        model_answer: typedOutput.answerText
       }
 
       const { text } = await generateText({

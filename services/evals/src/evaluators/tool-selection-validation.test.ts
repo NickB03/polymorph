@@ -47,14 +47,14 @@ describe.skipIf(!apiKey)(
 
       const results = await Promise.all(
         fixtures.map(async fx => {
+          // Map the fixture's snake_case (judge-prompt) vocabulary to the
+          // pipeline shape the evaluator reads at runtime.
           const result = await evaluator.evaluate({
             input: {
               query: fx.query,
-              available_tools: fx.available_tools,
-              tools_called: fx.tools_called,
-              model_answer: fx.model_answer
+              availableTools: fx.available_tools
             },
-            output: { toolNames: fx.tools_called, modelAnswer: fx.model_answer }
+            output: { toolNames: fx.tools_called, answerText: fx.model_answer }
           })
           return {
             fixture: fx,

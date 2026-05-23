@@ -271,6 +271,40 @@ export function buildEvalSummaryMetadata(
   }
 }
 
+/**
+ * Tool roster the chat agent exposes at eval time. Mirrors the keys returned
+ * by `createChatAgentTools` in `lib/agents/chat/toolset.ts` minus the canvas
+ * and image tools, which require a per-chat context that the eval runner does
+ * not pass. Keep in sync when adding/removing/renaming tools — the
+ * tool_selection judge prompt names tools from this list, so drift here makes
+ * the judge see the wrong roster.
+ */
+const KNOWN_AGENT_TOOLS: readonly string[] = [
+  // Search + fetch (lib/agents/chat/toolset.ts)
+  'search',
+  'fetch',
+  'competitorResearch',
+  // Geo (lib/agents/chat/toolset.ts)
+  'getDirections',
+  'geocodeAddress',
+  'getIsochrone',
+  'getStaticMapImage',
+  // Tool UI display surface (lib/tools/tool-ui/server-catalog.ts)
+  'displayPlan',
+  'displayTable',
+  'displayChart',
+  'displayGeoMap',
+  'displayCitations',
+  'displayLinkPreview',
+  'displayAgentArtifact',
+  'displayOptionList',
+  'displayQuestionWizard',
+  'displayCallout',
+  'displayTimeline',
+  // Todo (lib/tools/todo.ts)
+  'todoWrite'
+]
+
 export function buildDatasetExamples(
   cases: EvalCase[],
   results: EvalRunResult[]
@@ -297,7 +331,8 @@ export function buildDatasetExamples(
         prompt,
         query: prompt,
         context,
-        tags: caseSpec.tags
+        tags: caseSpec.tags,
+        availableTools: [...KNOWN_AGENT_TOOLS]
       },
       output,
       metadata: {

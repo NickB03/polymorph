@@ -27,11 +27,14 @@ function makeEvaluator(judgeOutput: string) {
   return createToolSelectionExperimentEvaluator(stubModel)
 }
 
+// Mocks match the production pipeline shape: EvalDatasetInput exposes
+// `availableTools` (camelCase) and EvalRunResult exposes `answerText`.
 const baseInput = {
   query: 'What is the weather in Tokyo today?',
-  available_tools: ['webSearch', 'displayFeatureList'],
-  model_answer: 'The weather in Tokyo is sunny, 22°C.'
+  availableTools: ['search', 'displayCallout']
 }
+
+const baseAnswer = 'The weather in Tokyo is sunny, 22°C.'
 
 describe('tool_selection evaluator', () => {
   it('exposes name=tool_selection and kind=LLM for orchestration wiring', () => {
@@ -44,7 +47,7 @@ describe('tool_selection evaluator', () => {
     const evaluator = makeEvaluator('correct')
     const result = await evaluator.evaluate({
       input: baseInput,
-      output: { toolNames: ['webSearch'], modelAnswer: baseInput.model_answer }
+      output: { toolNames: ['search'], answerText: baseAnswer }
     })
     expect(result.score).toBe(1.0)
     expect(result.label).toBe('correct')
@@ -55,8 +58,8 @@ describe('tool_selection evaluator', () => {
     const result = await evaluator.evaluate({
       input: baseInput,
       output: {
-        toolNames: ['displayFeatureList'],
-        modelAnswer: 'Here are some features.'
+        toolNames: ['displayCallout'],
+        answerText: 'Here is a callout.'
       }
     })
     expect(result.score).toBe(0.0)
@@ -67,7 +70,7 @@ describe('tool_selection evaluator', () => {
     const evaluator = makeEvaluator('missing')
     const result = await evaluator.evaluate({
       input: baseInput,
-      output: { toolNames: [], modelAnswer: 'It is sunny.' }
+      output: { toolNames: [], answerText: 'It is sunny.' }
     })
     expect(result.score).toBe(0.0)
     expect(result.label).toBe('missing')
@@ -79,7 +82,7 @@ describe('tool_selection evaluator', () => {
       input: { ...baseInput, query: 'Tell me a joke' },
       output: {
         toolNames: [],
-        modelAnswer: 'Why did the chicken cross the road?'
+        answerText: 'Why did the chicken cross the road?'
       }
     })
     expect(result.score).toBeNull()
@@ -90,7 +93,7 @@ describe('tool_selection evaluator', () => {
     const evaluator = makeEvaluator('correct — judged appropriate')
     const result = await evaluator.evaluate({
       input: baseInput,
-      output: { toolNames: ['webSearch'], modelAnswer: baseInput.model_answer }
+      output: { toolNames: ['search'], answerText: baseAnswer }
     })
     expect(result.label).toBe('correct')
   })
@@ -101,8 +104,8 @@ describe('tool_selection evaluator', () => {
       evaluator.evaluate({
         input: baseInput,
         output: {
-          toolNames: ['webSearch'],
-          modelAnswer: baseInput.model_answer
+          toolNames: ['search'],
+          answerText: baseAnswer
         }
       })
     ).rejects.toBeInstanceOf(ToolSelectionParseError)
