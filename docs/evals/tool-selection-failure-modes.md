@@ -8,7 +8,7 @@ Two data sources sampled on 2026-05-20:
 
 1. **Phoenix experiments**. Capability (24 cases) and regression (3 cases) datasets are golden test sets engineered to succeed, so tool-selection failures there are rare by construction. The most recent traffic-monitor experiment landed 2026-05-10; production has had zero `POST /api/chat` requests for ≥10 days (per Vercel logs review on 2026-05-20), so no fresh real-world tool calls are available.
 
-2. **Tool roster** enumeration. The chat agent has 25 registered tools across 6 families (catalog below). Failure modes are derived from the shape of the roster — i.e., the kinds of mis-selections the tool taxonomy makes possible — rather than from a large pool of observed failures, which doesn't exist yet.
+2. **Tool roster** enumeration. The chat agent registers ~20 tools across 6 families (catalog below); 16 of those are visible to the eval judge after the eval-replay path's filters (no canvas/image context, no writer, interactive tools removed). Failure modes are derived from the shape of the roster — i.e., the kinds of mis-selections the tool taxonomy makes possible — rather than from a large pool of observed failures, which doesn't exist yet.
 
 This is the right starting point per the phoenix-evals principle "custom > generic": the rubric is grounded in this codebase's specific tool roster, not a generic "good tool use" template. The validation fixtures in Task 2 will mix real cases from the capability/regression corpus with synthetic adversarial cases that exercise each failure mode.
 
@@ -21,9 +21,9 @@ This is the right starting point per the phoenix-evals principle "custom > gener
 | Canvas (replay-incompatible) | `createCanvasArtifact`, `updateCanvasArtifact`, `readCanvasArtifact`                                                                                                                                                | Building/modifying interactive HTML artifacts in the canvas surface |
 | Image (replay-incompatible)  | `generateImage`                                                                                                                                                                                                     | DALL-E / FLUX image synthesis                                       |
 | Display (Tool-UI)            | `displayPlan`, `displayTable`, `displayChart`, `displayGeoMap`, `displayCitations`, `displayLinkPreview`, `displayAgentArtifact`, `displayOptionList`, `displayQuestionWizard`, `displayCallout`, `displayTimeline` | Rendering structured UI components inline in the chat               |
-| Todo                         | `setTodos`, `clearTodos` (per `createTodoTools`)                                                                                                                                                                    | Multi-step task tracking                                            |
+| Todo (replay-incompatible)   | `todoWrite` (per `createTodoTools`) — requires a UI message writer; eval replay does not pass one, so this is registered but never callable in eval mode                                                            | Multi-step task tracking                                            |
 
-Source: `lib/agents/chat/toolset.ts` and `lib/tools/tool-ui/server-catalog.ts`.
+Source: `lib/agents/chat/toolset.ts`, `lib/tools/tool-ui/server-catalog.ts`, `lib/tools/todo.ts`. Eval-time filters: `lib/agents/chat/factory.ts:82-87` (drops interactive tool-UI tools — `displayOptionList`, `displayQuestionWizard`) and `lib/streaming/eval-chat-runner.ts:230-241` (does not pass `canvasToolContext` / `imageToolContext` / `writer`, removing canvas + image + todo tools from the active set).
 
 ## Failure taxonomy
 

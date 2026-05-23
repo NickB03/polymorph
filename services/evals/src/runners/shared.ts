@@ -272,12 +272,29 @@ export function buildEvalSummaryMetadata(
 }
 
 /**
- * Tool roster the chat agent exposes at eval time. Mirrors the keys returned
- * by `createChatAgentTools` in `lib/agents/chat/toolset.ts` minus the canvas
- * and image tools, which require a per-chat context that the eval runner does
- * not pass. Keep in sync when adding/removing/renaming tools — the
- * tool_selection judge prompt names tools from this list, so drift here makes
- * the judge see the wrong roster.
+ * Tool roster the chat agent has callable in **eval replay mode**. This is a
+ * narrower set than `createChatAgentTools` exports because eval replay:
+ *
+ * - does NOT pass `canvasToolContext` → canvas tools (`createCanvasArtifact`,
+ *   `updateCanvasArtifact`, `readCanvasArtifact`) are absent
+ *   (`lib/agents/chat/factory.ts:89-107`).
+ * - does NOT pass `imageToolContext` → `generateImage` is absent
+ *   (`lib/agents/chat/factory.ts:109-111`).
+ * - does NOT pass a `writer` → `todoWrite` is gated behind a writer in the
+ *   research agent definition (`lib/agents/chat/research.ts:24-27`), so it's
+ *   never active in eval replay.
+ * - filters `INTERACTIVE_TOOL_UI_TOOL_NAMES` when `executionMode === 'eval'`
+ *   (`lib/agents/chat/factory.ts:82-87`), removing `displayOptionList` and
+ *   `displayQuestionWizard` (`lib/tools/tool-ui/metadata.ts`).
+ *
+ * Known overstatement that remains: `competitorResearch` is only active in
+ * research-mode cases (`RESEARCH_AGENT_ACTIVE_TOOLS` in
+ * `lib/agents/chat/research.ts:12-17`); for search/build cases the judge will
+ * see it advertised but the agent could not have called it. Acceptable until
+ * the per-case roster is captured at run time (see plan
+ * `docs/superpowers/plans/2026-05-23-post-merge-validation-chart-eval-prs.md`
+ * Appendix A1) — until then prefer the conservative overstatement to omitting
+ * a tool research-mode cases genuinely had.
  */
 const KNOWN_AGENT_TOOLS: readonly string[] = [
   // Search + fetch (lib/agents/chat/toolset.ts)
@@ -290,6 +307,8 @@ const KNOWN_AGENT_TOOLS: readonly string[] = [
   'getIsochrone',
   'getStaticMapImage',
   // Tool UI display surface (lib/tools/tool-ui/server-catalog.ts)
+  // Excludes displayOptionList + displayQuestionWizard (interactive — filtered
+  // by factory.ts:82-87 in eval mode).
   'displayPlan',
   'displayTable',
   'displayChart',
@@ -297,12 +316,8 @@ const KNOWN_AGENT_TOOLS: readonly string[] = [
   'displayCitations',
   'displayLinkPreview',
   'displayAgentArtifact',
-  'displayOptionList',
-  'displayQuestionWizard',
   'displayCallout',
-  'displayTimeline',
-  // Todo (lib/tools/todo.ts)
-  'todoWrite'
+  'displayTimeline'
 ]
 
 export function buildDatasetExamples(

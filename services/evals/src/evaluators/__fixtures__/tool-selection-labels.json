@@ -203,7 +203,7 @@
   {
     "case_id": "synthetic-wrong-009",
     "query": "Set a 25-minute pomodoro timer.",
-    "available_tools": ["setTodos", "displayCallout", "search"],
+    "available_tools": ["todoWrite", "displayCallout", "search"],
     "tools_called": ["search"],
     "model_answer": "Here are articles about pomodoro timers.",
     "human_label": "wrong_tool",
