@@ -60,14 +60,17 @@ export class ToolSelectionParseError extends Error {
 }
 
 export function parseLabel(text: string): Label {
-  const firstWord = text
-    .trim()
-    .toLowerCase()
-    .split(/[\s,.:;—-]/)[0]
+  const normalized = text.trim().toLowerCase()
+  const firstWord = normalized.split(/[\s,.:;—-]/)[0]
   if (firstWord === 'correct') return 'correct'
   if (firstWord === 'wrong') return 'wrong'
   if (firstWord === 'missing') return 'missing'
-  if (firstWord === 'not_required' || firstWord === 'not') return 'not_required'
+  if (firstWord === 'not_required') return 'not_required'
+  // Accept "not required" with a space (common judge typo) but require the
+  // second token to be exactly "required" — without this guard, outputs like
+  // "not enough context" or "not applicable" would silently collapse to
+  // not_required (score=null), hiding judge confusion as a confident skip.
+  if (/^not[\s_-]required\b/.test(normalized)) return 'not_required'
   throw new ToolSelectionParseError(text)
 }
 

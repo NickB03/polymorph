@@ -124,6 +124,14 @@ describe('parseLabel', () => {
     expect(parseLabel('not required')).toBe('not_required')
   })
 
+  it('rejects ambiguous "not …" outputs that are not "not required"', () => {
+    expect(() => parseLabel('not enough context')).toThrow(
+      ToolSelectionParseError
+    )
+    expect(() => parseLabel('not applicable')).toThrow(ToolSelectionParseError)
+    expect(() => parseLabel('not sure')).toThrow(ToolSelectionParseError)
+  })
+
   it('normalizes case and whitespace', () => {
     expect(parseLabel('  CORRECT  ')).toBe('correct')
     expect(parseLabel('Wrong.')).toBe('wrong')
