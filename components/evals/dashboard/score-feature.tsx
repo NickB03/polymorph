@@ -6,6 +6,7 @@ import { getSuiteDisplay } from '@/lib/evals/display'
 import { DEFINITIONS, snapshotSuiteKey } from '@/lib/evals/glossary'
 import { getSuiteStatus, STATUS_TOKENS } from '@/lib/evals/helpers/status'
 import type { EvalSummarySnapshot } from '@/lib/evals/types'
+import { useReducedMotion } from '@/lib/motion/use-reduced-motion'
 import { cn } from '@/lib/utils'
 
 import {
@@ -30,6 +31,7 @@ export function ScoreFeature({
   hideTagline?: boolean
   footer?: ReactNode
 }) {
+  const reducedMotion = useReducedMotion()
   const score = Math.max(0, Math.min(1, cap.overallScore))
   const scorePercent = Math.round(score * 100)
   const suiteKey = snapshotSuiteKey(cap)
@@ -81,6 +83,7 @@ export function ScoreFeature({
                 inactiveFillOpacity={0.3}
                 width={176}
                 height={176}
+                reducedMotion={reducedMotion ?? false}
               />
             </button>
           </TooltipTrigger>

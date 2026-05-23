@@ -157,6 +157,13 @@ export interface GaugeProps {
    * edge toward the outer arc. Clamped **5–100**.
    */
   notchLengthPercent?: number
+  /**
+   * When true, skip the notch entrance stagger and the {@link PieCenterShell}
+   * count-up so users with `prefers-reduced-motion` see the final state on
+   * first paint. Upstream bklit has no reduced-motion awareness — this is a
+   * LOCAL PATCH so the consumer can honor the project's motion preferences.
+   */
+  reducedMotion?: boolean
 }
 
 interface GaugeInnerProps extends Omit<GaugeProps, 'className' | 'minWidth'> {
@@ -187,7 +194,8 @@ function GaugeInner({
   inactiveFillOpacity,
   activeFillOpacity,
   children,
-  notchLengthPercent = 100
+  notchLengthPercent = 100,
+  reducedMotion = false
 }: GaugeInnerProps) {
   const defsChildren = useMemo(() => collectDefsElements(children), [children])
 
@@ -390,15 +398,16 @@ function GaugeInner({
             d={createNotchPath(notch.points, notchCornerRadius, notchLength)}
             fill={resolveBgFill(notch.index)}
             fillOpacity={resolvedInactiveFillOpacity}
-            initial={{ opacity: 0, scale: 0 }}
+            initial={reducedMotion ? false : { opacity: 0, scale: 0 }}
             key={`bg-${notch.index}`}
             style={{
               transformOrigin: `${centerX}px ${centerY}px`
             }}
-            transition={{
-              ...notchSpring,
-              delay: notch.index * 0.015
-            }}
+            transition={
+              reducedMotion
+                ? { duration: 0 }
+                : { ...notchSpring, delay: notch.index * 0.015 }
+            }
           />
         ))}
 
@@ -410,15 +419,16 @@ function GaugeInner({
               d={createNotchPath(notch.points, notchCornerRadius, notchLength)}
               fill={resolveActiveFill(notch)}
               fillOpacity={resolvedActiveFillOpacity}
-              initial={{ opacity: 0, scale: 0 }}
+              initial={reducedMotion ? false : { opacity: 0, scale: 0 }}
               key={`active-${notch.index}`}
               style={{
                 transformOrigin: `${centerX}px ${centerY}px`
               }}
-              transition={{
-                ...notchSpring,
-                delay: 0.3 + notch.index * 0.02
-              }}
+              transition={
+                reducedMotion
+                  ? { duration: 0 }
+                  : { ...notchSpring, delay: 0.3 + notch.index * 0.02 }
+              }
             />
           ))}
       </svg>
@@ -428,6 +438,7 @@ function GaugeInner({
         style={{ paddingTop: size * 0.08 }}
       >
         <PieCenterShell
+          animateEntrance={!reducedMotion}
           centerValue={centerValue}
           contextSize={size}
           defaultLabel={defaultLabel}

@@ -213,10 +213,10 @@ function EvaluatorRadar({
       label: 'This run',
       color: STATUS_TOKENS[status].cssVar,
       values: Object.fromEntries(
-        evaluators.map(key => [
-          key,
-          (snap.evaluatorScores[key] as number) * 100
-        ])
+        evaluators.flatMap(key => {
+          const score = snap.evaluatorScores[key]
+          return score == null ? [] : [[key, score * 100] as const]
+        })
       )
     }
   ]

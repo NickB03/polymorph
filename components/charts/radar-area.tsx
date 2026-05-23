@@ -127,6 +127,23 @@ export function RadarArea({
   // Create path from positions
   const pathD = `M ${animatedPositions.map(p => `${p.x},${p.y}`).join(' L ')} Z`
 
+  // LOCAL PATCH (not upstream bklit): consumer passes `animate={!reducedMotion}`,
+  // but upstream RadarArea only honors that flag for the intro stagger — the
+  // hover springs (scale, path morph, circle springs) run unconditionally and
+  // bypass the global `transition-duration: 0.01ms !important` reduced-motion
+  // CSS rule (inline styles win over the !important rule). Collapse all
+  // transitions to duration 0 when `animate=false`.
+  const positionSpring = animate
+    ? { type: 'spring' as const, stiffness: 80, damping: 15, mass: 1 }
+    : { duration: 0 }
+  const radiusSpring = animate
+    ? { type: 'spring' as const, stiffness: 300, damping: 20 }
+    : { duration: 0 }
+  const scaleSpring = animate
+    ? { type: 'spring' as const, stiffness: 400, damping: 25 }
+    : { duration: 0 }
+  const opacityTween = animate ? { duration: 0.2 } : { duration: 0 }
+
   return (
     <motion.g
       animate={{
@@ -140,10 +157,10 @@ export function RadarArea({
       style={{ transformOrigin: '0px 0px', cursor: 'pointer' }}
       transition={{
         opacity: {
-          duration: 0.15,
+          duration: animate ? 0.15 : 0,
           delay: hasAnimated.current ? 0 : animationDelay * 0.5
         },
-        scale: { type: 'spring', stiffness: 400, damping: 25 }
+        scale: scaleSpring
       }}
     >
       {/* Area polygon */}
@@ -161,9 +178,9 @@ export function RadarArea({
             showGlow && isHovered ? `drop-shadow(0 0 12px ${color})` : 'none'
         }}
         transition={{
-          d: { type: 'spring', stiffness: 80, damping: 15, mass: 1 },
-          fillOpacity: { duration: 0.2 },
-          strokeWidth: { duration: 0.2 }
+          d: positionSpring,
+          fillOpacity: opacityTween,
+          strokeWidth: opacityTween
         }}
       />
 
@@ -186,9 +203,9 @@ export function RadarArea({
               stroke={radarCssVars.background}
               strokeWidth={2}
               transition={{
-                cx: { type: 'spring', stiffness: 80, damping: 15, mass: 1 },
-                cy: { type: 'spring', stiffness: 80, damping: 15, mass: 1 },
-                r: { type: 'spring', stiffness: 300, damping: 20 }
+                cx: positionSpring,
+                cy: positionSpring,
+                r: radiusSpring
               }}
             />
           )

@@ -65,19 +65,18 @@ export function Area({
   const pathRef = useRef<SVGPathElement>(null)
   const [clipWidth, setClipWidth] = useState(0)
 
-  // Unique IDs for this area
+  // LOCAL PATCH (not upstream bklit): all <defs> ids derive from useId(), not
+  // Math.random(). Upstream emits `area-gradient-${dataKey}-${Math.random()...}`
+  // inside useMemo, which produces different ids on the server-rendered HTML vs.
+  // the client hydrate and triggers React hydration mismatches. clipPathId
+  // likewise needs the useId suffix so two <Area> children with the same
+  // dataKey on one page don't collide.
   const uniqueId = useId()
-  const gradientId = useMemo(
-    () => `area-gradient-${dataKey}-${Math.random().toString(36).slice(2, 9)}`,
-    [dataKey]
-  )
-  const strokeGradientId = useMemo(
-    () =>
-      `area-stroke-gradient-${dataKey}-${Math.random().toString(36).slice(2, 9)}`,
-    [dataKey]
-  )
+  const gradientId = `area-gradient-${dataKey}-${uniqueId}`
+  const strokeGradientId = `area-stroke-gradient-${dataKey}-${uniqueId}`
   const edgeMaskId = `area-edge-mask-${dataKey}-${uniqueId}`
   const edgeGradientId = `${edgeMaskId}-gradient`
+  const clipPathId = `grow-clip-area-${dataKey}-${uniqueId}`
 
   // Resolved stroke color (defaults to fill)
   const resolvedStroke = stroke || fill
@@ -305,7 +304,7 @@ export function Area({
       {/* Clip path for grow animation - unique per area */}
       {animate && (
         <defs>
-          <clipPath id={`grow-clip-area-${dataKey}`}>
+          <clipPath id={clipPathId}>
             <rect
               height={innerHeight + 20}
               style={{
@@ -323,7 +322,7 @@ export function Area({
       )}
 
       {/* Main area with clip path */}
-      <g clipPath={animate ? `url(#grow-clip-area-${dataKey})` : undefined}>
+      <g clipPath={animate ? `url(#${clipPathId})` : undefined}>
         <motion.g
           animate={{ opacity: isHovering && showHighlight ? 0.6 : 1 }}
           initial={{ opacity: 1 }}
