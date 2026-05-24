@@ -40,7 +40,7 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
     return (
       <TooltipProvider delayDuration={200}>
         <div className="flex flex-1 min-h-0 min-w-0 flex-col overflow-y-auto">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-8 sm:px-8 lg:px-12">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-14 sm:px-8 sm:pt-8 lg:px-12">
             <Header
               view="suites"
               onChange={() => {}}
@@ -61,10 +61,18 @@ export function EvalsDashboardV2({ data }: { data: EvalsDashboardData }) {
 }
 
 function getLastSyncText(data: EvalsDashboardData): string {
-  const lastSyncIso = data.trafficMonitor.lastUpdated
-  return lastSyncIso
-    ? formatDistanceToNow(new Date(lastSyncIso), { addSuffix: true })
-    : 'never'
+  const latest = [
+    data.capability.lastUpdated,
+    data.trafficMonitor.lastUpdated,
+    data.regression.lastUpdated
+  ]
+    .filter((iso): iso is string => iso != null)
+    .map(iso => new Date(iso).getTime())
+    .reduce<number | null>((max, t) => (max == null || t > max ? t : max), null)
+
+  return latest == null
+    ? 'never'
+    : formatDistanceToNow(new Date(latest), { addSuffix: true })
 }
 
 function DashboardWithViews({ data }: { data: EvalsDashboardData }) {
@@ -79,7 +87,7 @@ function DashboardWithViews({ data }: { data: EvalsDashboardData }) {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex flex-1 min-h-0 min-w-0 flex-col overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-8 sm:px-8 lg:px-12">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pb-10 pt-14 sm:px-8 sm:pt-8 lg:px-12">
           <Header view={view} onChange={setView} data={data} />
 
           {view === 'suites' ? (

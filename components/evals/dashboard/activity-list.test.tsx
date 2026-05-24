@@ -107,6 +107,31 @@ describe('ActivityList', () => {
     expect(rows[2]).toHaveTextContent('84%')
   })
 
+  it('renders the trend caption when there are at least 2 recent runs', () => {
+    const run1 = baseSnapshot({
+      id: 'cap-1',
+      overallScore: 0.84,
+      createdAt: '2026-04-29T08:00:00.000Z'
+    })
+    const run2 = baseSnapshot({
+      id: 'cap-2',
+      overallScore: 0.9,
+      createdAt: '2026-04-29T12:00:00.000Z'
+    })
+    renderActivityList(dataWithRecentRuns([run2, run1]))
+    expect(screen.getByText(/Score trend/i)).toBeInTheDocument()
+  })
+
+  it('hides the trend chart when there is only one recent run', () => {
+    const run1 = baseSnapshot({
+      id: 'cap-1',
+      overallScore: 0.9,
+      createdAt: '2026-04-29T12:00:00.000Z'
+    })
+    renderActivityList(dataWithRecentRuns([run1]))
+    expect(screen.queryByText(/Score trend/i)).not.toBeInTheDocument()
+  })
+
   it('keeps expanded score bars visible inside focusable tooltip rows', () => {
     const capabilityNew = baseSnapshot({
       id: 'cap-new',

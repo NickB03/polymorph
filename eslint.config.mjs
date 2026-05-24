@@ -11,7 +11,8 @@ const eslintConfig = [
       '.claude/**',
       '.agents/**',
       'skills/**',
-      'public/canvas-vendor/**'
+      'public/canvas-vendor/**',
+      'components/charts/**'
     ]
   },
   ...nextCoreWebVitals,

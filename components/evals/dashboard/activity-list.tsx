@@ -14,13 +14,19 @@ import {
   getEvaluatorLabel
 } from '@/lib/evals/evaluator-labels'
 import { snapshotSuiteKey } from '@/lib/evals/glossary'
+import { buildTrendSeries, type TrendPoint } from '@/lib/evals/helpers/trend'
 import type {
   EvalsDashboardData,
   EvalSummarySnapshot,
   PersistedDashboardSuite
 } from '@/lib/evals/types'
+import { useReducedMotion } from '@/lib/motion/use-reduced-motion'
 import { cn } from '@/lib/utils'
 
+import { Area, AreaChart } from '@/components/charts/area-chart'
+import { Grid } from '@/components/charts/grid'
+import { ChartTooltip } from '@/components/charts/tooltip'
+import { XAxis } from '@/components/charts/x-axis'
 import { ScoreBar } from '@/components/evals/dashboard/score-bar'
 import { pct } from '@/components/evals/dashboard/shared'
 import { ScoreCell } from '@/components/evals/glossary'
@@ -59,6 +65,8 @@ function buildRows(data: EvalsDashboardData): Row[] {
 
 export function ActivityList({ data }: { data: EvalsDashboardData }) {
   const rows = buildRows(data)
+  const trendPoints = buildTrendSeries(data.recentRuns)
+  const reducedMotion = useReducedMotion()
   const [expanded, setExpanded] = useState<string | null>(rows[0]?.id ?? null)
 
   if (rows.length === 0) return null
@@ -79,6 +87,67 @@ export function ActivityList({ data }: { data: EvalsDashboardData }) {
           newest first
         </span>
       </div>
+      {trendPoints.length > 1 ? (
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
+            Score trend · last {trendPoints.length} runs
+          </p>
+          <AreaChart
+            data={trendPoints as unknown as Record<string, unknown>[]}
+            xDataKey="createdAt"
+            aspectRatio="5 / 1"
+            margin={{ top: 8, right: 16, bottom: 24, left: 32 }}
+            animationDuration={reducedMotion ? 0 : undefined}
+          >
+            <Grid horizontal />
+            <Area
+              dataKey="capability"
+              fill="var(--accent-blue)"
+              fillOpacity={0.35}
+            />
+            <Area
+              dataKey="trafficMonitor"
+              fill="var(--warning)"
+              fillOpacity={0.35}
+            />
+            <Area
+              dataKey="regression"
+              fill="var(--success)"
+              fillOpacity={0.35}
+            />
+            <XAxis />
+            <ChartTooltip
+              rows={point => {
+                const p = point as unknown as TrendPoint
+                const out: Array<{
+                  color: string
+                  label: string
+                  value: string
+                }> = []
+                if (p.capability != null)
+                  out.push({
+                    color: 'var(--accent-blue)',
+                    label: 'Capability',
+                    value: `${p.capability}%`
+                  })
+                if (p.trafficMonitor != null)
+                  out.push({
+                    color: 'var(--warning)',
+                    label: 'Traffic Monitor',
+                    value: `${p.trafficMonitor}%`
+                  })
+                if (p.regression != null)
+                  out.push({
+                    color: 'var(--success)',
+                    label: 'Regression',
+                    value: `${p.regression}%`
+                  })
+                return out
+              }}
+            />
+          </AreaChart>
+        </div>
+      ) : null}
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="hidden grid-cols-[140px_minmax(0,1fr)_96px_120px_120px_72px_24px] gap-4 border-b border-border bg-muted/30 px-5 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:grid">
           <span>When</span>

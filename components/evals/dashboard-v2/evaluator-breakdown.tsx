@@ -13,13 +13,23 @@ import {
 import { formatAppModelSummary } from '@/lib/evals/display'
 import { EVALUATOR_DISPLAY_ORDER } from '@/lib/evals/evaluator-labels'
 import { snapshotSuiteKey } from '@/lib/evals/glossary'
-import { getSuiteStatus, type SuiteStatus } from '@/lib/evals/helpers/status'
+import {
+  getSuiteStatus,
+  STATUS_TOKENS,
+  type SuiteStatus
+} from '@/lib/evals/helpers/status'
 import type {
   EvalCaseResultSnapshot,
   EvalSummarySnapshot
 } from '@/lib/evals/types'
+import { useReducedMotion } from '@/lib/motion/use-reduced-motion'
 import { cn } from '@/lib/utils'
 
+import { RadarArea } from '@/components/charts/radar-area'
+import { RadarAxis } from '@/components/charts/radar-axis'
+import { RadarChart } from '@/components/charts/radar-chart'
+import { RadarGrid } from '@/components/charts/radar-grid'
+import { RadarLabels } from '@/components/charts/radar-labels'
 import { ScoreBar } from '@/components/evals/dashboard/score-bar'
 import { deltaPts } from '@/components/evals/dashboard/shared'
 import { ScoreCell } from '@/components/evals/glossary'
@@ -79,6 +89,14 @@ export function EvaluatorBreakdown({
           red rows fell below the pass mark.
         </p>
       </div>
+
+      {evaluators.length >= 3 ? (
+        <EvaluatorRadar
+          snap={snap}
+          previous={previous ?? null}
+          evaluators={evaluators}
+        />
+      ) : null}
 
       <ul className="divide-y divide-border border-t border-border">
         {evaluators.map(key => {
@@ -176,6 +194,50 @@ export function EvaluatorBreakdown({
         ) : null}
       </div>
     </section>
+  )
+}
+
+function EvaluatorRadar({
+  snap,
+  previous,
+  evaluators
+}: {
+  snap: EvalSummarySnapshot
+  previous: EvalSummarySnapshot | null
+  evaluators: string[]
+}) {
+  const reducedMotion = useReducedMotion()
+  const status = getSuiteStatus(snap, previous)
+  const data = [
+    {
+      label: 'This run',
+      color: STATUS_TOKENS[status].cssVar,
+      values: Object.fromEntries(
+        evaluators.flatMap(key => {
+          const score = snap.evaluatorScores[key]
+          return score == null ? [] : [[key, score * 100] as const]
+        })
+      )
+    }
+  ]
+  const metrics = evaluators.map(key => ({ key, label: localLabel(key) }))
+
+  return (
+    <div className="flex justify-center" data-testid="evaluator-radar">
+      <RadarChart
+        data={data}
+        metrics={metrics}
+        size={240}
+        levels={4}
+        margin={48}
+        animate={!reducedMotion}
+      >
+        <RadarGrid showLabels={false} />
+        <RadarAxis />
+        <RadarLabels offset={20} fontSize={10} />
+        <RadarArea index={0} showPoints showGlow />
+      </RadarChart>
+    </div>
   )
 }
 
