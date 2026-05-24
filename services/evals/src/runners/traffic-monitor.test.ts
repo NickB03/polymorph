@@ -126,6 +126,14 @@ vi.mock('../evaluators/tool-usage', () => ({
   }))
 }))
 
+vi.mock('../evaluators/tool-selection', () => ({
+  createToolSelectionExperimentEvaluator: vi.fn(() => ({
+    name: 'tool_selection',
+    kind: 'LLM',
+    evaluate: vi.fn()
+  }))
+}))
+
 vi.mock('../prechecks', () => ({
   createDeterministicPrecheckEvaluator: vi.fn(() => ({
     name: 'precheck'

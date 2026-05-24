@@ -29,6 +29,7 @@ import { createNoToolPlaceholdersExperimentEvaluator } from '../evaluators/no-to
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
 import { createSafetyExperimentEvaluator } from '../evaluators/safety'
+import { createToolSelectionExperimentEvaluator } from '../evaluators/tool-selection'
 import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { createJudgeModel, JUDGE_DEFAULT_SETTINGS } from '../judge-model'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
@@ -116,6 +117,7 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     prechecks: createDeterministicPrecheckEvaluator,
     toolUsage: createToolUsageExperimentEvaluator,
     noToolPlaceholders: createNoToolPlaceholdersExperimentEvaluator,
+    toolSelection: createToolSelectionExperimentEvaluator,
     faithfulness: createFaithfulnessExperimentEvaluator,
     relevance: createRelevanceExperimentEvaluator,
     responseQuality: createResponseQualityExperimentEvaluator,
@@ -269,6 +271,55 @@ export function buildEvalSummaryMetadata(
   }
 }
 
+/**
+ * Tool roster the chat agent has callable in **eval replay mode**. This is a
+ * narrower set than `createChatAgentTools` exports because eval replay:
+ *
+ * - does NOT pass `canvasToolContext` → canvas tools (`createCanvasArtifact`,
+ *   `updateCanvasArtifact`, `readCanvasArtifact`) are absent
+ *   (`lib/agents/chat/factory.ts:89-107`).
+ * - does NOT pass `imageToolContext` → `generateImage` is absent
+ *   (`lib/agents/chat/factory.ts:109-111`).
+ * - does NOT pass a `writer` → `todoWrite` is gated behind a writer in the
+ *   research agent definition (`lib/agents/chat/research.ts:24-27`), so it's
+ *   never active in eval replay.
+ * - filters `INTERACTIVE_TOOL_UI_TOOL_NAMES` when `executionMode === 'eval'`
+ *   (`lib/agents/chat/factory.ts:82-87`), removing `displayOptionList` and
+ *   `displayQuestionWizard` (`lib/tools/tool-ui/metadata.ts`).
+ *
+ * Known overstatement that remains: `competitorResearch` is only active in
+ * research-mode cases (`RESEARCH_AGENT_ACTIVE_TOOLS` in
+ * `lib/agents/chat/research.ts:12-17`); for search/build cases the judge will
+ * see it advertised but the agent could not have called it. Acceptable until
+ * the per-case roster is captured at run time (see plan
+ * `docs/superpowers/plans/2026-05-23-post-merge-validation-chart-eval-prs.md`
+ * Appendix A1) — until then prefer the conservative overstatement to omitting
+ * a tool research-mode cases genuinely had.
+ */
+const KNOWN_AGENT_TOOLS: readonly string[] = [
+  // Search + fetch (lib/agents/chat/toolset.ts)
+  'search',
+  'fetch',
+  'competitorResearch',
+  // Geo (lib/agents/chat/toolset.ts)
+  'getDirections',
+  'geocodeAddress',
+  'getIsochrone',
+  'getStaticMapImage',
+  // Tool UI display surface (lib/tools/tool-ui/server-catalog.ts)
+  // Excludes displayOptionList + displayQuestionWizard (interactive — filtered
+  // by factory.ts:82-87 in eval mode).
+  'displayPlan',
+  'displayTable',
+  'displayChart',
+  'displayGeoMap',
+  'displayCitations',
+  'displayLinkPreview',
+  'displayAgentArtifact',
+  'displayCallout',
+  'displayTimeline'
+]
+
 export function buildDatasetExamples(
   cases: EvalCase[],
   results: EvalRunResult[]
@@ -295,7 +346,8 @@ export function buildDatasetExamples(
         prompt,
         query: prompt,
         context,
-        tags: caseSpec.tags
+        tags: caseSpec.tags,
+        availableTools: [...KNOWN_AGENT_TOOLS]
       },
       output,
       metadata: {
@@ -331,6 +383,7 @@ export interface EvaluatorFactories {
   prechecks: () => Evaluator
   toolUsage: () => Evaluator
   noToolPlaceholders: () => Evaluator
+  toolSelection: (model: LanguageModel) => Evaluator
   faithfulness: (model: LanguageModel) => Evaluator
   relevance: (model: LanguageModel) => Evaluator
   responseQuality: (model: LanguageModel) => Evaluator
@@ -346,6 +399,7 @@ export function buildExperimentEvaluators(
     prechecks,
     toolUsage,
     noToolPlaceholders,
+    toolSelection,
     faithfulness,
     relevance,
     responseQuality,
@@ -357,6 +411,7 @@ export function buildExperimentEvaluators(
     prechecks(),
     toolUsage(),
     noToolPlaceholders(),
+    wrapEvaluatorWithRetry(toolSelection(model)),
     wrapEvaluatorWithRetry(faithfulness(model)),
     wrapEvaluatorWithRetry(relevance(model)),
     wrapEvaluatorWithRetry(responseQuality(model)),

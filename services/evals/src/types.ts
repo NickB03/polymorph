@@ -100,6 +100,9 @@ export interface EvalDatasetInput {
   query: string
   context: string
   tags: string[]
+  /** Tool roster the chat agent had access to at run time. Read by the
+   * tool_selection judge to assess whether the model picked the right tool. */
+  availableTools: string[]
 }
 
 export interface EvalDatasetExample {

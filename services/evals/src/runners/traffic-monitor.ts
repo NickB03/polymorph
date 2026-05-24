@@ -9,6 +9,7 @@ import { createNoToolPlaceholdersExperimentEvaluator } from '../evaluators/no-to
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
 import { createSafetyExperimentEvaluator } from '../evaluators/safety'
+import { createToolSelectionExperimentEvaluator } from '../evaluators/tool-selection'
 import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { createDeterministicPrecheckEvaluator } from '../prechecks'
 import { type ChatSample, sampleRecentChats } from '../sampler'
@@ -105,6 +106,7 @@ export async function runTrafficMonitorSuite(
     prechecks: createDeterministicPrecheckEvaluator,
     toolUsage: createToolUsageExperimentEvaluator,
     noToolPlaceholders: createNoToolPlaceholdersExperimentEvaluator,
+    toolSelection: createToolSelectionExperimentEvaluator,
     faithfulness: createFaithfulnessExperimentEvaluator,
     relevance: createRelevanceExperimentEvaluator,
     responseQuality: createResponseQualityExperimentEvaluator,

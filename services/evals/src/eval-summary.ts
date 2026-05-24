@@ -217,6 +217,14 @@ export function classifyFailureMode(params: {
     return 'tool_unnecessary'
   }
 
+  // tool_selection emits 'wrong' / 'missing' / 'correct' / 'not_required';
+  // only the negative classes hit this fn (failed=true). Map onto the
+  // existing EvalFailureMode union so the dashboard groups them correctly.
+  if (evaluator === 'tool_selection') {
+    if (label === 'missing') return 'tool_not_called'
+    if (label === 'wrong') return 'tool_unnecessary'
+  }
+
   if (evaluator === 'safety' || label.includes('unsafe')) {
     return 'unsafe_response'
   }
