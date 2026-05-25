@@ -13,13 +13,6 @@ const DEFAULT_MODEL: Model = {
   providerId: 'openrouter'
 }
 
-const GATEWAY_FALLBACK_MODEL: Model = {
-  id: 'xai/grok-4.1-fast-non-reasoning',
-  name: 'Grok 4.1 Fast Non-Reasoning',
-  provider: 'xAI',
-  providerId: 'gateway'
-}
-
 const VALID_MODEL_TYPES: ModelType[] = ['speed', 'quality']
 const MODE_FALLBACK_ORDER: SearchMode[] = ['chat', 'research']
 
@@ -33,6 +26,14 @@ interface ModelSelectionByModeAndTypeParams {
   modelType?: ModelType
 }
 
+function resolveGatewayFallbackModel(model: Model): Model | undefined {
+  if (model.providerId !== 'openrouter' || !isProviderEnabled('gateway')) {
+    return undefined
+  }
+
+  return { ...model, providerId: 'gateway' }
+}
+
 function resolveModelForModeAndType(
   mode: SearchMode,
   type: ModelType
@@ -44,6 +45,14 @@ function resolveModelForModeAndType(
     }
 
     if (!isProviderEnabled(model.providerId)) {
+      const gatewayFallback = resolveGatewayFallbackModel(model)
+      if (gatewayFallback) {
+        console.warn(
+          `[ModelSelection] Provider "${model.providerId}" is not enabled for mode "${mode}" and model type "${type}". Falling back to Gateway model "${model.id}".`
+        )
+        return gatewayFallback
+      }
+
       console.warn(
         `[ModelSelection] Provider "${model.providerId}" is not enabled for mode "${mode}" and model type "${type}"`
       )
@@ -108,11 +117,12 @@ export function selectModelForModeAndType({
     }
   }
 
-  if (isProviderEnabled(GATEWAY_FALLBACK_MODEL.providerId)) {
+  const defaultGatewayFallback = resolveGatewayFallbackModel(DEFAULT_MODEL)
+  if (defaultGatewayFallback) {
     console.warn(
-      `[ModelSelection] OpenRouter is not enabled. Falling back to Gateway model "${GATEWAY_FALLBACK_MODEL.id}".`
+      `[ModelSelection] Default model provider "${DEFAULT_MODEL.providerId}" is not enabled. Falling back to Gateway model "${DEFAULT_MODEL.id}".`
     )
-    return GATEWAY_FALLBACK_MODEL
+    return defaultGatewayFallback
   }
 
   if (!isProviderEnabled(DEFAULT_MODEL.providerId)) {

@@ -137,7 +137,13 @@ describe('selectModel', () => {
     expect(result).toEqual(DEFAULT_MODEL)
   })
 
-  it('falls back to the legacy Gateway text model when OpenRouter is not configured', () => {
+  it('falls back to the Gateway version of the configured speed model when OpenRouter is not configured', () => {
+    matrix.chat.speed = {
+      id: 'deepseek/deepseek-v4-flash',
+      name: 'DeepSeek V4 Flash',
+      provider: 'DeepSeek',
+      providerId: 'openrouter'
+    }
     mockIsProviderEnabled.mockImplementation(
       providerId => providerId === 'gateway'
     )
@@ -148,9 +154,33 @@ describe('selectModel', () => {
     })
 
     expect(result).toEqual({
-      id: 'xai/grok-4.1-fast-non-reasoning',
-      name: 'Grok 4.1 Fast Non-Reasoning',
-      provider: 'xAI',
+      id: 'deepseek/deepseek-v4-flash',
+      name: 'DeepSeek V4 Flash',
+      provider: 'DeepSeek',
+      providerId: 'gateway'
+    })
+  })
+
+  it('falls back to the Gateway version of the configured quality model when OpenRouter is not configured', () => {
+    matrix.chat.quality = {
+      id: 'deepseek/deepseek-v4-pro',
+      name: 'DeepSeek V4 Pro',
+      provider: 'DeepSeek',
+      providerId: 'openrouter'
+    }
+    mockIsProviderEnabled.mockImplementation(
+      providerId => providerId === 'gateway'
+    )
+
+    const result = selectModel({
+      cookieStore: createCookieStore('quality'),
+      searchMode: 'chat'
+    })
+
+    expect(result).toEqual({
+      id: 'deepseek/deepseek-v4-pro',
+      name: 'DeepSeek V4 Pro',
+      provider: 'DeepSeek',
       providerId: 'gateway'
     })
   })
