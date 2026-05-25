@@ -82,7 +82,8 @@ const FIXTURE_WITH_ALL_EVALUATORS: EvalSummarySnapshot = {
     safety: 0.8,
     citation_accuracy: 0.8,
     deterministic_prechecks: 0.8,
-    tool_usage: 0.8
+    tool_usage: 0.8,
+    tool_selection: 0.8
   },
   totalCases: 10,
   attemptedCases: 10,
