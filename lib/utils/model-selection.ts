@@ -13,6 +13,13 @@ const DEFAULT_MODEL: Model = {
   providerId: 'openrouter'
 }
 
+const GATEWAY_FALLBACK_MODEL: Model = {
+  id: 'xai/grok-4.1-fast-non-reasoning',
+  name: 'Grok 4.1 Fast Non-Reasoning',
+  provider: 'xAI',
+  providerId: 'gateway'
+}
+
 const VALID_MODEL_TYPES: ModelType[] = ['speed', 'quality']
 const MODE_FALLBACK_ORDER: SearchMode[] = ['chat', 'research']
 
@@ -99,6 +106,13 @@ export function selectModelForModeAndType({
         return model
       }
     }
+  }
+
+  if (isProviderEnabled(GATEWAY_FALLBACK_MODEL.providerId)) {
+    console.warn(
+      `[ModelSelection] OpenRouter is not enabled. Falling back to Gateway model "${GATEWAY_FALLBACK_MODEL.id}".`
+    )
+    return GATEWAY_FALLBACK_MODEL
   }
 
   if (!isProviderEnabled(DEFAULT_MODEL.providerId)) {

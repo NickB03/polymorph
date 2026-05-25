@@ -136,4 +136,22 @@ describe('selectModel', () => {
 
     expect(result).toEqual(DEFAULT_MODEL)
   })
+
+  it('falls back to the legacy Gateway text model when OpenRouter is not configured', () => {
+    mockIsProviderEnabled.mockImplementation(
+      providerId => providerId === 'gateway'
+    )
+
+    const result = selectModel({
+      cookieStore: createCookieStore(),
+      searchMode: 'chat'
+    })
+
+    expect(result).toEqual({
+      id: 'xai/grok-4.1-fast-non-reasoning',
+      name: 'Grok 4.1 Fast Non-Reasoning',
+      provider: 'xAI',
+      providerId: 'gateway'
+    })
+  })
 })
