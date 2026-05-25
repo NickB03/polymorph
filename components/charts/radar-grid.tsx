@@ -20,22 +20,32 @@ const springConfig = {
   mass: 1
 }
 
+const RADAR_DEGREES = 360
+
+export function buildRadarGridAngles(metricCount: number) {
+  if (metricCount <= 0) {
+    throw new Error('metricCount must be greater than 0')
+  }
+
+  return [...new Array(metricCount + 1)].map((_, i) => ({
+    angle: i * (RADAR_DEGREES / metricCount)
+  }))
+}
+
 export function RadarGrid({
   showLabels = true,
   className = ''
 }: RadarGridProps) {
   const { metrics, radius, levels, animate } = useRadar()
 
-  // Generate angles for the radial lines (one per metric)
-  const degrees = 360
-  const angles = [...new Array(metrics.length + 1)].map((_, i) => ({
-    angle: i * (degrees / metrics.length) + degrees / metrics.length / 2
-  }))
+  // Generate grid vertices on the same metric angles used by axes, labels, and
+  // area points. The inverted radial scale below handles SVG orientation.
+  const angles = buildRadarGridAngles(metrics.length)
 
   // Radial scale for converting degrees to radians
   const radialScale = scaleLinear<number>({
     range: [0, Math.PI * 2],
-    domain: [degrees, 0]
+    domain: [RADAR_DEGREES, 0]
   })
 
   // Grid animation delays (staggered from inside out)
