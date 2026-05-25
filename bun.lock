@@ -19,6 +19,7 @@
         "@codemirror/lang-json": "^6.0.2",
         "@codemirror/theme-one-dark": "^6.1.2",
         "@number-flow/react": "^0.6.0",
+        "@openrouter/ai-sdk-provider": "^2.9.0",
         "@opentelemetry/api-logs": "0.57.2",
         "@opentelemetry/exporter-trace-otlp-proto": "~0.57.0",
         "@opentelemetry/instrumentation": "0.57.2",
@@ -461,6 +462,7 @@
     "@nolyfill/is-core-module": ["@nolyfill/is-core-module@1.0.39", "", {}, "sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA=="],
 
     "@number-flow/react": ["@number-flow/react@0.6.0", "", { "dependencies": { "esm-env": "^1.1.4", "number-flow": "0.6.0" }, "peerDependencies": { "react": "^18 || ^19", "react-dom": "^18 || ^19" } }, "sha512-77Yfc9+zkV2UDSP8phhZzxJGuwxi/Tt1TikmipL+1r3e9GFKEYDZ1XwInj67NoSt3OnOB0KLvvcl3lfPZgBHVQ=="],
+    "@openrouter/ai-sdk-provider": ["@openrouter/ai-sdk-provider@2.9.0", "", { "peerDependencies": { "ai": "^6.0.0", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-Seva+NCa0WUQnJIUE5GzHsUv1WTIeyqwz0ELl2VtS6NP+eF+77yCXGFVOMbvoCM7QMjlnhv7931e89R+8pJdcQ=="],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
 

@@ -42,15 +42,15 @@ describe('context-window', () => {
       expect(maxTokens).toBe(10650)
     })
 
-    test('resolves prefixed gateway ids (e.g. xai/grok-4.1-fast-non-reasoning)', () => {
-      const grokFast: Model = {
-        id: 'xai/grok-4.1-fast-non-reasoning',
-        name: 'Grok 4.1 Fast Non-Reasoning',
-        provider: 'xAI',
-        providerId: 'gateway'
+    test('resolves prefixed provider ids (e.g. deepseek/deepseek-v4-flash)', () => {
+      const deepseekFlash: Model = {
+        id: 'deepseek/deepseek-v4-flash',
+        name: 'DeepSeek V4 Flash',
+        provider: 'DeepSeek',
+        providerId: 'openrouter'
       }
-      // 2097152 - 65536 - floor(2097152 * 0.1) = 2031616 - 209715 = 1821901
-      expect(getMaxAllowedTokens(grokFast)).toBe(1821901)
+      // 1048576 - 65536 - floor(1048576 * 0.1) = 983040 - 104857 = 878183
+      expect(getMaxAllowedTokens(deepseekFlash)).toBe(878183)
     })
 
     test('ensures minimum viable token count', () => {

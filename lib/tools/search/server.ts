@@ -370,7 +370,7 @@ export function createSearchTool(fullModel: string) {
 
 // Default export for backward compatibility, using a default model
 export const searchTool = createSearchTool(
-  'gateway:xai/grok-4.1-fast-non-reasoning'
+  'openrouter:deepseek/deepseek-v4-flash'
 )
 
 export const serverTool = searchTool

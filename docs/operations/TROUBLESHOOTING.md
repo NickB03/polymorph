@@ -19,7 +19,7 @@ cp .env.local.example .env.local
 Then fill in the required values. See [Environment Reference](../getting-started/ENVIRONMENT.md) for the full variable reference. At minimum you need:
 
 - `DATABASE_URL`
-- `AI_GATEWAY_API_KEY`
+- `OPENROUTER_API_KEY`
 - `BRAVE_SEARCH_API_KEY` (or another search provider key)
 
 ### Port Conflicts
@@ -66,6 +66,7 @@ This happens when the selected AI model's provider has no API key configured. Th
 
 | Provider            | Required Variable                                              |
 | ------------------- | -------------------------------------------------------------- |
+| `openrouter`        | `OPENROUTER_API_KEY`                                           |
 | `gateway`           | `AI_GATEWAY_API_KEY`                                           |
 | `openai`            | `OPENAI_API_KEY`                                               |
 | `anthropic`         | `ANTHROPIC_API_KEY`                                            |
@@ -73,7 +74,7 @@ This happens when the selected AI model's provider has no API key configured. Th
 | `ollama`            | `OLLAMA_BASE_URL`                                              |
 | `openai-compatible` | `OPENAI_COMPATIBLE_API_KEY` + `OPENAI_COMPATIBLE_API_BASE_URL` |
 
-**Fix:** Set the API key for the provider you want to use in `.env.local`. The default provider is `gateway`, which requires `AI_GATEWAY_API_KEY`.
+**Fix:** Set the API key for the provider you want to use in `.env.local`. The default text provider is `openrouter`, which requires `OPENROUTER_API_KEY`.
 
 ## Runtime Issues
 

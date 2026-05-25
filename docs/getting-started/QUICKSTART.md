@@ -52,8 +52,10 @@ Open `.env.local` and set the variables for the default local path:
 DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres
 DATABASE_SSL_DISABLED=true
 
-# AI -- Vercel AI Gateway (powers the default shipped models)
-AI_GATEWAY_API_KEY=your_vercel_gateway_key
+# AI -- OpenRouter (powers the default shipped text models)
+OPENROUTER_API_KEY=your_openrouter_key
+# Optional: Vercel AI Gateway powers image generation
+# AI_GATEWAY_API_KEY=your_vercel_gateway_key
 # Search -- Brave (default primary search provider)
 BRAVE_SEARCH_API_KEY=your_brave_key
 # Or use Tavily as an alternative:

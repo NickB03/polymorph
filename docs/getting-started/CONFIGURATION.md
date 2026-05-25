@@ -17,7 +17,7 @@ DATABASE_SSL_DISABLED=true
 For the shipped default experience, add the provider keys used by the current model and search config:
 
 ```bash
-AI_GATEWAY_API_KEY=[YOUR_VERCEL_GATEWAY_KEY]
+OPENROUTER_API_KEY=[YOUR_OPENROUTER_KEY]
 BRAVE_SEARCH_API_KEY=[YOUR_BRAVE_SEARCH_KEY]
 ```
 
@@ -71,8 +71,9 @@ Without these keys, the UI still loads, but geo features degrade: client maps fa
 
 ## AI Provider Options
 
-Default model config ships with Vercel AI Gateway. Direct providers are also supported:
+Default text model config ships with OpenRouter. Vercel AI Gateway is still used for image generation when `AI_GATEWAY_API_KEY` is configured. Direct providers are also supported:
 
+- OpenRouter (`OPENROUTER_API_KEY`)
 - OpenAI (`OPENAI_API_KEY`)
 - Anthropic (`ANTHROPIC_API_KEY`)
 - Google (`GOOGLE_GENERATIVE_AI_API_KEY`)
