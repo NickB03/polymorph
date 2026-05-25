@@ -617,7 +617,7 @@ flowchart TD
     ProviderEnabled{"isProviderEnabled()<br/>API key present?"}
     ReturnModel["Return model"]
     NextCandidate["Try next candidate"]
-    DefaultModel["Return DEFAULT_MODEL<br/>(Grok 4.1 Fast Non-Reasoning via Gateway)"]
+    DefaultModel["Return DEFAULT_MODEL<br/>(DeepSeek V4 Flash via OpenRouter)"]
 
     subgraph ConfigFiles["Configuration Files"]
         DefaultJSON["default.json<br/>(standard deployment)"]
@@ -625,6 +625,7 @@ flowchart TD
     end
 
     subgraph Providers["Provider Registry (lib/utils/registry.ts)"]
+        OpenRouter["openrouter<br/>OPENROUTER_API_KEY"]
         Gateway["gateway<br/>AI_GATEWAY_API_KEY"]
         OpenAI["openai<br/>OPENAI_API_KEY"]
         Anthropic["anthropic<br/>ANTHROPIC_API_KEY"]
@@ -652,13 +653,13 @@ flowchart TD
 
 From [`config/models/default.json`](../../config/models/default.json):
 
-| Mode              | Type    | Model                             | Provider |
-| ----------------- | ------- | --------------------------------- | -------- |
-| Chat              | Speed   | `xai/grok-4.1-fast-non-reasoning` | Gateway  |
-| Chat              | Quality | `xai/grok-4.1-fast-reasoning`     | Gateway  |
-| Research          | Speed   | `xai/grok-4.1-fast-non-reasoning` | Gateway  |
-| Research          | Quality | `xai/grok-4.1-fast-reasoning`     | Gateway  |
-| Related Questions | --      | `xai/grok-4.1-fast-non-reasoning` | Gateway  |
+| Mode              | Type    | Model                        | Provider   |
+| ----------------- | ------- | ---------------------------- | ---------- |
+| Chat              | Speed   | `deepseek/deepseek-v4-flash` | OpenRouter |
+| Chat              | Quality | `deepseek/deepseek-v4-pro`   | OpenRouter |
+| Research          | Speed   | `deepseek/deepseek-v4-flash` | OpenRouter |
+| Research          | Quality | `deepseek/deepseek-v4-pro`   | OpenRouter |
+| Related Questions | --      | `deepseek/deepseek-v4-flash` | OpenRouter |
 
 **Cloud deployment behavior:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag controls config profile selection (uses `cloud.json` instead of `default.json`), rate limiting enforcement, and analytics event tracking.
 

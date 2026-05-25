@@ -7,10 +7,10 @@ import { SearchMode } from '@/lib/types/search'
 import { isProviderEnabled } from '@/lib/utils/registry'
 
 const DEFAULT_MODEL: Model = {
-  id: 'xai/grok-4.1-fast-non-reasoning',
-  name: 'Grok 4.1 Fast Non-Reasoning',
-  provider: 'xAI',
-  providerId: 'gateway'
+  id: 'deepseek/deepseek-v4-flash',
+  name: 'DeepSeek V4 Flash',
+  provider: 'DeepSeek',
+  providerId: 'openrouter'
 }
 
 const VALID_MODEL_TYPES: ModelType[] = ['speed', 'quality']

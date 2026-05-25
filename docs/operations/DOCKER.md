@@ -23,7 +23,7 @@ npx supabase start
 ```bash
 DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres
 DATABASE_SSL_DISABLED=true
-AI_GATEWAY_API_KEY=your_vercel_gateway_key
+OPENROUTER_API_KEY=your_openrouter_key
 BRAVE_SEARCH_API_KEY=your_brave_key
 ```
 

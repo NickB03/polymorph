@@ -124,7 +124,7 @@ flowchart TD
 
 2. **Authentication & Rate Limiting**: The API route authenticates the user via Supabase. Guest users are rate-limited by IP (Upstash Redis); authenticated users by overall chat limits.
 
-3. **Model Selection**: `selectModel()` reads cookie preferences for model type (`speed` or `quality`) and search mode (`chat` or `research`), looks up the model in `config/models/*.json`, and verifies the provider is enabled (API key present). Falls back to Grok 4.1 Fast Non-Reasoning via Gateway.
+3. **Model Selection**: `selectModel()` reads cookie preferences for model type (`speed` or `quality`) and search mode (`chat` or `research`), looks up the model in `config/models/*.json`, and verifies the provider is enabled (API key present). Falls back to DeepSeek V4 Flash via OpenRouter.
 
 4. **Stream Dispatch**: Authenticated users go through `createChatStreamResponse` (with DB persistence and title generation); guests go through `createEphemeralChatStreamResponse` (stateless).
 
@@ -552,7 +552,7 @@ flowchart TD
     Enabled{"Provider enabled?<br/>(API key present)"}
     Return["Return model"]
     Next["Next candidate"]
-    Default["Return DEFAULT_MODEL<br/>(Grok 4.1 Fast Non-Reasoning via Gateway)"]
+    Default["Return DEFAULT_MODEL<br/>(DeepSeek V4 Flash via OpenRouter)"]
 
     Start --> ReadType --> ReadMode --> BuildOrder --> Loop
     Loop --> LoadJSON --> Found
@@ -567,19 +567,20 @@ flowchart TD
 
 From `config/models/default.json`:
 
-| Mode     | Type    | Model                             | Provider |
-| -------- | ------- | --------------------------------- | -------- |
-| Chat     | Speed   | `xai/grok-4.1-fast-non-reasoning` | Gateway  |
-| Chat     | Quality | `xai/grok-4.1-fast-reasoning`     | Gateway  |
-| Research | Speed   | `xai/grok-4.1-fast-non-reasoning` | Gateway  |
-| Research | Quality | `xai/grok-4.1-fast-reasoning`     | Gateway  |
+| Mode     | Type    | Model                        | Provider   |
+| -------- | ------- | ---------------------------- | ---------- |
+| Chat     | Speed   | `deepseek/deepseek-v4-flash` | OpenRouter |
+| Chat     | Quality | `deepseek/deepseek-v4-pro`   | OpenRouter |
+| Research | Speed   | `deepseek/deepseek-v4-flash` | OpenRouter |
+| Research | Quality | `deepseek/deepseek-v4-pro`   | OpenRouter |
 
 ### Provider Registry
 
-The provider registry ([`lib/utils/registry.ts`](../../lib/utils/registry.ts)) wraps six AI providers via `createProviderRegistry`:
+The provider registry ([`lib/utils/registry.ts`](../../lib/utils/registry.ts)) wraps seven AI providers via `createProviderRegistry`:
 
 | Provider ID         | SDK                                | Env var required                                               |
 | ------------------- | ---------------------------------- | -------------------------------------------------------------- |
+| `openrouter`        | `@openrouter/ai-sdk-provider`      | `OPENROUTER_API_KEY`                                           |
 | `gateway`           | `@ai-sdk/gateway`                  | `AI_GATEWAY_API_KEY`                                           |
 | `openai`            | `@ai-sdk/openai`                   | `OPENAI_API_KEY`                                               |
 | `anthropic`         | `@ai-sdk/anthropic`                | `ANTHROPIC_API_KEY`                                            |
@@ -587,7 +588,7 @@ The provider registry ([`lib/utils/registry.ts`](../../lib/utils/registry.ts)) w
 | `openai-compatible` | `@ai-sdk/openai` (custom base URL) | `OPENAI_COMPATIBLE_API_KEY` + `OPENAI_COMPATIBLE_API_BASE_URL` |
 | `ollama`            | `ollama-ai-provider-v2`            | `OLLAMA_BASE_URL`                                              |
 
-The `getModel(modelString)` function takes a `providerId:modelId` string (e.g., `gateway:google/gemini-3-flash`) and returns a `LanguageModel` instance from the registry.
+The `getModel(modelString)` function takes a `providerId:modelId` string (e.g., `openrouter:deepseek/deepseek-v4-flash`) and returns a `LanguageModel` instance from the registry.
 
 ### Cloud Deployment Behavior
 
@@ -626,6 +627,7 @@ Token estimation uses `js-tiktoken` with the `cl100k_base` encoding (GPT-4 token
 | Claude Opus 4 / Sonnet 4             | 680,000           | 8,192         |
 | Claude 3.7 Sonnet / 3.5 Haiku        | 200,000           | 8,192         |
 | Gemini 3 Flash / 2.5 Flash / 2.5 Pro | 1,048,576         | 65,536        |
+| DeepSeek V4 Flash / Pro              | 1,048,576         | 65,536        |
 | Grok 4.1 Fast Reasoning              | 1,048,576         | 65,536        |
 | Grok 4 / Grok 3 / Grok 3 Mini        | 131,072 - 256,000 | 8,192         |
 
@@ -730,7 +732,7 @@ Generates a 3-5 word chat title from the user's first message. Runs in parallel 
 Generates 3 concise follow-up questions after the main agent completes. Streams results incrementally.
 
 - Uses `streamText` with `Output.array` for structured output
-- Model: configured via `getRelatedQuestionsModel()` (default: Grok 4.1 Fast Non-Reasoning)
+- Model: configured via `getRelatedQuestionsModel()` (default: DeepSeek V4 Flash)
 - Receives the last user message + all response messages as context
 - Validated against `relatedQuestionSchema` (Zod)
 - Questions must be 10-12 words max, unique angles, in the user's language

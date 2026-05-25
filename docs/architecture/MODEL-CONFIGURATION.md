@@ -152,7 +152,7 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
    - Check if the model's provider is enabled via `isProviderEnabled(providerId)`
    - If both succeed, return that model immediately
 
-5. **Fallback** — If no candidate succeeds (all providers disabled, or config loading fails), return the hardcoded `DEFAULT_MODEL` (Grok 4.1 Fast Non-Reasoning via Gateway).
+5. **Fallback** — If no candidate succeeds (all providers disabled, or config loading fails), return the hardcoded `DEFAULT_MODEL` (DeepSeek V4 Flash via OpenRouter).
 
 **Cloud deployment:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag selects the `cloud.json` config profile instead of `default.json`. The legacy `VANA_CLOUD_DEPLOYMENT` alias is also accepted. This does not force a specific model type.
 
@@ -164,13 +164,13 @@ For a request with `searchMode=chat` and `modelType=quality`, the candidates are
 2. `chat` + `speed` (fallback type)
 3. `research` + `quality` (fallback mode)
 4. `research` + `speed` (fallback mode + type)
-5. `DEFAULT_MODEL` (hardcoded Grok 4.1 Fast Non-Reasoning)
+5. `DEFAULT_MODEL` (hardcoded DeepSeek V4 Flash)
 
 ### Example scenarios
 
-**Default local development** — User has `modelType=speed`, `searchMode=chat`. Lookup finds `chat/speed` -> `xai/grok-4.1-fast-non-reasoning` via `gateway`. `AI_GATEWAY_API_KEY` is set, so the provider is enabled. Result: Grok 4.1 Fast Non-Reasoning.
+**Default local development** — User has `modelType=speed`, `searchMode=chat`. Lookup finds `chat/speed` -> `deepseek/deepseek-v4-flash` via `openrouter`. `OPENROUTER_API_KEY` is set, so the provider is enabled. Result: DeepSeek V4 Flash.
 
-**Quality preference** — User has `modelType=quality`, `searchMode=chat`. Lookup finds `chat/quality` -> `xai/grok-4.1-fast-reasoning` via `gateway`. Provider is enabled. Result: Grok 4.1 Fast Reasoning.
+**Quality preference** — User has `modelType=quality`, `searchMode=chat`. Lookup finds `chat/quality` -> `deepseek/deepseek-v4-pro` via `openrouter`. Provider is enabled. Result: DeepSeek V4 Pro.
 
 **Provider unavailable** — User has `modelType=quality` but no API keys are set. All four config candidates fail `isProviderEnabled()`. The hardcoded `DEFAULT_MODEL` is returned as a last resort (even though its provider may also be unavailable).
 
@@ -180,14 +180,15 @@ For a request with `searchMode=chat` and `modelType=quality`, the candidates are
 
 The provider registry at `lib/utils/registry.ts` wraps multiple AI SDK providers into a unified `createProviderRegistry`:
 
-| Provider ID         | SDK                       | Environment Variable                                           | Purpose                                                  |
-| ------------------- | ------------------------- | -------------------------------------------------------------- | -------------------------------------------------------- |
-| `gateway`           | `@ai-sdk/gateway`         | `AI_GATEWAY_API_KEY`                                           | Vercel AI Gateway (primary, routes to multiple backends) |
-| `openai`            | `@ai-sdk/openai`          | `OPENAI_API_KEY`                                               | OpenAI direct access                                     |
-| `anthropic`         | `@ai-sdk/anthropic`       | `ANTHROPIC_API_KEY`                                            | Anthropic direct access                                  |
-| `google`            | `@ai-sdk/google`          | `GOOGLE_GENERATIVE_AI_API_KEY`                                 | Google AI direct access                                  |
-| `openai-compatible` | `@ai-sdk/openai` (custom) | `OPENAI_COMPATIBLE_API_KEY` + `OPENAI_COMPATIBLE_API_BASE_URL` | Any OpenAI-compatible API                                |
-| `ollama`            | `ollama-ai-provider-v2`   | `OLLAMA_BASE_URL`                                              | Local Ollama models (only registered when URL is set)    |
+| Provider ID         | SDK                           | Environment Variable                                           | Purpose                                                  |
+| ------------------- | ----------------------------- | -------------------------------------------------------------- | -------------------------------------------------------- |
+| `openrouter`        | `@openrouter/ai-sdk-provider` | `OPENROUTER_API_KEY`                                           | OpenRouter (default text model provider)                 |
+| `gateway`           | `@ai-sdk/gateway`             | `AI_GATEWAY_API_KEY`                                           | Vercel AI Gateway (image generation and optional routes) |
+| `openai`            | `@ai-sdk/openai`              | `OPENAI_API_KEY`                                               | OpenAI direct access                                     |
+| `anthropic`         | `@ai-sdk/anthropic`           | `ANTHROPIC_API_KEY`                                            | Anthropic direct access                                  |
+| `google`            | `@ai-sdk/google`              | `GOOGLE_GENERATIVE_AI_API_KEY`                                 | Google AI direct access                                  |
+| `openai-compatible` | `@ai-sdk/openai` (custom)     | `OPENAI_COMPATIBLE_API_KEY` + `OPENAI_COMPATIBLE_API_BASE_URL` | Any OpenAI-compatible API                                |
+| `ollama`            | `ollama-ai-provider-v2`       | `OLLAMA_BASE_URL`                                              | Local Ollama models (only registered when URL is set)    |
 
 The `getModel(modelString)` function takes a `providerId:modelId` string and returns a `LanguageModel` from the registry.
 
@@ -197,23 +198,23 @@ The `getModel(modelString)` function takes a `providerId:modelId` string and ret
 
 The current default configuration (`config/models/default.json`):
 
-| Mode                 | Type    | Model                       | Provider |
-| -------------------- | ------- | --------------------------- | -------- |
-| Chat                 | Speed   | Grok 4.1 Fast Non-Reasoning | Gateway  |
-| Chat                 | Quality | Grok 4.1 Fast Reasoning     | Gateway  |
-| Research             | Speed   | Grok 4.1 Fast Non-Reasoning | Gateway  |
-| Research             | Quality | Grok 4.1 Fast Reasoning     | Gateway  |
-| Related Questions    | -       | Grok 4.1 Fast Non-Reasoning | Gateway  |
-| Trending Suggestions | -       | Grok 4.1 Fast Non-Reasoning | Gateway  |
+| Mode                 | Type    | Model             | Provider   |
+| -------------------- | ------- | ----------------- | ---------- |
+| Chat                 | Speed   | DeepSeek V4 Flash | OpenRouter |
+| Chat                 | Quality | DeepSeek V4 Pro   | OpenRouter |
+| Research             | Speed   | DeepSeek V4 Flash | OpenRouter |
+| Research             | Quality | DeepSeek V4 Pro   | OpenRouter |
+| Related Questions    | -       | DeepSeek V4 Flash | OpenRouter |
+| Trending Suggestions | -       | DeepSeek V4 Flash | OpenRouter |
 
 The hardcoded `DEFAULT_MODEL` fallback (used when all config models fail):
 
 ```typescript
 const DEFAULT_MODEL: Model = {
-  id: 'xai/grok-4.1-fast-non-reasoning',
-  name: 'Grok 4.1 Fast Non-Reasoning',
-  provider: 'xAI',
-  providerId: 'gateway'
+  id: 'deepseek/deepseek-v4-flash',
+  name: 'DeepSeek V4 Flash',
+  provider: 'DeepSeek',
+  providerId: 'openrouter'
 }
 ```
 
@@ -221,16 +222,16 @@ const DEFAULT_MODEL: Model = {
 
 ## How to Change Models
 
-### Using the Gateway Provider
+### Using OpenRouter or Gateway Providers
 
-If you use the Vercel AI Gateway (`providerId: "gateway"`), the model `id` follows the format `vendor/model-name`. Simply change the `id` in the config file:
+OpenRouter (`providerId: "openrouter"`) is the default text model provider. Vercel AI Gateway (`providerId: "gateway"`) remains available for image generation and optional model routes. For both providers, the model `id` follows the format `vendor/model-name`.
 
 ```json
 {
-  "id": "anthropic/claude-sonnet-4-5",
-  "name": "Claude Sonnet 4.5",
-  "provider": "Anthropic",
-  "providerId": "gateway"
+  "id": "deepseek/deepseek-v4-flash",
+  "name": "DeepSeek V4 Flash",
+  "provider": "DeepSeek",
+  "providerId": "openrouter"
 }
 ```
 

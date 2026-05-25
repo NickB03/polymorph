@@ -7,12 +7,13 @@ This document defines the environment-variable matrix for Polymorph.
 
 ## Required (Day-1 bootstrap)
 
-| Variable               | Required                        | Purpose                                                                                    |
-| ---------------------- | ------------------------------- | ------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`         | Yes                             | PostgreSQL connection string for Drizzle/Supabase; `POSTGRES_URL` is also accepted         |
-| `AI_GATEWAY_API_KEY`   | Required for the default models | Vercel AI Gateway provider key                                                             |
-| `BRAVE_SEARCH_API_KEY` | Required for the default search | Primary search provider when `SEARCH_API=brave` (default); enables web + multimedia search |
-| `TAVILY_API_KEY`       | Optional                        | Alternative search / extract provider key                                                  |
+| Variable               | Required                         | Purpose                                                                                    |
+| ---------------------- | -------------------------------- | ------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`         | Yes                              | PostgreSQL connection string for Drizzle/Supabase; `POSTGRES_URL` is also accepted         |
+| `OPENROUTER_API_KEY`   | Required for default text models | OpenRouter provider key                                                                    |
+| `AI_GATEWAY_API_KEY`   | Optional                         | Vercel AI Gateway provider key; currently used for image generation                        |
+| `BRAVE_SEARCH_API_KEY` | Required for the default search  | Primary search provider when `SEARCH_API=brave` (default); enables web + multimedia search |
+| `TAVILY_API_KEY`       | Optional                         | Alternative search / extract provider key                                                  |
 
 ## Core behavior controls
 
@@ -56,6 +57,8 @@ Required when `ENABLE_AUTH=true`:
 
 ## AI provider options (Direct)
 
+- `OPENROUTER_API_KEY` (default text model provider)
+- `AI_GATEWAY_API_KEY` (image generation via Vercel AI Gateway)
 - `OPENAI_API_KEY`
 - `ANTHROPIC_API_KEY`
 - `GOOGLE_GENERATIVE_AI_API_KEY`
@@ -145,7 +148,7 @@ For production masking, configure OpenInference environment variables according 
    - **Note:** This project uses a custom port range (**4432x**) to avoid conflicts with other Supabase projects.
 3. Fill required variables in `.env.local`:
    - `DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres`
-   - `AI_GATEWAY_API_KEY=[YOUR_VERCEL_GATEWAY_KEY]`
+   - `OPENROUTER_API_KEY=[YOUR_OPENROUTER_KEY]`
    - `BRAVE_SEARCH_API_KEY=[YOUR_BRAVE_SEARCH_KEY]` (or another `SEARCH_API` provider)
    - `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:44321`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY=[YOUR_SUPABASE_ANON_KEY]`

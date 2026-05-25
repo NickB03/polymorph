@@ -34,6 +34,7 @@ const baseEnvSchema = z.object({
   OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH: z.string().optional(),
 
   // Feature-gated (warn if missing)
+  OPENROUTER_API_KEY: z.string().optional(),
   AI_GATEWAY_API_KEY: z.string().optional(),
   TAVILY_API_KEY: z.string().optional(),
   BRAVE_SEARCH_API_KEY: z.string().optional(),
@@ -70,8 +71,12 @@ const featureWarnings: Array<{
   message: string
 }> = [
   {
+    key: 'OPENROUTER_API_KEY',
+    message: 'Default text model features require OPENROUTER_API_KEY'
+  },
+  {
     key: 'AI_GATEWAY_API_KEY',
-    message: 'AI features require AI_GATEWAY_API_KEY'
+    message: 'Image generation requires AI_GATEWAY_API_KEY'
   },
   { key: 'TAVILY_API_KEY', message: 'Search requires TAVILY_API_KEY' },
   {
@@ -113,6 +118,7 @@ export function validateEnv(): Env {
       OPENINFERENCE_HIDE_INPUT_TEXT: process.env.OPENINFERENCE_HIDE_INPUT_TEXT,
       OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH:
         process.env.OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH,
+      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
       AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
       TAVILY_API_KEY: process.env.TAVILY_API_KEY,
       BRAVE_SEARCH_API_KEY: process.env.BRAVE_SEARCH_API_KEY,

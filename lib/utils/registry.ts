@@ -2,6 +2,7 @@ import { anthropic } from '@ai-sdk/anthropic'
 import { createGateway } from '@ai-sdk/gateway'
 import { google } from '@ai-sdk/google'
 import { createOpenAI, openai } from '@ai-sdk/openai'
+import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { createProviderRegistry, LanguageModel } from 'ai'
 import { createOllama } from 'ollama-ai-provider-v2'
 
@@ -12,6 +13,9 @@ const providers: Record<string, any> = {
   google,
   gateway: createGateway({
     apiKey: process.env.AI_GATEWAY_API_KEY
+  }),
+  openrouter: createOpenRouter({
+    apiKey: process.env.OPENROUTER_API_KEY
   })
 }
 
@@ -37,7 +41,7 @@ export const registry = createProviderRegistry(providers)
 export function getModel(model: string): LanguageModel {
   if (!model.includes(':')) {
     throw new Error(
-      `Invalid model format "${model}": expected "provider:model-id" (e.g. "gateway:google/gemini-3-flash")`
+      `Invalid model format "${model}": expected "provider:model-id" (e.g. "openrouter:deepseek/deepseek-v4-flash")`
     )
   }
   return registry.languageModel(
@@ -60,6 +64,8 @@ export function isProviderEnabled(providerId: string): boolean {
       )
     case 'gateway':
       return !!process.env.AI_GATEWAY_API_KEY
+    case 'openrouter':
+      return !!process.env.OPENROUTER_API_KEY
     case 'ollama':
       return !!process.env.OLLAMA_BASE_URL
     default:

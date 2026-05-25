@@ -27,6 +27,11 @@ const MODEL_CONTEXT_WINDOWS: Record<string, ModelContextInfo> = {
   'gemini-3-flash': { contextWindow: 1048576, outputTokens: 65536 },
   'gemini-2.5-flash': { contextWindow: 1048576, outputTokens: 65536 },
   'gemini-2.5-pro': { contextWindow: 1048576, outputTokens: 65536 },
+  'gemini-3.1-flash-lite': { contextWindow: 1048576, outputTokens: 65536 },
+
+  // DeepSeek Models
+  'deepseek-v4-flash': { contextWindow: 1048576, outputTokens: 65536 },
+  'deepseek-v4-pro': { contextWindow: 1048576, outputTokens: 65536 },
 
   // xAI Models
   'grok-4.1-fast-non-reasoning': {
@@ -64,6 +69,9 @@ const MODEL_TO_ENCODING: Record<string, TiktokenEncoding> = {
   'gemini-3-flash': 'cl100k_base',
   'gemini-2.5-flash': 'cl100k_base', // Use GPT-4 tokenizer as approximation for Gemini
   'gemini-2.5-pro': 'cl100k_base',
+  'gemini-3.1-flash-lite': 'cl100k_base',
+  'deepseek-v4-flash': 'cl100k_base',
+  'deepseek-v4-pro': 'cl100k_base',
   'grok-4.1-fast-non-reasoning': 'cl100k_base',
   'grok-4.1-fast-reasoning': 'cl100k_base',
   'grok-4-0709': 'cl100k_base', // Use GPT-4 tokenizer as approximation for Grok
@@ -72,7 +80,7 @@ const MODEL_TO_ENCODING: Record<string, TiktokenEncoding> = {
 }
 
 // Model ids in config carry a provider prefix
-// (e.g. "xai/grok-4.1-fast-non-reasoning") but the lookup tables here are
+// (e.g. "deepseek/deepseek-v4-flash") but the lookup tables here are
 // keyed unprefixed. Strip the segment before "/".
 function stripProviderPrefix(modelId: string): string {
   const slash = modelId.indexOf('/')

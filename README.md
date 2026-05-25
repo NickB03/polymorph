@@ -35,7 +35,7 @@
 - **Generative UI** — tables, charts, geo maps, timelines, citations, callouts, and link previews render inline
 - **Three conversation modes** — Search, Research, and Build share one chat surface with intent-aware prompting
 - **Geo intelligence** — interactive maps, real directions, reachability polygons, and static map images
-- **Multi-provider AI** — Grok 4.1 Fast (speed and quality) via Vercel AI Gateway, with Gemini 2.5 Flash Image for inline generation, plus direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers
+- **Multi-provider AI** — DeepSeek V4 Flash/Pro via OpenRouter for text, Gemini 2.5 Flash Image via Vercel AI Gateway for inline generation, plus direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers
 - **Voice mode** — speech input and text-to-speech playback
 - **Guest access** — instant search without sign-up, rate-limited per IP in cloud deployments
 

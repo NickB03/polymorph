@@ -4,44 +4,44 @@
     "byMode": {
       "chat": {
         "speed": {
-          "id": "xai/grok-4.1-fast-non-reasoning",
-          "name": "Grok 4.1 Fast Non-Reasoning",
-          "provider": "xAI",
-          "providerId": "gateway"
+          "id": "deepseek/deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash",
+          "provider": "DeepSeek",
+          "providerId": "openrouter"
         },
         "quality": {
-          "id": "xai/grok-4.1-fast-reasoning",
-          "name": "Grok 4.1 Fast Reasoning",
-          "provider": "xAI",
-          "providerId": "gateway"
+          "id": "deepseek/deepseek-v4-pro",
+          "name": "DeepSeek V4 Pro",
+          "provider": "DeepSeek",
+          "providerId": "openrouter"
         }
       },
       "research": {
         "speed": {
-          "id": "xai/grok-4.1-fast-non-reasoning",
-          "name": "Grok 4.1 Fast Non-Reasoning",
-          "provider": "xAI",
-          "providerId": "gateway"
+          "id": "deepseek/deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash",
+          "provider": "DeepSeek",
+          "providerId": "openrouter"
         },
         "quality": {
-          "id": "xai/grok-4.1-fast-reasoning",
-          "name": "Grok 4.1 Fast Reasoning",
-          "provider": "xAI",
-          "providerId": "gateway"
+          "id": "deepseek/deepseek-v4-pro",
+          "name": "DeepSeek V4 Pro",
+          "provider": "DeepSeek",
+          "providerId": "openrouter"
         }
       }
     },
     "relatedQuestions": {
-      "id": "xai/grok-4.1-fast-non-reasoning",
-      "name": "Grok 4.1 Fast Non-Reasoning",
-      "provider": "xAI",
-      "providerId": "gateway"
+      "id": "deepseek/deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "provider": "DeepSeek",
+      "providerId": "openrouter"
     },
     "trendingSuggestions": {
-      "id": "xai/grok-4.1-fast-non-reasoning",
-      "name": "Grok 4.1 Fast Non-Reasoning",
-      "provider": "xAI",
-      "providerId": "gateway"
+      "id": "deepseek/deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "provider": "DeepSeek",
+      "providerId": "openrouter"
     }
   }
 }
