@@ -83,6 +83,13 @@ const DEFAULT_ACTIVE_GRADIENT: readonly [string, string] = [
 
 const DEFAULT_ACTIVE_FILL_OPACITY = 1
 const DEFAULT_INACTIVE_FILL_OPACITY = 0.8
+const SVG_NUMBER_PRECISION = 6
+
+function formatSvgNumber(value: number): string {
+  const factor = 10 ** SVG_NUMBER_PRECISION
+  const rounded = Math.round(value * factor) / factor
+  return Object.is(rounded, -0) ? '0' : String(rounded)
+}
 
 export interface GaugeProps {
   /** Fill level 0–100 */
@@ -320,7 +327,7 @@ function GaugeInner({
     const d41 = dist(x4, y4, x1, y1)
 
     if (cornerRadiusPx <= 0) {
-      return `M ${x1} ${y1} L ${x2} ${y2} L ${x3} ${y3} L ${x4} ${y4} Z`
+      return `M ${formatSvgNumber(x1)} ${formatSvgNumber(y1)} L ${formatSvgNumber(x2)} ${formatSvgNumber(y2)} L ${formatSvgNumber(x3)} ${formatSvgNumber(y3)} L ${formatSvgNumber(x4)} ${formatSvgNumber(y4)} Z`
     }
 
     const minEdge = Math.min(d12, d23, d34, d41)
@@ -348,7 +355,7 @@ function GaugeInner({
     const p4a = { x: lerp(x4, x3, r3), y: lerp(y4, y3, r3) }
     const p4b = { x: lerp(x4, x1, r4), y: lerp(y4, y1, r4) }
 
-    return `M ${p1a.x} ${p1a.y} Q ${x1} ${y1} ${p1b.x} ${p1b.y} L ${p2a.x} ${p2a.y} Q ${x2} ${y2} ${p2b.x} ${p2b.y} L ${p3a.x} ${p3a.y} Q ${x3} ${y3} ${p3b.x} ${p3b.y} L ${p4a.x} ${p4a.y} Q ${x4} ${y4} ${p4b.x} ${p4b.y} Z`
+    return `M ${formatSvgNumber(p1a.x)} ${formatSvgNumber(p1a.y)} Q ${formatSvgNumber(x1)} ${formatSvgNumber(y1)} ${formatSvgNumber(p1b.x)} ${formatSvgNumber(p1b.y)} L ${formatSvgNumber(p2a.x)} ${formatSvgNumber(p2a.y)} Q ${formatSvgNumber(x2)} ${formatSvgNumber(y2)} ${formatSvgNumber(p2b.x)} ${formatSvgNumber(p2b.y)} L ${formatSvgNumber(p3a.x)} ${formatSvgNumber(p3a.y)} Q ${formatSvgNumber(x3)} ${formatSvgNumber(y3)} ${formatSvgNumber(p3b.x)} ${formatSvgNumber(p3b.y)} L ${formatSvgNumber(p4a.x)} ${formatSvgNumber(p4a.y)} Q ${formatSvgNumber(x4)} ${formatSvgNumber(y4)} ${formatSvgNumber(p4b.x)} ${formatSvgNumber(p4b.y)} Z`
   }
 
   const bgFillSolid = 'var(--chart-background)'

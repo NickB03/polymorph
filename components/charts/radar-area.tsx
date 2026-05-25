@@ -126,6 +126,8 @@ export function RadarArea({
 
   // Create path from positions
   const pathD = `M ${animatedPositions.map(p => `${p.x},${p.y}`).join(' L ')} Z`
+  const fillOpacity = isHovered ? 0.35 : 0.15
+  const strokeWidth = showStroke ? getStrokeWidth(isHovered) : 0
 
   // LOCAL PATCH (not upstream bklit): consumer passes `animate={!reducedMotion}`,
   // but upstream RadarArea only honors that flag for the intro stagger — the
@@ -167,12 +169,16 @@ export function RadarArea({
       <motion.path
         animate={{
           d: pathD,
-          fillOpacity: isHovered ? 0.35 : 0.15,
-          strokeWidth: showStroke ? getStrokeWidth(isHovered) : 0
+          fillOpacity,
+          strokeWidth
         }}
+        d={pathD}
         fill={color}
+        fillOpacity={fillOpacity}
+        initial={false}
         stroke={showStroke ? color : 'none'}
         strokeLinejoin="round"
+        strokeWidth={strokeWidth}
         style={{
           filter:
             showGlow && isHovered ? `drop-shadow(0 0 12px ${color})` : 'none'
@@ -191,15 +197,20 @@ export function RadarArea({
           if (!point) {
             return null
           }
+          const radius = isHovered ? 6 : 4
           return (
             <motion.circle
               animate={{
                 cx: point.x,
                 cy: point.y,
-                r: isHovered ? 6 : 4
+                r: radius
               }}
+              cx={point.x}
+              cy={point.y}
               fill={color}
+              initial={false}
               key={metric.key}
+              r={radius}
               stroke={radarCssVars.background}
               strokeWidth={2}
               transition={{

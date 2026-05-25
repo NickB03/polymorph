@@ -91,6 +91,9 @@ Required when `ENABLE_AUTH=true`:
 | --------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ADMIN_USER_ID` | When admin needed | Supabase user ID that gates `app/(admin)/admin/*` routes via `lib/auth/is-admin.ts`. Without this, admin routes return `notFound()`. Ignored when `ENABLE_AUTH=false`. |
 
+Use the [Browser QA runbook](../operations/runbooks/browser-qa-auth-admin.md)
+for local admin user setup and `/admin/evals` browser verification.
+
 ## Vercel cron jobs
 
 | Variable      | Required          | Purpose                                                                                                                      |
