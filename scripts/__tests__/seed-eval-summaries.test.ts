@@ -36,6 +36,14 @@ describe('buildSeedEvalSummaryRows', () => {
     )
   })
 
+  it('includes Tool Selection scores for v7 dashboard browser QA', () => {
+    const rows = buildSeedEvalSummaryRows(NOW)
+
+    expect(
+      rows.every(row => typeof row.evaluatorScores.tool_selection === 'number')
+    ).toBe(true)
+  })
+
   it('generates dashboard-safe values and stable local seed names', () => {
     const rows = buildSeedEvalSummaryRows(NOW)
     const judgeConfig = createJudgeConfig()

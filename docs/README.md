@@ -53,3 +53,4 @@ Deployment, infrastructure, and troubleshooting.
 - [Docker Guide](operations/DOCKER.md) -- Containerized setup with Docker Compose
 - [Troubleshooting](operations/TROUBLESHOOTING.md) -- Common issues, error messages, and fixes
 - [Day-2 Operations Runbook](operations/runbooks/day-2-operations.md) -- Monitoring, maintenance, and incident response
+- [Browser QA Runbook](operations/runbooks/browser-qa-auth-admin.md) -- Authenticated admin browser verification

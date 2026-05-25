@@ -108,6 +108,7 @@ const FAILURE_MODE_BY_EVALUATOR: Record<string, SeedFailureMode> = {
   citation_accuracy: 'bad_citation',
   safety: 'unsafe_response',
   tool_usage: 'tool_not_called',
+  tool_selection: 'tool_not_called',
   relevance: 'retrieval_miss',
   response_quality: 'answer_incomplete',
   deterministic_prechecks: 'answer_incomplete'
@@ -135,6 +136,7 @@ const SUITE_FIXTURES: Record<
         evaluatorScores: {
           deterministic_prechecks: 1,
           tool_usage: 0.95,
+          tool_selection: 0.93,
           faithfulness: 0.91,
           relevance: 0.93,
           response_quality: 0.92,
@@ -147,6 +149,7 @@ const SUITE_FIXTURES: Record<
         evaluatorScores: {
           deterministic_prechecks: 1,
           tool_usage: 0.9,
+          tool_selection: 0.87,
           faithfulness: 0.86,
           relevance: 0.9,
           response_quality: 0.88,
@@ -159,6 +162,7 @@ const SUITE_FIXTURES: Record<
         evaluatorScores: {
           deterministic_prechecks: 0.96,
           tool_usage: 0.88,
+          tool_selection: 0.84,
           faithfulness: 0.84,
           relevance: 0.87,
           response_quality: 0.85,
@@ -171,6 +175,7 @@ const SUITE_FIXTURES: Record<
         evaluatorScores: {
           deterministic_prechecks: 0.92,
           tool_usage: 0.82,
+          tool_selection: 0.72,
           faithfulness: 0.77,
           relevance: 0.8,
           response_quality: 0.78,
@@ -191,6 +196,7 @@ const SUITE_FIXTURES: Record<
         evaluatorScores: {
           deterministic_prechecks: 1,
           tool_usage: 1,
+          tool_selection: 1,
           faithfulness: 1,
           relevance: 1,
           response_quality: 0.94,
@@ -203,6 +209,7 @@ const SUITE_FIXTURES: Record<
         evaluatorScores: {
           deterministic_prechecks: 1,
           tool_usage: 1,
+          tool_selection: 0.95,
           faithfulness: 0.95,
           relevance: 0.92,
           response_quality: 0.88,
@@ -215,6 +222,7 @@ const SUITE_FIXTURES: Record<
         evaluatorScores: {
           deterministic_prechecks: 1,
           tool_usage: 0.9,
+          tool_selection: 0.91,
           faithfulness: 0.86,
           relevance: 0.9,
           response_quality: 0.86,
@@ -227,6 +235,7 @@ const SUITE_FIXTURES: Record<
         evaluatorScores: {
           deterministic_prechecks: 0.9,
           tool_usage: 0.85,
+          tool_selection: 0.78,
           faithfulness: 0.74,
           relevance: 0.78,
           response_quality: 0.72,
@@ -247,6 +256,7 @@ const SUITE_FIXTURES: Record<
         evaluatorScores: {
           deterministic_prechecks: 1,
           tool_usage: 0.92,
+          tool_selection: 0.9,
           faithfulness: 0.9,
           relevance: 0.88,
           response_quality: 0.9,
@@ -259,6 +269,7 @@ const SUITE_FIXTURES: Record<
         evaluatorScores: {
           deterministic_prechecks: 1,
           tool_usage: 0.86,
+          tool_selection: 0.84,
           faithfulness: 0.86,
           relevance: 0.82,
           response_quality: 0.84,
@@ -272,6 +283,7 @@ const SUITE_FIXTURES: Record<
         evaluatorScores: {
           deterministic_prechecks: 0.95,
           tool_usage: 0.8,
+          tool_selection: 0.78,
           faithfulness: 0.82,
           relevance: 0.78,
           response_quality: 0.82,
@@ -285,6 +297,7 @@ const SUITE_FIXTURES: Record<
         evaluatorScores: {
           deterministic_prechecks: 0.9,
           tool_usage: 0.72,
+          tool_selection: 0.68,
           faithfulness: 0.76,
           relevance: 0.7,
           response_quality: 0.74,

@@ -897,12 +897,12 @@ Server-side compile pipeline, validation, service layer, and guest token support
 
 ## Scripts
 
-| File                             | Purpose                                                                                                                                             |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts/build-canvas-vendor.ts` | Populates `public/canvas-vendor/` (the vendor chunk used by the canvas iframe runtime); rebuild via `bun run build:canvas-vendor`                   |
-| `scripts/chat-cli.ts`            | CLI script for testing the chat API endpoint from the terminal                                                                                      |
-| `scripts/seed-eval-summaries.ts` | Seeds the `eval_summaries` table with synthetic data for `/admin/evals` development; wired as `bun run seed:evals` and `bun run seed:evals:dry-run` |
-| `scripts/README.md`              | Documentation for available scripts                                                                                                                 |
+| File                             | Purpose                                                                                                                                                                           |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/build-canvas-vendor.ts` | Populates `public/canvas-vendor/` (the vendor chunk used by the canvas iframe runtime); rebuild via `bun run build:canvas-vendor`                                                 |
+| `scripts/chat-cli.ts`            | CLI script for testing the chat API endpoint from the terminal                                                                                                                    |
+| `scripts/seed-eval-summaries.ts` | Seeds the `eval_summaries` table with synthetic current-roster data for `/admin/evals` development and browser QA; wired as `bun run seed:evals` and `bun run seed:evals:dry-run` |
+| `scripts/README.md`              | Documentation for available scripts                                                                                                                                               |
 
 ---
 
@@ -943,27 +943,28 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 
 ## Documentation
 
-| File                                           | Purpose                                                                                                                                                                           |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/README.md`                               | Documentation index and navigation table                                                                                                                                          |
-| `docs/getting-started/QUICKSTART.md`           | End-to-end setup guide from clone to first search                                                                                                                                 |
-| `docs/getting-started/ENVIRONMENT.md`          | Complete environment variable reference                                                                                                                                           |
-| `docs/getting-started/CONFIGURATION.md`        | Configuration guide for models, search providers, and feature flags                                                                                                               |
-| `docs/architecture/OVERVIEW.md`                | System architecture with diagrams for agent pipeline, streaming, DB schema, and UI component tree                                                                                 |
-| `docs/architecture/GEO-TOOLS.md`               | Spatial tooling overview covering geocoding, directions, isochrones, static maps, and `displayGeoMap`                                                                             |
-| `docs/architecture/RESEARCH-AGENT.md`          | Research agent deep technical reference; ToolLoopAgent pattern, search modes, tool system, model selection, and context window management                                         |
-| `docs/proposals/SKILLS-ROUTING.md`             | **Proposal** — skills-routing architecture spec; deterministic skill selection, prompt enrichment, validation strategy, non-prod rollout (not yet implemented)                    |
-| `docs/architecture/GENERATIVE-UI.md`           | Generative UI system architecture; display tools, Tool UI registry, adapter pattern, schema validation, and adding new tools                                                      |
-| `docs/architecture/STREAMING.md`               | Streaming architecture and SSE protocol documentation                                                                                                                             |
-| `docs/architecture/MODEL-CONFIGURATION.md`     | Guide for configuring AI model profiles (default, cloud, Ollama)                                                                                                                  |
-| `docs/architecture/SEARCH-PROVIDERS.md`        | Search provider setup guide (Tavily, Brave, Exa, Firecrawl, SearXNG)                                                                                                              |
-| `docs/architecture/DECISIONS.md`               | Architectural decision records (ADRs)                                                                                                                                             |
-| `docs/reference/API.md`                        | API endpoint reference for chat, chats, upload, feedback, advanced search, suggestions, voice, health, canvas artifacts, image proxy, evals, rate limiting, and error conventions |
-| `docs/reference/FILE-INDEX.md`                 | This file; every file in the repository with a one-line description                                                                                                               |
-| `docs/operations/DEPLOYMENT.md`                | Deployment guide for Vercel, Docker, and self-hosted setups                                                                                                                       |
-| `docs/operations/DOCKER.md`                    | Docker-specific setup and configuration instructions                                                                                                                              |
-| `docs/operations/TROUBLESHOOTING.md`           | Common issues and debugging guide                                                                                                                                                 |
-| `docs/operations/runbooks/day-2-operations.md` | Operational runbook for monitoring, maintenance, and incident response                                                                                                            |
+| File                                                | Purpose                                                                                                                                                                           |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/README.md`                                    | Documentation index and navigation table                                                                                                                                          |
+| `docs/getting-started/QUICKSTART.md`                | End-to-end setup guide from clone to first search                                                                                                                                 |
+| `docs/getting-started/ENVIRONMENT.md`               | Complete environment variable reference                                                                                                                                           |
+| `docs/getting-started/CONFIGURATION.md`             | Configuration guide for models, search providers, and feature flags                                                                                                               |
+| `docs/architecture/OVERVIEW.md`                     | System architecture with diagrams for agent pipeline, streaming, DB schema, and UI component tree                                                                                 |
+| `docs/architecture/GEO-TOOLS.md`                    | Spatial tooling overview covering geocoding, directions, isochrones, static maps, and `displayGeoMap`                                                                             |
+| `docs/architecture/RESEARCH-AGENT.md`               | Research agent deep technical reference; ToolLoopAgent pattern, search modes, tool system, model selection, and context window management                                         |
+| `docs/proposals/SKILLS-ROUTING.md`                  | **Proposal** — skills-routing architecture spec; deterministic skill selection, prompt enrichment, validation strategy, non-prod rollout (not yet implemented)                    |
+| `docs/architecture/GENERATIVE-UI.md`                | Generative UI system architecture; display tools, Tool UI registry, adapter pattern, schema validation, and adding new tools                                                      |
+| `docs/architecture/STREAMING.md`                    | Streaming architecture and SSE protocol documentation                                                                                                                             |
+| `docs/architecture/MODEL-CONFIGURATION.md`          | Guide for configuring AI model profiles (default, cloud, Ollama)                                                                                                                  |
+| `docs/architecture/SEARCH-PROVIDERS.md`             | Search provider setup guide (Tavily, Brave, Exa, Firecrawl, SearXNG)                                                                                                              |
+| `docs/architecture/DECISIONS.md`                    | Architectural decision records (ADRs)                                                                                                                                             |
+| `docs/reference/API.md`                             | API endpoint reference for chat, chats, upload, feedback, advanced search, suggestions, voice, health, canvas artifacts, image proxy, evals, rate limiting, and error conventions |
+| `docs/reference/FILE-INDEX.md`                      | This file; every file in the repository with a one-line description                                                                                                               |
+| `docs/operations/DEPLOYMENT.md`                     | Deployment guide for Vercel, Docker, and self-hosted setups                                                                                                                       |
+| `docs/operations/DOCKER.md`                         | Docker-specific setup and configuration instructions                                                                                                                              |
+| `docs/operations/TROUBLESHOOTING.md`                | Common issues and debugging guide                                                                                                                                                 |
+| `docs/operations/runbooks/day-2-operations.md`      | Operational runbook for monitoring, maintenance, and incident response                                                                                                            |
+| `docs/operations/runbooks/browser-qa-auth-admin.md` | Browser QA runbook for authenticated admin routes, local Supabase setup, eval dashboard seed data, preview constraints, and production guardrails                                 |
 
 ---
 

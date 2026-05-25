@@ -107,6 +107,8 @@ ADMIN_USER_ID=[SUPABASE_USER_ID]
 
 Only a session whose `user.id` matches will render admin routes. Unauthenticated requests are redirected to `/auth/login`; authenticated non-admin users get `notFound()`. `ENABLE_AUTH=false` still disables admin access entirely.
 
+For real browser checks of authenticated admin routes, use the [Browser QA runbook](../operations/runbooks/browser-qa-auth-admin.md).
+
 ## Optional Features
 
 - Guest chat: `ENABLE_GUEST_CHAT=true`

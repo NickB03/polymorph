@@ -16,6 +16,10 @@ Seeds a local Supabase/Postgres database with deterministic synthetic
 `eval_summaries` rows for dashboard development. It does not call Phoenix,
 OpenRouter, or the eval runner.
 
+The seeded evaluator scores include the current dashboard roster, including
+`tool_selection`, so local browser QA can verify the Tool Selection row and radar
+chart. See the [authenticated admin browser QA runbook](../docs/operations/runbooks/browser-qa-auth-admin.md).
+
 ### Safety
 
 - Only runs when `DATABASE_URL` or `POSTGRES_URL` points at `localhost`,
