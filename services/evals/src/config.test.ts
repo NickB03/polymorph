@@ -63,11 +63,40 @@ describe('createConfig', () => {
     expect(config.evalRunnerUrl).toBe('https://app.example.com')
     expect(config.evalRunnerSecret).toBe('secret')
     expect(config.appUrl).toBe('https://app.example.com')
+    expect(config.evalRunnerTimeoutMs).toBe(300000)
     expect(config.smokeEnabled).toBe(true)
     expect(config.smokeCaseCount).toBe(1)
     expect(config.smokeTimeoutMs).toBe(300000)
     expect(config.judgeReasoningEnabled).toBe(true)
     expect(config.judgeReasoningMaxTokens).toBe(1024)
+  })
+
+  it('parses EVAL_RUNNER_TIMEOUT_MS from env', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+    vi.stubEnv('EVAL_RUNNER_TIMEOUT_MS', '600000')
+
+    const { createConfig } = await import('./config')
+    const config = createConfig()
+
+    expect(config.evalRunnerTimeoutMs).toBe(600000)
+  })
+
+  it('falls back when EVAL_RUNNER_TIMEOUT_MS is not positive', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+    vi.stubEnv('EVAL_RUNNER_TIMEOUT_MS', '0')
+
+    const { createConfig } = await import('./config')
+    const config = createConfig()
+
+    expect(config.evalRunnerTimeoutMs).toBe(300000)
   })
 
   it('defaults reasoning to enabled with a 1024 token budget', async () => {

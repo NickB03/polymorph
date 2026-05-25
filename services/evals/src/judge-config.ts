@@ -12,7 +12,10 @@ export function validInt(raw: string | undefined, fallback: number): number {
   return Number.isNaN(n) ? fallback : n
 }
 
-function validPositiveInt(raw: string | undefined, fallback: number): number {
+export function validPositiveInt(
+  raw: string | undefined,
+  fallback: number
+): number {
   const n = validInt(raw, fallback)
   return n > 0 ? n : fallback
 }

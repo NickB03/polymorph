@@ -8,6 +8,8 @@ export interface EvalRunnerClientConfig {
   timeoutMs?: number
 }
 
+export const DEFAULT_EVAL_RUNNER_TIMEOUT_MS = 300_000
+
 export interface EvalRunnerRequest {
   caseId: string
   suite: EvalCase['suite']
@@ -38,7 +40,7 @@ export async function runEvalCase(
   caseSpec: EvalCase,
   config: EvalRunnerClientConfig
 ): Promise<EvalRunResult> {
-  const timeoutMs = config.timeoutMs ?? 120_000
+  const timeoutMs = config.timeoutMs ?? DEFAULT_EVAL_RUNNER_TIMEOUT_MS
 
   return await withRetry(
     async () => {

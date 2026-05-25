@@ -206,6 +206,7 @@ The `services/evals/` directory contains a scheduled evaluation pipeline:
 - Traffic monitor lookback: `48` hours
 - Traffic monitor sample cap: `10` chats
 - Eval concurrency: `1`
+- Eval runner case timeout: `300000` ms
 
 These defaults are tuned for low-volume personal-project traffic. If you widen the lookback beyond the cron cadence, the sampler can rescore the same chats on multiple runs because it samples from the current window and does not track previously evaluated chat IDs.
 
@@ -229,6 +230,7 @@ These defaults are tuned for low-volume personal-project traffic. If you widen t
 | `SAMPLE_SIZE`                   | `10` (default)                                                                                                  |
 | `LOOKBACK_HOURS`                | `48` (default)                                                                                                  |
 | `EVAL_CASE_CONCURRENCY`         | `1` (default)                                                                                                   |
+| `EVAL_RUNNER_TIMEOUT_MS`        | `300000` (default) per `/api/evals/run` case replay                                                             |
 | `EVAL_EXIT_ON_THRESHOLD_BREACH` | `false` (default) — when `true`, the cron exits non-zero on threshold breach so Railway marks the run as failed |
 
 ### Rotating Phoenix API keys

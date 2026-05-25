@@ -1,4 +1,10 @@
-import { createJudgeConfig, validBool, validInt } from './judge-config'
+import { DEFAULT_EVAL_RUNNER_TIMEOUT_MS } from './eval-runner-client'
+import {
+  createJudgeConfig,
+  validBool,
+  validInt,
+  validPositiveInt
+} from './judge-config'
 import type { EvalRunMode } from './types'
 
 // Environment configuration for the evals service.
@@ -20,6 +26,7 @@ export interface EvalsConfig {
   evalRunMode: EvalRunMode
   evalRunnerUrl?: string
   evalRunnerSecret?: string
+  evalRunnerTimeoutMs: number
   appUrl?: string
   supabaseUrl?: string
   supabaseAnonKey?: string
@@ -142,6 +149,10 @@ export function createConfig(
     evalRunMode,
     evalRunnerUrl,
     evalRunnerSecret,
+    evalRunnerTimeoutMs: validPositiveInt(
+      env.EVAL_RUNNER_TIMEOUT_MS,
+      DEFAULT_EVAL_RUNNER_TIMEOUT_MS
+    ),
     appUrl,
     supabaseUrl,
     supabaseAnonKey,
