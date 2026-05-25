@@ -8,8 +8,8 @@ import {
 } from './corpus'
 
 describe('corpus', () => {
-  it('exposes a versioned corpus', () => {
-    expect(getCorpusVersion()).toMatch(/v\d+/)
+  it('uses v7 after adding availableTools to Phoenix dataset inputs', () => {
+    expect(getCorpusVersion()).toBe('v7')
   })
 
   it('returns capability cases with stable ids', () => {

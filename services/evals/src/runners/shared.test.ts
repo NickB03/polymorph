@@ -233,6 +233,16 @@ describe('buildDatasetExamples', () => {
     expect(examples[0].input.context).toContain(
       '- [Source](https://example.com)'
     )
+    expect(examples[0].input.availableTools).toEqual(
+      expect.arrayContaining(['search', 'fetch', 'displayCallout'])
+    )
+    expect(examples[0].input.availableTools).not.toContain(
+      'createCanvasArtifact'
+    )
+    expect(examples[0].input.availableTools).not.toContain('generateImage')
+    expect(examples[0].input.availableTools).not.toContain(
+      'displayQuestionWizard'
+    )
   })
 
   it('returns an empty context when there are no search results or citations', async () => {
@@ -368,7 +378,7 @@ describe('Phoenix dataset and experiment naming', () => {
       suite: 'capability',
       examples: [
         {
-          input: { caseId: 'c1' },
+          input: { caseId: 'c1', availableTools: ['search', 'fetch'] },
           output: { answerText: 'ok' },
           metadata: { caseId: 'c1' }
         }
@@ -379,7 +389,14 @@ describe('Phoenix dataset and experiment naming', () => {
 
     expect(mockCreateOrGetDataset).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: 'polymorph-capability-v2'
+        name: 'polymorph-capability-v2',
+        examples: [
+          expect.objectContaining({
+            input: expect.objectContaining({
+              availableTools: ['search', 'fetch']
+            })
+          })
+        ]
       })
     )
     expect(mockCreateDataset).not.toHaveBeenCalled()

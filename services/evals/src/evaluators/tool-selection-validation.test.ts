@@ -26,7 +26,7 @@ const FIXTURE_PATH = fileURLToPath(
 )
 
 const apiKey =
-  process.env.AI_GATEWAY_API_KEY ?? process.env.JUDGE_API_KEY ?? undefined
+  process.env.JUDGE_API_KEY ?? process.env.OPENROUTER_API_KEY ?? undefined
 
 describe.skipIf(!apiKey)(
   'tool_selection validation against human labels',
