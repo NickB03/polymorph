@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  EvalReplayEmptyOutputError,
   normalizeEvalRunResult,
   runEvalChat
 } from '@/lib/streaming/eval-chat-runner'
@@ -401,5 +402,66 @@ describe('runEvalChat', () => {
 
     expect(mockInlineFileUrls).toHaveBeenCalledTimes(1)
     expect(callOrder).toEqual(['prune', 'inline', 'truncate'])
+  })
+
+  it('fails when the replay stream completes without an assistant message', async () => {
+    mockReadUIMessageStream.mockImplementation(async function* () {})
+    mockResearcher.mockReturnValue({
+      stream: vi.fn().mockResolvedValue({
+        toUIMessageStream: vi.fn(() => new ReadableStream())
+      })
+    })
+
+    await expect(
+      runEvalChat({
+        caseId: 'empty-stream-case',
+        suite: 'capability',
+        conversation: [
+          { role: 'user', parts: [{ type: 'text', text: 'hi' }] }
+        ] as any,
+        searchMode: 'chat',
+        modelType: 'speed',
+        model: {
+          id: 'gemini-3-flash',
+          name: 'Gemini 3 Flash',
+          provider: 'Google',
+          providerId: 'gateway'
+        }
+      })
+    ).rejects.toThrow(EvalReplayEmptyOutputError)
+  })
+
+  it('fails when the final assistant message has no text or tool output', async () => {
+    mockReadUIMessageStream.mockImplementation(async function* () {
+      yield {
+        role: 'assistant',
+        parts: []
+      }
+    })
+    mockResearcher.mockReturnValue({
+      stream: vi.fn().mockResolvedValue({
+        toUIMessageStream: vi.fn(() => new ReadableStream())
+      })
+    })
+
+    await expect(
+      runEvalChat({
+        caseId: 'empty-output-case',
+        suite: 'capability',
+        conversation: [
+          { role: 'user', parts: [{ type: 'text', text: 'hi' }] }
+        ] as any,
+        searchMode: 'chat',
+        modelType: 'speed',
+        model: {
+          id: 'gemini-3-flash',
+          name: 'Gemini 3 Flash',
+          provider: 'Google',
+          providerId: 'gateway'
+        }
+      })
+    ).rejects.toThrow(
+      '[eval-runner] Empty eval replay output for case empty-output-case'
+    )
   })
 })

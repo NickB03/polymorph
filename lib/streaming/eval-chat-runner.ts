@@ -53,6 +53,23 @@ export interface EvalChatRunResult {
   durationMs: number
 }
 
+export class EvalReplayEmptyOutputError extends Error {
+  constructor({
+    caseId,
+    modelId,
+    correlationId
+  }: {
+    caseId: string
+    modelId: string
+    correlationId: string
+  }) {
+    super(
+      `[eval-runner] Empty eval replay output for case ${caseId} (model=${modelId}, correlationId=${correlationId})`
+    )
+    this.name = 'EvalReplayEmptyOutputError'
+  }
+}
+
 interface NormalizeEvalRunResultInput {
   finalMessage?: { parts?: unknown[] } | null
   modelId: string
@@ -191,6 +208,10 @@ export function normalizeEvalRunResult({
   }
 }
 
+function hasEvalOutput(result: EvalChatRunResult) {
+  return result.answerText.trim().length > 0 || result.toolNames.length > 0
+}
+
 export async function runEvalChat({
   caseId,
   suite,
@@ -287,11 +308,17 @@ export async function runEvalChat({
 
   await flushTraces()
 
-  return normalizeEvalRunResult({
+  const evalResult = normalizeEvalRunResult({
     finalMessage,
     modelId,
     correlationId,
     ...(otelTraceId ? { otelTraceId } : {}),
     durationMs: Date.now() - startTime
   })
+
+  if (!hasEvalOutput(evalResult)) {
+    throw new EvalReplayEmptyOutputError({ caseId, modelId, correlationId })
+  }
+
+  return evalResult
 }
