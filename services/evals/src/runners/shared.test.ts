@@ -372,7 +372,15 @@ describe('Phoenix dataset and experiment naming', () => {
     )
   })
 
-  it('uses createOrGetDataset for stable judged-suite datasets', async () => {
+  it('uses second-precision fresh dataset names for judged suites', async () => {
+    const { buildFreshDatasetName } = await import('./shared')
+
+    expect(buildFreshDatasetName('capability')).toBe(
+      'polymorph-capability-v2-2026-04-29-12-34-56'
+    )
+  })
+
+  it('creates a fresh corpus-versioned dataset for judged suites', async () => {
     const { createDatasetAndExperiment } = await import('./shared')
 
     await createDatasetAndExperiment({
@@ -388,9 +396,9 @@ describe('Phoenix dataset and experiment naming', () => {
       task: async example => example.output as any
     })
 
-    expect(mockCreateOrGetDataset).toHaveBeenCalledWith(
+    expect(mockCreateDataset).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: 'polymorph-capability-v2',
+        name: 'polymorph-capability-v2-2026-04-29-12-34-56',
         examples: [
           expect.objectContaining({
             input: expect.objectContaining({
@@ -400,11 +408,11 @@ describe('Phoenix dataset and experiment naming', () => {
         ]
       })
     )
-    expect(mockCreateDataset).not.toHaveBeenCalled()
+    expect(mockCreateOrGetDataset).not.toHaveBeenCalled()
     expect(mockRunExperiment).toHaveBeenCalledWith(
       expect.objectContaining({
         experimentName: 'polymorph-capability-2026-04-29-12-34-56',
-        dataset: { datasetId: 'ds-1' }
+        dataset: { datasetId: 'ds-created' }
       })
     )
   })
@@ -778,7 +786,8 @@ describe('runJudgedSuite', () => {
 
     expect(mockGetCasesForEvaluation).toHaveBeenCalledWith('capability')
     expect(mockRunEvalCase).toHaveBeenCalledTimes(2)
-    expect(mockCreateOrGetDataset).toHaveBeenCalledTimes(1)
+    expect(mockCreateDataset).toHaveBeenCalledTimes(1)
+    expect(mockCreateOrGetDataset).not.toHaveBeenCalled()
     expect(mockRunExperiment).toHaveBeenCalledTimes(1)
     expect(mockPersistEvalSummary).toHaveBeenCalledTimes(1)
     expect(result.status).toBe('passed')
@@ -807,6 +816,7 @@ describe('runJudgedSuite', () => {
     )
 
     expect(mockCreateOrGetDataset).not.toHaveBeenCalled()
+    expect(mockCreateDataset).not.toHaveBeenCalled()
     expect(mockRunExperiment).not.toHaveBeenCalled()
   })
 
@@ -830,7 +840,8 @@ describe('runJudgedSuite', () => {
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('1/3 regression cases failed')
     )
-    expect(mockCreateOrGetDataset).toHaveBeenCalledTimes(1)
+    expect(mockCreateDataset).toHaveBeenCalledTimes(1)
+    expect(mockCreateOrGetDataset).not.toHaveBeenCalled()
     expect(mockRunExperiment).toHaveBeenCalledTimes(1)
     expect(result.status).toBe('passed')
 
@@ -890,7 +901,7 @@ describe('runJudgedSuite', () => {
     const cases = [makeCaseSpec('c1', 'capability')]
     mockGetCasesForEvaluation.mockReturnValue(cases)
     mockRunEvalCase.mockResolvedValueOnce(makeRunResult('c1'))
-    mockCreateOrGetDataset.mockRejectedValueOnce(new Error('phoenix down'))
+    mockCreateDataset.mockRejectedValueOnce(new Error('phoenix down'))
 
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
