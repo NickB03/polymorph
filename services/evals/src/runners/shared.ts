@@ -1,7 +1,6 @@
 import { createClient } from '@arizeai/phoenix-client'
 import {
   createDataset,
-  createOrGetDataset,
   getDatasetExamples
 } from '@arizeai/phoenix-client/datasets'
 import { runExperiment } from '@arizeai/phoenix-client/experiments'
@@ -242,6 +241,14 @@ export function buildStableDatasetName(suite: string): string {
   return `polymorph-${suite}-${getCorpusVersion()}`
 }
 
+export function buildFreshDatasetName(suite: string): string {
+  return `${buildStableDatasetName(suite)}-${new Date()
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', '-')
+    .replaceAll(':', '-')}`
+}
+
 export function buildTimestampedDatasetName(suite: string): string {
   const timestamp = new Date()
     .toISOString()
@@ -450,11 +457,10 @@ export async function createDatasetAndExperiment({
   datasetName?: string
 }) {
   const phoenix = createPhoenixClient()
-  const datasetName = datasetNameOverride ?? buildStableDatasetName(suite)
+  const datasetName = datasetNameOverride ?? buildFreshDatasetName(suite)
   const experimentName = buildTimestampedExperimentName(suite)
-  const createFn = datasetNameOverride ? createDataset : createOrGetDataset
 
-  const { datasetId } = await createFn({
+  const { datasetId } = await createDataset({
     client: phoenix,
     name: datasetName,
     description: `Automated eval of ${examples.length} ${suite} cases from corpus ${getCorpusVersion()}`,
