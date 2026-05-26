@@ -71,3 +71,10 @@ The query is conversational, opinion-based, or about the assistant's own capabil
 Given a user query, the list of available tools, the list of tools the model actually called, and the model's final answer text, decide which of the four labels applies. Judge **only** the tool selection — not the answer's correctness, not its tone, not its citations (other evaluators cover those). Reply with a single word.
 
 When the call is ambiguous (e.g., a query could reasonably use either of two tools), prefer `correct_tool` — false negatives on this judge are more harmful than false positives, because they create noisy failure signals for the dashboard.
+
+## 2026-05-26 Decision Notes
+
+- Production v7 recovery succeeded at the Phoenix schema level. The fresh capability run used `polymorph-capability-v7-2026-05-26-01-49-32`; `tool_selection` produced `total=24`, `scored=23`, `errors=[]`, with one `not_required` skip. The fresh regression run used `polymorph-regression-v7-2026-05-26-02-18-10`; `tool_selection` produced `total=3`, `scored=2`, `errors=[]`, with one `not_required` skip.
+- The 30-fixture validation harness still needs prompt/model follow-up. On 2026-05-25 it failed the `>=0.80` threshold with six mismatches: three positive examples were mislabeled as `not_required`/`missing`, and three negative `wrong_tool` examples were mislabeled as `correct`.
+- Cross-package `availableTools` round-trip requires a dedicated follow-up because recent tool-surface churn exceeded the deferral threshold. Follow `docs/superpowers/plans/2026-05-25-runtime-available-tools-round-trip.md`; do not remove `competitorResearch` from the static eval roster until that runtime round-trip has source-level coverage.
+- Canvas/image chats remain excluded from traffic-monitor replay because those flows are not text-replayable through the current eval runner. Revisit if the 14-day unsupported tool share reaches 5% or product prioritizes canvas/image tool-choice scoring. The 2026-05-25 production check returned `total=3`, `unsupported=0`, `unsupported_pct=0.00`.
