@@ -13,6 +13,7 @@ const mockConfig = vi.hoisted(() => ({
   judgeReasoningMaxTokens: 1024,
   evalRunnerUrl: 'http://localhost:3000',
   evalRunnerSecret: 'test-secret',
+  evalRunnerTimeoutMs: 300000,
   scoreThreshold: 0.8,
   exitOnThresholdBreach: false,
   caseConcurrency: 3,
@@ -1073,6 +1074,24 @@ describe('runCasesConcurrently', () => {
     expect(succeeded[1].caseSpec.id).toBe('b')
     expect(succeeded[1].result.answerText).toBe('answer for b')
     expect(mockRunEvalCase).toHaveBeenCalledTimes(2)
+  })
+
+  it('passes the configured eval runner timeout to each case replay', async () => {
+    const { runCasesConcurrently } = await import('./shared')
+
+    const cases = [makeConcurrencyCase('a')]
+    mockRunEvalCase.mockImplementation(
+      (caseSpec: import('../types').EvalCase) =>
+        Promise.resolve(makeConcurrencyResult(caseSpec.id))
+    )
+
+    await runCasesConcurrently(cases)
+
+    expect(mockRunEvalCase).toHaveBeenCalledWith(cases[0], {
+      evalRunnerUrl: 'http://localhost:3000',
+      evalRunnerSecret: 'test-secret',
+      timeoutMs: 300000
+    })
   })
 
   it('respects concurrency limit of 3', async () => {

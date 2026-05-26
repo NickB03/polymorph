@@ -25,6 +25,8 @@ const evalRequestSchema = z.object({
   corpusVersion: z.string().optional()
 })
 
+export const maxDuration = 300
+
 export async function POST(req: Request) {
   const configuredSecret = process.env.EVAL_RUNNER_SECRET?.trim()
   const providedSecret = req.headers.get('x-eval-runner-secret')?.trim()

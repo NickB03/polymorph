@@ -57,7 +57,8 @@ export async function runCasesConcurrently(
   const runtimeConfig = createConfig()
   const clientConfig = {
     evalRunnerUrl: runtimeConfig.evalRunnerUrl!,
-    evalRunnerSecret: runtimeConfig.evalRunnerSecret!
+    evalRunnerSecret: runtimeConfig.evalRunnerSecret!,
+    timeoutMs: runtimeConfig.evalRunnerTimeoutMs
   }
 
   const inFlight = new Set<Promise<void>>()
