@@ -490,7 +490,7 @@ flowchart TD
     subgraph GuestMode["Guest Mode (ENABLE_GUEST_CHAT=true)"]
         ExtractIP["Extract IP from<br/>x-forwarded-for | x-real-ip"]
         RateLimit["checkAndEnforceGuestLimit()<br/>(Upstash Redis)"]
-        ForceSpeedModel["Force modelType=speed"]
+        ModelPreference["Honor modelType cookie<br/>(UI defaults to speed)"]
         EphemeralStream["Ephemeral stream<br/>(no DB persistence)"]
     end
 
@@ -501,7 +501,7 @@ flowchart TD
     PublicPath -->|No| Redirect
 
     Continue -->|"POST /api/chat<br/>no userId"| ExtractIP
-    ExtractIP --> RateLimit --> ForceSpeedModel --> EphemeralStream
+    ExtractIP --> RateLimit --> ModelPreference --> EphemeralStream
 ```
 
 ### Client pattern details
@@ -601,7 +601,7 @@ The `ChatMessages` component manages open/close state for tool results:
 
 ## Model Selection
 
-Models are resolved through a layered preference system that considers the user's cookie preferences, the active search mode, and provider availability. Guest requests are a special case: they bypass quality selection and are pinned to the speed model tier before the normal preference ordering runs. Authenticated requests try every combination of mode and type before falling back to a hardcoded default.
+Models are resolved through a layered preference system that considers the user's cookie preferences, the active search mode, and provider availability. New guest UI sessions default to the speed model tier, but the backend uses the same selection path for guest and authenticated requests and honors a valid `modelType` cookie before falling back to configured defaults.
 
 ```mermaid
 flowchart TD

@@ -788,7 +788,7 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/utils/model-selection.ts`        | Resolves the appropriate model based on search mode and model type cookie preferences                                    |
 | `lib/utils/context-window.ts`         | Token counting, context window management, and message truncation using tiktoken                                         |
 | `lib/utils/citation.ts`               | Citation extraction, processing, and mapping from search results to inline references                                    |
-| `lib/utils/message-mapping.ts`        | Maps AI SDK UIMessage and DB parts; restores registered rich dynamic tools                                               |
+| `lib/utils/message-mapping.ts`        | Maps canonical AI SDK UIMessage payloads to and from message rows, merging persisted metadata                            |
 | `lib/utils/message-utils.ts`          | Helpers for extracting text content from message parts                                                                   |
 | `lib/utils/domain.ts`                 | Extracts display-friendly domain name from URLs (e.g., "google" from "www.google.com")                                   |
 | `lib/utils/file-validation.ts`        | Allowed file types, size limits, and validation constants for uploads                                                    |
