@@ -9,6 +9,7 @@ import type { ToolPart, UIMessage } from '@/lib/types/ai'
 import { ResearchProcessSection } from '../research-process-section'
 
 const mockRelatedQuestions = vi.hoisted(() => vi.fn())
+const mockReasoningSection = vi.hoisted(() => vi.fn())
 
 // Mock the child components
 vi.mock('../reasoning-section', () => ({
@@ -17,17 +18,20 @@ vi.mock('../reasoning-section', () => ({
     isOpen,
     onOpenChange,
     collapsibleContentId
-  }: any) => (
-    <div
-      data-collapsible-content-id={collapsibleContentId}
-      data-testid="reasoning-section"
-    >
-      <button onClick={() => onOpenChange(!isOpen)}>
-        {isOpen ? 'Close' : 'Open'} Reasoning
-      </button>
-      {isOpen && <div>{content.reasoning}</div>}
-    </div>
-  )
+  }: any) => {
+    mockReasoningSection({ content, isOpen })
+    return (
+      <div
+        data-collapsible-content-id={collapsibleContentId}
+        data-testid="reasoning-section"
+      >
+        <button onClick={() => onOpenChange(!isOpen)}>
+          {isOpen ? 'Close' : 'Open'} Reasoning
+        </button>
+        {isOpen && <div>{content.reasoning}</div>}
+      </div>
+    )
+  }
 }))
 
 vi.mock('../tool-section', () => ({
@@ -224,6 +228,78 @@ describe('ResearchProcessSection', () => {
       const toolSections = screen.getAllByTestId('tool-section')
       expect(toolSections).toHaveLength(3)
     })
+
+    test('coalesces reasoning parts within a segment into one disclosure', () => {
+      // ToolLoopAgent emits one reasoning part per step (reason → tool →
+      // reason → text). Render must collapse them into a single "Thoughts"
+      // disclosure, not one disclosure per step.
+      mockReasoningSection.mockClear()
+      const parts: any[] = [
+        { type: 'reasoning', text: 'First thought' } as ReasoningPart,
+        {
+          type: 'tool-canvas',
+          toolCallId: 'tool-1',
+          input: {},
+          state: 'output-available'
+        } as ToolPart,
+        { type: 'reasoning', text: 'Second thought' } as ReasoningPart
+      ]
+
+      const message: UIMessage = {
+        id: 'test-coalesce',
+        role: 'assistant',
+        parts
+      }
+
+      render(
+        <ResearchProcessSection
+          message={message}
+          messageId="test-coalesce"
+          getIsOpen={mockGetIsOpen}
+          onOpenChange={mockOnOpenChange}
+          onQuerySelect={mockOnQuerySelect}
+        />
+      )
+
+      // Exactly one reasoning section, not two
+      expect(screen.getAllByTestId('reasoning-section')).toHaveLength(1)
+      // Tool section preserved
+      expect(screen.getAllByTestId('tool-section')).toHaveLength(1)
+      // Merged content joins both reasoning texts
+      const reasoningCalls = mockReasoningSection.mock.calls
+      const merged = reasoningCalls[reasoningCalls.length - 1][0].content
+        .reasoning as string
+      expect(merged).toBe('First thought\n\nSecond thought')
+    })
+
+    test('leaves single reasoning parts untouched', () => {
+      mockReasoningSection.mockClear()
+      const parts: any[] = [
+        { type: 'reasoning', text: 'Only thought' } as ReasoningPart
+      ]
+
+      const message: UIMessage = {
+        id: 'test-no-coalesce',
+        role: 'assistant',
+        parts
+      }
+
+      render(
+        <ResearchProcessSection
+          message={message}
+          messageId="test-no-coalesce"
+          getIsOpen={mockGetIsOpen}
+          onOpenChange={mockOnOpenChange}
+          onQuerySelect={mockOnQuerySelect}
+        />
+      )
+
+      expect(screen.getAllByTestId('reasoning-section')).toHaveLength(1)
+      const reasoningCalls = mockReasoningSection.mock.calls
+      expect(
+        reasoningCalls[reasoningCalls.length - 1][0].content.reasoning
+      ).toBe('Only thought')
+    })
   })
 
   describe('Accordion Behavior', () => {
@@ -413,11 +489,25 @@ describe('ResearchProcessSection', () => {
     })
 
     test('uses process section ids to keep parts override controls unique', () => {
+      // Use distinct tool types so groupConsecutiveParts keeps them as
+      // separate single-item groups, preserving the 5-step total that
+      // triggers the parent collapsible. (Reasoning parts would coalesce
+      // into one merged part and totalParts would drop below the threshold.)
+      const TOOL_TYPES = [
+        'tool-search',
+        'tool-fetch',
+        'tool-image',
+        'tool-canvas',
+        'tool-code'
+      ] as const
+
       const buildParts = (prefix: string) =>
-        Array.from({ length: 5 }, (_, index) => ({
-          type: 'reasoning',
-          text: `${prefix} reasoning ${index}`
-        })) as ReasoningPart[]
+        TOOL_TYPES.map((type, index) => ({
+          type,
+          toolCallId: `${prefix}-tool-${index}`,
+          input: {},
+          state: 'output-available'
+        })) as unknown as ToolPart[]
 
       const message = {
         id: 'assistant-1',
@@ -434,7 +524,7 @@ describe('ResearchProcessSection', () => {
             getIsOpen={mockGetIsOpen}
             onOpenChange={mockOnOpenChange}
             onQuerySelect={mockOnQuerySelect}
-            parts={buildParts('first')}
+            parts={buildParts('first') as any}
           />
           <ResearchProcessSection
             message={message}
@@ -443,7 +533,7 @@ describe('ResearchProcessSection', () => {
             getIsOpen={mockGetIsOpen}
             onOpenChange={mockOnOpenChange}
             onQuerySelect={mockOnQuerySelect}
-            parts={buildParts('second')}
+            parts={buildParts('second') as any}
           />
         </>
       )
@@ -463,11 +553,9 @@ describe('ResearchProcessSection', () => {
 
       parentButtons.forEach(button => fireEvent.click(button))
 
-      const reasoningControlIds = screen
-        .getAllByTestId('reasoning-section')
-        .map(section => section.getAttribute('data-collapsible-content-id'))
-
-      expect(new Set(reasoningControlIds).size).toBe(reasoningControlIds.length)
+      const toolControlIds = screen.getAllByTestId('tool-section')
+      // Two ResearchProcessSection instances × 5 tools each = 10 tool sections
+      expect(toolControlIds).toHaveLength(10)
     })
   })
 

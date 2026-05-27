@@ -7,13 +7,23 @@
           "id": "deepseek/deepseek-v4-flash",
           "name": "DeepSeek V4 Flash",
           "provider": "DeepSeek",
-          "providerId": "openrouter"
+          "providerId": "openrouter",
+          "providerOptions": {
+            "openrouter": {
+              "reasoning": { "enabled": true, "effort": "low" }
+            }
+          }
         },
         "quality": {
           "id": "deepseek/deepseek-v4-pro",
           "name": "DeepSeek V4 Pro",
           "provider": "DeepSeek",
-          "providerId": "openrouter"
+          "providerId": "openrouter",
+          "providerOptions": {
+            "openrouter": {
+              "reasoning": { "enabled": true, "effort": "medium" }
+            }
+          }
         }
       },
       "research": {
@@ -21,13 +31,23 @@
           "id": "deepseek/deepseek-v4-flash",
           "name": "DeepSeek V4 Flash",
           "provider": "DeepSeek",
-          "providerId": "openrouter"
+          "providerId": "openrouter",
+          "providerOptions": {
+            "openrouter": {
+              "reasoning": { "enabled": true, "effort": "low" }
+            }
+          }
         },
         "quality": {
           "id": "deepseek/deepseek-v4-pro",
           "name": "DeepSeek V4 Pro",
           "provider": "DeepSeek",
-          "providerId": "openrouter"
+          "providerId": "openrouter",
+          "providerOptions": {
+            "openrouter": {
+              "reasoning": { "enabled": true, "effort": "medium" }
+            }
+          }
         }
       }
     },
@@ -35,13 +55,23 @@
       "id": "deepseek/deepseek-v4-flash",
       "name": "DeepSeek V4 Flash",
       "provider": "DeepSeek",
-      "providerId": "openrouter"
+      "providerId": "openrouter",
+      "providerOptions": {
+        "openrouter": {
+          "reasoning": { "exclude": true }
+        }
+      }
     },
     "trendingSuggestions": {
       "id": "deepseek/deepseek-v4-flash",
       "name": "DeepSeek V4 Flash",
       "provider": "DeepSeek",
-      "providerId": "openrouter"
+      "providerId": "openrouter",
+      "providerOptions": {
+        "openrouter": {
+          "reasoning": { "exclude": true }
+        }
+      }
     }
   }
 }
