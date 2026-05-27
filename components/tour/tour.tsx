@@ -311,7 +311,7 @@ export function TourProvider({
   }, [currentStep, steps.length, onSkip])
 
   const startTour = useCallback(() => {
-    if (isTourCompleted) {
+    if (isCompleted) {
       warn(
         'Attempted to start completed tour. Call setIsTourCompleted(false) first to restart.',
         {
@@ -331,7 +331,7 @@ export function TourProvider({
 
     setDirection('next')
     setCurrentStep(0)
-  }, [isTourCompleted, tourId])
+  }, [isCompleted, tourId])
 
   // Keyboard navigation
   useEffect(() => {
@@ -561,98 +561,104 @@ export function TourProvider({
             })()}
 
             {/* Tour content tooltip */}
-            <motion.div
-              ref={contentRef}
-              role="dialog"
-              aria-modal="true"
-              aria-label={`Tour step ${currentStep + 1} of ${steps.length}`}
-              tabIndex={-1}
-              initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                top: calculateContentPosition(
+            {currentStep >= 0 &&
+              elementPosition &&
+              (() => {
+                const tooltipPos = calculateContentPosition(
                   elementPosition,
                   steps[currentStep]?.position
-                ).top,
-                left: calculateContentPosition(
-                  elementPosition,
-                  steps[currentStep]?.position
-                ).left
-              }}
-              transition={{
-                duration: reducedMotion ? 0.1 : 0.5,
-                ease: [0.16, 1, 0.3, 1],
-                opacity: { duration: reducedMotion ? 0.1 : 0.3 }
-              }}
-              exit={{ opacity: 0, y: reducedMotion ? 0 : 10 }}
-              style={{
-                position: 'fixed',
-                width: `min(${CONTENT_WIDTH}px, calc(100vw - 32px))`,
-                maxWidth: 'calc(100vw - 32px)'
-              }}
-              className="bg-popover text-popover-foreground relative z-[100] rounded-lg border p-5 shadow-lg outline-none"
-            >
-              {/* Close button - top right (44x44px touch target for mobile accessibility) */}
-              <button
-                onClick={endTour}
-                className="absolute top-1 right-1 z-10 size-11 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                aria-label="Close tour"
-              >
-                <X className="h-5 w-5" />
-              </button>
-
-              {/* Step counter - top left */}
-              <span className="absolute top-3 left-4 text-sm text-muted-foreground tabular-nums">
-                {currentStep + 1} / {steps.length}
-              </span>
-
-              {/* Step content with directional animation */}
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={`tour-content-${currentStep}`}
-                  {...contentAnimation}
-                  transition={{ duration: reducedMotion ? 0.1 : 0.25 }}
-                  className="overflow-hidden pt-4"
-                >
-                  {steps[currentStep]?.content}
-                </motion.div>
-              </AnimatePresence>
-
-              {/* Navigation */}
-              <div
-                className="mt-4 flex items-center justify-between"
-                role="navigation"
-                aria-label="Tour navigation"
-              >
-                {/* Previous button - left (44px height for mobile touch targets) */}
-                {currentStep > 0 ? (
-                  <Button
-                    onClick={previousStep}
-                    variant="ghost"
-                    className="h-11 px-4"
-                    aria-label={`Go to previous step (${currentStep} of ${steps.length})`}
+                )
+                return (
+                  <motion.div
+                    ref={contentRef}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`Tour step ${currentStep + 1} of ${steps.length}`}
+                    tabIndex={-1}
+                    initial={
+                      reducedMotion ? { opacity: 0 } : { opacity: 0, y: 10 }
+                    }
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                      top: tooltipPos.top,
+                      left: tooltipPos.left
+                    }}
+                    transition={{
+                      duration: reducedMotion ? 0.1 : 0.5,
+                      ease: [0.16, 1, 0.3, 1],
+                      opacity: { duration: reducedMotion ? 0.1 : 0.3 }
+                    }}
+                    exit={{ opacity: 0, y: reducedMotion ? 0 : 10 }}
+                    style={{
+                      position: 'fixed',
+                      width: `min(${CONTENT_WIDTH}px, calc(100vw - 32px))`,
+                      maxWidth: 'calc(100vw - 32px)'
+                    }}
+                    className="bg-popover text-popover-foreground relative z-[100] rounded-lg border p-5 shadow-lg outline-none"
                   >
-                    Previous
-                  </Button>
-                ) : (
-                  <div />
-                )}
+                    {/* Close button - top right (44x44px touch target for mobile accessibility) */}
+                    <button
+                      onClick={endTour}
+                      className="absolute top-1 right-1 z-10 size-11 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                      aria-label="Close tour"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
 
-                {/* Next button - right (44px height for mobile touch targets) */}
-                <Button
-                  onClick={nextStep}
-                  className="h-11 px-4"
-                  aria-label={
-                    currentStep === steps.length - 1
-                      ? 'Finish tour'
-                      : `Go to next step (${currentStep + 2} of ${steps.length})`
-                  }
-                >
-                  {currentStep === steps.length - 1 ? 'Finish' : 'Next'}
-                </Button>
-              </div>
-            </motion.div>
+                    {/* Step counter - top left */}
+                    <span className="absolute top-3 left-4 text-sm text-muted-foreground tabular-nums">
+                      {currentStep + 1} / {steps.length}
+                    </span>
+
+                    {/* Step content with directional animation */}
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={`tour-content-${currentStep}`}
+                        {...contentAnimation}
+                        transition={{ duration: reducedMotion ? 0.1 : 0.25 }}
+                        className="overflow-hidden pt-4"
+                      >
+                        {steps[currentStep]?.content}
+                      </motion.div>
+                    </AnimatePresence>
+
+                    {/* Navigation */}
+                    <div
+                      className="mt-4 flex items-center justify-between"
+                      role="navigation"
+                      aria-label="Tour navigation"
+                    >
+                      {/* Previous button - left (44px height for mobile touch targets) */}
+                      {currentStep > 0 ? (
+                        <Button
+                          onClick={previousStep}
+                          variant="ghost"
+                          className="h-11 px-4"
+                          aria-label={`Go to previous step (${currentStep} of ${steps.length})`}
+                        >
+                          Previous
+                        </Button>
+                      ) : (
+                        <div />
+                      )}
+
+                      {/* Next button - right (44px height for mobile touch targets) */}
+                      <Button
+                        onClick={nextStep}
+                        className="h-11 px-4"
+                        aria-label={
+                          currentStep === steps.length - 1
+                            ? 'Finish tour'
+                            : `Go to next step (${currentStep + 2} of ${steps.length})`
+                        }
+                      >
+                        {currentStep === steps.length - 1 ? 'Finish' : 'Next'}
+                      </Button>
+                    </div>
+                  </motion.div>
+                )
+              })()}
           </>
         )}
       </AnimatePresence>
