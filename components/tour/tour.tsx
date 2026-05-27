@@ -871,18 +871,18 @@ function MobileTourDialog({
       </AlertDialogDescription>
 
       <div className="flex flex-col px-4 pt-4 pb-3">
-        <h2 className="text-lg font-bold text-foreground">
+        <div className="text-lg font-bold text-foreground">
           Welcome to Polymorph
-        </h2>
+        </div>
         <p className="text-xs text-muted-foreground mt-0.5 mb-3">
           An AI platform with a generative UI for research, creation, and
           exploration.
         </p>
 
-        <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wide mb-1.5">
+        <p className="text-xs font-semibold text-foreground/50 uppercase tracking-wide mb-1.5">
           Capabilities
         </p>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px] mb-3">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-3">
           <div>
             <span className="text-muted-foreground">Chat</span>
             <p className="text-foreground">Streaming responses</p>
