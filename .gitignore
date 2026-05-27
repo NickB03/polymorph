@@ -63,6 +63,7 @@ skills-lock.json
 /.impeccable.md
 /.claude/skills/
 
-# README demo source assets — only the .gif and .png variants ship in the repo
+# README demo source assets — ship only explicit derived README assets
 docs/assets/demos/*.mp4
+!docs/assets/demos/polymorph-demo.mp4
 docs/assets/demos/*-poster.png
