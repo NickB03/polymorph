@@ -22,9 +22,11 @@
 
 <br>
 
-<img src="docs/assets/demos/polymorph-demo.gif" alt="Polymorph demo: canvas artifacts, generative UI, conversational workflows, and the evals dashboard" width="880">
+<a href="docs/assets/demos/polymorph-demo.mp4" aria-label="Watch the high-resolution Polymorph demo video">
+  <img src="docs/assets/demos/polymorph-demo.gif" alt="Polymorph demo: canvas artifacts, generative UI, conversational workflows, and the evals dashboard" width="880">
+</a>
 
-<p><sub>Polymorph end to end — canvas artifacts, generative UI, conversational workflows, and the evals dashboard.</sub></p>
+<p><sub>Polymorph end to end — canvas artifacts, generative UI, conversational workflows, and the evals dashboard. <a href="docs/assets/demos/polymorph-demo.mp4">Watch the high-resolution video</a>.</sub></p>
 
 </div>
 
