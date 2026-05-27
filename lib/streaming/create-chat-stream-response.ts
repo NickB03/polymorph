@@ -230,11 +230,17 @@ export async function createChatStreamResponse(
               imageToolContext: { userId, chatId }
             })
 
-            // For OpenAI models, strip reasoning parts from UIMessages before conversion
-            // OpenAI's Responses API requires reasoning items and their following items to be kept together
-            // See: https://github.com/vercel/ai/issues/11036
-            const isOpenAI = context.modelId.startsWith('openai:')
-            const messagesToConvert = isOpenAI
+            // Strip reasoning parts from prior assistant turns before conversion:
+            // - OpenAI's Responses API requires reasoning items and their following items to be kept together
+            //   (see: https://github.com/vercel/ai/issues/11036)
+            // - DeepSeek (via OpenRouter) attaches provider-specific `reasoning_details` metadata that
+            //   should not be replayed on the next turn; replaying it risks 400s or silent drops.
+            // The current turn's streamed reasoning is unaffected — it flows through writer.merge(),
+            // not through messagesToConvert.
+            const needsReasoningStrip =
+              context.modelId.startsWith('openai:') ||
+              context.modelId.startsWith('openrouter:deepseek/')
+            const messagesToConvert = needsReasoningStrip
               ? stripReasoningParts(validatedMessages)
               : validatedMessages
 

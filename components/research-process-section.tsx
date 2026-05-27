@@ -76,6 +76,37 @@ type Props = {
 }
 
 /**
+ * Coalesces all reasoning parts within a segment into a single merged
+ * reasoning part at the position of the first one. Subsequent reasoning
+ * parts are dropped. Tool and data parts retain their positions.
+ *
+ * Why: with reasoning models behind a tool loop, the agent emits one
+ * reasoning part per step (reason → tool-call → reason → text). Without
+ * coalescing the UI renders one "Thoughts" disclosure per reasoning part,
+ * sandwiching every tool call between two siblings.
+ */
+function coalesceReasoningParts(segment: MessagePart[]): MessagePart[] {
+  const reasoningCount = segment.reduce(
+    (count, part) => (isReasoningPart(part) ? count + 1 : count),
+    0
+  )
+  if (reasoningCount <= 1) return segment
+
+  const mergedText = segment
+    .filter(isReasoningPart)
+    .map(p => p.text)
+    .join('\n\n')
+
+  let merged = false
+  return segment.flatMap<MessagePart>(part => {
+    if (!isReasoningPart(part)) return [part]
+    if (merged) return []
+    merged = true
+    return [{ ...part, text: mergedText }]
+  })
+}
+
+/**
  * Splits message parts into segments, where each segment contains
  * non-text parts between text parts
  * @param parts - Array of message parts to split
@@ -323,7 +354,9 @@ export function ResearchProcessSection({
   // Filter out empty reasoning parts to avoid incorrect grouping
   const filteredParts = allParts.filter(p => !(isReasoningPart(p) && !p.text))
 
-  const segments = partsOverride ? [filteredParts] : splitByText(filteredParts)
+  const segments = (
+    partsOverride ? [filteredParts] : splitByText(filteredParts)
+  ).map(coalesceReasoningParts)
 
   // Use custom hook for accordion state management
   const { openSectionId, handleAccordionChange } =
