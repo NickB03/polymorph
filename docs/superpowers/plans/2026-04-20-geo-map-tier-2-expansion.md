@@ -1,5 +1,7 @@
 # Geo-Map Tier 2 Expansion Implementation Plan
 
+> **Status:** Completed historical plan. Geo Tier 2 tools are already part of the current chat-agent toolset; source paths below predate the `lib/agents/chat/*` module split and should not be used as fresh execution instructions.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add four new MapTiler-backed tools (`getDirections`, `geocodeAddress`, `getIsochrone`, `getStaticMapImage`) plus a polygon render primitive on the existing geo-map; additively expand the researcher's prompt so the agent actually uses the Tier 1 capabilities of `displayGeoMap` (clustering, emoji/image icons, always-on tooltips, marker descriptions, route styling) and composes the new tools correctly.

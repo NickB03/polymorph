@@ -78,7 +78,7 @@ Use the Supabase values if you want signed-in auth locally. If you prefer anonym
 bun run migrate
 ```
 
-This creates the database tables (`chats`, `messages`, `parts`, `feedback`, and related tables) with Row-Level Security policies.
+This creates the database tables (`chats`, `messages`, `feedback`, canvas artifacts, eval summaries, and related tables) with Row-Level Security policies.
 
 ## 5. Start the Dev Server
 
@@ -104,7 +104,7 @@ Here's the flow your search triggered:
 2. **Chat agent** (`lib/agents/chat/factory.ts` via the registry in `lib/agents/chat/registry.ts`) received the query and selected tools — one of three agents (`search`, `research`, or `build`) based on the requested mode
 3. **Search tool** called Brave (or your configured provider) to find relevant web pages
 4. **Fetch tool** extracted content from top results
-5. **LLM** (via Vercel AI Gateway) synthesized an answer with citations
+5. **LLM** (DeepSeek via OpenRouter by default) synthesized an answer with citations
 6. **Streaming** sent message parts back to the browser incrementally
 7. **Generative UI** rendered each part as an interactive component
 

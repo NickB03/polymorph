@@ -1,5 +1,7 @@
 # Prompt Injection Protection Implementation Plan
 
+> **Status:** Active proposal, not implemented. Revalidate source paths and current protections before execution: the continuation validation path has moved, and the CSP/search/fetch/eval protections proposed here are not currently shipped.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Close the highest-leverage prompt-injection attack paths in Polymorph by (1) tightening the canvas iframe CSP to block exfiltration, (2) tagging attacker-controllable tool outputs as untrusted data with a system-prompt rule, and (3) adding a deterministic injection-resistance regression eval that gates model swaps.

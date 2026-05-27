@@ -14,7 +14,7 @@ This document describes the internal architecture of Polymorph — an AI platfor
 | Language  | TypeScript (strict mode)                                                                                                                           |
 | Database  | PostgreSQL via Supabase + Drizzle ORM                                                                                                              |
 | Auth      | Supabase Auth                                                                                                                                      |
-| AI        | Vercel AI SDK + AI Gateway                                                                                                                         |
+| AI        | Vercel AI SDK + OpenRouter text defaults; Vercel AI Gateway for image generation and optional routes                                               |
 | Search    | Brave (default), Tavily/Exa fallbacks, optional SearXNG/Firecrawl providers                                                                        |
 | Artifacts | Canvas artifact compiler + workspace (single-file HTML preview/export)                                                                             |
 | Styling   | Tailwind CSS v4 + shadcn/ui                                                                                                                        |
@@ -57,7 +57,7 @@ graph TD
     NextApp["Next.js 16 App Router"]
     API["API Routes<br/>/api/chat"]
     Agent["Chat Agent<br/>(search / research / build,<br/>ToolLoopAgent)"]
-    AI["AI Providers<br/>(Gateway, OpenAI, Anthropic,<br/>Google, Ollama)"]
+    AI["AI Providers<br/>(OpenRouter default text,<br/>Gateway images / optional,<br/>direct providers)"]
     Search["Search Providers<br/>(Brave default,<br/>Tavily/Exa fallbacks,<br/>optional SearXNG/Firecrawl)"]
     DB["Supabase PostgreSQL<br/>(Drizzle ORM)"]
     Redis["Upstash Redis<br/>(Rate Limiting)"]
@@ -87,7 +87,7 @@ The default chat-agent search path is Brave with Tavily and Exa fallbacks. SearX
 | Admin surface layout     | [`app/(admin)/layout.tsx`](<../../app/(admin)/layout.tsx>) (admin role gate)                                                                                                                                |
 | Evals dashboard          | [`components/evals/dashboard-v2/dashboard.tsx`](../../components/evals/dashboard-v2/dashboard.tsx) (orchestrator) + sibling components in `components/evals/dashboard-v2/` and `components/evals/glossary/` |
 | Evals queries            | [`lib/evals/queries.ts`](../../lib/evals/queries.ts) (`getEvalsDashboard`, suite-specific selectors)                                                                                                        |
-| Agent factory            | [`lib/agents/chat/factory.ts`](../../lib/agents/chat/factory.ts) and [`lib/agents/chat/registry.ts`](../../lib/agents/chat/registry.ts) (`lib/agents/researcher.ts` is a compatibility shim)                |
+| Agent factory            | [`lib/agents/chat/factory.ts`](../../lib/agents/chat/factory.ts), [`lib/agents/chat/registry.ts`](../../lib/agents/chat/registry.ts), and per-agent modules in `lib/agents/chat/`                           |
 | Image generation tool    | [`lib/tools/generate-image/server.ts`](../../lib/tools/generate-image/server.ts)                                                                                                                            |
 | Authenticated streaming  | [`lib/streaming/create-chat-stream-response.ts`](../../lib/streaming/create-chat-stream-response.ts)                                                                                                        |
 | Guest streaming          | [`lib/streaming/create-ephemeral-chat-stream-response.ts`](../../lib/streaming/create-ephemeral-chat-stream-response.ts)                                                                                    |
@@ -118,7 +118,7 @@ flowchart TD
     EphemeralStream["createEphemeralChatStreamResponse()"]
     AuthStream["createChatStreamResponse()"]
     PrepareMsg["prepareMessages()<br/>(load/create chat,<br/>handle regeneration)"]
-    CreateAgent["createResearcher()<br/>(configure tools + mode)"]
+    CreateAgent["createChatAgent()<br/>(configure tools + mode)"]
     ChatMode["Chat Mode<br/>maxSteps=20<br/>search forced optimized<br/>tools: search, fetch,<br/>displayPlan, displayTable,<br/>displayChart, displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayAgentArtifact,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline"]
     ResearchMode["Research Mode<br/>maxSteps=50<br/>full search types<br/>tools: search, fetch,<br/>competitorResearch,<br/>displayTable, displayChart,<br/>displayGeoMap,<br/>geocodeAddress, getDirections,<br/>getIsochrone, getStaticMapImage,<br/>displayCitations, displayLinkPreview,<br/>displayAgentArtifact,<br/>displayOptionList,<br/>displayQuestionWizard,<br/>displayCallout, displayTimeline, todoWrite"]
     BuildMode["Build Mode<br/>maxSteps=20<br/>same tools as Chat<br/>+ artifact-intake prompt<br/>(canvas tools registered<br/>conditionally by context)"]
@@ -154,7 +154,7 @@ flowchart TD
     AgentStream --> Parallel --> SSE
 ```
 
-Three agents — `search`, `research`, and `build` — share a common factory at [`lib/agents/chat/factory.ts`](../../lib/agents/chat/factory.ts) and a shared toolset at [`lib/agents/chat/toolset.ts`](../../lib/agents/chat/toolset.ts). Each agent declares its own `*_AGENT_ACTIVE_TOOLS` array, system prompt, step limit, and `configureSearchTool` wrapper. `lib/agents/researcher.ts` is a thin compatibility shim that delegates to `createChatAgent` in [`lib/agents/chat/registry.ts`](../../lib/agents/chat/registry.ts).
+Three agents — `search`, `research`, and `build` — share a common factory at [`lib/agents/chat/factory.ts`](../../lib/agents/chat/factory.ts) and a shared toolset at [`lib/agents/chat/toolset.ts`](../../lib/agents/chat/toolset.ts). Each agent declares its own `*_AGENT_ACTIVE_TOOLS` array, system prompt, step limit, and `configureSearchTool` wrapper. [`lib/agents/chat/registry.ts`](../../lib/agents/chat/registry.ts) resolves the active agent and dispatches to the per-agent module.
 
 The agent is selected by [`resolveChatAgentId()`](../../lib/agents/chat/registry.ts): `searchMode === 'research'` routes to the research agent, `userMode === 'build'` (or `intent === 'build'`) routes to the build agent, and everything else routes to the search agent. The search and build agents force `type: 'optimized'` via `wrapSearchToolForChatMode` and run up to 20 steps; the research agent accepts the full search type set, runs up to 50 steps, and gains the `todoWrite` and `competitorResearch` tools. Canvas tools (`createCanvasArtifact`, `updateCanvasArtifact`, `readCanvasArtifact`) and `generateImage` are registered conditionally inside the factory when the matching context is present, regardless of agent.
 
@@ -354,7 +354,7 @@ sequenceDiagram
 
 - **OpenAI compatibility**: For OpenAI models, reasoning parts are stripped before conversion to model messages, due to the Responses API requiring reasoning items and following items to be kept together.
 
-- **Persistence** happens in the `onFinish` callback with retry logic via `retryDatabaseOperation`. Metadata (traceId, searchMode, modelId) is attached to the response message before saving.
+- **Persistence** happens in the `onFinish` callback with retry logic via `retryDatabaseOperation`. Metadata (`correlationId`, optional `otelTraceId`, `userMode`, `modelType`, `modelId`) is attached to the response message before saving.
 
 - **Ephemeral streams** (guest mode) skip persistence entirely — no database writes, no title generation, no analytics.
 
@@ -395,7 +395,7 @@ erDiagram
         timestamp created_at "NOT NULL, default now()"
         timestamp updated_at "nullable"
         jsonb ui_message "NOT NULL canonical UIMessage"
-        jsonb metadata "optional (traceId, searchMode, modelId)"
+        jsonb metadata "optional stream metadata"
     }
 
     artifacts {
@@ -780,7 +780,6 @@ The `current_setting('app.current_user_id', true)` call uses `true` as the secon
 | `lib/agents/chat/registry.ts`                            | Agent ID resolution (`resolveChatAgentId`) and dispatch (`createChatAgent`)                                  |
 | `lib/agents/chat/{search,research,build}.ts`             | Per-agent definitions: system prompt, active tools, step limit, search-tool wrapping                         |
 | `lib/agents/chat/toolset.ts`                             | `ChatAgentTools` type and the `createChatAgentTools()` factory shared by all three agents                    |
-| `lib/agents/researcher.ts`                               | Compatibility shim — delegates to `createChatAgent`                                                          |
 | `lib/agents/prompts/search-mode-prompts.ts`              | System prompts for chat/research modes                                                                       |
 | `lib/tools/search.ts`                                    | Multi-provider search tool with streaming generator                                                          |
 | `lib/tools/fetch.ts`                                     | Web content extraction (regular + API-based)                                                                 |

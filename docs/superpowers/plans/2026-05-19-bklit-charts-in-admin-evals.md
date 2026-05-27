@@ -1,5 +1,7 @@
 # bklit Charts in Admin Evals Implementation Plan
 
+> **Status:** Completed historical plan. Gauge, area, and radar chart work is already wired into the admin evals dashboard; use this document for implementation history only.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Bring bklit-ui's fluid chart animations into the `/admin/evals` dashboard without changing what the page does — replace the bespoke SVG ring in `score-feature.tsx` with bklit's Gauge, and add Area + Radar chart visualizations alongside existing UI.

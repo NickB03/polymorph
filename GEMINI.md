@@ -18,7 +18,7 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 - **Storage:** Supabase Storage
 - **Caching/Rate Limiting:** Upstash Redis
 - **Search:** Brave (primary), Tavily (fallback), Exa, SearXNG, Firecrawl
-- **App AI Providers:** xAI Grok defaults and Google Gemini image generation via Vercel AI Gateway
+- **App AI Providers:** DeepSeek V4 Flash/Pro via OpenRouter for text; Google Gemini image generation via Vercel AI Gateway
 - **Evals Judge Provider:** OpenRouter-backed `google/gemini-3.1-flash-lite-preview` in `services/evals`
 - **Styling:** Tailwind CSS v4 + shadcn/ui
 - **Testing:** Vitest
@@ -28,26 +28,26 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 
 ### AI Agent Pipeline
 
-The core flow is: `app/api/chat/route.ts` → `lib/agents/researcher.ts` → tools → streaming response.
+The core flow is: `app/api/chat/route.ts` → `lib/agents/chat/route-handler.ts` → `lib/agents/chat/registry.ts` → selected chat agent → tools → streaming response.
 
-- **Researcher agent** (`lib/agents/researcher.ts`): Uses Vercel AI SDK's `ToolLoopAgent` with two modes:
-  - **Chat mode**: max 20 steps, forced optimized search, tools: `[search, fetch, displayPlan, displayTable, displayChart, displayGeoMap, displayCitations, displayLinkPreview, displayAgentArtifact, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline]` + canvas artifact tools
-  - **Research mode**: max 50 steps, full search, tools: `[search, fetch, displayTable, displayChart, displayGeoMap, displayCitations, displayLinkPreview, displayAgentArtifact, displayOptionList, displayQuestionWizard, displayCallout, displayTimeline, todoWrite]` + canvas artifact tools
+- **Chat agents** (`lib/agents/chat/*`): Use Vercel AI SDK's `ToolLoopAgent` through a shared factory:
+  - **Search agent**: max 20 steps, forced optimized search, display tools, geo helpers, and conditional canvas/image tools
+  - **Research agent**: max 50 steps, full search types, `todoWrite`, `competitorResearch`, display tools, geo helpers, and conditional canvas/image tools
+  - **Build agent**: max 20 steps, artifact-intake prompting, search/display/geo helpers, and conditional canvas/image tools
 - **Canvas artifact tools** (conditional): `createCanvasArtifact`, `updateCanvasArtifact`, `readCanvasArtifact` — generate, iterate, and read React SPA artifacts compiled server-side via esbuild + Tailwind CSS v4
 - **Image generation** (conditional): `generateImage` — generates images via Gemini 2.5 Flash Image when image context is available
 - **Tools** (`lib/tools/`): `search` (Brave primary, Tavily fallback, plus Exa, SearXNG, Firecrawl), `fetch` (web content extraction), `todoWrite` (task management), `dynamic` (MCP/runtime-defined tools)
-- **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Default: Grok 4.1 Fast Non-Reasoning (speed), Grok 4.1 Fast Reasoning (quality), both via Vercel AI Gateway. The factory at `lib/agents/chat/factory.ts` upgrades Speed → Quality automatically when a canvas tool context is present.
-- **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
+- **Model selection** (`lib/utils/model-selection.ts`): Resolves model by search mode + model type (speed/quality). Defaults: DeepSeek V4 Flash (speed) and DeepSeek V4 Pro (quality), both via OpenRouter. If OpenRouter is unavailable and Gateway is enabled, OpenRouter model IDs can be routed through Gateway. The factory at `lib/agents/chat/factory.ts` upgrades Speed → Quality automatically when a canvas tool context is present.
+- **Provider registry** (`lib/utils/registry.ts`): Wraps multiple AI providers (openrouter, gateway, openai, anthropic, google, openai-compatible, ollama) via `createProviderRegistry`
 
 ### Database (Drizzle + Supabase PostgreSQL)
 
 Schema in `lib/db/schema.ts` with core tables:
 
-- **chats** → **messages** → **parts** (cascade delete)
+- **chats** → **messages** (cascade delete; `messages.ui_message` stores the canonical AI SDK UIMessage)
 - **canvasArtifacts** → **canvasArtifactVersions** (cascade delete)
 - **feedback** — user feedback storage
-- `parts` is a wide table storing all message part types (text, reasoning, files, sources, tool calls) with check constraints per type
-- All tables use Row-Level Security (RLS) via `current_setting('app.current_user_id')`
+- User-scoped tables use Row-Level Security (RLS) via `current_setting('app.current_user_id')`; public cache/feedback and authenticated eval reads use narrower policies
 - Server actions in `lib/actions/chat.ts` use `unstable_cache` with revalidation tags
 
 ### Streaming
@@ -63,7 +63,7 @@ Supabase Auth with three client patterns:
 - `lib/supabase/client.ts` — browser client
 - `lib/supabase/server.ts` — server-side client (cookies-based)
 - `lib/supabase/middleware.ts` — session refresh in middleware
-- **Guest mode** (default): `ENABLE_GUEST_CHAT=true` lets unauthenticated users search immediately. Guest chats are ephemeral (not persisted), default to speed-mode models, and are rate-limited per IP via Upstash Redis in cloud deployments.
+- **Guest mode**: `ENABLE_GUEST_CHAT=true` lets unauthenticated users search immediately. When unset or false, root chat requires sign-in. Guest chats are ephemeral (not persisted), new guest UI sessions default to speed-mode models, and guest traffic is rate-limited per IP via Upstash Redis in cloud deployments.
 
 ### Canvas Artifacts
 
@@ -96,7 +96,7 @@ Offline evaluation pipeline (`services/evals/`) running as a Railway cron servic
 
 ### Generative UI
 
-Components render different message part types: `answer-section.tsx`, `search-section.tsx`, `reasoning-section.tsx`, `canvas/` directory for canvas artifacts. These map to part types from the `parts` database table.
+Components render AI SDK UI message parts: `answer-section.tsx`, `search-section.tsx`, `reasoning-section.tsx`, Tool UI components, and the `canvas/` directory for canvas artifacts. Persisted messages read from the canonical `messages.ui_message` JSONB payload.
 
 ## Commands
 
@@ -135,7 +135,7 @@ Strict import sorting via `simple-import-sort`:
 ### Quality Standards
 
 - Fix every warning and error encountered. Run `bun lint` and `bun typecheck` before claiming any task is complete.
-- New tools go in `lib/tools/` and are registered in `lib/agents/researcher.ts`.
+- New tools go in `lib/tools/` and are exposed through `lib/agents/chat/toolset.ts` plus the relevant per-agent active-tool list in `lib/agents/chat/{search,research,build}.ts`.
 - Database changes go in `lib/db/schema.ts` with Drizzle Kit migrations.
 
 ## Environment
@@ -143,7 +143,8 @@ Strict import sorting via `simple-import-sort`:
 See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 
 - `DATABASE_URL` — PostgreSQL connection
-- `AI_GATEWAY_API_KEY` — Vercel AI Gateway for app chat/canvas/image model calls
+- `OPENROUTER_API_KEY` — default text model provider
+- `AI_GATEWAY_API_KEY` — Vercel AI Gateway for image generation and optional model routing
 - `JUDGE_API_KEY` — OpenRouter key for offline eval judge calls in `services/evals`
 - `BRAVE_SEARCH_API_KEY` — search (Brave is default provider)
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase
@@ -153,7 +154,9 @@ See `docs/getting-started/ENVIRONMENT.md` for full reference. Key variables:
 ## Key Files
 
 - `app/api/chat/route.ts` — main chat API endpoint (300s timeout)
-- `lib/agents/researcher.ts` — ToolLoopAgent orchestration
+- `lib/agents/chat/route-handler.ts` — route-level agent dispatch for authenticated and guest streams
+- `lib/agents/chat/registry.ts` — resolves search/research/build agent selection
+- `lib/agents/chat/factory.ts` — shared ToolLoopAgent creation
 - `lib/agents/prompts/` — system prompts for search modes
 - `lib/tools/search.ts` — multi-provider search tool
 - `lib/db/schema.ts` — Drizzle schema with RLS

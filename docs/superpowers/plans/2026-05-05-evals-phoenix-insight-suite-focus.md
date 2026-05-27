@@ -1,5 +1,7 @@
 # Phoenix Insight Suite Focus Implementation Plan
 
+> **Status:** Completed historical plan, later superseded by the current dashboard-v2 attention helper. References to `phoenix-insight.tsx` describe a removed intermediate component.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Keep the nontechnical "Test Suite" naming while making `/admin/evals` open the suite that needs attention and explain the reason with a Phoenix insight strip.

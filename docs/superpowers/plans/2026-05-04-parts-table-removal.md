@@ -1,6 +1,6 @@
 # Parts Table Removal
 
-**Status: Not started**
+**Status:** Superseded/completed. Migration `drizzle/0025_next_meltdown.sql` drops the legacy `parts` table, and `messages.ui_message` is the canonical message payload. Use this document for historical context only.
 
 Remove the legacy `parts` table and all backward-compatibility code that reads from it.
 New writes have not touched `parts` since Phase 3 Workstream 1. Every message in

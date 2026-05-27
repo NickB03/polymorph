@@ -1,5 +1,7 @@
 # AI SDK Contract Standardization: Phase 2 Plan
 
+> **Status:** Completed historical plan. Current runtime ownership lives in `lib/agents/chat/*`, and `messages.ui_message` is the canonical persistence contract; use this document only for implementation history.
+
 > **For agentic workers:** Use a repo-grounded execution workflow. Validate each step against the current branch state before editing. Do not widen scope beyond the files and acceptance criteria below.
 
 **Goal:** Turn the phase 1 AI SDK contract work on branch `codex/ai-sdk-contract-phase-1` / PR `#171` into the default feature path for chat features. Phase 2 is where agent ownership, per-tool modularization, canonical `ui_message` persistence, one live specialist, and a community-portability proof become runtime reality instead of scaffolding.

@@ -1,5 +1,7 @@
 # Evals Dashboard IA Migration Implementation Plan
 
+> **Status:** Completed historical plan. `/admin/evals` now uses the dashboard-v2 IA; use this document for implementation history only, not as current work instructions.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Lift the IA proposal demonstrated at `/admin/evals/demo-redesign` into the canonical `/admin/evals` route. Replace the current 3-section "Overview / Suites / History" layout (where tabs do nothing) with two URL-driven tabs (Suites + Run history), a compact threshold-breach banner, suite-card drill-down navigation, and a deep-linkable `?suite=` parameter. Cut the redundant `KpiStrip` and `CombinedTrend` chart that aren't earning their slots. Delete the three demo routes after the canonical route is live.

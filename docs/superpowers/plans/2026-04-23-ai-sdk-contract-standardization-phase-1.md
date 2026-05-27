@@ -1,6 +1,7 @@
 # AI SDK Contract Standardization: Phase 1 Foundation
 
 > **Status:** Implemented on branch `codex/ai-sdk-contract-phase-1` and published in PR [#171](https://github.com/NickB03/polymorph/pull/171).
+> **2026-05-26 note:** Historical context only; references to `lib/agents/researcher.ts` describe the old ownership boundary before the current `lib/agents/chat/*` split.
 
 **Goal:** Establish AI SDK-native contracts as the primary chat/runtime boundary without breaking the current product surfaces for research UX, canvas, image generation, citations, guest chat, or authenticated chat.
 

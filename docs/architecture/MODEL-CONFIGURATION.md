@@ -152,7 +152,7 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
    - Check if the model's provider is enabled via `isProviderEnabled(providerId)`
    - If both succeed, return that model immediately
 
-5. **Fallback** — If no candidate succeeds (all providers disabled, or config loading fails), return the hardcoded `DEFAULT_MODEL` (DeepSeek V4 Flash via OpenRouter).
+5. **Fallback** — If no candidate succeeds (all providers disabled, or config loading fails), return the hardcoded `DEFAULT_MODEL` (DeepSeek V4 Flash via OpenRouter). If Gateway is enabled while OpenRouter is not, OpenRouter model IDs can be routed through Gateway before falling back to the raw OpenRouter provider.
 
 **Cloud deployment:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag selects the `cloud.json` config profile instead of `default.json`. The legacy `VANA_CLOUD_DEPLOYMENT` alias is also accepted. This does not force a specific model type.
 
@@ -164,7 +164,8 @@ For a request with `searchMode=chat` and `modelType=quality`, the candidates are
 2. `chat` + `speed` (fallback type)
 3. `research` + `quality` (fallback mode)
 4. `research` + `speed` (fallback mode + type)
-5. `DEFAULT_MODEL` (hardcoded DeepSeek V4 Flash)
+5. Gateway-routed fallback for OpenRouter model IDs, if Gateway is enabled
+6. `DEFAULT_MODEL` (hardcoded DeepSeek V4 Flash, with the same Gateway fallback when available)
 
 ### Example scenarios
 
@@ -172,7 +173,7 @@ For a request with `searchMode=chat` and `modelType=quality`, the candidates are
 
 **Quality preference** — User has `modelType=quality`, `searchMode=chat`. Lookup finds `chat/quality` -> `deepseek/deepseek-v4-pro` via `openrouter`. Provider is enabled. Result: DeepSeek V4 Pro.
 
-**Provider unavailable** — User has `modelType=quality` but no API keys are set. All four config candidates fail `isProviderEnabled()`. The hardcoded `DEFAULT_MODEL` is returned as a last resort (even though its provider may also be unavailable).
+**Provider unavailable** — User has `modelType=quality` but no OpenRouter key is set. If `AI_GATEWAY_API_KEY` is set, OpenRouter model IDs are retried through Gateway. If neither provider is enabled, the hardcoded `DEFAULT_MODEL` is returned as a last resort (even though its provider may also be unavailable).
 
 ---
 

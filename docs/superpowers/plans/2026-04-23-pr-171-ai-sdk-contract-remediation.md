@@ -1,5 +1,7 @@
 # PR 171 AI SDK Contract Remediation Plan
 
+> **Status:** Historical PR remediation plan. The referenced PR and source ownership have moved on; use this document only for review history.
+
 > **For agentic workers:** Validate all claims against the exact PR ref `origin/main...origin/pr/171` before editing. Do not advance to phase 2 until every acceptance criterion in this document passes on the merge-candidate branch.
 
 **Goal:** Turn PR 171 into a mergeable phase-1 baseline by removing unrelated scope, fixing the new chat/runtime regressions, and re-verifying guest and authenticated chat behavior end to end.

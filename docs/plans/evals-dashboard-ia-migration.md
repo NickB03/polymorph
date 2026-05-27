@@ -1,8 +1,8 @@
 # Evals Dashboard IA Migration
 
-**Status:** Demo complete on this branch. Awaiting product sign-off before promoting to canonical.
-**Demo URL:** `/admin/evals/demo-redesign`
-**Canonical route to replace:** `/admin/evals` (currently rendered by `EvalsDashboardV2`)
+**Status:** Completed historical plan. The canonical `/admin/evals` route now renders the dashboard-v2 IA; the demo route is no longer the promotion target.
+**Former demo URL:** `/admin/evals/demo-redesign`
+**Canonical route:** `/admin/evals` (rendered by `EvalsDashboardV2`)
 **Estimated effort to migrate:** ~3-4 focused hours.
 
 ## Why this exists

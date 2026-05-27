@@ -27,7 +27,7 @@ Polymorph uses [Supabase Auth](https://supabase.com/docs/guides/auth) for user a
 
 - Session tokens are refreshed automatically via Next.js middleware (`proxy.ts` → `lib/supabase/middleware.ts`). The middleware runs on every non-static request and refreshes the session; it is not the layer that protects individual routes.
 - Route-level access control happens in each route's layout/handler, not middleware:
-  - `/` (root chat) — public when `ENABLE_GUEST_CHAT=true` (default); otherwise requires sign-in.
+  - `/` (root chat) — public only when `ENABLE_GUEST_CHAT=true`; otherwise requires sign-in.
   - `/auth/*` — always public (login, sign-up, forgot-password, confirm, OAuth, etc.).
   - `/share/*` — public read-only chat sharing.
   - `/api/chat` — accepts guest traffic when `ENABLE_GUEST_CHAT=true`; otherwise requires an authenticated session. IP-rate-limited for guests in cloud deployments.
@@ -37,14 +37,15 @@ Polymorph uses [Supabase Auth](https://supabase.com/docs/guides/auth) for user a
 
 ### Row-Level Security (RLS)
 
-All database tables enforce PostgreSQL Row-Level Security via `current_setting('app.current_user_id')`:
+Database tables enable PostgreSQL Row-Level Security. User-scoped tables use `current_setting('app.current_user_id', true)` to identify the current user; intentionally public or authenticated-wide tables use narrower policies:
 
 - **chats** -- Users can only read, create, update, and delete their own chats. Chats with `visibility = 'public'` are readable by anyone.
 - **messages** -- Access is granted only when the user owns the parent chat (verified via `EXISTS` subquery).
-- **parts** -- Access is granted only when the user owns the parent chat (verified via join through `messages` to `chats`).
 - **canvasArtifacts**, **canvasArtifactVersions** -- Access scoped to the owning user via the parent chat chain.
 - **artifacts**, **artifactRevisions**, **artifactRuntimeSessions** -- Legacy artifact tables; access scoped to the owning user via the parent artifact/chat chain.
 - **feedback** -- Anyone can insert feedback; all feedback is readable (no sensitive user data stored).
+- **eval_summaries**, **eval_case_results** -- readable to authenticated app sessions for the admin dashboard.
+- **trending_suggestions_cache** -- public read-only cache for home-page suggestion pills; writes go through the privileged cron path.
 
 RLS is enabled on every table (`enableRLS()` in the Drizzle schema at `lib/db/schema.ts`).
 

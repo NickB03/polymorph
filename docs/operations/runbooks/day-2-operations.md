@@ -80,7 +80,7 @@ The `polymorph-evals` Railway cron runs every 48 hours. Two distinct failure lab
 | `PHOENIX UNAVAILABLE` | Phoenix HTTP layer down — experiment creation failed; suite never reached the DB write | Check Phoenix service logs; verify volume mount; confirm `PHOENIX_HOST` resolves                                                 |
 | `DB WRITE FAILED`     | Phoenix experiment succeeded; the Postgres write to `eval_summaries` failed            | Check Postgres connectivity; verify the sampler's DB role has the right RLS context; confirm `eval_summaries` table is reachable |
 
-Threshold-gating errors still throw even when the DB write fails (the threshold check moved before the DB persist). When the dashboard is missing a row but Phoenix shows the experiment, suspect `DB WRITE FAILED`.
+Threshold breaches are warning-only by default (`EVAL_EXIT_ON_THRESHOLD_BREACH=false`). Set `EVAL_EXIT_ON_THRESHOLD_BREACH=true` when threshold breaches should fail the cron; DB write failures still throw separately after the mode finishes. When the dashboard is missing a row but Phoenix shows the experiment, suspect `DB WRITE FAILED`.
 
 Useful commands:
 
