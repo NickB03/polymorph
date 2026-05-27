@@ -62,6 +62,7 @@ const eslintConfig = [
     files: [
       'lib/motion/**/*.{ts,tsx}',
       'components/motion/**/*.{ts,tsx}',
+      'components/tour/**/*.{ts,tsx}',
       'components/voice/**/*.{ts,tsx}'
     ],
     rules: {
