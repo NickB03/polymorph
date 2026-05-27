@@ -151,8 +151,10 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
    - Look up the model from the config via `getModelForModeAndType(mode, type)`
    - Check if the model's provider is enabled via `isProviderEnabled(providerId)`
    - If both succeed, return that model immediately
+   - If the model is an OpenRouter model and OpenRouter is disabled while Gateway is enabled, return the same model ID through `providerId: "gateway"` immediately
+   - Otherwise, try the next configured candidate
 
-5. **Fallback** — If no candidate succeeds (all providers disabled, or config loading fails), return the hardcoded `DEFAULT_MODEL` (DeepSeek V4 Flash via OpenRouter). If Gateway is enabled while OpenRouter is not, OpenRouter model IDs can be routed through Gateway before falling back to the raw OpenRouter provider.
+5. **Fallback** — If no configured candidate succeeds (all providers disabled, or config loading fails), try the hardcoded `DEFAULT_MODEL` (DeepSeek V4 Flash) through Gateway when Gateway is enabled. Otherwise, return the raw OpenRouter `DEFAULT_MODEL` as the last-resort configuration, even if OpenRouter is also unavailable.
 
 **Cloud deployment:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag selects the `cloud.json` config profile instead of `default.json`. The legacy `VANA_CLOUD_DEPLOYMENT` alias is also accepted. This does not force a specific model type.
 
@@ -160,12 +162,11 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
 
 For a request with `searchMode=chat` and `modelType=quality`, the candidates are tried in this order:
 
-1. `chat` + `quality` (requested combination)
-2. `chat` + `speed` (fallback type)
-3. `research` + `quality` (fallback mode)
-4. `research` + `speed` (fallback mode + type)
-5. Gateway-routed fallback for OpenRouter model IDs, if Gateway is enabled
-6. `DEFAULT_MODEL` (hardcoded DeepSeek V4 Flash, with the same Gateway fallback when available)
+1. `chat` + `quality` (requested combination); if this is an OpenRouter model and only Gateway is enabled, return the Gateway-routed version
+2. `chat` + `speed` (fallback type); same immediate Gateway fallback rule
+3. `research` + `quality` (fallback mode); same immediate Gateway fallback rule
+4. `research` + `speed` (fallback mode + type); same immediate Gateway fallback rule
+5. `DEFAULT_MODEL` (hardcoded DeepSeek V4 Flash); return it through Gateway if Gateway is enabled, otherwise return the raw OpenRouter default
 
 ### Example scenarios
 

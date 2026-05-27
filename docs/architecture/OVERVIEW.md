@@ -616,7 +616,10 @@ flowchart TD
     ConfigFound{"Model found<br/>in config?"}
     ProviderEnabled{"isProviderEnabled()<br/>API key present?"}
     ReturnModel["Return model"]
+    GatewayFallback["Return same OpenRouter<br/>model via gateway"]
     NextCandidate["Try next candidate"]
+    DefaultGatewayCheck{"Gateway enabled<br/>for DEFAULT_MODEL?"}
+    DefaultGateway["Return DEFAULT_MODEL<br/>via gateway"]
     DefaultModel["Return DEFAULT_MODEL<br/>(DeepSeek V4 Flash via OpenRouter)"]
 
     subgraph ConfigFiles["Configuration Files"]
@@ -639,11 +642,14 @@ flowchart TD
     LoopTypes --> LoadConfig --> ConfigFound
     ConfigFound -->|No| NextCandidate
     ConfigFound -->|Yes| ProviderEnabled
-    ProviderEnabled -->|No| NextCandidate
+    ProviderEnabled -->|"No + OpenRouter model<br/>+ Gateway enabled"| GatewayFallback
+    ProviderEnabled -->|No otherwise| NextCandidate
     ProviderEnabled -->|Yes| ReturnModel
     NextCandidate --> LoopTypes
     LoopTypes -->|"Exhausted"| LoopModes
-    LoopModes -->|"All exhausted"| DefaultModel
+    LoopModes -->|"All exhausted"| DefaultGatewayCheck
+    DefaultGatewayCheck -->|Yes| DefaultGateway
+    DefaultGatewayCheck -->|No| DefaultModel
 
     LoadConfig -.-> ConfigFiles
     ProviderEnabled -.-> Providers
@@ -662,6 +668,8 @@ From [`config/models/default.json`](../../config/models/default.json):
 | Related Questions | --      | `deepseek/deepseek-v4-flash` | OpenRouter |
 
 **Cloud deployment behavior:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag controls config profile selection (uses `cloud.json` instead of `default.json`), rate limiting enforcement, and analytics event tracking.
+
+If an OpenRouter candidate is selected from config but OpenRouter is disabled and Gateway is enabled, `selectModel()` returns the same model ID with `providerId: 'gateway'` before trying later candidates. The hardcoded `DEFAULT_MODEL` uses the same Gateway fallback after all configured candidates are exhausted.
 
 **Source files:** [`lib/utils/model-selection.ts`](../../lib/utils/model-selection.ts), [`lib/utils/registry.ts`](../../lib/utils/registry.ts), [`lib/config/model-types.ts`](../../lib/config/model-types.ts), [`config/models/default.json`](../../config/models/default.json)
 
