@@ -712,23 +712,219 @@ export function TourAlertDialog({
 }
 
 // ============================================================================
-// DesktopTourDialog Component (stub — implemented in Task 4)
+// DesktopTourDialog Component
 // ============================================================================
 
-function DesktopTourDialog(_props: {
+function DesktopTourDialog({
+  onStartTour,
+  onSkip
+}: {
   onStartTour: () => void
   onSkip: () => void
 }) {
-  return null // Implemented in Task 4
+  const reducedMotion = useReducedMotion()
+  const imageAnimation = reducedMotion
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 } }
+    : {
+        initial: { scale: 0.95, opacity: 0 },
+        animate: { scale: 1, opacity: 1 }
+      }
+  const imageTransition = reducedMotion
+    ? { duration: 0.15 }
+    : { duration: 0.2, ease: 'easeOut' as const }
+
+  return (
+    <AlertDialogContent className="max-w-3xl w-[calc(100vw-32px)] sm:w-full p-0 flex flex-col overflow-hidden bg-card border-border shadow-xl">
+      <AlertDialogTitle className="sr-only">
+        Welcome to Polymorph — an AI platform with a generative UI
+      </AlertDialogTitle>
+      <AlertDialogDescription className="sr-only">
+        Learn about Polymorph&apos;s chat, modes, canvas artifacts, and how to
+        start the tour.
+      </AlertDialogDescription>
+      <div className="flex flex-col p-8 max-h-[85vh] overflow-y-auto">
+        <motion.div
+          {...imageAnimation}
+          transition={imageTransition}
+          className="mb-6"
+        >
+          <div className="text-2xl font-semibold text-foreground">
+            Polymorph
+          </div>
+          <p className="text-sm text-muted-foreground mt-1 text-pretty leading-relaxed">
+            An AI platform with a generative UI for research, creation, and
+            exploration.
+          </p>
+        </motion.div>
+
+        <div className="mb-6">
+          <h4 className="text-xs font-semibold text-foreground/70 uppercase tracking-wide mb-3">
+            Capabilities
+          </h4>
+          <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Chat</p>
+              <p className="text-xs text-muted-foreground">
+                Streaming responses
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Research mode
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Multi-step with citations
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Build mode</p>
+              <p className="text-xs text-muted-foreground">
+                Code &amp; artifact authoring
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Canvas</p>
+              <p className="text-xs text-muted-foreground">
+                Interactive HTML &amp; React artifacts
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Generative UI
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Tool-specific message parts
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Search</p>
+              <p className="text-xs text-muted-foreground">
+                Multiple providers
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h4 className="text-xs font-semibold text-foreground/70 uppercase tracking-wide mb-3">
+            Stack
+          </h4>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex">
+              <span className="text-muted-foreground w-24 shrink-0">
+                Frontend
+              </span>
+              <span className="text-foreground">
+                Next.js 16, React 19, Tailwind v4
+              </span>
+            </div>
+            <div className="flex">
+              <span className="text-muted-foreground w-24 shrink-0">
+                Backend
+              </span>
+              <span className="text-foreground">Supabase, Drizzle, Bun</span>
+            </div>
+            <div className="flex">
+              <span className="text-muted-foreground w-24 shrink-0">
+                Observability
+              </span>
+              <span className="text-foreground">Phoenix (Arize)</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-2 pt-4 border-t border-border/50">
+          <Button
+            onClick={onSkip}
+            variant="ghost"
+            className="flex-1 h-11 font-medium bg-muted/50 hover:bg-muted"
+          >
+            Skip
+          </Button>
+          <Button onClick={onStartTour} className="flex-1 h-11 font-medium">
+            Start the tour
+          </Button>
+        </div>
+      </div>
+    </AlertDialogContent>
+  )
 }
 
 // ============================================================================
-// MobileTourDialog Component (stub — implemented in Task 4)
+// MobileTourDialog Component
 // ============================================================================
 
-function MobileTourDialog(_props: {
+function MobileTourDialog({
+  onStartTour,
+  onSkip
+}: {
   onStartTour: () => void
   onSkip: () => void
 }) {
-  return null // Implemented in Task 4
+  return (
+    <AlertDialogContent className="w-[calc(100vw-32px)] max-w-[360px] p-0 flex flex-col overflow-hidden bg-card border-border shadow-xl rounded-xl">
+      <AlertDialogTitle className="sr-only">
+        Welcome to Polymorph
+      </AlertDialogTitle>
+      <AlertDialogDescription className="sr-only">
+        Learn about Polymorph&apos;s capabilities and start the tour.
+      </AlertDialogDescription>
+
+      <div className="flex flex-col px-4 pt-4 pb-3">
+        <h2 className="text-lg font-bold text-foreground">
+          Welcome to Polymorph
+        </h2>
+        <p className="text-xs text-muted-foreground mt-0.5 mb-3">
+          An AI platform with a generative UI for research, creation, and
+          exploration.
+        </p>
+
+        <p className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wide mb-1.5">
+          Capabilities
+        </p>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px] mb-3">
+          <div>
+            <span className="text-muted-foreground">Chat</span>
+            <p className="text-foreground">Streaming responses</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Research</span>
+            <p className="text-foreground">Multi-step + citations</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Build</span>
+            <p className="text-foreground">Code &amp; artifacts</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Canvas</span>
+            <p className="text-foreground">HTML &amp; React</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Gen UI</span>
+            <p className="text-foreground">Tool-specific parts</p>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Search</span>
+            <p className="text-foreground">Multiple providers</p>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            onClick={onSkip}
+            variant="ghost"
+            className="flex-1 h-10 text-sm bg-muted/40 hover:bg-muted rounded-lg"
+          >
+            Skip
+          </Button>
+          <Button
+            onClick={onStartTour}
+            className="flex-1 h-10 text-sm font-medium rounded-lg"
+          >
+            Start tour
+          </Button>
+        </div>
+      </div>
+    </AlertDialogContent>
+  )
 }
