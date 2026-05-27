@@ -151,8 +151,10 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
    - Look up the model from the config via `getModelForModeAndType(mode, type)`
    - Check if the model's provider is enabled via `isProviderEnabled(providerId)`
    - If both succeed, return that model immediately
+   - If the model is an OpenRouter model and OpenRouter is disabled while Gateway is enabled, return the same model ID through `providerId: "gateway"` immediately
+   - Otherwise, try the next configured candidate
 
-5. **Fallback** — If no candidate succeeds (all providers disabled, or config loading fails), return the hardcoded `DEFAULT_MODEL` (DeepSeek V4 Flash via OpenRouter).
+5. **Fallback** — If no configured candidate succeeds (all providers disabled, or config loading fails), try the hardcoded `DEFAULT_MODEL` (DeepSeek V4 Flash) through Gateway when Gateway is enabled. Otherwise, return the raw OpenRouter `DEFAULT_MODEL` as the last-resort configuration, even if OpenRouter is also unavailable.
 
 **Cloud deployment:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag selects the `cloud.json` config profile instead of `default.json`. The legacy `VANA_CLOUD_DEPLOYMENT` alias is also accepted. This does not force a specific model type.
 
@@ -160,11 +162,11 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
 
 For a request with `searchMode=chat` and `modelType=quality`, the candidates are tried in this order:
 
-1. `chat` + `quality` (requested combination)
-2. `chat` + `speed` (fallback type)
-3. `research` + `quality` (fallback mode)
-4. `research` + `speed` (fallback mode + type)
-5. `DEFAULT_MODEL` (hardcoded DeepSeek V4 Flash)
+1. `chat` + `quality` (requested combination); if this is an OpenRouter model and only Gateway is enabled, return the Gateway-routed version
+2. `chat` + `speed` (fallback type); same immediate Gateway fallback rule
+3. `research` + `quality` (fallback mode); same immediate Gateway fallback rule
+4. `research` + `speed` (fallback mode + type); same immediate Gateway fallback rule
+5. `DEFAULT_MODEL` (hardcoded DeepSeek V4 Flash); return it through Gateway if Gateway is enabled, otherwise return the raw OpenRouter default
 
 ### Example scenarios
 
@@ -172,7 +174,7 @@ For a request with `searchMode=chat` and `modelType=quality`, the candidates are
 
 **Quality preference** — User has `modelType=quality`, `searchMode=chat`. Lookup finds `chat/quality` -> `deepseek/deepseek-v4-pro` via `openrouter`. Provider is enabled. Result: DeepSeek V4 Pro.
 
-**Provider unavailable** — User has `modelType=quality` but no API keys are set. All four config candidates fail `isProviderEnabled()`. The hardcoded `DEFAULT_MODEL` is returned as a last resort (even though its provider may also be unavailable).
+**Provider unavailable** — User has `modelType=quality` but no OpenRouter key is set. If `AI_GATEWAY_API_KEY` is set, OpenRouter model IDs are retried through Gateway. If neither provider is enabled, the hardcoded `DEFAULT_MODEL` is returned as a last resort (even though its provider may also be unavailable).
 
 ---
 

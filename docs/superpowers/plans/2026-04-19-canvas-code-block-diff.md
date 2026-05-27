@@ -1,5 +1,7 @@
 # Canvas Code Block / Diff Implementation Plan
 
+> **Status:** Proposal not implemented. This predates the current chat-agent module split and should be revalidated before execution; do not treat `displayCodeBlock` / `displayCodeDiff` as current runtime behavior.
+
 ## Summary
 
 - Add Tool UI `code-block` and `code-diff` to the existing bespoke chat runtime; do not introduce `assistant-ui`, activity-tab changes, or workspace changes.

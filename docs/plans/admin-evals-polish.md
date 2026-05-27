@@ -1,5 +1,7 @@
 # Admin Evals UI Polish — Implementation Plan
 
+> **Status:** Completed historical plan. The polish pieces described here are already represented in the current dashboard-v2 components; use this document for implementation history only.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make `/admin/evals` answer "is anything regressing right now?" in under five seconds by demoting the static H1, promoting the run-state pill, turning suite tabs into scoreboards with a two-tone scoop pattern, and tightening type/spacing scales — all without changing component contracts.

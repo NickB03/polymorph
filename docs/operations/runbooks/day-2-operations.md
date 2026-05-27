@@ -19,18 +19,18 @@ This runbook is for operators maintaining Polymorph after initial deployment. It
 
 Rotate on schedule and after any suspected exposure. Each key has a distinct surface — rotating one does not rotate the others.
 
-| Key                                    | Where it's set                                                    | What it gates                                                                       |
-| -------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| AI provider key(s)                     | Vercel env (Production)                                           | Text generation via `OPENROUTER_API_KEY`; image generation via `AI_GATEWAY_API_KEY` |
-| Search provider key(s)                 | Vercel env (Production)                                           | `BRAVE_SEARCH_API_KEY`, `TAVILY_API_KEY`, `EXA_API_KEY`                             |
-| Supabase anon key                      | Vercel env (Production)                                           | Browser-side Supabase access                                                        |
-| Upstash Redis token                    | Vercel env (Production)                                           | Rate limiting and guest-chat counters                                               |
-| `CRON_SECRET`                          | Vercel env (Production)                                           | `/api/suggestions/refresh` Vercel cron auth                                         |
-| `GUEST_CANVAS_SECRET`                  | Vercel env (Production)                                           | HMAC signing of guest canvas tokens (rotates on every successful guest write)       |
-| `PHOENIX_API_KEY`                      | Vercel env (Production) **and** `polymorph-evals` Railway service | Trace ingestion + experiment writes                                                 |
-| `PHOENIX_ADMIN_SECRET`                 | Phoenix Railway service                                           | Admin REST endpoints (`/v1/projects` etc.)                                          |
-| `EVAL_RUNNER_SECRET`                   | Vercel env **and** `polymorph-evals` Railway service              | Auth between the evals cron and `/api/evals/run`                                    |
-| `JUDGE_API_KEY` / `OPENROUTER_API_KEY` | `polymorph-evals` Railway service                                 | LLM-judge model calls during eval runs                                              |
+| Key                    | Where it's set                                                    | What it gates                                                                       |
+| ---------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| AI provider key(s)     | Vercel env (Production)                                           | Text generation via `OPENROUTER_API_KEY`; image generation via `AI_GATEWAY_API_KEY` |
+| Search provider key(s) | Vercel env (Production)                                           | `BRAVE_SEARCH_API_KEY`, `TAVILY_API_KEY`, `EXA_API_KEY`                             |
+| Supabase anon key      | Vercel env (Production)                                           | Browser-side Supabase access                                                        |
+| Upstash Redis token    | Vercel env (Production)                                           | Rate limiting and guest-chat counters                                               |
+| `CRON_SECRET`          | Vercel env (Production)                                           | `/api/suggestions/refresh` Vercel cron auth                                         |
+| `GUEST_CANVAS_SECRET`  | Vercel env (Production)                                           | HMAC signing of guest canvas tokens (rotates on every successful guest write)       |
+| `PHOENIX_API_KEY`      | Vercel env (Production) **and** `polymorph-evals` Railway service | Trace ingestion + experiment writes                                                 |
+| `PHOENIX_ADMIN_SECRET` | Phoenix Railway service                                           | Admin REST endpoints (`/v1/projects` etc.)                                          |
+| `EVAL_RUNNER_SECRET`   | Vercel env **and** `polymorph-evals` Railway service              | Auth between the evals cron and `/api/evals/run`                                    |
+| `JUDGE_API_KEY`        | `polymorph-evals` Railway service                                 | LLM-judge model calls during eval runs; required at evals service startup           |
 
 After rotation:
 
@@ -80,7 +80,7 @@ The `polymorph-evals` Railway cron runs every 48 hours. Two distinct failure lab
 | `PHOENIX UNAVAILABLE` | Phoenix HTTP layer down — experiment creation failed; suite never reached the DB write | Check Phoenix service logs; verify volume mount; confirm `PHOENIX_HOST` resolves                                                 |
 | `DB WRITE FAILED`     | Phoenix experiment succeeded; the Postgres write to `eval_summaries` failed            | Check Postgres connectivity; verify the sampler's DB role has the right RLS context; confirm `eval_summaries` table is reachable |
 
-Threshold-gating errors still throw even when the DB write fails (the threshold check moved before the DB persist). When the dashboard is missing a row but Phoenix shows the experiment, suspect `DB WRITE FAILED`.
+Threshold breaches are warning-only by default (`EVAL_EXIT_ON_THRESHOLD_BREACH=false`). Set `EVAL_EXIT_ON_THRESHOLD_BREACH=true` when threshold breaches should fail the cron; DB write failures still throw separately after the mode finishes. When the dashboard is missing a row but Phoenix shows the experiment, suspect `DB WRITE FAILED`.
 
 Useful commands:
 

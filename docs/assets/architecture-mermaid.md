@@ -16,15 +16,13 @@ graph LR
 
     subgraph Providers["AI Providers"]
         direction TB
-        Gateway["Vercel AI Gateway"]
-        Gemini["Gemini"]
-        GPT["GPT"]
-        Claude["Claude"]
-        Grok["Grok"]
-        Gateway --> Gemini
-        Gateway --> GPT
-        Gateway --> Claude
-        Gateway --> Grok
+        OpenRouter["OpenRouter<br/>default text"]
+        DeepSeek["DeepSeek V4<br/>Flash / Pro"]
+        Gateway["Vercel AI Gateway<br/>images / optional"]
+        GeminiImage["Gemini 2.5<br/>Flash Image"]
+        Direct["Direct providers<br/>OpenAI · Anthropic · Google · Ollama"]
+        OpenRouter --> DeepSeek
+        Gateway --> GeminiImage
     end
 
     subgraph Search["Web Search"]

@@ -37,7 +37,7 @@
 - **Geo intelligence** — interactive maps, real directions, reachability polygons, and static map images
 - **Multi-provider AI** — DeepSeek V4 Flash/Pro via OpenRouter for text, Gemini 2.5 Flash Image via Vercel AI Gateway for inline generation, plus direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers
 - **Voice mode** — speech input and text-to-speech playback
-- **Guest access** — instant search without sign-up, rate-limited per IP in cloud deployments
+- **Configurable guest access** — optional instant search without sign-up, rate-limited per IP in cloud deployments
 
 ## Documentation
 
@@ -57,7 +57,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/assets/architecture.png">
-    <img alt="Polymorph architecture: a three-agent chat system (search, research, build) routes requests through a shared tool layer (core, generative-UI display, geo, canvas) to multi-provider search, the Vercel AI Gateway, and Postgres with Phoenix observability." src="docs/assets/architecture.png" width="960">
+    <img alt="Polymorph architecture: a three-agent chat system (search, research, build) routes requests through a shared tool layer (core, generative-UI display, geo, canvas) to multi-provider search, OpenRouter text models, optional Gateway image generation, and Postgres with Phoenix observability." src="docs/assets/architecture.png" width="960">
   </picture>
 </div>
 

@@ -25,6 +25,51 @@ Excluded from the first pass:
 
 Reason: the primary pass should focus on current product, architecture, onboarding, ops, and policy docs rather than historical planning artifacts.
 
+2026-05-26 expanded validation scope:
+
+- Include `docs/plans/**/*.md`, `docs/superpowers/plans/**/*.md`, `docs/superpowers/specs/**/*.md`, and Tool UI component READMEs as a classification pass.
+- Do not treat all plan/spec artifacts as current source of truth. Classify each as `current`, `completed historical`, `stale active plan`, `superseded`, or `proposal not implemented`.
+- For canonical production-origin claims, repo grep and health checks are not enough to prove the live canonical domain. Validate repo references first, then use live Vercel/domain inspection before declaring a canonical production URL.
+
+## 2026-05-26 Validated Findings
+
+A second read-only validation pass re-opened the cited docs and source. These findings are confirmed unless noted otherwise:
+
+1. `GEMINI.md` is stale for model defaults, agent path, and DB message storage.
+   - Docs still say Grok/Gateway defaults and `lib/agents/researcher.ts`.
+   - Source defaults are DeepSeek V4 Flash/Pro through OpenRouter in `config/models/default.json`; runtime is `lib/agents/chat/*`; canonical message content is `messages.ui_message`, and migration `0025` drops `parts`.
+   - Architecture diagram assets and alt text also need to show OpenRouter as the default text provider path, with Gateway limited to image generation or optional routes.
+2. Architecture docs still reference deleted `lib/agents/researcher.ts`.
+   - Update `docs/architecture/OVERVIEW.md`, `docs/architecture/RESEARCH-AGENT.md`, `docs/architecture/STREAMING.md`, and any linked key-file tables to point at `lib/agents/chat/registry.ts`, `lib/agents/chat/route-handler.ts`, and the per-agent modules.
+3. Evals deployment docs incorrectly document `OPENROUTER_API_KEY` as a fallback for judge credentials.
+   - `services/evals/src/index.ts` calls `validateJudgeCredentials()` and `services/evals/src/judge-config.ts` requires `JUDGE_API_KEY`.
+4. `SECURITY.md` overstates guest-chat defaults.
+   - Guest chat is allowed only when `ENABLE_GUEST_CHAT === 'true'`; unset or false requires sign-in.
+5. `SECURITY.md` overgeneralizes RLS as user-scoped on every table and still names deleted `parts`.
+   - Keep the `enableRLS()` claim, but distinguish public feedback/suggestions policies and authenticated-wide eval reads from user-owned tables.
+6. `docs/reference/API.md` documents stale `/api/suggestions` headers.
+   - Runtime emits `x-suggestions-source: dynamic-blend | static-rotation` plus cache headers; it does not emit `x-suggestions-serve-mode`.
+7. `docs/architecture/MODEL-CONFIGURATION.md` omits the Gateway fallback.
+   - `lib/utils/model-selection.ts` rewrites OpenRouter config/default models to `providerId: 'gateway'` when Gateway is enabled.
+8. Plan docs need classification, not blanket updates.
+   - Completed/stale examples: eval dashboard IA, admin evals polish, BkLit charts, tool-selection evaluator, parts-table removal.
+   - `docs/superpowers/plans/2026-04-19-canvas-code-block-diff.md` is stale as current-source documentation but appears unimplemented, so label it `proposal not implemented` or `active proposal needing revalidation`, not completed.
+9. `docs/architecture/STREAMING.md` has stale stream metadata and ephemeral `onFinish` wording.
+   - Runtime emits `correlationId`, optional `otelTraceId`, `userMode`, `modelType`, and `modelId`; ephemeral streams do have `onFinish` for `flushTraces()`, just not persistence.
+10. `docs/reference/FILE-INDEX.md` is stale.
+    - It lists deleted `components/evals/dashboard-v2/phoenix-insight.tsx`, references deleted `lib/agents/researcher.ts`, and overclaims every file while missing current root docs such as `AGENTS.md` and `DESIGN.md`.
+11. Production-origin references use `polymorph.fyi`.
+    - The user confirmed `https://polymorph.fyi` is the new live canonical domain.
+    - Replace legacy Vercel preview-domain references in Docker, CI, env examples, API/deployment docs, and public-origin tests.
+
+## 2026-05-26 Execution Status
+
+- Current docs, config examples, CI metadata, Docker defaults, and public-origin tests now use `https://polymorph.fyi` for production-origin references.
+- Architecture diagrams and current architecture docs now show OpenRouter as the default text-provider path, with Gateway limited to image generation or optional routing.
+- Current docs now point at `lib/agents/chat/*`, `messages.ui_message`, current suggestions headers, current stream metadata, and current evals judge credential requirements.
+- Plan/spec artifacts that still contain old implementation paths are classified as historical, superseded, active proposals needing revalidation, or proposals not implemented. They should not be executed without a fresh source-code validation pass.
+- No additional audit agent is needed for the remaining corrections from this pass; the remaining stale literals are retained only in historical plan bodies or this audit finding record.
+
 ## Preflight Rules
 
 1. Do not trust one doc to validate another. Every material claim must trace to code, config, tests, or runtime wiring.
@@ -57,7 +102,9 @@ Audit first because these shape reader expectations and point into the rest of t
 1. `README.md`
    Source of truth:
    - `app/api/chat/route.ts`
-   - `lib/agents/researcher.ts`
+   - `lib/agents/chat/registry.ts`
+   - `lib/agents/chat/route-handler.ts`
+   - `lib/agents/chat/{search,research,build}.ts`
    - `lib/utils/model-selection.ts`
    - `lib/utils/registry.ts`
    - `lib/streaming/create-chat-stream-response.ts`
@@ -97,7 +144,10 @@ Audit together because they cross-reference the same runtime paths.
 Primary source-of-truth files for this phase:
 
 - `app/api/chat/route.ts`
-- `lib/agents/researcher.ts`
+- `lib/agents/chat/registry.ts`
+- `lib/agents/chat/route-handler.ts`
+- `lib/agents/chat/{search,research,build}.ts`
+- `lib/agents/chat/factory.ts`
 - `lib/agents/prompts/search-mode-prompts.ts`
 - `lib/streaming/create-chat-stream-response.ts`
 - `lib/streaming/create-ephemeral-chat-stream-response.ts`

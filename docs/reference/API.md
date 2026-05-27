@@ -29,11 +29,11 @@ graph LR
 
 Polymorph uses **Supabase Auth** with cookie-based sessions. The middleware (`lib/supabase/middleware.ts`) refreshes the session on every request using `@supabase/ssr`.
 
-| Mode              | Behavior                                                                                                                                    |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Authenticated** | Supabase JWT stored in HTTP-only cookies. User ID extracted via `supabase.auth.getUser()`.                                                  |
-| **Guest**         | Allowed when `ENABLE_GUEST_CHAT=true`. Identified by IP address. Chats are ephemeral (not persisted) and default to the `speed` model tier. |
-| **Auth Disabled** | When `ENABLE_AUTH=false` (non-cloud only). All requests use a shared anonymous user ID. For personal/Docker deployments only.               |
+| Mode              | Behavior                                                                                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Authenticated** | Supabase JWT stored in HTTP-only cookies. User ID extracted via `supabase.auth.getUser()`.                                                                         |
+| **Guest**         | Allowed when `ENABLE_GUEST_CHAT=true`. Identified by IP address. Chats are ephemeral (not persisted), and new guest UI sessions default to the `speed` model tier. |
+| **Auth Disabled** | When `ENABLE_AUTH=false` (non-cloud only). All requests use a shared anonymous user ID. For personal/Docker deployments only.                                      |
 
 Unauthenticated requests to protected endpoints receive a `401 Unauthorized` response.
 
@@ -73,10 +73,10 @@ The primary chat endpoint. Accepts the AI SDK `UIMessage[]` history and returns 
 
 #### Cookies Read
 
-| Cookie       | Values                 | Default   | Description                                                                                                               |
-| ------------ | ---------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `searchMode` | `"chat"`, `"research"` | `"chat"`  | Controls the research agent mode. Chat uses max 20 steps; research uses max 50 steps.                                     |
-| `modelType`  | `"speed"`, `"quality"` | `"speed"` | Model selection preference. The route honors a valid cookie value and otherwise falls back to the configured model order. |
+| Cookie       | Values                              | Default    | Description                                                                                                               |
+| ------------ | ----------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `searchMode` | `"search"`, `"research"`, `"build"` | `"search"` | UI-facing mode. Server code maps `search` and `build` to backend chat mode, while `build` also carries `intent='build'`.  |
+| `modelType`  | `"speed"`, `"quality"`              | `"speed"`  | Model selection preference. The route honors a valid cookie value and otherwise falls back to the configured model order. |
 
 #### Response
 
@@ -376,8 +376,8 @@ Returns trending topic suggestions for the homepage, grouped by category. Reads 
 
 **Headers:**
 
-- `x-suggestions-source` -- Source of suggestions (`cache`, `tavily`, `brave`, `default`)
-- `x-suggestions-serve-mode` -- How the response was served (`primary-cache`, `fresh-generated`, `stale-cache`)
+- `x-suggestions-source` -- Source of suggestions (`dynamic-blend` when cached dynamic suggestions are blended with static rotation, otherwise `static-rotation`)
+- `Cache-Control` / `CDN-Cache-Control` -- CDN cache headers with stale-while-revalidate behavior
 
 ---
 
@@ -428,7 +428,7 @@ Health check endpoint for monitoring and load balancers. Verifies database conne
 **Authentication:** None
 **Dynamic:** `force-dynamic`
 
-For Vercel monitoring, use the canonical production alias (`https://polymorph-nb.vercel.app/api/health`). Raw deployment URLs may be protected by Vercel Authentication even when the application route itself is public.
+For Vercel monitoring, use the canonical production alias (`https://polymorph.fyi/api/health`). Raw deployment URLs may be protected by Vercel Authentication even when the application route itself is public.
 
 #### Query Parameters
 

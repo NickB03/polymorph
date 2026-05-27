@@ -64,7 +64,7 @@ Key characteristics:
 - Accepts full `messages` array from the client (since there is no server-side history)
 - No database reads or writes
 - No title generation
-- No `onFinish` callback (nothing to persist)
+- `onFinish` flushes pending traces; it does not persist chat messages
 - Still supports related question generation and smooth streaming
 - Rate-limited by IP via Upstash Redis (enforced in the API route)
 
@@ -79,7 +79,7 @@ Key characteristics:
 | Smooth streaming          | Yes (`word` chunking)             | Yes (`word` chunking)          |
 | Phoenix tracing           | Yes (when enabled)                | Yes (when enabled)             |
 | Message source            | Server-side history + new message | Full message array from client |
-| `onFinish` callback       | `persistStreamResults`            | None                           |
+| `onFinish` callback       | `persistStreamResults`            | `flushTraces` only             |
 | Rate limiting             | Overall chat limit per user       | IP-based guest limit           |
 | OpenAI reasoning strip    | Yes                               | Yes                            |
 | Context window management | Yes                               | Yes                            |
@@ -140,7 +140,7 @@ If this is a new chat, `generateChatTitle()` fires immediately and runs concurre
 
 ### 9. Chat Agent Streaming
 
-The injected `agentFactory` creates a `ToolLoopAgent` through the chat agent registry in `lib/agents/chat/`. `lib/agents/researcher.ts` is now a compatibility shim for older imports; runtime route delegation is owned by:
+The injected `agentFactory` creates a `ToolLoopAgent` through the chat agent registry in `lib/agents/chat/`. Runtime route delegation is owned by:
 
 - `lib/agents/chat/registry.ts`
 - `lib/agents/chat/route-handler.ts`
@@ -174,14 +174,14 @@ writer.merge(
   result.toUIMessageStream({
     messageMetadata: ({ part }) => {
       if (part.type === 'start') {
-        return { traceId: parentTraceId, searchMode, modelId }
+        return { correlationId, otelTraceId, userMode, modelType, modelId }
       }
     }
   })
 )
 ```
 
-`writer.merge()` is the sole consumer of the agent result stream. (`result.consumeStream()` must NOT be called — `toUIMessageStream()` already consumes the stream internally, making an additional `consumeStream()` call redundant.) The `messageMetadata` callback attaches trace context to the stream's `start` event so the client knows which model and search mode produced the response.
+`writer.merge()` is the sole consumer of the agent result stream. (`result.consumeStream()` must NOT be called — `toUIMessageStream()` already consumes the stream internally, making an additional `consumeStream()` call redundant.) The `messageMetadata` callback attaches request, trace, mode, and model context to the stream's `start` event.
 
 ### 10. Tool Loop Execution
 
@@ -204,7 +204,7 @@ After the agent stream completes, if there are response messages, `streamRelated
 
 For authenticated streams, when the stream closes normally (not aborted), the `onFinish` callback calls `persistStreamResults()` which:
 
-1. Attaches metadata (traceId, searchMode, modelId) to the response message
+1. Attaches stream metadata (`correlationId`, optional `otelTraceId`, `userMode`, `modelType`, `modelId`) to the response message
 2. Awaits the `titlePromise` if it was started
 3. Awaits any pending initial chat/message persistence (for new chats)
 4. Saves the AI response message to the database with retry logic
@@ -526,17 +526,17 @@ Connection: keep-alive
 
 The Vercel AI SDK's UI message stream protocol sends events in SSE format. Each event is a JSON-encoded object with a `type` field. Key event types include:
 
-| Event Type                  | Description                        | Payload                                      |
-| --------------------------- | ---------------------------------- | -------------------------------------------- |
-| `start`                     | Stream begins                      | Metadata: `{ traceId, searchMode, modelId }` |
-| `text-delta`                | Incremental text chunk             | `{ textDelta: "word " }`                     |
-| `tool-call`                 | Agent invokes a tool               | `{ toolCallId, toolName, args }`             |
-| Tool output                 | Tool execution result              | Tool call ID plus output payload             |
-| `tool-call-streaming-start` | Tool call begins streaming         | `{ toolCallId, toolName }`                   |
-| `tool-call-delta`           | Streaming tool call argument chunk | `{ toolCallId, argsTextDelta }`              |
-| `data-relatedQuestions`     | Related questions update           | `{ id, status, questions? }`                 |
-| `finish`                    | Stream complete                    | Final message metadata                       |
-| `error`                     | Error occurred                     | Error message string                         |
+| Event Type                  | Description                        | Payload                                                                   |
+| --------------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
+| `start`                     | Stream begins                      | Metadata: `{ correlationId, otelTraceId?, userMode, modelType, modelId }` |
+| `text-delta`                | Incremental text chunk             | `{ textDelta: "word " }`                                                  |
+| `tool-call`                 | Agent invokes a tool               | `{ toolCallId, toolName, args }`                                          |
+| Tool output                 | Tool execution result              | Tool call ID plus output payload                                          |
+| `tool-call-streaming-start` | Tool call begins streaming         | `{ toolCallId, toolName }`                                                |
+| `tool-call-delta`           | Streaming tool call argument chunk | `{ toolCallId, argsTextDelta }`                                           |
+| `data-relatedQuestions`     | Related questions update           | `{ id, status, questions? }`                                              |
+| `finish`                    | Stream complete                    | Final message metadata                                                    |
+| `error`                     | Error occurred                     | Error message string                                                      |
 
 ### How the Client Consumes the Stream
 
@@ -576,7 +576,8 @@ That test is not a substitute for reviewing a future change's diff. It proves th
 | `lib/streaming/helpers/strip-reasoning-parts.ts`         | OpenAI reasoning compatibility                                                         |
 | `lib/streaming/helpers/types.ts`                         | `StreamContext` interface                                                              |
 | `lib/streaming/types.ts`                                 | `BaseStreamConfig` interface                                                           |
-| `lib/agents/researcher.ts`                               | Compatibility shim that delegates to the chat agent registry                           |
+| `lib/agents/chat/registry.ts`                            | Resolves `search`, `research`, and `build` agent IDs                                   |
+| `lib/agents/chat/route-handler.ts`                       | Injects selected agent factories into authenticated and guest stream primitives        |
 | `lib/agents/title-generator.ts`                          | Parallel title generation                                                              |
 | `lib/agents/generate-related-questions.ts`               | Related questions LLM call                                                             |
 | `lib/utils/context-window.ts`                            | Token counting and message truncation                                                  |

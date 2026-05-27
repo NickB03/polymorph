@@ -17,14 +17,12 @@ describe('public origin helpers', () => {
     process.env = {
       ...process.env,
       NODE_ENV: 'production',
-      NEXT_PUBLIC_APP_URL: 'https://polymorph-nb.vercel.app'
+      NEXT_PUBLIC_APP_URL: 'https://polymorph.fyi'
     }
 
     const { getPublicOrigin } = await import('../public-origin')
 
-    expect(getPublicOrigin().toString()).toBe(
-      'https://polymorph-nb.vercel.app/'
-    )
+    expect(getPublicOrigin().toString()).toBe('https://polymorph.fyi/')
   })
 
   it('throws in production when NEXT_PUBLIC_APP_URL is missing', async () => {
@@ -53,7 +51,7 @@ describe('public origin helpers', () => {
     process.env = {
       ...process.env,
       NODE_ENV: 'production',
-      NEXT_PUBLIC_APP_URL: 'https://polymorph-nb.vercel.app'
+      NEXT_PUBLIC_APP_URL: 'https://polymorph.fyi'
     }
 
     const { createAppMetadata } = await import('../app-metadata')
@@ -62,14 +60,10 @@ describe('public origin helpers', () => {
     const openGraphImages = metadata.openGraph?.images
     const twitterImages = metadata.twitter?.images
 
-    expect(metadata.metadataBase?.toString()).toBe(
-      'https://polymorph-nb.vercel.app/'
-    )
+    expect(metadata.metadataBase?.toString()).toBe('https://polymorph.fyi/')
     expect(openGraphImages).toContain(
-      'https://polymorph-nb.vercel.app/opengraph-image.png'
+      'https://polymorph.fyi/opengraph-image.png'
     )
-    expect(twitterImages).toContain(
-      'https://polymorph-nb.vercel.app/opengraph-image.png'
-    )
+    expect(twitterImages).toContain('https://polymorph.fyi/opengraph-image.png')
   })
 })

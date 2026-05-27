@@ -37,7 +37,7 @@ graph TD
     Agent["ToolLoopAgent<br/>(chat agent registry)"]
     Prompt["System Prompt<br/>(chat or research)"]
     Tools["Tools<br/>(search, fetch, display, todo)"]
-    LLM["LLM Provider<br/>(Gemini, Grok, GPT, Claude)"]
+    LLM["LLM Provider<br/>(OpenRouter default text,<br/>Gateway images / optional,<br/>direct providers)"]
     Answer["Cited Answer + Generative UI"]
 
     User --> Route --> Select --> Stream --> Agent
@@ -47,7 +47,7 @@ graph TD
     Agent --> Answer
 ```
 
-**Source files:** [`lib/agents/chat/registry.ts`](../../lib/agents/chat/registry.ts), [`lib/agents/chat/route-handler.ts`](../../lib/agents/chat/route-handler.ts), [`lib/agents/chat/research.ts`](../../lib/agents/chat/research.ts), [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts) (compatibility shim)
+**Source files:** [`lib/agents/chat/registry.ts`](../../lib/agents/chat/registry.ts), [`lib/agents/chat/route-handler.ts`](../../lib/agents/chat/route-handler.ts), [`lib/agents/chat/search.ts`](../../lib/agents/chat/search.ts), [`lib/agents/chat/research.ts`](../../lib/agents/chat/research.ts), [`lib/agents/chat/build.ts`](../../lib/agents/chat/build.ts)
 
 ---
 
@@ -163,7 +163,7 @@ stateDiagram-v2
 
 ### Configuration
 
-The chat agent modules configure `ToolLoopAgent` instances through [`lib/agents/chat/factory.ts`](../../lib/agents/chat/factory.ts). [`lib/agents/researcher.ts`](../../lib/agents/researcher.ts) remains as a compatibility shim that delegates into this registry.
+The chat agent modules configure `ToolLoopAgent` instances through [`lib/agents/chat/factory.ts`](../../lib/agents/chat/factory.ts). Agent selection and dispatch live in [`lib/agents/chat/registry.ts`](../../lib/agents/chat/registry.ts), with route-level wiring in [`lib/agents/chat/route-handler.ts`](../../lib/agents/chat/route-handler.ts).
 
 ```typescript
 const agent = new ToolLoopAgent({
@@ -621,15 +621,13 @@ Token estimation uses `js-tiktoken` with the `cl100k_base` encoding (GPT-4 token
 
 ### Model Context Windows
 
-| Model Family                         | Context Window    | Output Tokens |
-| ------------------------------------ | ----------------- | ------------- |
-| GPT-4.1 / GPT-4o-mini                | 128,000           | 16,384        |
-| Claude Opus 4 / Sonnet 4             | 680,000           | 8,192         |
-| Claude 3.7 Sonnet / 3.5 Haiku        | 200,000           | 8,192         |
-| Gemini 3 Flash / 2.5 Flash / 2.5 Pro | 1,048,576         | 65,536        |
-| DeepSeek V4 Flash / Pro              | 1,048,576         | 65,536        |
-| Grok 4.1 Fast Reasoning              | 1,048,576         | 65,536        |
-| Grok 4 / Grok 3 / Grok 3 Mini        | 131,072 - 256,000 | 8,192         |
+| Model Family                         | Context Window | Output Tokens |
+| ------------------------------------ | -------------- | ------------- |
+| GPT-4.1 / GPT-4o-mini                | 128,000        | 16,384        |
+| Claude Opus 4 / Sonnet 4             | 680,000        | 8,192         |
+| Claude 3.7 Sonnet / 3.5 Haiku        | 200,000        | 8,192         |
+| Gemini 3 Flash / 2.5 Flash / 2.5 Pro | 1,048,576      | 65,536        |
+| DeepSeek V4 Flash / Pro              | 1,048,576      | 65,536        |
 
 A 10% safety buffer is reserved for system prompts and formatting overhead. The formula is:
 
@@ -697,7 +695,7 @@ The stream's `start` event includes metadata used by the client for UI and debug
 ```typescript
 messageMetadata: ({ part }) => {
   if (part.type === 'start') {
-    return { traceId: parentTraceId, searchMode, modelId }
+    return { correlationId, otelTraceId, userMode, modelType, modelId }
   }
 }
 ```
@@ -864,8 +862,8 @@ case 'my-provider':
 
 | File                                                     | Purpose                                                               |
 | -------------------------------------------------------- | --------------------------------------------------------------------- |
-| `lib/agents/researcher.ts`                               | Compatibility shim that delegates to the chat agent registry          |
 | `lib/agents/chat/registry.ts`                            | Resolves `search`, `research`, and `build` agent IDs                  |
+| `lib/agents/chat/route-handler.ts`                       | Injects selected agent factories into authenticated and guest streams |
 | `lib/agents/chat/factory.ts`                             | Shared `ToolLoopAgent` factory for chat agents                        |
 | `lib/agents/chat/search.ts`                              | Search/chat agent definition and search pacing wrappers               |
 | `lib/agents/chat/research.ts`                            | Research agent definition, active tools, and specialist activation    |

@@ -1,6 +1,6 @@
 # AI SDK Contract Standardization: Phase 3 Revalidation
 
-> **Status:** Revalidated against current source. The original Phase 3 planning artifact was not present in committed `HEAD`/`origin/main` in this worktree, so this file is the restored and corrected plan of record for the current branch.
+> **Status:** Completed/superseded historical plan. `messages.ui_message` is now canonical and migration `0025` removed the legacy `parts` table; use this document only for implementation history.
 
 ## Verified Current State
 

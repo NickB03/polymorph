@@ -1,8 +1,9 @@
 # Skills Routing
 
 > **Audience:** Architect | Contributor
-> **Prerequisites:** [Architecture Overview](OVERVIEW.md), [Research Agent](RESEARCH-AGENT.md), [Streaming](STREAMING.md)
+> **Prerequisites:** [Architecture Overview](../architecture/OVERVIEW.md), [Research Agent](../architecture/RESEARCH-AGENT.md), [Streaming](../architecture/STREAMING.md)
 > **Status:** Proposal — not yet implemented. The file plan, types, and runtime described below describe a design under consideration, not shipped code.
+> **2026-05-26 note:** Source paths and ownership boundaries below predate the current `lib/agents/chat/*` module split; revalidate against current code before using this as an execution plan.
 
 This document specifies a skills-based routing layer for Polymorph's researcher agent. The goal is to inject domain-specific instructions only when they are relevant to the current request while preserving the current agent pipeline, tool model, and streaming behavior.
 
@@ -86,9 +87,9 @@ The best insertion point is the streaming layer, not the route:
 - [create-chat-stream-response.ts](../../lib/streaming/create-chat-stream-response.ts)
 - [create-ephemeral-chat-stream-response.ts](../../lib/streaming/create-ephemeral-chat-stream-response.ts)
 
-These two files already have the prepared conversation context and resolved canvas state immediately before they call `researcher(...)`. By contrast, [route.ts](../../app/api/chat/route.ts) should remain focused on auth, rate limiting, cookies, and model selection.
+These two files already have the prepared conversation context and resolved canvas state immediately before they create the selected chat agent. By contrast, [route.ts](../../app/api/chat/route.ts) should remain focused on auth, rate limiting, cookies, and model selection.
 
-This also avoids a common failure mode: if skills tried to override mode later in [researcher.ts](../../lib/agents/researcher.ts), the prompt would diverge from the model that was already selected earlier in [model-selection.ts](../../lib/utils/model-selection.ts).
+This also avoids a common failure mode: if skills tried to override mode later in the chat-agent factory, the prompt would diverge from the model that was already selected earlier in [model-selection.ts](../../lib/utils/model-selection.ts).
 
 ---
 
@@ -143,11 +144,11 @@ V1 should not change how tools are defined. The researcher still operates over t
 
 | File                                                     | Change                                                                      |
 | -------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `lib/streaming/create-chat-stream-response.ts`           | Run skills selection before `researcher(...)`                               |
+| `lib/streaming/create-chat-stream-response.ts`           | Run skills selection before creating the selected chat agent                |
 | `lib/streaming/create-ephemeral-chat-stream-response.ts` | Mirror the same skills selection for guest flows                            |
-| `lib/agents/researcher.ts`                               | Accept `skillSelection` and merge instructions, tools, and step adjustments |
+| `lib/agents/chat/factory.ts`                             | Accept `skillSelection` and merge instructions, tools, and step adjustments |
 | `lib/agents/prompts/search-mode-prompts.ts`              | Add a minimal note that active skill instructions may be appended           |
-| `lib/agents/__tests__/researcher.test.ts`                | Cover researcher behavior when skills are present                           |
+| `lib/agents/chat/__tests__/registry.test.ts`             | Cover chat-agent behavior when skills are present                           |
 | `package.json`                                           | Add `gray-matter` for frontmatter parsing                                   |
 | `docs/getting-started/CONFIGURATION.md`                  | Document the `ENABLE_SKILLS_ROUTING` flag and local evaluation workflow     |
 | `docs/reference/FILE-INDEX.md`                           | Register this document in the documentation index                           |

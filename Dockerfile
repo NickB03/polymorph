@@ -1,5 +1,5 @@
 # Build stage - Use Node for Next.js 16 compatibility (Bun lacks worker_threads support on arm64)
-ARG NEXT_PUBLIC_APP_URL=https://polymorph-nb.vercel.app
+ARG NEXT_PUBLIC_APP_URL=https://polymorph.fyi
 ARG BUN_VERSION=1.3.9
 
 FROM node:22-slim AS builder

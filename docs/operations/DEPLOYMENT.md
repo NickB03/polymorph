@@ -33,7 +33,7 @@ ADMIN_USER_ID=[SUPABASE_USER_ID_FOR_ADMIN_ACCESS]
 For the current Vercel production alias, set:
 
 ```bash
-NEXT_PUBLIC_APP_URL=https://polymorph-nb.vercel.app
+NEXT_PUBLIC_APP_URL=https://polymorph.fyi
 ```
 
 If cloud controls are enabled:
@@ -81,7 +81,7 @@ ORS_API_KEY=[YOUR_OPENROUTESERVICE_KEY]
 - Database migrations must be applied (`bun run migrate`) before accepting traffic
 - **Self-hosted Docker deployments:** Consider moving `bun run migrate` from the Docker entrypoint to a one-shot pre-deploy step to avoid race conditions with multi-replica deployments. The entrypoint currently runs migrations on every container start. (Polymorph itself deploys to Vercel; only Phoenix and the `polymorph-evals` cron run on Railway.)
 - At least one configured model/provider must be enabled at runtime
-- Monitor `https://polymorph-nb.vercel.app/api/health` rather than raw deployment URLs. Deployment URLs may still be protected by Vercel Authentication.
+- Monitor `https://polymorph.fyi/api/health` rather than raw deployment URLs. Deployment URLs may still be protected by Vercel Authentication.
 
 ## Rollback strategy
 
@@ -186,7 +186,7 @@ The `services/evals/` directory contains a scheduled evaluation pipeline:
 
 > **The `evaluators` project in the Phoenix UI is Phoenix-managed, not ours.** When an experiment runs, Phoenix auto-routes the judge model's LLM spans into a reserved project called `evaluators`. You can't rename, delete, or reconfigure it — it exists anywhere experiments run. This is why you'll see traces there even though `services/evals/` never sets `PHOENIX_PROJECT_NAME`.
 >
-> **Ad-hoc evals run locally against `bun dev`, not against preview deployments.** The Railway cron above targets production (`EVAL_RUNNER_URL=https://polymorph-nb.vercel.app`). For one-off runs on a branch, run `services/evals/` locally with `EVAL_RUNNER_URL=http://localhost:43100` and a matching `EVAL_RUNNER_SECRET` set in both your local `.env.local` and the shell invoking the evals service. The `capability`, `regression`, and `traffic-monitor` modes call `/api/evals/run` (secret-gated); the `smoke` mode instead calls `/api/chat` directly using a Supabase seed user, so it needs `APP_URL` / `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SEED_USER_EMAIL` / `SEED_USER_PASSWORD` — see `services/evals/src/config.ts` for the exact required set per mode. Vercel Preview deployments intentionally do **not** have `EVAL_RUNNER_SECRET` configured, so `/api/evals/run` on a preview URL returns HTTP 403 — preview remains a visual-QA surface, not an eval target.
+> **Ad-hoc evals run locally against `bun dev`, not against preview deployments.** The Railway cron above targets production (`EVAL_RUNNER_URL=https://polymorph.fyi`). For one-off runs on a branch, run `services/evals/` locally with `EVAL_RUNNER_URL=http://localhost:43100` and a matching `EVAL_RUNNER_SECRET` set in both your local `.env.local` and the shell invoking the evals service. The `capability`, `regression`, and `traffic-monitor` modes call `/api/evals/run` (secret-gated); the `smoke` mode instead calls `/api/chat` directly using a Supabase seed user, so it needs `APP_URL` / `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SEED_USER_EMAIL` / `SEED_USER_PASSWORD` — see `services/evals/src/config.ts` for the exact required set per mode. Vercel Preview deployments intentionally do **not** have `EVAL_RUNNER_SECRET` configured, so `/api/evals/run` on a preview URL returns HTTP 403 — preview remains a visual-QA surface, not an eval target.
 >
 > For browser-only QA of authenticated admin pages such as `/admin/evals`, use
 > the [Browser QA runbook](runbooks/browser-qa-auth-admin.md) and local synthetic
@@ -221,8 +221,7 @@ These defaults are tuned for low-volume personal-project traffic. If you widen t
 | `PHOENIX_HOST`                  | `http://phoenix.railway.internal:6006`                                                                          |
 | `PHOENIX_PUBLIC_URL`            | Public Phoenix URL used in persisted dashboard links                                                            |
 | `PHOENIX_API_KEY`               | Phoenix System API key                                                                                          |
-| `JUDGE_API_KEY`                 | OpenRouter API key for the judge model (preferred)                                                              |
-| `OPENROUTER_API_KEY`            | Fallback; read by the OpenRouter SDK when `JUDGE_API_KEY` is unset                                              |
+| `JUDGE_API_KEY`                 | OpenRouter API key for the judge model; required by `services/evals` startup validation                         |
 | `JUDGE_BASE_URL`                | `https://openrouter.ai/api/v1`                                                                                  |
 | `JUDGE_MODEL`                   | `google/gemini-3.1-flash-lite-preview` (default)                                                                |
 | `JUDGE_REASONING_ENABLED`       | `true` (default)                                                                                                |

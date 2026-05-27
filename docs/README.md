@@ -42,7 +42,7 @@ Deep dives into how Polymorph works internally.
 Lookup material for day-to-day development.
 
 - [API Reference](reference/API.md) -- Chat API endpoint, request/response schemas, error codes
-- [File Index](reference/FILE-INDEX.md) -- Every file in the repository with a one-line description
+- [File Index](reference/FILE-INDEX.md) -- Curated repository file map with one-line descriptions for the main code, config, and docs surfaces
 - [ESLint Conventions](reference/ESLINT-CONVENTIONS.md) -- Flat config layout and the eslint-disable discipline enforced by a test
 
 ## Operations

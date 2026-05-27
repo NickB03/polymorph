@@ -1,5 +1,7 @@
 # Tool-Selection Evaluator Implementation Plan
 
+> **Status:** Completed historical plan with one operational caveat: the evaluator and dashboard labels are implemented, but judge validation against live/human-labeled production calls should be tracked in an active runbook if it is still required.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a `tool_selection` LLM-judge evaluator that scores whether the model chose the _right_ tool for a user query — complementing the existing deterministic `tool_usage` which only checks whether _any_ search tool was called and produced results.
