@@ -66,7 +66,7 @@ describe('NewUserDemoPopup', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('opens for eligible first-run users and renders the demo video', async () => {
+  it('opens for eligible first-run users and autoplays the demo video without native controls', async () => {
     render(<NewUserDemoPopup enabled />)
 
     expect(
@@ -75,13 +75,13 @@ describe('NewUserDemoPopup', () => {
 
     const video = screen.getByTitle('Polymorph demo video')
     expect(video).toHaveAttribute('src', '/demos/polymorph-demo.mp4')
-    expect(video).toHaveAttribute('controls')
+    expect(video).not.toHaveAttribute('controls')
     expect(video).toHaveAttribute('muted')
     expect(video).toHaveAttribute('playsinline')
     expect(video).toHaveAttribute('autoplay')
   })
 
-  it('does not autoplay when reduced motion is preferred', async () => {
+  it('autoplays regardless of reduced-motion preference', async () => {
     vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
       matches: query === '(prefers-reduced-motion: reduce)',
       media: query,
@@ -96,13 +96,14 @@ describe('NewUserDemoPopup', () => {
     render(<NewUserDemoPopup enabled />)
 
     const video = await screen.findByTitle('Polymorph demo video')
-    expect(video).not.toHaveAttribute('autoplay')
+    expect(video).toHaveAttribute('autoplay')
   })
 
-  it('persists dismissal when skipped', async () => {
-    render(<NewUserDemoPopup enabled />)
+  it('persists dismissal and fires onStart when closed via the X button', async () => {
+    const onStart = vi.fn()
+    render(<NewUserDemoPopup enabled onStart={onStart} />)
 
-    fireEvent.click(await screen.findByRole('button', { name: /skip/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /close/i }))
 
     await waitFor(() => {
       expect(
@@ -110,6 +111,7 @@ describe('NewUserDemoPopup', () => {
       ).not.toBeInTheDocument()
     })
     expect(window.localStorage.getItem(storageKey)).toContain('dismissedAt')
+    expect(onStart).toHaveBeenCalledTimes(1)
   })
 
   it('stays hidden when already dismissed', () => {
@@ -123,17 +125,5 @@ describe('NewUserDemoPopup', () => {
     expect(
       screen.queryByRole('dialog', { name: /watch polymorph in motion/i })
     ).not.toBeInTheDocument()
-  })
-
-  it('runs the primary action before closing', async () => {
-    const onStart = vi.fn()
-    render(<NewUserDemoPopup enabled onStart={onStart} />)
-
-    fireEvent.click(
-      await screen.findByRole('button', { name: /start exploring/i })
-    )
-
-    expect(onStart).toHaveBeenCalledTimes(1)
-    expect(window.localStorage.getItem(storageKey)).toContain('dismissedAt')
   })
 })
