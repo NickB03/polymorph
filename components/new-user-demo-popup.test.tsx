@@ -5,9 +5,43 @@ import { NewUserDemoPopup } from './new-user-demo-popup'
 
 const storageKey = 'polymorph:new-user-demo:v1'
 
+function createTestStorage(): Storage {
+  const store = new Map<string, string>()
+
+  return {
+    get length() {
+      return store.size
+    },
+    clear() {
+      store.clear()
+    },
+    getItem(key) {
+      return store.get(key) ?? null
+    },
+    key(index) {
+      return Array.from(store.keys())[index] ?? null
+    },
+    removeItem(key) {
+      store.delete(key)
+    },
+    setItem(key, value) {
+      store.set(key, value)
+    }
+  }
+}
+
 beforeEach(() => {
-  localStorage.clear()
   vi.restoreAllMocks()
+  const storage = createTestStorage()
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: storage
+  })
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: storage
+  })
+  window.localStorage.clear()
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({
@@ -75,11 +109,14 @@ describe('NewUserDemoPopup', () => {
         screen.queryByRole('dialog', { name: /watch polymorph in motion/i })
       ).not.toBeInTheDocument()
     })
-    expect(localStorage.getItem(storageKey)).toContain('dismissedAt')
+    expect(window.localStorage.getItem(storageKey)).toContain('dismissedAt')
   })
 
   it('stays hidden when already dismissed', () => {
-    localStorage.setItem(storageKey, JSON.stringify({ dismissedAt: 'now' }))
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify({ dismissedAt: 'now' })
+    )
 
     render(<NewUserDemoPopup enabled />)
 
@@ -97,6 +134,6 @@ describe('NewUserDemoPopup', () => {
     )
 
     expect(onStart).toHaveBeenCalledTimes(1)
-    expect(localStorage.getItem(storageKey)).toContain('dismissedAt')
+    expect(window.localStorage.getItem(storageKey)).toContain('dismissedAt')
   })
 })
