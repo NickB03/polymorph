@@ -20,6 +20,7 @@ import {
 
 import { ChatHistoryClient } from './sidebar/chat-history-client'
 import { ChatHistorySkeleton } from './sidebar/chat-history-skeleton'
+import { TOUR_STEP_IDS } from './tour'
 
 export default function AppSidebar({ hasUser = false }: { hasUser?: boolean }) {
   const router = useRouter()
@@ -36,7 +37,12 @@ export default function AppSidebar({ hasUser = false }: { hasUser?: boolean }) {
   )
 
   return (
-    <Sidebar side="left" variant="sidebar" collapsible="offcanvas">
+    <Sidebar
+      id={TOUR_STEP_IDS.SIDEBAR}
+      side="left"
+      variant="sidebar"
+      collapsible="offcanvas"
+    >
       <SidebarHeader className="flex flex-row justify-between items-center">
         <Link
           href="/"

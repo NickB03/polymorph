@@ -27,6 +27,7 @@ import { ActionButtons } from './action-buttons'
 import { FileUploadButton, readFileAsDataUrl } from './file-upload-button'
 import { ModeSelector } from './mode-selector'
 import { PolymorphWordmark } from './polymorph-wordmark'
+import { TOUR_STEP_IDS } from './tour'
 import { UploadedFileList } from './uploaded-file-list'
 
 // Constants for timing delays
@@ -323,6 +324,7 @@ export function ChatPanel({
         >
           <Textarea
             ref={inputRef}
+            id={TOUR_STEP_IDS.CHAT_INPUT}
             name="input"
             rows={1}
             maxRows={5}
@@ -459,6 +461,7 @@ export function ChatPanel({
         {/* Action buttons for prompt suggestions */}
         {messages.length === 0 && (
           <div
+            id={TOUR_STEP_IDS.SUGGESTIONS}
             data-testid="empty-state-action-buttons"
             data-empty-chat-suggestions="true"
             className={cn(
