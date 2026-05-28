@@ -16,6 +16,7 @@ function detectFirstVisit(): boolean {
       ) === null
     )
   } catch {
+    // Private browsing or storage disabled — treat as NOT a first visit so the welcome dialog stays hidden.
     return false
   }
 }
@@ -35,7 +36,7 @@ export function TourHost() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- canonical client-mount gate; runs exactly once after first paint to enable localStorage reads safely
     setMounted(true)
   }, [])
 
