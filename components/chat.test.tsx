@@ -433,6 +433,23 @@ describe('Chat new user demo popup', () => {
         onStart: expect.any(Function)
       })
     )
+
+    const textarea = document.createElement('textarea')
+    textarea.setAttribute('name', 'input')
+    document.body.appendChild(textarea)
+    const popupProps = mockNewUserDemoPopup.mock.calls.at(-1)?.[0] as {
+      onStart: () => void
+    }
+
+    popupProps.onStart()
+
+    try {
+      await waitFor(() => {
+        expect(document.activeElement).toBe(textarea)
+      })
+    } finally {
+      textarea.remove()
+    }
   })
 
   it('disables the demo popup for an existing chat id', async () => {

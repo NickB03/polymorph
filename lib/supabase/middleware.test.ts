@@ -21,4 +21,8 @@ describe('isPublicPath', () => {
   it('keeps metadata routes public', () => {
     expect(isPublicPath('/manifest.webmanifest')).toBe(true)
   })
+
+  it('keeps demo assets public', () => {
+    expect(isPublicPath('/demos/polymorph-demo.mp4')).toBe(true)
+  })
 })

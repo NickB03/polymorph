@@ -860,9 +860,11 @@ export function Chat({
   const isNewUserDemoEnabled =
     messages.length === 0 && !providedId && !query?.trim()
   const handleNewUserDemoStart = useCallback(() => {
-    document
-      .querySelector<HTMLTextAreaElement>('textarea[name="input"]')
-      ?.focus()
+    window.setTimeout(() => {
+      document
+        .querySelector<HTMLTextAreaElement>('textarea[name="input"]')
+        ?.focus()
+    }, 0)
   }, [])
 
   return (
