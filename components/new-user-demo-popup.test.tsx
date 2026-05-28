@@ -126,4 +126,38 @@ describe('NewUserDemoPopup', () => {
       screen.queryByRole('dialog', { name: /watch polymorph in motion/i })
     ).not.toBeInTheDocument()
   })
+
+  it('reflects video playback progress in the progress bar', async () => {
+    render(<NewUserDemoPopup enabled />)
+
+    const video = (await screen.findByTitle(
+      'Polymorph demo video'
+    )) as HTMLVideoElement
+    Object.defineProperty(video, 'duration', { configurable: true, value: 60 })
+    Object.defineProperty(video, 'currentTime', {
+      configurable: true,
+      value: 15
+    })
+
+    fireEvent.timeUpdate(video)
+
+    const fill = screen.getByTestId('demo-video-progress')
+    expect(fill).toHaveStyle({ transform: 'scaleX(0.25)' })
+  })
+
+  it('auto-closes and persists dismissal when the video ends', async () => {
+    const onStart = vi.fn()
+    render(<NewUserDemoPopup enabled onStart={onStart} />)
+
+    const video = await screen.findByTitle('Polymorph demo video')
+    fireEvent.ended(video)
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('dialog', { name: /watch polymorph in motion/i })
+      ).not.toBeInTheDocument()
+    })
+    expect(window.localStorage.getItem(storageKey)).toContain('dismissedAt')
+    expect(onStart).toHaveBeenCalledTimes(1)
+  })
 })

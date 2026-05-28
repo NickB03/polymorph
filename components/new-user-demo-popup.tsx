@@ -46,6 +46,7 @@ function persistDismissal() {
 
 export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
   const [open, setOpen] = React.useState(false)
+  const [progress, setProgress] = React.useState(0)
 
   React.useEffect(() => {
     let active = true
@@ -78,6 +79,17 @@ export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
     element?.setAttribute('muted', '')
   }, [])
 
+  const handleTimeUpdate = React.useCallback(
+    (event: React.SyntheticEvent<HTMLVideoElement>) => {
+      const video = event.currentTarget
+      if (!video.duration || !Number.isFinite(video.duration)) {
+        return
+      }
+      setProgress(Math.min(1, Math.max(0, video.currentTime / video.duration)))
+    },
+    []
+  )
+
   return (
     <Dialog
       open={open}
@@ -95,16 +107,30 @@ export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <video
-          ref={setVideoRef}
-          title="Polymorph demo video"
-          src="/demos/polymorph-demo.mp4"
-          muted
-          playsInline
-          autoPlay
-          preload="auto"
-          className="block aspect-video w-full rounded-lg bg-background"
-        />
+        <div className="relative overflow-hidden rounded-lg">
+          <video
+            ref={setVideoRef}
+            title="Polymorph demo video"
+            src="/demos/polymorph-demo.mp4"
+            muted
+            playsInline
+            autoPlay
+            preload="auto"
+            onTimeUpdate={handleTimeUpdate}
+            onEnded={dismiss}
+            className="block aspect-video w-full bg-background"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-white/15"
+          >
+            <div
+              data-testid="demo-video-progress"
+              className="h-full origin-left bg-accent-blue transition-transform duration-200 ease-linear"
+              style={{ transform: `scaleX(${progress})` }}
+            />
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )
