@@ -90,6 +90,18 @@ export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
     []
   )
 
+  const handleVideoClick = React.useCallback(
+    (event: React.MouseEvent<HTMLVideoElement>) => {
+      const video = event.currentTarget
+      if (video.paused || video.ended) {
+        void video.play()
+      } else {
+        video.pause()
+      }
+    },
+    []
+  )
+
   return (
     <Dialog
       open={open}
@@ -107,7 +119,7 @@ export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative overflow-hidden rounded-lg">
+        <div className="relative aspect-[160/84] overflow-hidden rounded-lg">
           <video
             ref={setVideoRef}
             title="Polymorph demo video"
@@ -118,7 +130,8 @@ export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
             preload="auto"
             onTimeUpdate={handleTimeUpdate}
             onEnded={dismiss}
-            className="block aspect-video w-full bg-background"
+            onClick={handleVideoClick}
+            className="block aspect-video w-full cursor-pointer bg-background"
           />
           <div
             aria-hidden

@@ -145,6 +145,26 @@ describe('NewUserDemoPopup', () => {
     expect(fill).toHaveStyle({ transform: 'scaleX(0.25)' })
   })
 
+  it('toggles playback when the video is clicked', async () => {
+    render(<NewUserDemoPopup enabled />)
+
+    const video = (await screen.findByTitle(
+      'Polymorph demo video'
+    )) as HTMLVideoElement
+    const playSpy = vi.spyOn(video, 'play').mockResolvedValue()
+    const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
+
+    Object.defineProperty(video, 'paused', { configurable: true, value: false })
+    fireEvent.click(video)
+    expect(pauseSpy).toHaveBeenCalledTimes(1)
+    expect(playSpy).not.toHaveBeenCalled()
+
+    Object.defineProperty(video, 'paused', { configurable: true, value: true })
+    fireEvent.click(video)
+    expect(playSpy).toHaveBeenCalledTimes(1)
+    expect(pauseSpy).toHaveBeenCalledTimes(1)
+  })
+
   it('auto-closes and persists dismissal when the video ends', async () => {
     const onStart = vi.fn()
     render(<NewUserDemoPopup enabled onStart={onStart} />)
