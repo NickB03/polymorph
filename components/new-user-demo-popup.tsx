@@ -111,7 +111,10 @@ export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
         }
       }}
     >
-      <DialogContent className="max-w-5xl gap-0 border-border bg-background p-0 sm:p-0">
+      <DialogContent
+        onOpenAutoFocus={event => event.preventDefault()}
+        className="max-w-5xl gap-0 border-border bg-background p-0 sm:p-0"
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>Watch Polymorph in motion</DialogTitle>
           <DialogDescription>
