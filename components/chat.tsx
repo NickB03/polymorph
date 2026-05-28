@@ -54,6 +54,7 @@ import { ChatPanel } from './chat-panel'
 import { buildChatRequestBody, getLatestGuestCanvasToken } from './chat-request'
 import { DragOverlay } from './drag-overlay'
 import { ErrorModal } from './error-modal'
+import { NewUserDemoPopup } from './new-user-demo-popup'
 
 const EMPTY_MESSAGES: UIMessage[] = []
 
@@ -856,6 +857,15 @@ export function Chat({
     () => collectInitialPartIds(savedMessages),
     [savedMessages]
   )
+  const isNewUserDemoEnabled =
+    messages.length === 0 && !providedId && !query?.trim()
+  const handleNewUserDemoStart = useCallback(() => {
+    window.setTimeout(() => {
+      document
+        .querySelector<HTMLTextAreaElement>('textarea[name="input"]')
+        ?.focus()
+    }, 0)
+  }, [])
 
   return (
     <HydrationAnimationProvider initialPartIds={initialPartIds}>
@@ -954,6 +964,10 @@ export function Chat({
           />
         )}
         <DragOverlay visible={dragHandlers.isDragging} />
+        <NewUserDemoPopup
+          enabled={isNewUserDemoEnabled}
+          onStart={handleNewUserDemoStart}
+        />
         <ErrorModal
           open={errorModal.open}
           onOpenChange={open => setErrorModal(prev => ({ ...prev, open }))}

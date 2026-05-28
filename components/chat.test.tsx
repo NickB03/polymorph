@@ -11,6 +11,7 @@ const mockUseChat = vi.fn()
 const mockUseVoiceConversation = vi.fn()
 const mockChatMessages = vi.fn((_props?: unknown) => null)
 const mockChatPanel = vi.fn((_props?: unknown) => null)
+const mockNewUserDemoPopup = vi.fn((_props?: unknown) => null)
 const mockUseSoftKeyboardOpen = vi.fn(() => false)
 const mockToast = vi.fn()
 const mockToastError = vi.fn()
@@ -153,6 +154,13 @@ vi.mock('./error-modal', () => ({
   ErrorModal: () => null
 }))
 
+vi.mock('./new-user-demo-popup', () => ({
+  NewUserDemoPopup: (props: unknown) => {
+    mockNewUserDemoPopup(props)
+    return null
+  }
+}))
+
 vi.mock('./voice/voice-orb', () => ({
   VoiceOrb: () => null
 }))
@@ -211,6 +219,7 @@ beforeEach(() => {
   mockUseVoiceConversation.mockReset()
   mockChatMessages.mockClear()
   mockChatPanel.mockClear()
+  mockNewUserDemoPopup.mockReset()
   mockUseSoftKeyboardOpen.mockReset()
   mockUseSoftKeyboardOpen.mockReturnValue(false)
   mockToast.mockReset()
@@ -407,6 +416,68 @@ describe('Chat soft keyboard layout', () => {
     expect(mockChatPanel.mock.calls.at(-1)?.[0]).toMatchObject({
       isSoftKeyboardOpen: true
     })
+  })
+})
+
+describe('Chat new user demo popup', () => {
+  it('enables the demo popup for an empty root chat', async () => {
+    mockUseChat.mockReturnValue(makeUseChatReturnValue())
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat savedMessages={[]} />)
+
+    expect(mockNewUserDemoPopup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabled: true,
+        onStart: expect.any(Function)
+      })
+    )
+
+    const textarea = document.createElement('textarea')
+    textarea.setAttribute('name', 'input')
+    document.body.appendChild(textarea)
+    const popupProps = mockNewUserDemoPopup.mock.calls.at(-1)?.[0] as {
+      onStart: () => void
+    }
+
+    popupProps.onStart()
+
+    try {
+      await waitFor(() => {
+        expect(document.activeElement).toBe(textarea)
+      })
+    } finally {
+      textarea.remove()
+    }
+  })
+
+  it('disables the demo popup for an existing chat id', async () => {
+    mockUseChat.mockReturnValue(makeUseChatReturnValue())
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat id="chat-existing" savedMessages={[]} />)
+
+    expect(mockNewUserDemoPopup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabled: false
+      })
+    )
+  })
+
+  it('disables the demo popup for an initial query', async () => {
+    mockUseChat.mockReturnValue(makeUseChatReturnValue())
+
+    const { Chat } = await import('./chat')
+
+    render(<Chat savedMessages={[]} query="research local-first evals" />)
+
+    expect(mockNewUserDemoPopup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabled: false
+      })
+    )
   })
 })
 
