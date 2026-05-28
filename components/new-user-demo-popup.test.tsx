@@ -99,7 +99,7 @@ describe('NewUserDemoPopup', () => {
     expect(video).toHaveAttribute('autoplay')
   })
 
-  it('persists dismissal and fires onStart when closed via the X button', async () => {
+  it('persists dismissal without firing onStart when closed via the X button', async () => {
     const onStart = vi.fn()
     render(<NewUserDemoPopup enabled onStart={onStart} />)
 
@@ -111,7 +111,7 @@ describe('NewUserDemoPopup', () => {
       ).not.toBeInTheDocument()
     })
     expect(window.localStorage.getItem(storageKey)).toContain('dismissedAt')
-    expect(onStart).toHaveBeenCalledTimes(1)
+    expect(onStart).not.toHaveBeenCalled()
   })
 
   it('stays hidden when already dismissed', () => {

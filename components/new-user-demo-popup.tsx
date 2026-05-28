@@ -72,8 +72,13 @@ export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
   const dismiss = React.useCallback(() => {
     persistDismissal()
     setOpen(false)
+    setProgress(0)
+  }, [])
+
+  const handleEnded = React.useCallback(() => {
+    dismiss()
     onStart?.()
-  }, [onStart])
+  }, [dismiss, onStart])
 
   const setVideoRef = React.useCallback((element: HTMLVideoElement | null) => {
     element?.setAttribute('muted', '')
@@ -93,7 +98,7 @@ export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
   const handleVideoClick = React.useCallback(
     (event: React.MouseEvent<HTMLVideoElement>) => {
       const video = event.currentTarget
-      if (video.paused || video.ended) {
+      if (video.paused) {
         void video.play()
       } else {
         video.pause()
@@ -132,7 +137,7 @@ export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
             autoPlay
             preload="auto"
             onTimeUpdate={handleTimeUpdate}
-            onEnded={dismiss}
+            onEnded={handleEnded}
             onClick={handleVideoClick}
             className="block aspect-video w-full cursor-pointer bg-background"
           />
