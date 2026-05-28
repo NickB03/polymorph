@@ -6,6 +6,7 @@ import { SidebarProvider } from '@/components/ui/sidebar'
 import AppSidebar from '@/components/app-sidebar'
 import { CanvasRoot } from '@/components/canvas/canvas-root'
 import Header from '@/components/header'
+import { TourHost } from '@/components/tour'
 
 export default async function ChatLayout({
   children
@@ -35,6 +36,7 @@ export default async function ChatLayout({
           <CanvasRoot>{children}</CanvasRoot>
         </main>
       </div>
+      <TourHost />
     </SidebarProvider>
   )
 }
