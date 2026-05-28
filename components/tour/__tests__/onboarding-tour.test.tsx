@@ -1,5 +1,5 @@
-import { render, renderHook } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { act, render, renderHook } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { OnboardingTour, useTourAutoStart } from '../onboarding-tour'
 import { TourProvider, useTour } from '../tour'
@@ -34,6 +34,14 @@ describe('OnboardingTour', () => {
 })
 
 describe('useTourAutoStart', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('does nothing when the tour is already completed', () => {
     const { result } = renderHook(
       () => {
@@ -45,5 +53,30 @@ describe('useTourAutoStart', () => {
       }
     )
     expect(result.current.isActive).toBe(false)
+  })
+
+  it('starts the tour after the delay when isFirstVisit is true', () => {
+    const { result } = renderHook(
+      () => {
+        useTourAutoStart({ isFirstVisit: true, delay: 100 })
+        return useTour()
+      },
+      {
+        wrapper: ({ children }) =>
+          withProvider(
+            <>
+              <OnboardingTour />
+              {children}
+            </>,
+            'autostart-happy'
+          )
+      }
+    )
+    expect(result.current.isActive).toBe(false)
+    act(() => {
+      vi.advanceTimersByTime(100)
+    })
+    expect(result.current.isActive).toBe(true)
+    expect(result.current.currentStep).toBe(0)
   })
 })
