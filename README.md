@@ -65,6 +65,18 @@
 
 <p align="center"><sub>Three-agent chat system with generative UI · See <a href="docs/architecture/OVERVIEW.md">architecture overview</a> for the full breakdown.</sub></p>
 
+## Evaluation
+
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/eval-system-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/eval-system.png">
+    <img alt="Polymorph evaluation system: a Railway cron orchestrates four suites (capability, regression, traffic-monitor, smoke) that replay cases through the app, score them with two deterministic and five LLM-judge evaluators, then persist results to Phoenix and Postgres for the admin dashboard." src="docs/assets/eval-system.png" width="960">
+  </picture>
+</div>
+
+<p align="center"><sub>Offline LLM-judge pipeline · Railway cron → Phoenix experiments → Postgres dashboard.</sub></p>
+
 ## Attribution
 
 Polymorph is derived from [miurla/morphic](https://github.com/miurla/morphic) under the Apache-2.0 license. See [LICENSE](LICENSE) for details.
