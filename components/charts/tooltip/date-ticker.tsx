@@ -22,7 +22,11 @@ export function DateTicker({ currentIndex, labels, visible }: DateTickerProps) {
     })
   }, [labels])
 
-  // Get unique months and their indices
+  // Detect each month run start. uniqueMonths and indices are always pushed
+  // together in this loop, so they share length and per-position alignment —
+  // monthIndices.indices[i] is the parsedLabels start index of uniqueMonths[i].
+  // (Despite the name, uniqueMonths is not globally unique: data spanning a
+  // year boundary produces e.g. ['Nov','Dec','Jan',...,'Nov','Dec'].)
   const monthIndices = useMemo(() => {
     const uniqueMonths: string[] = []
     const indices: number[] = []

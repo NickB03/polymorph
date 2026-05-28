@@ -3,42 +3,66 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DateTicker } from './date-ticker'
 
+const DUPLICATE_KEY_PATTERN = /two children with the same key/i
+
 describe('DateTicker', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const originalError = console.error
+    consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation((...args: unknown[]) => {
+        // Only suppress the duplicate-key warning we're explicitly asserting
+        // against; let every other React/console error through so unrelated
+        // regressions still surface in the test output.
+        if (
+          typeof args[0] === 'string' &&
+          DUPLICATE_KEY_PATTERN.test(args[0])
+        ) {
+          return
+        }
+        originalError(...args)
+      })
   })
 
   afterEach(() => {
     consoleErrorSpy.mockRestore()
   })
 
-  it('does not emit duplicate-key warnings when labels repeat', () => {
-    // Two TrendPoints on the same calendar day or in different years both
-    // format to the same "MMM D" label — the renderer must still produce
-    // unique React keys.
+  function expectNoDuplicateKeyWarning() {
+    const offending = consoleErrorSpy.mock.calls.find(call =>
+      typeof call[0] === 'string' ? DUPLICATE_KEY_PATTERN.test(call[0]) : false
+    )
+    expect(offending, 'unexpected duplicate-key warning').toBeUndefined()
+  }
+
+  it('renders one day row per label without duplicate-key warnings when day labels repeat', () => {
+    // Two TrendPoints on the same calendar day (multiple runs in one day, or
+    // the same date across years) both format to "MMM D" — the renderer must
+    // still produce unique React keys, and every row must survive reconcile.
     const labels = ['May 24', 'May 25', 'May 25', 'May 26']
 
-    render(<DateTicker currentIndex={0} labels={labels} visible />)
-
-    const duplicateKeyWarning = consoleErrorSpy.mock.calls.find(call =>
-      String(call[0] ?? '').includes('two children with the same key')
+    const { container } = render(
+      <DateTicker currentIndex={0} labels={labels} visible />
     )
-    expect(duplicateKeyWarning).toBeUndefined()
+
+    // Each parsedLabel must render its own row; if React collapsed duplicates
+    // the count would be < labels.length even without the warning text check.
+    const dayRows = container.querySelectorAll(
+      '[class*="flex-col"] > div > span'
+    )
+    // Day stack contains labels.length spans; month stack contains uniqueMonths.length spans.
+    // Both stacks live under the same .flex-col layout, so we check totals.
+    expect(dayRows.length).toBeGreaterThanOrEqual(labels.length)
+    expectNoDuplicateKeyWarning()
   })
 
-  it('does not emit duplicate-key warnings when month runs repeat across years', () => {
-    // Data spanning a year boundary produces month runs like
-    // ['Nov','Dec','Jan','Feb','Nov','Dec'] — the month stack must also key
-    // by position, not just the month string.
+  it('renders each month run separately when month labels repeat across a year boundary', () => {
     const labels = ['Nov 30', 'Dec 1', 'Jan 1', 'Feb 1', 'Nov 30', 'Dec 1']
 
     render(<DateTicker currentIndex={0} labels={labels} visible />)
 
-    const duplicateKeyWarning = consoleErrorSpy.mock.calls.find(call =>
-      String(call[0] ?? '').includes('two children with the same key')
-    )
-    expect(duplicateKeyWarning).toBeUndefined()
+    expectNoDuplicateKeyWarning()
   })
 })
