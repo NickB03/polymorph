@@ -20,6 +20,5 @@ describe('TOUR_STEP_IDS', () => {
 describe('TOUR_STORAGE_KEYS', () => {
   it('namespaces all keys under polymorph-tour-', () => {
     expect(TOUR_STORAGE_KEYS.TOUR_STATE_PREFIX).toBe('polymorph-tour-')
-    expect(TOUR_STORAGE_KEYS.FORCE_TOUR).toBe('polymorph-tour-force-mode')
   })
 })

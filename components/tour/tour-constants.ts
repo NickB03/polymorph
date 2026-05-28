@@ -8,6 +8,5 @@ export const TOUR_STEP_IDS = {
 export type TourStepId = (typeof TOUR_STEP_IDS)[keyof typeof TOUR_STEP_IDS]
 
 export const TOUR_STORAGE_KEYS = {
-  FORCE_TOUR: 'polymorph-tour-force-mode',
   TOUR_STATE_PREFIX: 'polymorph-tour-'
 } as const

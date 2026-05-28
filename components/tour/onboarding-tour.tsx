@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react'
 
+import { useIsMobile } from '@/hooks/use-mobile'
+
 import type { TourStep } from './tour'
 import { useTour } from './tour'
 import { TOUR_STEP_IDS } from './tour-constants'
@@ -68,9 +70,13 @@ const onboardingSteps: TourStep[] = [
 
 export function OnboardingTour() {
   const { setSteps } = useTour()
+  const isMobile = useIsMobile()
   useEffect(() => {
-    setSteps(onboardingSteps)
-  }, [setSteps])
+    // The 4th step targets the desktop sidebar panel. On mobile that surface is a
+    // portaled <Sheet> which doesn't expose a stable DOM target, so we drop the
+    // step rather than show a spotlight in the wrong place.
+    setSteps(isMobile ? onboardingSteps.slice(0, 3) : onboardingSteps)
+  }, [setSteps, isMobile])
   return null
 }
 
