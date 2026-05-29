@@ -1,5 +1,6 @@
 import { desc, eq } from 'drizzle-orm'
 
+import { carsearchSeedListings } from '@/lib/carsearch/seed/snapshot'
 import type {
   CarsearchListing,
   CarsearchPriceHistory,
@@ -109,7 +110,11 @@ export async function listActiveCarsearchListings() {
     .from(carsearchListings)
     .where(eq(carsearchListings.isActive, true))
 
-  return rows.map(toCarsearchListing)
+  if (rows.length) {
+    return rows.map(toCarsearchListing)
+  }
+
+  return carsearchSeedListings.filter(listing => listing.isActive)
 }
 
 export async function getCarsearchListing(vin: string) {
@@ -119,7 +124,11 @@ export async function getCarsearchListing(vin: string) {
     .where(eq(carsearchListings.vin, vin))
     .limit(1)
 
-  return rows[0] ? toCarsearchListing(rows[0]) : null
+  if (rows[0]) {
+    return toCarsearchListing(rows[0])
+  }
+
+  return carsearchSeedListings.find(listing => listing.vin === vin) ?? null
 }
 
 export async function listCarsearchPriceHistory(vin: string) {
@@ -129,7 +138,22 @@ export async function listCarsearchPriceHistory(vin: string) {
     .where(eq(carsearchPriceHistory.vin, vin))
     .orderBy(desc(carsearchPriceHistory.observedAt))
 
-  return rows.map(toCarsearchPriceHistory)
+  if (rows.length) {
+    return rows.map(toCarsearchPriceHistory)
+  }
+
+  const listing = carsearchSeedListings.find(item => item.vin === vin)
+  if (!listing) return []
+
+  return [
+    {
+      id: `seed-${listing.vin}`,
+      vin: listing.vin,
+      observedAt: listing.firstSeenAt,
+      price: listing.price,
+      sourceSite: listing.sourceSite
+    }
+  ]
 }
 
 export async function getLatestCarsearchRefreshRun() {
