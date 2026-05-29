@@ -29,7 +29,7 @@ export function CarsearchListingImage({
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
+    // eslint-disable-next-line @next/next/no-img-element -- Dealer images need native onError fallback.
     <img
       alt={alt}
       className={className}
