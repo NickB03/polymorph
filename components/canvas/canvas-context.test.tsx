@@ -44,7 +44,15 @@ function Harness() {
       >
         open-guest
       </button>
+      <button
+        onClick={() =>
+          void (canvas.openCanvasArtifact as any)('art-1', undefined, 'chat-1')
+        }
+      >
+        open-public
+      </button>
       <button onClick={() => canvas.focusCanvasArtifact('art-1')}>focus</button>
+      <button onClick={() => void canvas.reloadArtifact()}>reload</button>
       <button
         onClick={() =>
           canvas.setPendingWorkspace({
@@ -119,6 +127,56 @@ describe('CanvasProvider', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/canvas-artifacts/art-1?guestCanvasToken=guest-token-abc'
+      )
+    })
+  })
+
+  it('includes the public chat id on public artifact fetches', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => makeArtifactState()
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <CanvasProvider>
+        <Harness />
+      </CanvasProvider>
+    )
+
+    fireEvent.click(screen.getByText('open-public'))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/canvas-artifacts/art-1?chatId=chat-1'
+      )
+    })
+  })
+
+  it('keeps the public chat id when reloading a public artifact', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => makeArtifactState()
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <CanvasProvider>
+        <Harness />
+      </CanvasProvider>
+    )
+
+    fireEvent.click(screen.getByText('open-public'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('artifact-id')).toHaveTextContent('art-1')
+    })
+
+    fireEvent.click(screen.getByText('reload'))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        '/api/canvas-artifacts/art-1?chatId=chat-1'
       )
     })
   })

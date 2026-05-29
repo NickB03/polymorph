@@ -443,10 +443,18 @@ export function Chat({
           ) {
             attemptedThisRun.add(artifactData.artifactId)
             closeArtifactSidebar()
-            cv.openCanvasArtifact(
-              artifactData.artifactId,
-              latestGuestCanvasToken
-            )
+            if (providedId) {
+              cv.openCanvasArtifact(
+                artifactData.artifactId,
+                latestGuestCanvasToken,
+                providedId
+              )
+            } else {
+              cv.openCanvasArtifact(
+                artifactData.artifactId,
+                latestGuestCanvasToken
+              )
+            }
           }
         }
       }
@@ -483,7 +491,7 @@ export function Chat({
         }
       }
     }
-  }, [messages, closeArtifactSidebar, isGuest])
+  }, [messages, closeArtifactSidebar, isGuest, providedId])
 
   // Detect streaming canvas tool calls and show the progress tracker early.
   // Without this, the tracker only appears during sub-second server-side
@@ -597,7 +605,8 @@ export function Chat({
     closeArtifactSidebar()
     void canvasRef.current.openCanvasArtifact(
       initialCanvasArtifactId,
-      undefined
+      undefined,
+      providedId
     )
   }, [closeArtifactSidebar, initialCanvasArtifactId, providedId])
 
@@ -605,9 +614,13 @@ export function Chat({
   const handleCanvasArtifactClick = useCallback(
     (artifactId: string) => {
       closeArtifactSidebar()
-      canvas.focusCanvasArtifact(artifactId)
+      if (providedId) {
+        canvas.focusCanvasArtifact(artifactId, providedId)
+      } else {
+        canvas.focusCanvasArtifact(artifactId)
+      }
     },
-    [canvas, closeArtifactSidebar]
+    [canvas, closeArtifactSidebar, providedId]
   )
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

@@ -44,7 +44,7 @@ export default async function SearchPage(props: {
   }
 
   const messages: UIMessage[] = chat.messages
-  const canvasArtifact = await loadCanvasArtifactByChatId(id, userId)
+  const canvasArtifact = await loadCanvasArtifactByChatId(id, chat.userId)
 
   if (!hasRenderableConversationContent(messages) && !canvasArtifact) {
     notFound()

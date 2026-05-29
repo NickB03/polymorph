@@ -42,6 +42,15 @@ vi.mock('@/lib/canvas/service', () => ({
     mockLoadCanvasArtifactState(...args)
 }))
 
+// Mock db actions
+const mockGetChat = vi.fn()
+const mockLoadCanvasArtifactByChatId = vi.fn()
+vi.mock('@/lib/db/actions', () => ({
+  getChat: (...args: unknown[]) => mockGetChat(...args),
+  loadCanvasArtifactByChatId: (...args: unknown[]) =>
+    mockLoadCanvasArtifactByChatId(...args)
+}))
+
 import { GET } from './route'
 
 function makeArtifactState(overrides: Record<string, unknown> = {}) {
@@ -109,6 +118,106 @@ describe('GET /api/canvas-artifacts/[artifactId]', () => {
     })
 
     expect(response.status).toBe(401)
+  })
+
+  it('returns artifact state for anonymous viewers of a public chat', async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockGetChat.mockResolvedValue({
+      id: 'chat-1',
+      userId: 'owner-1',
+      visibility: 'public'
+    })
+    mockLoadCanvasArtifactByChatId.mockResolvedValue({ id: 'art-1' })
+    mockLoadCanvasArtifactState.mockResolvedValue(makeArtifactState())
+
+    const req = new Request(
+      'http://localhost/api/canvas-artifacts/art-1?chatId=chat-1'
+    )
+    const response = await GET(req, {
+      params: Promise.resolve({ artifactId: 'art-1' })
+    })
+
+    expect(response.status).toBe(200)
+    expect(mockGetChat).toHaveBeenCalledWith('chat-1', undefined)
+    expect(mockLoadCanvasArtifactByChatId).toHaveBeenCalledWith(
+      'chat-1',
+      'owner-1'
+    )
+    expect(mockLoadCanvasArtifactState).toHaveBeenCalledWith({
+      artifactId: 'art-1',
+      userId: 'owner-1'
+    })
+  })
+
+  it('returns artifact state for logged-in non-owners of a public chat', async () => {
+    mockGetCurrentUserId.mockResolvedValue('viewer-1')
+    mockLoadCanvasArtifactState
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(makeArtifactState())
+    mockGetChat.mockResolvedValue({
+      id: 'chat-1',
+      userId: 'owner-1',
+      visibility: 'public'
+    })
+    mockLoadCanvasArtifactByChatId.mockResolvedValue({ id: 'art-1' })
+
+    const req = new Request(
+      'http://localhost/api/canvas-artifacts/art-1?chatId=chat-1'
+    )
+    const response = await GET(req, {
+      params: Promise.resolve({ artifactId: 'art-1' })
+    })
+
+    expect(response.status).toBe(200)
+    expect(mockLoadCanvasArtifactState).toHaveBeenNthCalledWith(1, {
+      artifactId: 'art-1',
+      userId: 'viewer-1'
+    })
+    expect(mockGetChat).toHaveBeenCalledWith('chat-1', 'viewer-1')
+    expect(mockLoadCanvasArtifactState).toHaveBeenNthCalledWith(2, {
+      artifactId: 'art-1',
+      userId: 'owner-1'
+    })
+  })
+
+  it('rejects public chat access when the artifact does not belong to that chat', async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockGetChat.mockResolvedValue({
+      id: 'chat-1',
+      userId: 'owner-1',
+      visibility: 'public'
+    })
+    mockLoadCanvasArtifactByChatId.mockResolvedValue({ id: 'other-artifact' })
+
+    const req = new Request(
+      'http://localhost/api/canvas-artifacts/art-1?chatId=chat-1'
+    )
+    const response = await GET(req, {
+      params: Promise.resolve({ artifactId: 'art-1' })
+    })
+
+    expect(response.status).toBe(404)
+    expect(mockLoadCanvasArtifactState).not.toHaveBeenCalled()
+  })
+
+  it('rejects public chat access for private chats', async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockGetChat.mockResolvedValue({
+      id: 'chat-1',
+      userId: 'owner-1',
+      visibility: 'private'
+    })
+
+    const req = new Request(
+      'http://localhost/api/canvas-artifacts/art-1?chatId=chat-1'
+    )
+    const response = await GET(req, {
+      params: Promise.resolve({ artifactId: 'art-1' })
+    })
+
+    expect(response.status).toBe(404)
+    expect(mockLoadCanvasArtifactByChatId).not.toHaveBeenCalled()
+    expect(mockLoadCanvasArtifactState).not.toHaveBeenCalled()
   })
 
   it('rejects expired guest token', async () => {

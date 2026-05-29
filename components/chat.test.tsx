@@ -862,7 +862,8 @@ describe('Chat route sync', () => {
     await waitFor(() => {
       expect(mockCanvasContext.openCanvasArtifact).toHaveBeenCalledWith(
         'artifact-1',
-        undefined
+        undefined,
+        'chat-artifact-only'
       )
     })
   })

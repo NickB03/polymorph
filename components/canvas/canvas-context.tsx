@@ -41,10 +41,11 @@ export type CanvasContextValue = {
   /** Fetch and display an artifact by ID */
   openCanvasArtifact: (
     artifactId: string,
-    guestToken?: string | null
+    guestToken?: string | null,
+    chatId?: string | null
   ) => Promise<void>
   /** Focus an already-loaded artifact (no re-fetch) */
-  focusCanvasArtifact: (artifactId: string) => void
+  focusCanvasArtifact: (artifactId: string, chatId?: string | null) => void
   /** Close the canvas workspace panel */
   closeWorkspace: () => void
   /** Entry point for "Ask AI to change it" */
@@ -88,14 +89,22 @@ const CanvasContext = createContext<CanvasContextValue | null>(null)
 function buildUrl(
   artifactId: string,
   path: string,
-  guestToken: string | null
+  guestToken: string | null,
+  chatId?: string | null
 ): string {
   const base = `/api/canvas-artifacts/${artifactId}${path}`
+  const params = new URLSearchParams()
+
   if (guestToken) {
-    const sep = base.includes('?') ? '&' : '?'
-    return `${base}${sep}guestCanvasToken=${encodeURIComponent(guestToken)}`
+    params.set('guestCanvasToken', guestToken)
   }
-  return base
+
+  if (chatId) {
+    params.set('chatId', chatId)
+  }
+
+  const query = params.toString()
+  return query ? `${base}?${query}` : base
 }
 
 // ── Provider ─────────────────────────────────────────────────────────
@@ -123,6 +132,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   // opens of the same artifact (the auto-open effect can fire repeatedly
   // during streaming as canvas state changes trigger re-renders).
   const openingRef = useRef<string | null>(null)
+  const artifactChatIdRef = useRef<string | null>(null)
 
   const isWorkspaceOpen = !!(artifact || isLoading || pendingWorkspace)
 
@@ -130,6 +140,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
     setArtifact(null)
     setPendingWorkspaceState(null)
     setCompileProgressState(null)
+    artifactChatIdRef.current = null
   }, [])
 
   /** Apply an API response state and sync the rotated guest token if changed. */
@@ -137,6 +148,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
     (state: CanvasArtifactState) => {
       setArtifact(state)
       setArtifactId(state.artifactId)
+      artifactChatIdRef.current = state.chatId
 
       if (pendingWorkspace?.artifactId === state.artifactId) {
         setPendingWorkspaceState(null)
@@ -156,7 +168,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   // ── Core actions ─────────────────────────────────────────────────
 
   const openCanvasArtifact = useCallback(
-    async (id: string, guestToken?: string | null) => {
+    async (id: string, guestToken?: string | null, chatId?: string | null) => {
       if (!id) return // Guard against empty artifactId (e.g. from failed creates)
       if (openingRef.current === id) return // Already fetching this artifact
 
@@ -172,7 +184,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
           setGuestCanvasToken(guestToken)
         }
 
-        const url = buildUrl(id, '', effectiveGuestToken)
+        const url = buildUrl(id, '', effectiveGuestToken, chatId)
         const res = await fetch(url)
         if (!res.ok) {
           console.error('Failed to load canvas artifact:', res.status)
@@ -195,7 +207,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   )
 
   const focusCanvasArtifact = useCallback(
-    (id: string) => {
+    (id: string, chatId?: string | null) => {
       if (!id) return // Guard against empty artifactId
 
       if (artifact && artifact.artifactId === id) {
@@ -206,13 +218,14 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       if (openingRef.current === id) return
 
       // Not loaded yet, fall through to full open
-      openCanvasArtifact(id)
+      openCanvasArtifact(id, undefined, chatId)
     },
     [artifact, openCanvasArtifact]
   )
 
   const closeWorkspace = useCallback(() => {
     openingRef.current = null
+    artifactChatIdRef.current = null
     setArtifact(null)
     setArtifactId(null)
     setIsLoading(false)
@@ -271,7 +284,12 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true)
     try {
-      const url = buildUrl(artifactId, '', guestTokenRef.current)
+      const url = buildUrl(
+        artifactId,
+        '',
+        guestTokenRef.current,
+        artifactChatIdRef.current
+      )
       const res = await fetch(url)
       if (!res.ok) {
         console.error('Failed to reload canvas artifact:', res.status)
