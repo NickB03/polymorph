@@ -1,0 +1,19 @@
+{
+  "name": "polymorph-traffic-gen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "setup": "bunx playwright install chromium"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.55.0",
+    "playwright": "^1.52.0"
+  },
+  "devDependencies": {
+    "@types/bun": "~1.2.12",
+    "typescript": "^5.8.0"
+  }
+}
