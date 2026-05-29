@@ -844,6 +844,28 @@ describe('Chat route sync', () => {
       })
     })
   })
+
+  it('opens the canvas artifact for artifact-only persisted chats', async () => {
+    resetCanvasContext()
+    mockUseChat.mockReturnValue(makeUseChatReturnValue())
+
+    const { Chat } = await import('./chat')
+
+    render(
+      <Chat
+        id="chat-artifact-only"
+        savedMessages={[]}
+        initialCanvasArtifactId="artifact-1"
+      />
+    )
+
+    await waitFor(() => {
+      expect(mockCanvasContext.openCanvasArtifact).toHaveBeenCalledWith(
+        'artifact-1',
+        undefined
+      )
+    })
+  })
 })
 
 describe('Chat sections', () => {

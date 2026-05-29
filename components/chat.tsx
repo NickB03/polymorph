@@ -62,12 +62,14 @@ export function Chat({
   id: providedId,
   savedMessages = EMPTY_MESSAGES,
   query,
-  isGuest = false
+  isGuest = false,
+  initialCanvasArtifactId
 }: {
   id?: string
   savedMessages?: UIMessage[]
   query?: string
   isGuest?: boolean
+  initialCanvasArtifactId?: string
 }) {
   const router = useRouter()
   const canvas = useCanvas()
@@ -83,6 +85,7 @@ export function Chat({
   // Tracks canvas tool call IDs that have already triggered synthetic
   // compile progress (avoids re-setting on every messages change).
   const canvasProgressInitRef = useRef<Set<string>>(new Set())
+  const initialCanvasArtifactOpenedRef = useRef<string | null>(null)
   // The startedAt timestamp from client-side "generating" detection,
   // carried over to real server-side compile-progress events so the
   // elapsed timer reflects the full duration including AI generation.
@@ -583,6 +586,20 @@ export function Chat({
       break // Only handle the first streaming canvas tool
     }
   }, [messages, status, closeArtifactSidebar])
+
+  useEffect(() => {
+    if (!providedId || !initialCanvasArtifactId) return
+    if (initialCanvasArtifactOpenedRef.current === initialCanvasArtifactId) {
+      return
+    }
+
+    initialCanvasArtifactOpenedRef.current = initialCanvasArtifactId
+    closeArtifactSidebar()
+    void canvasRef.current.openCanvasArtifact(
+      initialCanvasArtifactId,
+      undefined
+    )
+  }, [closeArtifactSidebar, initialCanvasArtifactId, providedId])
 
   // Canvas callbacks for RenderMessage → ChatMessages
   const handleCanvasArtifactClick = useCallback(

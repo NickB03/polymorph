@@ -67,6 +67,50 @@ import type { TxInstance } from './with-rls'
 import { withOptionalRLS, withRLS } from './with-rls'
 import { db } from '.'
 
+function hasDisplayableChatContent() {
+  return sql`(
+    EXISTS (
+      SELECT 1
+      FROM ${messages}
+      CROSS JOIN LATERAL jsonb_array_elements(
+        CASE
+          WHEN jsonb_typeof(${messages.uiMessage}->'parts') = 'array'
+          THEN ${messages.uiMessage}->'parts'
+          ELSE '[]'::jsonb
+        END
+      ) AS message_part(value)
+      WHERE ${messages.chatId} = ${chats.id}
+      AND message_part.value->>'type' IS NOT NULL
+      AND message_part.value->>'type' NOT IN (
+        'data-canvasArtifactStatus',
+        'data-canvasArtifactEvent',
+        'data-canvasDiagnostics',
+        'step-start'
+      )
+      AND (
+        message_part.value->>'type' <> 'text'
+        OR length(btrim(coalesce(message_part.value->>'text', ''))) > 0
+      )
+      AND (
+        message_part.value->>'type' <> 'reasoning'
+        OR length(btrim(coalesce(message_part.value->>'text', ''))) > 0
+        OR (
+          CASE
+            WHEN jsonb_typeof(message_part.value->'details') = 'array'
+            THEN jsonb_array_length(message_part.value->'details')
+            ELSE 0
+          END
+        ) > 0
+      )
+    )
+    OR EXISTS (
+      SELECT 1
+      FROM ${canvasArtifacts}
+      WHERE ${canvasArtifacts.chatId} = ${chats.id}
+    )
+  )`
+}
+
 /**
  * Ensure a chat record exists for the given ID.
  *
@@ -591,7 +635,7 @@ export async function getChats(userId: string): Promise<Chat[]> {
     return tx
       .select()
       .from(chats)
-      .where(eq(chats.userId, userId))
+      .where(and(eq(chats.userId, userId), hasDisplayableChatContent()))
       .orderBy(desc(chats.createdAt))
   })
 }
@@ -609,7 +653,7 @@ export async function getChatsPage(
       const results = await tx
         .select()
         .from(chats)
-        .where(eq(chats.userId, userId))
+        .where(and(eq(chats.userId, userId), hasDisplayableChatContent()))
         .orderBy(desc(chats.createdAt))
         .limit(limit)
         .offset(offset)
