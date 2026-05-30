@@ -40,6 +40,15 @@ vi.mock('@/lib/canvas/service', () => ({
   exportCanvasArtifactHtml: (...args: unknown[]) => mockExportHtml(...args)
 }))
 
+// Mock db actions
+const mockGetChat = vi.fn()
+const mockLoadCanvasArtifactByChatId = vi.fn()
+vi.mock('@/lib/db/actions', () => ({
+  getChat: (...args: unknown[]) => mockGetChat(...args),
+  loadCanvasArtifactByChatId: (...args: unknown[]) =>
+    mockLoadCanvasArtifactByChatId(...args)
+}))
+
 import { GET } from './route'
 
 describe('GET /api/canvas-artifacts/[artifactId]/export', () => {
@@ -157,6 +166,60 @@ describe('GET /api/canvas-artifacts/[artifactId]/export', () => {
     })
 
     expect(response.status).toBe(200)
+  })
+
+  it('allows anonymous export for artifacts attached to public chats', async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockGetChat.mockResolvedValue({
+      id: 'chat-1',
+      userId: 'owner-1',
+      visibility: 'public'
+    })
+    mockLoadCanvasArtifactByChatId.mockResolvedValue({ id: 'art-1' })
+    mockExportHtml.mockResolvedValue({
+      ok: true,
+      html: '<html>public export</html>',
+      title: 'Public App',
+      hasExternalDependencies: false
+    })
+
+    const req = new Request(
+      'http://localhost/api/canvas-artifacts/art-1/export?chatId=chat-1'
+    )
+    const response = await GET(req, {
+      params: Promise.resolve({ artifactId: 'art-1' })
+    })
+
+    expect(response.status).toBe(200)
+    expect(mockGetChat).toHaveBeenCalledWith('chat-1', undefined)
+    expect(mockLoadCanvasArtifactByChatId).toHaveBeenCalledWith(
+      'chat-1',
+      'owner-1'
+    )
+    expect(mockExportHtml).toHaveBeenCalledWith({
+      artifactId: 'art-1',
+      userId: 'owner-1'
+    })
+  })
+
+  it('rejects public export when the artifact does not belong to the chat', async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockGetChat.mockResolvedValue({
+      id: 'chat-1',
+      userId: 'owner-1',
+      visibility: 'public'
+    })
+    mockLoadCanvasArtifactByChatId.mockResolvedValue({ id: 'other-artifact' })
+
+    const req = new Request(
+      'http://localhost/api/canvas-artifacts/art-1/export?chatId=chat-1'
+    )
+    const response = await GET(req, {
+      params: Promise.resolve({ artifactId: 'art-1' })
+    })
+
+    expect(response.status).toBe(404)
+    expect(mockExportHtml).not.toHaveBeenCalled()
   })
 
   it('rejects unauthenticated request without guest token', async () => {

@@ -2,6 +2,7 @@ import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import { verifyGuestCanvasToken } from '@/lib/canvas/guest-token'
 import { injectViewportFitStyles } from '@/lib/canvas/inject-viewport-fit'
 import { exportCanvasArtifactHtml } from '@/lib/canvas/service'
+import { getChat, loadCanvasArtifactByChatId } from '@/lib/db/actions'
 import { jsonError } from '@/lib/utils/json-error'
 
 function slugify(title: string): string {
@@ -12,6 +13,29 @@ function slugify(title: string): string {
       .replace(/^-|-$/g, '')
       .slice(0, 50) || 'canvas-artifact'
   )
+}
+
+async function getPublicArtifactOwnerUserId({
+  artifactId,
+  chatId,
+  viewerUserId
+}: {
+  artifactId: string
+  chatId: string
+  viewerUserId?: string
+}): Promise<string | null> {
+  const chat = await getChat(chatId, viewerUserId)
+
+  if (!chat || chat.visibility !== 'public') {
+    return null
+  }
+
+  const artifact = await loadCanvasArtifactByChatId(chatId, chat.userId)
+  if (!artifact || artifact.id !== artifactId) {
+    return null
+  }
+
+  return chat.userId
 }
 
 /**
@@ -25,8 +49,9 @@ export async function serveCanvasHtml(
 ): Promise<Response> {
   const url = new URL(req.url)
   const guestToken = url.searchParams.get('guestCanvasToken')
+  const publicChatId = url.searchParams.get('chatId')?.trim() || null
 
-  const userId = await getCurrentUserId()
+  const userId = (await getCurrentUserId()) ?? undefined
   let isGuest = false
 
   if (!userId && guestToken) {
@@ -42,20 +67,45 @@ export async function serveCanvasHtml(
       )
     }
     isGuest = true
-  } else if (!userId) {
+  } else if (!userId && !publicChatId) {
     return jsonError('AUTH_REQUIRED', 'Authentication required', 401)
   }
 
-  const result = await exportCanvasArtifactHtml({
-    artifactId,
-    userId: isGuest ? null : userId
-  })
+  let result: Awaited<ReturnType<typeof exportCanvasArtifactHtml>> | null = null
 
-  if (!result.ok) {
-    const status = result.errorCode === 'not-found' ? 404 : 422
+  if (isGuest) {
+    result = await exportCanvasArtifactHtml({
+      artifactId,
+      userId: null
+    })
+  } else if (userId) {
+    result = await exportCanvasArtifactHtml({
+      artifactId,
+      userId
+    })
+  }
+
+  if ((!result || !result.ok) && publicChatId && !isGuest) {
+    const ownerUserId = await getPublicArtifactOwnerUserId({
+      artifactId,
+      chatId: publicChatId,
+      viewerUserId: userId
+    })
+
+    if (ownerUserId) {
+      result = await exportCanvasArtifactHtml({
+        artifactId,
+        userId: ownerUserId
+      })
+    }
+  }
+
+  if (!result?.ok) {
+    const errorCode = result?.errorCode ?? 'not-found'
+    const status = errorCode === 'not-found' ? 404 : 422
     return jsonError(
-      result.errorCode?.toUpperCase() ?? 'ERROR',
-      result.error ?? 'Export failed',
+      errorCode.toUpperCase(),
+      result?.error ?? 'Artifact not found',
       status
     )
   }

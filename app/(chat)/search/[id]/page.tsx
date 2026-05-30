@@ -2,7 +2,9 @@ import { notFound, redirect } from 'next/navigation'
 
 import { loadChat } from '@/lib/actions/chat'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
+import { loadCanvasArtifactByChatId } from '@/lib/db/actions'
 import type { UIMessage } from '@/lib/types/ai'
+import { hasRenderableConversationContent } from '@/lib/utils/chat-content'
 
 import { Chat } from '@/components/chat'
 
@@ -42,6 +44,18 @@ export default async function SearchPage(props: {
   }
 
   const messages: UIMessage[] = chat.messages
+  const canvasArtifact = await loadCanvasArtifactByChatId(id, chat.userId)
 
-  return <Chat id={id} savedMessages={messages} isGuest={!userId} />
+  if (!hasRenderableConversationContent(messages) && !canvasArtifact) {
+    notFound()
+  }
+
+  return (
+    <Chat
+      id={id}
+      savedMessages={messages}
+      isGuest={!userId}
+      initialCanvasArtifactId={canvasArtifact?.id}
+    />
+  )
 }

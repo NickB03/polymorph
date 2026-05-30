@@ -80,6 +80,29 @@ function resetSidebarContext() {
   mockSidebar.isMobile = false
 }
 
+function mockWindowLocalStorage() {
+  const store = new Map<string, string>()
+  const localStorageMock: Storage = {
+    get length() {
+      return store.size
+    },
+    clear: vi.fn(() => store.clear()),
+    getItem: vi.fn((key: string) => store.get(key) ?? null),
+    key: vi.fn((index: number) => Array.from(store.keys())[index] ?? null),
+    removeItem: vi.fn((key: string) => {
+      store.delete(key)
+    }),
+    setItem: vi.fn((key: string, value: string) => {
+      store.set(key, String(value))
+    })
+  }
+
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: localStorageMock
+  })
+}
+
 function makeUseChatReturnValue(messages: UIMessage[] = []) {
   return {
     messages,
@@ -213,6 +236,7 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
 }
 
 beforeEach(() => {
+  mockWindowLocalStorage()
   resetCanvasContext()
   resetSidebarContext()
   mockUseChat.mockReset()
@@ -842,6 +866,29 @@ describe('Chat route sync', () => {
       expect(mockChatMessages.mock.calls.at(-1)?.[0]).toMatchObject({
         chatId: 'chat-b'
       })
+    })
+  })
+
+  it('opens the canvas artifact for artifact-only persisted chats', async () => {
+    resetCanvasContext()
+    mockUseChat.mockReturnValue(makeUseChatReturnValue())
+
+    const { Chat } = await import('./chat')
+
+    render(
+      <Chat
+        id="chat-artifact-only"
+        savedMessages={[]}
+        initialCanvasArtifactId="artifact-1"
+      />
+    )
+
+    await waitFor(() => {
+      expect(mockCanvasContext.openCanvasArtifact).toHaveBeenCalledWith(
+        'artifact-1',
+        undefined,
+        'chat-artifact-only'
+      )
     })
   })
 })

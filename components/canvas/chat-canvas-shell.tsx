@@ -84,7 +84,7 @@ export function ChatCanvasShell({
   useEffect(() => {
     let savedWidth: string | null = null
     try {
-      savedWidth = localStorage.getItem('artifactPanelWidth')
+      savedWidth = window.localStorage.getItem('artifactPanelWidth')
     } catch {
       // localStorage may be unavailable in some environments
     }
@@ -151,7 +151,10 @@ export function ChatCanvasShell({
         )
         setWidth(clampedWidth)
         try {
-          localStorage.setItem('artifactPanelWidth', clampedWidth.toString())
+          window.localStorage.setItem(
+            'artifactPanelWidth',
+            clampedWidth.toString()
+          )
         } catch {
           // localStorage may be unavailable in some environments
         }
