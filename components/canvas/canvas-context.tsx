@@ -404,14 +404,24 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
   const viewFullscreen = useCallback(() => {
     if (!artifactId) return
-    const url = buildUrl(artifactId, '/view', guestTokenRef.current)
+    const url = buildUrl(
+      artifactId,
+      '/view',
+      guestTokenRef.current,
+      artifactChatIdRef.current
+    )
     window.open(url, '_blank')
   }, [artifactId])
 
   const exportHtml = useCallback(async () => {
     if (!artifactId) return
 
-    const url = buildUrl(artifactId, '/export', guestTokenRef.current)
+    const url = buildUrl(
+      artifactId,
+      '/export',
+      guestTokenRef.current,
+      artifactChatIdRef.current
+    )
 
     try {
       const res = await fetch(url)

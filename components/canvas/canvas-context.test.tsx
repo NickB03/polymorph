@@ -53,6 +53,8 @@ function Harness() {
       </button>
       <button onClick={() => canvas.focusCanvasArtifact('art-1')}>focus</button>
       <button onClick={() => void canvas.reloadArtifact()}>reload</button>
+      <button onClick={() => canvas.viewFullscreen()}>view</button>
+      <button onClick={() => void canvas.exportHtml()}>export</button>
       <button
         onClick={() =>
           canvas.setPendingWorkspace({
@@ -179,6 +181,84 @@ describe('CanvasProvider', () => {
         '/api/canvas-artifacts/art-1?chatId=chat-1'
       )
     })
+  })
+
+  it('keeps the public chat id when opening a public artifact in a new tab', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => makeArtifactState()
+    })
+    const openMock = vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <CanvasProvider>
+        <Harness />
+      </CanvasProvider>
+    )
+
+    fireEvent.click(screen.getByText('open-public'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('artifact-id')).toHaveTextContent('art-1')
+    })
+
+    fireEvent.click(screen.getByText('view'))
+
+    expect(openMock).toHaveBeenCalledWith(
+      '/api/canvas-artifacts/art-1/view?chatId=chat-1',
+      '_blank'
+    )
+  })
+
+  it('keeps the public chat id when exporting a public artifact', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => makeArtifactState()
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: async () => new Blob(['<html></html>']),
+        headers: new Headers({
+          'Content-Disposition': 'attachment; filename="public.html"'
+        })
+      })
+    const createObjectURLMock = vi.fn(() => 'blob:public-export')
+    const revokeObjectURLMock = vi.fn()
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectURLMock
+    })
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: revokeObjectURLMock
+    })
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <CanvasProvider>
+        <Harness />
+      </CanvasProvider>
+    )
+
+    fireEvent.click(screen.getByText('open-public'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('artifact-id')).toHaveTextContent('art-1')
+    })
+
+    fireEvent.click(screen.getByText('export'))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        '/api/canvas-artifacts/art-1/export?chatId=chat-1'
+      )
+    })
+    expect(createObjectURLMock).toHaveBeenCalledTimes(1)
+    expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:public-export')
   })
 
   it('focuses an already-loaded artifact without re-fetching it', async () => {
