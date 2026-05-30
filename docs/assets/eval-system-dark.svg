@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1080" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#60a5fa"/></marker>
+    <marker id="arr-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#34d399"/></marker>
+    <marker id="arr-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#c084fc"/></marker>
+    <marker id="arr-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#f87171"/></marker>
+    <marker id="arr-gray" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#a1a1aa"/></marker>
+    <filter id="softshadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect width="1240" height="1080" fill="#0a0a0f"/>
+  <text x="620" y="40" text-anchor="middle" font-size="22" font-weight="600" fill="#fafafa">Polymorph Evaluation System</text>
+  <text x="620" y="63" text-anchor="middle" font-size="13" fill="#a1a1aa">offline LLM-judge pipeline &#183; Railway cron &#183; Phoenix experiments + Postgres dashboard</text>
+  <rect x="470" y="80" width="300" height="56" rx="8" ry="8" fill="#18181b" stroke="#60a5fa" stroke-width="1.5" filter="url(#softshadow)"/>
+  <text x="620" y="105" text-anchor="middle" font-size="15" font-weight="600" fill="#fafafa">Railway Cron</text>
+  <text x="620" y="124" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">every 48h &#183; service polymorph-evals</text>
+  <line x1="620" y1="138" x2="620" y2="162" stroke="#60a5fa" stroke-width="1.6" marker-end="url(#arr-blue)"/>
+  <rect x="420" y="165" width="400" height="60" rx="8" ry="8" fill="#18181b" stroke="#52525b" stroke-width="2" filter="url(#softshadow)"/>
+  <text x="620" y="192" text-anchor="middle" font-size="15" font-weight="600" fill="#fafafa">Orchestrator</text>
+  <text x="620" y="210" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">switch (evalRunMode) &#8594; suite dispatch</text>
+  <path d="M 620,227 C 620,250 260,230 260,268" fill="none" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+  <path d="M 620,227 C 620,250 500,230 500,268" fill="none" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+  <path d="M 620,227 C 620,250 740,230 740,268" fill="none" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+  <path d="M 620,227 C 620,250 980,230 980,268" fill="none" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+  <rect x="160" y="270" width="200" height="95" rx="8" ry="8" fill="#18181b" stroke="#34d399" stroke-width="1.5" filter="url(#softshadow)"/>
+  <text x="260" y="302" text-anchor="middle" font-size="14" font-weight="600" fill="#fafafa">Capability</text>
+  <text x="260" y="323" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">golden cases</text>
+  <text x="260" y="345" text-anchor="middle" font-size="10" font-weight="400" fill="#71717a">runners/capability.ts</text>
+  <rect x="400" y="270" width="200" height="95" rx="8" ry="8" fill="#18181b" stroke="#fbbf24" stroke-width="1.5" filter="url(#softshadow)"/>
+  <text x="500" y="302" text-anchor="middle" font-size="14" font-weight="600" fill="#fafafa">Regression</text>
+  <text x="500" y="323" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">golden cases</text>
+  <text x="500" y="345" text-anchor="middle" font-size="10" font-weight="400" fill="#71717a">runners/regression.ts</text>
+  <rect x="640" y="270" width="200" height="95" rx="8" ry="8" fill="#18181b" stroke="#a78bfa" stroke-width="1.5" filter="url(#softshadow)"/>
+  <text x="740" y="302" text-anchor="middle" font-size="14" font-weight="600" fill="#fafafa">Traffic-Monitor</text>
+  <text x="740" y="323" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">sampled live chats</text>
+  <text x="740" y="345" text-anchor="middle" font-size="10" font-weight="400" fill="#71717a">runners/traffic-monitor.ts</text>
+  <rect x="880" y="270" width="200" height="95" rx="8" ry="8" fill="#18181b" stroke="#f87171" stroke-width="1.5" filter="url(#softshadow)"/>
+  <text x="980" y="302" text-anchor="middle" font-size="14" font-weight="600" fill="#fafafa">Smoke</text>
+  <text x="980" y="323" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">auth + probe runner</text>
+  <text x="980" y="345" text-anchor="middle" font-size="10" font-weight="400" fill="#71717a">runners/smoke.ts</text>
+  <path d="M 220.0,410.0 L 220.0,490.0 A 140.0,10 0 0 0 500.0,490.0 L 500.0,410.0" fill="#18181b" stroke="#4ade80" stroke-width="1.5"/>
+  <ellipse cx="360" cy="410.0" rx="140.0" ry="10" fill="#14331f" stroke="#4ade80" stroke-width="1.5"/>
+  <text x="360" y="446" text-anchor="middle" font-size="14" font-weight="600" fill="#fafafa">Golden Corpus (JSON)</text>
+  <text x="360" y="465" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">corpus/*.json &#183; curated cases</text>
+  <path d="M 600.0,410.0 L 600.0,490.0 A 140.0,10 0 0 0 880.0,490.0 L 880.0,410.0" fill="#18181b" stroke="#a78bfa" stroke-width="1.5"/>
+  <ellipse cx="740" cy="410.0" rx="140.0" ry="10" fill="#241b3d" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="740" y="446" text-anchor="middle" font-size="14" font-weight="600" fill="#fafafa">Supabase Postgres</text>
+  <text x="740" y="465" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">sampleRecentChats() &#183; last N hours</text>
+  <path d="M 260,366 C 260,400 320,420 340,420" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  <path d="M 500,366 C 500,400 400,420 380,420" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  <path d="M 740,366 L 740,415" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  <path d="M 980,366 C 980,420 1090,500 1090,580" fill="none" stroke="#a1a1aa" stroke-width="1.4" marker-end="url(#arr-gray)" stroke-dasharray="5,3"/>
+  <rect x="243" y="388" width="24" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="255" y="398" text-anchor="middle" font-size="11" fill="#34d399">load</text>
+  <rect x="473" y="388" width="24" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="485" y="398" text-anchor="middle" font-size="11" fill="#34d399">load</text>
+  <rect x="742" y="386" width="36" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="760" y="396" text-anchor="middle" font-size="11" fill="#34d399">sample</text>
+  <rect x="1055" y="451" width="60" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="1085" y="461" text-anchor="middle" font-size="11" fill="#a1a1aa">probe only</text>
+  <path d="M 360,490 C 360,520 460,540 500,558" fill="none" stroke="#34d399" stroke-width="1.6" marker-end="url(#arr-green)"/>
+  <path d="M 740,490 C 740,520 580,540 540,558" fill="none" stroke="#34d399" stroke-width="1.6" marker-end="url(#arr-green)"/>
+  <rect x="405" y="516" width="30" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="420" y="526" text-anchor="middle" font-size="11" fill="#34d399">cases</text>
+  <rect x="380" y="560" width="240" height="70" rx="8" ry="8" fill="#18181b" stroke="#3f3f46" stroke-width="1.5" filter="url(#softshadow)"/>
+  <text x="500" y="588" text-anchor="middle" font-size="14" font-weight="600" fill="#fafafa">Eval Runner Client</text>
+  <text x="500" y="608" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">replays cases via HTTP</text>
+  <rect x="700" y="560" width="240" height="70" rx="8" ry="8" fill="#18181b" stroke="#fb923c" stroke-width="1.5" filter="url(#softshadow)"/>
+  <text x="820" y="588" text-anchor="middle" font-size="14" font-weight="600" fill="#fafafa">Polymorph App</text>
+  <text x="820" y="608" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">/api/evals/run &#183; researcher loop</text>
+  <line x1="620" y1="585" x2="698" y2="585" stroke="#60a5fa" stroke-width="1.6" marker-end="url(#arr-blue)"/>
+  <path d="M 700,605 L 622,605" fill="none" stroke="#60a5fa" stroke-width="1.4" marker-end="url(#arr-blue)"/>
+  <rect x="639" y="569" width="42" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="660" y="579" text-anchor="middle" font-size="10" fill="#60a5fa">request</text>
+  <rect x="615" y="613" width="90" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="660" y="623" text-anchor="middle" font-size="10" fill="#60a5fa">output + traces</text>
+  <line x1="1090" y1="580" x2="942" y2="595" stroke="#a1a1aa" stroke-width="1.3" marker-end="url(#arr-gray)" stroke-dasharray="5,3"/>
+  <rect x="987" y="569" width="66" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="1020" y="579" text-anchor="middle" font-size="10" fill="#a1a1aa">auth + ping</text>
+  <path d="M 500,632 L 500,668" fill="none" stroke="#60a5fa" stroke-width="1.6" marker-end="url(#arr-blue)"/>
+  <rect x="453" y="645" width="84" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="495" y="655" text-anchor="middle" font-size="10" fill="#60a5fa">dataset + task</text>
+  <rect x="140" y="668" width="800" height="200" rx="10" ry="10" fill="#111114" stroke="#3f3f46" stroke-width="1.5"/>
+  <text x="540" y="692" text-anchor="middle" font-size="14" font-weight="600" fill="#fafafa">Phoenix Experiment (datasets + experiments)</text>
+  <text x="540" y="710" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">createDataset &#183; runExperiment &#183; 9 evaluators per case</text>
+  <rect x="170" y="730" width="240" height="120" rx="8" ry="8" fill="#18181b" stroke="#3f3f46" stroke-width="1"/>
+  <text x="290" y="750" text-anchor="middle" font-size="12" font-weight="600" fill="#fafafa">Deterministic (3)</text>
+  <rect x="190" y="760" width="200" height="22" rx="6" ry="6" fill="#0a0a0f" stroke="#22d3ee" stroke-width="1"/>
+  <text x="290" y="775" text-anchor="middle" font-size="11" font-weight="400" fill="#67e8f9">prechecks</text>
+  <rect x="190" y="788" width="200" height="22" rx="6" ry="6" fill="#0a0a0f" stroke="#22d3ee" stroke-width="1"/>
+  <text x="290" y="803" text-anchor="middle" font-size="11" font-weight="400" fill="#67e8f9">tool-usage</text>
+  <rect x="190" y="816" width="200" height="22" rx="6" ry="6" fill="#0a0a0f" stroke="#22d3ee" stroke-width="1"/>
+  <text x="290" y="831" text-anchor="middle" font-size="11" font-weight="400" fill="#67e8f9">no-tool-placeholders</text>
+  <rect x="440" y="730" width="470" height="120" rx="8" ry="8" fill="#18181b" stroke="#3f3f46" stroke-width="1"/>
+  <text x="675" y="750" text-anchor="middle" font-size="12" font-weight="600" fill="#fafafa">LLM-Judge (6) &#8212; uses Judge Model</text>
+  <rect x="460" y="760" width="200" height="22" rx="6" ry="6" fill="#0a0a0f" stroke="#a78bfa" stroke-width="1"/>
+  <text x="560" y="775" text-anchor="middle" font-size="11" font-weight="400" fill="#d8b4fe">tool-selection</text>
+  <rect x="680" y="760" width="200" height="22" rx="6" ry="6" fill="#0a0a0f" stroke="#a78bfa" stroke-width="1"/>
+  <text x="780" y="775" text-anchor="middle" font-size="11" font-weight="400" fill="#d8b4fe">faithfulness</text>
+  <rect x="460" y="788" width="200" height="22" rx="6" ry="6" fill="#0a0a0f" stroke="#a78bfa" stroke-width="1"/>
+  <text x="560" y="803" text-anchor="middle" font-size="11" font-weight="400" fill="#d8b4fe">relevance</text>
+  <rect x="680" y="788" width="200" height="22" rx="6" ry="6" fill="#0a0a0f" stroke="#a78bfa" stroke-width="1"/>
+  <text x="780" y="803" text-anchor="middle" font-size="11" font-weight="400" fill="#d8b4fe">response-quality</text>
+  <rect x="460" y="816" width="200" height="22" rx="6" ry="6" fill="#0a0a0f" stroke="#a78bfa" stroke-width="1"/>
+  <text x="560" y="831" text-anchor="middle" font-size="11" font-weight="400" fill="#d8b4fe">safety</text>
+  <rect x="680" y="816" width="200" height="22" rx="6" ry="6" fill="#0a0a0f" stroke="#a78bfa" stroke-width="1"/>
+  <text x="780" y="831" text-anchor="middle" font-size="11" font-weight="400" fill="#d8b4fe">citation-accuracy</text>
+  <rect x="980" y="720" width="220" height="120" rx="8" ry="8" fill="#18181b" stroke="#c084fc" stroke-width="1.5" filter="url(#softshadow)"/>
+  <text x="1090" y="745" text-anchor="middle" font-size="14" font-weight="600" fill="#e9d5ff">Judge Model</text>
+  <text x="1090" y="766" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">OpenRouter &#183; Claude/GPT</text>
+  <text x="1090" y="800" text-anchor="middle" font-size="10" font-weight="400" fill="#71717a">judge-model.ts</text>
+  <text x="1090" y="824" text-anchor="middle" font-size="10" font-weight="400" fill="#71717a">with 3-attempt retry</text>
+  <path d="M 910,790 C 950,790 950,778 978,778" fill="none" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arr-purple)"/>
+  <path d="M 980,808 C 950,808 950,820 912,820" fill="none" stroke="#c084fc" stroke-width="1.5" marker-end="url(#arr-purple)" stroke-dasharray="4,2"/>
+  <rect x="930" y="761" width="30" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="945" y="771" text-anchor="middle" font-size="10" fill="#c084fc">grade</text>
+  <rect x="906" y="823" width="78" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="945" y="833" text-anchor="middle" font-size="10" fill="#c084fc">score + label</text>
+  <path d="M 260,872 L 260,898" fill="none" stroke="#60a5fa" stroke-width="1.6" marker-end="url(#arr-blue)"/>
+  <path d="M 540,872 L 540,898" fill="none" stroke="#34d399" stroke-width="1.6" marker-end="url(#arr-green)"/>
+  <rect x="140" y="900" width="240" height="70" rx="8" ry="8" fill="#18181b" stroke="#60a5fa" stroke-width="1.5" filter="url(#softshadow)"/>
+  <text x="260" y="928" text-anchor="middle" font-size="14" font-weight="600" fill="#fafafa">Phoenix UI</text>
+  <text x="260" y="948" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">experiments &#183; traces &#183; annotations</text>
+  <path d="M 420.0,900.0 L 420.0,970.0 A 120.0,10 0 0 0 660.0,970.0 L 660.0,900.0" fill="#18181b" stroke="#4ade80" stroke-width="1.5"/>
+  <ellipse cx="540" cy="900.0" rx="120.0" ry="10" fill="#14331f" stroke="#4ade80" stroke-width="1.5"/>
+  <text x="540" y="932" text-anchor="middle" font-size="14" font-weight="600" fill="#fafafa">eval_summaries</text>
+  <text x="540" y="950" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">Postgres &#183; persistEvalSummary()</text>
+  <rect x="800" y="900" width="240" height="70" rx="8" ry="8" fill="#18181b" stroke="#fbbf24" stroke-width="1.5" filter="url(#softshadow)"/>
+  <text x="920" y="928" text-anchor="middle" font-size="14" font-weight="600" fill="#fafafa">/admin/evals</text>
+  <text x="920" y="948" text-anchor="middle" font-size="11" font-weight="400" fill="#a1a1aa">capability &#183; regression &#183; traffic</text>
+  <line x1="660" y1="935" x2="798" y2="935" stroke="#34d399" stroke-width="1.6" marker-end="url(#arr-green)"/>
+  <rect x="681" y="919" width="96" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="729" y="929" text-anchor="middle" font-size="10" fill="#34d399">powers dashboard</text>
+  <rect x="1060" y="900" width="160" height="70" rx="8" ry="8" fill="#18181b" stroke="#fb923c" stroke-width="1.5" filter="url(#softshadow)"/>
+  <text x="1140" y="924" text-anchor="middle" font-size="12" font-weight="600" fill="#fafafa">Threshold Gate</text>
+  <text x="1140" y="942" text-anchor="middle" font-size="10" font-weight="400" fill="#a1a1aa">exitOnThresholdBreach</text>
+  <text x="1140" y="958" text-anchor="middle" font-size="10" font-weight="400" fill="#a1a1aa">&#8594; non-zero exit</text>
+  <path d="M 940,820 C 1000,820 1040,860 1080,898" fill="none" stroke="#60a5fa" stroke-width="1.4" marker-end="url(#arr-blue)" stroke-dasharray="4,2"/>
+  <rect x="965" y="836" width="90" height="14" fill="#0a0a0f" opacity="0.95"/>
+  <text x="1010" y="846" text-anchor="middle" font-size="10" fill="#60a5fa">check pass rate</text>
+  <rect x="60" y="1010" width="520" height="46" rx="8" ry="8" fill="#18181b" stroke="#3f3f46" stroke-width="1"/>
+  <line x1="80" y1="1034" x2="114" y2="1034" stroke="#60a5fa" stroke-width="1.6" marker-end="url(#arr-blue)"/>
+  <text x="122" y="1038" font-size="11" fill="#d4d4d8">control / dispatch</text>
+  <line x1="255" y1="1034" x2="289" y2="1034" stroke="#34d399" stroke-width="1.6" marker-end="url(#arr-green)"/>
+  <text x="297" y="1038" font-size="11" fill="#d4d4d8">data load &#183; DB write</text>
+  <line x1="430" y1="1034" x2="464" y2="1034" stroke="#c084fc" stroke-width="1.6" marker-end="url(#arr-purple)"/>
+  <text x="472" y="1038" font-size="11" fill="#d4d4d8">judge model call</text>
+</svg>

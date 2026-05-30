@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1040" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1080" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
   <defs>
     <marker id="arr-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/></marker>
     <marker id="arr-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#16a34a"/></marker>
@@ -9,7 +9,7 @@
       <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.06"/>
     </filter>
   </defs>
-  <rect width="1240" height="1040" fill="#ffffff"/>
+  <rect width="1240" height="1080" fill="#ffffff"/>
   <text x="620" y="40" text-anchor="middle" font-size="22" font-weight="600" fill="#111827">Polymorph Evaluation System</text>
   <text x="620" y="63" text-anchor="middle" font-size="13" fill="#6b7280">offline LLM-judge pipeline &#183; Railway cron &#183; Phoenix experiments + Postgres dashboard</text>
   <rect x="470" y="80" width="300" height="56" rx="8" ry="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5" filter="url(#softshadow)"/>
@@ -68,7 +68,7 @@
   <text x="500" y="608" text-anchor="middle" font-size="11" font-weight="400" fill="#6b7280">replays cases via HTTP</text>
   <rect x="700" y="560" width="240" height="70" rx="8" ry="8" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5" filter="url(#softshadow)"/>
   <text x="820" y="588" text-anchor="middle" font-size="14" font-weight="600" fill="#111827">Polymorph App</text>
-  <text x="820" y="608" text-anchor="middle" font-size="11" font-weight="400" fill="#6b7280">/api/eval-run &#183; researcher loop</text>
+  <text x="820" y="608" text-anchor="middle" font-size="11" font-weight="400" fill="#6b7280">/api/evals/run &#183; researcher loop</text>
   <line x1="620" y1="585" x2="698" y2="585" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arr-blue)"/>
   <path d="M 700,605 L 622,605" fill="none" stroke="#2563eb" stroke-width="1.4" marker-end="url(#arr-blue)"/>
   <rect x="639" y="569" width="42" height="14" fill="#ffffff" opacity="0.95"/>
@@ -83,25 +83,29 @@
   <text x="495" y="655" text-anchor="middle" font-size="10" fill="#2563eb">dataset + task</text>
   <rect x="140" y="668" width="800" height="200" rx="10" ry="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
   <text x="540" y="692" text-anchor="middle" font-size="14" font-weight="600" fill="#0f172a">Phoenix Experiment (datasets + experiments)</text>
-  <text x="540" y="710" text-anchor="middle" font-size="11" font-weight="400" fill="#6b7280">createDataset &#183; runExperiment &#183; 7 evaluators per case</text>
+  <text x="540" y="710" text-anchor="middle" font-size="11" font-weight="400" fill="#6b7280">createDataset &#183; runExperiment &#183; 9 evaluators per case</text>
   <rect x="170" y="730" width="240" height="120" rx="8" ry="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="290" y="752" text-anchor="middle" font-size="12" font-weight="600" fill="#0f172a">Deterministic (2)</text>
-  <rect x="190" y="766" width="200" height="24" rx="6" ry="6" fill="#ecfeff" stroke="#a5f3fc" stroke-width="1"/>
-  <text x="290" y="782" text-anchor="middle" font-size="11" font-weight="400" fill="#0e7490">prechecks</text>
-  <rect x="190" y="796" width="200" height="24" rx="6" ry="6" fill="#ecfeff" stroke="#a5f3fc" stroke-width="1"/>
-  <text x="290" y="812" text-anchor="middle" font-size="11" font-weight="400" fill="#0e7490">tool-usage</text>
+  <text x="290" y="750" text-anchor="middle" font-size="12" font-weight="600" fill="#0f172a">Deterministic (3)</text>
+  <rect x="190" y="760" width="200" height="22" rx="6" ry="6" fill="#ecfeff" stroke="#a5f3fc" stroke-width="1"/>
+  <text x="290" y="775" text-anchor="middle" font-size="11" font-weight="400" fill="#0e7490">prechecks</text>
+  <rect x="190" y="788" width="200" height="22" rx="6" ry="6" fill="#ecfeff" stroke="#a5f3fc" stroke-width="1"/>
+  <text x="290" y="803" text-anchor="middle" font-size="11" font-weight="400" fill="#0e7490">tool-usage</text>
+  <rect x="190" y="816" width="200" height="22" rx="6" ry="6" fill="#ecfeff" stroke="#a5f3fc" stroke-width="1"/>
+  <text x="290" y="831" text-anchor="middle" font-size="11" font-weight="400" fill="#0e7490">no-tool-placeholders</text>
   <rect x="440" y="730" width="470" height="120" rx="8" ry="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="675" y="752" text-anchor="middle" font-size="12" font-weight="600" fill="#0f172a">LLM-Judge (5) &#8212; uses Judge Model</text>
-  <rect x="460" y="770" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
-  <text x="560" y="785" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">faithfulness</text>
-  <rect x="680" y="770" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
-  <text x="780" y="785" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">relevance</text>
-  <rect x="460" y="798" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
-  <text x="560" y="813" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">response-quality</text>
-  <rect x="680" y="798" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
-  <text x="780" y="813" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">safety</text>
-  <rect x="460" y="826" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
-  <text x="560" y="841" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">citation-accuracy</text>
+  <text x="675" y="750" text-anchor="middle" font-size="12" font-weight="600" fill="#0f172a">LLM-Judge (6) &#8212; uses Judge Model</text>
+  <rect x="460" y="760" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="560" y="775" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">tool-selection</text>
+  <rect x="680" y="760" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="780" y="775" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">faithfulness</text>
+  <rect x="460" y="788" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="560" y="803" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">relevance</text>
+  <rect x="680" y="788" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="780" y="803" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">response-quality</text>
+  <rect x="460" y="816" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="560" y="831" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">safety</text>
+  <rect x="680" y="816" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="780" y="831" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">citation-accuracy</text>
   <rect x="980" y="720" width="220" height="120" rx="8" ry="8" fill="#fdf4ff" stroke="#e9d5ff" stroke-width="1.5" filter="url(#softshadow)"/>
   <text x="1090" y="745" text-anchor="middle" font-size="14" font-weight="600" fill="#581c87">Judge Model</text>
   <text x="1090" y="766" text-anchor="middle" font-size="11" font-weight="400" fill="#6b7280">OpenRouter &#183; Claude/GPT</text>
@@ -113,17 +117,11 @@
   <text x="945" y="771" text-anchor="middle" font-size="10" fill="#9333ea">grade</text>
   <rect x="906" y="823" width="78" height="14" fill="#ffffff" opacity="0.95"/>
   <text x="945" y="833" text-anchor="middle" font-size="10" fill="#9333ea">score + label</text>
-  <path d="M 300,872 L 300,898" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arr-blue)"/>
+  <path d="M 260,872 L 260,898" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arr-blue)"/>
   <path d="M 540,872 L 540,898" fill="none" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arr-green)"/>
-  <rect x="568" y="636" width="114" height="14" fill="#fff5f5" opacity="0.95"/>
-  <text x="625" y="646" text-anchor="middle" font-size="10" fill="#dc2626">PHOENIX UNAVAILABLE</text>
-  <path d="M 565,648 L 520,650" fill="none" stroke="#dc2626" stroke-width="1" stroke-dasharray="3,2"/>
-  <rect x="580" y="875" width="90" height="14" fill="#fff5f5" opacity="0.95"/>
-  <text x="625" y="885" text-anchor="middle" font-size="10" fill="#dc2626">DB WRITE FAILED</text>
-  <path d="M 575,886 L 545,886" fill="none" stroke="#dc2626" stroke-width="1" stroke-dasharray="3,2"/>
-  <rect x="180" y="900" width="240" height="70" rx="8" ry="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5" filter="url(#softshadow)"/>
-  <text x="300" y="928" text-anchor="middle" font-size="14" font-weight="600" fill="#111827">Phoenix UI</text>
-  <text x="300" y="948" text-anchor="middle" font-size="11" font-weight="400" fill="#6b7280">experiments &#183; traces &#183; annotations</text>
+  <rect x="140" y="900" width="240" height="70" rx="8" ry="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5" filter="url(#softshadow)"/>
+  <text x="260" y="928" text-anchor="middle" font-size="14" font-weight="600" fill="#111827">Phoenix UI</text>
+  <text x="260" y="948" text-anchor="middle" font-size="11" font-weight="400" fill="#6b7280">experiments &#183; traces &#183; annotations</text>
   <path d="M 420.0,900.0 L 420.0,970.0 A 120.0,10 0 0 0 660.0,970.0 L 660.0,900.0" fill="#ffffff" stroke="#86efac" stroke-width="1.5"/>
   <ellipse cx="540" cy="900.0" rx="120.0" ry="10" fill="#bbf7d0" stroke="#86efac" stroke-width="1.5"/>
   <text x="540" y="932" text-anchor="middle" font-size="14" font-weight="600" fill="#111827">eval_summaries</text>
@@ -141,13 +139,11 @@
   <path d="M 940,820 C 1000,820 1040,860 1080,898" fill="none" stroke="#2563eb" stroke-width="1.4" marker-end="url(#arr-blue)" stroke-dasharray="4,2"/>
   <rect x="965" y="836" width="90" height="14" fill="#ffffff" opacity="0.95"/>
   <text x="1010" y="846" text-anchor="middle" font-size="10" fill="#2563eb">check pass rate</text>
-  <rect x="60" y="980" width="700" height="46" rx="8" ry="8" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
-  <line x1="80" y1="1004" x2="114" y2="1004" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arr-blue)"/>
-  <text x="122" y="1008" font-size="11" fill="#374151">control / dispatch</text>
-  <line x1="255" y1="1004" x2="289" y2="1004" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arr-green)"/>
-  <text x="297" y="1008" font-size="11" fill="#374151">data load &#183; DB write</text>
-  <line x1="430" y1="1004" x2="464" y2="1004" stroke="#9333ea" stroke-width="1.6" marker-end="url(#arr-purple)"/>
-  <text x="472" y="1008" font-size="11" fill="#374151">judge model call</text>
-  <line x1="605" y1="1004" x2="639" y2="1004" stroke="#dc2626" stroke-width="1.6" marker-end="url(#arr-red)" stroke-dasharray="4,2"/>
-  <text x="647" y="1008" font-size="11" fill="#374151">failure points</text>
+  <rect x="60" y="1010" width="520" height="46" rx="8" ry="8" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <line x1="80" y1="1034" x2="114" y2="1034" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arr-blue)"/>
+  <text x="122" y="1038" font-size="11" fill="#374151">control / dispatch</text>
+  <line x1="255" y1="1034" x2="289" y2="1034" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arr-green)"/>
+  <text x="297" y="1038" font-size="11" fill="#374151">data load &#183; DB write</text>
+  <line x1="430" y1="1034" x2="464" y2="1034" stroke="#9333ea" stroke-width="1.6" marker-end="url(#arr-purple)"/>
+  <text x="472" y="1038" font-size="11" fill="#374151">judge model call</text>
 </svg>

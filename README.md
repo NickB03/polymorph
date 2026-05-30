@@ -56,14 +56,30 @@
 ## Architecture
 
 <div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/architecture.png">
-    <img alt="Polymorph architecture: a three-agent chat system (search, research, build) routes requests through a shared tool layer (core, generative-UI display, geo, canvas) to multi-provider search, OpenRouter text models, optional Gateway image generation, and Postgres with Phoenix observability." src="docs/assets/architecture.png" width="960">
-  </picture>
+  <a href="docs/assets/architecture.png">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.png">
+      <source media="(prefers-color-scheme: light)" srcset="docs/assets/architecture.png">
+      <img alt="Polymorph architecture: a three-agent chat system (search, research, build) routes requests through a shared tool layer (core, generative-UI display, geo, canvas) to multi-provider search, OpenRouter text models, optional Gateway image generation, and Postgres with Phoenix observability." src="docs/assets/architecture.png" width="960">
+    </picture>
+  </a>
 </div>
 
 <p align="center"><sub>Three-agent chat system with generative UI · See <a href="docs/architecture/OVERVIEW.md">architecture overview</a> for the full breakdown.</sub></p>
+
+## Evaluation
+
+<div align="center">
+  <a href="docs/assets/eval-system.png">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/assets/eval-system-dark.png">
+      <source media="(prefers-color-scheme: light)" srcset="docs/assets/eval-system.png">
+      <img alt="Polymorph evaluation system: a Railway cron orchestrates three judged suites (capability, regression, traffic-monitor) that replay cases through the app, score them with three deterministic and six LLM-judge evaluators, then persist results to Phoenix and Postgres for the admin dashboard, plus a separate smoke suite that auths and probes /api/chat as a health check (not scored or persisted)." src="docs/assets/eval-system.png" width="960">
+    </picture>
+  </a>
+</div>
+
+<p align="center"><sub>Offline LLM-judge pipeline · Railway cron → Phoenix experiments → Postgres dashboard.</sub></p>
 
 ## Attribution
 
