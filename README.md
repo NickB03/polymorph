@@ -74,7 +74,7 @@
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="docs/assets/eval-system-dark.png">
       <source media="(prefers-color-scheme: light)" srcset="docs/assets/eval-system.png">
-      <img alt="Polymorph evaluation system: a Railway cron orchestrates four suites (capability, regression, traffic-monitor, smoke) that replay cases through the app, score them with two deterministic and five LLM-judge evaluators, then persist results to Phoenix and Postgres for the admin dashboard." src="docs/assets/eval-system.png" width="960">
+      <img alt="Polymorph evaluation system: a Railway cron orchestrates three judged suites (capability, regression, traffic-monitor) that replay cases through the app, score them with three deterministic and six LLM-judge evaluators, then persist results to Phoenix and Postgres for the admin dashboard, plus a separate smoke suite that auths and probes /api/chat as a health check (not scored or persisted)." src="docs/assets/eval-system.png" width="960">
     </picture>
   </a>
 </div>

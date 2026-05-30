@@ -83,25 +83,29 @@
   <text x="495" y="655" text-anchor="middle" font-size="10" fill="#2563eb">dataset + task</text>
   <rect x="140" y="668" width="800" height="200" rx="10" ry="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
   <text x="540" y="692" text-anchor="middle" font-size="14" font-weight="600" fill="#0f172a">Phoenix Experiment (datasets + experiments)</text>
-  <text x="540" y="710" text-anchor="middle" font-size="11" font-weight="400" fill="#6b7280">createDataset &#183; runExperiment &#183; 7 evaluators per case</text>
+  <text x="540" y="710" text-anchor="middle" font-size="11" font-weight="400" fill="#6b7280">createDataset &#183; runExperiment &#183; 9 evaluators per case</text>
   <rect x="170" y="730" width="240" height="120" rx="8" ry="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="290" y="752" text-anchor="middle" font-size="12" font-weight="600" fill="#0f172a">Deterministic (2)</text>
-  <rect x="190" y="766" width="200" height="24" rx="6" ry="6" fill="#ecfeff" stroke="#a5f3fc" stroke-width="1"/>
-  <text x="290" y="782" text-anchor="middle" font-size="11" font-weight="400" fill="#0e7490">prechecks</text>
-  <rect x="190" y="796" width="200" height="24" rx="6" ry="6" fill="#ecfeff" stroke="#a5f3fc" stroke-width="1"/>
-  <text x="290" y="812" text-anchor="middle" font-size="11" font-weight="400" fill="#0e7490">tool-usage</text>
+  <text x="290" y="750" text-anchor="middle" font-size="12" font-weight="600" fill="#0f172a">Deterministic (3)</text>
+  <rect x="190" y="760" width="200" height="22" rx="6" ry="6" fill="#ecfeff" stroke="#a5f3fc" stroke-width="1"/>
+  <text x="290" y="775" text-anchor="middle" font-size="11" font-weight="400" fill="#0e7490">prechecks</text>
+  <rect x="190" y="788" width="200" height="22" rx="6" ry="6" fill="#ecfeff" stroke="#a5f3fc" stroke-width="1"/>
+  <text x="290" y="803" text-anchor="middle" font-size="11" font-weight="400" fill="#0e7490">tool-usage</text>
+  <rect x="190" y="816" width="200" height="22" rx="6" ry="6" fill="#ecfeff" stroke="#a5f3fc" stroke-width="1"/>
+  <text x="290" y="831" text-anchor="middle" font-size="11" font-weight="400" fill="#0e7490">no-tool-placeholders</text>
   <rect x="440" y="730" width="470" height="120" rx="8" ry="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="675" y="752" text-anchor="middle" font-size="12" font-weight="600" fill="#0f172a">LLM-Judge (5) &#8212; uses Judge Model</text>
-  <rect x="460" y="770" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
-  <text x="560" y="785" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">faithfulness</text>
-  <rect x="680" y="770" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
-  <text x="780" y="785" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">relevance</text>
-  <rect x="460" y="798" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
-  <text x="560" y="813" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">response-quality</text>
-  <rect x="680" y="798" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
-  <text x="780" y="813" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">safety</text>
-  <rect x="460" y="826" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
-  <text x="560" y="841" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">citation-accuracy</text>
+  <text x="675" y="750" text-anchor="middle" font-size="12" font-weight="600" fill="#0f172a">LLM-Judge (6) &#8212; uses Judge Model</text>
+  <rect x="460" y="760" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="560" y="775" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">tool-selection</text>
+  <rect x="680" y="760" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="780" y="775" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">faithfulness</text>
+  <rect x="460" y="788" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="560" y="803" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">relevance</text>
+  <rect x="680" y="788" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="780" y="803" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">response-quality</text>
+  <rect x="460" y="816" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="560" y="831" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">safety</text>
+  <rect x="680" y="816" width="200" height="22" rx="6" ry="6" fill="#faf5ff" stroke="#ddd6fe" stroke-width="1"/>
+  <text x="780" y="831" text-anchor="middle" font-size="11" font-weight="400" fill="#6b21a8">citation-accuracy</text>
   <rect x="980" y="720" width="220" height="120" rx="8" ry="8" fill="#fdf4ff" stroke="#e9d5ff" stroke-width="1.5" filter="url(#softshadow)"/>
   <text x="1090" y="745" text-anchor="middle" font-size="14" font-weight="600" fill="#581c87">Judge Model</text>
   <text x="1090" y="766" text-anchor="middle" font-size="11" font-weight="400" fill="#6b7280">OpenRouter &#183; Claude/GPT</text>
