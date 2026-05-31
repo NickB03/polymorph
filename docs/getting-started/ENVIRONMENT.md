@@ -7,13 +7,14 @@ This document defines the environment-variable matrix for Polymorph.
 
 ## Required (Day-1 bootstrap)
 
-| Variable               | Required                         | Purpose                                                                                    |
-| ---------------------- | -------------------------------- | ------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`         | Yes                              | PostgreSQL connection string for Drizzle/Supabase; `POSTGRES_URL` is also accepted         |
-| `OPENROUTER_API_KEY`   | Required for default text models | OpenRouter provider key                                                                    |
-| `AI_GATEWAY_API_KEY`   | Optional                         | Vercel AI Gateway provider key; currently used for image generation                        |
-| `BRAVE_SEARCH_API_KEY` | Required for the default search  | Primary search provider when `SEARCH_API=brave` (default); enables web + multimedia search |
-| `TAVILY_API_KEY`       | Optional                         | Alternative search / extract provider key                                                  |
+| Variable                  | Required                         | Purpose                                                                                                                                                                         |
+| ------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`            | Yes                              | PostgreSQL connection string for Drizzle/Supabase; `POSTGRES_URL` is also accepted                                                                                              |
+| `DATABASE_RESTRICTED_URL` | Optional                         | Lower-privilege PostgreSQL connection string. When set, the runtime query client prefers it over `DATABASE_URL` (`lib/db/index.ts`); the privileged admin client never uses it. |
+| `OPENROUTER_API_KEY`      | Required for default text models | OpenRouter provider key                                                                                                                                                         |
+| `AI_GATEWAY_API_KEY`      | Optional                         | Vercel AI Gateway provider key; currently used for image generation                                                                                                             |
+| `BRAVE_SEARCH_API_KEY`    | Required for the default search  | Primary search provider when `SEARCH_API=brave` (default); enables web + multimedia search                                                                                      |
+| `TAVILY_API_KEY`          | Optional                         | Alternative search / extract provider key                                                                                                                                       |
 
 ## Core behavior controls
 
@@ -26,11 +27,11 @@ This document defines the environment-variable matrix for Polymorph.
 
 ## Cloud deployment controls
 
-| Variable                     | Required in cloud                     | Purpose                                    |
-| ---------------------------- | ------------------------------------- | ------------------------------------------ |
-| `POLYMORPH_CLOUD_DEPLOYMENT` | Yes                                   | Enables cloud-mode guardrails and behavior |
-| `UPSTASH_REDIS_REST_URL`     | Yes, if you want chat limits enforced | Redis endpoint for limits                  |
-| `UPSTASH_REDIS_REST_TOKEN`   | Yes, if you want chat limits enforced | Redis credential                           |
+| Variable                     | Required in cloud                     | Purpose                                                                                                                                     |
+| ---------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POLYMORPH_CLOUD_DEPLOYMENT` | Yes                                   | Enables cloud-mode guardrails and behavior. `VANA_CLOUD_DEPLOYMENT=true` is accepted as a backward-compatible alias (`lib/utils/index.ts`). |
+| `UPSTASH_REDIS_REST_URL`     | Yes, if you want chat limits enforced | Redis endpoint for limits                                                                                                                   |
+| `UPSTASH_REDIS_REST_TOKEN`   | Yes, if you want chat limits enforced | Redis credential                                                                                                                            |
 
 ## Authentication (Supabase)
 
@@ -42,6 +43,7 @@ Required when `ENABLE_AUTH=true`:
 ## Storage (Supabase)
 
 - `SUPABASE_STORAGE_BUCKET` (default: `user-uploads`)
+- `SUPABASE_SERVICE_ROLE_KEY` — service-role key required for server-side storage uploads (`lib/supabase/server-storage.ts`); used together with `NEXT_PUBLIC_SUPABASE_URL`. Keep server-only (never expose to the client).
 
 ## Search provider options
 
@@ -52,6 +54,11 @@ Required when `ENABLE_AUTH=true`:
 - `SEARCH_API` (`brave`, `tavily`, `exa`, `searxng`, `firecrawl`)
 - `FIRECRAWL_API_KEY` (if selected explicitly)
 - `SEARXNG_API_URL` (required when `SEARCH_API=searxng`)
+
+When using SearXNG, the following optional tuning variables are read by `lib/tools/search/advanced-search.ts` (see the full table in [API → /api/advanced-search](../reference/API.md#post-apiadvanced-search)):
+
+- `SEARXNG_MAX_RESULTS` (default `50`), `SEARXNG_DEFAULT_DEPTH` (default `basic`), `SEARXNG_ENGINES`, `SEARXNG_TIME_RANGE`, `SEARXNG_SAFESEARCH`, `SEARXNG_CRAWL_MULTIPLIER`
+- `LOCAL_REDIS_URL` (default `redis://localhost:6379`) — Redis connection used to cache advanced-search results in non-cloud setups
 
 `fetch type="api"` is reserved for PDFs and explicit extraction needs on hard-to-parse pages. Normal HTML article pages should generally be handled by search results or `fetch type="regular"`, which keeps research resilient even when an extractor is rate-limited or quota-limited.
 
@@ -65,6 +72,16 @@ Required when `ENABLE_AUTH=true`:
 - `OPENAI_COMPATIBLE_API_KEY` + `OPENAI_COMPATIBLE_API_BASE_URL` (any OpenAI-compatible API)
 - `OLLAMA_BASE_URL`
 
+## Voice / text-to-speech
+
+Voice synthesis (`POST /api/voice/synthesize`) is feature-gated and off by default.
+
+| Variable                   | Default                | Purpose                                                                                                                                |
+| -------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_ENABLE_VOICE` | `false`                | Client + server feature gate for voice synthesis (`lib/voice/config.ts`). The synth endpoint returns 404 when unset.                   |
+| `ELEVENLABS_API_KEY`       | —                      | Enables the ElevenLabs TTS provider (`lib/voice/tts-provider.ts`). When unset, the server falls back to OpenAI TTS (`OPENAI_API_KEY`). |
+| `ELEVENLABS_VOICE_ID`      | `DXFkLCBUTmvXpp2QwZjA` | Default ElevenLabs voice ID when the request does not specify one (`app/api/voice/synthesize/route.ts`).                               |
+
 ## Canvas artifacts
 
 | Variable              | Default | Purpose                                                                                                                                                                           |
@@ -74,8 +91,11 @@ Required when `ENABLE_AUTH=true`:
 ## Optional platform features
 
 - Guest mode: `ENABLE_GUEST_CHAT` (recommended), `GUEST_CHAT_DAILY_LIMIT`
+- Authenticated chat limit: `DAILY_CHAT_LIMIT` (default `100`) — daily cap per authenticated user, enforced in cloud mode (`lib/rate-limit/chat-limits.ts`)
+- Site feedback → Slack: `SLACK_WEBHOOK_URL` — when set, the feedback action posts submissions to Slack (`lib/actions/site-feedback.ts`)
 - Tracing/observability: see [Tracing (Arize Phoenix)](#tracing-arize-phoenix) below
 - Performance diagnostics: `ENABLE_PERF_LOGGING`
+- Canvas compiler debug logging: `DEBUG_CANVAS_COMPILER` (`lib/canvas/compiler/compile-canvas-artifact.ts`)
 
 ## Map tiles (geo-map Tool UI)
 
