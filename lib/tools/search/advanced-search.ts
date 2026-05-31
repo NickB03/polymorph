@@ -340,7 +340,7 @@ async function crawlPage(
   }
 }
 
-function highlightQueryTerms(content: string, query: string): string {
+export function highlightQueryTerms(content: string, query: string): string {
   try {
     const terms = query
       .toLowerCase()
@@ -364,7 +364,10 @@ function highlightQueryTerms(content: string, query: string): string {
   }
 }
 
-function calculateRelevanceScore(result: SearXNGResult, query: string): number {
+export function calculateRelevanceScore(
+  result: SearXNGResult,
+  query: string
+): number {
   try {
     const lowercaseContent = result.content.toLowerCase()
     const lowercaseQuery = query.toLowerCase()
@@ -410,7 +413,7 @@ function calculateRelevanceScore(result: SearXNGResult, query: string): number {
   }
 }
 
-function extractPublicationDate(document: Document): Date | null {
+export function extractPublicationDate(document: Document): Date | null {
   const dateSelectors = [
     'meta[name="article:published_time"]',
     'meta[property="article:published_time"]',
@@ -554,7 +557,7 @@ function timeout(ms: number, message: string): Promise<never> {
   })
 }
 
-function isQualityContent(text: string): boolean {
+export function isQualityContent(text: string): boolean {
   const words = text.split(/\s+/).length
   const sentences = text.split(/[.!?]+/).length
   const avgWordsPerSentence = words / sentences
