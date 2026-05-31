@@ -69,7 +69,7 @@ describe.skipIf(!RUN)('RLS policies (real Postgres)', () => {
   it('scopes reads to the user set via withRLS', async () => {
     const idA = `${prefix}-a`
     seededIds.push(idA)
-    await createChat(idA, 'user-A', 'A private chat')
+    await createChat({ id: idA, userId: 'user-A', title: 'A private chat' })
 
     const asA = await withRLS('user-A', tx =>
       tx.select().from(chats).where(eq(chats.id, idA))
