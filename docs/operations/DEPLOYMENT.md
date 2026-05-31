@@ -212,26 +212,26 @@ These defaults are tuned for low-volume personal-project traffic. If you widen t
 
 **Required env vars:**
 
-| Variable                        | Value                                                                                                           |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                  | Supabase Postgres connection string                                                                             |
-| `EVAL_RUN_MODE`                 | `traffic-monitor` for the scheduled production cron                                                             |
-| `EVAL_RUNNER_URL`               | Production app URL for `/api/evals/run`                                                                         |
-| `EVAL_RUNNER_SECRET`            | Shared secret that matches the app's `EVAL_RUNNER_SECRET`                                                       |
-| `PHOENIX_HOST`                  | `http://phoenix.railway.internal:6006`                                                                          |
-| `PHOENIX_PUBLIC_URL`            | Public Phoenix URL used in persisted dashboard links                                                            |
-| `PHOENIX_API_KEY`               | Phoenix System API key                                                                                          |
-| `JUDGE_API_KEY`                 | OpenRouter API key for the judge model; required by `services/evals` startup validation                         |
-| `JUDGE_BASE_URL`                | `https://openrouter.ai/api/v1`                                                                                  |
-| `JUDGE_MODEL`                   | `google/gemini-3.1-flash-lite-preview` (default)                                                                |
-| `JUDGE_REASONING_ENABLED`       | `true` (default)                                                                                                |
-| `JUDGE_REASONING_MAX_TOKENS`    | `1024` (default, positive integer)                                                                              |
-| `SAMPLE_SIZE`                   | `10` (default)                                                                                                  |
-| `LOOKBACK_HOURS`                | `48` (default)                                                                                                  |
-| `EVAL_CASE_CONCURRENCY`         | `1` (default)                                                                                                   |
-| `EVAL_RUNNER_TIMEOUT_MS`        | `300000` (default) per `/api/evals/run` case replay                                                             |
-| `EVAL_EXIT_ON_THRESHOLD_BREACH` | `false` (default) — when `true`, the cron exits non-zero on threshold breach so Railway marks the run as failed |
-| `JUDGE_LOG_PARAMS`              | `false` (default) — optional debug flag; when `true`, logs the judge model's sampling parameters to stdout      |
+| Variable                        | Value                                                                                                             |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                  | Supabase Postgres connection string                                                                               |
+| `EVAL_RUN_MODE`                 | `traffic-monitor` for the scheduled production cron                                                               |
+| `EVAL_RUNNER_URL`               | Production app URL for `/api/evals/run`                                                                           |
+| `EVAL_RUNNER_SECRET`            | Shared secret that matches the app's `EVAL_RUNNER_SECRET`                                                         |
+| `PHOENIX_HOST`                  | `http://phoenix.railway.internal:6006`                                                                            |
+| `PHOENIX_PUBLIC_URL`            | Public Phoenix URL used in persisted dashboard links                                                              |
+| `PHOENIX_API_KEY`               | Phoenix System API key                                                                                            |
+| `JUDGE_API_KEY`                 | OpenRouter API key for the judge model; required by `services/evals` startup validation                           |
+| `JUDGE_BASE_URL`                | `https://openrouter.ai/api/v1`                                                                                    |
+| `JUDGE_MODEL`                   | `google/gemini-3.1-flash-lite-preview` (default)                                                                  |
+| `JUDGE_REASONING_ENABLED`       | `true` (default)                                                                                                  |
+| `JUDGE_REASONING_MAX_TOKENS`    | `1024` (default, positive integer)                                                                                |
+| `SAMPLE_SIZE`                   | `10` (default)                                                                                                    |
+| `LOOKBACK_HOURS`                | `48` (default)                                                                                                    |
+| `EVAL_CASE_CONCURRENCY`         | `1` (default)                                                                                                     |
+| `EVAL_RUNNER_TIMEOUT_MS`        | `300000` (default) per `/api/evals/run` case replay                                                               |
+| `EVAL_EXIT_ON_THRESHOLD_BREACH` | `false` (default) — when `true`, the cron exits non-zero on threshold breach so Railway marks the run as failed   |
+| `JUDGE_LOG_PARAMS`              | unset (default) — optional debug flag; set to `1` to log the judge model's resolved sampling parameters to stdout |
 
 ### Rotating Phoenix API keys
 
