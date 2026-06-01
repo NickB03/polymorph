@@ -69,16 +69,39 @@ describe('NewUserDemoPopup', () => {
   it('opens for eligible first-run users and autoplays the demo video without native controls', async () => {
     render(<NewUserDemoPopup enabled />)
 
-    expect(
-      await screen.findByRole('dialog', { name: /watch polymorph in motion/i })
-    ).toBeInTheDocument()
+    const dialog = await screen.findByRole('dialog', {
+      name: /watch polymorph in motion/i
+    })
+    expect(dialog).toBeInTheDocument()
+    expect(dialog).toHaveClass('max-w-none')
+    expect(dialog.className).toContain(
+      'w-[min(92vw,calc((100dvh-2rem)*16/9),1120px)]'
+    )
+    expect(dialog.className).toContain(
+      '2xl:w-[min(78vw,calc((100dvh-2rem)*16/9),1680px)]'
+    )
+
+    expect(screen.getByTestId('demo-video-frame')).toHaveClass('aspect-video')
 
     const video = screen.getByTitle('Polymorph demo video')
+    expect(video).toHaveClass('object-contain')
     expect(video).toHaveAttribute('src', '/demos/polymorph-demo.mp4')
     expect(video).not.toHaveAttribute('controls')
     expect(video).toHaveAttribute('muted')
     expect(video).toHaveAttribute('playsinline')
     expect(video).toHaveAttribute('autoplay')
+  })
+
+  it('does not crop the demo video frame', async () => {
+    render(<NewUserDemoPopup enabled />)
+
+    expect(
+      await screen.findByRole('dialog', { name: /watch polymorph in motion/i })
+    ).toBeInTheDocument()
+
+    expect(screen.getByTestId('demo-video-frame')).toHaveClass('aspect-video')
+    const video = screen.getByTitle('Polymorph demo video')
+    expect(video).toHaveClass('h-full', 'w-full', 'object-contain')
   })
 
   it('autoplays regardless of reduced-motion preference', async () => {
