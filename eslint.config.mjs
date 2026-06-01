@@ -5,6 +5,7 @@ const eslintConfig = [
   {
     ignores: [
       '.next/**',
+      'coverage/**',
       'node_modules/**',
       'lib/db/migrations/**',
       'services/evals/node_modules/**',
