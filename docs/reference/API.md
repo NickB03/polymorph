@@ -849,11 +849,11 @@ When the guest limit is exceeded, the response is:
 
 ### Authenticated Rate Limits
 
-| Setting    | Value                  | Description                    |
-| ---------- | ---------------------- | ------------------------------ |
-| Limit      | 100 requests/day       | Hardcoded `DAILY_CHAT_LIMIT`.  |
-| Window     | Resets at midnight UTC | Key: `rl:chat:{userId}:{date}` |
-| Identifier | Supabase user ID       | Extracted from auth session.   |
+| Setting    | Value                  | Description                                        |
+| ---------- | ---------------------- | -------------------------------------------------- |
+| Limit      | 100 requests/day       | Configurable via `DAILY_CHAT_LIMIT` (default 100). |
+| Window     | Resets at midnight UTC | Key: `rl:chat:{userId}:{date}`                     |
+| Identifier | Supabase user ID       | Extracted from auth session.                       |
 
 When the authenticated limit is exceeded, the response is:
 

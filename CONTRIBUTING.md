@@ -175,7 +175,7 @@ Three chat agents (`search`, `research`, `build`) share a common toolset wired t
 
 5. **Persist new message-part types** in `lib/db/schema.ts` only if the tool needs a part shape that doesn't fit the existing `parts` table conventions. Most display tools don't need schema changes.
 
-> Note: `lib/agents/researcher.ts` is now a thin compatibility shim around `createChatAgent`. New tool registrations belong in `lib/agents/chat/`, not in `researcher.ts`.
+> Note: chat-agent tool registration lives in `lib/agents/chat/` — `createChatAgentTools()` in `lib/agents/chat/toolset.ts` assembles the toolset, and the per-agent active-tool arrays live in `search.ts`/`research.ts`/`build.ts`. New tool registrations belong here.
 
 ## Architecture Reference
 

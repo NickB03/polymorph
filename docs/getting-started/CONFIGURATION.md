@@ -113,6 +113,7 @@ For real browser checks of authenticated admin routes, use the [Browser QA runbo
 
 - Guest chat: `ENABLE_GUEST_CHAT=true`
 - Guest daily limit: `GUEST_CHAT_DAILY_LIMIT=10`
+- Voice / text-to-speech: `NEXT_PUBLIC_ENABLE_VOICE=true` (plus `OPENAI_API_KEY` or `ELEVENLABS_API_KEY`) — see [Environment Reference](ENVIRONMENT.md#voice--text-to-speech)
 - Phoenix tracing: `ENABLE_TRACING=true`
 - File uploads: `SUPABASE_STORAGE_BUCKET=user-uploads`
 - Perf logging: `ENABLE_PERF_LOGGING=true`
