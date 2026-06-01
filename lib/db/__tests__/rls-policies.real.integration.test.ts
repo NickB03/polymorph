@@ -55,8 +55,8 @@ describe.skipIf(!RUN)('RLS policies (real Postgres)', () => {
     const id = `${prefix}-unset`
     seededIds.push(id)
     await owner`
-      insert into chats (id, user_id, visibility)
-      values (${id}, ${'someone-else'}, 'private')
+      insert into chats (id, user_id, title, visibility)
+      values (${id}, ${'someone-else'}, ${'Someone elses chat'}, 'private')
     `
 
     // The app db connects as app_user with no GUC set -> the policy

@@ -108,10 +108,71 @@ jobs:
       - name: Run tests
         run: cd services/evals && bun run test
 
+  test-db:
+    runs-on: ubuntu-latest
+    name: Test (DB integration)
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: polymorph_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_SSL_DISABLED: 'true'
+      # Owner connection: applies migrations and seeds rows (bypasses RLS)
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/polymorph_test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.9
+
+      - name: Install dependencies
+        run: bun install
+
+      # Apply schema + RLS policies as the owner.
+      - name: Run migrations
+        run: bun run migrate
+
+      # Create the restricted application role (no SUPERUSER / no BYPASSRLS) so
+      # RLS is actually enforced for it, then grant table/sequence access.
+      - name: Create restricted app_user role
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d polymorph_test -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN
+              CREATE ROLE app_user LOGIN PASSWORD 'app_pw';
+            END IF;
+          END $$;
+          GRANT USAGE ON SCHEMA public TO app_user;
+          GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
+          GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;
+          SQL
+
+      - name: Run RLS integration tests
+        env:
+          # App runtime connection: the restricted role, so RLS applies.
+          DATABASE_RESTRICTED_URL: postgresql://app_user:app_pw@localhost:5432/polymorph_test
+          RUN_DB_INTEGRATION: 'true'
+        run: bun run test:db
+
   build:
     runs-on: ubuntu-latest
     name: Build
-    needs: [lint, typecheck, format, test, test-evals]
+    needs: [lint, typecheck, format, test, test-evals, test-db]
 
     steps:
       - name: Checkout repository
