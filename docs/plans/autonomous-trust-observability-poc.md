@@ -4,12 +4,23 @@
 
 Pitch-grade prototype that demonstrates the "Autonomous Trust Observability" user story for an enterprise security audience. The goal is **a 5-minute live demo on stage**, not an enterprise product. We piggyback on the existing polymorph codebase because it already gives us a real LLM agent doing real tool calls (web search, HTTP fetches, image gen, canvas writes), real OpenTelemetry/Phoenix tracing, a real auth/identity layer, and an admin dashboard pattern we can clone. That lets us show **real telemetry from a real agent** instead of a fully mocked demo, which is what makes this kind of pitch credible.
 
-**Threat model — "Ungoverned Autonomous Agents."** The unifying threat class the platform detects is *ungoverned autonomous agents operating inside the enterprise perimeter*, regardless of provenance. Three faces:
+**Two buyer personas, one appliance.** The same trust-observability platform addresses two distinct enterprise pain points. The demo picks whichever scenario matches the audience.
+
+- **Persona 1 — Enterprise AI Governance** (CISO / Head of AI Security). *"My sanctioned and unsanctioned AI agents are doing things I can't see."* Concerned with **outbound** ungoverned autonomous agents operating inside the enterprise perimeter. Buyer: any enterprise running internal AI agents.
+- **Persona 2 — Fraud Prevention / Trust & Safety** (Head of Fraud, CISO/CRO at customer-facing brand). *"External AI agents are now impersonating customers against my customer-service and self-service endpoints."* Concerned with **inbound** AI agents abusing customer-facing channels. Buyer: banks, retailers, telcos, insurance, marketplaces.
+
+**Threat model A — "Ungoverned Autonomous Agents"** (outbound, Persona 1). The unifying threat class is *ungoverned autonomous agents operating inside the enterprise perimeter*, regardless of provenance. Three faces:
 1. **Sanctioned-but-compromised** — an enterprise-deployed agent (e.g. procurement) whose context gets poisoned and behavior drifts off-baseline. Telemetry-rich: we have OTel, tool calls, identity.
 2. **Shadow / OSS agents** — Open Interpreter, OpenHands/OpenDevin, AutoGPT, Aider, self-hosted Llama agents installed on employee laptops. No vendor SaaS governance, no OTel emission. We see them only at the network layer.
 3. **Computer-use / GUI-controlling agents** — Anthropic Computer Use, OpenAI Operator, Browser Use, autonomous RPA. They bypass APIs and operate human-facing UIs, making them invisible to API-centric monitoring. We see them through behavioral fingerprints (timing regularity, parallel sessions, MCP traffic).
 
-The demo surfaces all three classes simultaneously: a foreground compromised-procurement scenario plus a background shadow-agent detection beat.
+**Threat model B — "Inbound AI Abuse"** (inbound, Persona 2). External AI agents interacting with enterprise customer-facing endpoints (web, voice, chat). The platform answers *"Is the entity on the other end of this session an AI agent or a human?"* per session, with a confidence score and the driving signals. Use cases:
+1. **AI-driven account takeover / social-engineering** — agents automate password reset, KYC bypass, recovery flows.
+2. **AI-driven customer-service abuse** — agents extract refunds, manipulate pricing, exfiltrate account info via chat or voice.
+3. **AI-driven scraping / pricing recon at scale** — agents harvest catalogs, prices, availability.
+4. **AI-driven application abuse** — agents file insurance claims, open accounts, process transactions on behalf of a human controller (often coordinated fraud rings).
+
+The demo surfaces one scenario from each threat model on the same dashboard via a scenario picker: **Scenario A** (Compromised Procurement Agent + Workstation WS-42 shadow-agent background beat) for Persona 1, **Scenario B** (AI-vs-human Customer Service against a fake "First National Bank" target app) for Persona 2.
 
 Per scoping conversation:
 - **Hero scenario:** Scenario 1 from the user story — compromised enterprise procurement agent — running in the foreground. **Concurrent background detection:** a "Workstation WS-42" host on the same network emits Open Interpreter-shaped traffic; the appliance flags it as an ungoverned agent.
@@ -27,17 +38,34 @@ The deliverable is a new `/admin/trust` dashboard plus the supporting telemetry/
 
 ---
 
-## Demo narrative (target stage flow, ~5 min)
+## Demo narratives (presenter picks one per audience, ~4 min each)
 
-1. (15s) Open `/admin/trust` — "Vision One Trust Monitor watching the enterprise AI fleet. One appliance. Three classes of ungoverned autonomous agents."
+Both scenarios run from the same `/admin/trust` dashboard with a scenario picker. Presenter chooses based on the audience in front of them; if there's appetite, run both back-to-back in ~8 min.
+
+### Scenario A — Compromised Procurement Agent (Persona 1: Enterprise AI Governance)
+
+1. (15s) Open `/admin/trust` — "Vision One Trust Monitor watching the enterprise AI fleet."
 2. (15s) Quiet baseline — sanctioned agents green, trust scores ~95. Topology shows the procurement agent at center, workstations at the periphery.
-3. (20s) Click **Run scenario: Compromised Procurement Agent**.
-4. (45s) Activity feed streams real tool calls, real A2A sub-agent spawns, real HTTP egress as the procurement agent executes a poisoned task. Trust gauge slides 95 → 89/Elevated → 42/High. Drivers panel shows ensemble reasoning. Topology graph fans out in real time.
-5. (30s) **Concurrent background detection.** A new node lights up on the topology: "Workstation WS-42 — Ungoverned Agent." Activity feed shows the SLM-2 classifier flagging Open Interpreter-shaped traffic from the workstation. The pitch line lands: *"You're seeing both faces of the threat — your sanctioned agent gone rogue and an unsanctioned shadow agent — caught by one appliance."*
-6. (45s) **Real** Zeek/Suricata events stream into the activity feed — conn.log, http.log, ssl.log, dns.log entries correlated by 5-tuple to real fetches. Beelzebub MCP-honeypot interaction surfaces with verbatim captured prompt. Optional: real Falco syscall events.
-7. (20s) **Ensemble panel** — three SLMs (Trust Judge, Ungoverned-Agent Classifier, Prompt-Injection Detector) each output a score + one-sentence reasoning. Final ensemble score crosses the Critical threshold.
-8. (30s) **Graduated response in action.** Score < 60 → pause + approval modal (Medium). Presenter dismisses. Score < 30 → **Critical**: appliance SNMP-writes the managed switch, dropping the agent host's switch port. The Ethernet LED on the target Pi visibly goes dark on stage. Theater lands.
-9. (15s) Close — "Autonomous Trust Observability — runtime + infrastructure-native, no cloud round-trip, no enterprise data leaving the edge."
+3. (15s) Click **Run scenario: Compromised Procurement Agent**.
+4. (45s) Activity feed streams real tool calls, real A2A sub-agent spawns, real HTTP egress as the procurement agent executes a poisoned task. Trust gauge slides 95 → 89/Elevated → 42/High. Topology graph fans out in real time.
+5. (30s) **Concurrent background detection.** A new node lights up: "Workstation WS-42 — Ungoverned Agent." Activity feed shows the SLM-2 classifier flagging Open Interpreter-shaped traffic. Pitch: *"Your sanctioned agent gone rogue and an unsanctioned shadow agent — caught by one appliance."*
+6. (40s) **Real** Zeek/Suricata events stream — conn.log, http.log, ssl.log, dns.log correlated by 5-tuple. Beelzebub MCP-honeypot interaction surfaces with verbatim captured prompt.
+7. (20s) **Ensemble panel** — three SLMs (Trust Judge, Ungoverned-Agent Classifier, Prompt-Injection Detector) each output a score + reasoning. Final ensemble score crosses Critical.
+8. (30s) **Graduated response.** Score < 60 → pause + approval modal. Presenter dismisses. Score < 30 → **Critical**: appliance SNMP-writes the switch, dropping the agent host's port. Target Pi's Ethernet LED goes dark on stage.
+9. (10s) Close — "Autonomous Trust Observability — runtime + infrastructure-native, no cloud round-trip, no enterprise data leaving the edge."
+
+### Scenario B — AI Agent vs Customer Service (Persona 2: Fraud Prevention)
+
+The narrative inverts: instead of watching *our* agents go bad, we watch *external* agents attack *our* customer-facing surface. Target = a tiny fake "First National Bank" web app served from the appliance (password-reset + refund-request flow). Two sessions run side-by-side, scored independently by the trust appliance.
+
+1. (15s) Open `/admin/trust` and switch to scenario picker → **Customer-Service Inbound**. Pitch: *"Same appliance, different question — for every visitor on your customer-facing endpoint, is this an AI agent or a human?"*
+2. (15s) Dashboard shows two empty session lanes — **Session L (Human)** and **Session R (AI Agent)**. Trust scores both at 50 (no data yet).
+3. (30s) Presenter opens the bank app in a real browser on the presenter laptop. Clicks through password-reset flow naturally — types, pauses, makes a typo, backspaces, scrolls. Behavioral collector JS streams mouse / keystroke / scroll / focus events to the appliance. Session L's "P(AI agent)" drops to ~0.04 in real-time. Drivers show: *"Bezier mouse curves, variable keystroke timing, tab-blur events, decision pauses at high-stakes fields."*
+4. (45s) Presenter clicks **Launch AI Agent vs Same Flow**. A Docker container on the attacker host spawns either (a) Anthropic Computer Use against the bank app, or (b) a Playwright mimic running the same flow with computer-use-shaped behavior (zero jitter, paste-typing, straight-line mouse paths). Session R populates.
+5. (60s) Session R's P(AI agent) climbs to 0.97 within ~5 seconds of mouse data. Drivers stream in: *"Straight-line mouse paths (no Bezier), instant teleports between clicks, zero keystroke flight-time variance (paste), no tab-blur, no decision pauses, JA3 fingerprint matches headless Chrome variant."* Network panel shows the agent's request headers + HTTP/2 SETTINGS hash. Ensemble panel: Biometric Classifier 0.97, Ungoverned-Agent Classifier 0.81, Network Fingerprint 0.74 → final 0.95.
+6. (30s) **Graduated enforcement at the inbound boundary.** As Session R crosses 0.90: appliance fires a step-up challenge (proof-of-humanity modal injected into Session R's response). Score holds high → appliance issues identity-revoke (mock IDP `revokeSession`) and the AI agent's session is terminated mid-flow. The Computer Use video feed shows the agent staring at a "Session expired" screen. Meanwhile Session L (the human) is untouched.
+7. (15s) Show side-by-side biometric traces in the timeline — human session's mouse track is a wandering line; AI session's is a constellation of straight segments. The visual contrast is the close.
+8. (10s) Close — *"One appliance. Outbound AI governance for your CISO, inbound AI fraud for your fraud team. Same model family, same enforcement engine."*
 
 ---
 
@@ -45,12 +73,31 @@ The deliverable is a new `/admin/trust` dashboard plus the supporting telemetry/
 
 ### Layer 1 — Real telemetry capture (real)
 
-Tap polymorph's existing primitives, no new agent framework.
+Tap polymorph's existing primitives for outbound (Scenario A) and add a small inbound-session capture path for Scenario B.
+
+**Outbound (Scenario A):**
 
 - **Tool-call events** — Hook into the `ToolPart` state transitions already streamed by `lib/streaming/create-chat-stream-response.ts`. Each `input-streaming → input-available → output-available` transition emits a `trust_event` row.
 - **OTel span enrichment** — Extend `lib/utils/telemetry.ts:withOtelRootSpan` to tag spans with `trust.agent_id`, `trust.parent_agent_id`, `trust.scenario_id`. Phoenix already receives these via `instrumentation.ts`.
 - **Identity provenance** — Use the real `userId` from `lib/auth/get-current-user.ts` plus a new `agent_id` (UUID) attached to every chat run. Sub-agent spawns carry a `parent_agent_id` so the delegation chain is real.
 - **HTTP egress signal** — The `fetch` tool in `lib/agents/chat/toolset.ts` already routes through `fetchWithRetry()`; wrap it to record destination host + bytes + duration per call into `trust_events`.
+
+**Inbound (Scenario B):**
+
+- **Behavioral biometrics collector** (`targets/first-national-bank/public/collector.js`, ~250 LOC) — embedded JS in the target customer-facing app. Captures, buffers, and batches:
+  - *Mouse*: `pointermove` (x, y, t), `pointerdown/up`, computed velocity / acceleration / jitter, Bezier-fit residual.
+  - *Keystroke*: `keydown/keyup` per-key dwell time + flight time, paste events, IME composition, backspace/correction frequency.
+  - *Scroll / focus*: scroll deltas with momentum, `focus` / `blur` / `visibilitychange` events.
+  - *Decision pauses*: time-between-field-interaction histograms; high-stakes-field flag from data attributes on inputs.
+  - *Submit-time summary*: per-form aggregate of all the above.
+  - POSTs batches to `/api/trust/biometrics` every 500ms via `navigator.sendBeacon` (so a session terminating mid-flow still flushes).
+- **Server-side request features** captured by the target app middleware:
+  - *TLS fingerprint*: JA3 / JA4 / JA4S via a small extractor on the inbound TLS-terminating proxy (v1: a Caddy / nginx sidecar with `ja3` module; v2: extracted from the Jetson's TLS-terminator).
+  - *HTTP/2 fingerprint*: Akamai SETTINGS hash + frame ordering.
+  - *Header order + value fingerprint* (cmp. headers against a known-browser fixture).
+  - *IP-reputation lookup* (datacenter / residential / known-proxy via a static MaxMind dataset bundled into the appliance — no external lookups during demo).
+  - *Endpoint arrival order* (did this session traverse the normal flow or arrive directly at a deep endpoint?).
+- **Session correlation** — server-side request features and biometric collector events are joined by a `session_id` cookie issued on first hit, so each session has both halves of the signal.
 
 ### Layer 2 — A2A primitive (real, minimal)
 
@@ -126,15 +173,24 @@ The trust dashboard correlates real NDR events back to the originating tool call
 
 Recommended baseline for the demo: **Zeek + Suricata + Beelzebub** (the non-negotiable trio: NDR for the network audience, signatures for protocol anomalies, deception for the AI/MCP narrative). **Falco** as a fast-follow if time permits to get a real "cloud control-plane" claim.
 
-### Layer 5 — SLM ensemble (on-device intelligence)
+### Layer 5 — SLM / classifier ensemble (on-device intelligence)
 
-`lib/trust/slm/` — three small models running concurrently on the Jetson Orin Nano Super (or via cloud LLM judge in v1). Each is exposed behind the same `JudgeModel` interface from `services/evals/src/judge-model.ts` so v1→v2 is a config swap.
+`lib/trust/slm/` — four models running concurrently on the Jetson Orin Nano Super (or via cloud LLM judge / sklearn-style classifier in v1). The first three are used for Scenario A (outbound trust scoring); the fourth is used for Scenario B (inbound AI-vs-human session classification). SLM-2's network-fingerprint signal also contributes to Scenario B. Each is exposed behind the same `JudgeModel` interface from `services/evals/src/judge-model.ts` so v1→v2 is a config swap.
 
-- **SLM-1: Behavioral Trust Judge** (`slm/judge.ts`) — Qwen 2.5 3B or Llama 3.2 3B Instruct, INT8 quantized via TensorRT-LLM. Input: compact agent-trace summary (tools called, hosts hit, A2A graph) + heuristic driver list. Output: `{ score: 0-100, primary_drivers[], reasoning }`. Replaces the cloud judge from the v1 plan. Temperature 0 for determinism. ~200ms latency on Jetson Orin Nano Super.
-- **SLM-2: Ungoverned-Agent Classifier** (`slm/ungoverned-classifier.ts`) — small distilled classifier (1B parameter range; can start with Llama 3.2 1B fine-tuned on shadow-agent traffic patterns, or for the demo, a prompt-engineered small model with a system prompt enumerating known signatures). Input: NDR flow summary for a host (User-Agent strings, destination hosts, MCP protocol presence, timing regularity, parallel session count, TLS JA3 fingerprint). Output: `{ p_unmonitored_agent: 0-1, indicators[], suspected_kind: oss_agent | computer_use | rpa | unknown }`. **This is what catches the WS-42 shadow agent in scene 5 of the demo.**
-- **SLM-3: Prompt-Injection / Instruction-Deviation Detector** (`slm/injection-detector.ts`) — Llama Guard 3 1B or a Qwen Guard 1.5B equivalent. Input: tool call sequence + the most recent user message + any retrieved content the agent saw. Output: `{ p_injection: 0-1, flagged_spans[], category: prompt_injection | instruction_deviation | goal_hijack }`. Catches the procurement-scenario poisoning beat.
+- **SLM-1: Behavioral Trust Judge** (`slm/judge.ts`) — Qwen 2.5 3B or Llama 3.2 3B Instruct, INT8 quantized via TensorRT-LLM. Input: compact agent-trace summary (tools called, hosts hit, A2A graph) + heuristic driver list. Output: `{ score: 0-100, primary_drivers[], reasoning }`. Temperature 0 for determinism. ~200ms latency on Jetson Orin Nano Super. **Scenario A only.**
+- **SLM-2: Ungoverned-Agent / Network-Fingerprint Classifier** (`slm/ungoverned-classifier.ts`) — small distilled classifier (1B parameter range). Input: NDR flow summary for a host (User-Agent strings, destination hosts, MCP protocol presence, timing regularity, parallel session count, TLS JA3/JA4 fingerprint, HTTP/2 SETTINGS hash). Output: `{ p_unmonitored_agent: 0-1, indicators[], suspected_kind: oss_agent | computer_use | rpa | unknown }`. **Used by both scenarios** — catches WS-42 in Scenario A and contributes the network-fingerprint signal to Session R in Scenario B.
+- **SLM-3: Prompt-Injection / Instruction-Deviation Detector** (`slm/injection-detector.ts`) — Llama Guard 3 1B or a Qwen Guard 1.5B equivalent. Input: tool call sequence + the most recent user message + any retrieved content the agent saw. Output: `{ p_injection: 0-1, flagged_spans[], category: prompt_injection | instruction_deviation | goal_hijack }`. **Scenario A only.**
+- **SLM-4: Biometric AI-vs-Human Classifier** (`slm/biometric-classifier.ts`) — gradient-boosted classifier (XGBoost / LightGBM) rather than an SLM, because the inputs are dense numeric feature vectors not natural-language traces. Lightweight (~5MB), runs in <20ms per inference on either laptop CPU or Jetson. Input: per-session feature vector aggregated from the biometric collector + server-side request features:
+  - Mouse: jitter variance, path-curvature stats, Bezier-fit residual, click-time-to-target, max-velocity distribution.
+  - Keystroke: dwell/flight time variance, paste-event count, IME usage, backspace ratio, inter-key timing entropy.
+  - Scroll/focus: tab-blur count, scroll-momentum presence, partial-scroll ratio, time-since-last-focus distribution.
+  - Decision pause: time-at-high-stakes-fields, time-at-low-stakes-fields ratio.
+  - Server-side: JA3/JA4 hash bucket, HTTP/2 SETTINGS hash bucket, header-order distance from browser-fixture, IP-reputation class, endpoint-arrival-order score.
+  Output: `{ p_ai_agent: 0-1, top_drivers[], confidence_band: low | medium | high }`. Trained-from-scratch is out of v1/v2 scope; for the PoC we ship a hand-tuned classifier with thresholds calibrated against captured human + Computer-Use traces (see "data factory" framing in Limitations). **Scenario B only.**
 
-**Ensemble fusion** (`slm/ensemble.ts`) — weighted combination:
+**Ensemble fusion** (`slm/ensemble.ts`) — scenario-specific weights.
+
+*Scenario A — outbound trust score (higher = more trustworthy):*
 
 ```
 final_score = round(
@@ -145,7 +201,18 @@ final_score = round(
 )
 ```
 
-Each component is surfaced individually in the dashboard's **Ensemble panel** so the audience sees the composition — not a black box.
+*Scenario B — inbound P(AI agent) per session (higher = more likely AI):*
+
+```
+p_ai_agent = clamp(
+  0.55 * slm4_p_ai_agent +
+  0.25 * slm2_p_unmonitored +     // network fingerprint signal
+  0.20 * interaction_sequence_score,  // endpoint order + form-fill timing heuristic
+  0, 1
+)
+```
+
+Each component is surfaced individually in the dashboard's **Ensemble panel** so the audience sees the composition — not a black box. Scenario B's ensemble runs once per submit and continuously every 2s during a session.
 
 **v1 vs. v2 model backends:**
 
