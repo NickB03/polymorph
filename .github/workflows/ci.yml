@@ -83,7 +83,7 @@ jobs:
       - name: Run tests
         run: |
           if [ -f "vitest.config.ts" ] || [ -f "vitest.config.mts" ]; then
-            bun run test
+            bun run test -- --coverage
           fi
         env:
           DATABASE_URL: postgresql://user:pass@localhost:5432/db

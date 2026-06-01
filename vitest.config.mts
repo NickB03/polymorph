@@ -22,14 +22,30 @@ export default defineConfig({
     exclude: ['**/node_modules/**', 'services/**', '.claude/worktrees/**'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'text-summary', 'json-summary'],
-      include: ['lib/**/*.ts', 'app/api/**/*.ts'],
+      reporter: ['text', 'text-summary', 'json-summary', 'lcov'],
+      include: [
+        'lib/**/*.{ts,tsx}',
+        'app/**/*.{ts,tsx}',
+        'components/**/*.{ts,tsx}',
+        'hooks/**/*.{ts,tsx}'
+      ],
       exclude: [
         '**/__tests__/**',
         '**/*.test.ts',
         '**/*.test.tsx',
-        'lib/db/migrations/**'
-      ]
+        '**/*.d.ts',
+        'lib/db/migrations/**',
+        'lib/canvas/compiler/vendor/**',
+        '**/*.generated.ts'
+      ],
+      // Ratchet floor: set a few points below the measured baseline so this
+      // gates regressions without being aspirational. Raise as coverage grows.
+      thresholds: {
+        statements: 58,
+        branches: 71,
+        functions: 67,
+        lines: 58
+      }
     }
   }
 })
