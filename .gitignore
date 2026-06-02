@@ -61,7 +61,8 @@ skills-lock.json
 /.playwright-mcp/
 /skills/
 /.impeccable.md
-/.claude/skills/
+/.claude/skills/*
+!/.claude/skills/*.md
 
 # README demo source assets — ship only explicit derived README assets
 docs/assets/demos/*.mp4
