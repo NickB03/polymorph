@@ -118,7 +118,7 @@ export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
     >
       <DialogContent
         onOpenAutoFocus={event => event.preventDefault()}
-        className="max-w-5xl gap-0 border-border bg-background p-0 sm:p-0"
+        className="w-[min(92vw,calc((100dvh-2rem)*16/9),1120px)] max-w-none gap-0 border-border bg-background p-0 sm:p-0 2xl:w-[min(78vw,calc((100dvh-2rem)*16/9),1680px)]"
       >
         <DialogHeader className="sr-only">
           <DialogTitle>Watch Polymorph in motion</DialogTitle>
@@ -127,7 +127,10 @@ export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative aspect-[160/84] overflow-hidden rounded-lg">
+        <div
+          data-testid="demo-video-frame"
+          className="relative aspect-video overflow-hidden rounded-lg bg-background"
+        >
           <video
             ref={setVideoRef}
             title="Polymorph demo video"
@@ -139,7 +142,7 @@ export function NewUserDemoPopup({ enabled, onStart }: NewUserDemoPopupProps) {
             onTimeUpdate={handleTimeUpdate}
             onEnded={handleEnded}
             onClick={handleVideoClick}
-            className="block aspect-video w-full cursor-pointer bg-background"
+            className="block h-full w-full cursor-pointer bg-background object-contain"
           />
           <div
             aria-hidden
