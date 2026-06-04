@@ -43,6 +43,7 @@ Run these in order. Each is a fresh chat (new session).
 **Mode:** research  
 **Model:** quality  
 **Prompt:**
+
 ```
 What are the most significant AI safety research developments from the past year, and what open problems remain? Cite your sources.
 ```
@@ -52,6 +53,7 @@ What are the most significant AI safety research developments from the past year
 **Mode:** build  
 **Model:** quality  
 **Prompt:**
+
 ```
 Create an interactive dashboard showing global renewable energy adoption trends over the last decade. Include a line chart, a summary table by region, and a brief analysis.
 ```
@@ -61,6 +63,7 @@ Create an interactive dashboard showing global renewable energy adoption trends 
 **Mode:** chat  
 **Model:** speed  
 **Prompt:**
+
 ```
 Explain the key differences between RAG and fine-tuning for LLM applications, and when you'd choose one over the other.
 ```
@@ -68,6 +71,7 @@ Explain the key differences between RAG and fine-tuning for LLM applications, an
 ## Verification
 
 After all sessions complete:
+
 - Confirm 3 new traces appear in Phoenix under the production project
 - Check that no session returned an error or empty response
 - If any session failed, re-run it once before reporting the failure
