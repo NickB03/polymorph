@@ -20,6 +20,7 @@
     "seed:evals": "bun run scripts/seed-eval-summaries.ts --write --reset",
     "seed:evals:dry-run": "bun run scripts/seed-eval-summaries.ts --dry-run",
     "chat": "bun run scripts/chat-cli.ts",
+    "generate-traffic": "bun run scripts/generate-traffic.ts",
     "prepare": "husky"
   },
   "dependencies": {

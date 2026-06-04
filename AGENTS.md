@@ -15,6 +15,7 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 - `bun run test` — Vitest (single run); `bun run test -- path/to/file.test.ts` for one file; `bun run test:watch` for watch mode
 - `bun run migrate` — Drizzle migrations
 - `bun run chat` — CLI chat interface (`scripts/chat-cli.ts`)
+- `bun run generate-traffic` — run 3 synthetic sessions against the production site (`scripts/generate-traffic.ts`)
 - `npx supabase start` — local Supabase (DB 44322, API 44321, Studio 44323)
 
 ## Code conventions
@@ -56,6 +57,7 @@ Users should not need to say the word "skill." Infer intent from normal requests
 - **Next.js App Router architecture decisions** → `nextjs-app-router-patterns`
 - **New page, major UI section, complex layout** → Pencil wireframe workflow (`.claude/rules/design-workflow.md`), then `frontend-design`
 - **Any creative/visual work** → `brainstorming` (before wireframing or implementation)
+- **Generating production eval traffic / seeding traces** → `generate-traffic`
 
 **Precedence:** process/quality skills first (debugging/planning/verification/review), then domain skills (Next.js, Supabase, testing). When multiple apply, order:
 `systematic-debugging` → `writing-plans` → execution mode (inline or `subagent-driven-development`) → domain skill(s) → `verification-before-completion` → review skill(s) → `finishing-a-development-branch`.

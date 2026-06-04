@@ -34,6 +34,7 @@
     "node_modules",
     "lib/artifacts/templates",
     "services",
+    "scripts",
     "skills",
     ".agents",
     ".claude/skills"
