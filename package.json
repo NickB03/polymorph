@@ -20,6 +20,7 @@
     "seed:evals": "bun run scripts/seed-eval-summaries.ts --write --reset",
     "seed:evals:dry-run": "bun run scripts/seed-eval-summaries.ts --dry-run",
     "chat": "bun run scripts/chat-cli.ts",
+    "synthetic-traffic": "bun run scripts/synthetic-traffic.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -139,6 +140,7 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.3.2",
+    "playwright": "^1.60.0",
     "postcss": "^8",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.11",
