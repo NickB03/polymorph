@@ -61,8 +61,9 @@ case "$FORMAT" in
     ;;
   gif)
     OUT="${OUT_DIR}/polymorph-demo-preview.gif"
-    PALETTE="$(mktemp --suffix=.png)"
-    trap 'rm -f "$PALETTE"' EXIT
+    PALETTE_DIR="$(mktemp -d)"
+    PALETTE="${PALETTE_DIR}/palette.png"
+    trap 'rm -rf "$PALETTE_DIR"' EXIT
     echo "Encoding GIF (per-frame palette) -> ${OUT} (fps=${FPS}, width=${WIDTH})"
     ffmpeg -y -i "$SRC" -vf "${SCALE},palettegen=stats_mode=diff" "$PALETTE"
     ffmpeg -y -i "$SRC" -i "$PALETTE" -lavfi \
