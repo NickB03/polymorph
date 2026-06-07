@@ -10,6 +10,34 @@ Populates `public/canvas-vendor/`, the vendor chunk loaded by the canvas iframe 
 bun run build:canvas-vendor
 ```
 
+## build-demo.sh
+
+Regenerates the README hero demo (`docs/assets/demos/polymorph-demo.webp`) from
+the source recording. Defaults to an animated WebP — full color, autoplays and
+loops on GitHub, and far sharper than the legacy 256-color GIF for a text- and
+gradient-heavy UI screencast. Requires `ffmpeg` (installed automatically in
+Claude Code web sessions via `.claude/hooks/session-start.sh`; locally,
+`apt-get install -y ffmpeg` or `brew install ffmpeg`).
+
+```bash
+# WebP from the in-repo MP4 source
+scripts/build-demo.sh
+
+# Custom source recording
+scripts/build-demo.sh path/to/recording.mov
+
+# Tune output (defaults: FPS=24, WIDTH=1760, QUALITY=85; size is fine to
+# trade for quality — the demo fades to black at the end by design)
+FPS=30 WIDTH=1920 QUALITY=90 scripts/build-demo.sh
+
+# Fallback formats
+FORMAT=apng scripts/build-demo.sh   # full-color APNG
+FORMAT=gif  scripts/build-demo.sh   # higher-quality GIF (per-frame palette)
+```
+
+The high-resolution `polymorph-demo.mp4` remains the download target linked from
+the README; keep it as the source of truth for regenerating the WebP.
+
 ## seed-eval-summaries.ts
 
 Seeds a local Supabase/Postgres database with deterministic synthetic
