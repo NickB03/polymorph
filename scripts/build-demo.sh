@@ -18,7 +18,7 @@
 # Env knobs (with defaults):
 #   FORMAT   webp | apng | gif        (default: webp)
 #   FPS      frames per second        (default: 24)
-#   WIDTH    output width in px       (default: 1760, i.e. 2x the 880px README display)
+#   WIDTH    output width in px       (default: 1760; never upscales a smaller source)
 #   QUALITY  WebP lossy quality 0-100 (default: 85)
 #
 set -euo pipefail
@@ -44,7 +44,8 @@ if [ ! -f "$SRC" ]; then
 fi
 
 # Even dimensions keep encoders happy; -2 lets ffmpeg pick a valid height.
-SCALE="fps=${FPS},scale=${WIDTH}:-2:flags=lanczos"
+# min(WIDTH,iw) caps the output at WIDTH without upscaling a smaller source.
+SCALE="fps=${FPS},scale='min(${WIDTH},iw)':-2:flags=lanczos"
 
 case "$FORMAT" in
   webp)

@@ -22,11 +22,11 @@
 
 <br>
 
-<a href="https://github.com/NickB03/polymorph/raw/refs/heads/main/docs/assets/demos/polymorph-demo.mp4" aria-label="Download the high-resolution Polymorph demo video">
+<a href="https://github.com/NickB03/polymorph/blob/main/docs/assets/demos/polymorph-demo.mp4" aria-label="View the high-resolution Polymorph demo video on GitHub">
   <img src="docs/assets/demos/polymorph-demo.webp" alt="Polymorph demo: canvas artifacts, generative UI, conversational workflows, and the evals dashboard" width="880">
 </a>
 
-<p><sub>Polymorph end to end — canvas artifacts, generative UI, conversational workflows, and the evals dashboard. <a href="https://github.com/NickB03/polymorph/raw/refs/heads/main/docs/assets/demos/polymorph-demo.mp4">Download the high-resolution video</a>.</sub></p>
+<p><sub>Polymorph end to end — canvas artifacts, generative UI, conversational workflows, and the evals dashboard. <a href="https://github.com/NickB03/polymorph/blob/main/docs/assets/demos/polymorph-demo.mp4">View the high-resolution video on GitHub</a>.</sub></p>
 
 </div>
 
