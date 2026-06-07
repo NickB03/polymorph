@@ -101,6 +101,7 @@
     "next-themes": "^0.3.0",
     "node-html-parser": "^6.1.13",
     "ollama-ai-provider-v2": "^1.5.0",
+    "playwright": "1.44.0",
     "postgres": "^3.4.7",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
