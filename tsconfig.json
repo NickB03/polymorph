@@ -35,6 +35,7 @@
     "lib/artifacts/templates",
     "services",
     "skills",
+    ".archive",
     ".agents",
     ".claude/skills"
   ]

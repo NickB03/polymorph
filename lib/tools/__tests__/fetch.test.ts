@@ -1,22 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-// Mock the fetch schema before importing the module
-vi.mock('@/lib/schema/fetch', () => ({
-  fetchSchema: {
-    type: 'object',
-    properties: {
-      url: { type: 'string' },
-      type: { type: 'string', enum: ['regular', 'api'], default: 'regular' }
-    },
-    required: ['url']
-  }
-}))
-
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
 const originalEnv = { ...process.env }
 
-// Must import after mocks
 const { fetchTool } = await import('../fetch')
 
 async function collectStreamResults(

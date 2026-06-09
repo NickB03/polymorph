@@ -4,7 +4,7 @@ This directory contains utility scripts for development and one-off operations.
 
 ## build-canvas-vendor.ts
 
-Populates `public/canvas-vendor/`, the vendor chunk loaded by the canvas iframe runtime. Run when canvas dependencies change or when `public/canvas-vendor/` is empty/stale. The output directory is excluded from ESLint (`eslint.config.mjs`), so this script is the source of truth for that bundle.
+Populates `lib/canvas/compiler/vendor/*.generated.ts`, the vendor chunks loaded by the canvas iframe runtime. Run when canvas dependencies change or when those generated files are empty/stale. The output files are excluded from ESLint (`eslint.config.mjs`), so this script is the source of truth for that bundle.
 
 ```bash
 bun run build:canvas-vendor

@@ -7,12 +7,13 @@ const eslintConfig = [
       '.next/**',
       'coverage/**',
       'node_modules/**',
+      '.archive/**',
       'lib/db/migrations/**',
       'services/evals/node_modules/**',
       '.claude/**',
       '.agents/**',
       'skills/**',
-      'public/canvas-vendor/**',
+      'lib/canvas/compiler/vendor/*.generated.ts',
       'components/charts/**'
     ]
   },
