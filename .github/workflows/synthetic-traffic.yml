@@ -1,0 +1,37 @@
+name: Synthetic Traffic
+
+on:
+  schedule:
+    # 3:00 PM UTC daily — after suggestions refresh (14:00 UTC) so trending queries are fresh
+    - cron: '0 15 * * *'
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Target URL (defaults to https://polymorph.fyi)'
+        required: false
+        default: 'https://polymorph.fyi'
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: bunx playwright install chromium --with-deps
+
+      - name: Run synthetic traffic sessions
+        run: bun scripts/synthetic-traffic/index.ts
+        env:
+          POLYMORPH_URL: ${{ inputs.url || 'https://polymorph.fyi' }}
+          SYNTHETIC_USER_EMAIL: ${{ secrets.SYNTHETIC_USER_EMAIL }}
+          SYNTHETIC_USER_PASSWORD: ${{ secrets.SYNTHETIC_USER_PASSWORD }}
