@@ -196,7 +196,6 @@ The App Router is split into two route groups (`(chat)/` and `(admin)/`) plus no
 | `components/sign-up-form.tsx`         | Sign-up form with name, email, password fields                        |
 | `components/forgot-password-form.tsx` | Forgot password form for email-based password reset                   |
 | `components/update-password-form.tsx` | Password update form for setting a new password                       |
-| `components/auth-modal.tsx`           | Modal prompting unauthenticated users to sign in                      |
 | `components/guest-menu.tsx`           | Dropdown menu for guest users with sign-in option                     |
 | `components/guest-signup-nudge.tsx`   | Inline nudge encouraging guest users to sign up after repeated use    |
 | `components/user-menu.tsx`            | Dropdown menu for authenticated users with theme, links, and sign-out |
@@ -213,7 +212,6 @@ The App Router is split into two route groups (`(chat)/` and `(admin)/`) plus no
 | `components/action-buttons.tsx`      | Reusable action button row for message interactions                                          |
 | `components/retry-button.tsx`        | Button to retry a failed or aborted message generation                                       |
 | `components/chat-error.tsx`          | Inline error display for failed chat messages                                                |
-| `components/chat-share.tsx`          | Dialog for sharing a chat via public link                                                    |
 | `components/related-questions.tsx`   | Renders follow-up question suggestions after an answer                                       |
 | `components/citation-context.tsx`    | React context provider supplying citation data to nested components                          |
 | `components/citation-link.tsx`       | Inline citation link rendered within markdown text                                           |
@@ -254,11 +252,9 @@ Shared motion primitives used by the chat and Tool UI surfaces.
 | `components/research-plan.tsx`            | Renders the research plan using the Plan tool UI component          |
 | `components/research-status-line.tsx`     | Status line showing research mode with streaming indicator          |
 | `components/process-header.tsx`           | Header for research process sections with step count                |
-| `components/process-rail.tsx`             | Vertical rail UI showing research step progression                  |
 | `components/reasoning-section.tsx`        | Renders model reasoning/thinking output                             |
 | `components/tool-badge.tsx`               | Small badge showing tool name during invocation                     |
 | `components/tool-section.tsx`             | Routes tool invocations to search or fetch section components       |
-| `components/todo-list-content.tsx`        | Renders todo list items with status indicators                      |
 | `components/dynamic-tool-display.tsx`     | Renders dynamic/MCP tool invocations via the tool UI registry       |
 
 ### File & Upload Components
@@ -310,7 +306,6 @@ Shared motion primitives used by the chat and Tool UI surfaces.
 
 | File                                           | Purpose                                                     |
 | ---------------------------------------------- | ----------------------------------------------------------- |
-| `components/activity/activity-root.tsx`        | Root wrapper providing ActivityProvider                     |
 | `components/activity/activity-context.tsx`     | React context for activity feed state and event dispatching |
 | `components/activity/activity-panel.tsx`       | Desktop panel showing real-time search and fetch activity   |
 | `components/activity/activity-drawer.tsx`      | Mobile drawer for the activity feed using bottom sheet      |
@@ -356,7 +351,6 @@ The dashboard tree has three sibling directories: `dashboard-v2/` (current IA â€
 
 | File                                     | Purpose                                                     |
 | ---------------------------------------- | ----------------------------------------------------------- |
-| `components/voice/mic-button.tsx`        | Microphone toggle button for voice input                    |
 | `components/voice/speak-button.tsx`      | Text-to-speech playback toggle button                       |
 | `components/voice/voice-mode-toggle.tsx` | Toggle button to enter/exit voice conversation mode         |
 | `components/voice/voice-orb.tsx`         | Animated voice orb for active voice conversation mode       |
@@ -629,7 +623,6 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/tools/display-question-wizard/{schema.ts,server.ts,client.tsx,index.ts}` | Module-local contract, frontend-resolved server tool, client adapter, and public exports                              |
 | `lib/tools/display-table.ts`                                                  | Display tool that renders a formatted data table with column types                                                    |
 | `lib/tools/display-timeline.ts`                                               | Display tool that renders a chronological event timeline with category styling                                        |
-| `lib/tools/dynamic.ts`                                                        | Factory for creating runtime-defined tools (MCP tools, user-defined functions)                                        |
 | `lib/tools/generate-image.ts`                                                 | Compatibility re-export for the image generation module                                                               |
 | `lib/tools/generate-image/`                                                   | AI tool module: schema, server tool, and result renderer for generated images                                         |
 | `lib/tools/generate-image/{schema.ts,server.ts,result.tsx,index.ts}`          | Module-local contract, server tool, result adapter, and public exports                                                |
@@ -675,15 +668,14 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Database
 
-| File                  | Purpose                                                                                                                                                                                                                                                                                                                      |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lib/db/schema.ts`    | Drizzle schema defining `chats`, `messages` with non-null canonical `ui_message`, `feedback`, `canvas_artifacts`, `eval_summaries`, `eval_case_results`, and `trending_suggestions_cache` with RLS policies, including eval summary metadata columns (`judge_*`, corpus/dataset/template versions, app SHA, sample/lookback) |
-| `lib/db/index.ts`     | Database client initialization with connection pooling, SSL config, and restricted user support                                                                                                                                                                                                                              |
-| `lib/db/actions.ts`   | Database CRUD operations with RLS; writes and reads canonical `messages.ui_message` payloads                                                                                                                                                                                                                                 |
-| `lib/db/admin.ts`     | Privileged DB client factory (`getPrivilegedDb`) bypassing RLS for cron/service writes (e.g., suggestions refresh)                                                                                                                                                                                                           |
-| `lib/db/constants.ts` | Database constants (query limits, default values)                                                                                                                                                                                                                                                                            |
-| `lib/db/with-rls.ts`  | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                                                                                                                                                                                                                                      |
-| `lib/db/migrate.ts`   | Standalone migration runner script using Drizzle Kit                                                                                                                                                                                                                                                                         |
+| File                 | Purpose                                                                                                                                                                                                                                                                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/db/schema.ts`   | Drizzle schema defining `chats`, `messages` with non-null canonical `ui_message`, `feedback`, `canvas_artifacts`, `eval_summaries`, `eval_case_results`, and `trending_suggestions_cache` with RLS policies, including eval summary metadata columns (`judge_*`, corpus/dataset/template versions, app SHA, sample/lookback) |
+| `lib/db/index.ts`    | Database client initialization with connection pooling, SSL config, and restricted user support                                                                                                                                                                                                                              |
+| `lib/db/actions.ts`  | Database CRUD operations with RLS; writes and reads canonical `messages.ui_message` payloads                                                                                                                                                                                                                                 |
+| `lib/db/admin.ts`    | Privileged DB client factory (`getPrivilegedDb`) bypassing RLS for cron/service writes (e.g., suggestions refresh)                                                                                                                                                                                                           |
+| `lib/db/with-rls.ts` | RLS helper that sets `app.current_user_id` in PostgreSQL session for row-level security                                                                                                                                                                                                                                      |
+| `lib/db/migrate.ts`  | Standalone migration runner script using Drizzle Kit                                                                                                                                                                                                                                                                         |
 
 ### Server Actions
 
@@ -695,11 +687,11 @@ shadcn/ui-based primitives and custom UI components.
 
 ### Schema (Zod)
 
-| File                    | Purpose                                                                    |
-| ----------------------- | -------------------------------------------------------------------------- |
-| `lib/schema/search.tsx` | Zod schema for search tool input (query, type, content_types, max_results) |
-| `lib/schema/fetch.tsx`  | Zod schema for fetch tool input (url, type)                                |
-| `lib/schema/related.ts` | Zod schema for related questions output (array of 3 questions)             |
+| File                         | Purpose                                                        |
+| ---------------------------- | -------------------------------------------------------------- |
+| `lib/tools/search/schema.ts` | Zod schema for search tool input/output                        |
+| `lib/tools/fetch/schema.ts`  | Zod schema for fetch tool input/output                         |
+| `lib/schema/related.ts`      | Zod schema for related questions output (array of 3 questions) |
 
 ### Types
 
@@ -709,7 +701,6 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/types/search.ts`              | Backend `SearchMode` plus UI-facing `UserMode` definitions and mapping helpers             |
 | `lib/types/models.ts`              | Model interface (id, name, provider, providerId, providerOptions)                          |
 | `lib/types/model-type.ts`          | ModelType definition (`'speed' \| 'quality'`)                                              |
-| `lib/types/agent.ts`               | ResearcherTools type, ResearcherAgent alias, and manifest-derived tool invocation types    |
 | `lib/types/ai.ts`                  | Extended AI SDK types: UIMessage, UIMessageMetadata, UITools, UIDataTypes, Part, ToolPart  |
 | `lib/types/dynamic-tools.ts`       | Type definitions for MCP client, dynamic tool configuration, and DynamicToolPart variants  |
 | `lib/types/message-persistence.ts` | Database message part types (DBMessagePart, ToolState) and metadata schemas                |
@@ -816,12 +807,6 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/ollama/client.ts`         | Ollama API client for listing models and checking capabilities             |
 | `lib/ollama/types.ts`          | Type definitions for Ollama model responses and capabilities               |
 
-### Lib Hooks
-
-| File                                 | Purpose                                                     |
-| ------------------------------------ | ----------------------------------------------------------- |
-| `lib/hooks/use-copy-to-clipboard.ts` | Hook for copying text to clipboard with timeout-based reset |
-
 ### Constants
 
 | File                                   | Purpose                                                                                    |
@@ -872,8 +857,6 @@ Server-side compile pipeline, validation, service layer, and guest token support
 | File                                  | Purpose                                                                   |
 | ------------------------------------- | ------------------------------------------------------------------------- |
 | `hooks/use-activity-feed.ts`          | Hook for activity stream display                                          |
-| `hooks/use-auth-check.tsx`            | Hook checking Supabase auth state and subscribing to auth changes         |
-| `hooks/use-content-entrance.ts`       | Hook for content display entrance logic                                   |
 | `hooks/use-current-user.ts`           | Hook fetching the current user's session data from Supabase               |
 | `hooks/use-file-dropzone.ts`          | Hook managing file drag-and-drop, validation, and upload to `/api/upload` |
 | `hooks/use-mobile.tsx`                | Hook detecting mobile viewport (< 768px breakpoint)                       |
@@ -952,7 +935,6 @@ The `drizzle/` directory contains Drizzle ORM migration files and snapshots.
 | `docs/architecture/OVERVIEW.md`                     | System architecture with diagrams for agent pipeline, streaming, DB schema, and UI component tree                                                                                 |
 | `docs/architecture/GEO-TOOLS.md`                    | Spatial tooling overview covering geocoding, directions, isochrones, static maps, and `displayGeoMap`                                                                             |
 | `docs/architecture/RESEARCH-AGENT.md`               | Research agent deep technical reference; ToolLoopAgent pattern, search modes, tool system, model selection, and context window management                                         |
-| `docs/proposals/SKILLS-ROUTING.md`                  | **Proposal** â€” skills-routing architecture spec; deterministic skill selection, prompt enrichment, validation strategy, non-prod rollout (not yet implemented)                    |
 | `docs/architecture/GENERATIVE-UI.md`                | Generative UI system architecture; display tools, Tool UI registry, adapter pattern, schema validation, and adding new tools                                                      |
 | `docs/architecture/STREAMING.md`                    | Streaming architecture and SSE protocol documentation                                                                                                                             |
 | `docs/architecture/MODEL-CONFIGURATION.md`          | Guide for configuring AI model profiles (default, cloud, Ollama)                                                                                                                  |

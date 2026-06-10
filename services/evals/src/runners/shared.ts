@@ -299,10 +299,9 @@ export function buildEvalSummaryMetadata(
  * research-mode cases (`RESEARCH_AGENT_ACTIVE_TOOLS` in
  * `lib/agents/chat/research.ts:12-17`); for search/build cases the judge will
  * see it advertised but the agent could not have called it. Acceptable until
- * the per-case roster is captured at run time (see plan
- * `docs/superpowers/plans/2026-05-23-post-merge-validation-chart-eval-prs.md`
- * Appendix A1) — until then prefer the conservative overstatement to omitting
- * a tool research-mode cases genuinely had.
+ * the per-case roster is captured at run time. Until then, prefer the
+ * conservative overstatement to omitting a tool research-mode cases genuinely
+ * had.
  */
 const KNOWN_AGENT_TOOLS: readonly string[] = [
   // Search + fetch (lib/agents/chat/toolset.ts)

@@ -167,8 +167,7 @@ export function createConfig(
     dbPoolMax: validInt(env.EVAL_DB_POOL_MAX, 5),
     // `safety` has its own dedicated threshold logic; `tool_selection` is
     // excluded while we baseline real production scores before deciding what
-    // "failing" means (see services/evals/src/evaluators/tool-selection.ts and
-    // the plan at docs/superpowers/plans/2026-05-20-tool-selection-evaluator.md).
+    // "failing" means (see services/evals/src/evaluators/tool-selection.ts).
     // Remove `tool_selection` from this default once a per-suite threshold is set.
     excludeFromThreshold: env.EVAL_EXCLUDE_FROM_THRESHOLD
       ? env.EVAL_EXCLUDE_FROM_THRESHOLD.split(',').map(s => s.trim())

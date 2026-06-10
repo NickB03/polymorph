@@ -3,16 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createAdvancedSearchResult } from '@/lib/tools/search/advanced-search.test-helpers'
 import type { SearchResults } from '@/lib/types'
 
-vi.mock('@/lib/schema/search', () => ({
-  getSearchSchemaForModel: () => ({
-    type: 'object',
-    properties: {
-      query: { type: 'string' }
-    },
-    required: ['query']
-  })
-}))
-
 const providerSearchMocks = vi.hoisted(() => ({
   brave: vi.fn(),
   tavily: vi.fn(),

@@ -403,17 +403,9 @@ Some tools are registered only when the request context provides the capabilitie
 
 Chat messages use `messages.ui_message` as the canonical persisted `UIMessage`. The column is non-null in the active schema and load paths throw if that invariant is violated. Migration `0026_enforce_chat_ui_message.sql` aborts when null rows remain, then enforces `NOT NULL`; data cleanup must happen before deployment rather than through an automatic conversion script.
 
-### Dynamic Tools
+### Dynamic Tool Parts
 
-**Source:** [`lib/tools/dynamic.ts`](../../lib/tools/dynamic.ts)
-
-A factory for creating runtime-defined tools, primarily for MCP (Model Context Protocol) integration:
-
-- `createDynamicTool(name, description, execute)` — creates a tool with a flexible passthrough schema
-- `createMCPTool(toolName, description, mcpClient)` — wraps an MCP tool call
-- `createCustomTool(name, description, handler)` — wraps a custom handler
-
-Dynamic tools use `z.object({}).passthrough()` as their input schema, accepting any object shape.
+Runtime-defined tool parts can be displayed in chat through `components/dynamic-tool-display.tsx`, which recognizes AI SDK dynamic tool part states and falls back to JSON input/output rendering when no registered Tool UI renderer matches the tool name. The current chat agent tool roster is still defined by the static catalogs above; there is no active runtime-defined tool factory wired into the chat agents.
 
 ---
 
@@ -880,7 +872,6 @@ case 'my-provider':
 | `components/tool-ui/renderer-catalog.tsx`                | Client renderer catalog for passive manifest display outputs          |
 | `components/tool-ui/interactive-renderer-catalog.tsx`    | Client renderer catalog for interactive display tool parts            |
 | `lib/tools/tool-ui/client-output-validation.ts`          | Validates client-resolved interactive outputs before persistence      |
-| `lib/tools/dynamic.ts`                                   | Dynamic/MCP tool factory                                              |
 | `lib/tools/display-plan.ts`                              | Step-by-step guide display tool                                       |
 | `lib/tools/display-table.ts`                             | Sortable data table display tool                                      |
 | `lib/tools/display-chart.ts`                             | Bar and line chart display tool                                       |
@@ -900,7 +891,7 @@ case 'my-provider':
 | `lib/utils/registry.ts`                                  | AI provider registry (6 providers)                                    |
 | `lib/utils/context-window.ts`                            | Token counting and context window truncation                          |
 | `lib/utils/search-config.ts`                             | Environment-aware search provider configuration                       |
-| `lib/types/agent.ts`                                     | `ResearcherTools` type, `ResearcherAgent` type, tool invocation types |
 | `lib/types/ai.ts`                                        | UI message types, tool part types, data part types                    |
+| `lib/types/dynamic-tools.ts`                             | Dynamic and interactive tool part types                               |
 | `app/api/chat/route.ts`                                  | API endpoint — auth, model selection, stream dispatch                 |
 | `config/models/default.json`                             | Default model assignments per mode and type                           |

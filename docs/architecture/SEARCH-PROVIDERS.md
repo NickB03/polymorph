@@ -282,7 +282,7 @@ In **Research Mode**, the agent freely chooses between `type: "general"` and `ty
 
 ## Search Tool Schema
 
-The search tool exposes these parameters to the agent (defined in `lib/schema/search.tsx`):
+The search tool exposes these parameters to the agent (defined in `lib/tools/search/schema.ts`):
 
 | Parameter         | Type                                        | Default       | Description                        |
 | ----------------- | ------------------------------------------- | ------------- | ---------------------------------- |
