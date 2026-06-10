@@ -13,6 +13,7 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 - `bun lint` / `bun typecheck` — must pass before claiming done
 - `bun format` / `bun format:check` — Prettier
 - `bun run test` — Vitest (single run); `bun run test -- path/to/file.test.ts` for one file; `bun run test:watch` for watch mode
+- `bun run test:db` — real RLS-policy integration tests (needs local Supabase running)
 - `bun run migrate` — Drizzle migrations
 - `bun run chat` — CLI chat interface (`scripts/chat-cli.ts`)
 - `npx supabase start` — local Supabase (DB 44322, API 44321, Studio 44323)
@@ -22,12 +23,13 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 - **Path alias:** `@/*` maps to project root. Use `@/lib/...`, `@/components/...`, etc.
 - **Prettier:** no semicolons, single quotes, no trailing commas, 2-space indent, avoid arrow parens, LF line endings.
 - **Import order (ESLint `simple-import-sort`):** `react`/`next` → third-party → `@/types` → `@/config` → `@/lib` → `@/hooks` → `@/components/ui` → `@/components` → `@/registry` → `@/styles` → `@/app` → side effects → parents → relatives → styles.
+- **Pre-commit hook:** husky runs `lint-staged` (Prettier + `eslint --fix` on staged files), so a commit may rewrite what you staged.
 
 ## Non-obvious invariants
 
 These are load-bearing and not derivable by reading any single file:
 
-- **Row-Level Security.** Every user-scoped table in `lib/db/schema.ts` uses RLS keyed on `current_setting('app.current_user_id', true)`. The `true` flag means a missing GUC returns NULL (not an error), so unset sessions don't throw — they silently return zero rows. Server code must set that GUC before querying.
+- **Row-Level Security.** Every user-scoped table in `lib/db/schema.ts` uses RLS keyed on `current_setting('app.current_user_id', true)`. The `true` flag means a missing GUC returns NULL (not an error), so unset sessions don't throw — they silently return zero rows. Server code must set that GUC before querying — use `withRLS` / `withOptionalRLS` from `lib/db/with-rls.ts`.
 - **Tool UI is bespoke in this repo.** Do not default to `assistant-ui`, `Toolkit`, `tool-agent`, or stock `shadcn add` flows when adding a Tool UI component. Match the local pattern across `components/tool-ui/*`, `components/render-message.tsx`, `components/chat.tsx`, `components/chat-request.ts`, `lib/types/dynamic-tools.ts`, `lib/streaming/helpers/prepare-messages.ts`, and `lib/agents/chat/*`. Only propose an assistant-ui runtime migration if the user explicitly asks for it.
 - **Canvas is one-artifact-per-chat.** `createCanvasArtifact` / `updateCanvasArtifact` / `readCanvasArtifact` are conditionally registered only when a canvas context is present. Compiled HTML lives in the DB and is served via `iframe.srcdoc`.
 - **Guest canvas tokens** are HMAC-SHA256 signed with `GUEST_CANVAS_SECRET` and rotate on every successful write.
@@ -38,16 +40,16 @@ These are load-bearing and not derivable by reading any single file:
 
 ## Skill invocation policy
 
-Users should not need to say the word "skill." Infer intent from normal requests and invoke project-scoped skills automatically:
+Users should not need to say the word "skill." Infer intent from normal requests and invoke skills automatically. Most of these skills are installed user-side (plugins), not in this repo — in environments where a named skill or memory file isn't available (e.g. remote/web sessions), follow its intent manually using the inline guidance below rather than skipping the step:
 
 - **Bug, test failure, unexpected behavior** → `systematic-debugging`
-- **Multi-step feature, refactor, migration** → `writing-plans` first; then choose execution mode by tier (see memory `feedback_execution_mode.md`):
+- **Multi-step feature, refactor, migration** → `writing-plans` first; then choose execution mode by tier (background in memory `feedback_execution_mode.md`; the tier rules below are authoritative):
   - **Tier 1** (1-3 tasks): inline single-session
   - **Tier 2** (4-8 tasks): Claude picks between inline-with-`/compact` and `subagent-driven-development` — this is a tactical call, not a scope call, so make it directly. Only surface to the user if the choice has scope implications (e.g., a subagent run will materially change cost or wall-clock).
   - **Tier 3** (9+ tasks): `subagent-driven-development` (sequential subagent + 2-stage review per task)
   - Complete via `finishing-a-development-branch`
 - **Independent parallel research** (multi-source investigation, codebase audit) → `dispatching-parallel-agents` — read-only work only; **never** for implementation
-- **Long session showing context-rot symptoms** (forgetting earlier decisions, looping, file confusion) → see memory `project_context_management.md`; `/compact` proactively at 50% displayed (UI under-reports usage ~2x in 1M mode)
+- **Long session showing context-rot symptoms** (forgetting earlier decisions, looping, file confusion) → `/compact` proactively at 50% displayed (UI under-reports usage ~2x in 1M mode); details in memory `project_context_management.md` if available
 - **Before claiming done / opening PR** → `verification-before-completion`
 - **Preparing for review** → `requesting-code-review`
 - **Applying review feedback** → `receiving-code-review`
