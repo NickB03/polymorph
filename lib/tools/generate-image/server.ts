@@ -42,6 +42,7 @@ async function resolveSourceImageUrl(
     storagePathFromLegacyPublicUrl(sourceImageUrl)
 
   if (storagePath) {
+    if (context.isGuest) return null
     if (!storagePath.startsWith(`${context.userId}/`)) return null
     const signedUrl = await createSignedDownloadUrl(
       storagePath,

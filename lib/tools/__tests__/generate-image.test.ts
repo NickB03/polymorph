@@ -203,6 +203,83 @@ describe('createGenerateImageTool', () => {
     )
   })
 
+  it('rejects guest proxy-path edit sources without signing them', async () => {
+    const guestTool = createGenerateImageTool({
+      userId: 'guest',
+      chatId: 'chat-1',
+      isGuest: true
+    })
+
+    const result = await guestTool.execute!(
+      {
+        prompt: 'make it bluer',
+        sourceImageUrl: '/api/files/guest/chats/other-chat/generated-1.png'
+      },
+      {
+        abortSignal: undefined as any,
+        toolCallId: 'tc-guest-forged',
+        messages: []
+      }
+    )
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        error: expect.stringContaining('not accessible')
+      })
+    )
+    expect(mockCreateSignedDownloadUrl).not.toHaveBeenCalled()
+    expect(mockGenerateText).not.toHaveBeenCalled()
+  })
+
+  it('allows guest edit sources that are already fetchable URLs', async () => {
+    mockGenerateText.mockResolvedValueOnce({
+      text: '',
+      files: [
+        {
+          mediaType: 'image/png',
+          base64: 'iVBOR...',
+          uint8Array: new Uint8Array([137, 80, 78, 71])
+        }
+      ]
+    } as any)
+
+    const guestTool = createGenerateImageTool({
+      userId: 'guest',
+      chatId: 'chat-1',
+      isGuest: true
+    })
+
+    await guestTool.execute!(
+      {
+        prompt: 'make it bluer',
+        sourceImageUrl: 'https://storage.example.com/signed/source.png?token=t'
+      },
+      {
+        abortSignal: undefined as any,
+        toolCallId: 'tc-guest-edit',
+        messages: []
+      }
+    )
+
+    expect(mockCreateSignedDownloadUrl).not.toHaveBeenCalled()
+    expect(mockGenerateText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            content: expect.arrayContaining([
+              expect.objectContaining({
+                type: 'image',
+                image: new URL(
+                  'https://storage.example.com/signed/source.png?token=t'
+                )
+              })
+            ])
+          })
+        ])
+      })
+    )
+  })
+
   it('uses the proxy URL (no signed URL) for authenticated contexts', async () => {
     mockGenerateText.mockResolvedValueOnce({
       text: '',
