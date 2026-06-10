@@ -1,0 +1,58 @@
+# Graphify corpus selection
+#
+# Keep the graph focused on current application source plus stable product,
+# architecture, operations, and API docs.
+
+# Generated/local outputs and dependency/build caches
+graphify-out/
+node_modules/
+.next/
+.turbo/
+.cache/
+coverage/
+dist/
+build/
+out/
+
+# Design binaries, generated review artifacts, and brand/static media are not
+# useful for code navigation and can make semantic extraction noisy.
+polymorph.pen
+claude-code-expert-review.html
+claude-code-expert.skill
+GEMINI.md
+DESIGN.md
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+SECURITY.md
+.github/
+app/apple-icon.png
+app/icon.png
+app/opengraph-image.png
+public/demos/
+public/images/
+
+# Local agent and tool workspaces
+.archive/
+.agent/
+.agents/
+.augment/
+.kiro/
+.playwright-mcp/
+skills/
+.impeccable.md
+.claude/settings.local.json
+skills-lock.json
+
+# Generated Graphify assistant instructions; these support the tool but should
+# not become part of the project knowledge graph.
+.codex/skills/graphify/
+.claude/skills/graphify/
+
+# Bulky/generated docs, historical plans, and prototypes that make the graph
+# noisy and expensive without improving current-app code navigation.
+docs/assets/
+docs/superpowers/
+docs/plans/
+docs/proposals/
+docs/reference/FILE-INDEX.md

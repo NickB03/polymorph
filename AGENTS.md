@@ -114,3 +114,18 @@ Claude should `Read` these only when the current task needs them.
 | ESLint conventions                         | `docs/reference/ESLINT-CONVENTIONS.md`         |
 | Railway + Phoenix CLI cheat sheet          | `.claude/rules/operations.md`                  |
 | Design / wireframing workflow              | `.claude/rules/design-workflow.md`             |
+
+## graphify
+
+This project uses a current-app focused Graphify corpus: source code plus stable product, architecture, operations, and API docs. Historical plans, generated agent docs, demos, and bulky media are intentionally excluded by `.graphifyignore`.
+
+When the user invokes Graphify (`$graphify` in Codex or `/graphify` in Claude Code), use the `graphify` skill before doing anything else.
+
+Rules:
+- Build or refresh the local graph with `graphify . --no-viz --backend openrouter --model deepseek/deepseek-v4-flash --max-concurrency 2 --token-budget 20000`.
+- If the Flash run returns invalid/truncated JSON, remove `graphify-out/` and retry once with `graphify . --no-viz --backend openrouter --model deepseek/deepseek-v4-pro --max-concurrency 1 --token-budget 8000`.
+- `graphify-out/` is local-only and must not be committed unless the user explicitly asks to version generated graph output.
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
