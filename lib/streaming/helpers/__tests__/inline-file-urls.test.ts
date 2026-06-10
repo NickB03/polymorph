@@ -1,5 +1,11 @@
 import type { ModelMessage } from 'ai'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const { downloadStorageFile } = vi.hoisted(() => ({
+  downloadStorageFile: vi.fn()
+}))
+
+vi.mock('@/lib/supabase/server-storage', () => ({ downloadStorageFile }))
 
 import { inlineFileUrls } from '../inline-file-urls'
 
@@ -9,6 +15,11 @@ vi.stubGlobal('fetch', mockFetch)
 
 beforeEach(() => {
   mockFetch.mockReset()
+  downloadStorageFile.mockReset()
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
 })
 
 function userMsg(content: any[]): ModelMessage {
@@ -29,7 +40,7 @@ describe('inlineFileUrls', () => {
       assistantMsg('hi')
     ]
 
-    const result = await inlineFileUrls(messages)
+    const result = await inlineFileUrls(messages, null)
     expect(result).toBe(messages)
     expect(mockFetch).not.toHaveBeenCalled()
   })
@@ -45,7 +56,7 @@ describe('inlineFileUrls', () => {
       ])
     ]
 
-    const result = await inlineFileUrls(messages)
+    const result = await inlineFileUrls(messages, null)
     expect(result).toBe(messages)
     expect(mockFetch).not.toHaveBeenCalled()
   })
@@ -65,7 +76,7 @@ describe('inlineFileUrls', () => {
       userMsg([{ type: 'file', data: fileUrl, mediaType: 'image/png' }])
     ]
 
-    const result = await inlineFileUrls(messages)
+    const result = await inlineFileUrls(messages, null)
 
     expect(mockFetch).toHaveBeenCalledWith(fileUrl)
     const filePart = (result[0] as { content: Array<Record<string, unknown>> })
@@ -94,7 +105,7 @@ describe('inlineFileUrls', () => {
       ])
     ]
 
-    const result = await inlineFileUrls(messages)
+    const result = await inlineFileUrls(messages, null)
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
     const filePart = (result[0] as { content: Array<Record<string, unknown>> })
@@ -114,7 +125,7 @@ describe('inlineFileUrls', () => {
       ])
     ]
 
-    const result = await inlineFileUrls(messages)
+    const result = await inlineFileUrls(messages, null)
     expect(result).toBe(messages)
     expect(mockFetch).not.toHaveBeenCalled()
   })
@@ -132,7 +143,7 @@ describe('inlineFileUrls', () => {
       userMsg([{ type: 'file', data: fileUrl, mediaType: 'image/png' }])
     ]
 
-    const result = await inlineFileUrls(messages)
+    const result = await inlineFileUrls(messages, null)
 
     // Original should still have the URL
     const originalPart = (
@@ -159,7 +170,7 @@ describe('inlineFileUrls', () => {
       userMsg([{ type: 'file', data: fileUrl, mediaType: 'image/png' }])
     ]
 
-    const result = await inlineFileUrls(messages)
+    const result = await inlineFileUrls(messages, null)
 
     // URL should remain since fetch failed
     const filePart = (result[0] as { content: Array<Record<string, unknown>> })
@@ -175,7 +186,7 @@ describe('inlineFileUrls', () => {
       userMsg([{ type: 'file', data: fileUrl, mediaType: 'image/png' }])
     ]
 
-    const result = await inlineFileUrls(messages)
+    const result = await inlineFileUrls(messages, null)
 
     const filePart = (result[0] as { content: Array<Record<string, unknown>> })
       .content[0]
@@ -214,7 +225,7 @@ describe('inlineFileUrls', () => {
       ])
     ]
 
-    const result = await inlineFileUrls(messages)
+    const result = await inlineFileUrls(messages, null)
 
     expect(mockFetch).toHaveBeenCalledTimes(2)
     const content = (result[0] as { content: Array<Record<string, unknown>> })
@@ -231,9 +242,111 @@ describe('inlineFileUrls', () => {
       userMsg([{ type: 'text', text: 'no files here' }])
     ]
 
-    const result = await inlineFileUrls(messages)
+    const result = await inlineFileUrls(messages, null)
     expect(result).toBe(messages)
     expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('resolves relative proxy URLs via storage download instead of fetch', async () => {
+    const testData = new Uint8Array([137, 80, 78, 71])
+    downloadStorageFile.mockResolvedValueOnce({
+      data: testData,
+      mediaType: 'image/png'
+    })
+
+    const messages: ModelMessage[] = [
+      userMsg([
+        {
+          type: 'file',
+          data: '/api/files/user-1/chats/chat-1/123-img.png',
+          mediaType: 'image/png'
+        }
+      ])
+    ]
+
+    const result = await inlineFileUrls(messages, 'user-1')
+
+    expect(downloadStorageFile).toHaveBeenCalledWith(
+      'user-1/chats/chat-1/123-img.png'
+    )
+    expect(mockFetch).not.toHaveBeenCalled()
+    const filePart = (result[0] as { content: Array<Record<string, unknown>> })
+      .content[0]
+    expect(filePart.data).toEqual(testData)
+    expect(filePart.mediaType).toBe('image/png')
+  })
+
+  it('resolves legacy public storage URLs via storage download', async () => {
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://abc.supabase.co')
+    const testData = new Uint8Array([1, 2, 3])
+    downloadStorageFile.mockResolvedValueOnce({
+      data: testData,
+      mediaType: 'application/pdf'
+    })
+
+    const messages: ModelMessage[] = [
+      userMsg([
+        {
+          type: 'file',
+          data: 'https://abc.supabase.co/storage/v1/object/public/user-uploads/user-1/chats/chat-1/old.pdf',
+          mediaType: 'application/pdf'
+        }
+      ])
+    ]
+
+    const result = await inlineFileUrls(messages, 'user-1')
+
+    expect(downloadStorageFile).toHaveBeenCalledWith(
+      'user-1/chats/chat-1/old.pdf'
+    )
+    expect(mockFetch).not.toHaveBeenCalled()
+    const filePart = (result[0] as { content: Array<Record<string, unknown>> })
+      .content[0]
+    expect(filePart.data).toEqual(testData)
+  })
+
+  it('leaves the URL in place when storage download fails', async () => {
+    downloadStorageFile.mockResolvedValueOnce(null)
+
+    const proxyUrl = '/api/files/user-1/chats/chat-1/123-img.png'
+    const messages: ModelMessage[] = [
+      userMsg([{ type: 'file', data: proxyUrl, mediaType: 'image/png' }])
+    ]
+
+    const result = await inlineFileUrls(messages, 'user-1')
+
+    const filePart = (result[0] as { content: Array<Record<string, unknown>> })
+      .content[0]
+    expect(filePart.data).toBe(proxyUrl)
+  })
+
+  it('does not download storage paths owned by another user', async () => {
+    const forgedUrl = '/api/files/victim-user/chats/private-chat/secret.pdf'
+    const messages: ModelMessage[] = [
+      userMsg([{ type: 'file', data: forgedUrl, mediaType: 'application/pdf' }])
+    ]
+
+    const result = await inlineFileUrls(messages, 'attacker-user')
+
+    expect(downloadStorageFile).not.toHaveBeenCalled()
+    expect(mockFetch).not.toHaveBeenCalled()
+    const filePart = (result[0] as { content: Array<Record<string, unknown>> })
+      .content[0]
+    expect(filePart.data).toBe(forgedUrl)
+  })
+
+  it('does not download storage paths for anonymous requests', async () => {
+    const proxyUrl = '/api/files/user-1/chats/chat-1/123-img.png'
+    const messages: ModelMessage[] = [
+      userMsg([{ type: 'file', data: proxyUrl, mediaType: 'image/png' }])
+    ]
+
+    const result = await inlineFileUrls(messages, null)
+
+    expect(downloadStorageFile).not.toHaveBeenCalled()
+    const filePart = (result[0] as { content: Array<Record<string, unknown>> })
+      .content[0]
+    expect(filePart.data).toBe(proxyUrl)
   })
 
   it('handles image parts with URL data', async () => {
@@ -249,7 +362,7 @@ describe('inlineFileUrls', () => {
       userMsg([{ type: 'image', data: imageUrl, mediaType: 'image/webp' }])
     ]
 
-    const result = await inlineFileUrls(messages)
+    const result = await inlineFileUrls(messages, null)
 
     const part = (result[0] as { content: Array<Record<string, unknown>> })
       .content[0]

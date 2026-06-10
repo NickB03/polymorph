@@ -1,5 +1,6 @@
 import { getErrorMessage } from '@/lib/utils/error'
 
+import { FILE_PROXY_PREFIX } from './file-url'
 import { createClient } from './server'
 
 export const SUPABASE_STORAGE_BUCKET =
@@ -19,7 +20,7 @@ export async function uploadFileToSupabase(
   try {
     const buffer = await file.arrayBuffer()
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(SUPABASE_STORAGE_BUCKET)
       .upload(filePath, buffer, {
         contentType: file.type,
@@ -30,13 +31,11 @@ export async function uploadFileToSupabase(
       throw error
     }
 
-    const {
-      data: { publicUrl }
-    } = supabase.storage.from(SUPABASE_STORAGE_BUCKET).getPublicUrl(filePath)
-
+    // The bucket is private; files are served through the auth-checked
+    // proxy route, which keeps persisted message URLs stable forever.
     return {
       filename: file.name,
-      url: publicUrl,
+      url: `${FILE_PROXY_PREFIX}${filePath}`,
       mediaType: file.type,
       type: 'file'
     }

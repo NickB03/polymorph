@@ -3,7 +3,14 @@ import { z } from 'zod'
 import { defineToolUiContract } from '../shared/contract'
 
 export const GenerateImagePropsSchema = z.object({
-  imageUrl: z.string().url(),
+  // Generated images are served via the relative /api/files proxy route;
+  // older outputs persisted absolute storage URLs.
+  imageUrl: z
+    .string()
+    .refine(
+      value => value.startsWith('/api/files/') || /^https?:\/\//i.test(value),
+      'imageUrl must be an http(s) URL or an /api/files/ path'
+    ),
   filename: z.string().min(1),
   mediaType: z.string().min(1),
   description: z.string().min(1),

@@ -19,7 +19,7 @@ import { serverTool as updateCanvasArtifactTool } from '@/lib/tools/update-canva
 
 import { createCompetitorResearchTool } from './specialists/competitor-research'
 
-type ImageToolContext = { userId: string; chatId: string }
+type ImageToolContext = { userId: string; chatId: string; isGuest?: boolean }
 
 export type ChatAgentTools = {
   search: ReturnType<typeof createSearchTool>

@@ -30,7 +30,7 @@ export type CreateChatAgentArgs = {
   telemetryEnabled?: boolean
   experimentalContext?: unknown
   canvasToolContext?: CanvasToolContext
-  imageToolContext?: { userId: string; chatId: string }
+  imageToolContext?: { userId: string; chatId: string; isGuest?: boolean }
 }
 
 export type ChatAgentDefinition = {

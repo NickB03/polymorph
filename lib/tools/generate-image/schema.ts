@@ -15,9 +15,14 @@ export const inputSchema = z.object({
     .describe(
       'Aspect ratio for the generated image. Defaults to model default if not specified.'
     ),
+  // Generated images are persisted as relative /api/files proxy paths, so the
+  // model may echo those back as edit sources alongside absolute URLs.
   sourceImageUrl: z
     .string()
-    .url()
+    .refine(
+      value => value.startsWith('/api/files/') || /^https?:\/\//i.test(value),
+      'sourceImageUrl must be an http(s) URL or an /api/files/ path'
+    )
     .optional()
     .describe(
       'URL of an existing image to edit. When provided, the prompt describes the desired changes to this image.'
@@ -25,7 +30,14 @@ export const inputSchema = z.object({
 })
 
 export const generateImageOutputSchema = z.object({
-  imageUrl: z.string().url(),
+  // Authenticated chats return relative /api/files proxy paths; guest chats
+  // return absolute signed URLs.
+  imageUrl: z
+    .string()
+    .refine(
+      value => value.startsWith('/api/files/') || /^https?:\/\//i.test(value),
+      'imageUrl must be an http(s) URL or an /api/files/ path'
+    ),
   filename: z.string().min(1),
   mediaType: z.string().min(1),
   description: z.string().min(1),

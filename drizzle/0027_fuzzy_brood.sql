@@ -1,0 +1,1 @@
+ALTER POLICY "feedback_select_policy" ON "feedback" TO public USING (user_id = current_setting('app.current_user_id', true));

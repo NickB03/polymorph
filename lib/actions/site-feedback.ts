@@ -1,9 +1,34 @@
 'use server'
 
+import { z } from 'zod'
+
 import { db } from '@/lib/db'
 import { feedback, generateId } from '@/lib/db/schema'
 import { withOptionalRLS } from '@/lib/db/with-rls'
+import { checkFeedbackLimit } from '@/lib/rate-limit/feedback-limits'
 import { createClient } from '@/lib/supabase/server'
+
+const MAX_MESSAGE_LENGTH = 4000
+const MAX_URL_LENGTH = 2048
+const MAX_USER_AGENT_LENGTH = 512
+
+// This server action is publicly POSTable (no auth requirement), so the
+// payload must be validated and rate-limited before it reaches the DB/Slack.
+const feedbackInputSchema = z.object({
+  sentiment: z.enum(['positive', 'neutral', 'negative']),
+  message: z.string().trim().min(1).max(MAX_MESSAGE_LENGTH),
+  pageUrl: z
+    .string()
+    .max(MAX_URL_LENGTH)
+    .refine(value => {
+      try {
+        const url = new URL(value)
+        return url.protocol === 'http:' || url.protocol === 'https:'
+      } catch {
+        return false
+      }
+    })
+})
 
 export async function submitFeedback(data: {
   sentiment: 'positive' | 'neutral' | 'negative'
@@ -11,6 +36,12 @@ export async function submitFeedback(data: {
   pageUrl: string
 }) {
   try {
+    const parsed = feedbackInputSchema.safeParse(data)
+    if (!parsed.success) {
+      return { success: false, error: 'Invalid feedback' }
+    }
+    const input = parsed.data
+
     // Get current user if logged in
     let userId: string | undefined
     let userEmail: string | undefined
@@ -29,7 +60,21 @@ export async function submitFeedback(data: {
     // Get user agent from headers
     const { headers } = await import('next/headers')
     const headersList = await headers()
-    const userAgent = headersList.get('user-agent') || undefined
+    const userAgent =
+      headersList.get('user-agent')?.slice(0, MAX_USER_AGENT_LENGTH) ||
+      undefined
+
+    const rateLimitId =
+      userId ||
+      headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      'anonymous'
+    const limitResult = await checkFeedbackLimit(rateLimitId)
+    if (!limitResult.allowed) {
+      return {
+        success: false,
+        error: 'Too many feedback submissions. Please try again shortly.'
+      }
+    }
 
     // Save to database with RLS context
     // Note: Avoid relying on RETURNING because RLS without a SELECT policy
@@ -39,9 +84,9 @@ export async function submitFeedback(data: {
       await tx.insert(feedback).values({
         id,
         userId,
-        sentiment: data.sentiment,
-        message: data.message,
-        pageUrl: data.pageUrl,
+        sentiment: input.sentiment,
+        message: input.message,
+        pageUrl: input.pageUrl,
         userAgent
       })
     })
@@ -54,7 +99,7 @@ export async function submitFeedback(data: {
           positive: '😊',
           neutral: '😐',
           negative: '😞'
-        }[data.sentiment]
+        }[input.sentiment]
 
         const slackMessage = {
           text: `New feedback received ${sentimentEmoji}`,
@@ -71,7 +116,7 @@ export async function submitFeedback(data: {
               fields: [
                 {
                   type: 'mrkdwn',
-                  text: `*Sentiment:*\n${data.sentiment}`
+                  text: `*Sentiment:*\n${input.sentiment}`
                 },
                 {
                   type: 'mrkdwn',
@@ -83,7 +128,7 @@ export async function submitFeedback(data: {
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: `*Message:*\n${data.message}`
+                text: `*Message:*\n${input.message}`
               }
             },
             {
@@ -91,7 +136,7 @@ export async function submitFeedback(data: {
               elements: [
                 {
                   type: 'mrkdwn',
-                  text: `Page: ${data.pageUrl} | Time: ${new Date().toISOString()}`
+                  text: `Page: ${input.pageUrl} | Time: ${new Date().toISOString()}`
                 }
               ]
             }

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
+import { FILE_PROXY_PREFIX } from './file-url'
 import { SUPABASE_STORAGE_BUCKET } from './storage'
 
 let _adminClient: ReturnType<typeof createClient> | null = null
@@ -26,11 +27,17 @@ export function buildGeneratedImagePath(
   return `${userId}/chats/${chatId}/generated-${Date.now()}.${ext}`
 }
 
+// Guest (ephemeral) chats have no authenticated identity or chat row, so the
+// /api/files proxy route can never authorize their generated images. They get
+// a signed URL instead; ephemeral chats are not persisted, so expiry is fine.
+const GUEST_IMAGE_URL_TTL_SECONDS = 24 * 60 * 60
+
 export async function uploadGeneratedImage(
   imageData: Uint8Array,
   mediaType: string,
   userId: string,
-  chatId: string
+  chatId: string,
+  options?: { useSignedUrl?: boolean }
 ): Promise<{ url: string; filename: string }> {
   const admin = getAdminClient()
   const filePath = buildGeneratedImagePath(userId, chatId, mediaType)
@@ -47,10 +54,61 @@ export async function uploadGeneratedImage(
     throw new Error('Image upload failed: ' + error.message)
   }
 
-  const {
-    data: { publicUrl }
-  } = admin.storage.from(SUPABASE_STORAGE_BUCKET).getPublicUrl(filePath)
-
   const filename = filePath.split('/').pop() ?? 'generated.png'
-  return { url: publicUrl, filename }
+
+  if (options?.useSignedUrl) {
+    const signedUrl = await createSignedDownloadUrl(
+      filePath,
+      GUEST_IMAGE_URL_TTL_SECONDS
+    )
+    if (!signedUrl) {
+      throw new Error('Image upload failed: could not create signed URL')
+    }
+    return { url: signedUrl, filename }
+  }
+
+  return { url: `${FILE_PROXY_PREFIX}${filePath}`, filename }
+}
+
+/**
+ * Create a short-lived signed URL for a file in the private uploads bucket.
+ * Authorization happens in the /api/files route before this is called.
+ */
+export async function createSignedDownloadUrl(
+  path: string,
+  expiresInSeconds: number
+): Promise<string | null> {
+  const admin = getAdminClient()
+  const { data, error } = await admin.storage
+    .from(SUPABASE_STORAGE_BUCKET)
+    .createSignedUrl(path, expiresInSeconds)
+
+  if (error || !data?.signedUrl) {
+    console.error('[createSignedDownloadUrl] Failed:', error)
+    return null
+  }
+  return data.signedUrl
+}
+
+/**
+ * Download a file from the private uploads bucket. Used when preparing model
+ * messages, where attachment URLs point at the auth-checked proxy route and
+ * cannot be fetched over plain HTTP.
+ */
+export async function downloadStorageFile(
+  path: string
+): Promise<{ data: Uint8Array; mediaType?: string } | null> {
+  const admin = getAdminClient()
+  const { data, error } = await admin.storage
+    .from(SUPABASE_STORAGE_BUCKET)
+    .download(path)
+
+  if (error || !data) {
+    console.warn('[downloadStorageFile] Failed:', error)
+    return null
+  }
+  return {
+    data: new Uint8Array(await data.arrayBuffer()),
+    mediaType: data.type || undefined
+  }
 }

@@ -190,6 +190,13 @@
       "when": 1778025600000,
       "tag": "0026_enforce_chat_ui_message",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1781080939104,
+      "tag": "0027_fuzzy_brood",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import { generateTrendingSuggestions } from '@/lib/agents/generate-trending-sugg
 import { getPrivilegedDb } from '@/lib/db/admin'
 import { trendingSuggestionsCache } from '@/lib/db/schema'
 import { flushTraces } from '@/lib/utils/telemetry'
+import { safeSecretCompare } from '@/lib/utils/timing-safe'
 
 export const maxDuration = 60
 
@@ -18,7 +19,10 @@ export async function GET(request: Request) {
   }
 
   const auth = request.headers.get('authorization')
-  if (auth !== `Bearer ${expected}`) {
+  const token = auth?.startsWith('Bearer ')
+    ? auth.slice('Bearer '.length)
+    : null
+  if (!token || !safeSecretCompare(token, expected)) {
     return NextResponse.json(
       { ok: false, error: 'unauthorized' },
       { status: 401 }
