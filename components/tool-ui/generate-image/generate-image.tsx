@@ -5,15 +5,20 @@ import { createPortal } from 'react-dom'
 
 import { Download, X } from 'lucide-react'
 
+import { toProxyFileUrl } from '@/lib/supabase/file-url'
+
 import { Button } from '@/components/ui/button'
 
 import type { GenerateImageProps } from './schema'
 
 export function GenerateImage({
-  imageUrl,
+  imageUrl: rawImageUrl,
   filename,
   description
 }: GenerateImageProps) {
+  // Older tool outputs persisted absolute public storage URLs; the bucket is
+  // now private, so those must go through the auth-checked proxy route.
+  const imageUrl = toProxyFileUrl(rawImageUrl)
   const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {

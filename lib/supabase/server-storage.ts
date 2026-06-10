@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
+import { FILE_PROXY_PREFIX } from './file-url'
 import { SUPABASE_STORAGE_BUCKET } from './storage'
 
 let _adminClient: ReturnType<typeof createClient> | null = null
@@ -47,12 +48,8 @@ export async function uploadGeneratedImage(
     throw new Error('Image upload failed: ' + error.message)
   }
 
-  const {
-    data: { publicUrl }
-  } = admin.storage.from(SUPABASE_STORAGE_BUCKET).getPublicUrl(filePath)
-
   const filename = filePath.split('/').pop() ?? 'generated.png'
-  return { url: publicUrl, filename }
+  return { url: `${FILE_PROXY_PREFIX}${filePath}`, filename }
 }
 
 /**

@@ -3,6 +3,7 @@ import { Fragment, type ReactNode, useMemo } from 'react'
 import { UseChatHelpers } from '@ai-sdk/react'
 
 import { JSON_BLOCK_REGEX } from '@/lib/motion/part-ids'
+import { toProxyFileUrl } from '@/lib/supabase/file-url'
 import type { SearchResultItem } from '@/lib/types'
 import type {
   CanvasArtifactData,
@@ -509,7 +510,7 @@ export function RenderMessage({
                   key={`${messageId}-user-file-${index}`}
                   file={{
                     name: part.filename || 'Unknown file',
-                    url: part.url,
+                    url: toProxyFileUrl(part.url),
                     contentType: part.mediaType
                   }}
                 />
