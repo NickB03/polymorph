@@ -600,3 +600,176 @@ export const trendingSuggestionsCache = pgTable(
 export type TrendingSuggestionsCacheRow = InferSelectModel<
   typeof trendingSuggestionsCache
 >
+
+export const carsearchListings = pgTable(
+  'carsearch_listings',
+  {
+    vin: varchar('vin', { length: 32 }).primaryKey(),
+    brand: varchar('brand', {
+      length: VARCHAR_LENGTH,
+      enum: ['ford', 'volvo', 'polestar']
+    }).notNull(),
+    model: varchar('model', { length: VARCHAR_LENGTH }).notNull(),
+    modelLabel: text('model_label').notNull(),
+    year: integer('year').notNull(),
+    trim: text('trim').notNull(),
+    trimType: varchar('trim_type', { length: VARCHAR_LENGTH }).notNull(),
+    awd: boolean('awd').notNull(),
+    price: integer('price').notNull(),
+    miles: integer('miles').notNull(),
+    epaRangeMiles: integer('epa_range_miles').notNull(),
+    location: text('location').notNull(),
+    distanceMiles: integer('distance_miles').notNull(),
+    locationType: varchar('location_type', {
+      length: VARCHAR_LENGTH,
+      enum: ['dfw', 'tx', 'online']
+    }).notNull(),
+    deal: varchar('deal', {
+      length: VARCHAR_LENGTH,
+      enum: ['great price', 'good price', 'fair price']
+    }),
+    cpo: boolean('cpo').notNull().default(false),
+    assist: varchar('assist', {
+      length: VARCHAR_LENGTH,
+      enum: ['std', 'verify', 'no']
+    }).notNull(),
+    lemon: boolean('lemon').notNull().default(false),
+    topPick: boolean('top_pick').notNull().default(false),
+    topPickReason: text('top_pick_reason'),
+    features: jsonb('features')
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    imageUrl: text('image_url'),
+    sourceUrl: text('source_url').notNull(),
+    sourceSite: varchar('source_site', { length: VARCHAR_LENGTH }).notNull(),
+    listedSince: timestamp('listed_since', { withTimezone: true }),
+    firstSeenAt: timestamp('first_seen_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+  },
+  table => [
+    index('carsearch_listings_active_brand_idx').on(
+      table.isActive,
+      table.brand
+    ),
+    index('carsearch_listings_source_site_idx').on(table.sourceSite),
+    pgPolicy('public_read_active_carsearch_listings', {
+      as: 'permissive',
+      for: 'select',
+      to: 'public',
+      using: sql`is_active = true`
+    })
+  ]
+).enableRLS()
+
+export type CarsearchListingRow = InferSelectModel<typeof carsearchListings>
+
+export const carsearchPriceHistory = pgTable(
+  'carsearch_price_history',
+  {
+    id: varchar('id', { length: ID_LENGTH })
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    vin: varchar('vin', { length: 32 })
+      .notNull()
+      .references(() => carsearchListings.vin, { onDelete: 'cascade' }),
+    observedAt: timestamp('observed_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    price: integer('price').notNull(),
+    sourceSite: varchar('source_site', { length: VARCHAR_LENGTH }).notNull()
+  },
+  table => [
+    index('carsearch_price_history_vin_observed_idx').on(
+      table.vin,
+      table.observedAt.desc()
+    ),
+    pgPolicy('public_read_carsearch_price_history', {
+      as: 'permissive',
+      for: 'select',
+      to: 'public',
+      using: sql`true`
+    })
+  ]
+).enableRLS()
+
+export type CarsearchPriceHistoryRow = InferSelectModel<
+  typeof carsearchPriceHistory
+>
+
+export const carsearchSavedListings = pgTable(
+  'carsearch_saved_listings',
+  {
+    vin: varchar('vin', { length: 32 })
+      .primaryKey()
+      .references(() => carsearchListings.vin, { onDelete: 'cascade' }),
+    savedByUserId: varchar('saved_by_user_id', {
+      length: USER_ID_LENGTH
+    }).notNull(),
+    status: varchar('status', {
+      length: VARCHAR_LENGTH,
+      enum: ['saved', 'contacted', 'test_drive', 'rejected', 'purchased']
+    })
+      .notNull()
+      .default('saved'),
+    note: text('note'),
+    savedAt: timestamp('saved_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+  },
+  table => [index('carsearch_saved_status_idx').on(table.status)]
+).enableRLS()
+
+export type CarsearchSavedListingRow = InferSelectModel<
+  typeof carsearchSavedListings
+>
+
+export const carsearchRefreshRuns = pgTable(
+  'carsearch_refresh_runs',
+  {
+    id: varchar('id', { length: ID_LENGTH })
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    startedAt: timestamp('started_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    status: varchar('status', {
+      length: VARCHAR_LENGTH,
+      enum: ['running', 'success', 'failed']
+    }).notNull(),
+    sourceSite: varchar('source_site', { length: VARCHAR_LENGTH }).notNull(),
+    seenCount: integer('seen_count').notNull().default(0),
+    insertedCount: integer('inserted_count').notNull().default(0),
+    updatedCount: integer('updated_count').notNull().default(0),
+    deactivatedCount: integer('deactivated_count').notNull().default(0),
+    error: text('error')
+  },
+  table => [
+    index('carsearch_refresh_runs_started_idx').on(table.startedAt.desc()),
+    pgPolicy('public_read_carsearch_refresh_runs', {
+      as: 'permissive',
+      for: 'select',
+      to: 'public',
+      using: sql`true`
+    })
+  ]
+).enableRLS()
+
+export type CarsearchRefreshRunRow = InferSelectModel<
+  typeof carsearchRefreshRuns
+>

@@ -6,6 +6,9 @@ import {
   artifacts,
   canvasArtifacts,
   canvasArtifactVersions,
+  carsearchListings,
+  carsearchPriceHistory,
+  carsearchSavedListings,
   chats,
   messages
 } from './schema'
@@ -74,6 +77,37 @@ export const canvasArtifactVersionsRelations = relations(
     artifact: one(canvasArtifacts, {
       fields: [canvasArtifactVersions.artifactId],
       references: [canvasArtifacts.id]
+    })
+  })
+)
+
+export const carsearchListingsRelations = relations(
+  carsearchListings,
+  ({ many, one }) => ({
+    priceHistory: many(carsearchPriceHistory),
+    saved: one(carsearchSavedListings, {
+      fields: [carsearchListings.vin],
+      references: [carsearchSavedListings.vin]
+    })
+  })
+)
+
+export const carsearchPriceHistoryRelations = relations(
+  carsearchPriceHistory,
+  ({ one }) => ({
+    listing: one(carsearchListings, {
+      fields: [carsearchPriceHistory.vin],
+      references: [carsearchListings.vin]
+    })
+  })
+)
+
+export const carsearchSavedListingsRelations = relations(
+  carsearchSavedListings,
+  ({ one }) => ({
+    listing: one(carsearchListings, {
+      fields: [carsearchSavedListings.vin],
+      references: [carsearchListings.vin]
     })
   })
 )

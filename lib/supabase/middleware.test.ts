@@ -36,6 +36,11 @@ describe('isPublicPath', () => {
   it('keeps demo assets public', () => {
     expect(isPublicPath('/demos/polymorph-demo.mp4')).toBe(true)
   })
+
+  it('keeps carsearch browsing public', () => {
+    expect(isPublicPath('/carsearch')).toBe(true)
+    expect(isPublicPath('/carsearch/3FMTK3R78PMA65898')).toBe(true)
+  })
 })
 
 function makeRequest(path: string, search = '') {
