@@ -39,7 +39,7 @@ After rotation:
 3. Run the smoke test: chat request + citation path + admin `/admin/evals`
    dashboard load. Use the [browser QA runbook](browser-qa-auth-admin.md) for
    authenticated admin routes.
-4. For `PHOENIX_API_KEY` rotation, confirm Phoenix persistence first per [DEPLOYMENT.md → Persistence verification](../DEPLOYMENT.md#persistence-verification-run-after-every-phoenix-deploy). A pre-rotation wipe loses the new token rows.
+4. For `PHOENIX_API_KEY` rotation, confirm Phoenix persistence first per [PHOENIX-OPERATIONS.md → Persistence verification](../PHOENIX-OPERATIONS.md#persistence-verification-run-after-every-phoenix-deploy). A pre-rotation wipe loses the new token rows.
 
 ## 3) Provider outage fallback
 
