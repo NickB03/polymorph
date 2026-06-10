@@ -24,9 +24,12 @@ vi.mock('@/lib/utils/registry', () => ({
 
 import { generateText } from 'ai'
 
+import { uploadGeneratedImage } from '@/lib/supabase/server-storage'
+
 import { createGenerateImageTool } from '../generate-image'
 
 const mockGenerateText = vi.mocked(generateText)
+const mockUploadGeneratedImage = vi.mocked(uploadGeneratedImage)
 
 describe('createGenerateImageTool', () => {
   const context = { userId: 'user-1', chatId: 'chat-1' }
@@ -94,6 +97,63 @@ describe('createGenerateImageTool', () => {
       expect.objectContaining({
         error: expect.stringContaining('No image')
       })
+    )
+  })
+
+  it('requests a signed URL for guest contexts', async () => {
+    mockGenerateText.mockResolvedValueOnce({
+      text: '',
+      files: [
+        {
+          mediaType: 'image/png',
+          base64: 'iVBOR...',
+          uint8Array: new Uint8Array([137, 80, 78, 71])
+        }
+      ]
+    } as any)
+
+    const guestTool = createGenerateImageTool({
+      userId: 'guest',
+      chatId: 'chat-1',
+      isGuest: true
+    })
+    await guestTool.execute!(
+      { prompt: 'a sunset' },
+      { abortSignal: undefined as any, toolCallId: 'tc-guest', messages: [] }
+    )
+
+    expect(mockUploadGeneratedImage).toHaveBeenCalledWith(
+      expect.any(Uint8Array),
+      'image/png',
+      'guest',
+      'chat-1',
+      { useSignedUrl: true }
+    )
+  })
+
+  it('uses the proxy URL (no signed URL) for authenticated contexts', async () => {
+    mockGenerateText.mockResolvedValueOnce({
+      text: '',
+      files: [
+        {
+          mediaType: 'image/png',
+          base64: 'iVBOR...',
+          uint8Array: new Uint8Array([137, 80, 78, 71])
+        }
+      ]
+    } as any)
+
+    await tool.execute!(
+      { prompt: 'a sunset' },
+      { abortSignal: undefined as any, toolCallId: 'tc-auth', messages: [] }
+    )
+
+    expect(mockUploadGeneratedImage).toHaveBeenLastCalledWith(
+      expect.any(Uint8Array),
+      'image/png',
+      'user-1',
+      'chat-1',
+      { useSignedUrl: undefined }
     )
   })
 

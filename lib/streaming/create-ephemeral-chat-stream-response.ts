@@ -141,7 +141,8 @@ export async function createEphemeralChatStreamResponse(
             ? {
                 imageToolContext: {
                   userId: 'guest',
-                  chatId
+                  chatId,
+                  isGuest: true
                 }
               }
             : {})

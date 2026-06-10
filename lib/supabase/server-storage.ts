@@ -27,11 +27,17 @@ export function buildGeneratedImagePath(
   return `${userId}/chats/${chatId}/generated-${Date.now()}.${ext}`
 }
 
+// Guest (ephemeral) chats have no authenticated identity or chat row, so the
+// /api/files proxy route can never authorize their generated images. They get
+// a signed URL instead; ephemeral chats are not persisted, so expiry is fine.
+const GUEST_IMAGE_URL_TTL_SECONDS = 24 * 60 * 60
+
 export async function uploadGeneratedImage(
   imageData: Uint8Array,
   mediaType: string,
   userId: string,
-  chatId: string
+  chatId: string,
+  options?: { useSignedUrl?: boolean }
 ): Promise<{ url: string; filename: string }> {
   const admin = getAdminClient()
   const filePath = buildGeneratedImagePath(userId, chatId, mediaType)
@@ -49,6 +55,18 @@ export async function uploadGeneratedImage(
   }
 
   const filename = filePath.split('/').pop() ?? 'generated.png'
+
+  if (options?.useSignedUrl) {
+    const signedUrl = await createSignedDownloadUrl(
+      filePath,
+      GUEST_IMAGE_URL_TTL_SECONDS
+    )
+    if (!signedUrl) {
+      throw new Error('Image upload failed: could not create signed URL')
+    }
+    return { url: signedUrl, filename }
+  }
+
   return { url: `${FILE_PROXY_PREFIX}${filePath}`, filename }
 }
 

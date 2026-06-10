@@ -98,7 +98,8 @@ describe('createEphemeralChatStreamResponse', () => {
           writer: mockWriter,
           imageToolContext: {
             userId: 'guest',
-            chatId: 'guest-chat-1'
+            chatId: 'guest-chat-1',
+            isGuest: true
           }
         })
       )

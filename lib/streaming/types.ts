@@ -14,7 +14,7 @@ export type ChatStreamAgentFactoryArgs = {
   correlationId?: string
   otelTraceId?: string
   canvasToolContext?: CanvasToolContext
-  imageToolContext?: { userId: string; chatId: string }
+  imageToolContext?: { userId: string; chatId: string; isGuest?: boolean }
 }
 
 export type ChatStreamAgentFactory = (

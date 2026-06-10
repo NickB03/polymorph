@@ -25,7 +25,14 @@ export const inputSchema = z.object({
 })
 
 export const generateImageOutputSchema = z.object({
-  imageUrl: z.string().url(),
+  // Authenticated chats return relative /api/files proxy paths; guest chats
+  // return absolute signed URLs.
+  imageUrl: z
+    .string()
+    .refine(
+      value => value.startsWith('/api/files/') || /^https?:\/\//i.test(value),
+      'imageUrl must be an http(s) URL or an /api/files/ path'
+    ),
   filename: z.string().min(1),
   mediaType: z.string().min(1),
   description: z.string().min(1),

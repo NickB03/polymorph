@@ -12,6 +12,9 @@ const IMAGE_MODEL = 'gateway:google/gemini-2.5-flash-image'
 type ImageToolContext = {
   userId: string
   chatId: string
+  // Guest chats cannot be authorized by the /api/files proxy route, so their
+  // generated images are returned as signed URLs instead of proxy URLs.
+  isGuest?: boolean
 }
 
 export function createGenerateImageTool(context: ImageToolContext) {
@@ -60,7 +63,8 @@ export function createGenerateImageTool(context: ImageToolContext) {
           imageFile.uint8Array,
           imageFile.mediaType ?? 'image/png',
           context.userId,
-          context.chatId
+          context.chatId,
+          { useSignedUrl: context.isGuest }
         )
 
         return {
