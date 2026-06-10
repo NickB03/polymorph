@@ -33,6 +33,10 @@ public/demos/
 public/images/
 
 # Local agent and tool workspaces
+AGENTS.md
+CLAUDE.md
+.claude/
+.codex/
 .archive/
 .agent/
 .agents/
@@ -43,11 +47,6 @@ skills/
 .impeccable.md
 .claude/settings.local.json
 skills-lock.json
-
-# Generated Graphify assistant instructions; these support the tool but should
-# not become part of the project knowledge graph.
-.codex/skills/graphify/
-.claude/skills/graphify/
 
 # Bulky/generated docs, historical plans, and prototypes that make the graph
 # noisy and expensive without improving current-app code navigation.

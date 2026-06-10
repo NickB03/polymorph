@@ -3,197 +3,76 @@
 > **Audience:** New Developer | Contributor
 > **Prerequisites:** [Quickstart Guide](QUICKSTART.md)
 
-This document defines the environment-variable matrix for Polymorph.
+This page is the navigation hub for environment variables. The detailed matrix is split into core, provider, operations, and local setup leaves.
 
 ## Required (Day-1 bootstrap)
 
-| Variable                  | Required                         | Purpose                                                                                                                                                                         |
-| ------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`            | Yes                              | PostgreSQL connection string for Drizzle/Supabase; `POSTGRES_URL` is also accepted                                                                                              |
-| `DATABASE_RESTRICTED_URL` | Optional                         | Lower-privilege PostgreSQL connection string. When set, the runtime query client prefers it over `DATABASE_URL` (`lib/db/index.ts`); the privileged admin client never uses it. |
-| `OPENROUTER_API_KEY`      | Required for default text models | OpenRouter provider key                                                                                                                                                         |
-| `AI_GATEWAY_API_KEY`      | Optional                         | Vercel AI Gateway provider key; currently used for image generation                                                                                                             |
-| `BRAVE_SEARCH_API_KEY`    | Required for the default search  | Primary search provider when `SEARCH_API=brave` (default); enables web + multimedia search                                                                                      |
-| `TAVILY_API_KEY`          | Optional                         | Alternative search / extract provider key                                                                                                                                       |
+Required database, AI, and search variables are in the core leaf. See [Environment Core Variables](ENVIRONMENT-CORE.md#required-day-1-bootstrap).
 
 ## Core behavior controls
 
-| Variable                | Default                               | Purpose                                                        |
-| ----------------------- | ------------------------------------- | -------------------------------------------------------------- |
-| `ENABLE_AUTH`           | `true`                                | Toggle auth required mode                                      |
-| `ANONYMOUS_USER_ID`     | `anonymous-user`                      | Shared local user id when auth is disabled                     |
-| `DATABASE_SSL_DISABLED` | `false`                               | Disable SSL for local Supabase / Docker PostgreSQL             |
-| `NEXT_PUBLIC_APP_URL`   | `http://localhost:43100` in local dev | Metadata base URL and canonical links. Required in production. |
+Authentication, anonymous user, SSL, and app URL controls are in the core leaf. See [Environment Core Variables](ENVIRONMENT-CORE.md#core-behavior-controls).
 
 ## Cloud deployment controls
 
-| Variable                     | Required in cloud                     | Purpose                                                                                                                                     |
-| ---------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POLYMORPH_CLOUD_DEPLOYMENT` | Yes                                   | Enables cloud-mode guardrails and behavior. `VANA_CLOUD_DEPLOYMENT=true` is accepted as a backward-compatible alias (`lib/utils/index.ts`). |
-| `UPSTASH_REDIS_REST_URL`     | Yes, if you want chat limits enforced | Redis endpoint for limits                                                                                                                   |
-| `UPSTASH_REDIS_REST_TOKEN`   | Yes, if you want chat limits enforced | Redis credential                                                                                                                            |
+Cloud mode and Redis limit controls are in the core leaf. See [Environment Core Variables](ENVIRONMENT-CORE.md#cloud-deployment-controls).
 
 ## Authentication (Supabase)
 
-Required when `ENABLE_AUTH=true`:
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+Supabase auth variables are in the core leaf. See [Environment Core Variables](ENVIRONMENT-CORE.md#authentication-supabase).
 
 ## Storage (Supabase)
 
-- `SUPABASE_STORAGE_BUCKET` (default: `user-uploads`)
-- `SUPABASE_SERVICE_ROLE_KEY` — service-role key required for server-side storage uploads (`lib/supabase/server-storage.ts`); used together with `NEXT_PUBLIC_SUPABASE_URL`. Keep server-only (never expose to the client).
+Storage bucket and service-role variables are in the core leaf. See [Environment Core Variables](ENVIRONMENT-CORE.md#storage-supabase).
 
 ## Search provider options
 
-- `BRAVE_SEARCH_API_KEY` (primary search provider; preferred for general web research and multimedia results)
-- `TAVILY_API_KEY` (secondary search provider and optional extract fallback for `fetch type="api"`)
-- `EXA_API_KEY` (tertiary text-search fallback when Brave and Tavily fail)
-- `JINA_API_KEY` (optional extract provider for `fetch type="api"`, not required for the default setup)
-- `SEARCH_API` (`brave`, `tavily`, `exa`, `searxng`, `firecrawl`)
-- `FIRECRAWL_API_KEY` (if selected explicitly)
-- `SEARXNG_API_URL` (required when `SEARCH_API=searxng`)
-
-When using SearXNG, the following optional tuning variables are read by `lib/tools/search/advanced-search.ts` (see the full table in [API → /api/advanced-search](../reference/API.md#post-apiadvanced-search)):
-
-- `SEARXNG_MAX_RESULTS` (default `50`), `SEARXNG_DEFAULT_DEPTH` (default `basic`), `SEARXNG_ENGINES`, `SEARXNG_TIME_RANGE`, `SEARXNG_SAFESEARCH`, `SEARXNG_CRAWL_MULTIPLIER`
-- `LOCAL_REDIS_URL` (default `redis://localhost:6379`) — Redis connection used to cache advanced-search results in non-cloud setups
-
-`fetch type="api"` is reserved for PDFs and explicit extraction needs on hard-to-parse pages. Normal HTML article pages should generally be handled by search results or `fetch type="regular"`, which keeps research resilient even when an extractor is rate-limited or quota-limited.
+Search provider keys and SearXNG tuning variables are in the provider leaf. See [Environment Provider Variables](ENVIRONMENT-PROVIDERS.md#search-provider-options).
 
 ## AI provider options (Direct)
 
-- `OPENROUTER_API_KEY` (default text model provider)
-- `AI_GATEWAY_API_KEY` (image generation via Vercel AI Gateway)
-- `OPENAI_API_KEY`
-- `ANTHROPIC_API_KEY`
-- `GOOGLE_GENERATIVE_AI_API_KEY`
-- `OPENAI_COMPATIBLE_API_KEY` + `OPENAI_COMPATIBLE_API_BASE_URL` (any OpenAI-compatible API)
-- `OLLAMA_BASE_URL`
+Direct AI provider keys are in the provider leaf. See [Environment Provider Variables](ENVIRONMENT-PROVIDERS.md#ai-provider-options-direct).
 
 ## Voice / text-to-speech
 
-Voice synthesis (`POST /api/voice/synthesize`) is feature-gated and off by default.
-
-| Variable                   | Default                | Purpose                                                                                                                                |
-| -------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_ENABLE_VOICE` | `false`                | Client + server feature gate for voice synthesis (`lib/voice/config.ts`). The synth endpoint returns 404 when unset.                   |
-| `ELEVENLABS_API_KEY`       | —                      | Enables the ElevenLabs TTS provider (`lib/voice/tts-provider.ts`). When unset, the server falls back to OpenAI TTS (`OPENAI_API_KEY`). |
-| `ELEVENLABS_VOICE_ID`      | `DXFkLCBUTmvXpp2QwZjA` | Default ElevenLabs voice ID when the request does not specify one (`app/api/voice/synthesize/route.ts`).                               |
+Voice feature gate and TTS provider variables are in the provider leaf. See [Environment Provider Variables](ENVIRONMENT-PROVIDERS.md#voice--text-to-speech).
 
 ## Canvas artifacts
 
-| Variable              | Default | Purpose                                                                                                                                                                           |
-| --------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GUEST_CANVAS_SECRET` | —       | HMAC-SHA256 secret for signing guest canvas tokens (required for guest artifact use). `GUEST_ARTIFACT_SECRET` is also accepted as a backward-compatible fallback in local setups. |
+Guest canvas signing variables are in the provider leaf. See [Environment Provider Variables](ENVIRONMENT-PROVIDERS.md#canvas-artifacts).
 
 ## Optional platform features
 
-- Guest mode: `ENABLE_GUEST_CHAT` (recommended), `GUEST_CHAT_DAILY_LIMIT`
-- Authenticated chat limit: `DAILY_CHAT_LIMIT` (default `100`) — daily cap per authenticated user, enforced in cloud mode (`lib/rate-limit/chat-limits.ts`)
-- Site feedback → Slack: `SLACK_WEBHOOK_URL` — when set, the feedback action posts submissions to Slack (`lib/actions/site-feedback.ts`)
-- Tracing/observability: see [Tracing (Arize Phoenix)](#tracing-arize-phoenix) below
-- Performance diagnostics: `ENABLE_PERF_LOGGING`
-- Canvas compiler debug logging: `DEBUG_CANVAS_COMPILER` (`lib/canvas/compiler/compile-canvas-artifact.ts`)
+Guest limits, feedback, tracing pointer, diagnostics, and compiler debug flags are in the provider leaf. See [Environment Provider Variables](ENVIRONMENT-PROVIDERS.md#optional-platform-features).
 
 ## Map tiles (geo-map Tool UI)
 
-| Variable                       | Required    | Purpose                                                                                                                                                                                                                                                                                                                                               |
-| ------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_MAPTILER_API_KEY` | Recommended | **Client-side MapTiler key** for `streets-v2` (light) and `streets-v2-dark` basemaps — reaches the browser. Lock this key's "allowed origins" in the MapTiler dashboard to production + localhost. Free tier: 100K tile loads/month, commercial use permitted. When unset, the map falls back to CARTO Voyager (light only).                          |
-| `MAPTILER_API_KEY`             | Recommended | **Server-only MapTiler key** for `getDirections`, `geocodeAddress`, `getStaticMapImage` tools. Generate a second key in the MapTiler dashboard with no origin restriction. When unset, server tools fall back to `NEXT_PUBLIC_MAPTILER_API_KEY`, but keeping a separate server-only key gives defense in depth if the public key's origin-lock fails. |
-| `ORS_API_KEY`                  | Optional    | OpenRouteService API key for the `getIsochrone` tool. Free tier: 2500 requests/day. Sign up at https://openrouteservice.org/dev/#/signup. When unset, `getIsochrone` returns an error result gracefully.                                                                                                                                              |
+MapTiler and OpenRouteService variables are in the provider leaf. See [Environment Provider Variables](ENVIRONMENT-PROVIDERS.md#map-tiles-geo-map-tool-ui).
 
 ## Admin surface
 
-| Variable        | Required          | Purpose                                                                                                                                                                |
-| --------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ADMIN_USER_ID` | When admin needed | Supabase user ID that gates `app/(admin)/admin/*` routes via `lib/auth/is-admin.ts`. Without this, admin routes return `notFound()`. Ignored when `ENABLE_AUTH=false`. |
-
-Use the [Browser QA runbook](../operations/runbooks/browser-qa-auth-admin.md)
-for local admin user setup and `/admin/evals` browser verification.
+Admin user configuration is in the operations leaf. See [Environment Operations Variables](ENVIRONMENT-OPERATIONS.md#admin-surface).
 
 ## Vercel cron jobs
 
-| Variable      | Required          | Purpose                                                                                                                      |
-| ------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `CRON_SECRET` | In Vercel deploys | Bearer token required by `GET /api/suggestions/refresh` (declared in `vercel.json`, schedule `0 14 * * *`). Reject-on-empty. |
+Cron secret requirements are in the operations leaf. See [Environment Operations Variables](ENVIRONMENT-OPERATIONS.md#vercel-cron-jobs).
 
 ## Evals cron (Railway `polymorph-evals`)
 
-See [Deployment → Evals cron service](../operations/DEPLOYMENT.md#evals-cron-service) for the full env matrix.
-The current repo baseline is OpenRouter-backed `google/gemini-3.1-flash-lite-preview` with `LOOKBACK_HOURS=48`, `SAMPLE_SIZE=10`, and `EVAL_CASE_CONCURRENCY=1`; the live cron cadence itself is managed in Railway.
+Railway eval cron defaults and pointers are in the operations leaf. See [Environment Operations Variables](ENVIRONMENT-OPERATIONS.md#evals-cron-railway-polymorph-evals).
 
-### Tracing (Arize Phoenix)
+## Tracing (Arize Phoenix)
 
-Polymorph exports OpenTelemetry traces to a self-hosted Arize Phoenix instance. Tracing is gated behind `ENABLE_TRACING` and configured in `instrumentation.ts`.
+Phoenix tracing variables and production HTTPS enforcement are in the operations leaf. See [Environment Operations Variables](ENVIRONMENT-OPERATIONS.md#tracing-arize-phoenix).
 
-| Variable                      | Required          | Default                 | Purpose                                                                                                                                                          |
-| ----------------------------- | ----------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ENABLE_TRACING`              | No                | `false`                 | Gate all OTel trace export                                                                                                                                       |
-| `EVAL_REPLAY_TRACING_ENABLED` | No                | `false`                 | Opt-in tracing for eval replay runs; leave off by default to avoid noisy/costly Phoenix traces                                                                   |
-| `PHOENIX_COLLECTOR_ENDPOINT`  | When tracing on   | `http://localhost:6006` | Phoenix OTLP HTTP endpoint (base URL, no `/v1/traces`)                                                                                                           |
-| `PHOENIX_PROJECT_NAME`        | No                | `polymorph-local`       | Project name shown in Phoenix UI. Convention: `polymorph-{env}` — `polymorph-prod`, `polymorph-preview`, `polymorph-local`. Never use the bare name `polymorph`. |
-| `PHOENIX_API_KEY`             | When auth enabled | —                       | API key created in Phoenix; sets `Authorization: Bearer` header on the OTLP exporter                                                                             |
-| `OTEL_EXPORTER_OTLP_HEADERS`  | No                | —                       | Standard OTel env var for exporter headers (redundant if `PHOENIX_API_KEY` is set; see note below)                                                               |
+## Troubleshooting research fetches
 
-> **Production HTTPS enforcement:** When the app detects a production environment (`VERCEL_ENV`, `VERCEL_TARGET_ENV`, `RAILWAY_ENVIRONMENT`, or `NODE_ENV` set to `production`), the collector endpoint must use `https://`. Plain HTTP endpoints cause tracing to be silently disabled to protect the API key in transit.
-
-**Production values** (Vercel environment variables):
-
-```env
-ENABLE_TRACING=true
-PHOENIX_COLLECTOR_ENDPOINT=<public Phoenix URL, e.g. https://phoenix-production-xxxx.up.railway.app>
-PHOENIX_PROJECT_NAME=polymorph-prod
-PHOENIX_API_KEY=<API key created in Phoenix>
-EVAL_REPLAY_TRACING_ENABLED=false
-```
-
-Set these in the Vercel dashboard under **Settings → Environment Variables** for the Production environment. Since Vercel serverless functions run outside of any private network, the Phoenix endpoint must be publicly reachable (with auth via `PHOENIX_API_KEY`).
-
-For production masking, configure OpenInference environment variables according to the sensitivity of your trace data: `OPENINFERENCE_HIDE_INPUTS`, `OPENINFERENCE_HIDE_OUTPUTS`, `OPENINFERENCE_HIDE_INPUT_MESSAGES`, `OPENINFERENCE_HIDE_OUTPUT_MESSAGES`, `OPENINFERENCE_HIDE_INPUT_IMAGES`, `OPENINFERENCE_HIDE_INPUT_TEXT`, and `OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH`.
-
-**`PHOENIX_API_KEY` vs `OTEL_EXPORTER_OTLP_HEADERS`:** `instrumentation.ts` (lines 29-31) reads `PHOENIX_API_KEY` and explicitly sets the `Authorization: Bearer` header on the `OTLPTraceExporter`. The standard OTel env var `OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer <key>` accomplishes the same thing at the SDK level. Setting `PHOENIX_API_KEY` alone is sufficient. Adding `OTEL_EXPORTER_OTLP_HEADERS` is harmless as a belt-and-suspenders approach but not required.
-
-**Local development:** Set `ENABLE_TRACING=true` and leave `PHOENIX_COLLECTOR_ENDPOINT` at the default (`http://localhost:6006`) if running Phoenix locally via Docker.
-
-### Troubleshooting research fetches
-
-- If an extractor is rate-limited or over quota, the UI now surfaces the provider message instead of a generic failure.
-- Typical symptoms include `Tavily extract error 432` or `Jina Reader error 429` in the fetch section and activity list.
-- Search-based research should still complete because Brave, Tavily, and Exa are used before extraction and normal article pages can fall back to regular HTML fetching.
+Extractor rate-limit symptoms are in the operations leaf. See [Environment Operations Variables](ENVIRONMENT-OPERATIONS.md#troubleshooting-research-fetches).
 
 ## Local setup workflow
 
-1. `cp .env.local.example .env.local`
-2. Start local Supabase CLI: `npx supabase start`
-   - **Note:** This project uses a custom port range (**4432x**) to avoid conflicts with other Supabase projects.
-3. Fill required variables in `.env.local`:
-   - `DATABASE_URL=postgresql://postgres:postgres@localhost:44322/postgres`
-   - `OPENROUTER_API_KEY=[YOUR_OPENROUTER_KEY]`
-   - `BRAVE_SEARCH_API_KEY=[YOUR_BRAVE_SEARCH_KEY]` (or another `SEARCH_API` provider)
-   - `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:44321`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY=[YOUR_SUPABASE_ANON_KEY]`
-   - `DATABASE_SSL_DISABLED=true` (Required for local DB)
-   - If you want anonymous local access instead of Supabase Auth, set `ENABLE_GUEST_CHAT=true` and skip the Supabase keys above.
-4. **Docker Networking:** If running the app via Docker, the container must use `host.docker.internal:44322` for the database URL (this is pre-configured in `docker-compose.yaml`).
-5. `bun run migrate`
-6. `bun dev`
+Local setup steps are in the local setup leaf. See [Environment Local Setup](ENVIRONMENT-LOCAL.md#local-setup-workflow).
 
 ## Implementation Details
 
-### Guest Chat (`ENABLE_GUEST_CHAT`)
-
-Guest mode lets unauthenticated users search immediately without signing in — reducing friction and letting users experience the product before creating an account.
-
-- Set `ENABLE_GUEST_CHAT=true` to allow unauthenticated users to search.
-- Leave it unset or set it to `false` to require sign-in before any search.
-- Guest sessions are ephemeral: chats are not persisted, and the UI defaults guests to speed-mode models.
-- `GUEST_CHAT_DAILY_LIMIT` (default: `10`) caps daily searches per IP. It is enforced only in cloud mode when Redis is configured; otherwise the app allows requests without applying the guest limit.
-
-### Cloud Mode (`POLYMORPH_CLOUD_DEPLOYMENT`)
-
-- Enabling this mode turns on the cloud-only code paths used for analytics and rate limiting.
-- If `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are present, guest and authenticated chat limits are enforced through Redis.
-- If Redis is missing or unreachable, the app still boots and the limit checks fall back to allow-all / in-memory behavior.
+Guest chat and cloud-mode behavior are in the local setup leaf. See [Environment Local Setup](ENVIRONMENT-LOCAL.md#implementation-details).
