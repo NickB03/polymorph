@@ -10,10 +10,26 @@ interface ChatPageResponse {
   nextOffset: number | null
 }
 
+function clampInt(
+  raw: string | null,
+  fallback: number,
+  min: number,
+  max: number
+): number {
+  const parsed = Number.parseInt(raw ?? '', 10)
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.min(Math.max(parsed, min), max)
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  const offset = parseInt(searchParams.get('offset') || '0', 10)
-  const limit = parseInt(searchParams.get('limit') || '20', 10)
+  const offset = clampInt(
+    searchParams.get('offset'),
+    0,
+    0,
+    Number.MAX_SAFE_INTEGER
+  )
+  const limit = clampInt(searchParams.get('limit'), 20, 1, 100)
 
   try {
     const result = await getChatsPage(limit, offset)
