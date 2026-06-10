@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock the AI SDK generateText before importing the tool
 vi.mock('ai', async importOriginal => {
@@ -14,7 +14,10 @@ vi.mock('@/lib/supabase/server-storage', () => ({
   uploadGeneratedImage: vi.fn().mockResolvedValue({
     url: 'https://storage.example.com/generated-123.png',
     filename: 'generated-123.png'
-  })
+  }),
+  createSignedDownloadUrl: vi
+    .fn()
+    .mockResolvedValue('https://storage.example.com/signed/source.png?token=t')
 }))
 
 // Mock registry
@@ -24,16 +27,25 @@ vi.mock('@/lib/utils/registry', () => ({
 
 import { generateText } from 'ai'
 
-import { uploadGeneratedImage } from '@/lib/supabase/server-storage'
+import {
+  createSignedDownloadUrl,
+  uploadGeneratedImage
+} from '@/lib/supabase/server-storage'
 
 import { createGenerateImageTool } from '../generate-image'
 
 const mockGenerateText = vi.mocked(generateText)
 const mockUploadGeneratedImage = vi.mocked(uploadGeneratedImage)
+const mockCreateSignedDownloadUrl = vi.mocked(createSignedDownloadUrl)
 
 describe('createGenerateImageTool', () => {
   const context = { userId: 'user-1', chatId: 'chat-1' }
   const tool = createGenerateImageTool(context)
+
+  beforeEach(() => {
+    // Clears call history only; module-mock default implementations survive.
+    vi.clearAllMocks()
+  })
 
   it('has a description', () => {
     expect(tool.description).toBeTruthy()
@@ -98,6 +110,66 @@ describe('createGenerateImageTool', () => {
         error: expect.stringContaining('No image')
       })
     )
+  })
+
+  it('signs own proxy-path edit sources before calling the model', async () => {
+    mockGenerateText.mockResolvedValueOnce({
+      text: '',
+      files: [
+        {
+          mediaType: 'image/png',
+          base64: 'iVBOR...',
+          uint8Array: new Uint8Array([137, 80, 78, 71])
+        }
+      ]
+    } as any)
+
+    await tool.execute!(
+      {
+        prompt: 'make it bluer',
+        sourceImageUrl: '/api/files/user-1/chats/chat-1/generated-1.png'
+      },
+      { abortSignal: undefined as any, toolCallId: 'tc-sign', messages: [] }
+    )
+
+    expect(mockCreateSignedDownloadUrl).toHaveBeenCalledWith(
+      'user-1/chats/chat-1/generated-1.png',
+      expect.any(Number)
+    )
+    expect(mockGenerateText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            content: expect.arrayContaining([
+              expect.objectContaining({
+                type: 'image',
+                image: new URL(
+                  'https://storage.example.com/signed/source.png?token=t'
+                )
+              })
+            ])
+          })
+        ])
+      })
+    )
+  })
+
+  it('rejects edit sources owned by another user without calling the model', async () => {
+    const result = await tool.execute!(
+      {
+        prompt: 'make it bluer',
+        sourceImageUrl: '/api/files/victim-user/chats/c/generated-1.png'
+      },
+      { abortSignal: undefined as any, toolCallId: 'tc-forged', messages: [] }
+    )
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        error: expect.stringContaining('not accessible')
+      })
+    )
+    expect(mockCreateSignedDownloadUrl).not.toHaveBeenCalled()
+    expect(mockGenerateText).not.toHaveBeenCalled()
   })
 
   it('requests a signed URL for guest contexts', async () => {

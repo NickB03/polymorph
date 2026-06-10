@@ -1,6 +1,13 @@
 import { generateText, tool } from 'ai'
 
-import { uploadGeneratedImage } from '@/lib/supabase/server-storage'
+import {
+  storagePathFromLegacyPublicUrl,
+  storagePathFromProxyUrl
+} from '@/lib/supabase/file-url'
+import {
+  createSignedDownloadUrl,
+  uploadGeneratedImage
+} from '@/lib/supabase/server-storage'
 import { getErrorMessage } from '@/lib/utils/error'
 import { getModel } from '@/lib/utils/registry'
 
@@ -15,6 +22,39 @@ type ImageToolContext = {
   // Guest chats cannot be authorized by the /api/files proxy route, so their
   // generated images are returned as signed URLs instead of proxy URLs.
   isGuest?: boolean
+}
+
+const SOURCE_IMAGE_URL_TTL_SECONDS = 300
+
+/**
+ * Resolve a model-supplied source image reference to a URL the image provider
+ * can fetch. Generated images are persisted as private /api/files proxy paths
+ * (older outputs as public storage URLs); both are signed after verifying the
+ * path belongs to the requesting user, since the model can echo arbitrary
+ * paths from conversation history. Other http(s) URLs pass through unchanged.
+ */
+async function resolveSourceImageUrl(
+  sourceImageUrl: string,
+  context: ImageToolContext
+): Promise<URL | null> {
+  const storagePath =
+    storagePathFromProxyUrl(sourceImageUrl) ??
+    storagePathFromLegacyPublicUrl(sourceImageUrl)
+
+  if (storagePath) {
+    if (!storagePath.startsWith(`${context.userId}/`)) return null
+    const signedUrl = await createSignedDownloadUrl(
+      storagePath,
+      SOURCE_IMAGE_URL_TTL_SECONDS
+    )
+    return signedUrl ? new URL(signedUrl) : null
+  }
+
+  try {
+    return new URL(sourceImageUrl)
+  } catch {
+    return null
+  }
 }
 
 export function createGenerateImageTool(context: ImageToolContext) {
@@ -36,7 +76,14 @@ export function createGenerateImageTool(context: ImageToolContext) {
         > = [{ type: 'text', text: prompt }]
 
         if (sourceImageUrl) {
-          content.push({ type: 'image', image: new URL(sourceImageUrl) })
+          const resolved = await resolveSourceImageUrl(sourceImageUrl, context)
+          if (!resolved) {
+            return {
+              error:
+                'The source image is not accessible for editing. Generate a new image instead.'
+            }
+          }
+          content.push({ type: 'image', image: resolved })
         }
 
         const result = await generateText({
