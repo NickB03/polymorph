@@ -19,16 +19,27 @@ import { downloadStorageFile } from '@/lib/supabase/server-storage'
 
 type FileSource = { kind: 'url'; url: URL } | { kind: 'storage'; path: string }
 
-function resolveFileSource(data: unknown): FileSource | null {
+function resolveFileSource(
+  data: unknown,
+  userId: string | null
+): FileSource | null {
   const href =
     data instanceof URL ? data.href : typeof data === 'string' ? data : null
   if (!href) return null
 
-  const proxyPath = storagePathFromProxyUrl(href)
-  if (proxyPath) return { kind: 'storage', path: proxyPath }
-
-  const legacyPath = storagePathFromLegacyPublicUrl(href)
-  if (legacyPath) return { kind: 'storage', path: legacyPath }
+  const storagePath =
+    storagePathFromProxyUrl(href) ?? storagePathFromLegacyPublicUrl(href)
+  if (storagePath) {
+    // The service-role download bypasses storage RLS, so only the requesting
+    // user's own files may be inlined here — file parts arrive from the
+    // client unvalidated, and a forged path must not leak another user's
+    // private uploads. Foreign or anonymous paths are left as URL strings
+    // (authorization for browser reads lives in the /api/files route).
+    if (userId && storagePath.startsWith(`${userId}/`)) {
+      return { kind: 'storage', path: storagePath }
+    }
+    return null
+  }
 
   if (/^https?:\/\//i.test(href)) {
     try {
@@ -41,7 +52,8 @@ function resolveFileSource(data: unknown): FileSource | null {
 }
 
 export async function inlineFileUrls(
-  messages: ModelMessage[]
+  messages: ModelMessage[],
+  userId: string | null
 ): Promise<ModelMessage[]> {
   // Collect all (messageIndex, partIndex, source) tuples that need fetching
   const downloads: {
@@ -57,7 +69,7 @@ export async function inlineFileUrls(
     for (let p = 0; p < msg.content.length; p++) {
       const part = msg.content[p]
       if ((part.type === 'file' || part.type === 'image') && 'data' in part) {
-        const source = resolveFileSource(part.data)
+        const source = resolveFileSource(part.data, userId)
         if (source) {
           downloads.push({ msgIdx: m, partIdx: p, source })
         }

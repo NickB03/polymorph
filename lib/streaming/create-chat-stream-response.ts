@@ -257,7 +257,7 @@ export async function createChatStreamResponse(
 
             // Inline any HTTPS file URLs as binary data so the model receives
             // image content directly instead of URLs it cannot fetch.
-            modelMessages = await inlineFileUrls(modelMessages)
+            modelMessages = await inlineFileUrls(modelMessages, userId)
 
             const preTruncationCount = modelMessages.length
             modelMessages = maybeTruncateMessages(modelMessages, model)

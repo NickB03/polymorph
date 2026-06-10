@@ -91,8 +91,9 @@ export async function createEphemeralChatStreamResponse(
         })
 
         // Inline any HTTPS file URLs as binary data so the model receives
-        // image content directly instead of URLs it cannot fetch.
-        modelMessages = await inlineFileUrls(modelMessages)
+        // image content directly instead of URLs it cannot fetch. Guests have
+        // no authenticated identity, so private storage paths are never inlined.
+        modelMessages = await inlineFileUrls(modelMessages, null)
 
         modelMessages = maybeTruncateMessages(modelMessages, model)
 

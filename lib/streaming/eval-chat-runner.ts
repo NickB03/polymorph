@@ -245,7 +245,7 @@ export async function runEvalChat({
     toolCalls: 'before-last-2-messages',
     emptyMessages: 'remove'
   })
-  modelMessages = await inlineFileUrls(modelMessages)
+  modelMessages = await inlineFileUrls(modelMessages, null)
   modelMessages = maybeTruncateMessages(modelMessages, model)
 
   const executeReplay = async () => {
