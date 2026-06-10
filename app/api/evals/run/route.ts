@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { runEvalChat } from '@/lib/streaming/eval-chat-runner'
 import { jsonError } from '@/lib/utils/json-error'
 import { selectModelForModeAndType } from '@/lib/utils/model-selection'
+import { safeSecretCompare } from '@/lib/utils/timing-safe'
 
 const evalRequestSchema = z.object({
   caseId: z.string().min(1),
@@ -35,7 +36,10 @@ export async function POST(req: Request) {
     return jsonError('AUTH_REQUIRED', 'Missing eval runner secret', 401)
   }
 
-  if (!configuredSecret || providedSecret !== configuredSecret) {
+  if (
+    !configuredSecret ||
+    !safeSecretCompare(providedSecret, configuredSecret)
+  ) {
     return jsonError('FORBIDDEN', 'Invalid eval runner secret', 403)
   }
 
