@@ -1,6 +1,6 @@
 {
-  "id": "ef5cba29-503a-40c2-ab70-98a47499a916",
-  "prevId": "874d3b73-7351-4406-9f0b-518b1a28d6a7",
+  "id": "a5871cb3-f106-486d-9fcf-7f231cb38873",
+  "prevId": "ef5cba29-503a-40c2-ab70-98a47499a916",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1337,7 +1337,7 @@
           "as": "PERMISSIVE",
           "for": "SELECT",
           "to": ["public"],
-          "using": "true"
+          "using": "user_id = current_setting('app.current_user_id', true)"
         },
         "anyone_can_insert_feedback": {
           "name": "anyone_can_insert_feedback",

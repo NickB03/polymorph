@@ -398,12 +398,14 @@ export const feedback = pgTable(
     index('feedback_user_id_idx').on(table.userId),
     index('feedback_created_at_idx').on(table.createdAt),
 
-    // RLS Policies - Allow reads (for INSERT ... RETURNING and app visibility)
+    // RLS Policy - Users can read only their own feedback rows. Inserts
+    // intentionally avoid RETURNING (see lib/actions/site-feedback.ts), so
+    // anonymous submissions don't need SELECT visibility.
     pgPolicy('feedback_select_policy', {
       as: 'permissive',
       for: 'select',
       to: 'public',
-      using: sql`true`
+      using: sql`user_id = current_setting('app.current_user_id', true)`
     }),
 
     // RLS Policy - Allow anyone to insert feedback
