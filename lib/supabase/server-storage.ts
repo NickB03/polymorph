@@ -54,3 +54,46 @@ export async function uploadGeneratedImage(
   const filename = filePath.split('/').pop() ?? 'generated.png'
   return { url: publicUrl, filename }
 }
+
+/**
+ * Create a short-lived signed URL for a file in the private uploads bucket.
+ * Authorization happens in the /api/files route before this is called.
+ */
+export async function createSignedDownloadUrl(
+  path: string,
+  expiresInSeconds: number
+): Promise<string | null> {
+  const admin = getAdminClient()
+  const { data, error } = await admin.storage
+    .from(SUPABASE_STORAGE_BUCKET)
+    .createSignedUrl(path, expiresInSeconds)
+
+  if (error || !data?.signedUrl) {
+    console.error('[createSignedDownloadUrl] Failed:', error)
+    return null
+  }
+  return data.signedUrl
+}
+
+/**
+ * Download a file from the private uploads bucket. Used when preparing model
+ * messages, where attachment URLs point at the auth-checked proxy route and
+ * cannot be fetched over plain HTTP.
+ */
+export async function downloadStorageFile(
+  path: string
+): Promise<{ data: Uint8Array; mediaType?: string } | null> {
+  const admin = getAdminClient()
+  const { data, error } = await admin.storage
+    .from(SUPABASE_STORAGE_BUCKET)
+    .download(path)
+
+  if (error || !data) {
+    console.warn('[downloadStorageFile] Failed:', error)
+    return null
+  }
+  return {
+    data: new Uint8Array(await data.arrayBuffer()),
+    mediaType: data.type || undefined
+  }
+}
