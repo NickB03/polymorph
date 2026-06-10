@@ -53,7 +53,7 @@ Voice synthesis (`POST /api/voice/synthesize`) is feature-gated and off by defau
 - Guest mode: `ENABLE_GUEST_CHAT` (recommended), `GUEST_CHAT_DAILY_LIMIT`
 - Authenticated chat limit: `DAILY_CHAT_LIMIT` (default `100`) — daily cap per authenticated user, enforced in cloud mode (`lib/rate-limit/chat-limits.ts`)
 - Site feedback → Slack: `SLACK_WEBHOOK_URL` — when set, the feedback action posts submissions to Slack (`lib/actions/site-feedback.ts`)
-- Tracing/observability: see [Tracing (Arize Phoenix)](#tracing-arize-phoenix) below
+- Tracing/observability: see [Tracing (Arize Phoenix)](ENVIRONMENT-OPERATIONS.md#tracing-arize-phoenix)
 - Performance diagnostics: `ENABLE_PERF_LOGGING`
 - Canvas compiler debug logging: `DEBUG_CANVAS_COMPILER` (`lib/canvas/compiler/compile-canvas-artifact.ts`)
 

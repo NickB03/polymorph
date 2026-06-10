@@ -230,6 +230,11 @@ Serves the compiled HTML for inline embedding or preview. Returns the artifact's
 
 Returns the compiled HTML for the canvas artifact, rendered inline (not as a download).
 
+**Security headers:**
+
+- `Content-Security-Policy: sandbox allow-scripts` -- sandboxes the document even when opened top-level (for example, the fullscreen view). The opaque origin prevents model-generated scripts from reading app-origin cookies or storage, matching the isolation of the in-app preview iframe. Must never gain `allow-same-origin`.
+- `X-Canvas-Executes-JavaScript` -- `true` (advisory: the served HTML runs JS)
+
 #### Error Responses
 
 | Status | Condition                                                    |

@@ -118,6 +118,15 @@ export async function serveCanvasHtml(
       : 'inline'
   )
   headers.set('Content-Type', 'text/html; charset=utf-8')
+  if (mode === 'inline') {
+    // The CSP sandbox directive is header-only (ignored in the meta CSP that
+    // assemble-canvas-html.ts embeds) and is the only way to sandbox a
+    // top-level document. Without it, model-generated scripts run at the app
+    // origin and can read Supabase session cookies. `allow-scripts` without
+    // `allow-same-origin` gives the document an opaque origin — same isolation
+    // as the preview iframe's sandbox attribute. Never add `allow-same-origin`.
+    headers.set('Content-Security-Policy', 'sandbox allow-scripts')
+  }
   headers.set('X-Canvas-Executes-JavaScript', 'true')
   headers.set(
     'X-Canvas-External-Dependencies',

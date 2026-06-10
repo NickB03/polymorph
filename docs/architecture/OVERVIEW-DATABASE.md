@@ -76,7 +76,7 @@ erDiagram
 
 - **Cascade deletes** propagate from chats through messages
 
-- All tables use **Row-Level Security** (see [RLS Policy Chain](#rls-policy-chain))
+- All tables use **Row-Level Security** (see [RLS Policy Chain](OVERVIEW-RLS.md#rls-policy-chain))
 
 ### Indexes
 
