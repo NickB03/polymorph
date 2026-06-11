@@ -1,0 +1,48 @@
+name: Synthetic Traffic
+
+on:
+  schedule:
+    # Daily at 2 PM UTC — same window as the suggestions-refresh Vercel cron.
+    # Generates 3 realistic chat sessions so the eval traffic-monitor has data to sample.
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+    inputs:
+      session_count:
+        description: Number of sessions to run (default 3)
+        required: false
+        default: '3'
+      dry_run:
+        description: Dry run — print sessions without executing
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  generate-sessions:
+    runs-on: ubuntu-latest
+    name: Generate Synthetic Sessions
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.9
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Install Playwright browsers
+        run: bunx playwright install chromium --with-deps
+
+      - name: Run synthetic sessions
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          POLYMORPH_COOKIES: ${{ secrets.POLYMORPH_COOKIES }}
+          SYNTHETIC_URL: https://polymorph.fyi
+          SYNTHETIC_SESSIONS: ${{ github.event.inputs.session_count || '3' }}
+          SYNTHETIC_DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '1' || '' }}
+        run: bun scripts/synthetic-traffic.ts
