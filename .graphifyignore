@@ -48,6 +48,12 @@ skills/
 .claude/settings.local.json
 skills-lock.json
 
+# Graph-maintenance tooling — excluded from the corpus it maintains so editing
+# the guard or merge driver never makes the graph report itself "stale".
+scripts/check-graph-freshness.py
+scripts/graphify-merge-driver.sh
+scripts/setup-git-merge-drivers.sh
+
 # Bulky/generated docs, historical plans, and prototypes that make the graph
 # noisy and expensive without improving current-app code navigation.
 docs/assets/

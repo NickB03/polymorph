@@ -1,1 +1,7 @@
 lib/canvas/compiler/vendor/*.generated.ts linguist-generated=true
+
+# The committed knowledge graph is generated; union-merge it via the graphify
+# CLI instead of conflicting. The driver is registered per-environment by
+# scripts/setup-git-merge-drivers.sh (package.json `prepare`). graph.json is
+# also marked linguist-generated so it stays out of language stats and diffs.
+graphify-out/graph.json merge=graphify linguist-generated=true
