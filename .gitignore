@@ -39,8 +39,20 @@ next-env.d.ts
 # temporary files
 .tmp/
 
-# Graphify output is local-only; commit assistant config, not generated graphs.
-/graphify-out/
+# Graphify: persist the knowledge graph + the expensive semantic (LLM) extraction
+# cache so they travel with the repo (local, worktree, cloud). Commit graph.json
+# (union-merged via .gitattributes), the report, labels, and cache/semantic/.
+# Ignore: interpreter/root paths; manifest / stat-index / cost log (absolute paths
+# + mtimes → churn and conflict on every clone); and cache/ast/ (free + fast to
+# regenerate from tree-sitter, path-coupled so it never hits a fresh checkout, and
+# rewritten on every run — pure churn with no cross-environment value).
+/graphify-out/*
+!/graphify-out/graph.json
+!/graphify-out/GRAPH_REPORT.md
+!/graphify-out/.graphify_labels.json
+!/graphify-out/cache/
+/graphify-out/cache/stat-index.json
+/graphify-out/cache/ast/
 
 # Raw demo-video masters (commit only derived clips in docs/assets/demos/)
 /demo-video/

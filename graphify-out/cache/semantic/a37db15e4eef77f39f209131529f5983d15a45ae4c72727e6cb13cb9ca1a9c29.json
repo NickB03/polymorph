@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "shared_embedded_actions_embeddedactionsprops", "target": "shared_actions_config_actionsprop", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "components/tool-ui/shared/embedded-actions.ts", "source_location": null, "weight": 1.0}], "hyperedges": []}

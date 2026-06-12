@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "compiler_build_tailwind_css_buildtailwindcss", "target": "compiler_compile_canvas_artifact_createvirtualplugin", "relation": "shares_data_with", "confidence": "INFERRED", "confidence_score": 0.75, "source_file": "lib/canvas/compiler/build-tailwind-css.ts", "source_location": null, "weight": 1.0}], "hyperedges": []}

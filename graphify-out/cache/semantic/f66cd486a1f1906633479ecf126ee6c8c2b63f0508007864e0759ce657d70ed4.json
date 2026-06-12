@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "types_model_type_isvalidmodeltype", "target": "types_model_type_modeltype", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "lib/types/model-type.ts", "source_location": null, "weight": 1.0}], "hyperedges": []}

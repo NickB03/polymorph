@@ -169,6 +169,31 @@ jobs:
           RUN_DB_INTEGRATION: 'true'
         run: bun run test:db
 
+  graph-freshness:
+    runs-on: ubuntu-latest
+    name: Graph Freshness
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Pinned to the version that built the committed graph so AST extraction
+      # is reproducible (a newer graphify could change extraction and flag a
+      # false staleness).
+      - name: Install graphify
+        run: pip install 'graphifyy==0.8.38'
+
+      # Re-derives the AST symbol set from the code (no LLM, uses the committed
+      # cache) and fails if it diverges from graphify-out/graph.json — i.e. code
+      # changed without the graph being rebuilt and committed.
+      - name: Check graph.json is in sync with the code
+        run: python scripts/check-graph-freshness.py
+
   build:
     runs-on: ubuntu-latest
     name: Build

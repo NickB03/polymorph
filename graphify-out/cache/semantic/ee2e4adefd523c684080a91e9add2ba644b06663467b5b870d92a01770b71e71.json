@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "generate_image_generate_image_generateimage", "target": "generate_image_schema_generateimageprops", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "components/tool-ui/generate-image/generate-image.tsx", "source_location": null, "weight": 1.0}], "hyperedges": []}
