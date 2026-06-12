@@ -19,6 +19,7 @@
     "test:db": "NODE_ENV=test RUN_DB_INTEGRATION=true vitest run lib/db/__tests__/rls-policies.real.integration.test.ts",
     "seed:evals": "bun run scripts/seed-eval-summaries.ts --write --reset",
     "seed:evals:dry-run": "bun run scripts/seed-eval-summaries.ts --dry-run",
+    "simulate-traffic": "bun run scripts/simulate-traffic.ts",
     "chat": "bun run scripts/chat-cli.ts",
     "prepare": "husky && (bash scripts/setup-git-merge-drivers.sh || true)"
   },
@@ -143,7 +144,9 @@
     "prettier": "^3.8.4",
     "tailwindcss": "^4.3.0",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.6"
+    "vitest": "^3.2.6",
+    "@anthropic-ai/sdk": "^0.36.0",
+    "playwright": "^1.48.0"
   },
   "overrides": {
     "postcss": "^8.5.10"
