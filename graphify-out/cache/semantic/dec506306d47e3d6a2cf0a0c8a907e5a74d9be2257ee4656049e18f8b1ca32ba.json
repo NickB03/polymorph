@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "chart_chart_chart", "target": "chart_schema_chartprops", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "components/tool-ui/chart/chart.tsx", "source_location": null, "weight": 1.0}], "hyperedges": []}

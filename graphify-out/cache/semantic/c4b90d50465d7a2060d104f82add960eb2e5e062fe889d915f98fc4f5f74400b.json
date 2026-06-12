@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "shared_action_buttons_actionbuttons", "target": "shared_schema_action", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "components/tool-ui/shared/action-buttons.tsx", "source_location": null, "weight": 1.0}], "hyperedges": []}

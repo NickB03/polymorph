@@ -39,8 +39,16 @@ next-env.d.ts
 # temporary files
 .tmp/
 
-# Graphify output is local-only; commit assistant config, not generated graphs.
-/graphify-out/
+# Graphify: persist the knowledge graph + extraction cache so it travels with the
+# repo (local, worktree, cloud). Ignore only the machine-specific path files, which
+# hold absolute interpreter/root paths and must be regenerated per environment.
+/graphify-out/*
+!/graphify-out/graph.json
+!/graphify-out/GRAPH_REPORT.md
+!/graphify-out/manifest.json
+!/graphify-out/cost.json
+!/graphify-out/.graphify_labels.json
+!/graphify-out/cache/
 
 # Raw demo-video masters (commit only derived clips in docs/assets/demos/)
 /demo-video/

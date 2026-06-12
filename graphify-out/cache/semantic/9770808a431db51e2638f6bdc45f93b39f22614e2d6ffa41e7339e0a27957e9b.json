@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "media_aspect_ratio_getratioclass", "target": "media_aspect_ratio_ratio_class_map", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "components/tool-ui/shared/media/aspect-ratio.ts", "source_location": null, "weight": 1.0}], "hyperedges": []}
