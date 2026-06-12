@@ -40,15 +40,16 @@ next-env.d.ts
 .tmp/
 
 # Graphify: persist the knowledge graph + extraction cache so it travels with the
-# repo (local, worktree, cloud). Ignore only the machine-specific path files, which
-# hold absolute interpreter/root paths and must be regenerated per environment.
+# repo (local, worktree, cloud). Commit graph.json (union-merged via .gitattributes),
+# the report, labels, and the content-addressed cache/. Ignore the machine-specific
+# files: interpreter/root paths, and the manifest / stat-index / cost log, which key
+# on absolute paths + mtimes and otherwise churn and conflict on every clone.
 /graphify-out/*
 !/graphify-out/graph.json
 !/graphify-out/GRAPH_REPORT.md
-!/graphify-out/manifest.json
-!/graphify-out/cost.json
 !/graphify-out/.graphify_labels.json
 !/graphify-out/cache/
+/graphify-out/cache/stat-index.json
 
 # Raw demo-video masters (commit only derived clips in docs/assets/demos/)
 /demo-video/

@@ -8,6 +8,17 @@
 #
 set -uo pipefail
 
+# Register the graphify graph.json merge driver in this checkout's .git/config.
+# .gitattributes (merge=graphify) travels with the repo, but the driver
+# definition is per-environment. `bun install`/`prepare` covers normal checkouts;
+# this covers fresh worktrees and cloud sessions where install may not have run,
+# so a graph.json merge never falls back to raw conflict markers. Runs in every
+# session (local + remote); the script no-ops outside a git work tree.
+_proj="${CLAUDE_PROJECT_DIR:-$PWD}"
+if [ -f "$_proj/scripts/setup-git-merge-drivers.sh" ]; then
+  ( cd "$_proj" && bash scripts/setup-git-merge-drivers.sh ) || true
+fi
+
 # Only run in Claude Code on the web (remote) sessions.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
