@@ -20,6 +20,7 @@
     "seed:evals": "bun run scripts/seed-eval-summaries.ts --write --reset",
     "seed:evals:dry-run": "bun run scripts/seed-eval-summaries.ts --dry-run",
     "chat": "bun run scripts/chat-cli.ts",
+    "synthetic-traffic": "bun run scripts/synthetic-traffic.ts",
     "prepare": "husky && (bash scripts/setup-git-merge-drivers.sh || true)"
   },
   "dependencies": {
@@ -143,6 +144,7 @@
     "prettier": "^3.8.4",
     "tailwindcss": "^4.3.0",
     "typescript": "^5.9.3",
+    "playwright": "^1.48.0",
     "vitest": "^3.2.6"
   },
   "overrides": {
