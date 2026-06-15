@@ -17,6 +17,7 @@
     "test": "NODE_ENV=test vitest run",
     "test:watch": "vitest --watch",
     "test:db": "NODE_ENV=test RUN_DB_INTEGRATION=true vitest run lib/db/__tests__/rls-policies.real.integration.test.ts",
+    "drive-traffic": "bun run scripts/drive-traffic.ts",
     "seed:evals": "bun run scripts/seed-eval-summaries.ts --write --reset",
     "seed:evals:dry-run": "bun run scripts/seed-eval-summaries.ts --dry-run",
     "chat": "bun run scripts/chat-cli.ts",

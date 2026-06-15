@@ -58,6 +58,7 @@ Users should not need to say the word "skill." Infer intent from normal requests
 - **Next.js App Router architecture decisions** → `nextjs-app-router-patterns`
 - **New page, major UI section, complex layout** → Pencil wireframe workflow (`.claude/rules/design-workflow.md`), then `frontend-design`
 - **Any creative/visual work** → `brainstorming` (before wireframing or implementation)
+- **Generating daily eval traffic on polymorph.fyi** → `drive-traffic` (runs `bun run scripts/drive-traffic.ts`; requires `POLYMORPH_COOKIES` in `.env.local`; schedule with `/loop 24h /drive-traffic`)
 
 **Precedence:** process/quality skills first (debugging/planning/verification/review), then domain skills (Next.js, Supabase, testing). When multiple apply, order:
 `systematic-debugging` → `writing-plans` → execution mode (inline or `subagent-driven-development`) → domain skill(s) → `verification-before-completion` → review skill(s) → `finishing-a-development-branch`.
