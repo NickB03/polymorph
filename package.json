@@ -20,6 +20,7 @@
     "seed:evals": "bun run scripts/seed-eval-summaries.ts --write --reset",
     "seed:evals:dry-run": "bun run scripts/seed-eval-summaries.ts --dry-run",
     "chat": "bun run scripts/chat-cli.ts",
+    "traffic-sim": "bun scripts/simulate-traffic.ts",
     "prepare": "husky && (bash scripts/setup-git-merge-drivers.sh || true)"
   },
   "dependencies": {
