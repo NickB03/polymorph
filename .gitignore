@@ -83,6 +83,8 @@ skills-lock.json
 /.claude/skills/*
 !/.claude/skills/graphify/
 !/.claude/skills/graphify/**
+!/.claude/skills/simulate-traffic/
+!/.claude/skills/simulate-traffic/**
 
 # README demo source assets — ship only explicit derived README assets
 docs/assets/demos/*.mp4
