@@ -17,6 +17,7 @@ Polymorph is an AI platform with a generative UI for research, creation, and exp
 - `bun run migrate` — Drizzle migrations
 - `bun run chat` — CLI chat interface (`scripts/chat-cli.ts`)
 - `npx supabase start` — local Supabase (DB 44322, API 44321, Studio 44323)
+- `bun run scripts/synthetic-traffic.ts` — run 3 synthetic user sessions on polymorph.fyi (daily via GH Actions cron)
 
 ## Code conventions
 
@@ -116,6 +117,7 @@ Claude should `Read` these only when the current task needs them.
 | ESLint conventions                         | `docs/reference/ESLINT-CONVENTIONS.md`         |
 | Railway + Phoenix CLI cheat sheet          | `.claude/rules/operations.md`                  |
 | Design / wireframing workflow              | `.claude/rules/design-workflow.md`             |
+| Synthetic traffic generation               | `.claude/skills/synthetic-traffic/SKILL.md`    |
 
 ## graphify
 
