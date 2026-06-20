@@ -17,6 +17,7 @@
     "test": "NODE_ENV=test vitest run",
     "test:watch": "vitest --watch",
     "test:db": "NODE_ENV=test RUN_DB_INTEGRATION=true vitest run lib/db/__tests__/rls-policies.real.integration.test.ts",
+    "synthetic-traffic": "bun run scripts/synthetic-traffic.ts",
     "seed:evals": "bun run scripts/seed-eval-summaries.ts --write --reset",
     "seed:evals:dry-run": "bun run scripts/seed-eval-summaries.ts --dry-run",
     "chat": "bun run scripts/chat-cli.ts",
@@ -143,6 +144,7 @@
     "prettier": "^3.8.4",
     "tailwindcss": "^4.3.0",
     "typescript": "^5.9.3",
+    "playwright": "^1.52.0",
     "vitest": "^3.2.6"
   },
   "overrides": {
