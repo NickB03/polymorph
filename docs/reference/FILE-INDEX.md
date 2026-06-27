@@ -58,35 +58,35 @@ Curated index of the main files in the Polymorph repository, organized by direct
 
 ## Root Files
 
-| File                  | Purpose                                                                                                                                    |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `proxy.ts`            | Next.js middleware entry point; propagates Supabase session and base URL headers to downstream requests                                    |
-| `instrumentation.ts`  | Registers OpenTelemetry with Phoenix exporter (HTTPS enforced via `isProductionTarget()`); initializes Ollama validation on server startup |
-| `next.config.mjs`     | Next.js configuration; sets allowed remote image patterns for YouTube, Google, and Brave                                                   |
-| `drizzle.config.ts`   | Drizzle Kit configuration; points schema at `@/lib/db/schema.ts` and outputs migrations to `drizzle/`                                      |
-| `vitest.config.mts`   | Vitest configuration; sets jsdom environment, path aliases, and setup file                                                                 |
-| `vitest.setup.ts`     | Test setup file; mocks Next.js cache functions and sets dummy env vars                                                                     |
-| `package.json`        | Project manifest with scripts, dependencies, and metadata                                                                                  |
-| `tsconfig.json`       | TypeScript configuration with strict mode and `@/` path alias                                                                              |
-| `postcss.config.mjs`  | PostCSS configuration for Tailwind CSS                                                                                                     |
-| `prettier.config.js`  | Prettier configuration (no semicolons, single quotes, no trailing commas)                                                                  |
-| `components.json`     | shadcn/ui configuration for component generation                                                                                           |
-| `docker-compose.yaml` | Docker Compose stack defining Polymorph app and Redis services                                                                             |
-| `Dockerfile`          | Multi-stage Docker build for production deployment                                                                                         |
-| `.gitignore`          | Git ignore rules for node_modules, .next, env files, etc.                                                                                  |
-| `.mcp.json`           | MCP (Model Context Protocol) configuration                                                                                                 |
-| `eslint.config.mjs`   | ESLint 9 flat config (replaces `.eslintrc.json`); Next 16 compatible, import sort rules, shared ignores                                    |
-| `vercel.json`         | Vercel project config; declares the daily cron `GET /api/suggestions/refresh` at `0 14 * * *`                                              |
-| `CLAUDE.md`           | AI coding assistant instructions and project conventions                                                                                   |
-| `AGENTS.md`           | Codex/agent-facing project instructions and invariants                                                                                     |
-| `GEMINI.md`           | Gemini-specific AI assistant instructions                                                                                                  |
-| `DESIGN.md`           | Design-system guidance and source-of-truth token notes                                                                                     |
-| `README.md`           | Project overview, setup guide, and feature summary                                                                                         |
-| `CHANGELOG.md`        | Version history and release notes                                                                                                          |
-| `CONTRIBUTING.md`     | Contribution guidelines and development workflow                                                                                           |
-| `CODE_OF_CONDUCT.md`  | Community code of conduct                                                                                                                  |
-| `SECURITY.md`         | Security policy and vulnerability reporting                                                                                                |
-| `LICENSE`             | Apache 2.0 license                                                                                                                         |
+| File                  | Purpose                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------- |
+| `proxy.ts`            | Next.js middleware entry point; propagates Supabase session and base URL headers to downstream requests |
+| `instrumentation.ts`  | Registers OpenTelemetry with Phoenix exporter (HTTPS enforced via `isProductionTarget()`)               |
+| `next.config.mjs`     | Next.js configuration; sets allowed remote image patterns for YouTube, Google, and Brave                |
+| `drizzle.config.ts`   | Drizzle Kit configuration; points schema at `@/lib/db/schema.ts` and outputs migrations to `drizzle/`   |
+| `vitest.config.mts`   | Vitest configuration; sets jsdom environment, path aliases, and setup file                              |
+| `vitest.setup.ts`     | Test setup file; mocks Next.js cache functions and sets dummy env vars                                  |
+| `package.json`        | Project manifest with scripts, dependencies, and metadata                                               |
+| `tsconfig.json`       | TypeScript configuration with strict mode and `@/` path alias                                           |
+| `postcss.config.mjs`  | PostCSS configuration for Tailwind CSS                                                                  |
+| `prettier.config.js`  | Prettier configuration (no semicolons, single quotes, no trailing commas)                               |
+| `components.json`     | shadcn/ui configuration for component generation                                                        |
+| `docker-compose.yaml` | Docker Compose stack defining Polymorph app and Redis services                                          |
+| `Dockerfile`          | Multi-stage Docker build for production deployment                                                      |
+| `.gitignore`          | Git ignore rules for node_modules, .next, env files, etc.                                               |
+| `.mcp.json`           | MCP (Model Context Protocol) configuration                                                              |
+| `eslint.config.mjs`   | ESLint 9 flat config (replaces `.eslintrc.json`); Next 16 compatible, import sort rules, shared ignores |
+| `vercel.json`         | Vercel project config; declares the daily cron `GET /api/suggestions/refresh` at `0 14 * * *`           |
+| `CLAUDE.md`           | AI coding assistant instructions and project conventions                                                |
+| `AGENTS.md`           | Codex/agent-facing project instructions and invariants                                                  |
+| `GEMINI.md`           | Gemini-specific AI assistant instructions                                                               |
+| `DESIGN.md`           | Design-system guidance and source-of-truth token notes                                                  |
+| `README.md`           | Project overview, setup guide, and feature summary                                                      |
+| `CHANGELOG.md`        | Version history and release notes                                                                       |
+| `CONTRIBUTING.md`     | Contribution guidelines and development workflow                                                        |
+| `CODE_OF_CONDUCT.md`  | Community code of conduct                                                                               |
+| `SECURITY.md`         | Security policy and vulnerability reporting                                                             |
+| `LICENSE`             | Apache 2.0 license                                                                                      |
 
 ---
 
@@ -713,7 +713,6 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/config/load-models-config.ts` | Loads and validates model configuration from JSON files (default.json, cloud.json)                                  |
 | `lib/config/search-modes.ts`       | Search/Research/Build UI configuration including backend mode and optional intent mapping                           |
 | `lib/config/env.ts`                | Environment variable validation, type-safe access, and exported `isProductionTarget()` for Vercel/Railway detection |
-| `lib/config/ollama-validator.ts`   | Validates configured Ollama models are available and compatible on server startup                                   |
 
 ### Auth
 
@@ -804,8 +803,6 @@ shadcn/ui-based primitives and custom UI components.
 | `lib/firecrawl/client.ts`      | Firecrawl API client for web search and image search                       |
 | `lib/firecrawl/types.ts`       | Type definitions for Firecrawl API requests and responses                  |
 | `lib/tools/maptiler/client.ts` | Shared MapTiler client for JSON API calls and static/public URL generation |
-| `lib/ollama/client.ts`         | Ollama API client for listing models and checking capabilities             |
-| `lib/ollama/types.ts`          | Type definitions for Ollama model responses and capabilities               |
 
 ### Constants
 

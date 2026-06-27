@@ -22900,36 +22900,6 @@
       "norm_label": "gettrendingsuggestionsmodel()"
     },
     {
-      "label": "ollama-validator.ts",
-      "file_type": "code",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "config_ollama_validator",
-      "community": 1,
-      "norm_label": "ollama-validator.ts"
-    },
-    {
-      "label": "getConfiguredOllamaModels()",
-      "file_type": "code",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L15",
-      "_origin": "ast",
-      "id": "config_ollama_validator_getconfiguredollamamodels",
-      "community": 1,
-      "norm_label": "getconfiguredollamamodels()"
-    },
-    {
-      "label": "initializeOllamaValidation()",
-      "file_type": "code",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L46",
-      "_origin": "ast",
-      "id": "config_ollama_validator_initializeollamavalidation",
-      "community": 1,
-      "norm_label": "initializeollamavalidation()"
-    },
-    {
       "label": "search-modes.ts",
       "file_type": "code",
       "source_file": "lib/config/search-modes.ts",
@@ -25548,116 +25518,6 @@
       "id": "observability_phoenix_feedback_annotatephoenixuserfeedback",
       "community": 99,
       "norm_label": "annotatephoenixuserfeedback()"
-    },
-    {
-      "label": "client.ts",
-      "file_type": "code",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "ollama_client",
-      "community": 140,
-      "norm_label": "client.ts"
-    },
-    {
-      "label": "OllamaClient",
-      "file_type": "code",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L8",
-      "_origin": "ast",
-      "id": "ollama_client_ollamaclient",
-      "community": 140,
-      "norm_label": "ollamaclient"
-    },
-    {
-      "label": ".constructor()",
-      "file_type": "code",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L11",
-      "_origin": "ast",
-      "id": "ollama_client_ollamaclient_constructor",
-      "community": 140,
-      "norm_label": ".constructor()"
-    },
-    {
-      "label": ".getModels()",
-      "file_type": "code",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L19",
-      "_origin": "ast",
-      "id": "ollama_client_ollamaclient_getmodels",
-      "community": 140,
-      "norm_label": ".getmodels()"
-    },
-    {
-      "label": ".getModelCapabilities()",
-      "file_type": "code",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L46",
-      "_origin": "ast",
-      "id": "ollama_client_ollamaclient_getmodelcapabilities",
-      "community": 140,
-      "norm_label": ".getmodelcapabilities()"
-    },
-    {
-      "label": ".isAvailable()",
-      "file_type": "code",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L81",
-      "_origin": "ast",
-      "id": "ollama_client_ollamaclient_isavailable",
-      "community": 140,
-      "norm_label": ".isavailable()"
-    },
-    {
-      "label": "types.ts",
-      "file_type": "code",
-      "source_file": "lib/ollama/types.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "ollama_types",
-      "community": 140,
-      "norm_label": "types.ts"
-    },
-    {
-      "label": "OllamaModel",
-      "file_type": "code",
-      "source_file": "lib/ollama/types.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "ollama_types_ollamamodel",
-      "community": 140,
-      "norm_label": "ollamamodel"
-    },
-    {
-      "label": "OllamaModelCapabilities",
-      "file_type": "code",
-      "source_file": "lib/ollama/types.ts",
-      "source_location": "L16",
-      "_origin": "ast",
-      "id": "ollama_types_ollamamodelcapabilities",
-      "community": 140,
-      "norm_label": "ollamamodelcapabilities"
-    },
-    {
-      "label": "OllamaModelsResponse",
-      "file_type": "code",
-      "source_file": "lib/ollama/types.ts",
-      "source_location": "L24",
-      "_origin": "ast",
-      "id": "ollama_types_ollamamodelsresponse",
-      "community": 140,
-      "norm_label": "ollamamodelsresponse"
-    },
-    {
-      "label": "OllamaShowResponse",
-      "file_type": "code",
-      "source_file": "lib/ollama/types.ts",
-      "source_location": "L28",
-      "_origin": "ast",
-      "id": "ollama_types_ollamashowresponse",
-      "community": 140,
-      "norm_label": "ollamashowresponse"
     },
     {
       "label": "canvas-limits.test.ts",
@@ -97823,28 +97683,6 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "instrumentation.ts",
-      "source_location": "L74",
-      "weight": 1.0,
-      "source": "instrumentation_register",
-      "target": "config_ollama_validator",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "INFERRED",
-      "confidence_score": 0.8,
-      "source_file": "instrumentation.ts",
-      "source_location": "L75",
-      "weight": 1.0,
-      "source": "instrumentation_register",
-      "target": "config_ollama_validator_initializeollamavalidation"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "instrumentation.ts",
       "source_location": "L16",
       "weight": 1.0,
       "source": "instrumentation_register",
@@ -110716,17 +110554,6 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "config_ollama_validator",
-      "target": "config_load_models_config",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "references",
       "context": "generic_arg",
       "confidence": "EXTRACTED",
@@ -110811,28 +110638,6 @@
       "weight": 1.0,
       "source": "config_load_models_config_loadmodelsconfig",
       "target": "utils_index_isclouddeployment"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "config_ollama_validator",
-      "target": "config_load_models_config_loadmodelsconfig",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L19",
-      "weight": 1.0,
-      "source": "config_ollama_validator_getconfiguredollamamodels",
-      "target": "config_load_models_config_loadmodelsconfig",
-      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -111049,81 +110854,6 @@
       "weight": 1.0,
       "source": "utils_model_selection_resolvemodelformodeandtype",
       "target": "config_model_types_getmodelformodeandtype",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L15",
-      "weight": 1.0,
-      "source": "config_ollama_validator",
-      "target": "config_ollama_validator_getconfiguredollamamodels",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L46",
-      "weight": 1.0,
-      "source": "config_ollama_validator",
-      "target": "config_ollama_validator_initializeollamavalidation",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L2",
-      "weight": 1.0,
-      "source": "config_ollama_validator",
-      "target": "ollama_client",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L2",
-      "weight": 1.0,
-      "source": "config_ollama_validator",
-      "target": "ollama_client_ollamaclient",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L3",
-      "weight": 1.0,
-      "source": "config_ollama_validator",
-      "target": "types_models",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L3",
-      "weight": 1.0,
-      "source": "config_ollama_validator",
-      "target": "types_models_model",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L97",
-      "weight": 1.0,
-      "source": "config_ollama_validator_initializeollamavalidation",
-      "target": "config_ollama_validator_getconfiguredollamamodels",
       "confidence_score": 1.0
     },
     {
@@ -116958,173 +116688,6 @@
       "weight": 1.0,
       "source": "observability_phoenix_feedback_annotatephoenixuserfeedback",
       "target": "observability_phoenix_feedback_getphoenixbaseurl",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "ollama_client",
-      "target": "ollama_client_ollamaclient",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "ollama_client",
-      "target": "ollama_types",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "ollama_client",
-      "target": "ollama_types_ollamamodel",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "ollama_client",
-      "target": "ollama_types_ollamamodelcapabilities",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "ollama_client",
-      "target": "ollama_types_ollamamodelsresponse",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "ollama_client",
-      "target": "ollama_types_ollamashowresponse",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "ollama_client_ollamaclient",
-      "target": "ollama_client_ollamaclient_constructor",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L46",
-      "weight": 1.0,
-      "source": "ollama_client_ollamaclient",
-      "target": "ollama_client_ollamaclient_getmodelcapabilities",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L19",
-      "weight": 1.0,
-      "source": "ollama_client_ollamaclient",
-      "target": "ollama_client_ollamaclient_getmodels",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "method",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L81",
-      "weight": 1.0,
-      "source": "ollama_client_ollamaclient",
-      "target": "ollama_client_ollamaclient_isavailable",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "references",
-      "context": "generic_arg",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L19",
-      "weight": 1.0,
-      "source": "ollama_client_ollamaclient_getmodels",
-      "target": "ollama_types_ollamamodel",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "references",
-      "context": "generic_arg",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/client.ts",
-      "source_location": "L46",
-      "weight": 1.0,
-      "source": "ollama_client_ollamaclient_getmodelcapabilities",
-      "target": "ollama_types_ollamamodelcapabilities",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/types.ts",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "ollama_types",
-      "target": "ollama_types_ollamamodel",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/types.ts",
-      "source_location": "L16",
-      "weight": 1.0,
-      "source": "ollama_types",
-      "target": "ollama_types_ollamamodelcapabilities",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/types.ts",
-      "source_location": "L24",
-      "weight": 1.0,
-      "source": "ollama_types",
-      "target": "ollama_types_ollamamodelsresponse",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/ollama/types.ts",
-      "source_location": "L28",
-      "weight": 1.0,
-      "source": "ollama_types",
-      "target": "ollama_types_ollamashowresponse",
       "confidence_score": 1.0
     },
     {
