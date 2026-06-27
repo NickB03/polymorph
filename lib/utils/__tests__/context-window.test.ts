@@ -128,6 +128,42 @@ describe('context-window', () => {
       expect(result[0]).toEqual(messages[0]) // First user message preserved
     })
 
+    test('keeps the sole user question even when it exceeds the budget', () => {
+      // A single question larger than the whole budget must never collapse to
+      // an empty turn — the model has to receive the question.
+      const bigQuestion = 'word '.repeat(200) // ~1000 chars, ~250 tokens
+      const messages = [createMessage('user', bigQuestion)]
+
+      const result = truncateMessages(messages, 100)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].role).toBe('user')
+      expect(result[0].content).toBe(bigQuestion)
+    })
+
+    test('does not drop the first user message when it exceeds 30% of budget', () => {
+      // First message is >30% of the budget (so it cannot be "reserved") but
+      // still small enough to fit once an assistant turn is evicted. It must be
+      // included, not silently skipped.
+      const firstQuestion = 'IMPORTANT FIRST QUESTION '.repeat(7) // ~175 chars
+      const messages: ModelMessage[] = [
+        createMessage('user', firstQuestion),
+        createMessage('assistant', 'a'.repeat(240)),
+        createMessage('user', 'Hi')
+      ]
+
+      const result = truncateMessages(messages, 100)
+
+      expect(result.length).toBeGreaterThan(0)
+      expect(
+        result.some(
+          m =>
+            typeof m.content === 'string' &&
+            m.content.includes('IMPORTANT FIRST QUESTION')
+        )
+      ).toBe(true)
+    })
+
     test('removes assistant messages to keep user messages', () => {
       const messages: ModelMessage[] = [
         createMessage('user', 'Question 1'),

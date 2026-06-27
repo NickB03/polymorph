@@ -240,9 +240,11 @@ describe('POST /api/voice/synthesize', () => {
     )
 
     expect(response.status).toBe(500)
+    // The client gets a fixed message — upstream provider error detail must
+    // not leak into the response body.
     await expect(readJson(response)).resolves.toEqual({
       error: 'TTS_ERROR',
-      message: 'Speech synthesis failed: ElevenLabs unavailable'
+      message: 'Speech synthesis failed'
     })
   })
 
@@ -263,7 +265,7 @@ describe('POST /api/voice/synthesize', () => {
     expect(response.status).toBe(500)
     await expect(readJson(response)).resolves.toEqual({
       error: 'TTS_ERROR',
-      message: 'Speech synthesis failed: OpenAI unavailable'
+      message: 'Speech synthesis failed'
     })
   })
 

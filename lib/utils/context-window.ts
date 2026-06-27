@@ -248,6 +248,7 @@ export function truncateMessages(
   let usedTokens = 0
 
   // Reserve space for first user message if it exists
+  let reservedFirstUser = false
   if (firstUserMessage) {
     const firstUserTokens = estimateTokenCount(
       firstUserMessage.content,
@@ -257,6 +258,7 @@ export function truncateMessages(
       // Don't let first message take more than 30%
       result.push(firstUserMessage)
       usedTokens += firstUserTokens
+      reservedFirstUser = true
     }
   }
 
@@ -266,8 +268,10 @@ export function truncateMessages(
   for (let i = messages.length - 1; i >= 0; i--) {
     const { message, tokens } = messageTokenCounts[i]
 
-    // Skip if this is the first user message (already added)
-    if (firstUserMessage && i === firstUserIndex) continue
+    // Skip the first user message only if we already reserved it above.
+    // If it was too large to reserve, let it compete here instead of being
+    // dropped entirely (otherwise a single oversized question vanishes).
+    if (reservedFirstUser && i === firstUserIndex) continue
 
     if (usedTokens + tokens <= maxTokens) {
       recentMessages.unshift(message)
@@ -303,6 +307,18 @@ export function truncateMessages(
   // Ensure the result starts with a user message
   while (result.length > 0 && result[0].role !== 'user') {
     result.shift()
+  }
+
+  // Safety net: never send an empty turn. If truncation stripped everything
+  // (e.g. the only/first user message alone exceeds the budget, or the result
+  // was reduced to leading assistant messages), fall back to the most recent
+  // user message so the model always receives the actual question.
+  if (result.length === 0) {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        return [messages[i]]
+      }
+    }
   }
 
   return result

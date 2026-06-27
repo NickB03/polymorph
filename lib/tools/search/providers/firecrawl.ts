@@ -92,7 +92,9 @@ export class FirecrawlSearchProvider extends BaseSearchProvider {
 
     const results = resources.map(resource => {
       if ('markdown' in resource) {
-        const markdown = resource.markdown.slice(0, 1000)
+        // The `markdown` key can be present but null/undefined on a scrape
+        // miss, so guard the value, not just key presence.
+        const markdown = (resource.markdown ?? '').slice(0, 1000)
         return {
           title: resource.title || '',
           url: resource.url,

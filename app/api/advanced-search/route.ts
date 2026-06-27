@@ -4,7 +4,6 @@ import {
   advancedSearchSchema,
   runAdvancedSearch
 } from '@/lib/tools/search/advanced-search'
-import { getErrorMessage } from '@/lib/utils/error'
 
 export async function POST(request: Request) {
   let body: unknown
@@ -45,11 +44,13 @@ export async function POST(request: Request) {
     const results = await runAdvancedSearch(parseResult.data)
     return NextResponse.json(results)
   } catch (error) {
+    // Keep the detailed error server-side only; returning it to the client
+    // would leak backend internals (e.g. SearXNG status payloads, config state).
     console.error('Advanced search error:', error)
     return NextResponse.json(
       {
         message: 'Internal Server Error',
-        error: getErrorMessage(error),
+        error: 'Search failed',
         query: parseResult.data.query,
         results: [],
         images: [],

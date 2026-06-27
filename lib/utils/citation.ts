@@ -83,8 +83,10 @@ export function processCitations(
     (_match, num, toolCallId) => {
       const citationNum = parseInt(num, 10)
 
-      // Validate citation number bounds
-      if (isNaN(citationNum) || citationNum < 1 || citationNum > 100) {
+      // Validate citation number. The actual upper bound is enforced by the
+      // citationMap lookup below — a hard-coded ceiling (e.g. > 100) would
+      // wrongly drop valid citations when a search returns more results.
+      if (isNaN(citationNum) || citationNum < 1) {
         return '' // Return empty string for invalid citation numbers
       }
 

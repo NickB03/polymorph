@@ -201,10 +201,10 @@ async function advancedSearchXNGSearch(
     }
 
     if (searchDepth === 'advanced') {
-      const crawledResults = await Promise.all(
-        generalResults
-          .slice(0, maxResults * searxngCrawlMultiplier)
-          .map(result => crawlPage(result, query))
+      const crawledResults = await mapWithConcurrency(
+        generalResults.slice(0, maxResults * searxngCrawlMultiplier),
+        CRAWL_CONCURRENCY,
+        result => crawlPage(result, query)
       )
 
       generalResults = crawledResults
@@ -251,19 +251,51 @@ async function advancedSearchXNGSearch(
   }
 }
 
+// Cap how many pages we crawl in parallel during an advanced search. Without
+// this, a single request could spin up `maxResults * multiplier` (hundreds of)
+// JSDOM instances and outbound fetches at once.
+const CRAWL_CONCURRENCY = 8
+
+/**
+ * Map `items` through `fn` with at most `limit` invocations in flight, while
+ * preserving input order in the returned array.
+ */
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length)
+  let nextIndex = 0
+
+  async function worker(): Promise<void> {
+    while (true) {
+      const index = nextIndex++
+      if (index >= items.length) return
+      results[index] = await fn(items[index])
+    }
+  }
+
+  const workerCount = Math.min(Math.max(1, limit), items.length)
+  await Promise.all(Array.from({ length: workerCount }, () => worker()))
+  return results
+}
+
 async function crawlPage(
   result: SearXNGResult,
   query: string
 ): Promise<SearXNGResult> {
+  let dom: JSDOM | undefined
   try {
     const html = await fetchHtmlWithTimeout(result.url, 20000)
     const virtualConsole = new VirtualConsole()
     virtualConsole.on('error', () => {})
     virtualConsole.on('warn', () => {})
 
-    const dom = new JSDOM(html, {
+    // Note: no `resources: 'usable'` — we only extract text from the parsed
+    // DOM, so JSDOM must not fetch external sub-resources (images, CSS, …).
+    dom = new JSDOM(html, {
       runScripts: 'outside-only',
-      resources: 'usable',
       virtualConsole
     })
     const document = dom.window.document
@@ -337,6 +369,10 @@ async function crawlPage(
       ...result,
       content: result.content || 'Content unavailable due to crawling error.'
     }
+  } finally {
+    // Tear down the JSDOM window (and its ResourceLoader/timers) so it is not
+    // held until GC after each crawl.
+    dom?.window.close()
   }
 }
 

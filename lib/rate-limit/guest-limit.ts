@@ -46,12 +46,15 @@ async function checkGuestLimit(ip: string): Promise<{
   try {
     const dateKey = new Date().toISOString().split('T')[0]
     const key = `rl:guest:chat:${ip}:${dateKey}`
+    let timeout: ReturnType<typeof setTimeout> | undefined
     const count = await Promise.race([
       redis.incr(key),
-      new Promise<number>((_, reject) =>
-        setTimeout(() => reject(new Error('Redis timeout')), 3000)
-      )
-    ])
+      new Promise<number>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error('Redis timeout')), 3000)
+      })
+    ]).finally(() => {
+      if (timeout) clearTimeout(timeout)
+    })
 
     if (count === 1) {
       const secondsUntilMidnight = getSecondsUntilMidnight()

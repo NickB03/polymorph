@@ -19450,16 +19450,6 @@
       "norm_label": "updatemessagefeedback()"
     },
     {
-      "label": "getMessageFeedback()",
-      "file_type": "code",
-      "source_file": "lib/actions/feedback.ts",
-      "source_location": "L81",
-      "_origin": "ast",
-      "id": "actions_feedback_getmessagefeedback",
-      "community": 99,
-      "norm_label": "getmessagefeedback()"
-    },
-    {
       "label": "site-feedback.ts",
       "file_type": "code",
       "source_file": "lib/actions/site-feedback.ts",
@@ -22938,26 +22928,6 @@
       "id": "config_ollama_validator_initializeollamavalidation",
       "community": 1,
       "norm_label": "initializeollamavalidation()"
-    },
-    {
-      "label": "validateOllamaModel()",
-      "file_type": "code",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L154",
-      "_origin": "ast",
-      "id": "config_ollama_validator_validateollamamodel",
-      "community": 1,
-      "norm_label": "validateollamamodel()"
-    },
-    {
-      "label": "getValidatedOllamaModels()",
-      "file_type": "code",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L190",
-      "_origin": "ast",
-      "id": "config_ollama_validator_getvalidatedollamamodels",
-      "community": 1,
-      "norm_label": "getvalidatedollamamodels()"
     },
     {
       "label": "search-modes.ts",
@@ -46936,6 +46906,16 @@
       "id": "readme_chat_cli",
       "community": 156,
       "norm_label": "chat-cli.ts"
+    },
+    {
+      "label": "mapWithConcurrency()",
+      "file_type": "code",
+      "source_file": "lib/tools/search/advanced-search.ts",
+      "source_location": "L263",
+      "_origin": "ast",
+      "id": "search_advanced_search_mapwithconcurrency",
+      "community": 47,
+      "norm_label": "mapwithconcurrency()"
     }
   ],
   "links": [
@@ -99142,17 +99122,6 @@
       "source_location": "L9",
       "weight": 1.0,
       "source": "tests_feedback_test",
-      "target": "actions_feedback_getmessagefeedback",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/actions/__tests__/feedback.test.ts",
-      "source_location": "L9",
-      "weight": 1.0,
-      "source": "tests_feedback_test",
       "target": "actions_feedback_updatemessagefeedback",
       "confidence_score": 1.0
     },
@@ -100162,16 +100131,6 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "lib/actions/feedback.ts",
-      "source_location": "L81",
-      "weight": 1.0,
-      "source": "actions_feedback",
-      "target": "actions_feedback_getmessagefeedback",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/actions/feedback.ts",
       "source_location": "L10",
       "weight": 1.0,
       "source": "actions_feedback",
@@ -100314,37 +100273,6 @@
       "source_location": null,
       "weight": 1.0,
       "source": "actions_feedback_updatemessagefeedback",
-      "target": "db_with_rls_withoptionalrls"
-    },
-    {
-      "relation": "implements",
-      "confidence": "INFERRED",
-      "confidence_score": 0.85,
-      "source_file": "lib/actions/feedback.ts",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "actions_feedback_getmessagefeedback",
-      "target": "concept_rls_message_metadata"
-    },
-    {
-      "relation": "shares_data_with",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "lib/actions/feedback.ts",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "actions_feedback_getmessagefeedback",
-      "target": "db_schema_messages"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "lib/actions/feedback.ts",
-      "source_location": null,
-      "weight": 1.0,
-      "source": "actions_feedback_getmessagefeedback",
       "target": "db_with_rls_withoptionalrls"
     },
     {
@@ -111137,30 +111065,10 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L190",
-      "weight": 1.0,
-      "source": "config_ollama_validator",
-      "target": "config_ollama_validator_getvalidatedollamamodels",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/config/ollama-validator.ts",
       "source_location": "L46",
       "weight": 1.0,
       "source": "config_ollama_validator",
       "target": "config_ollama_validator_initializeollamavalidation",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/config/ollama-validator.ts",
-      "source_location": "L154",
-      "weight": 1.0,
-      "source": "config_ollama_validator",
-      "target": "config_ollama_validator_validateollamamodel",
       "confidence_score": 1.0
     },
     {
@@ -153492,6 +153400,27 @@
       "weight": 1.0,
       "source": "readme_build_canvas_vendor",
       "target": "eslint_conventions_eslint_config"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/tools/search/advanced-search.ts",
+      "source_location": "L263",
+      "weight": 1.0,
+      "source": "search_advanced_search",
+      "target": "search_advanced_search_mapwithconcurrency",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/tools/search/advanced-search.ts",
+      "source_location": "L263",
+      "weight": 1.0,
+      "source": "search_advanced_search_advancedsearchxngsearch",
+      "target": "search_advanced_search_mapwithconcurrency",
+      "confidence_score": 1.0
     }
   ],
   "hyperedges": [

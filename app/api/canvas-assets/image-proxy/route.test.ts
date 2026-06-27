@@ -90,7 +90,7 @@ describe('GET /api/canvas-assets/image-proxy', () => {
     mockSearch.mockResolvedValue({
       images: [
         {
-          thumbnailUrl: 'http://127.0.0.1:3000/image.png'
+          url: 'http://127.0.0.1:3000/image.png'
         }
       ],
       results: [],
@@ -109,7 +109,7 @@ describe('GET /api/canvas-assets/image-proxy', () => {
     mockSearch.mockResolvedValue({
       images: [
         {
-          thumbnailUrl: 'https://[::ffff:127.0.0.1]/image.png'
+          url: 'https://[::ffff:127.0.0.1]/image.png'
         }
       ],
       results: [],
@@ -128,7 +128,7 @@ describe('GET /api/canvas-assets/image-proxy', () => {
     mockSearch.mockResolvedValue({
       images: [
         {
-          thumbnailUrl: 'https://images.example.com/cat.png'
+          url: 'https://images.example.com/cat.png'
         }
       ],
       results: [],
@@ -163,7 +163,7 @@ describe('GET /api/canvas-assets/image-proxy', () => {
     mockSearch.mockResolvedValue({
       images: [
         {
-          thumbnailUrl: 'https://images.example.com/cat.png'
+          url: 'https://images.example.com/cat.png'
         }
       ],
       results: [],

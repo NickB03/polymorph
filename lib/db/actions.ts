@@ -728,7 +728,14 @@ export async function updateChatVisibility(
   visibility: 'public' | 'private'
 ): Promise<Chat | null> {
   return withRLS(userId, async tx => {
-    const chat = await getChat(chatId, userId)
+    // Read on the parent transaction. Calling getChat() here would open a
+    // second pooled connection nested inside this one, holding two connections
+    // per call and risking pool exhaustion / self-deadlock under concurrency.
+    const [chat] = await tx
+      .select()
+      .from(chats)
+      .where(eq(chats.id, chatId))
+      .limit(1)
     if (!chat || chat.userId !== userId) {
       return null
     }

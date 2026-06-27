@@ -117,11 +117,9 @@ export async function POST(req: Request) {
       return jsonError('TTS_TIMEOUT', 'Speech synthesis timed out', 504)
     }
 
+    // Detail (which can embed the upstream provider's raw HTTP error body)
+    // stays server-side; the client gets a fixed generic message.
     console.error('TTS synthesis error:', error)
-    return jsonError(
-      'TTS_ERROR',
-      `Speech synthesis failed: ${(error as Error).message}`,
-      500
-    )
+    return jsonError('TTS_ERROR', 'Speech synthesis failed', 500)
   }
 }

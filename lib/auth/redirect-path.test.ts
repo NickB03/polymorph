@@ -17,4 +17,13 @@ describe('getSafeRedirectPath', () => {
     expect(getSafeRedirectPath('https://example.com')).toBe('/')
     expect(getSafeRedirectPath('//example.com')).toBe('/')
   })
+
+  it('rejects backslash and control-char authority smuggling', () => {
+    // The WHATWG URL parser treats these as '//evil.com' (cross-origin).
+    expect(getSafeRedirectPath('/\\evil.com')).toBe('/')
+    expect(getSafeRedirectPath('/\\/evil.com')).toBe('/')
+    expect(getSafeRedirectPath('/\t/evil.com')).toBe('/')
+    expect(getSafeRedirectPath('/\n/evil.com')).toBe('/')
+    expect(getSafeRedirectPath('/path\\with\\backslash')).toBe('/')
+  })
 })

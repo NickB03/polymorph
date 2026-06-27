@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ChatPanel } from './chat-panel'
@@ -239,6 +239,39 @@ describe('ChatPanel', () => {
     expect(shelf).not.toHaveClass('mb-2')
     expect(wordmark).toHaveClass('opacity-100')
     expect(wordmark).not.toHaveClass('max-h-0')
+  })
+
+  it('submits the initial query as a v6 text part', async () => {
+    const append = vi.fn()
+
+    render(
+      <ChatPanel
+        chatId="chat-1"
+        input=""
+        handleInputChange={vi.fn()}
+        handleSubmit={e => e.preventDefault()}
+        status="ready"
+        messages={[]}
+        stop={vi.fn()}
+        append={append}
+        query="research local-first evals"
+        showScrollToBottomButton={false}
+        scrollContainerRef={{ current: null }}
+        uploadedFiles={[]}
+        setUploadedFiles={vi.fn()}
+        isGuest
+      />
+    )
+
+    // Regression guard: the ?q= initial query must reach the model as an
+    // AI SDK v6 text part, not a stale v3-era `content` field (which is
+    // silently dropped, sending an empty user turn).
+    await waitFor(() => {
+      expect(append).toHaveBeenCalledWith({
+        role: 'user',
+        parts: [{ type: 'text', text: 'research local-first evals' }]
+      })
+    })
   })
 
   it('keeps selected prompt suggestions visible when the soft keyboard opens', () => {

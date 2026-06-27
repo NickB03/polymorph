@@ -41,7 +41,10 @@ interface ChatPanelProps {
   messages: UIMessage[]
   query?: string
   stop: () => void
-  append: (message: any) => void
+  append: (message: {
+    role: 'user'
+    parts: Array<{ type: 'text'; text: string }>
+  }) => void
   /** Whether to show the scroll to bottom button */
   showScrollToBottomButton: boolean
   /** Reference to the scroll container */
@@ -125,7 +128,7 @@ export function ChatPanel({
   const appendInitialQuery = useEffectEvent((initialQuery: string) => {
     append({
       role: 'user',
-      content: initialQuery
+      parts: [{ type: 'text', text: initialQuery }]
     })
   })
 
