@@ -3,13 +3,6 @@ import { OllamaClient } from '@/lib/ollama/client'
 import { Model } from '@/lib/types/models'
 
 /**
- * Memory cache for validated Ollama models
- * Stored in server memory (only suitable for local deployments)
- */
-let validatedModels: Set<string> | null = null
-let validationError: Error | null = null
-
-/**
  * Extract all Ollama models from the configuration
  */
 async function getConfiguredOllamaModels(): Promise<Model[]> {
@@ -87,7 +80,6 @@ export async function initializeOllamaValidation(): Promise<void> {
       }
     }
 
-    validatedModels = validated
     console.log(
       `Ollama validation complete: ${validated.size} models with tools support`
     )
@@ -141,55 +133,7 @@ export async function initializeOllamaValidation(): Promise<void> {
       )
     }
   } catch (error) {
-    validationError = error as Error
     console.error('Ollama validation failed:', error)
     console.warn('Polymorph will continue, but Ollama models may not work')
   }
-}
-
-/**
- * Validate if a specific Ollama model supports tools capability
- * Returns validation result with optional error message
- */
-export function validateOllamaModel(modelId: string): {
-  valid: boolean
-  error?: string
-} {
-  // If OLLAMA_BASE_URL is not configured, consider model valid (not using Ollama)
-  if (!process.env.OLLAMA_BASE_URL) {
-    return { valid: true }
-  }
-
-  // If validation hasn't run yet (shouldn't happen after startup), consider valid
-  if (validatedModels === null && validationError === null) {
-    return { valid: true }
-  }
-
-  // If validation failed, warn but allow the model to be used
-  if (validationError) {
-    return {
-      valid: true,
-      error: `Ollama validation failed: ${validationError.message}. Model may not work correctly.`
-    }
-  }
-
-  // Check actual validation results
-  if (!validatedModels!.has(modelId)) {
-    return {
-      valid: false,
-      error: `Model "${modelId}" does not support tools capability required for Polymorph. Please use a model with tools support.`
-    }
-  }
-
-  return { valid: true }
-}
-
-/**
- * Get list of all validated Ollama models with tools support
- */
-export function getValidatedOllamaModels(): string[] {
-  if (!validatedModels) {
-    return []
-  }
-  return Array.from(validatedModels)
 }

@@ -1,8 +1,4 @@
-import {
-  SearchImageItem,
-  SearchResults,
-  SerperSearchResultItem
-} from '@/lib/types'
+import { SearchResults, SerperSearchResultItem } from '@/lib/types'
 import { getErrorMessage } from '@/lib/utils/error'
 import { retrySearchOperation } from '@/lib/utils/retry'
 
@@ -163,8 +159,11 @@ export class BraveSearchProvider implements SearchProvider {
       .slice(0, maxResults)
       .map((result: BraveWebResult) => ({
         title: result.title || 'No title',
-        description: result.description || 'No description available',
-        url: result.url
+        url: result.url,
+        // Canonical SearchResultItem snippet field is `content` — every other
+        // provider and all downstream consumers (citationMap, search-results
+        // UI) read it. Emitting `description` here left snippets empty.
+        content: result.description || ''
       }))
   }
 
@@ -224,14 +223,16 @@ export class BraveSearchProvider implements SearchProvider {
           telemetryHook?.(error, attempt, delayMs)
         }
       )
-      results.images = (data.results || []).slice(0, maxResults).map(
-        (result: BraveImageResult) =>
-          ({
-            title: result.title || 'No title',
-            link: result.url || result.source || '',
-            thumbnailUrl: this.getImageThumbnailUrl(result)
-          }) as SearchImageItem
-      )
+      // Canonical SearchResultImage is `{ url, description }` (or a bare
+      // string). Other providers and both consumers — the search-results
+      // image grid and the canvas image-proxy — read `url`/`description`.
+      results.images = (data.results || [])
+        .slice(0, maxResults)
+        .map((result: BraveImageResult) => ({
+          url: this.getImageThumbnailUrl(result),
+          description: result.title || ''
+        }))
+        .filter((image: { url: string }) => image.url.length > 0)
     } catch (error) {
       console.error('Brave image search error:', error)
       results.images = []

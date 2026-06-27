@@ -6,7 +6,7 @@ vi.mock('@/lib/db')
 // Import after mocking
 import { db } from '@/lib/db'
 
-import { getMessageFeedback, updateMessageFeedback } from '../feedback'
+import { updateMessageFeedback } from '../feedback'
 
 describe('Feedback Actions', () => {
   beforeEach(() => {
@@ -81,73 +81,6 @@ describe('Feedback Actions', () => {
         throw new Error('expected feedback update to fail')
       }
       expect(result.error).toBe('Database error')
-    })
-  })
-
-  describe('getMessageFeedback', () => {
-    it('should retrieve feedback score successfully', async () => {
-      const messageId = 'test-message-id'
-      const feedbackScore = 1
-
-      // Mock database response
-      const mockLimit = vi.fn().mockResolvedValue([
-        {
-          metadata: { feedbackScore }
-        }
-      ])
-      const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit })
-      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
-      vi.mocked(db).select = vi.fn().mockReturnValue({ from: mockFrom })
-
-      const result = await getMessageFeedback(messageId)
-
-      expect(result).toBe(feedbackScore)
-    })
-
-    it('should return null when message not found', async () => {
-      const messageId = 'non-existent-id'
-
-      // Mock empty database response
-      const mockLimit = vi.fn().mockResolvedValue([])
-      const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit })
-      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
-      vi.mocked(db).select = vi.fn().mockReturnValue({ from: mockFrom })
-
-      const result = await getMessageFeedback(messageId)
-
-      expect(result).toBeNull()
-    })
-
-    it('should return null when no feedback score exists', async () => {
-      const messageId = 'test-message-id'
-
-      // Mock database response without feedbackScore
-      const mockLimit = vi.fn().mockResolvedValue([
-        {
-          metadata: {}
-        }
-      ])
-      const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit })
-      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
-      vi.mocked(db).select = vi.fn().mockReturnValue({ from: mockFrom })
-
-      const result = await getMessageFeedback(messageId)
-
-      expect(result).toBeNull()
-    })
-
-    it('should handle errors and return null', async () => {
-      const messageId = 'test-message-id'
-
-      // Mock database error
-      const mockLimit = vi.fn().mockRejectedValue(new Error('Database error'))
-      const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit })
-      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
-      vi.mocked(db).select = vi.fn().mockReturnValue({ from: mockFrom })
-
-      const result = await getMessageFeedback(messageId)
-
-      expect(result).toBeNull()
     })
   })
 })

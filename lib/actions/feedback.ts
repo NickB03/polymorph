@@ -77,29 +77,3 @@ export async function updateMessageFeedback(
     }
   }
 }
-
-export async function getMessageFeedback(
-  messageId: string,
-  userId: string | null = null
-): Promise<number | null> {
-  try {
-    const result = await withOptionalRLS(userId, async tx => {
-      const [message] = await tx
-        .select({ metadata: messages.metadata })
-        .from(messages)
-        .where(eq(messages.id, messageId))
-        .limit(1)
-
-      if (!message) {
-        return null
-      }
-
-      return (message.metadata as UIMessageMetadata)?.feedbackScore || null
-    })
-
-    return result
-  } catch (error) {
-    console.error('Error getting message feedback:', error)
-    return null
-  }
-}

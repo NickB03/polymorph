@@ -305,6 +305,13 @@ export async function prepareMessages(
         context.pendingInitialSave = persistencePromise
         context.pendingInitialUserMessage = lastMessage
 
+        // If the stream is aborted before persistStreamResults consumes this
+        // promise, a rejected save would otherwise surface as an unhandled
+        // rejection. Attach a terminal no-op handler so the promise is always
+        // considered handled; persistStreamResults still awaits the same
+        // promise and observes any rejection through its own try/catch.
+        void persistencePromise.catch(() => {})
+
         perfTime('prepareMessages - Total (using client messages)', startTime)
         return normalizedMessages
       }

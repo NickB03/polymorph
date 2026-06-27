@@ -131,14 +131,19 @@ function getFirstThumbnailUrl(images: unknown): string | null {
     return null
   }
 
+  // SearchResultImage is `string | { url, description }`. The provider's
+  // image entries carry the (thumbnail) image URL in `url`.
   const firstImage = images[0]
+  if (typeof firstImage === 'string') {
+    return firstImage.trim() || null
+  }
   if (
     firstImage &&
     typeof firstImage === 'object' &&
-    'thumbnailUrl' in firstImage &&
-    typeof firstImage.thumbnailUrl === 'string'
+    'url' in firstImage &&
+    typeof firstImage.url === 'string'
   ) {
-    return firstImage.thumbnailUrl.trim()
+    return firstImage.url.trim() || null
   }
 
   return null

@@ -162,8 +162,8 @@ describe('processCitations', () => {
       'Edge cases: [0](#toolCall1) [101](#toolCall1) [-1](#toolCall1)'
     const result = processCitations(content, mockCitationMaps)
 
-    // 0 and 101 are out of bounds (1-100), so they're replaced with empty string
-    // -1 doesn't match the regex pattern \d+, so it remains unchanged
+    // 0 is < 1, and 101 is absent from the citation map, so both are replaced
+    // with empty string. -1 doesn't match the regex pattern \d+, so it remains.
     expect(result).toBe('Edge cases:   [-1](#toolCall1)')
   })
 })

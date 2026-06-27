@@ -239,7 +239,40 @@ describe('BraveSearchProvider', () => {
     })
     expect(result.results).toHaveLength(1)
     expect(result.results[0].title).toBe('Result 1')
+    // Snippet must land in the canonical `content` field (not `description`),
+    // or the model and search UI get empty snippets on the default provider.
+    expect(result.results[0].content).toBe('Desc 1')
     expect(result.number_of_results).toBe(1)
+  })
+
+  it('maps image results to the canonical { url, description } shape', async () => {
+    const { BraveSearchProvider } = await import('../brave')
+    const provider = new BraveSearchProvider()
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          results: [
+            {
+              title: 'A cat',
+              url: 'https://example.com/cat',
+              thumbnail: { src: 'https://images.example.com/cat-thumb.png' }
+            }
+          ]
+        })
+    })
+
+    const result = await provider.search('cat', 10, 'basic', [], [], {
+      type: 'general',
+      content_types: ['image']
+    })
+
+    expect(result.images).toHaveLength(1)
+    expect(result.images[0]).toEqual({
+      url: 'https://images.example.com/cat-thumb.png',
+      description: 'A cat'
+    })
   })
 
   it('searches multiple content types sequentially', async () => {
