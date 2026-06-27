@@ -18,6 +18,11 @@
       "env": {
         "PHOENIX_HOST": "https://phoenix-production-c6b5.up.railway.app"
       }
+    },
+    "firecrawl": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"]
     }
   }
 }
