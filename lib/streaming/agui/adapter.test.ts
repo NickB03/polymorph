@@ -150,6 +150,26 @@ describe('mapFullStreamPart', () => {
     ).toBeTruthy()
   })
 
+  it('maps tool-error to a TOOL_CALL_RESULT carrying the error text', () => {
+    const state = createAguiMapState()
+    const events = mapFullStreamPart(
+      {
+        type: 'tool-error',
+        toolCallId: 'tc9',
+        toolName: 'search',
+        error: new Error('rate limited')
+      } as Part,
+      state
+    )
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({
+      type: EventType.TOOL_CALL_RESULT,
+      toolCallId: 'tc9',
+      content: 'rate limited',
+      role: 'tool'
+    })
+  })
+
   it('maps steps and errors, and drops lifecycle/unmapped parts', () => {
     const state = createAguiMapState()
     expect(mapFullStreamPart({ type: 'start-step' } as Part, state)).toEqual([

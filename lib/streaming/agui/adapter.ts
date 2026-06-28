@@ -61,6 +61,8 @@ export function aguiMessagesToModelMessages(
 
 function safeStringify(value: unknown): string {
   if (typeof value === 'string') return value
+  // Errors JSON-serialize to '{}', losing the message — surface it directly.
+  if (value instanceof Error) return value.message
   try {
     return JSON.stringify(value) ?? ''
   } catch {
@@ -177,10 +179,7 @@ export function mapFullStreamPart(
       return [
         {
           type: EventType.RUN_ERROR,
-          message:
-            part.error instanceof Error
-              ? part.error.message
-              : safeStringify(part.error)
+          message: safeStringify(part.error)
         } as BaseEvent
       ]
 

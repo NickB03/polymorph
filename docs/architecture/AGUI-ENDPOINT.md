@@ -47,12 +47,14 @@ Polymorph's display tools (Plan, Chart, DataTable, GeoMap, …) surface as ordin
 
 ## Files
 
-| File                                 | Purpose                                                                            |
-| ------------------------------------ | ---------------------------------------------------------------------------------- |
-| `app/api/agui/route.ts`              | Route: env gate, `RunAgentInput` validation, dispatch                              |
-| `lib/streaming/agui/response.ts`     | Builds the agent, runs `.stream()`, encodes the SSE event stream                   |
-| `lib/streaming/agui/adapter.ts`      | Pure mapping: input messages → `ModelMessage[]`; `fullStream` parts → AG-UI events |
-| `lib/streaming/agui/adapter.test.ts` | Unit tests for the mapping layer                                                   |
+| File                                 | Purpose                                                                                                                |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `app/api/agui/route.ts`              | Route: env gate, `RunAgentInput` validation, dispatch                                                                  |
+| `lib/streaming/agui/response.ts`     | Builds the agent statelessly and hands its `fullStream` to the SSE encoder                                             |
+| `lib/streaming/agui/sse.ts`          | `aguiSseResponse`: wraps a run in `RUN_STARTED`/`RUN_FINISHED`/`RUN_ERROR` and encodes SSE (agent-free, unit-testable) |
+| `lib/streaming/agui/adapter.ts`      | Pure mapping: input messages → `ModelMessage[]`; `fullStream` parts → AG-UI events                                     |
+| `lib/streaming/agui/adapter.test.ts` | Unit tests for the mapping layer                                                                                       |
+| `lib/streaming/agui/sse.test.ts`     | Tests the lifecycle wrapping + SSE encoding with a synthetic `fullStream`                                              |
 
 ## Try it
 

@@ -1,5 +1,4 @@
-import { type BaseEvent, EventType, type RunAgentInput } from '@ag-ui/core'
-import { EventEncoder } from '@ag-ui/encoder'
+import type { RunAgentInput } from '@ag-ui/core'
 
 import {
   createChatAgentById,
@@ -8,14 +7,10 @@ import {
 import type { UserMode } from '@/lib/types/search'
 import { toIntent, toSearchMode } from '@/lib/types/search'
 import { createModelId } from '@/lib/utils'
-import { getErrorMessage } from '@/lib/utils/error'
 import { selectModelForModeAndType } from '@/lib/utils/model-selection'
 
-import {
-  aguiMessagesToModelMessages,
-  createAguiMapState,
-  mapFullStreamPart
-} from './adapter'
+import { aguiMessagesToModelMessages } from './adapter'
+import { aguiSseResponse } from './sse'
 
 const VALID_USER_MODES: readonly UserMode[] = ['search', 'research', 'build']
 
@@ -69,44 +64,15 @@ export function createAguiRunResponse(
 
   const modelMessages = aguiMessagesToModelMessages(input.messages)
 
-  const encoder = new EventEncoder()
-  const textEncoder = new TextEncoder()
-
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const send = (event: BaseEvent) =>
-        controller.enqueue(textEncoder.encode(encoder.encodeSSE(event)))
-
-      send({ type: EventType.RUN_STARTED, threadId, runId } as BaseEvent)
-
-      try {
-        const result = await agent.stream({
-          messages: modelMessages,
-          abortSignal: options.abortSignal
-        })
-
-        const state = createAguiMapState()
-        for await (const part of result.fullStream) {
-          for (const event of mapFullStreamPart(part, state)) send(event)
-        }
-
-        send({ type: EventType.RUN_FINISHED, threadId, runId } as BaseEvent)
-      } catch (error) {
-        send({
-          type: EventType.RUN_ERROR,
-          message: getErrorMessage(error)
-        } as BaseEvent)
-      } finally {
-        controller.close()
-      }
-    }
-  })
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': encoder.getContentType(),
-      'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive'
-    }
-  })
+  return aguiSseResponse(
+    async abortSignal => {
+      const result = await agent.stream({
+        messages: modelMessages,
+        abortSignal
+      })
+      return result.fullStream
+    },
+    { threadId, runId },
+    options
+  )
 }
