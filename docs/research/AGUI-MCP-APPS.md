@@ -34,16 +34,17 @@ The three highest-leverage showcase moves, in recommended order:
 
 **Event types** (the [JS core enum](https://docs.ag-ui.com/sdk/js/core/events), grouped):
 
-| Category | Events |
-| --- | --- |
-| **Lifecycle** | `RUN_STARTED`, `RUN_FINISHED`, `RUN_ERROR`, `STEP_STARTED`, `STEP_FINISHED` |
-| **Text messages** | `TEXT_MESSAGE_START`, `TEXT_MESSAGE_CONTENT`, `TEXT_MESSAGE_END` (+ chunk variant) |
-| **Tool calls** | `TOOL_CALL_START`, `TOOL_CALL_ARGS`, `TOOL_CALL_END`, `TOOL_CALL_RESULT` |
-| **State management** | `STATE_SNAPSHOT`, `STATE_DELTA` (JSON Patch diffs), `MESSAGES_SNAPSHOT` |
-| **Reasoning** | `REASONING_START`/`MESSAGE_*`/`END`, encrypted-value variant |
-| **Special** | `RAW`, `CUSTOM`, activity snapshot/delta |
+| Category             | Events                                                                             |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| **Lifecycle**        | `RUN_STARTED`, `RUN_FINISHED`, `RUN_ERROR`, `STEP_STARTED`, `STEP_FINISHED`        |
+| **Text messages**    | `TEXT_MESSAGE_START`, `TEXT_MESSAGE_CONTENT`, `TEXT_MESSAGE_END` (+ chunk variant) |
+| **Tool calls**       | `TOOL_CALL_START`, `TOOL_CALL_ARGS`, `TOOL_CALL_END`, `TOOL_CALL_RESULT`           |
+| **State management** | `STATE_SNAPSHOT`, `STATE_DELTA` (JSON Patch diffs), `MESSAGES_SNAPSHOT`            |
+| **Reasoning**        | `REASONING_START`/`MESSAGE_*`/`END`, encrypted-value variant                       |
+| **Special**          | `RAW`, `CUSTOM`, activity snapshot/delta                                           |
 
 **Key capabilities:**
+
 - **Bidirectional state sync** via `STATE_SNAPSHOT` (full) + `STATE_DELTA` (JSON Patch) — minimizes bandwidth while keeping a shared agent/app state object consistent.
 - **Generative UI** — agents drive structured frontend components, not just text.
 - **Human-in-the-loop** — approval/interrupt flows expressed as events + user input.
@@ -67,6 +68,7 @@ The three highest-leverage showcase moves, in recommended order:
 **Resource kinds** (mcp-ui): `rawHtml` (inline), `externalUrl` (iframe to a remote app), `remoteDom` (component tree rendered with the host's own design system).
 
 **Official SDK packages** (`@modelcontextprotocol/ext-apps`):
+
 - core `App` + `PostMessageTransport` for building Views,
 - `/react` hooks (`useApp`, `useHostStyles`),
 - `/app-bridge` for host-side embedding,
@@ -96,17 +98,17 @@ AG-UI carries the agent↔user conversation; MCP feeds the agent tools/context; 
 
 Polymorph already implements, in-house, most of the primitives both standards define. (Claims below cite `file:line`; the runtime-MCP gap was verified by grep — there is no `experimental_createMCPClient` / `modelcontextprotocol` usage anywhere under `lib/`, `app/`, or `components/`.)
 
-| Capability | AG-UI / MCP Apps concept | Polymorph today |
-| --- | --- | --- |
-| Event-stream transport | AG-UI SSE/WS event stream | SSE via Vercel AI SDK `UIMessageStream` — `lib/streaming/create-chat-stream-response.ts` |
-| Text deltas | `TEXT_MESSAGE_*` | `text-delta` parts (`smoothStream` word chunking) |
-| Tool-call events | `TOOL_CALL_START/ARGS/END/RESULT` | `tool-call` / `tool-call-streaming-start` / `tool-call-delta` + tool output parts (`docs/architecture/STREAMING-SSE-PROTOCOL.md`) |
-| Custom/state events | `CUSTOM`, `STATE_*` | `data-*` parts (`data-relatedQuestions`, `data-canvasArtifact*`), persistent + transient |
-| Schema-validated UI | typed UI resources | Zod tool-UI contracts + registry — `components/tool-ui/registry.tsx`, `renderer-catalog.tsx` |
-| Sandboxed iframe UI | MCP Apps `ui://` in sandboxed iframe | Canvas compiled HTML via `iframe.srcdoc sandbox=…` — `components/canvas/*`, `lib/canvas/*` |
-| Unknown-tool rendering | host renders any tool's UI | `DynamicToolDisplay` already special-cases `mcp__`/`dynamic__` prefixes — `components/dynamic-tool-display.tsx:47` |
-| Client-resolved interaction | host→tool action bridge | Interactive `displayOptionList` resolved client-side, fed back into the loop — `lib/tools/display-option-list/`, `lib/streaming/helpers/prepare-messages.ts` |
-| MCP client in agent loop | consume MCP servers at runtime | **Missing.** Only an interface-only `MCPClient` type (`lib/types/dynamic-tools.ts:8`) and a dev/ops `.mcp.json` (Railway/Phoenix/next-devtools for Claude Code CLI, not runtime) |
+| Capability                  | AG-UI / MCP Apps concept             | Polymorph today                                                                                                                                                                  |
+| --------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Event-stream transport      | AG-UI SSE/WS event stream            | SSE via Vercel AI SDK `UIMessageStream` — `lib/streaming/create-chat-stream-response.ts`                                                                                         |
+| Text deltas                 | `TEXT_MESSAGE_*`                     | `text-delta` parts (`smoothStream` word chunking)                                                                                                                                |
+| Tool-call events            | `TOOL_CALL_START/ARGS/END/RESULT`    | `tool-call` / `tool-call-streaming-start` / `tool-call-delta` + tool output parts (`docs/architecture/STREAMING-SSE-PROTOCOL.md`)                                                |
+| Custom/state events         | `CUSTOM`, `STATE_*`                  | `data-*` parts (`data-relatedQuestions`, `data-canvasArtifact*`), persistent + transient                                                                                         |
+| Schema-validated UI         | typed UI resources                   | Zod tool-UI contracts + registry — `components/tool-ui/registry.tsx`, `renderer-catalog.tsx`                                                                                     |
+| Sandboxed iframe UI         | MCP Apps `ui://` in sandboxed iframe | Canvas compiled HTML via `iframe.srcdoc sandbox=…` — `components/canvas/*`, `lib/canvas/*`                                                                                       |
+| Unknown-tool rendering      | host renders any tool's UI           | `DynamicToolDisplay` already special-cases `mcp__`/`dynamic__` prefixes — `components/dynamic-tool-display.tsx:47`                                                               |
+| Client-resolved interaction | host→tool action bridge              | Interactive `displayOptionList` resolved client-side, fed back into the loop — `lib/tools/display-option-list/`, `lib/streaming/helpers/prepare-messages.ts`                     |
+| MCP client in agent loop    | consume MCP servers at runtime       | **Missing.** Only an interface-only `MCPClient` type (`lib/types/dynamic-tools.ts:8`) and a dev/ops `.mcp.json` (Railway/Phoenix/next-devtools for Claude Code CLI, not runtime) |
 
 **The gap is narrow and specific:** we have the rendering, sandboxing, streaming, and registry layers; what we lack is (a) a runtime **MCP client** feeding tools into the agent, (b) an **MCP-Apps iframe bridge** for `ui://` resources, and (c) **outward-facing protocol adapters** (AG-UI event emitter; MCP-Apps server wrapper for our display tools).
 
@@ -123,6 +125,7 @@ Let Polymorph consume third-party MCP servers and render their MCP-Apps UI inlin
 **Why us:** we already (1) sandbox untrusted HTML in an iframe (canvas), (2) render unknown `mcp__`-prefixed tools via `DynamicToolDisplay`, and (3) have a transient `data-*` event channel for host→UI pushes.
 
 **Build:**
+
 1. Add a runtime MCP client (Vercel AI SDK `experimental_createMCPClient`, or `@modelcontextprotocol/ext-apps/app-bridge` on the host side). Load tools in `lib/agents/chat/toolset.ts`'s `createChatAgentTools()`; register them as `mcp__{server}__{tool}`.
 2. When a tool result carries a `ui://` resource, fetch it and stream a new `data-mcpAppResource` part. Reuse the canvas iframe/`srcdoc` + sandbox plumbing in `components/canvas/*` to render it.
 3. Implement the `postMessage` ↔ JSON-RPC bridge so the iframe can call back (`tool`/`prompt`/`link`/`notify`/`intent`) — route `tool` calls back into the agent loop the same way `displayOptionList` resolves client-side (`lib/streaming/helpers/prepare-messages.ts`).
@@ -130,13 +133,16 @@ Let Polymorph consume third-party MCP servers and render their MCP-Apps UI inlin
 **Effort:** Medium-High (new MCP client + iframe bridge + security review). **Impact:** Very high.
 **Security note:** `ui://` HTML is untrusted third-party code. Reuse canvas's strict `sandbox` flags and CSP posture; never grant `allow-same-origin` to remote MCP UIs without isolation. Treat all `postMessage` payloads as untrusted (origin-check, schema-validate).
 
-### Initiative B — Become an **AG-UI server** (expose our agent over the protocol) ⭐ cheapest
+### Initiative B — Become an **AG-UI server** (expose our agent over the protocol) ✅ shipped (v1)
+
+> **Status:** Implemented. `POST /api/agui` runs the chat agent and streams AG-UI events; gated behind `ENABLE_AGUI_ENDPOINT`. See [AG-UI Endpoint](../architecture/AGUI-ENDPOINT.md). Remaining: map display tools to AG-UI generative-UI / `STATE_*`, and the _consume_ stretch goal below.
 
 Add an AG-UI-compatible endpoint that re-emits the existing chat stream as AG-UI events. Then any AG-UI frontend — CopilotKit components, the AG-UI Dojo, a third-party app — can drive Polymorph's research agent. Strong "interoperability" story with near-zero risk to the main app.
 
 **Why us:** our part types map almost 1:1 onto AG-UI events.
 
 **Build:**
+
 1. New route `app/api/agui/route.ts` that runs the existing agent factory but pipes through a translation layer.
 2. A thin adapter (`lib/streaming/agui-adapter.ts`) mapping our parts → AG-UI events:
    - `start` → `RUN_STARTED`; `finish` → `RUN_FINISHED`; errors → `RUN_ERROR`
@@ -146,7 +152,7 @@ Add an AG-UI-compatible endpoint that re-emits the existing chat stream as AG-UI
 3. Optionally consume `@ag-ui/core` types directly so we stay spec-aligned.
 
 **Effort:** Low-Medium (pure adapter; no UI changes). **Impact:** High (interop + ecosystem visibility).
-**Stretch:** also *consume* AG-UI — let Polymorph's frontend connect to an external AG-UI agent (LangGraph/Mastra) and render it with our existing generative-UI components, proving the registry is host-agnostic.
+**Stretch:** also _consume_ AG-UI — let Polymorph's frontend connect to an external AG-UI agent (LangGraph/Mastra) and render it with our existing generative-UI components, proving the registry is host-agnostic.
 
 ### Initiative C — Become an **MCP Apps server** (publish our display tools as `ui://` apps) ⭐ widest reach
 
@@ -155,6 +161,7 @@ Wrap Polymorph's bespoke display library — Plan, DataTable, Chart, GeoMap, Tim
 **Why us:** our display tools are already serializable, Zod-validated, schema-contracted, and host-decoupled via the `_adapter.tsx` pattern (`components/tool-ui/*/_adapter.tsx`) — exactly the seam MCP Apps' `remoteDom`/`rawHtml` resources need.
 
 **Build:**
+
 1. A standalone MCP server (own package, like `services/evals/`) using `@modelcontextprotocol/ext-apps/server` (or `@mcp-ui/server`'s `createUIResource`).
 2. For each display tool, expose the MCP tool + a `ui://polymorph/{tool}` resource that renders the existing component. The `_adapter.tsx` indirection lets the same component compile for an external host's design system.
 3. Map the component's interactions to the mcp-ui action protocol (`tool`/`prompt`/`link`).
@@ -169,12 +176,12 @@ Capstone: a single flow where Polymorph runs as an **AG-UI agent** (B), pulls to
 
 ## 4. Recommended sequencing
 
-| Phase | Initiative | Rationale | Rough effort |
-| --- | --- | --- | --- |
-| 1 | **B — AG-UI server endpoint** | Cheapest, isolated (new route + adapter), immediate interop story; validates that our part model is protocol-grade | Low-Med |
-| 2 | **A — MCP Apps host** | Highest user-visible payoff; reuses canvas sandbox + `DynamicToolDisplay`; unlocks the public MCP App ecosystem inside Polymorph | Med-High |
-| 3 | **C — MCP Apps server** | Turns our display library into a cross-host product; biggest reach but most packaging work | High |
-| 4 | **D — Full-stack demo** | Marketing/positioning capstone once A & B exist | Med |
+| Phase | Initiative                    | Rationale                                                                                                                        | Rough effort |
+| ----- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 1     | **B — AG-UI server endpoint** | Cheapest, isolated (new route + adapter), immediate interop story; validates that our part model is protocol-grade               | Low-Med      |
+| 2     | **A — MCP Apps host**         | Highest user-visible payoff; reuses canvas sandbox + `DynamicToolDisplay`; unlocks the public MCP App ecosystem inside Polymorph | Med-High     |
+| 3     | **C — MCP Apps server**       | Turns our display library into a cross-host product; biggest reach but most packaging work                                       | High         |
+| 4     | **D — Full-stack demo**       | Marketing/positioning capstone once A & B exist                                                                                  | Med          |
 
 Start with **B** to ship something concrete and low-risk, then **A** for the flagship demo.
 
