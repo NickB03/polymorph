@@ -127,6 +127,92 @@ describe('mapFullStreamPart', () => {
     ])
   })
 
+  it('emits a GenerativeUI CUSTOM event for a non-streamed display-tool call', () => {
+    const state = createAguiMapState()
+    const props = { title: 'My plan', steps: [{ label: 'a' }] }
+    const events = mapFullStreamPart(
+      {
+        type: 'tool-call',
+        toolCallId: 'dt1',
+        toolName: 'displayPlan',
+        input: props
+      } as Part,
+      state
+    )
+    expect(events.map(e => e.type)).toEqual([
+      EventType.TOOL_CALL_START,
+      EventType.TOOL_CALL_ARGS,
+      EventType.TOOL_CALL_END,
+      EventType.CUSTOM
+    ])
+    expect(events.at(-1)).toEqual({
+      type: EventType.CUSTOM,
+      name: 'GenerativeUI',
+      value: {
+        component: 'displayPlan',
+        toolCallId: 'dt1',
+        kind: 'passive-display',
+        props
+      }
+    })
+  })
+
+  it('emits the GenerativeUI CUSTOM event on the deduped streamed display-tool call without re-emitting the lifecycle', () => {
+    const state = createAguiMapState()
+    const props = { options: [{ id: '1', label: 'one' }] }
+    // Streamed input first: emits the TOOL_CALL_* lifecycle, no CUSTOM yet.
+    mapFullStreamPart(
+      {
+        type: 'tool-input-start',
+        id: 'dt2',
+        toolName: 'displayOptionList'
+      } as Part,
+      state
+    )
+    mapFullStreamPart({ type: 'tool-input-end', id: 'dt2' } as Part, state)
+    // Assembled tool-call (deduped lifecycle) still emits the CUSTOM event.
+    const events = mapFullStreamPart(
+      {
+        type: 'tool-call',
+        toolCallId: 'dt2',
+        toolName: 'displayOptionList',
+        input: props
+      } as Part,
+      state
+    )
+    expect(events).toEqual([
+      {
+        type: EventType.CUSTOM,
+        name: 'GenerativeUI',
+        value: {
+          component: 'displayOptionList',
+          toolCallId: 'dt2',
+          kind: 'interactive-display',
+          props
+        }
+      }
+    ])
+  })
+
+  it('emits no GenerativeUI CUSTOM event for a non-UI tool', () => {
+    const state = createAguiMapState()
+    const events = mapFullStreamPart(
+      {
+        type: 'tool-call',
+        toolCallId: 'nt1',
+        toolName: 'search',
+        input: { query: 'x' }
+      } as Part,
+      state
+    )
+    expect(events.map(e => e.type)).toEqual([
+      EventType.TOOL_CALL_START,
+      EventType.TOOL_CALL_ARGS,
+      EventType.TOOL_CALL_END
+    ])
+    expect(events.some(e => e.type === EventType.CUSTOM)).toBe(false)
+  })
+
   it('maps tool-result to TOOL_CALL_RESULT with serialized content', () => {
     const state = createAguiMapState()
     const events = mapFullStreamPart(

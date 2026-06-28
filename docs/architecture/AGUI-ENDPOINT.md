@@ -29,17 +29,18 @@ The body is validated with `RunAgentInputSchema` from `@ag-ui/core`. Relevant fi
 
 The agent is a Vercel AI SDK `ToolLoopAgent`; its `fullStream` parts are translated to AG-UI events. Lifecycle events wrap the run; the rest map per-part:
 
-| AI SDK `fullStream` part                        | AG-UI event                                                                           |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------- |
-| (run start, before consuming)                   | `RUN_STARTED`                                                                         |
-| `text-start` / `text-delta` / `text-end`        | `TEXT_MESSAGE_START` (role `assistant`) / `TEXT_MESSAGE_CONTENT` / `TEXT_MESSAGE_END` |
-| `tool-input-start` / `-delta` / `-end`          | `TOOL_CALL_START` / `TOOL_CALL_ARGS` / `TOOL_CALL_END`                                |
-| `tool-call` (no prior streamed input)           | `TOOL_CALL_START` + `TOOL_CALL_ARGS` + `TOOL_CALL_END`                                |
-| `tool-result` / `tool-error`                    | `TOOL_CALL_RESULT`                                                                    |
-| `start-step` / `finish-step`                    | `STEP_STARTED` / `STEP_FINISHED`                                                      |
-| `error`                                         | `RUN_ERROR`                                                                           |
-| (stream complete)                               | `RUN_FINISHED`                                                                        |
-| `reasoning-*`, `source`, `file`, `raw`, `abort` | _(dropped — no AG-UI v1 mapping)_                                                     |
+| AI SDK `fullStream` part                        | AG-UI event                                                                              |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| (run start, before consuming)                   | `RUN_STARTED`                                                                            |
+| `text-start` / `text-delta` / `text-end`        | `TEXT_MESSAGE_START` (role `assistant`) / `TEXT_MESSAGE_CONTENT` / `TEXT_MESSAGE_END`    |
+| `tool-input-start` / `-delta` / `-end`          | `TOOL_CALL_START` / `TOOL_CALL_ARGS` / `TOOL_CALL_END`                                   |
+| `tool-call` (no prior streamed input)           | `TOOL_CALL_START` + `TOOL_CALL_ARGS` + `TOOL_CALL_END`                                   |
+| `tool-call` for a Polymorph **display tool**    | the above **plus** a `CUSTOM` `GenerativeUI` event (see [Generative UI](#generative-ui)) |
+| `tool-result` / `tool-error`                    | `TOOL_CALL_RESULT`                                                                       |
+| `start-step` / `finish-step`                    | `STEP_STARTED` / `STEP_FINISHED`                                                         |
+| `error`                                         | `RUN_ERROR`                                                                              |
+| (stream complete)                               | `RUN_FINISHED`                                                                           |
+| `reasoning-*`, `source`, `file`, `raw`, `abort` | _(dropped — no AG-UI v1 mapping)_                                                        |
 
 Events are serialized to SSE by `EventEncoder.encodeSSE()` from `@ag-ui/encoder`, guaranteeing spec-compliant framing.
 
@@ -52,7 +53,29 @@ A run ends in exactly one terminal event. There are two error paths, both emitti
 
 A successful run emits `RUN_FINISHED`; an errored run emits `RUN_ERROR` and never both.
 
-Polymorph's display tools (Plan, Chart, DataTable, GeoMap, …) surface as ordinary `TOOL_CALL_*` + `TOOL_CALL_RESULT` events, which AG-UI frontends render generically. Mapping them to AG-UI generative-UI / `STATE_*` is a future enhancement.
+### Generative UI
+
+Polymorph's display tools (`displayPlan`, `displayChart`, `displayTable`, `displayGeoMap`, …) drive bespoke UI components. Beyond the ordinary `TOOL_CALL_*` + `TOOL_CALL_RESULT` events (which any AG-UI frontend renders generically), a `tool-call` for one of these tools **also** emits a `CUSTOM` event so AG-UI frontends can render the matching component natively:
+
+```jsonc
+{
+  "type": "CUSTOM",
+  "name": "GenerativeUI",
+  "value": {
+    "component": "displayPlan", // the display-tool name
+    "toolCallId": "call-2",
+    "kind": "passive-display", // or "interactive-display"
+    "props": {
+      "title": "…",
+      "steps": [
+        /* the tool input */
+      ]
+    }
+  }
+}
+```
+
+The display-tool set and each tool's `kind` are derived from `TOOL_UI_TOOL_METADATA` in `lib/tools/tool-ui/metadata.ts` (the single source of truth), so the mapping stays in sync as tools are added. The `CUSTOM` event is emitted on the assembled `tool-call` part (where the full input is available) — including when the tool input was already streamed (in which case the `TOOL_CALL_*` lifecycle is **not** re-emitted, only the `CUSTOM` event). Non-UI tools (`search`, `fetch`, …) emit no `GenerativeUI` event.
 
 ## Files
 
@@ -62,10 +85,58 @@ Polymorph's display tools (Plan, Chart, DataTable, GeoMap, …) surface as ordin
 | `lib/streaming/agui/response.ts`     | Builds the agent statelessly and hands its `fullStream` to the SSE encoder                                             |
 | `lib/streaming/agui/sse.ts`          | `aguiSseResponse`: wraps a run in `RUN_STARTED`/`RUN_FINISHED`/`RUN_ERROR` and encodes SSE (agent-free, unit-testable) |
 | `lib/streaming/agui/adapter.ts`      | Pure mapping: input messages → `ModelMessage[]`; `fullStream` parts → AG-UI events                                     |
+| `lib/streaming/agui/client.ts`       | `consumeAguiStream`: Polymorph as an AG-UI _client_ — decodes an AG-UI SSE stream into a normalized result             |
 | `lib/streaming/agui/demo.ts`         | Scripted, model-free `fullStream` fixture powering `AGUI_DEMO` mode (see below)                                        |
 | `lib/streaming/agui/adapter.test.ts` | Unit tests for the mapping layer                                                                                       |
 | `lib/streaming/agui/sse.test.ts`     | Tests the lifecycle wrapping + SSE encoding + terminal-error handling with a synthetic `fullStream`                    |
+| `lib/streaming/agui/client.test.ts`  | Loopback round-trip (`aguiSseResponse` → `consumeAguiStream`) + an error-run reduction                                 |
 | `lib/streaming/agui/agent.test.ts`   | End-to-end test driving a real `ToolLoopAgent` backed by a mock model (no API key) through `aguiSseResponse`           |
+
+## Consuming AG-UI (Polymorph as a client)
+
+The endpoint above makes Polymorph an AG-UI _server_. The inverse direction —
+Polymorph driving an **external** AG-UI agent — lives in
+`lib/streaming/agui/client.ts`. `consumeAguiStream(source)` takes any AG-UI SSE
+source (a `fetch` `Response`, a `ReadableStream<Uint8Array>`, or an
+`AsyncIterable<string>` of SSE text), decodes the `data:` frames into AG-UI
+events (typed with `@ag-ui/core`, no `@ag-ui/client` dependency), and **reduces**
+them into a normalized, render-ready result:
+
+```ts
+{
+  status: 'finished' | 'error',
+  error?: string,                  // set when a RUN_ERROR was seen
+  messages: Array<{
+    id: string
+    role: 'assistant'
+    text: string                   // accumulated by messageId from TEXT_MESSAGE_*
+    toolCalls: Array<{
+      toolCallId: string
+      name: string                 // from TOOL_CALL_START
+      args: string                 // concatenated TOOL_CALL_ARGS deltas
+      result?: string              // TOOL_CALL_RESULT.content
+    }>
+  }>,
+  generativeUI: Array<{            // collected GenerativeUI CUSTOM events
+    component: string
+    toolCallId: string
+    kind?: string
+    props: unknown
+  }>
+}
+```
+
+`status` resolves from the terminal event (`RUN_FINISHED` → `'finished'`,
+`RUN_ERROR` → `'error'` with `error` set). It is a pure reducer with no I/O, so
+the loopback test pipes `aguiSseResponse(demoFullStream())` straight into it and
+asserts the reconstructed text, the `search` tool call + result, the `displayPlan`
+generative-UI component, and `status: 'finished'`.
+
+**Frontend wiring:** a Polymorph client component `fetch`es a remote AG-UI agent
+endpoint and passes the streaming `Response` to `consumeAguiStream`; the
+`messages` render as chat turns and each `generativeUI` entry maps `component` →
+the matching `components/tool-ui/*` component, rendered with `props` — the same
+display tools Polymorph emits as a server.
 
 ## Demo mode (no API key)
 
@@ -75,7 +146,7 @@ For exercising the endpoint and AG-UI frontends without any model credentials, t
 ENABLE_AGUI_ENDPOINT=true AGUI_DEMO=true bun dev
 ```
 
-When `AGUI_DEMO=true` **and** the runtime is not a production target (`isProductionTarget()` from `lib/config/env.ts` is false), `createAguiRunResponse` short-circuits before building the real agent and streams a scripted lifecycle from `demo.ts`: `RUN_STARTED`, assistant text, a complete `search` tool call (`TOOL_CALL_START`/`ARGS`/`END`) with a `TOOL_CALL_RESULT`, then `RUN_FINISHED`. No model is called and no network I/O happens.
+When `AGUI_DEMO=true` **and** the runtime is not a production target (`isProductionTarget()` from `lib/config/env.ts` is false), `createAguiRunResponse` short-circuits before building the real agent and streams a scripted lifecycle from `demo.ts`: `RUN_STARTED`, assistant text, a complete `search` tool call (`TOOL_CALL_START`/`ARGS`/`END`) with a `TOOL_CALL_RESULT`, a `displayPlan` display-tool call (its `TOOL_CALL_*` lifecycle **plus** a `GenerativeUI` `CUSTOM` event) with a `TOOL_CALL_RESULT`, then `RUN_FINISHED`. No model is called and no network I/O happens.
 
 Demo mode is **ignored on production targets** even if `AGUI_DEMO=true` is set, so it cannot accidentally serve fixture output in production.
 

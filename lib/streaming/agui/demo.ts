@@ -7,8 +7,11 @@ import type { TextStreamPart, ToolSet } from 'ai'
  *
  * Fed through {@link import('./sse').aguiSseResponse}, it produces the full
  * `RUN_STARTED` → text events → `TOOL_CALL_*` (+ result) → `RUN_FINISHED`
- * sequence. Used by the `AGUI_DEMO` endpoint mode (see `response.ts`) and as a
- * fixture; it deliberately performs no I/O so it is safe in any environment.
+ * sequence. It exercises both a regular tool (`search`) and a Polymorph
+ * display tool (`displayPlan`), so the demo also emits a `GenerativeUI` CUSTOM
+ * event for the generative-UI mapping. Used by the `AGUI_DEMO` endpoint mode
+ * (see `response.ts`) and as a fixture; it deliberately performs no I/O so it
+ * is safe in any environment.
  */
 export function demoFullStream(): AsyncIterable<TextStreamPart<ToolSet>> {
   type Part = TextStreamPart<ToolSet>
@@ -47,7 +50,28 @@ export function demoFullStream(): AsyncIterable<TextStreamPart<ToolSet>> {
     {
       type: 'text-delta',
       id: 'msg-1',
-      text: 'AG-UI is an open, event-based protocol for agent-user interaction.'
+      text: 'AG-UI is an open, event-based protocol for agent-user interaction. Here is a plan:'
+    } as Part,
+    // A Polymorph display tool (non-streamed input): exercises the
+    // generative-UI mapping (TOOL_CALL_* + a `GenerativeUI` CUSTOM event).
+    {
+      type: 'tool-call',
+      toolCallId: 'call-2',
+      toolName: 'displayPlan',
+      input: {
+        title: 'Learn AG-UI',
+        steps: [
+          { label: 'Read the protocol spec', status: 'done' },
+          { label: 'Wire up the SSE endpoint', status: 'in-progress' },
+          { label: 'Render generative UI in the frontend', status: 'todo' }
+        ]
+      }
+    } as Part,
+    {
+      type: 'tool-result',
+      toolCallId: 'call-2',
+      toolName: 'displayPlan',
+      output: { ok: true }
     } as Part,
     { type: 'text-end', id: 'msg-1' } as Part,
     { type: 'finish-step' } as Part,

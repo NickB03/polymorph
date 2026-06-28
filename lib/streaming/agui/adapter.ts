@@ -6,6 +6,41 @@ import {
   type ToolSet
 } from 'ai'
 
+import {
+  TOOL_UI_TOOL_METADATA,
+  type ToolUiToolKind
+} from '@/lib/tools/tool-ui/metadata'
+
+/**
+ * Display/tool-UI tool names, keyed by name → kind. Derived from
+ * {@link TOOL_UI_TOOL_METADATA} (the single source of truth) so it stays in
+ * sync as tools are added or change kind. A `tool-call` for any of these also
+ * emits a `GenerativeUI` CUSTOM event (see {@link generativeUiEvent}).
+ */
+const DISPLAY_TOOL_KINDS = new Map<string, ToolUiToolKind>(
+  TOOL_UI_TOOL_METADATA.map(tool => [tool.name, tool.kind])
+)
+
+/**
+ * Build the AG-UI `GenerativeUI` CUSTOM event for a Polymorph display tool, or
+ * `null` if the tool is not a display/tool-UI tool. Carries enough for an AG-UI
+ * frontend to render the matching component: its name, the tool-call id, the
+ * display kind, and the tool input as props.
+ */
+function generativeUiEvent(
+  toolName: string,
+  toolCallId: string,
+  input: unknown
+): BaseEvent | null {
+  const kind = DISPLAY_TOOL_KINDS.get(toolName)
+  if (!kind) return null
+  return {
+    type: EventType.CUSTOM,
+    name: 'GenerativeUI',
+    value: { component: toolName, toolCallId, kind, props: input }
+  } as BaseEvent
+}
+
 /**
  * Pure translation layer between Polymorph's agent (Vercel AI SDK) and the
  * AG-UI protocol (https://docs.ag-ui.com).
@@ -128,8 +163,20 @@ export function mapFullStreamPart(
       ]
 
     case 'tool-call': {
-      // Already surfaced via streamed tool-input-* events.
-      if (state.startedToolCalls.has(part.toolCallId)) return []
+      // A display/tool-UI tool also surfaces a `GenerativeUI` CUSTOM event so
+      // AG-UI frontends can render the matching component. Emitted here (full
+      // input available) even when the lifecycle was already streamed.
+      const custom = generativeUiEvent(
+        part.toolName,
+        part.toolCallId,
+        part.input
+      )
+
+      // Already surfaced via streamed tool-input-* events: skip re-emitting the
+      // TOOL_CALL_* lifecycle, but still emit the GenerativeUI CUSTOM event.
+      if (state.startedToolCalls.has(part.toolCallId)) {
+        return custom ? [custom] : []
+      }
       state.startedToolCalls.add(part.toolCallId)
       return [
         {
@@ -145,7 +192,8 @@ export function mapFullStreamPart(
         {
           type: EventType.TOOL_CALL_END,
           toolCallId: part.toolCallId
-        } as BaseEvent
+        } as BaseEvent,
+        ...(custom ? [custom] : [])
       ]
     }
 
