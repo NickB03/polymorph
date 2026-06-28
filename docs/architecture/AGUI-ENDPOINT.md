@@ -43,6 +43,15 @@ The agent is a Vercel AI SDK `ToolLoopAgent`; its `fullStream` parts are transla
 
 Events are serialized to SSE by `EventEncoder.encodeSSE()` from `@ag-ui/encoder`, guaranteeing spec-compliant framing.
 
+### Terminal errors
+
+A run ends in exactly one terminal event. There are two error paths, both emitting `RUN_ERROR` **instead of** `RUN_FINISHED`:
+
+- **Thrown errors** — if starting the run or iterating the `fullStream` throws (e.g. the model call fails), the `aguiSseResponse` catch block emits `RUN_ERROR` with the error message.
+- **`error` stream parts** — if the agent's `fullStream` yields an `error` part mid-run, it maps to `RUN_ERROR` and the run **stops immediately**: the stream is not consumed further and no `RUN_FINISHED` follows. Any parts after the `error` part are dropped.
+
+A successful run emits `RUN_FINISHED`; an errored run emits `RUN_ERROR` and never both.
+
 Polymorph's display tools (Plan, Chart, DataTable, GeoMap, …) surface as ordinary `TOOL_CALL_*` + `TOOL_CALL_RESULT` events, which AG-UI frontends render generically. Mapping them to AG-UI generative-UI / `STATE_*` is a future enhancement.
 
 ## Files
@@ -53,8 +62,22 @@ Polymorph's display tools (Plan, Chart, DataTable, GeoMap, …) surface as ordin
 | `lib/streaming/agui/response.ts`     | Builds the agent statelessly and hands its `fullStream` to the SSE encoder                                             |
 | `lib/streaming/agui/sse.ts`          | `aguiSseResponse`: wraps a run in `RUN_STARTED`/`RUN_FINISHED`/`RUN_ERROR` and encodes SSE (agent-free, unit-testable) |
 | `lib/streaming/agui/adapter.ts`      | Pure mapping: input messages → `ModelMessage[]`; `fullStream` parts → AG-UI events                                     |
+| `lib/streaming/agui/demo.ts`         | Scripted, model-free `fullStream` fixture powering `AGUI_DEMO` mode (see below)                                        |
 | `lib/streaming/agui/adapter.test.ts` | Unit tests for the mapping layer                                                                                       |
-| `lib/streaming/agui/sse.test.ts`     | Tests the lifecycle wrapping + SSE encoding with a synthetic `fullStream`                                              |
+| `lib/streaming/agui/sse.test.ts`     | Tests the lifecycle wrapping + SSE encoding + terminal-error handling with a synthetic `fullStream`                    |
+| `lib/streaming/agui/agent.test.ts`   | End-to-end test driving a real `ToolLoopAgent` backed by a mock model (no API key) through `aguiSseResponse`           |
+
+## Demo mode (no API key)
+
+For exercising the endpoint and AG-UI frontends without any model credentials, the route supports a gated demo mode:
+
+```bash
+ENABLE_AGUI_ENDPOINT=true AGUI_DEMO=true bun dev
+```
+
+When `AGUI_DEMO=true` **and** the runtime is not a production target (`isProductionTarget()` from `lib/config/env.ts` is false), `createAguiRunResponse` short-circuits before building the real agent and streams a scripted lifecycle from `demo.ts`: `RUN_STARTED`, assistant text, a complete `search` tool call (`TOOL_CALL_START`/`ARGS`/`END`) with a `TOOL_CALL_RESULT`, then `RUN_FINISHED`. No model is called and no network I/O happens.
+
+Demo mode is **ignored on production targets** even if `AGUI_DEMO=true` is set, so it cannot accidentally serve fixture output in production.
 
 ## Try it
 

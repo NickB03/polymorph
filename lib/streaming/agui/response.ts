@@ -4,13 +4,24 @@ import {
   createChatAgentById,
   resolveChatAgentId
 } from '@/lib/agents/chat/registry'
+import { isProductionTarget } from '@/lib/config/env'
 import type { UserMode } from '@/lib/types/search'
 import { toIntent, toSearchMode } from '@/lib/types/search'
 import { createModelId } from '@/lib/utils'
 import { selectModelForModeAndType } from '@/lib/utils/model-selection'
 
 import { aguiMessagesToModelMessages } from './adapter'
+import { demoFullStream } from './demo'
 import { aguiSseResponse } from './sse'
+
+/**
+ * Whether the gated AG-UI demo mode is active. Enabled by `AGUI_DEMO=true`, but
+ * never on a production target — it streams a scripted, model-free lifecycle so
+ * the endpoint can be exercised end-to-end with no API key.
+ */
+function isAguiDemoMode(): boolean {
+  return process.env.AGUI_DEMO === 'true' && !isProductionTarget()
+}
 
 const VALID_USER_MODES: readonly UserMode[] = ['search', 'research', 'build']
 
@@ -46,6 +57,17 @@ export function createAguiRunResponse(
   options: { abortSignal?: AbortSignal } = {}
 ): Response {
   const { threadId, runId } = input
+
+  // Gated demo mode: stream a scripted lifecycle with no model/API key. Useful
+  // for exercising the endpoint and AG-UI frontends without credentials.
+  if (isAguiDemoMode()) {
+    return aguiSseResponse(
+      async () => demoFullStream(),
+      { threadId, runId },
+      options
+    )
+  }
+
   const userMode = resolveUserMode(input.forwardedProps)
   const searchMode = toSearchMode(userMode)
   const intent = toIntent(userMode)

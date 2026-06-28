@@ -119,6 +119,29 @@ describe('aguiSseResponse', () => {
     expect(events[1]).toMatchObject({ message: 'model exploded' })
   })
 
+  it('emits RUN_ERROR and stops (no RUN_FINISHED) on a terminal error part', async () => {
+    const parts: Part[] = [
+      { type: 'text-start', id: 'm1' } as Part,
+      { type: 'text-delta', id: 'm1', text: 'partial' } as Part,
+      { type: 'error', error: new Error('stream failed') } as Part,
+      // Anything after the error part must not be emitted.
+      { type: 'text-delta', id: 'm1', text: 'should not appear' } as Part
+    ]
+
+    const events = await collectEvents(
+      aguiSseResponse(async () => fromParts(parts), IDS)
+    )
+
+    expect(events.map(e => e.type)).toEqual([
+      EventType.RUN_STARTED,
+      EventType.TEXT_MESSAGE_START,
+      EventType.TEXT_MESSAGE_CONTENT,
+      EventType.RUN_ERROR
+    ])
+    expect(events.at(-1)).toMatchObject({ message: 'stream failed' })
+    expect(events.some(e => e.type === EventType.RUN_FINISHED)).toBe(false)
+  })
+
   it('emits RUN_ERROR when the stream throws mid-iteration', async () => {
     async function* exploding(): AsyncGenerator<Part> {
       yield { type: 'text-start', id: 'm1' } as Part

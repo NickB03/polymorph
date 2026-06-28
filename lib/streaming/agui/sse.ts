@@ -41,11 +41,22 @@ export function aguiSseResponse(
       try {
         const fullStream = await startRun(options.abortSignal)
         const state = createAguiMapState()
-        for await (const part of fullStream) {
-          for (const event of mapFullStreamPart(part, state)) send(event)
+        let terminalError = false
+        outer: for await (const part of fullStream) {
+          for (const event of mapFullStreamPart(part, state)) {
+            send(event)
+            // An `error` fullStream part maps to RUN_ERROR, which terminates
+            // the run: stop consuming and do not emit RUN_FINISHED.
+            if (event.type === EventType.RUN_ERROR) {
+              terminalError = true
+              break outer
+            }
+          }
         }
 
-        send({ type: EventType.RUN_FINISHED, threadId, runId } as BaseEvent)
+        if (!terminalError) {
+          send({ type: EventType.RUN_FINISHED, threadId, runId } as BaseEvent)
+        }
       } catch (error) {
         send({
           type: EventType.RUN_ERROR,
