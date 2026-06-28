@@ -66,8 +66,9 @@ Polymorph's display tools (`displayPlan`, `displayChart`, `displayTable`, `displ
     "toolCallId": "call-2",
     "kind": "passive-display", // or "interactive-display"
     "props": {
+      "id": "…",
       "title": "…",
-      "steps": [
+      "todos": [
         /* the tool input */
       ]
     }
@@ -132,11 +133,29 @@ the loopback test pipes `aguiSseResponse(demoFullStream())` straight into it and
 asserts the reconstructed text, the `search` tool call + result, the `displayPlan`
 generative-UI component, and `status: 'finished'`.
 
-**Frontend wiring:** a Polymorph client component `fetch`es a remote AG-UI agent
-endpoint and passes the streaming `Response` to `consumeAguiStream`; the
-`messages` render as chat turns and each `generativeUI` entry maps `component` →
-the matching `components/tool-ui/*` component, rendered with `props` — the same
-display tools Polymorph emits as a server.
+**Frontend wiring:** the consume → render path is implemented in
+`components/agui/*`:
+
+- `useAguiAgent({ endpoint })` (`components/agui/use-agui-agent.ts`) — a client
+  hook whose `run(input)` POSTs an AG-UI `RunAgentInput` as JSON to `endpoint`
+  and pipes the streaming `Response` straight into `consumeAguiStream`. It owns
+  only the fetch + React state (`result`, `status`, `error`); all SSE decoding
+  is delegated to `lib/streaming/agui/client.ts`.
+- `AguiGenerativeUI` (`components/agui/agui-generative-ui.tsx`) — a client
+  component that takes an `AguiConsumeResult` and renders (a) the assistant
+  message text, (b) a compact list of reconstructed tool calls, and (c) each
+  `generativeUI` entry natively. Each entry maps `component` → the matching
+  `components/tool-ui/*` renderer via the tool-UI registry
+  (`components/tool-ui/registry.tsx`): when `isRegisteredToolUI(component)` is
+  true it calls `tryRenderToolUIByName(component, props, ` `agui-${toolCallId}` `)`,
+  which validates `props` against the tool's schema and renders the real card —
+  the same display components Polymorph emits as a server. An unregistered
+  component, or props that fail schema validation (so the registry returns
+  `null`), degrade to a labeled fallback card instead of crashing.
+
+`app/agui-demo/page.tsx` is a gated dev page that wires `useAguiAgent` against
+the local `/api/agui` endpoint and renders the live result with
+`AguiGenerativeUI` (enable the endpoint + demo mode as below).
 
 ## Demo mode (no API key)
 

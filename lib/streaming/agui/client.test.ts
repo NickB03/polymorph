@@ -52,7 +52,23 @@ describe('consumeAguiStream', () => {
       toolCallId: 'call-2',
       kind: 'passive-display'
     })
-    expect(ui.props).toMatchObject({ title: 'Learn AG-UI' })
+    expect(ui.props).toMatchObject({
+      id: 'plan-learn-agui',
+      title: 'Learn AG-UI',
+      todos: [
+        { id: 'todo-1', label: 'Read the protocol spec', status: 'completed' },
+        {
+          id: 'todo-2',
+          label: 'Wire up the SSE endpoint',
+          status: 'in_progress'
+        },
+        {
+          id: 'todo-3',
+          label: 'Render generative UI in the frontend',
+          status: 'pending'
+        }
+      ]
+    })
   })
 
   it('reduces an error run to status error with a message and no finished', async () => {

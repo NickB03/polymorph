@@ -59,11 +59,24 @@ export function demoFullStream(): AsyncIterable<TextStreamPart<ToolSet>> {
       toolCallId: 'call-2',
       toolName: 'displayPlan',
       input: {
+        id: 'plan-learn-agui',
         title: 'Learn AG-UI',
-        steps: [
-          { label: 'Read the protocol spec', status: 'done' },
-          { label: 'Wire up the SSE endpoint', status: 'in-progress' },
-          { label: 'Render generative UI in the frontend', status: 'todo' }
+        todos: [
+          {
+            id: 'todo-1',
+            label: 'Read the protocol spec',
+            status: 'completed'
+          },
+          {
+            id: 'todo-2',
+            label: 'Wire up the SSE endpoint',
+            status: 'in_progress'
+          },
+          {
+            id: 'todo-3',
+            label: 'Render generative UI in the frontend',
+            status: 'pending'
+          }
         ]
       }
     } as Part,
