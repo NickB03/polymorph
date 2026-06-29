@@ -1,1 +1,9 @@
 bunx lint-staged
+
+# Keep the graphify knowledge graph (graphify-out/graph.json) in sync when code
+# changes, so the CI "Graph Freshness" guard passes. No-op when graphify isn't
+# installed; never blocks the commit (CI is the backstop).
+if git diff --cached --name-only --diff-filter=ACMR \
+  | grep -qE '\.(ts|tsx|js|jsx|mjs|cjs)$|(^|/)package\.json$'; then
+  bash scripts/refresh-graph.sh && git add graphify-out/graph.json || true
+fi

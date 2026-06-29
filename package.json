@@ -23,6 +23,8 @@
     "prepare": "husky && (bash scripts/setup-git-merge-drivers.sh || true)"
   },
   "dependencies": {
+    "@ag-ui/core": "^0.0.57",
+    "@ag-ui/encoder": "^0.0.57",
     "@ai-sdk/anthropic": "^3.0.82",
     "@ai-sdk/gateway": "^3.0.127",
     "@ai-sdk/google": "^3.0.80",
