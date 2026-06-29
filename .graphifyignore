@@ -13,6 +13,11 @@ coverage/
 dist/
 build/
 out/
+# Tool-generated files that exist locally (after `bun install` / running the
+# app) but not in CI's bare checkout — graphing them makes the freshness guard
+# environment-dependent (a local-only "stale" diff that CI never sees).
+next-env.d.ts
+.husky/_/
 
 # Design binaries, generated review artifacts, and brand/static media are not
 # useful for code navigation and can make semantic extraction noisy.
@@ -53,6 +58,8 @@ skills-lock.json
 scripts/check-graph-freshness.py
 scripts/graphify-merge-driver.sh
 scripts/setup-git-merge-drivers.sh
+scripts/refresh-graph.py
+scripts/refresh-graph.sh
 
 # Bulky/generated docs, historical plans, and prototypes that make the graph
 # noisy and expensive without improving current-app code navigation.
