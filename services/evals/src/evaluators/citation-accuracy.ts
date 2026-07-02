@@ -17,15 +17,24 @@ Evaluate each citation:
 2. Does the cited source actually support the claim it's attached to?
 3. Are there claims in the answer that should be cited but aren't?
 
-Score:
-- 1.0 (accurate): All citations match sources in search results and support their claims
-- 0.75 (mostly_accurate): Most citations are accurate, minor issues
-- 0.5 (mixed): Some citations are accurate, some are fabricated or misattributed
-- 0.25 (mostly_inaccurate): Most citations don't match search results or don't support claims
-- 0.0 (fabricated): Citations appear to be fabricated (URLs not in search results)`
+Classify (choose exactly one label):
+- "accurate": All citations match sources in search results and support their claims
+- "mostly_accurate": Most citations are accurate, minor issues
+- "mixed": Some citations are accurate, some are fabricated or misattributed
+- "mostly_inaccurate": Most citations don't match search results or don't support claims
+- "fabricated": Citations appear to be fabricated (URLs not in search results)`
+
+export const CITATION_LABEL_SCORES: Record<string, number> = {
+  accurate: 1,
+  mostly_accurate: 0.75,
+  // Below the 0.5 pass cutoff on purpose: "some citations fabricated or
+  // misattributed" is a failing outcome for a research product.
+  mixed: 0.4,
+  mostly_inaccurate: 0.25,
+  fabricated: 0
+}
 
 const CitationAccuracySchema = z.object({
-  score: z.number().min(0).max(1),
   label: z.enum([
     'accurate',
     'mostly_accurate',
@@ -62,9 +71,9 @@ export function createCitationAccuracyExperimentEvaluator(
       ) {
         return {
           label: 'no_search_context',
-          score: 0.5,
+          score: null,
           explanation:
-            'Citations present but no search results available to verify against'
+            'Citations present but no search results available to verify against — cannot assess accuracy'
         }
       }
 
@@ -101,7 +110,7 @@ Evaluate the citation accuracy:`
 
       return {
         label: object.label,
-        score: object.score,
+        score: CITATION_LABEL_SCORES[object.label],
         explanation: object.explanation
       }
     }
