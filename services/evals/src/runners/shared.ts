@@ -10,7 +10,7 @@ import type {
   ExperimentEvaluatorLike,
   ExperimentTask
 } from '@arizeai/phoenix-client/types/experiments'
-import type { LanguageModel } from 'ai'
+import { APICallError, type LanguageModel } from 'ai'
 
 import { createConfig } from '../config'
 import { getCasesForEvaluation, getCorpusVersion } from '../corpus'
@@ -377,14 +377,58 @@ export function buildExperimentTask(): ExperimentTask {
   return async (example: Example) => example.output as unknown as EvalRunResult
 }
 
-function wrapEvaluatorWithRetry(evaluator: Evaluator): Evaluator {
+export function isRetryableJudgeError(err: unknown): boolean {
+  if (APICallError.isInstance(err)) return err.isRetryable
+  return true
+}
+
+// Note: this timeout does not abort the underlying HTTP request (phoenix-evals
+// has no abort-signal plumbing) — it exists to stop one hung socket from
+// stalling the 48h cron forever.
+function withJudgeTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () =>
+        reject(
+          new Error(`[evals] Judge call "${label}" timed out after ${ms}ms`)
+        ),
+      ms
+    )
+    promise.then(
+      value => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      error => {
+        clearTimeout(timer)
+        reject(error)
+      }
+    )
+  })
+}
+
+export function wrapEvaluatorWithRetry(
+  evaluator: Evaluator,
+  options: { timeoutMs?: number; maxAttempts?: number } = {}
+): Evaluator {
+  const timeoutMs = options.timeoutMs ?? createConfig().judgeTimeoutMs
+  const maxAttempts = options.maxAttempts ?? 3
   return {
     ...evaluator,
     evaluate: (args: Parameters<Evaluator['evaluate']>[0]) =>
-      withRetry(() => Promise.resolve(evaluator.evaluate(args)), {
-        maxAttempts: 3,
-        baseDelayMs: 2000
-      })
+      withRetry(
+        () =>
+          withJudgeTimeout(
+            Promise.resolve(evaluator.evaluate(args)),
+            timeoutMs,
+            evaluator.name
+          ),
+        { maxAttempts, baseDelayMs: 2000, shouldRetry: isRetryableJudgeError }
+      )
   }
 }
 

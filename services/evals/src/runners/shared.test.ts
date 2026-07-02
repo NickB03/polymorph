@@ -1,4 +1,4 @@
-import type { LanguageModel } from 'ai'
+import { APICallError, type LanguageModel } from 'ai'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockProvider = vi.hoisted(() => vi.fn())
@@ -19,6 +19,7 @@ const mockConfig = vi.hoisted(() => ({
   caseIds: [] as string[],
   caseConcurrency: 3,
   dbPoolMax: 5,
+  judgeTimeoutMs: 60000,
   excludeFromThreshold: ['safety']
 }))
 
@@ -838,6 +839,46 @@ describe('buildExperimentEvaluators', () => {
     expect(callCount).toBe(3) // 2 failures + 1 success
 
     vi.useRealTimers()
+  })
+})
+
+describe('judge retry policy', () => {
+  it('does not retry non-retryable judge API errors', async () => {
+    const { wrapEvaluatorWithRetry } = await import('./shared')
+
+    let calls = 0
+    const evaluator = wrapEvaluatorWithRetry({
+      name: 'fake',
+      kind: 'LLM',
+      evaluate: () => {
+        calls++
+        throw new APICallError({
+          message: 'Payment Required',
+          url: 'https://openrouter.ai/api/v1',
+          requestBodyValues: {},
+          statusCode: 402,
+          isRetryable: false
+        })
+      }
+    } as never)
+    await expect(evaluator.evaluate({} as never)).rejects.toThrow(
+      'Payment Required'
+    )
+    expect(calls).toBe(1)
+  })
+
+  it('times out a hung judge call', async () => {
+    const { wrapEvaluatorWithRetry } = await import('./shared')
+
+    const evaluator = wrapEvaluatorWithRetry(
+      {
+        name: 'hung',
+        kind: 'LLM',
+        evaluate: () => new Promise(() => {})
+      } as never,
+      { timeoutMs: 50, maxAttempts: 1 }
+    )
+    await expect(evaluator.evaluate({} as never)).rejects.toThrow(/timed out/)
   })
 })
 
