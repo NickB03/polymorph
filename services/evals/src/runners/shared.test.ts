@@ -721,6 +721,35 @@ describe('checkExperimentThresholds fail-closed semantics', () => {
   })
 })
 
+describe('applyDropRateGate', () => {
+  const base = (): import('../types').SuiteRunResult => ({
+    suite: 'capability',
+    status: 'passed',
+    passRate: 1,
+    threshold: 0.8,
+    failedEvaluators: [],
+    experimentName: 'x',
+    datasetName: 'y',
+    phoenixUrl: null,
+    totalCases: 4,
+    attemptedCases: 24,
+    failedCases: 20
+  })
+
+  it('judged suite breaches when more than half of replays failed', async () => {
+    const { applyDropRateGate } = await import('./shared')
+    const gated = applyDropRateGate(base(), 24, 20)
+    expect(gated.status).toBe('threshold_breached')
+    expect(gated.failedEvaluators).toContain('replay-drop-rate')
+  })
+
+  it('leaves result untouched at or below 50% drop rate', async () => {
+    const { applyDropRateGate } = await import('./shared')
+    const gated = applyDropRateGate(base(), 24, 12)
+    expect(gated.status).toBe('passed')
+  })
+})
+
 describe('buildPublicExperimentUrl', () => {
   it('builds a clickable URL using the public Phoenix host', async () => {
     const { buildPublicExperimentUrl } = await import('./shared')

@@ -16,6 +16,7 @@ import { type ChatSample, sampleRecentChats } from '../sampler'
 import type { EvalCase } from '../types'
 
 import {
+  applyDropRateGate,
   buildDatasetExamples,
   buildEvalSummaryMetadata,
   buildExperimentEvaluators,
@@ -168,15 +169,7 @@ export async function runTrafficMonitorSuite() {
     failedCases: failCount
   })
 
-  // Drop-rate gate: if more than half of replays failed, mark the suite
-  // as threshold_breached even if the surviving cases scored well.
-  // The dashboard signal must reflect "we lost most of the run," not
-  // "the few cases we kept happened to pass."
-  const dropRate = cases.length > 0 ? failCount / cases.length : 0
-  if (dropRate > 0.5 && result.status === 'passed') {
-    result.status = 'threshold_breached'
-    result.failedEvaluators = [...result.failedEvaluators, 'replay-drop-rate']
-  }
+  applyDropRateGate(result, cases.length, failCount)
 
   if (result.status === 'threshold_breached') {
     logThresholdBreachWarning(result)

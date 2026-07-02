@@ -190,6 +190,8 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     failedCases: failCount
   })
 
+  applyDropRateGate(result, cases.length, failCount)
+
   if (result.status === 'threshold_breached') {
     logThresholdBreachWarning(result)
   }
@@ -536,6 +538,22 @@ export function buildSuiteRunResult(params: {
     attemptedCases: params.attemptedCases,
     failedCases: params.failedCases
   }
+}
+
+// Drop-rate gate: if more than half of replays failed, the suite must not
+// report "passed" — the dashboard signal has to reflect "we lost most of the
+// run," not "the few cases we kept happened to pass."
+export function applyDropRateGate(
+  result: SuiteRunResult,
+  attempted: number,
+  failed: number
+): SuiteRunResult {
+  const dropRate = attempted > 0 ? failed / attempted : 0
+  if (dropRate > 0.5 && result.status === 'passed') {
+    result.status = 'threshold_breached'
+    result.failedEvaluators = [...result.failedEvaluators, 'replay-drop-rate']
+  }
+  return result
 }
 
 export function logThresholdBreachWarning(result: SuiteRunResult) {

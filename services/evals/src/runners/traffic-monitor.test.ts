@@ -63,20 +63,26 @@ vi.mock('../sampler', () => ({
   sampleRecentChats: mockSampleRecentChats
 }))
 
-vi.mock('./shared', () => ({
-  buildDatasetExamples: mockBuildDatasetExamples,
-  buildEvalSummaryMetadata: mockBuildEvalSummaryMetadata,
-  buildExperimentEvaluators: mockBuildExperimentEvaluators,
-  buildExperimentTask: mockBuildExperimentTask,
-  buildPublicExperimentUrl: vi.fn(() => 'https://phoenix.example.com/exp'),
-  buildSuiteRunResult: mockBuildSuiteRunResult,
-  buildTimestampedDatasetName: mockBuildTimestampedDatasetName,
-  checkExperimentThresholds: mockCheckExperimentThresholds,
-  createDatasetAndExperiment: mockCreateDatasetAndExperiment,
-  createJudgeModel: mockCreateJudgeModel,
-  logThresholdBreachWarning: mockLogThresholdBreachWarning,
-  runCasesConcurrently: mockRunCasesConcurrently
-}))
+vi.mock('./shared', async importOriginal => {
+  const actual = await importOriginal<typeof import('./shared')>()
+  return {
+    // Real implementation: the drop-rate gate is pure and its end-to-end
+    // effect on the suite result is asserted in this file.
+    applyDropRateGate: actual.applyDropRateGate,
+    buildDatasetExamples: mockBuildDatasetExamples,
+    buildEvalSummaryMetadata: mockBuildEvalSummaryMetadata,
+    buildExperimentEvaluators: mockBuildExperimentEvaluators,
+    buildExperimentTask: mockBuildExperimentTask,
+    buildPublicExperimentUrl: vi.fn(() => 'https://phoenix.example.com/exp'),
+    buildSuiteRunResult: mockBuildSuiteRunResult,
+    buildTimestampedDatasetName: mockBuildTimestampedDatasetName,
+    checkExperimentThresholds: mockCheckExperimentThresholds,
+    createDatasetAndExperiment: mockCreateDatasetAndExperiment,
+    createJudgeModel: mockCreateJudgeModel,
+    logThresholdBreachWarning: mockLogThresholdBreachWarning,
+    runCasesConcurrently: mockRunCasesConcurrently
+  }
+})
 
 vi.mock('../eval-summary', () => ({
   persistEvalSummary: mockPersistEvalSummary
