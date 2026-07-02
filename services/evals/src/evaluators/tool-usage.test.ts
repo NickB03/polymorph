@@ -78,6 +78,16 @@ describe('tool-usage evaluator', () => {
     expect(result.label).toBe('citations_missing')
   })
 
+  it('scores 0.5 when citations required but only non-search tools were called', async () => {
+    const input = makeInput()
+    input.output.toolNames = ['displayChart']
+    input.output.searchResults = []
+    input.output.citations = []
+    const result = await evaluator.evaluate(input)
+    expect(result.score).toBe(0.5)
+    expect(result.label).toBe('citations_missing')
+  })
+
   it('scores 1.0 for non-citation case with tools used', async () => {
     const input = makeInput()
     input.metadata.requiresCitations = false

@@ -18,7 +18,8 @@ export const SEARCH_TOOL_NAMES: readonly string[] = [
  *
  * 1.0 — tools_used: Tools called, search results returned, citations present (if required)
  * 0.5 — tools_ineffective: Search tools called but search returned no results
- * 0.5 — citations_missing: Tools called + results returned, but citations required and absent
+ * 0.5 — citations_missing: Tools called but citations required and absent
+ *        (covers both search-with-results-but-no-citations and non-search-tools-only)
  * 0.0 — tools_missing: Citations required but no tools were called
  * null — skipped: Case doesn't require citations and no tools were expected
  */
@@ -76,13 +77,16 @@ export function createToolUsageExperimentEvaluator() {
         }
       }
 
-      // Tools called, results returned, but citations required and missing
-      if (requiresCitations && hasSearchResults && !hasCitations) {
+      // Tools were called but citations required and missing. Reaching here
+      // with hasSearchResults=false means only non-search tools ran (search
+      // tools without results were caught by tools_ineffective above).
+      if (requiresCitations && !hasCitations) {
         return {
           label: 'citations_missing',
           score: 0.5,
-          explanation:
-            'Search results were available but no citations were produced in the answer'
+          explanation: hasSearchResults
+            ? 'Search results were available but no citations were produced in the answer'
+            : 'Citations were required but only non-search tools ran and no citations were produced'
         }
       }
 
