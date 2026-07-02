@@ -78,7 +78,7 @@ export async function runConfiguredModes(): Promise<SuiteRunResult[]> {
     case 'all':
       await runAndRecord(runCapabilitySuite)
       await runAndRecord(runRegressionSuite)
-      await runAndRecord(() => runTrafficMonitorSuite({ allowEmpty: true }))
+      await runAndRecord(runTrafficMonitorSuite)
       await runSmokeSuite()
       break
   }

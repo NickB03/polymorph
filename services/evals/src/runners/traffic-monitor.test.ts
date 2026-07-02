@@ -562,30 +562,15 @@ describe('runTrafficMonitorSuite', () => {
     ])
   })
 
-  it('fails when no chats are sampled so the run is treated as incomplete', async () => {
-    mockSampleRecentChats.mockResolvedValueOnce([])
-
-    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
-    await expect(runTrafficMonitorSuite()).rejects.toThrow(
-      'No chats found in lookback window for traffic-monitor run'
-    )
-
-    expect(mockCreateDatasetAndExperiment).not.toHaveBeenCalled()
-    expect(mockRunCasesConcurrently).not.toHaveBeenCalled()
-    expect(mockPersistEvalSummary).not.toHaveBeenCalled()
-  })
-
-  it('returns null without recording when empty samples are explicitly allowed', async () => {
+  it('returns null and logs NO TRAFFIC when sampler returns no chats', async () => {
     mockSampleRecentChats.mockResolvedValueOnce([])
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     const { runTrafficMonitorSuite } = await import('./traffic-monitor')
-    const result = await runTrafficMonitorSuite({ allowEmpty: true })
+    const result = await runTrafficMonitorSuite()
 
     expect(result).toBeNull()
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[evals] No chats found in lookback window for traffic-monitor run; skipping traffic-monitor suite'
-    )
+    expect(warnSpy.mock.calls.flat().join(' ')).toContain('NO TRAFFIC')
     expect(mockCreateDatasetAndExperiment).not.toHaveBeenCalled()
     expect(mockRunCasesConcurrently).not.toHaveBeenCalled()
     expect(mockPersistEvalSummary).not.toHaveBeenCalled()

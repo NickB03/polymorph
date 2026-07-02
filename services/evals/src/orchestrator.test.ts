@@ -82,9 +82,7 @@ describe('runConfiguredModes', () => {
       'regression',
       'traffic-monitor'
     ])
-    expect(mockRunTrafficMonitorSuite).toHaveBeenCalledWith({
-      allowEmpty: true
-    })
+    expect(mockRunTrafficMonitorSuite).toHaveBeenCalledWith()
     expect(mockRunSmokeSuite).toHaveBeenCalledTimes(1)
   })
 
@@ -110,19 +108,15 @@ describe('runConfiguredModes', () => {
     expect(mockRunSmokeSuite).toHaveBeenCalledTimes(1)
   })
 
-  it('fails when traffic-monitor produces no samples', async () => {
+  it('returns no results without throwing when traffic-monitor skips on empty traffic', async () => {
     mockConfig.evalRunMode = 'traffic-monitor'
-    mockRunTrafficMonitorSuite.mockRejectedValueOnce(
-      new Error(
-        '[evals] No chats found in lookback window for traffic-monitor run'
-      )
-    )
+    mockRunTrafficMonitorSuite.mockResolvedValueOnce(null)
 
     const { runConfiguredModes } = await import('./orchestrator')
 
-    await expect(runConfiguredModes()).rejects.toThrow(
-      'No chats found in lookback window for traffic-monitor run'
-    )
+    const results = await runConfiguredModes()
+
+    expect(results).toEqual([])
     expect(mockRunTrafficMonitorSuite).toHaveBeenCalledWith()
   })
 

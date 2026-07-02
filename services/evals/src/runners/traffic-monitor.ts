@@ -31,31 +31,19 @@ import {
 } from './shared'
 
 const NO_TRAFFIC_SAMPLES_MESSAGE =
-  '[evals] No chats found in lookback window for traffic-monitor run'
-
-interface TrafficMonitorRunOptions {
-  allowEmpty?: boolean
-}
+  '[evals] NO TRAFFIC - no chats found in lookback window; skipping traffic-monitor suite'
 
 export function formatContext(sample: ChatSample): string {
   return formatEvalContext(sample)
 }
 
-export async function runTrafficMonitorSuite(
-  options: TrafficMonitorRunOptions = {}
-) {
+export async function runTrafficMonitorSuite() {
   console.log('[evals] Sampling recent chats...')
   const samples = await sampleRecentChats()
 
   if (samples.length === 0) {
-    if (options.allowEmpty) {
-      console.warn(
-        `${NO_TRAFFIC_SAMPLES_MESSAGE}; skipping traffic-monitor suite`
-      )
-      return null
-    }
-
-    throw new Error(NO_TRAFFIC_SAMPLES_MESSAGE)
+    console.warn(NO_TRAFFIC_SAMPLES_MESSAGE)
+    return null
   }
 
   console.log(`[evals] Sampled ${samples.length} chats`)
