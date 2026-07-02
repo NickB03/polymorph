@@ -3,10 +3,21 @@ import { asExperimentEvaluator } from '@arizeai/phoenix-client/experiments'
 import { normalizeEvalRunResult } from '../eval-output'
 
 /**
+ * Tools whose calls are expected to produce search results. Only these count
+ * toward the `tools_ineffective` check — non-search tools (geo, display, etc.)
+ * are legitimate work that returns no search results.
+ */
+export const SEARCH_TOOL_NAMES: readonly string[] = [
+  'search',
+  'fetch',
+  'competitorResearch'
+]
+
+/**
  * Deterministic tool-usage evaluator with a 4-level rubric:
  *
  * 1.0 — tools_used: Tools called, search results returned, citations present (if required)
- * 0.5 — tools_ineffective: Tools called but search returned no results
+ * 0.5 — tools_ineffective: Search tools called but search returned no results
  * 0.5 — citations_missing: Tools called + results returned, but citations required and absent
  * 0.0 — tools_missing: Citations required but no tools were called
  * null — skipped: Case doesn't require citations and no tools were expected
@@ -24,6 +35,9 @@ export function createToolUsageExperimentEvaluator() {
     }) => {
       const result = normalizeEvalRunResult(output)
       const toolsUsed = result.toolNames.length > 0
+      const searchToolsUsed = result.toolNames.some(name =>
+        SEARCH_TOOL_NAMES.includes(name)
+      )
       const hasSearchResults = result.searchResults.some(
         sr => sr.results.length > 0
       )
@@ -50,13 +64,15 @@ export function createToolUsageExperimentEvaluator() {
         }
       }
 
-      // Tools called but search returned no results
-      if (toolsUsed && !hasSearchResults) {
+      // Search tools called but search returned no results
+      if (searchToolsUsed && !hasSearchResults) {
+        const searchToolsRan = result.toolNames.filter(name =>
+          SEARCH_TOOL_NAMES.includes(name)
+        )
         return {
           label: 'tools_ineffective',
           score: 0.5,
-          explanation:
-            'Search tools were called but returned no results — may indicate a bad query or service issue'
+          explanation: `Search tools were called (${searchToolsRan.join(', ')}) but returned no results — may indicate a bad query or service issue`
         }
       }
 

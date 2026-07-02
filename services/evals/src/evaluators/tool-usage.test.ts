@@ -86,6 +86,25 @@ describe('tool-usage evaluator', () => {
     expect(result.score).toBe(1.0)
   })
 
+  it('does not penalize non-search tool usage as ineffective', async () => {
+    const result = await evaluator.evaluate({
+      input: {},
+      output: {
+        answerText: 'Here are your directions',
+        citations: [],
+        searchResults: [],
+        toolNames: ['getDirections', 'displayGeoMap'],
+        usedInteractiveOnlyOutput: false,
+        modelId: '',
+        durationMs: 0
+      },
+      metadata: { requiresCitations: false },
+      expected: null
+    } as never)
+    expect(result.label).toBe('tools_used')
+    expect(result.score).toBe(1)
+  })
+
   it('returns null when case does not require citations and no tools needed', async () => {
     const input = makeInput()
     input.metadata.requiresCitations = false
