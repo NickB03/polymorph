@@ -1,6 +1,6 @@
 import { runCapabilitySuite } from './runners/capability'
 import { runRegressionSuite } from './runners/regression'
-import { runSmokeSuite } from './runners/smoke'
+import { assertSmokeHealthy, runSmokeSuite } from './runners/smoke'
 import { runTrafficMonitorSuite } from './runners/traffic-monitor'
 import { config } from './config'
 import { EvalSummaryPersistError } from './error'
@@ -73,13 +73,16 @@ export async function runConfiguredModes(): Promise<SuiteRunResult[]> {
       await runAndRecord(runTrafficMonitorSuite)
       break
     case 'smoke':
-      await runSmokeSuite()
+      assertSmokeHealthy(await runSmokeSuite())
       break
     case 'all':
       await runAndRecord(runCapabilitySuite)
       await runAndRecord(runRegressionSuite)
       await runAndRecord(runTrafficMonitorSuite)
-      await runSmokeSuite()
+      await runAndRecord(async () => {
+        assertSmokeHealthy(await runSmokeSuite())
+        return null
+      })
       break
   }
 
