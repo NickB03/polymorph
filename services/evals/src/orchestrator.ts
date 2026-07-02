@@ -46,6 +46,7 @@ function buildPersistCause(
 export async function runConfiguredModes(): Promise<SuiteRunResult[]> {
   const results: SuiteRunResult[] = []
   const persistErrors: EvalSummaryPersistError[] = []
+  const suiteErrors: Array<{ suite: string; error: unknown }> = []
 
   async function runAndRecord(
     runner: () => Promise<SuiteRunResult | null | undefined>
@@ -59,6 +60,22 @@ export async function runConfiguredModes(): Promise<SuiteRunResult[]> {
         return
       }
       throw error
+    }
+  }
+
+  // `all` mode only: a suite's hard failure is collected instead of aborting the
+  // run, so later suites still execute. The collected errors are re-thrown as an
+  // AggregateError after every suite has run. Single-suite modes keep the
+  // immediate-throw behavior — a dedicated mode failing IS the run failing.
+  async function runIsolated(
+    suite: string,
+    runner: () => Promise<SuiteRunResult | null | undefined>
+  ) {
+    try {
+      await runAndRecord(runner)
+    } catch (error) {
+      console.error(`[evals] ${suite} suite failed hard:`, error)
+      suiteErrors.push({ suite, error })
     }
   }
 
@@ -76,10 +93,10 @@ export async function runConfiguredModes(): Promise<SuiteRunResult[]> {
       assertSmokeHealthy(await runSmokeSuite())
       break
     case 'all':
-      await runAndRecord(runCapabilitySuite)
-      await runAndRecord(runRegressionSuite)
-      await runAndRecord(runTrafficMonitorSuite)
-      await runAndRecord(async () => {
+      await runIsolated('capability', runCapabilitySuite)
+      await runIsolated('regression', runRegressionSuite)
+      await runIsolated('traffic-monitor', runTrafficMonitorSuite)
+      await runIsolated('smoke', async () => {
         assertSmokeHealthy(await runSmokeSuite())
         return null
       })
@@ -110,6 +127,13 @@ export async function runConfiguredModes(): Promise<SuiteRunResult[]> {
     throw new AggregateError(
       persistErrors,
       `[evals] ${persistErrors.length} eval summary persistence failures`
+    )
+  }
+
+  if (suiteErrors.length > 0) {
+    throw new AggregateError(
+      suiteErrors.map(e => e.error),
+      `[evals] ${suiteErrors.length} suite failure(s): ${suiteErrors.map(e => e.suite).join(', ')}`
     )
   }
 

@@ -120,6 +120,18 @@ describe('runConfiguredModes', () => {
     })
   })
 
+  it('all mode runs remaining suites when one suite throws', async () => {
+    mockConfig.evalRunMode = 'all'
+    mockRunCapabilitySuite.mockRejectedValueOnce(new Error('phoenix down'))
+
+    const { runConfiguredModes } = await import('./orchestrator')
+
+    await expect(runConfiguredModes()).rejects.toThrow(/1 suite failure/)
+    expect(mockRunRegressionSuite).toHaveBeenCalled()
+    expect(mockRunTrafficMonitorSuite).toHaveBeenCalled()
+    expect(mockRunSmokeSuite).toHaveBeenCalledTimes(1)
+  })
+
   it('throws after aggregation when exitOnThresholdBreach is enabled', async () => {
     mockConfig.exitOnThresholdBreach = true
     mockRunTrafficMonitorSuite.mockResolvedValueOnce({
