@@ -40,7 +40,7 @@ Score "unrelated" only when the search topics are clearly off-target — wrong d
 </retrieved_search_topics>
 </data>
 
-Are the retrieved search topics above relevant to the query? Respond with a single word: 'relevant' or 'unrelated'.`
+Are the retrieved search topics above relevant to the query?`
   }
 ]
 
@@ -74,10 +74,19 @@ export function createRelevanceExperimentEvaluator(model: LanguageModel) {
       const context = inputField(input, 'context')
 
       if (!context) {
+        if (metadata?.requiresCitations === true) {
+          return {
+            label: 'no_results',
+            score: 0.0,
+            explanation:
+              'Case required retrieval but no search results were returned'
+          }
+        }
         return {
-          label: 'no_results',
-          score: 0.0,
-          explanation: 'No search results returned'
+          label: 'skipped',
+          score: null,
+          explanation:
+            'No search performed — this case does not require retrieval, so relevance is not applicable'
         }
       }
 
