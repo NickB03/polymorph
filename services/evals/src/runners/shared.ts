@@ -25,6 +25,7 @@ import { EVALUATOR_TEMPLATE_VERSION, persistEvalSummary } from '../eval-summary'
 import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createNoToolPlaceholdersExperimentEvaluator } from '../evaluators/no-tool-placeholders'
+import { createRefusalExperimentEvaluator } from '../evaluators/refusal'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
 import { createSafetyExperimentEvaluator } from '../evaluators/safety'
@@ -123,6 +124,7 @@ export async function runJudgedSuite(suite: 'capability' | 'regression') {
     responseQuality: createResponseQualityExperimentEvaluator,
     safety: createSafetyExperimentEvaluator,
     citationAccuracy: createCitationAccuracyExperimentEvaluator,
+    refusal: createRefusalExperimentEvaluator,
     model
   })
 
@@ -442,6 +444,7 @@ export interface EvaluatorFactories {
   responseQuality: (model: LanguageModel) => Evaluator
   safety: (model: LanguageModel) => Evaluator
   citationAccuracy: (model: LanguageModel) => Evaluator
+  refusal: (model: LanguageModel) => Evaluator
   model: LanguageModel
 }
 
@@ -458,6 +461,7 @@ export function buildExperimentEvaluators(
     responseQuality,
     safety,
     citationAccuracy,
+    refusal,
     model
   } = factories
   return [
@@ -469,7 +473,8 @@ export function buildExperimentEvaluators(
     wrapEvaluatorWithRetry(relevance(model)),
     wrapEvaluatorWithRetry(responseQuality(model)),
     wrapEvaluatorWithRetry(safety(model)),
-    wrapEvaluatorWithRetry(citationAccuracy(model))
+    wrapEvaluatorWithRetry(citationAccuracy(model)),
+    wrapEvaluatorWithRetry(refusal(model))
   ]
 }
 

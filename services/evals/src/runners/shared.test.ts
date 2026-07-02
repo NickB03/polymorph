@@ -820,10 +820,15 @@ describe('buildExperimentEvaluators', () => {
         kind: 'LLM',
         evaluate: () => ({ label: 'skipped', score: null })
       }),
+      refusal: () => ({
+        name: 'refusal',
+        kind: 'LLM',
+        evaluate: () => ({ label: 'skipped', score: null })
+      }),
       model: {} as LanguageModel
     })
 
-    expect(evaluators).toHaveLength(9)
+    expect(evaluators).toHaveLength(10)
     expect(evaluators[0].name).toBe('deterministic_prechecks')
     expect(evaluators[1].name).toBe('tool_usage')
     expect(evaluators[2].name).toBe('no_tool_placeholders')
