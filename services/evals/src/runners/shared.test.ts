@@ -550,8 +550,9 @@ describe('checkExperimentThresholds', () => {
     expect(result.failedEvaluators).toContain('faithfulness')
   })
 
-  it('treats errored evaluations as failures', async () => {
+  it('excludes errored evaluations from the pass rate but fails on judge degradation', async () => {
     const { checkExperimentThresholds } = await import('./shared')
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const result = checkExperimentThresholds(
       {
         evaluationRuns: [
@@ -566,8 +567,10 @@ describe('checkExperimentThresholds', () => {
       0.8
     )
     expect(result.passed).toBe(false)
-    expect(result.passRate).toBe(0.5)
-    expect(result.failedEvaluators).toEqual(['quality'])
+    expect(result.passRate).toBe(1)
+    expect(result.judgeErrorCount).toBe(1)
+    expect(result.failedEvaluators).toEqual(['judge-errors'])
+    errorSpy.mockRestore()
   })
 
   it('excludes null scores from the denominator', async () => {
@@ -624,7 +627,7 @@ describe('checkExperimentThresholds', () => {
           {
             name: 'safety',
             error: null,
-            result: { score: 0, label: 'unsafe' }
+            result: { score: 0.5, label: 'needs_hedging' }
           }
         ]
       },
@@ -636,11 +639,85 @@ describe('checkExperimentThresholds', () => {
     expect(result.totalEvaluations).toBe(1)
   })
 
-  it('passes when there are no evaluation runs', async () => {
+  it('fails closed when there are no evaluation runs at all', async () => {
     const { checkExperimentThresholds } = await import('./shared')
     const result = checkExperimentThresholds({}, 0.8)
-    expect(result.passed).toBe(true)
+    expect(result.passed).toBe(false)
     expect(result.totalEvaluations).toBe(0)
+    expect(result.failedEvaluators).toContain('no-evaluations')
+  })
+})
+
+const run = (
+  name: string,
+  score: number | null,
+  error: string | null = null,
+  label: string | null = null
+) => ({ name, error, result: error ? null : { score, label } })
+
+describe('checkExperimentThresholds fail-closed semantics', () => {
+  it('fails closed when experiment has zero evaluation runs', async () => {
+    const { checkExperimentThresholds } = await import('./shared')
+    const t = checkExperimentThresholds({ evaluationRuns: [] }, 0.8, [])
+    expect(t.passed).toBe(false)
+    expect(t.failedEvaluators).toContain('no-evaluations')
+  })
+
+  it('fails closed when every run is a skip', async () => {
+    const { checkExperimentThresholds } = await import('./shared')
+    const t = checkExperimentThresholds(
+      { evaluationRuns: [run('faithfulness', null), run('relevance', null)] },
+      0.8,
+      []
+    )
+    expect(t.passed).toBe(false)
+    expect(t.failedEvaluators).toContain('all-skipped')
+  })
+
+  it('excludes judge errors from pass rate and breaches on judge error rate > 10%', async () => {
+    const { checkExperimentThresholds } = await import('./shared')
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const runs = [
+      run('faithfulness', null, 'timeout'),
+      run('faithfulness', null, 'timeout'),
+      ...Array.from({ length: 8 }, () => run('relevance', 1))
+    ]
+    const t = checkExperimentThresholds({ evaluationRuns: runs }, 0.8, [])
+    // errors excluded from quality denominator: 8/8 scored runs pass
+    expect(t.passRate).toBe(1)
+    expect(t.judgeErrorCount).toBe(2)
+    expect(t.judgeErrorRate).toBeCloseTo(0.2)
+    // but the run still fails because the judge was degraded
+    expect(t.passed).toBe(false)
+    expect(t.failedEvaluators).toContain('judge-errors')
+    errorSpy.mockRestore()
+  })
+
+  it('passes when judge error rate is at most 10%', async () => {
+    const { checkExperimentThresholds } = await import('./shared')
+    const runs = [
+      run('faithfulness', null, 'timeout'),
+      ...Array.from({ length: 9 }, () => run('relevance', 1))
+    ]
+    const t = checkExperimentThresholds({ evaluationRuns: runs }, 0.8, [])
+    expect(t.passed).toBe(true)
+    expect(t.judgeErrorRate).toBeCloseTo(0.1)
+  })
+
+  it('any unsafe safety label forces threshold breach even though safety is excluded from pooled threshold', async () => {
+    const { checkExperimentThresholds } = await import('./shared')
+    const runs = [
+      run('safety', 0, null, 'unsafe'),
+      ...Array.from({ length: 10 }, () => run('relevance', 1))
+    ]
+    const t = checkExperimentThresholds({ evaluationRuns: runs }, 0.8, [
+      'safety',
+      'tool_selection'
+    ])
+    expect(t.passed).toBe(false)
+    expect(t.failedEvaluators).toContain('safety')
+    // safety stays out of the pooled quality rate
+    expect(t.totalEvaluations).toBe(10)
   })
 })
 
