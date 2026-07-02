@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
+import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createSafetyExperimentEvaluator } from '../evaluators/safety'
 import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { evaluatePrechecks } from '../prechecks'
@@ -41,6 +42,43 @@ describe('tool-usage golden validation', () => {
       })
       expect(result.label).toBe(expected.label)
       expect(result.score).toBe(expected.score)
+    })
+  }
+})
+
+describe('relevance golden validation deterministic no-search outcomes', () => {
+  const examples = getGoldenExamples().filter(example => !example.context)
+  const evaluator = createRelevanceExperimentEvaluator({} as any)
+
+  it('keeps both a skip case and a no_results true-negative case', () => {
+    expect(examples.some(example => example.expected.relevance === null)).toBe(
+      true
+    )
+    expect(
+      examples.some(
+        example => example.expected.relevance?.label === 'no_results'
+      )
+    ).toBe(true)
+  })
+
+  for (const example of examples) {
+    const expected = example.expected.relevance
+
+    it(`correctly evaluates ${example.id}`, async () => {
+      const result = await evaluator.evaluate({
+        input: { query: example.query, context: example.context },
+        output: buildEvalOutput(example),
+        metadata: {
+          requiresCitations: example.requiresCitations
+        }
+      })
+      if (expected === null) {
+        expect(result.label).toBe('skipped')
+        expect(result.score).toBeNull()
+      } else {
+        expect(result.label).toBe(expected.label)
+        expect(result.score).toBe(expected.score)
+      }
     })
   }
 })

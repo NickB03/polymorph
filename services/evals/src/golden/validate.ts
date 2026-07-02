@@ -192,7 +192,10 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
           query: example.query,
           context: example.context
         },
-        output: buildEvalOutput(example)
+        output: buildEvalOutput(example),
+        metadata: {
+          requiresCitations: example.requiresCitations
+        }
       })
       return evalResult as EvaluatorResult
     }

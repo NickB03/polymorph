@@ -733,6 +733,26 @@ export function getGoldenExamples(): GoldenExample[] {
         prechecks: { label: 'pass', score: 1 },
         tool_usage: null,
         faithfulness: null,
+        relevance: null,
+        response_quality: { label: 'good', score: 0.75 }
+      }
+    },
+    {
+      id: 'edge-required-search-missing',
+      query: 'Who won the 2024 Nobel Prize in Physics?',
+      context: '',
+      answer:
+        'The 2024 Nobel Prize in Physics was awarded jointly to John J. Hopfield and Geoffrey E. Hinton for foundational discoveries and inventions that enable machine learning with artificial neural networks. Hopfield created an associative memory that can store and reconstruct patterns in data, while Hinton co-invented the Boltzmann machine, laying the groundwork for modern deep learning.',
+      citations: [],
+      usedInteractiveOnlyOutput: false,
+      requiresTextAnswer: true,
+      requiresCitations: true,
+      allowsInteractiveOnly: false,
+      toolNames: [],
+      expected: {
+        prechecks: { label: 'missing_citations', score: 0 },
+        tool_usage: { label: 'tools_missing', score: 0 },
+        faithfulness: null,
         relevance: { label: 'no_results', score: 0 },
         response_quality: { label: 'good', score: 0.75 }
       }
