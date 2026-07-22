@@ -486,7 +486,20 @@ export function getSmoketestCases(count = 1): EvalCase[] {
 }
 
 export function getCasesForEvaluation(
-  suite: 'capability' | 'regression'
+  suite: 'capability' | 'regression',
+  caseIds: readonly string[] = []
 ): EvalCase[] {
-  return getCasesForSuite(suite)
+  const cases = getCasesForSuite(suite)
+  if (caseIds.length === 0) return cases
+
+  const casesById = new Map(cases.map(caseSpec => [caseSpec.id, caseSpec]))
+  const invalidCaseIds = caseIds.filter(caseId => !casesById.has(caseId))
+
+  if (invalidCaseIds.length > 0) {
+    throw new Error(
+      `[evals] EVAL_CASE_IDS contains invalid ${suite} case IDs: ${invalidCaseIds.join(', ')}`
+    )
+  }
+
+  return caseIds.map(caseId => casesById.get(caseId)!)
 }

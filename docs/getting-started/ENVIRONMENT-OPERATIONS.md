@@ -23,7 +23,7 @@ for local admin user setup and `/admin/evals` browser verification.
 ## Evals cron (Railway `polymorph-evals`)
 
 See [Deployment → Evals cron service](../operations/EVALS-CRON.md#evals-cron-service) for the full env matrix.
-The current repo baseline is OpenRouter-backed `google/gemini-3.1-flash-lite-preview` with `LOOKBACK_HOURS=48`, `SAMPLE_SIZE=10`, and `EVAL_CASE_CONCURRENCY=1`; the live cron cadence itself is managed in Railway.
+The current baseline runs `EVAL_RUN_MODE=regression` with `EVAL_CASE_IDS=reg-research-mode` and `EVAL_CASE_CONCURRENCY=1` every Monday at 15:00 UTC (`0 15 * * 1`, managed in Railway). The service code defaults to OpenRouter-backed `google/gemini-3.1-flash-lite-preview`, while Railway may preserve a deployed `JUDGE_MODEL` override. `LOOKBACK_HOURS` and `SAMPLE_SIZE` apply only to optional `traffic-monitor` audits.
 
 ## Tracing (Arize Phoenix)
 

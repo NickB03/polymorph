@@ -47,7 +47,10 @@ Are the retrieved search topics above relevant to the query? Respond with a sing
 export function createRelevanceExperimentEvaluator(model: LanguageModel) {
   const evaluator = createDocumentRelevanceEvaluator<RelevanceRecord>({
     model,
-    promptTemplate: RELEVANCE_PROMPT_TEMPLATE
+    promptTemplate: RELEVANCE_PROMPT_TEMPLATE,
+    // The system message is a trusted, static rubric. Phoenix forwards this
+    // AI SDK option even though its public evaluator type does not expose it.
+    ...{ allowSystemInMessages: true }
   })
 
   return asExperimentEvaluator({

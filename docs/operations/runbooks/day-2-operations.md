@@ -73,14 +73,22 @@ Weekly:
 
 ## 5) Evals cron failure modes
 
-The `polymorph-evals` Railway cron runs every 48 hours. Two distinct failure labels appear in the logs and indicate different root causes:
+The `polymorph-evals` Railway cron runs every Monday at 15:00 UTC. Its expected suite is `regression` with one attempted case (`reg-research-mode`). Two distinct failure labels appear in the logs and indicate different root causes:
 
-| Label                 | Meaning                                                                                | Investigation                                                                                                                    |
-| --------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `PHOENIX UNAVAILABLE` | Phoenix HTTP layer down — experiment creation failed; suite never reached the DB write | Check Phoenix service logs; verify volume mount; confirm `PHOENIX_HOST` resolves                                                 |
-| `DB WRITE FAILED`     | Phoenix experiment succeeded; the Postgres write to `eval_summaries` failed            | Check Postgres connectivity; verify the sampler's DB role has the right RLS context; confirm `eval_summaries` table is reachable |
+| Label                 | Meaning                                                                                | Investigation                                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PHOENIX UNAVAILABLE` | Phoenix HTTP layer down — experiment creation failed; suite never reached the DB write | Check Phoenix service logs; verify volume mount; confirm `PHOENIX_HOST` resolves                                                            |
+| `DB WRITE FAILED`     | Phoenix experiment succeeded; the Postgres write to `eval_summaries` failed            | Check Postgres connectivity; verify the eval service's `DATABASE_URL` role has the right RLS context; confirm `eval_summaries` is reachable |
 
 Threshold breaches are warning-only by default (`EVAL_EXIT_ON_THRESHOLD_BREACH=false`). Set `EVAL_EXIT_ON_THRESHOLD_BREACH=true` when threshold breaches should fail the cron; DB write failures still throw separately after the mode finishes. When the dashboard is missing a row but Phoenix shows the experiment, suspect `DB WRITE FAILED`.
+
+Configuration checklist:
+
+- `EVAL_RUN_MODE=regression`
+- `EVAL_CASE_IDS=reg-research-mode`
+- `EVAL_CASE_CONCURRENCY=1`
+
+`No chats found in lookback window` should appear only during a manually selected `traffic-monitor` run, never during the scheduled regression canary.
 
 Useful commands:
 
@@ -92,12 +100,12 @@ railway logs -s polymorph-evals --filter "DB WRITE FAILED"
 
 ## 6) On-demand actions
 
-| Need                                                 | Command                                                            |
-| ---------------------------------------------------- | ------------------------------------------------------------------ |
-| Restart Phoenix without rebuild                      | `railway restart -s phoenix`                                       |
-| Rebuild + redeploy Phoenix                           | `railway redeploy -s phoenix`                                      |
-| Rebuild evals image (does **not** run a cron firing) | `railway redeploy -s polymorph-evals`                              |
-| Fire an immediate one-off cron run                   | Railway dashboard → `polymorph-evals` → Deployments → ⋯ → Redeploy |
+| Need                                                 | Command                                                     |
+| ---------------------------------------------------- | ----------------------------------------------------------- |
+| Restart Phoenix without rebuild                      | `railway restart -s phoenix`                                |
+| Rebuild + redeploy Phoenix                           | `railway redeploy -s phoenix`                               |
+| Rebuild evals image (does **not** run a cron firing) | `railway redeploy -s polymorph-evals`                       |
+| Fire an immediate one-off cron run                   | Railway dashboard → `polymorph-evals` → Cron Runs → Run now |
 
 Verify Phoenix volume is real and attached:
 

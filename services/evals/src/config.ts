@@ -24,6 +24,7 @@ export interface EvalsConfig {
   lookbackHours: number
   databaseSslDisabled: boolean
   evalRunMode: EvalRunMode
+  caseIds: string[]
   evalRunnerUrl?: string
   evalRunnerSecret?: string
   evalRunnerTimeoutMs: number
@@ -56,6 +57,19 @@ function validFloat(raw: string | undefined, fallback: number): number {
   if (!raw) return fallback
   const n = parseFloat(raw)
   return Number.isNaN(n) ? fallback : n
+}
+
+function validStringList(raw: string | undefined): string[] {
+  if (!raw) return []
+
+  return [
+    ...new Set(
+      raw
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean)
+    )
+  ]
 }
 
 function parseRunMode(raw: string | undefined): EvalRunMode {
@@ -92,6 +106,14 @@ export function createConfig(
   options: CreateConfigOptions = { validateRunnerSettings: true }
 ): EvalsConfig {
   const evalRunMode = parseRunMode(env.EVAL_RUN_MODE)
+  const caseIds = validStringList(env.EVAL_CASE_IDS)
+
+  if (evalRunMode === 'all' && caseIds.length > 0) {
+    throw new Error(
+      '[evals] EVAL_CASE_IDS cannot be used with EVAL_RUN_MODE=all; select capability or regression'
+    )
+  }
+
   const smokeEnabled = validBool(env.SMOKE_ENABLED, true)
   const needsEvalRunner =
     options.validateRunnerSettings !== false &&
@@ -147,6 +169,7 @@ export function createConfig(
     lookbackHours: validInt(env.LOOKBACK_HOURS, 48),
     databaseSslDisabled: env.DATABASE_SSL_DISABLED === 'true',
     evalRunMode,
+    caseIds,
     evalRunnerUrl,
     evalRunnerSecret,
     evalRunnerTimeoutMs: validPositiveInt(
@@ -165,10 +188,9 @@ export function createConfig(
     exitOnThresholdBreach: validBool(env.EVAL_EXIT_ON_THRESHOLD_BREACH, false),
     caseConcurrency: validInt(env.EVAL_CASE_CONCURRENCY, 1),
     dbPoolMax: validInt(env.EVAL_DB_POOL_MAX, 5),
-    // `safety` has its own dedicated threshold logic; `tool_selection` is
-    // excluded while we baseline real production scores before deciding what
-    // "failing" means (see services/evals/src/evaluators/tool-selection.ts).
-    // Remove `tool_selection` from this default once a per-suite threshold is set.
+    // `safety` and `tool_selection` are excluded while we baseline real
+    // production scores before deciding what "failing" means for each.
+    // Remove them from this default once per-evaluator thresholds are set.
     excludeFromThreshold: env.EVAL_EXCLUDE_FROM_THRESHOLD
       ? env.EVAL_EXCLUDE_FROM_THRESHOLD.split(',').map(s => s.trim())
       : ['safety', 'tool_selection']
