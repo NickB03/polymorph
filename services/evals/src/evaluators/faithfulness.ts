@@ -53,7 +53,10 @@ Is the response above faithful or unfaithful given the query and the retrieved t
 export function createFaithfulnessExperimentEvaluator(model: LanguageModel) {
   const evaluator = createFaithfulnessEvaluator<FaithfulnessRecord>({
     model,
-    promptTemplate: FAITHFULNESS_PROMPT_TEMPLATE
+    promptTemplate: FAITHFULNESS_PROMPT_TEMPLATE,
+    // The system message is a trusted, static rubric. Phoenix forwards this
+    // AI SDK option even though its public evaluator type does not expose it.
+    ...{ allowSystemInMessages: true }
   })
 
   return asExperimentEvaluator({
