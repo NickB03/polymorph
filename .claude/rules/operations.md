@@ -2,9 +2,9 @@
 
 Railway CLI (`railway`, v4.35.2) and Phoenix CLI (`npx @arizeai/phoenix-cli`) manage production infrastructure. MCP servers for both are configured in `.mcp.json`.
 
-## Evals Service (`services/evals/`)
+## Railway evals cron (`polymorph-evals`)
 
-Offline LLM-judge evaluation pipeline running as a Railway cron service (every 48 hours, schedule managed in Railway). Deployed alongside `phoenix` on Railway. See `docs/operations/DEPLOYMENT.md` for configuration details.
+Offline LLM-judge evaluation pipeline running as a Railway cron service every Monday at 15:00 UTC (`0 15 * * 1`, schedule managed in Railway). The scheduled production baseline runs the single synthetic regression case `reg-research-mode`; `traffic-monitor` is reserved for intentional organic-traffic audits. Deployed alongside `phoenix` on Railway. See `docs/operations/EVALS-CRON.md` for configuration details.
 
 - Samples recent chats from Supabase Postgres (parameterized SQL)
 - Runs 9 evaluators: 3 deterministic (`prechecks`, `tool-usage`, `no-tool-placeholders`) + 6 LLM-judge (`faithfulness`, `relevance`, `response-quality`, `safety`, `citation-accuracy`, `tool-selection`) via `asExperimentEvaluator` shells
