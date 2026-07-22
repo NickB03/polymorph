@@ -13,6 +13,7 @@ coverage/
 dist/
 build/
 out/
+.husky/_/
 
 # Design binaries, generated review artifacts, and brand/static media are not
 # useful for code navigation and can make semantic extraction noisy.
