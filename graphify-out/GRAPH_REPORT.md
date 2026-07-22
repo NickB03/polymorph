@@ -1,16 +1,16 @@
 # Graph Report - vana-v2  (2026-07-21)
 
 ## Corpus Check
-- 987 files · ~490,037 words
+- 988 files · ~490,247 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 16542 nodes · 22449 edges · 1088 communities (1050 shown, 38 thin omitted)
+- 16544 nodes · 22454 edges · 1087 communities (1048 shown, 39 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 161 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4e96cbbd`
+- Built from commit: `2bc4f55f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1078,7 +1078,6 @@
 - [[_COMMUNITY_Community 1078|Community 1078]]
 - [[_COMMUNITY_Community 1079|Community 1079]]
 - [[_COMMUNITY_Community 1080|Community 1080]]
-- [[_COMMUNITY_Community 1081|Community 1081]]
 - [[_COMMUNITY_Community 1082|Community 1082]]
 - [[_COMMUNITY_Community 1083|Community 1083]]
 - [[_COMMUNITY_Community 1084|Community 1084]]
@@ -1100,10 +1099,10 @@
 ## Surprising Connections (you probably didn't know these)
 - `Generative UI` --conceptually_related_to--> `Generative UI Components Catalog`  [INFERRED]
   README.md → docs/architecture/GENERATIVE-UI-COMPONENTS.md
-- `Page()` --calls--> `getCurrentUserId()`  [EXTRACTED]
-  app/(chat)/page.tsx → lib/auth/get-current-user.ts
 - `RootLayout()` --calls--> `cn()`  [EXTRACTED]
   app/layout.tsx → lib/utils/index.ts
+- `ActivityFetchItemProps` --references--> `ToolPart`  [EXTRACTED]
+  components/activity/activity-fetch-item.tsx → lib/types/ai.ts
 - `ActivitySearchItemProps` --references--> `ToolPart`  [EXTRACTED]
   components/activity/activity-search-item.tsx → lib/types/ai.ts
 - `DiagnosticItem()` --calls--> `cn()`  [EXTRACTED]
@@ -1157,40 +1156,40 @@
 - **Evals Cron Pipeline (run, sample, failure modes)** — api_evals_limits_evals_run, api_evals_limits_sampler, day_2_operations_polymorph_evals_cron, day_2_operations_evals_cron_failure_modes [INFERRED 0.80]
 - **Canvas Artifact Lifecycle Endpoints** — api_canvas_endpoints_patch_draft, api_canvas_endpoints_post_versions, api_canvas_endpoints_post_restore, api_canvas_endpoints_view, api_canvas_endpoints_guest_token [EXTRACTED 0.90]
 
-## Communities (1088 total, 38 thin omitted)
+## Communities (1087 total, 39 thin omitted)
 
 ### Community 0 - "Project Root"
 Cohesion: 0.02
 Nodes (97): dependencies, ai, @ai-sdk/anthropic, @ai-sdk/gateway, @ai-sdk/google, @ai-sdk/openai, @ai-sdk/react, @arizeai/openinference-core (+89 more)
 
 ### Community 1 - "Utilities"
-Cohesion: 0.06
-Nodes (55): ChatAgent, Page(), Chat(), EMPTY_MESSAGES, ACTIVE_PILL_CLASSES, ModeSelector(), {
+Cohesion: 0.05
+Nodes (60): ACTIVE_PILL_CLASSES, ModeSelector(), {
   getCookieMock,
   mapSearchModeCookieValueMock,
   readSearchModeCookieMock,
   syncSearchModeMock
-}, getModelsConfig() (+47 more)
+}, getModelsConfig(), loadModelsConfig(), loadModelsConfigSync(), ModelsConfig, VALID_MODEL_TYPES (+52 more)
 
 ### Community 2 - "Components"
 Cohesion: 0.04
-Nodes (51): ActivitySearchItem(), ActivitySearchItemProps, CollapsibleMessage(), CollapsibleMessageProps, DragOverlay(), ProcessHeader(), ProcessHeaderProps, ReasoningContent (+43 more)
+Nodes (56): ActivitySearchItem(), ActivitySearchItemProps, CREATED_BY_ICON, CREATED_BY_LABELS, CollapsibleMessage(), CollapsibleMessageProps, DragOverlay(), ProcessHeader() (+48 more)
 
 ### Community 3 - "Database & Schema"
 Cohesion: 0.05
-Nodes (74): feedbackInputSchema, submitFeedback(), appendArtifactRevision(), AppendArtifactRevisionInput, ArtifactStatus, claimArtifactForRebuild(), clearAllChats(), CreateArtifactInput (+66 more)
+Nodes (69): MessageFeedbackUpdateResult, appendArtifactRevision(), AppendArtifactRevisionInput, ArtifactStatus, claimArtifactForRebuild(), clearAllChats(), CreateArtifactInput, createArtifactRecord() (+61 more)
 
 ### Community 4 - "Components"
-Cohesion: 0.04
-Nodes (76): ActivityFetchItem(), ActivityFetchItemProps, CanvasEmitter, CurrentCanvasArtifact, AnswerSection(), AnswerSectionProps, ChatMessages(), ChatMessagesProps (+68 more)
+Cohesion: 0.05
+Nodes (52): AnswerSection(), AnswerSectionProps, Attachment, AttachmentPreview(), AttachmentPreviewProps, ChatMessages(), ChatMessagesProps, toolTypes (+44 more)
 
 ### Community 5 - "Rate Limiting"
 Cohesion: 0.07
-Nodes (41): trackChatEvent(), AnalyticsProvider, ChatEventData, calculateConversationTurn(), handleChatAgentRoute(), POST(), checkAndEnforceOverallChatLimit(), checkOverallChatLimit() (+33 more)
+Nodes (38): feedbackInputSchema, submitFeedback(), mockCreateClient, mockGetUser, POST(), Feedback, checkAndEnforceOverallChatLimit(), checkOverallChatLimit() (+30 more)
 
 ### Community 6 - "Server Actions"
 Cohesion: 0.07
-Nodes (53): clearChats(), createChat(), createChatAndSaveMessage(), createChatWithFirstMessage(), deleteChat(), deleteMessagesAfter(), deleteMessagesFromIndex(), getChats() (+45 more)
+Nodes (55): clearChats(), createChat(), createChatAndSaveMessage(), createChatWithFirstMessage(), deleteChat(), deleteMessagesAfter(), deleteMessagesFromIndex(), getChats() (+47 more)
 
 ### Community 7 - "Charts"
 Cohesion: 0.06
@@ -1202,39 +1201,39 @@ Nodes (47): ChatStatus, { mockUseVoiceInput, mockUseVoicePlayer, isQuotaExhauste
 
 ### Community 9 - "Components"
 Cohesion: 0.06
-Nodes (38): DEFAULT_COLORS, ChatError(), ChatErrorProps, ForgotPasswordForm(), mockResetPasswordForEmail, LoginForm(), mockPush, mockRefresh (+30 more)
+Nodes (37): DEFAULT_COLORS, ChatError(), ChatErrorProps, ForgotPasswordForm(), mockResetPasswordForEmail, LoginForm(), mockPush, mockRefresh (+29 more)
 
 ### Community 10 - "Streaming"
 Cohesion: 0.05
-Nodes (59): createRelatedQuestionsStream(), createChatValidationContract(), AuthenticatedRouteContext, BaseValidatedRouteContext, ChatRouteTrigger, createRouteAgentFactory(), GuestRouteContext, ValidatedChatAgentRouteContext (+51 more)
+Nodes (66): createRelatedQuestionsStream(), ChatAgent, createChatValidationContract(), AuthenticatedRouteContext, BaseValidatedRouteContext, ChatRouteTrigger, createRouteAgentFactory(), GuestRouteContext (+58 more)
 
 ### Community 11 - "Tools"
-Cohesion: 0.17
-Nodes (18): ClientOutputValidationResult, getClientResolvedToolName(), getMaxSelections(), getMinSelections(), getToolPartInput(), isRecord(), OptionListInput, QuestionWizardInput (+10 more)
+Cohesion: 0.09
+Nodes (36): DisplayOptionListInput, DisplayOptionListOutput, inputSchema, optionSchema, outputSchema, toolName, serverTool, DisplayQuestionWizardInput (+28 more)
 
 ### Community 12 - "UI Primitives"
 Cohesion: 0.06
 Nodes (43): ErrorModal(), ErrorModalProps, FeedbackModalProps, Sentiment, NewUserDemoPopup(), NewUserDemoPopupProps, FilteredImagesState, FilterStatus (+35 more)
 
 ### Community 13 - "Canvas Engine"
-Cohesion: 0.14
-Nodes (18): buildCompileSteps(), COMPILE_STEP_DEFINITIONS, compileCanvasArtifact(), compileCanvasArtifactCore(), CompileCanvasArtifactInput, CompileCanvasArtifactResult, emitProgress(), getFirstErrorMessage() (+10 more)
+Cohesion: 0.15
+Nodes (15): buildTailwindCss(), extractCandidates(), buildCompileSteps(), COMPILE_STEP_DEFINITIONS, compileCanvasArtifactCore(), CompileCanvasArtifactInput, CompileCanvasArtifactResult, createVirtualPlugin() (+7 more)
 
 ### Community 14 - "Evals Service"
-Cohesion: 0.10
+Cohesion: 0.09
 Nodes (28): CitationAccuracySchema, createCitationAccuracyExperimentEvaluator(), createFaithfulnessExperimentEvaluator(), FAITHFULNESS_PROMPT_TEMPLATE, FaithfulnessRecord, mockEvaluate, createRelevanceExperimentEvaluator(), RELEVANCE_PROMPT_TEMPLATE (+20 more)
 
 ### Community 15 - "Canvas UI"
 Cohesion: 0.03
-Nodes (78): ActivityAction, ActivityContext, ActivityContextValue, ActivityItem, ActivityItemData, ActivityProvider(), ActivityState, initialState (+70 more)
+Nodes (67): ActivityAction, ActivityContext, ActivityContextValue, ActivityItem, ActivityItemData, ActivityProvider(), ActivityState, initialState (+59 more)
 
 ### Community 16 - "Tools"
-Cohesion: 0.13
-Nodes (24): BaseSearchProvider, SearchProvider, SearchTelemetryHook, BraveImageResult, BraveSearchProvider, BraveVideoResult, BraveWebResult, createHttpSearchError() (+16 more)
+Cohesion: 0.12
+Nodes (25): BaseSearchProvider, SearchProvider, SearchTelemetryHook, BraveImageResult, BraveSearchProvider, BraveVideoResult, BraveWebResult, createHttpSearchError() (+17 more)
 
 ### Community 17 - "Agents"
-Cohesion: 0.13
-Nodes (31): BUILD_AGENT_ACTIVE_TOOLS, createBuildAgent(), createBuildAgentDefinition(), isEvalMode(), ChatAgentDefinition, ChatAgentId, CreateChatAgentArgs, createConfiguredChatAgent() (+23 more)
+Cohesion: 0.10
+Nodes (40): BUILD_AGENT_ACTIVE_TOOLS, createBuildAgent(), createBuildAgentDefinition(), isEvalMode(), ChatAgentDefinition, ChatAgentId, CreateChatAgentArgs, createConfiguredChatAgent() (+32 more)
 
 ### Community 18 - "Evals Library"
 Cohesion: 0.09
@@ -1249,16 +1248,16 @@ Cohesion: 0.09
 Nodes (32): ScoreFeature(), SNAP, pct(), CollapsibleComparison(), SNAP, getLastSyncText(), Header(), BADGE_TINT (+24 more)
 
 ### Community 21 - "Components"
-Cohesion: 0.09
-Nodes (31): CitationContext, CitationContextValue, CitationProvider(), useCitation(), CitationLink, CitationLinkProps, CurrentUserAvatar(), Citing() (+23 more)
+Cohesion: 0.12
+Nodes (22): ActivityFetchItem(), ActivityFetchItemProps, CitationLinkProps, CurrentUserAvatar(), SearchResults(), SearchResultsProps, VideoCarouselDialogProps, VideoResultGrid() (+14 more)
 
 ### Community 22 - "Server Actions"
 Cohesion: 0.07
 Nodes (21): applyOrdering(), assertWriteAccess(), canReadRow(), clone(), columnProperty(), DeleteBuilder, dialect, Gate (+13 more)
 
 ### Community 23 - "UI Primitives"
-Cohesion: 0.09
-Nodes (33): CanvasEditor(), CanvasFile, ConflictState, cssExtensions, getExtensionsForFile(), isReadOnly(), jsonExtensions, tsxExtensions (+25 more)
+Cohesion: 0.08
+Nodes (34): CanvasEditor(), CanvasFile, ConflictState, cssExtensions, getExtensionsForFile(), isReadOnly(), jsonExtensions, tsxExtensions (+26 more)
 
 ### Community 24 - "Evals Library"
 Cohesion: 0.08
@@ -1269,8 +1268,8 @@ Cohesion: 0.05
 Nodes (47): Architecture RLS Policy Chain, Implementation details, Policy details, RLS Policy Chain, Architecture Streaming Overview, Key implementation details, Streaming Architecture, Two stream paths (+39 more)
 
 ### Community 26 - "Tool UI"
-Cohesion: 0.06
-Nodes (50): ResearchStatusLine(), ResearchStatusLineProps, DisplayToolPart, renderLoadingToolPlaceholder(), renderToolPart(), RenderToolPartArgs, ToolPartState, DisplayToolPart (+42 more)
+Cohesion: 0.08
+Nodes (34): ResearchStatusLine(), ResearchStatusLineProps, DisplayToolPart, renderLoadingToolPlaceholder(), renderToolPart(), RenderToolPartArgs, ToolPartState, DisplayToolPart (+26 more)
 
 ### Community 27 - "Canvas UI"
 Cohesion: 0.05
@@ -1278,51 +1277,51 @@ Nodes (40): created_at, current_revision_id, current_runtime_session_id, framewo
 
 ### Community 28 - "App Routes"
 Cohesion: 0.03
-Nodes (68): GET(), loadPublicChatArtifactState(), mockGetChat, mockGetCurrentUserId, mockLoadCanvasArtifactByChatId, mockLoadCanvasArtifactState, mockVerifyGuestCanvasToken, injectViewportFitStyles() (+60 more)
+Nodes (72): injectViewportFitStyles(), Opaque-origin sandbox isolation for canvas HTML, getPublicArtifactOwnerUserId(), serveCanvasHtml(), slugify(), exportCanvasArtifactHtml(), canvasSourceSchema, draftRequestSchema (+64 more)
 
 ### Community 29 - "React Hooks"
-Cohesion: 0.06
-Nodes (32): DataSection(), DataSectionProps, DefaultSkeleton(), SearchSkeleton(), PolymorphWordmark(), PolySuffixFluid(), SUFFIX_MAX_LEN, SUFFIX_WORDS (+24 more)
+Cohesion: 0.08
+Nodes (23): PolymorphWordmark(), PolySuffixFluid(), SUFFIX_MAX_LEN, SUFFIX_WORDS, close, connect, createMediaElementSource, createMediaStreamDestination (+15 more)
 
 ### Community 30 - "Evals Service"
-Cohesion: 0.12
-Nodes (33): getCorpusVersion(), createNoToolPlaceholdersExperimentEvaluator(), PLACEHOLDER_PATTERNS, runCapabilitySuite(), buildDatasetExamples(), buildEvalSummaryMetadata(), buildExperimentEvaluators(), buildExperimentTask() (+25 more)
+Cohesion: 0.13
+Nodes (31): getCorpusVersion(), createNoToolPlaceholdersExperimentEvaluator(), PLACEHOLDER_PATTERNS, runRegressionSuite(), buildDatasetExamples(), buildEvalSummaryMetadata(), buildExperimentEvaluators(), buildExperimentTask() (+23 more)
 
 ### Community 31 - "Canvas Engine"
-Cohesion: 0.07
-Nodes (45): Draft revision optimistic concurrency, buildArtifactState(), buildServiceCompileSteps(), CanvasExportResult, CanvasVersionResult, createCanvasArtifactFromSource(), emitValidationFailureProgress(), enforceVersionCap() (+37 more)
+Cohesion: 0.06
+Nodes (55): GET(), loadPublicChatArtifactState(), mockGetChat, mockGetCurrentUserId, mockLoadCanvasArtifactByChatId, mockLoadCanvasArtifactState, mockVerifyGuestCanvasToken, Draft revision optimistic concurrency (+47 more)
 
 ### Community 32 - "Tool UI"
-Cohesion: 0.09
-Nodes (25): GeoMapCenterViewportSchema, GeoMapClientProps, GeoMapClustering, GeoMapClusteringSchema, GeoMapFitTarget, GeoMapFitTargetSchema, GeoMapFitViewportSchema, GeoMapMarkerIcon (+17 more)
+Cohesion: 0.08
+Nodes (29): GeoMap, GeoMapEngine, GeoMapCenterViewportSchema, GeoMapClientProps, GeoMapClustering, GeoMapClusteringSchema, GeoMapFitTarget, GeoMapFitTargetSchema (+21 more)
 
 ### Community 33 - "Canvas Engine"
-Cohesion: 0.17
-Nodes (14): extractLocalBindings(), extractNamedBindings(), fixHallucinatedImports(), isSupportedSpecifier(), countSupportedAppDeclarations(), fixMissingDefaultExport(), SUPPORTED_APP_DECLARATIONS, runPreProcessors() (+6 more)
+Cohesion: 0.38
+Nodes (6): fixHallucinatedImports(), countSupportedAppDeclarations(), fixMissingDefaultExport(), SUPPORTED_APP_DECLARATIONS, runPreProcessors(), CanvasSourceFiles
 
 ### Community 34 - "Tool UI"
 Cohesion: 0.09
-Nodes (33): inferTodoProgress(), ResearchPlan(), ResearchPlanProps, toDomIdSegment(), mapTodoWriteToPlan(), STATUS_MAP, TodoWriteOutput, toPlanTodo() (+25 more)
+Nodes (34): inferTodoProgress(), ResearchPlan(), ResearchPlanProps, toDomIdSegment(), mapTodoWriteToPlan(), STATUS_MAP, TodoWriteOutput, toPlanTodo() (+26 more)
 
 ### Community 35 - "Tool UI"
 Cohesion: 0.05
 Nodes (39): expires_at, last_heartbeat_at, preview_url, provider, sandbox_id, started_at, status, name (+31 more)
 
 ### Community 36 - "Tool UI"
-Cohesion: 0.13
-Nodes (24): AgentArtifact(), artifactIcons, findNextNonBlankLineIndex(), getDownloadFilename(), isMarkdownTableSeparator(), parseCsvTable(), ParsedTable, parseMarkdownTable() (+16 more)
+Cohesion: 0.12
+Nodes (25): AgentArtifact(), artifactIcons, findNextNonBlankLineIndex(), getDownloadFilename(), isMarkdownTableSeparator(), parseCsvTable(), ParsedTable, parseMarkdownTable() (+17 more)
 
 ### Community 37 - "Components"
-Cohesion: 0.33
-Nodes (5): Attachment, AttachmentPreview(), AttachmentPreviewProps, UserFileSection(), UserFileSectionProps
+Cohesion: 0.06
+Nodes (46): ActivityItemRenderer(), CanvasCompileProgress(), CanvasCompileProgressProps, getElapsedTime(), CanvasDiagnosticsPanel(), DiagnosticItem(), DiagnosticSection(), hasDiagnostics() (+38 more)
 
 ### Community 38 - "Evals Library"
 Cohesion: 0.15
 Nodes (18): DASHBOARD_SUITE_BY_PERSISTED, getAlertedSuite(), getDefaultSuite(), getFirstAvailableSuite(), persistedSuiteToDashboardSuite(), BASE_SNAPSHOT, EMPTY, DashboardWithViews() (+10 more)
 
 ### Community 39 - "Evals Service"
-Cohesion: 0.11
-Nodes (32): RetryOptions, NonRetryable, Retryable, withRetry(), asRecord(), ChatSampleRow, citationsFromMessage(), citationsFromSearchOutput() (+24 more)
+Cohesion: 0.14
+Nodes (28): asRecord(), ChatSampleRow, citationsFromMessage(), citationsFromSearchOutput(), conversationMessageFromRow(), dedupeCitations(), dedupeSearchResults(), dedupeStrings() (+20 more)
 
 ### Community 40 - "Charts"
 Cohesion: 0.11
@@ -1333,16 +1332,16 @@ Cohesion: 0.14
 Nodes (22): getStrokeWidth(), RadarArea(), RadarAreaProps, RadarAxis(), RadarAxisProps, RadarChart(), RadarChartInnerProps, RadarChartProps (+14 more)
 
 ### Community 42 - "Evals Service"
-Cohesion: 0.12
-Nodes (22): getSmoketestCases(), runRegressionSuite(), authenticateSmokeUser(), buildCookieHeader(), consumeSse(), CookieStore, CookieToSet, CookieValue (+14 more)
+Cohesion: 0.20
+Nodes (11): runCapabilitySuite(), config, client, closeDb(), EvalSummaryPersistError, main(), validateJudgeCredentials(), buildPersistCause() (+3 more)
 
 ### Community 43 - "Tool UI"
-Cohesion: 0.04
-Nodes (81): DataTable, DataTableAccordionCard(), DataTableAccordionCardProps, DataTableBaseProps, DataTableBody(), DataTableCell(), DataTableCellProps, DataTableComponent (+73 more)
+Cohesion: 0.10
+Nodes (24): DataTableAccordionCard(), DataTableAccordionCardProps, DataTableBaseProps, DataTableBody(), DataTableCell(), DataTableCellProps, DataTableComponent, DataTableContext (+16 more)
 
 ### Community 44 - "Agents"
-Cohesion: 0.12
-Nodes (22): mockGenerateTrendingSuggestions, CATEGORY_SEED_OFFSETS, dayOfEpoch(), DEFAULT_SUGGESTIONS, seededRandom(), selectDailySuggestionsFromPool(), shuffleWithSeed(), SUGGESTION_POOL (+14 more)
+Cohesion: 0.11
+Nodes (25): mockGenerateTrendingSuggestions, ActionButtonsProps, ActionCategory, CATEGORY_SEED_OFFSETS, dayOfEpoch(), DEFAULT_SUGGESTIONS, seededRandom(), selectDailySuggestionsFromPool() (+17 more)
 
 ### Community 45 - "Evals UI"
 Cohesion: 0.08
@@ -1354,71 +1353,71 @@ Nodes (41): Display Tools (Server), Generative UI Display Tools, Schema example 
 
 ### Community 47 - "Tools"
 Cohesion: 0.11
-Nodes (25): POST(), AdvancedSearchInput, advancedSearchSchema, advancedSearchXNGSearch(), calculateRelevanceScore(), crawlPage(), extractPublicationDate(), fetchHtml() (+17 more)
+Nodes (27): AdvancedSearchInput, advancedSearchSchema, advancedSearchXNGSearch(), calculateRelevanceScore(), crawlPage(), extractPublicationDate(), fetchHtml(), fetchHtmlWithTimeout() (+19 more)
 
 ### Community 48 - "Components"
 Cohesion: 0.08
 Nodes (34): chat, research, quality, speed, models, byMode, relatedQuestions, trendingSuggestions (+26 more)
 
 ### Community 49 - "Evals Service"
-Cohesion: 0.06
-Nodes (38): CAPABILITY_CASES, getAllCases(), getCasesForEvaluation(), getCasesForSuite(), REGRESSION_CASES, SMOKE_CASES, buildGoldenSearchResults(), ExpectedEvaluatorResult (+30 more)
+Cohesion: 0.10
+Nodes (22): buildGoldenSearchResults(), ExpectedEvaluatorResult, GoldenExample, GoldenExampleInput, GoldenExpected, EvalContextLike, fixtureSample, mockCloseDb (+14 more)
 
 ### Community 50 - "Tool UI"
-Cohesion: 0.06
-Nodes (50): DynamicToolDisplay(), DynamicToolDisplayProps, DynamicToolPart, extractToolUIFromText(), tryRenderResult(), safeParseSerializableDataTable(), tryRenderResult(), tryRenderResult() (+42 more)
+Cohesion: 0.09
+Nodes (27): tryRenderResult(), tryRenderResult(), tryRenderResult(), tryRenderResult(), tryRenderResult(), tryRenderResult(), tryRenderResult(), tryRenderResult() (+19 more)
 
 ### Community 51 - "Components"
 Cohesion: 0.09
 Nodes (12): buildChatRequestBody(), getLatestGuestCanvasToken(), mockCanvasContext, mockChatMessages, mockChatPanel, mockNewUserDemoPopup, mockSidebar, mockToast (+4 more)
 
 ### Community 52 - "Components"
-Cohesion: 0.12
-Nodes (11): metadata, RootLayout(), viewport, ThemeProvider(), MockVisualViewport, VisualViewportHeight(), SoftKeyboardChangeDetail, Toaster() (+3 more)
+Cohesion: 0.10
+Nodes (12): metadata, RootLayout(), viewport, ThemeProvider(), MockVisualViewport, VisualViewportHeight(), SoftKeyboardChangeDetail, useSoftKeyboardOpen() (+4 more)
 
 ### Community 53 - "Evals Service"
 Cohesion: 0.13
-Nodes (22): asEvalRunResult(), buildEvalCaseResultRows(), clampPassRateBps(), classifyFailureMode(), collectAppModelIds(), computeEvaluatorAverages(), EvalCaseResultInsert, EvalFailureMode (+14 more)
+Nodes (24): asEvalRunResult(), buildEvalCaseResultRows(), clampPassRateBps(), classifyFailureMode(), collectAppModelIds(), computeEvaluatorAverages(), EvalCaseResultInsert, EvalFailureMode (+16 more)
 
 ### Community 54 - "Tools"
-Cohesion: 0.34
-Nodes (10): CanvasServiceResult, ResultComponent, CreateCanvasArtifactInput, CreateCanvasArtifactOutput, CreateCanvasArtifactSchema, inputSchema, outputSchema, toolName (+2 more)
+Cohesion: 0.25
+Nodes (11): CanvasServiceResult, ResultComponent, CreateCanvasArtifactInput, CreateCanvasArtifactOutput, inputSchema, outputSchema, toolName, createCanvasArtifactTool() (+3 more)
 
 ### Community 55 - "Agents"
-Cohesion: 0.11
-Nodes (23): canvasArtifactDataSchema, canvasArtifactEventDataSchema, canvasArtifactStatusDataSchema, canvasDiagnosticsDataSchema, chatMessageDataSchemas, chatMessageMetadataSchema, relatedQuestionsDataSchema, validateChatUIMessages() (+15 more)
+Cohesion: 0.10
+Nodes (24): canvasArtifactDataSchema, canvasArtifactEventDataSchema, canvasArtifactStatusDataSchema, canvasDiagnosticsDataSchema, chatMessageDataSchemas, chatMessageMetadataSchema, relatedQuestionsDataSchema, validateChatUIMessages() (+16 more)
 
 ### Community 56 - "Tool UI"
-Cohesion: 0.16
-Nodes (22): Citation(), CitationProps, extractDomain(), formatDate(), CitationList(), CitationListProps, OverflowIndicator(), OverflowIndicatorProps (+14 more)
+Cohesion: 0.18
+Nodes (21): Citation(), CitationProps, extractDomain(), formatDate(), CitationList(), CitationListProps, OverflowIndicator(), OverflowIndicatorProps (+13 more)
 
 ### Community 57 - "Tools"
-Cohesion: 0.07
-Nodes (32): ActionButtons(), ActionButtonsLayout, ActionButtonsProps, actionCategories, ActionCategory, ActiveView, promptSamples, ChatPanel() (+24 more)
+Cohesion: 0.06
+Nodes (42): ActionButtons(), ActionButtonsLayout, actionCategories, ActiveView, promptSamples, EMPTY_MESSAGES, ChatPanel(), FileUploadButton() (+34 more)
 
 ### Community 58 - "Tool UI"
 Cohesion: 0.08
 Nodes (34): chat, research, quality, speed, models, byMode, relatedQuestions, trendingSuggestions (+26 more)
 
 ### Community 59 - "Tool UI"
-Cohesion: 0.10
-Nodes (19): collectFitPoints(), dedupeClusterFeatures(), DEFAULT_CENTER, EMPTY_POLYGONS, EMPTY_ROUTES, GeoMapBbox, GeoMapClusterFeature, GeoMapClusterProperties (+11 more)
+Cohesion: 0.08
+Nodes (24): Geo-map react-leaflet adapter contract, collectFitPoints(), dedupeClusterFeatures(), DEFAULT_CENTER, EMPTY_POLYGONS, EMPTY_ROUTES, GeoMapBbox, GeoMapClusterFeature (+16 more)
 
 ### Community 60 - "Activity UI"
 Cohesion: 0.06
 Nodes (34): name, notNull, primaryKey, type, chat_id, current_revision_id, current_runtime_session_id, framework (+26 more)
 
 ### Community 61 - "Agents"
-Cohesion: 0.15
-Nodes (23): ChatSpecialist, chatSpecialistFixtures, competitorResearchSpecialist, defineChatSpecialist(), buildCompetitorResearchOutput(), buildEvidenceStatement(), collectFinalToolResult(), CompetitorEvidence (+15 more)
+Cohesion: 0.14
+Nodes (25): ChatSpecialist, chatSpecialistFixtures, competitorResearchSpecialist, competitorResearchSpecialistFixture, defineChatSpecialist(), buildCompetitorResearchOutput(), buildEvidenceStatement(), collectFinalToolResult() (+17 more)
 
 ### Community 62 - "lib"
-Cohesion: 0.17
-Nodes (11): FirecrawlClient, FirecrawlImageResult, FirecrawlImageSearchOptions, FirecrawlImageSearchResponse, FirecrawlImageSearchResponseData, FirecrawlNewsResult, FirecrawlSearchOptions, FirecrawlSearchResponse (+3 more)
+Cohesion: 0.15
+Nodes (13): FirecrawlClient, FirecrawlImageResult, FirecrawlImageSearchOptions, FirecrawlImageSearchResponse, FirecrawlImageSearchResponseData, FirecrawlNewsResult, FirecrawlSearchOptions, FirecrawlSearchResponse (+5 more)
 
 ### Community 63 - "Types"
-Cohesion: 0.10
-Nodes (24): INTERACTIVE_TOOL_PART_TYPES, DynamicToolConfig, DynamicToolPart, DynamicToolPartBase, DynamicToolPartInputAvailable, DynamicToolPartInputStreaming, DynamicToolPartOutputAvailable, DynamicToolPartOutputError (+16 more)
+Cohesion: 0.17
+Nodes (11): DataPart, dataPartSchema, DBMessage, DynamicToolInput, DynamicToolOutput, DynamicToolType, MCPGitHubInput, Metadata (+3 more)
 
 ### Community 64 - "Evals UI"
 Cohesion: 0.06
@@ -1437,12 +1436,12 @@ Cohesion: 0.08
 Nodes (25): devDependencies, eslint, eslint-config-next, eslint-plugin-simple-import-sort, husky, lint-staged, @opentelemetry/context-async-hooks, @opentelemetry/sdk-trace-base (+17 more)
 
 ### Community 68 - "Tools"
-Cohesion: 0.11
-Nodes (20): BaseCommunitySource, forbiddenImportSegments, getToolUiCommunitySourceById(), isPublicPackageImport(), ToolUiCommunitySource, ToolUiCommunitySourceId, ToolUiCommunitySourceType, ToolUiLocalCommunitySource (+12 more)
+Cohesion: 0.19
+Nodes (11): BaseCommunitySource, forbiddenImportSegments, getToolUiCommunitySourceById(), isPublicPackageImport(), ToolUiCommunitySource, ToolUiCommunitySourceId, ToolUiCommunitySourceType, ToolUiLocalCommunitySource (+3 more)
 
 ### Community 69 - "UI Primitives"
-Cohesion: 0.06
-Nodes (49): AdminShellTrigger(), mockUseSidebar, ADMIN_NAV_ITEMS, AdminNavItem, AdminSidebar(), mockUsePathname, AppSidebar(), FeedbackModal() (+41 more)
+Cohesion: 0.05
+Nodes (55): AdminShellTrigger(), mockUseSidebar, ADMIN_NAV_ITEMS, AdminNavItem, AdminSidebar(), mockUsePathname, AdminLayout(), getCurrentUser() (+47 more)
 
 ### Community 70 - "UI Primitives"
 Cohesion: 0.06
@@ -1450,23 +1449,23 @@ Nodes (34): name, notNull, primaryKey, type, chat_id, current_revision_id, curre
 
 ### Community 71 - "Tool UI"
 Cohesion: 0.14
-Nodes (14): writeText, Chart, ChartClientProps, ChartDataPoint, ChartProps, ChartSeries, ChartSeriesSchema, SerializableChart (+6 more)
+Nodes (24): ArrayValue(), ArrayValueProps, BadgeValue(), BadgeValueProps, BooleanValue(), BooleanValueProps, CurrencyValue(), CurrencyValueProps (+16 more)
 
 ### Community 72 - "Tools"
-Cohesion: 0.44
-Nodes (7): ResultComponent, DisplayCalloutInput, DisplayCalloutOutput, inputSchema, outputSchema, toolName, serverTool
+Cohesion: 0.38
+Nodes (8): ResultComponent, tryRenderResult(), DisplayCalloutInput, DisplayCalloutOutput, inputSchema, outputSchema, toolName, serverTool
 
 ### Community 73 - "Canvas Engine"
-Cohesion: 0.14
-Nodes (15): CANVAS_ALLOWED_FILES, CANVAS_DATA_PART_NAMES, CANVAS_REQUIRED_FILES, CANVAS_STATUSES, CANVAS_TOOL_NAMES, CANVAS_VERSION_CREATED_BY, classifyImport(), externalDependencySchema (+7 more)
+Cohesion: 0.13
+Nodes (16): CANVAS_ALLOWED_FILES, CANVAS_DATA_PART_NAMES, CANVAS_REQUIRED_FILES, CANVAS_STATUSES, CANVAS_TOOL_NAMES, CANVAS_VERSION_CREATED_BY, CanvasExternalDependency, classifyImport() (+8 more)
 
 ### Community 74 - "Tool UI"
-Cohesion: 0.15
-Nodes (15): DisplayToolPart, interactiveToolRendererByName, interactiveToolRendererEntries, InteractiveToolRendererEntry, RenderInteractiveToolPartArgs, ToolPartState, tryRenderInteractiveToolPart(), tryRenderRegisteredToolUiResult() (+7 more)
+Cohesion: 0.07
+Nodes (40): DynamicToolDisplay(), DynamicToolDisplayProps, DynamicToolPart, extractToolUIFromText(), CompetitorResearchResult(), CompetitorResearchResultProps, competitorResearchResultSchema, getMatrixColumns() (+32 more)
 
 ### Community 75 - "Tools"
-Cohesion: 0.26
-Nodes (11): canvasAllowedFileSet, canvasFilesSchema, ResultComponent, inputSchema, outputSchema, toolName, UpdateCanvasArtifactInput, UpdateCanvasArtifactOutput (+3 more)
+Cohesion: 0.38
+Nodes (9): ResultComponent, inputSchema, outputSchema, toolName, UpdateCanvasArtifactInput, UpdateCanvasArtifactOutput, UpdateCanvasArtifactSchema, serverTool (+1 more)
 
 ### Community 76 - "UI Primitives"
 Cohesion: 0.06
@@ -1494,7 +1493,7 @@ Nodes (13): AnimationState, AudioAnalyserOptions, Bar, BarVisualizer, BarVisuali
 
 ### Community 82 - "Tool UI"
 Cohesion: 0.15
-Nodes (19): SerializableCalloutSchema, ChartPropsSchema, SerializableCitationSchema, AlignEnum, CellValueSchema, formatSchema, inferRowIdKey(), isUniqueRowIdCandidate() (+11 more)
+Nodes (20): SerializableCalloutSchema, ChartPropsSchema, SerializableCitationSchema, AlignEnum, CellValueSchema, formatSchema, inferRowIdKey(), isUniqueRowIdCandidate() (+12 more)
 
 ### Community 83 - "Tools"
 Cohesion: 0.16
@@ -1505,16 +1504,16 @@ Cohesion: 0.06
 Nodes (34): name, notNull, primaryKey, type, chat_id, current_revision_id, current_runtime_session_id, framework (+26 more)
 
 ### Community 85 - "Tool UI"
-Cohesion: 0.10
-Nodes (29): ActionButtons(), ActionButtonsProps, ActionsProp, inferVariant(), NEGATORY_ACTION_IDS, normalizeActionsConfig(), EmbeddedActionHandler, EmbeddedActionsProps (+21 more)
+Cohesion: 0.08
+Nodes (37): OptionListOptionSchema, OptionListPropsSchema, OptionListSchemaInvariantInput, OptionListSelectionSchema, selectionToIds(), SerializableOptionListSchema, validateOptionListInvariants(), ActionButtons() (+29 more)
 
 ### Community 86 - "Project Root"
 Cohesion: 0.10
 Nodes (20): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+12 more)
 
 ### Community 87 - "Agents"
-Cohesion: 0.25
-Nodes (10): buildContext(), getTrendingContextFromBrave(), getTrendingContextFromExa(), getTrendingContextFromTavily(), PROVIDERS, sleep(), TRENDING_QUERIES, TrendingContextProvider (+2 more)
+Cohesion: 0.15
+Nodes (17): POST(), buildContext(), getTrendingContext(), getTrendingContextFromBrave(), getTrendingContextFromExa(), getTrendingContextFromTavily(), PROVIDERS, sleep() (+9 more)
 
 ### Community 88 - "Agents"
 Cohesion: 0.25
@@ -1529,56 +1528,56 @@ Cohesion: 0.17
 Nodes (18): LinkPreview(), LinkPreviewProps, SerializableLinkPreview, SerializableLinkPreviewSchemaContract, AspectRatio, AspectRatioSchema, getFitClass(), getRatioClass() (+10 more)
 
 ### Community 91 - "Tool UI"
-Cohesion: 0.11
-Nodes (26): CanvasCompileProgress(), CanvasCompileProgressProps, getElapsedTime(), TodoIcon, ElapsedTimeBadge(), formatElapsedTime(), formatElapsedTimeDateTime(), getReceiptState() (+18 more)
+Cohesion: 0.16
+Nodes (19): ElapsedTimeBadge(), formatElapsedTime(), formatElapsedTimeDateTime(), getReceiptState(), ProgressTrackerBaseProps, ProgressTrackerComponent, ProgressTrackerReceipt(), ProgressTrackerRoot() (+11 more)
 
 ### Community 92 - "Tool UI"
-Cohesion: 0.14
-Nodes (19): Callout, variantConfig, CalloutProps, CalloutVariant, CalloutVariantSchema, SerializableCallout, SerializableCalloutSchemaContract, SerializableGenerateImage (+11 more)
+Cohesion: 0.11
+Nodes (24): Chart, ChartClientProps, ChartDataPoint, ChartProps, ChartSeries, ChartSeriesSchema, SerializableChart, SerializableChartSchemaContract (+16 more)
 
 ### Community 93 - "Evals Service"
 Cohesion: 0.16
 Nodes (12): createToolSelectionExperimentEvaluator(), Label, parseLabel(), baseInput, makeEvaluator(), mockLm(), ToolSelectionInput, ToolSelectionOutput (+4 more)
 
 ### Community 94 - ""
-Cohesion: 0.11
-Nodes (17): Admin surface, Environment Operations Variables, Evals cron (Railway `polymorph-evals`), Production HTTPS Trace Enforcement, Phoenix Tracing Configuration, Tracing (Arize Phoenix), Troubleshooting research fetches, Vercel cron jobs (+9 more)
+Cohesion: 0.18
+Nodes (10): Admin Access, Admin surface, ADMIN_USER_ID, Environment Operations Variables, Evals cron (Railway `polymorph-evals`), Production HTTPS Trace Enforcement, Phoenix Tracing Configuration, Tracing (Arize Phoenix) (+2 more)
 
 ### Community 95 - "Project Root"
 Cohesion: 0.11
 Nodes (18): scripts, build, build:canvas-vendor, chat, dev, format, format:check, lint (+10 more)
 
 ### Community 96 - "Configuration"
-Cohesion: 0.16
-Nodes (9): baseEnvSchema, Env, envSchema, featureWarnings, getEnv(), isProductionTarget(), validateEnv(), register() (+1 more)
+Cohesion: 0.33
+Nodes (8): baseEnvSchema, Env, envSchema, featureWarnings, getEnv(), isProductionTarget(), validateEnv(), register()
 
 ### Community 97 - "Tools"
 Cohesion: 0.38
 Nodes (8): ResultComponent, citationSchema, DisplayCitationsInput, DisplayCitationsOutput, inputSchema, outputSchema, toolName, serverTool
 
 ### Community 98 - "lib"
-Cohesion: 0.16
-Nodes (16): GenerateImage(), GenerateImageProps, resolveSourceImageUrl(), FileSource, resolveFileSource(), isSafeStoragePath(), storagePathFromLegacyPublicUrl(), storagePathFromProxyUrl() (+8 more)
+Cohesion: 0.10
+Nodes (29): GenerateImage(), ResultComponent, tryRenderResult(), GenerateImageError, generateImageErrorSchema, GenerateImageInput, GenerateImageOutput, generateImageOutputSchema (+21 more)
 
 ### Community 99 - "lib"
-Cohesion: 0.24
-Nodes (10): MessageFeedbackUpdateResult, updateMessageFeedback(), RLS-scoped message metadata read/write pattern, POST(), annotatePhoenixUserFeedback(), getPhoenixBaseUrl(), mockAddSessionAnnotation, mockClient (+2 more)
+Cohesion: 0.13
+Nodes (18): CAPABILITY_CASES, getAllCases(), getCasesForEvaluation(), getCasesForSuite(), getSmoketestCases(), REGRESSION_CASES, SMOKE_CASES, authenticateSmokeUser() (+10 more)
 
 ### Community 100 - "Canvas Engine"
 Cohesion: 0.06
 Nodes (34): name, notNull, primaryKey, type, chat_id, current_revision_id, current_runtime_session_id, framework (+26 more)
 
 ### Community 101 - "Tool UI"
-Cohesion: 0.20
-Nodes (13): StaggerList(), ToolUIRoleSchema, SerializableTimeline, SerializableTimelineSchema, SerializableTimelineSchemaContract, TimelineEventCategory, TimelineEventCategorySchema, TimelineEventSchema (+5 more)
+Cohesion: 0.11
+Nodes (25): Callout, variantConfig, CalloutProps, CalloutVariant, CalloutVariantSchema, SerializableCallout, SerializableCalloutSchemaContract, StaggerList() (+17 more)
 
 ### Community 102 - "Tools"
-Cohesion: 0.27
-Nodes (12): ResultComponent, GenerateImageError, generateImageErrorSchema, GenerateImageInput, GenerateImageOutput, generateImageOutputSchema, inputSchema, outputSchema (+4 more)
+Cohesion: 0.14
+Nodes (17): DataPart, groupConsecutiveParts(), isDataPart(), isReasoningPart(), isTextPart(), isToolPart(), MessagePart, Props (+9 more)
 
 ### Community 103 - "Tool UI"
-Cohesion: 0.29
-Nodes (5): Geo-map react-leaflet adapter contract, GeoMapEngine, toSafeExpansionZoom(), createClusterIcon(), GeoMapOverlays()
+Cohesion: 0.15
+Nodes (13): CaseRunResults, EvalRunnerClientConfig, EvalRunnerHttpError, EvalRunnerRequest, runEvalCase(), baseCaseSpec, mockFetch, successBody (+5 more)
 
 ### Community 104 - ""
 Cohesion: 0.29
@@ -1629,8 +1628,8 @@ Cohesion: 0.06
 Nodes (34): name, notNull, primaryKey, type, chat_id, current_revision_id, current_runtime_session_id, framework (+26 more)
 
 ### Community 116 - "App Routes"
-Cohesion: 0.12
-Nodes (17): generateTrendingSuggestions(), getTrendingContext(), mockGenerateTrendingSuggestions, assertPrivilegedRole(), getPrivilegedDb(), trendingSuggestionsCache, GET(), Privileged RLS-bypass DB write pattern (+9 more)
+Cohesion: 0.13
+Nodes (16): generateTrendingSuggestions(), mockGenerateTrendingSuggestions, assertPrivilegedRole(), getPrivilegedDb(), trendingSuggestionsCache, GET(), Privileged RLS-bypass DB write pattern, evalRequestSchema (+8 more)
 
 ### Community 117 - "UI Primitives"
 Cohesion: 0.06
@@ -1694,7 +1693,7 @@ Nodes (11): engines, bun, license, lint-staged, *.{js,mjs,cjs,json,md,css,yaml,y
 
 ### Community 132 - "Tools"
 Cohesion: 0.14
-Nodes (20): CanvasToolContext, inputSchema, outputSchema, ReadCanvasArtifactInput, ReadCanvasArtifactOutput, ReadCanvasArtifactSchema, toolName, readCanvasArtifactTool() (+12 more)
+Nodes (21): CanvasToolContext, CreateCanvasArtifactSchema, inputSchema, outputSchema, ReadCanvasArtifactInput, ReadCanvasArtifactOutput, ReadCanvasArtifactSchema, toolName (+13 more)
 
 ### Community 133 - "Evals Service"
 Cohesion: 0.17
@@ -1713,12 +1712,12 @@ Cohesion: 0.06
 Nodes (33): file_fields_required, reasoning_text_required, text_text_required, tool_fields_required, tool_state_valid, name, value, parts_message_id_messages_id_fk (+25 more)
 
 ### Community 137 - "Utilities"
-Cohesion: 0.26
-Nodes (12): encoderCache, estimateTokenCount(), extractTextContent(), getEncoder(), getMaxAllowedTokens(), getModelContextInfo(), maybeTruncateMessages(), MODEL_CONTEXT_WINDOWS (+4 more)
+Cohesion: 0.19
+Nodes (10): DataTable, DataTableProvider(), FormatConfig, Column, createDataTableRowKeys(), getDataTableMobileDescriptionId(), getRowIdentifier(), parseNumericLike() (+2 more)
 
 ### Community 138 - "Auth"
 Cohesion: 0.12
-Nodes (20): AdminLayout(), getCurrentUser(), mockCreateClient, mockGetUser, getConfiguredAdminUserId(), isAdminUserId(), isCurrentUserAdmin(), mockGetCurrentUser (+12 more)
+Nodes (19): updateMessageFeedback(), getSafeRedirectPath(), RLS-scoped message metadata read/write pattern, GET(), POST(), GET(), annotatePhoenixUserFeedback(), getPhoenixBaseUrl() (+11 more)
 
 ### Community 139 - ""
 Cohesion: 0.09
@@ -1757,8 +1756,8 @@ Cohesion: 0.06
 Nodes (33): expires_at, last_heartbeat_at, preview_url, provider, sandbox_id, started_at, name, notNull (+25 more)
 
 ### Community 148 - ""
-Cohesion: 0.10
-Nodes (19): 1. `correct_tool` (positive class, score 1.0), 2. `wrong_tool` (negative class, score 0.0), 3. `missing_tool` (negative class, score 0.0), 4. `not_required` (null, skipped), Chat agent tool roster (as of 2026-05-20), Failure taxonomy, Judging rubric (for the LLM judge prompt), Method (+11 more)
+Cohesion: 0.18
+Nodes (10): 1. `correct_tool` (positive class, score 1.0), 2. `wrong_tool` (negative class, score 0.0), 3. `missing_tool` (negative class, score 0.0), 4. `not_required` (null, skipped), Chat agent tool roster (as of 2026-05-20), Failure taxonomy, Judging rubric (for the LLM judge prompt), Method (+2 more)
 
 ### Community 149 - "lib"
 Cohesion: 0.06
@@ -2102,7 +2101,7 @@ Nodes (31): message_id, provider_metadata, reasoning_text, source_url_source_id,
 
 ### Community 285 - "Community 285"
 Cohesion: 0.06
-Nodes (31): data_content, source_document_media_type, source_url_title, source_url_url, text_text, tool_state, name, notNull (+23 more)
+Nodes (31): data_content, source_document_media_type, source_url_title, source_url_url, tool_dynamic_output, tool_state, name, notNull (+23 more)
 
 ### Community 286 - "Community 286"
 Cohesion: 0.06
@@ -2225,8 +2224,8 @@ Cohesion: 0.07
 Nodes (27): created_at, prompt_summary, sandbox_snapshot_ref, source_files, triggering_message_id, default, name, notNull (+19 more)
 
 ### Community 316 - "Community 316"
-Cohesion: 0.07
-Nodes (27): created_at, prompt_summary, sandbox_snapshot_ref, source_files, triggering_message_id, default, name, notNull (+19 more)
+Cohesion: 0.08
+Nodes (26): name, notNull, primaryKey, type, artifact_id, prompt_summary, sandbox_snapshot_ref, source_files (+18 more)
 
 ### Community 317 - "Community 317"
 Cohesion: 0.07
@@ -2249,12 +2248,12 @@ Cohesion: 0.07
 Nodes (27): created_at, prompt_summary, sandbox_snapshot_ref, source_files, triggering_message_id, default, name, notNull (+19 more)
 
 ### Community 322 - "Community 322"
-Cohesion: 0.07
-Nodes (27): created_at, prompt_summary, sandbox_snapshot_ref, source_files, triggering_message_id, default, name, notNull (+19 more)
+Cohesion: 0.08
+Nodes (26): name, notNull, primaryKey, type, artifact_id, prompt_summary, sandbox_snapshot_ref, source_files (+18 more)
 
 ### Community 323 - "Community 323"
 Cohesion: 0.08
-Nodes (26): data_content, data_prefix, order, tool_dynamic_name, tool_dynamic_type, name, notNull, primaryKey (+18 more)
+Nodes (26): data_content, data_id, reasoning_text, tool_dynamic_input, tool_dynamic_name, name, notNull, primaryKey (+18 more)
 
 ### Community 324 - "Community 324"
 Cohesion: 0.08
@@ -2266,11 +2265,11 @@ Nodes (26): name, notNull, primaryKey, type, chat_id, id, metadata, role (+18 mo
 
 ### Community 326 - "Community 326"
 Cohesion: 0.08
-Nodes (26): id, title, visibility, name, notNull, primaryKey, type, checkConstraints (+18 more)
+Nodes (26): title, user_id, visibility, checkConstraints, columns, compositePrimaryKeys, foreignKeys, isRLSEnabled (+18 more)
 
 ### Community 327 - "Community 327"
 Cohesion: 0.08
-Nodes (26): message, page_url, sentiment, user_agent, user_id, name, notNull, primaryKey (+18 more)
+Nodes (26): id, message, page_url, sentiment, user_agent, name, notNull, primaryKey (+18 more)
 
 ### Community 328 - "Community 328"
 Cohesion: 0.08
@@ -2281,20 +2280,20 @@ Cohesion: 0.08
 Nodes (26): title, user_id, visibility, checkConstraints, columns, compositePrimaryKeys, foreignKeys, isRLSEnabled (+18 more)
 
 ### Community 330 - "Community 330"
-Cohesion: 0.08
-Nodes (26): name, notNull, primaryKey, type, chat_id, id, metadata, role (+18 more)
+Cohesion: 0.10
+Nodes (21): name, notNull, primaryKey, type, chat_id, metadata, role, updated_at (+13 more)
 
 ### Community 331 - "Community 331"
-Cohesion: 0.08
-Nodes (26): id, message, page_url, sentiment, user_agent, name, notNull, primaryKey (+18 more)
+Cohesion: 0.10
+Nodes (21): message, page_url, sentiment, user_agent, name, notNull, primaryKey, type (+13 more)
 
 ### Community 332 - "Community 332"
-Cohesion: 0.08
-Nodes (26): id, message, page_url, sentiment, user_agent, name, notNull, primaryKey (+18 more)
+Cohesion: 0.10
+Nodes (21): message, page_url, sentiment, user_agent, name, notNull, primaryKey, type (+13 more)
 
 ### Community 333 - "Community 333"
-Cohesion: 0.08
-Nodes (26): name, notNull, primaryKey, type, chat_id, id, metadata, role (+18 more)
+Cohesion: 0.07
+Nodes (27): name, notNull, primaryKey, type, chat_id, created_at, metadata, role (+19 more)
 
 ### Community 334 - "Community 334"
 Cohesion: 0.08
@@ -2309,8 +2308,8 @@ Cohesion: 0.08
 Nodes (26): name, notNull, primaryKey, type, artifact_id, prompt_summary, sandbox_snapshot_ref, source_files (+18 more)
 
 ### Community 337 - "Community 337"
-Cohesion: 0.08
-Nodes (26): name, notNull, primaryKey, type, artifact_id, prompt_summary, sandbox_snapshot_ref, source_files (+18 more)
+Cohesion: 0.07
+Nodes (27): created_at, prompt_summary, sandbox_snapshot_ref, source_files, triggering_message_id, default, name, notNull (+19 more)
 
 ### Community 338 - "Community 338"
 Cohesion: 0.08
@@ -2446,11 +2445,11 @@ Nodes (23): created_at, title, user_id, visibility, default, name, notNull, prim
 
 ### Community 371 - "Community 371"
 Cohesion: 0.09
-Nodes (23): created_at, title, user_id, visibility, default, name, notNull, primaryKey (+15 more)
+Nodes (22): id, title, user_id, visibility, name, notNull, primaryKey, type (+14 more)
 
 ### Community 372 - "Community 372"
 Cohesion: 0.09
-Nodes (23): created_at, title, user_id, visibility, default, name, notNull, primaryKey (+15 more)
+Nodes (22): id, title, user_id, visibility, name, notNull, primaryKey, type (+14 more)
 
 ### Community 373 - "Community 373"
 Cohesion: 0.09
@@ -2458,7 +2457,7 @@ Nodes (23): created_at, title, user_id, visibility, default, name, notNull, prim
 
 ### Community 374 - "Community 374"
 Cohesion: 0.09
-Nodes (23): created_at, title, user_id, visibility, default, name, notNull, primaryKey (+15 more)
+Nodes (22): id, title, user_id, visibility, name, notNull, primaryKey, type (+14 more)
 
 ### Community 375 - "Community 375"
 Cohesion: 0.09
@@ -2558,7 +2557,7 @@ Nodes (22): columns, concurrently, isUnique, method, name, with, columns, concur
 
 ### Community 399 - "Community 399"
 Cohesion: 0.09
-Nodes (22): id, title, user_id, visibility, name, notNull, primaryKey, type (+14 more)
+Nodes (23): created_at, title, user_id, visibility, default, name, notNull, primaryKey (+15 more)
 
 ### Community 400 - "Community 400"
 Cohesion: 0.09
@@ -2633,8 +2632,8 @@ Cohesion: 0.09
 Nodes (22): id, title, user_id, visibility, name, notNull, primaryKey, type (+14 more)
 
 ### Community 418 - "Community 418"
-Cohesion: 0.09
-Nodes (22): created_at, created_by, source_snapshot, version_number, default, name, notNull, primaryKey (+14 more)
+Cohesion: 0.10
+Nodes (21): name, notNull, primaryKey, type, artifact_id, created_by, source_snapshot, version_number (+13 more)
 
 ### Community 419 - "Community 419"
 Cohesion: 0.09
@@ -2642,7 +2641,7 @@ Nodes (22): id, title, user_id, visibility, name, notNull, primaryKey, type (+14
 
 ### Community 420 - "Community 420"
 Cohesion: 0.10
-Nodes (21): data_prefix, reasoning_text, source_document_title, tool_error_text, name, notNull, primaryKey, type (+13 more)
+Nodes (21): data_prefix, reasoning_text, source_document_title, tool_dynamic_name, name, notNull, primaryKey, type (+13 more)
 
 ### Community 421 - "Community 421"
 Cohesion: 0.10
@@ -2653,28 +2652,28 @@ Cohesion: 0.10
 Nodes (21): message, page_url, sentiment, user_agent, name, notNull, primaryKey, type (+13 more)
 
 ### Community 423 - "Community 423"
-Cohesion: 0.10
-Nodes (21): name, notNull, primaryKey, type, chat_id, metadata, role, updated_at (+13 more)
+Cohesion: 0.07
+Nodes (27): name, notNull, primaryKey, type, chat_id, created_at, metadata, role (+19 more)
 
 ### Community 424 - "Community 424"
-Cohesion: 0.10
-Nodes (21): data_content, tool_fetch_input, tool_fetch_output, tool_todoRead_output, name, notNull, primaryKey, type (+13 more)
+Cohesion: 0.40
+Nodes (5): data_content, name, notNull, primaryKey, type
 
 ### Community 425 - "Community 425"
-Cohesion: 0.10
-Nodes (21): name, notNull, primaryKey, type, chat_id, metadata, role, updated_at (+13 more)
+Cohesion: 0.08
+Nodes (26): name, notNull, primaryKey, type, chat_id, id, metadata, role (+18 more)
 
 ### Community 426 - "Community 426"
-Cohesion: 0.10
-Nodes (21): data_content, tool_fetch_input, tool_fetch_output, tool_todoRead_output, name, notNull, primaryKey, type (+13 more)
+Cohesion: 0.40
+Nodes (5): data_content, name, notNull, primaryKey, type
 
 ### Community 427 - "Community 427"
 Cohesion: 0.10
 Nodes (21): message, page_url, sentiment, user_agent, name, notNull, primaryKey, type (+13 more)
 
 ### Community 428 - "Community 428"
-Cohesion: 0.10
-Nodes (21): name, notNull, primaryKey, type, chat_id, metadata, role, updated_at (+13 more)
+Cohesion: 0.08
+Nodes (26): name, notNull, primaryKey, type, chat_id, id, metadata, role (+18 more)
 
 ### Community 429 - "Community 429"
 Cohesion: 0.10
@@ -2721,8 +2720,8 @@ Cohesion: 0.10
 Nodes (21): name, notNull, primaryKey, type, artifact_id, created_by, source_snapshot, version_number (+13 more)
 
 ### Community 440 - "Community 440"
-Cohesion: 0.10
-Nodes (21): name, notNull, primaryKey, type, artifact_id, created_by, source_snapshot, version_number (+13 more)
+Cohesion: 0.09
+Nodes (22): created_at, created_by, source_snapshot, version_number, default, name, notNull, primaryKey (+14 more)
 
 ### Community 441 - "Community 441"
 Cohesion: 0.10
@@ -2745,8 +2744,8 @@ Cohesion: 0.10
 Nodes (21): name, notNull, primaryKey, type, artifact_id, created_by, source_snapshot, version_number (+13 more)
 
 ### Community 446 - "Community 446"
-Cohesion: 0.10
-Nodes (21): name, notNull, primaryKey, type, artifact_id, created_by, source_snapshot, version_number (+13 more)
+Cohesion: 0.09
+Nodes (22): created_at, created_by, source_snapshot, version_number, default, name, notNull, primaryKey (+14 more)
 
 ### Community 447 - "Community 447"
 Cohesion: 0.10
@@ -2913,8 +2912,8 @@ Cohesion: 0.12
 Nodes (16): Constraints, Error Responses, Error Responses, Example, Example, Example, GET `/api/chats`, POST `/api/feedback` (+8 more)
 
 ### Community 486 - "Community 486"
-Cohesion: 0.23
-Nodes (13): decodeMappedIpv4(), GET(), getClientIp(), getFirstThumbnailUrl(), getTrustedIpCandidate(), isPrivateIpv4(), isPrivateIpv6(), isSafeRedirectTarget() (+5 more)
+Cohesion: 0.24
+Nodes (11): AccordionContent, AccordionItem, AccordionTrigger, Table, TableBody, TableCaption, TableCell, TableFooter (+3 more)
 
 ### Community 487 - "Community 487"
 Cohesion: 0.12
@@ -2942,7 +2941,7 @@ Nodes (16): file_fields_required, reasoning_text_required, text_text_required, t
 
 ### Community 493 - "Community 493"
 Cohesion: 0.12
-Nodes (16): file_media_type, message_id, reasoning_text, name, notNull, primaryKey, type, name (+8 more)
+Nodes (16): file_media_type, reasoning_text, source_document_source_id, name, notNull, primaryKey, type, columns (+8 more)
 
 ### Community 494 - "Community 494"
 Cohesion: 0.12
@@ -2970,7 +2969,7 @@ Nodes (16): file_fields_required, reasoning_text_required, text_text_required, t
 
 ### Community 500 - "Community 500"
 Cohesion: 0.12
-Nodes (16): file_media_type, message_id, source_document_source_id, name, notNull, primaryKey, type, name (+8 more)
+Nodes (16): file_media_type, message_id, reasoning_text, name, notNull, primaryKey, type, name (+8 more)
 
 ### Community 501 - "Community 501"
 Cohesion: 0.12
@@ -2982,7 +2981,7 @@ Nodes (16): file_fields_required, reasoning_text_required, text_text_required, t
 
 ### Community 503 - "Community 503"
 Cohesion: 0.12
-Nodes (16): file_media_type, reasoning_text, source_document_source_id, name, notNull, primaryKey, type, columns (+8 more)
+Nodes (16): file_media_type, message_id, reasoning_text, name, notNull, primaryKey, type, name (+8 more)
 
 ### Community 504 - "Community 504"
 Cohesion: 0.12
@@ -3349,8 +3348,8 @@ Cohesion: 0.23
 Nodes (11): Vendor global registry shim (__CANVAS_VENDOR__), buildChunk(), buildVendorEntry(), createShimPlugin(), EXPORT_NAMES, VENDOR_DIR, assertChunkMapComplete(), getAllBundleSpecifiers() (+3 more)
 
 ### Community 595 - "Community 595"
-Cohesion: 0.33
-Nodes (9): DisplayOptionListInput, DisplayOptionListOutput, inputSchema, optionSchema, outputSchema, toolName, serverTool, createClientResolvedDisplayTool() (+1 more)
+Cohesion: 0.20
+Nodes (13): ColumnKey, DataTableClientProps, DataTableContextValue, DataTableProps, DataTableRowData, DataTableSerializableProps, FormatFor, JsonPrimitive (+5 more)
 
 ### Community 596 - "Community 596"
 Cohesion: 0.14
@@ -3481,12 +3480,12 @@ Cohesion: 0.15
 Nodes (10): Callout, Files, Quick check, Citation, Files, Quick check, Generative UI Components Catalog, Files (+2 more)
 
 ### Community 628 - "Community 628"
-Cohesion: 0.17
-Nodes (6): createVirtualPlugin(), getVendorChunkName(), SPECIFIER_TO_CHUNK, VENDOR_CHUNKS, VENDOR_JS_MAP, VendorChunk
+Cohesion: 0.20
+Nodes (4): SPECIFIER_TO_CHUNK, VENDOR_CHUNKS, VENDOR_JS_MAP, VendorChunk
 
 ### Community 629 - "Community 629"
-Cohesion: 0.36
-Nodes (9): DisplayQuestionWizardInput, DisplayQuestionWizardOutput, inputSchema, outputSchema, toolName, wizardSelectionSchema, wizardStepOptionSchema, wizardStepSchema (+1 more)
+Cohesion: 0.14
+Nodes (14): eval_summaries Table, PHOENIX UNAVAILABLE vs DB WRITE FAILED Labels, Judge Model (gemini-flash-lite), Railway Redeploy Manual-Run Caveat, polymorph-evals Pipeline, Chat Agent Tool Roster, correct_tool Label, Custom > Generic Rubric Principle (+6 more)
 
 ### Community 630 - "Community 630"
 Cohesion: 0.15
@@ -3501,8 +3500,8 @@ Cohesion: 0.15
 Nodes (13): id, message_id, order, name, notNull, primaryKey, type, name (+5 more)
 
 ### Community 633 - "Community 633"
-Cohesion: 0.15
-Nodes (12): Deployment Guide, Enabling tracing on Vercel, Evals cron service, Healthcheck expectations, Observability (Phoenix on Railway), Persistence verification (run after every Phoenix deploy), Production minimum requirements, Recommended targets (+4 more)
+Cohesion: 0.11
+Nodes (16): Deployment Guide, Enabling tracing on Vercel, Evals cron service, Healthcheck expectations, Observability (Phoenix on Railway), Persistence verification (run after every Phoenix deploy), Production minimum requirements, Recommended targets (+8 more)
 
 ### Community 634 - "Community 634"
 Cohesion: 0.17
@@ -3517,8 +3516,8 @@ Cohesion: 0.17
 Nodes (11): Error Handling, Key Files, Mermaid Diagram, Overview, Parallel Operations, Smooth Streaming, Stream Lifecycle, Streaming Architecture (+3 more)
 
 ### Community 637 - "Community 637"
-Cohesion: 0.17
-Nodes (11): Admin Access, AI Provider Options, Baseline Bootstrap, Cloud Deployment Controls, Configuration Guide, Geo and Map Tools, Optional Features, Optional secondary/fallback providers (+3 more)
+Cohesion: 0.20
+Nodes (9): AI Provider Options, Baseline Bootstrap, Cloud Deployment Controls, Configuration Guide, Geo and Map Tools, Optional Features, Optional secondary/fallback providers, Primary search provider (recommended) (+1 more)
 
 ### Community 638 - "Community 638"
 Cohesion: 0.17
@@ -3529,8 +3528,8 @@ Cohesion: 0.17
 Nodes (12): Advanced Usage, chat-cli.ts, Features, Message Regeneration, Model Types, Options, Output Format, Requirements (+4 more)
 
 ### Community 640 - "Community 640"
-Cohesion: 0.27
-Nodes (9): AllowedPackage, CANVAS_ALLOWED_PACKAGE_IMPORTS_LIST, CANVAS_ALLOWED_PACKAGES, exactSet, isAllowedCanvasImport(), prefixEntries, makeArtifactRow(), VENDOR_CHUNK_DEFS as single source of truth for allowed packages (+1 more)
+Cohesion: 0.18
+Nodes (12): AllowedPackage, CANVAS_ALLOWED_PACKAGE_IMPORTS_LIST, CANVAS_ALLOWED_PACKAGES, exactSet, isAllowedCanvasImport(), prefixEntries, makeArtifactRow(), VENDOR_CHUNK_DEFS as single source of truth for allowed packages (+4 more)
 
 ### Community 641 - "Community 641"
 Cohesion: 0.18
@@ -3589,8 +3588,8 @@ Cohesion: 0.22
 Nodes (8): Context Window Management, Model Context Windows, Processing Stages, Research Agent Models and Context, Token Counting, Truncation Strategy, Token Counting (js-tiktoken cl100k_base), Message Truncation Strategy
 
 ### Community 655 - "Community 655"
-Cohesion: 0.28
-Nodes (4): GeoMap, GeoMapEngine, GeoMapProps, GeoMapStyle
+Cohesion: 0.46
+Nodes (4): trackChatEvent(), AnalyticsProvider, ChatEventData, calculateConversationTurn()
 
 ### Community 656 - "Community 656"
 Cohesion: 0.22
@@ -3601,12 +3600,12 @@ Cohesion: 0.22
 Nodes (9): parts_message_id_messages_id_fk, columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo (+1 more)
 
 ### Community 658 - "Community 658"
-Cohesion: 0.22
-Nodes (9): parts_message_id_messages_id_fk, columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo (+1 more)
+Cohesion: 0.12
+Nodes (16): parts_message_id_messages_id_fk, columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo (+8 more)
 
 ### Community 659 - "Community 659"
-Cohesion: 0.22
-Nodes (9): parts_message_id_messages_id_fk, columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo (+1 more)
+Cohesion: 0.12
+Nodes (16): parts_message_id_messages_id_fk, columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo (+8 more)
 
 ### Community 660 - "Community 660"
 Cohesion: 0.22
@@ -3621,8 +3620,8 @@ Cohesion: 0.22
 Nodes (9): parts_message_id_messages_id_fk, columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo (+1 more)
 
 ### Community 663 - "Community 663"
-Cohesion: 0.28
-Nodes (5): createAdvancedSearchResult(), advancedSearchMocks, collectAdvancedSearchChunks(), collectSearchChunks(), providerSearchMocks
+Cohesion: 0.21
+Nodes (6): createAdvancedSearchResult(), advancedSearchMocks, advancedSearchMocks, collectAdvancedSearchChunks(), collectSearchChunks(), providerSearchMocks
 
 ### Community 664 - "Community 664"
 Cohesion: 0.29
@@ -3651,10 +3650,6 @@ Nodes (7): 1. Client Sends Message, 2. API Route Receives Request, 3. Model Sele
 ### Community 670 - "Community 670"
 Cohesion: 0.39
 Nodes (7): assembleCanvasHtml(), AssembleCanvasHtmlOptions, buildAssetScript(), buildBootstrapScript(), escapeHtml(), escapeStyleContent(), CanvasMetaJson
-
-### Community 671 - "Community 671"
-Cohesion: 0.29
-Nodes (4): buildTailwindCss(), extractCandidates(), loadBuildTailwindCss(), { mockCompile, mockReadFileSync }
 
 ### Community 672 - "Community 672"
 Cohesion: 0.46
@@ -3685,8 +3680,8 @@ Cohesion: 0.25
 Nodes (6): Files, Option List, Quick check, Files, Progress Tracker, Quick check
 
 ### Community 679 - "Community 679"
-Cohesion: 0.54
-Nodes (4): uploadFileToSupabase(), MyError, POST(), getErrorMessage()
+Cohesion: 0.29
+Nodes (7): columns, concurrently, isUnique, method, name, with, chats_user_id_idx
 
 ### Community 680 - "Community 680"
 Cohesion: 0.29
@@ -3704,21 +3699,17 @@ Nodes (6): Architecture, Getting Started, Operations, Polymorph Documentation, R
 Cohesion: 0.29
 Nodes (7): columns, concurrently, isUnique, method, name, with, chats_user_id_idx
 
-### Community 684 - "Community 684"
-Cohesion: 0.29
-Nodes (7): columns, concurrently, isUnique, method, name, with, chats_user_id_created_at_idx
-
 ### Community 685 - "Community 685"
-Cohesion: 0.29
-Nodes (7): compositePrimaryKeys, isRLSEnabled, name, schema, uniqueConstraints, tables, public.parts
+Cohesion: 0.33
+Nodes (6): created_at, default, name, notNull, primaryKey, type
 
 ### Community 686 - "Community 686"
 Cohesion: 0.29
 Nodes (7): columns, concurrently, isUnique, method, name, with, chats_user_id_idx
 
 ### Community 687 - "Community 687"
-Cohesion: 0.29
-Nodes (7): compositePrimaryKeys, isRLSEnabled, name, schema, uniqueConstraints, tables, public.parts
+Cohesion: 0.40
+Nodes (4): mockAssembleCanvasHtml, mockBuildTailwindCss, mockEsbuildBuild, mockValidateCanvasSource
 
 ### Community 688 - "Community 688"
 Cohesion: 0.29
@@ -3753,8 +3744,8 @@ Cohesion: 0.33
 Nodes (5): Configuration, How It Works, Invocation, Research Agent Tool Loop, The ToolLoopAgent Pattern
 
 ### Community 696 - "Community 696"
-Cohesion: 0.33
-Nodes (6): created_at, default, name, notNull, primaryKey, type
+Cohesion: 0.40
+Nodes (5): tool_error_text, name, notNull, primaryKey, type
 
 ### Community 697 - "Community 697"
 Cohesion: 0.33
@@ -3854,7 +3845,7 @@ Nodes (5): tool_dynamic_input, name, notNull, primaryKey, type
 
 ### Community 721 - "Community 721"
 Cohesion: 0.40
-Nodes (5): tool_dynamic_name, name, notNull, primaryKey, type
+Nodes (5): data_prefix, name, notNull, primaryKey, type
 
 ### Community 722 - "Community 722"
 Cohesion: 0.40
@@ -3918,7 +3909,7 @@ Nodes (5): type, name, notNull, primaryKey, type
 
 ### Community 737 - "Community 737"
 Cohesion: 0.40
-Nodes (5): data_id, name, notNull, primaryKey, type
+Nodes (5): order, name, notNull, primaryKey, type
 
 ### Community 738 - "Community 738"
 Cohesion: 0.40
@@ -3942,7 +3933,7 @@ Nodes (5): provider_metadata, name, notNull, primaryKey, type
 
 ### Community 743 - "Community 743"
 Cohesion: 0.40
-Nodes (5): reasoning_text, name, notNull, primaryKey, type
+Nodes (5): tool_dynamic_type, name, notNull, primaryKey, type
 
 ### Community 744 - "Community 744"
 Cohesion: 0.40
@@ -3986,7 +3977,7 @@ Nodes (5): text_text, name, notNull, primaryKey, type
 
 ### Community 754 - "Community 754"
 Cohesion: 0.40
-Nodes (5): tool_dynamic_input, name, notNull, primaryKey, type
+Nodes (5): text_text, name, notNull, primaryKey, type
 
 ### Community 755 - "Community 755"
 Cohesion: 0.40
@@ -4378,7 +4369,7 @@ Nodes (5): tool_dynamic_name, name, notNull, primaryKey, type
 
 ### Community 852 - "Community 852"
 Cohesion: 0.40
-Nodes (5): tool_dynamic_output, name, notNull, primaryKey, type
+Nodes (5): message_id, name, notNull, primaryKey, type
 
 ### Community 853 - "Community 853"
 Cohesion: 0.40
@@ -4606,7 +4597,7 @@ Nodes (5): source_document_snippet, name, notNull, primaryKey, type
 
 ### Community 909 - "Community 909"
 Cohesion: 0.40
-Nodes (5): source_document_source_id, name, notNull, primaryKey, type
+Nodes (5): tool_fetch_input, name, notNull, primaryKey, type
 
 ### Community 910 - "Community 910"
 Cohesion: 0.40
@@ -4717,8 +4708,8 @@ Cohesion: 0.40
 Nodes (5): file_filename, name, notNull, primaryKey, type
 
 ### Community 937 - "Community 937"
-Cohesion: 0.40
-Nodes (5): file_media_type, name, notNull, primaryKey, type
+Cohesion: 0.12
+Nodes (16): file_media_type, reasoning_text, source_document_url, name, notNull, primaryKey, type, columns (+8 more)
 
 ### Community 938 - "Community 938"
 Cohesion: 0.40
@@ -4738,7 +4729,7 @@ Nodes (5): provider_metadata, name, notNull, primaryKey, type
 
 ### Community 942 - "Community 942"
 Cohesion: 0.40
-Nodes (5): reasoning_text, name, notNull, primaryKey, type
+Nodes (5): tool_fetch_output, name, notNull, primaryKey, type
 
 ### Community 943 - "Community 943"
 Cohesion: 0.40
@@ -4762,7 +4753,7 @@ Nodes (5): source_document_title, name, notNull, primaryKey, type
 
 ### Community 948 - "Community 948"
 Cohesion: 0.40
-Nodes (5): source_document_url, name, notNull, primaryKey, type
+Nodes (5): tool_todoRead_output, name, notNull, primaryKey, type
 
 ### Community 949 - "Community 949"
 Cohesion: 0.40
@@ -4853,8 +4844,8 @@ Cohesion: 0.40
 Nodes (5): file_filename, name, notNull, primaryKey, type
 
 ### Community 971 - "Community 971"
-Cohesion: 0.40
-Nodes (5): file_media_type, name, notNull, primaryKey, type
+Cohesion: 0.12
+Nodes (16): file_media_type, message_id, reasoning_text, name, notNull, primaryKey, type, name (+8 more)
 
 ### Community 972 - "Community 972"
 Cohesion: 0.40
@@ -4862,7 +4853,7 @@ Nodes (5): file_url, name, notNull, primaryKey, type
 
 ### Community 973 - "Community 973"
 Cohesion: 0.40
-Nodes (5): message_id, name, notNull, primaryKey, type
+Nodes (5): tool_fetch_input, name, notNull, primaryKey, type
 
 ### Community 974 - "Community 974"
 Cohesion: 0.40
@@ -4874,7 +4865,7 @@ Nodes (5): provider_metadata, name, notNull, primaryKey, type
 
 ### Community 976 - "Community 976"
 Cohesion: 0.40
-Nodes (5): reasoning_text, name, notNull, primaryKey, type
+Nodes (5): tool_fetch_output, name, notNull, primaryKey, type
 
 ### Community 977 - "Community 977"
 Cohesion: 0.40
@@ -5006,7 +4997,7 @@ Nodes (5): provider_metadata, name, notNull, primaryKey, type
 
 ### Community 1009 - "Community 1009"
 Cohesion: 0.40
-Nodes (5): reasoning_text, name, notNull, primaryKey, type
+Nodes (5): tool_todoRead_output, name, notNull, primaryKey, type
 
 ### Community 1010 - "Community 1010"
 Cohesion: 0.40
@@ -5138,7 +5129,7 @@ Nodes (5): file_url, name, notNull, primaryKey, type
 
 ### Community 1042 - "Community 1042"
 Cohesion: 0.40
-Nodes (5): message_id, name, notNull, primaryKey, type
+Nodes (5): source_document_source_id, name, notNull, primaryKey, type
 
 ### Community 1043 - "Community 1043"
 Cohesion: 0.40
@@ -5265,8 +5256,8 @@ Cohesion: 0.40
 Nodes (5): API Errors, Authentication Errors, Command Examples for Testing, General Issues, Troubleshooting
 
 ### Community 1074 - "Community 1074"
-Cohesion: 0.50
-Nodes (3): ToolUiToolName, getToolUiServerToolNames(), ToolUiServerTools
+Cohesion: 0.40
+Nodes (5): source_document_source_id, name, notNull, primaryKey, type
 
 ### Community 1075 - "Community 1075"
 Cohesion: 0.50
@@ -5299,22 +5290,22 @@ Nodes (3): Files, Quick check, Timeline
 ## Knowledge Gaps
 - **10761 isolated node(s):** `husky.sh script`, `@railway/mcp-server`, `@arizeai/phoenix-mcp`, `PHOENIX_HOST`, `firecrawl-mcp` (+10756 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **38 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **39 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `Components` to `Utilities`, `Components`, `Charts`, `React Hooks`, `Components`, `UI Primitives`, `Canvas UI`, `Community 655`, `Evals Library`, `Evals UI`, `Components`, `UI Primitives`, `Tool UI`, `React Hooks`, `Tool UI`, `Tool UI`, `Charts`, `Charts`, `Tool UI`, `Evals UI`, `Components`, `Tool UI`, `Tools`, `UI Primitives`, `UI Primitives`, `Tool UI`, `Tool UI`, `Tool UI`, `Tool UI`, `Tool UI`, `Tool UI`, `Evals UI`?**
+- **Why does `cn()` connect `Components` to `Utilities`, `Components`, `Server Actions`, `Charts`, `React Hooks`, `Components`, `UI Primitives`, `Canvas UI`, `Evals Library`, `Evals UI`, `Components`, `UI Primitives`, `Tool UI`, `React Hooks`, `Tool UI`, `Tool UI`, `Tool UI`, `Components`, `Charts`, `Charts`, `Tool UI`, `Evals UI`, `Components`, `Tool UI`, `Tools`, `Tool UI`, `UI Primitives`, `Tool UI`, `UI Primitives`, `Tool UI`, `Tool UI`, `Tool UI`, `Tool UI`, `Tools`, `Community 486`, `Evals UI`?**
   _High betweenness centrality (0.011) - this node is a cross-community bridge._
-- **Why does `UIMessage` connect `Components` to `Utilities`, `Database & Schema`, `lib`, `Rate Limiting`, `Server Actions`, `React Hooks`, `Streaming`, `Tools`, `Tool UI`, `Canvas UI`, `Tool UI`, `Components`, `Components`, `Agents`, `Tools`, `Types`?**
+- **Why does `UIMessage` connect `Components` to `Database & Schema`, `Components`, `Server Actions`, `Tools`, `React Hooks`, `Streaming`, `Tools`, `Tool UI`, `Community 655`, `Canvas UI`, `Tool UI`, `Components`, `Agents`, `Tools`, `Types`?**
   _High betweenness centrality (0.002) - this node is a cross-community bridge._
-- **Why does `columns` connect `Community 426` to `Community 687`, `Community 968`, `Community 969`, `Community 970`, `Community 971`, `Community 972`, `Community 332`, `Community 973`, `Community 974`, `Community 975`, `Community 976`, `Community 977`, `Community 978`, `Community 979`, `Community 980`, `Community 981`, `Community 982`, `Community 983`, `Community 984`, `Community 985`, `Community 986`, `Community 987`, `Community 988`, `Community 989`, `Community 990`, `Community 991`, `Community 992`, `Community 993`, `Community 994`, `Community 995`, `Community 996`, `Community 997`, `Community 998`, `Community 999`, `Community 1000`, `Community 1001`, `Community 373`?**
+- **Why does `columns` connect `Community 971` to `Community 659`, `Community 425`, `Community 426`, `Community 968`, `Community 969`, `Community 970`, `Community 972`, `Community 973`, `Community 974`, `Community 975`, `Community 976`, `Community 977`, `Community 978`, `Community 979`, `Community 980`, `Community 981`, `Community 982`, `Community 983`, `Community 984`, `Community 985`, `Community 986`, `Community 987`, `Community 988`, `Community 989`, `Community 990`, `Community 991`, `Community 992`, `Community 993`, `Community 994`, `Community 995`, `Community 996`, `Community 997`, `Community 998`, `Community 999`, `Community 1000`, `Community 1001`, `Community 1009`, `Community 373`?**
   _High betweenness centrality (0.001) - this node is a cross-community bridge._
 - **What connects `husky.sh script`, `@railway/mcp-server`, `@arizeai/phoenix-mcp` to the rest of the system?**
   _10784 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Project Root` be split into smaller, more focused modules?**
   _Cohesion score 0.020618556701030927 - nodes in this community are weakly interconnected._
 - **Should `Utilities` be split into smaller, more focused modules?**
-  _Cohesion score 0.05917721518987342 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05485232067510549 - nodes in this community are weakly interconnected._
 - **Should `Components` be split into smaller, more focused modules?**
-  _Cohesion score 0.04493207941483804 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.04040404040404041 - nodes in this community are weakly interconnected._
