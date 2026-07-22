@@ -91,7 +91,7 @@ export async function runCasesConcurrently(
 
 export async function runJudgedSuite(suite: 'capability' | 'regression') {
   const runtimeConfig = createConfig()
-  const cases = getCasesForEvaluation(suite)
+  const cases = getCasesForEvaluation(suite, runtimeConfig.caseIds)
 
   console.log(`[evals] Running ${suite} suite with ${cases.length} cases`)
 

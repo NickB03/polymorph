@@ -16,6 +16,7 @@ const mockConfig = vi.hoisted(() => ({
   evalRunnerTimeoutMs: 300000,
   scoreThreshold: 0.8,
   exitOnThresholdBreach: false,
+  caseIds: [] as string[],
   caseConcurrency: 3,
   dbPoolMax: 5,
   excludeFromThreshold: ['safety']
@@ -768,6 +769,7 @@ describe('runJudgedSuite', () => {
     mockCreateOpenRouter.mockReturnValue(mockProvider)
     mockProvider.mockReturnValue({ id: 'judge-model' })
     mockConfig.judgeReasoningEnabled = false
+    mockConfig.caseIds = []
     mockPersistEvalSummary.mockResolvedValue(undefined)
   })
 
@@ -784,7 +786,7 @@ describe('runJudgedSuite', () => {
     const { runJudgedSuite } = await import('./shared')
     const result = await runJudgedSuite('capability')
 
-    expect(mockGetCasesForEvaluation).toHaveBeenCalledWith('capability')
+    expect(mockGetCasesForEvaluation).toHaveBeenCalledWith('capability', [])
     expect(mockRunEvalCase).toHaveBeenCalledTimes(2)
     expect(mockCreateDataset).toHaveBeenCalledTimes(1)
     expect(mockCreateOrGetDataset).not.toHaveBeenCalled()
@@ -800,6 +802,23 @@ describe('runJudgedSuite', () => {
         failedEvaluators: []
       })
     )
+  })
+
+  it('passes configured case ids into corpus selection', async () => {
+    mockConfig.caseIds = ['reg-research-mode']
+    const cases = [makeCaseSpec('reg-research-mode', 'regression')]
+    mockGetCasesForEvaluation.mockReturnValue(cases)
+    mockRunEvalCase.mockResolvedValueOnce(makeRunResult('reg-research-mode'))
+
+    const { runJudgedSuite } = await import('./shared')
+    const result = await runJudgedSuite('regression')
+
+    expect(mockGetCasesForEvaluation).toHaveBeenCalledWith('regression', [
+      'reg-research-mode'
+    ])
+    expect(mockRunEvalCase).toHaveBeenCalledTimes(1)
+    expect(result.attemptedCases).toBe(1)
+    expect(result.totalCases).toBe(1)
   })
 
   it('throws when all cases fail', async () => {
@@ -893,7 +912,7 @@ describe('runJudgedSuite', () => {
     const { runJudgedSuite } = await import('./shared')
     const result = await runJudgedSuite('regression')
 
-    expect(mockGetCasesForEvaluation).toHaveBeenCalledWith('regression')
+    expect(mockGetCasesForEvaluation).toHaveBeenCalledWith('regression', [])
     expect(result.suite).toBe('regression')
   })
 
