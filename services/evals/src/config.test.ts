@@ -6,6 +6,47 @@ afterEach(() => {
 })
 
 describe('createConfig', () => {
+  it('defaults EVAL_CASE_IDS to every case in the selected suite', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+
+    const { createConfig } = await import('./config')
+    const config = createConfig({
+      DATABASE_URL: 'postgresql://db',
+      PHOENIX_HOST: 'http://phoenix',
+      PHOENIX_API_KEY: 'phoenix-key',
+      EVAL_RUN_MODE: 'regression',
+      EVAL_RUNNER_URL: 'https://app.example.com',
+      EVAL_RUNNER_SECRET: 'secret'
+    })
+
+    expect(config.caseIds).toEqual([])
+  })
+
+  it('normalizes and deduplicates EVAL_CASE_IDS', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+
+    const { createConfig } = await import('./config')
+    const config = createConfig({
+      DATABASE_URL: 'postgresql://db',
+      PHOENIX_HOST: 'http://phoenix',
+      PHOENIX_API_KEY: 'phoenix-key',
+      EVAL_RUN_MODE: 'regression',
+      EVAL_RUNNER_URL: 'https://app.example.com',
+      EVAL_RUNNER_SECRET: 'secret',
+      EVAL_CASE_IDS: ' reg-direct-answer,reg-follow-up,reg-direct-answer,, '
+    })
+
+    expect(config.caseIds).toEqual(['reg-direct-answer', 'reg-follow-up'])
+  })
+
   it('defaults to capability mode', async () => {
     vi.stubEnv('DATABASE_URL', 'postgresql://db')
     vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
