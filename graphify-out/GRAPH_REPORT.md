@@ -9,8 +9,9 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `13b98212`
-- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- AST signature: 4042 symbols from 875 code files (Graphify 0.8.38).
+- Run `uvx --from graphifyy==0.8.38 python scripts/check-graph-freshness.py` to check whether the committed graph is stale.
+- A commit-SHA comparison is not a freshness signal because documentation and ignore-only commits can follow extraction without changing the code graph.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)

@@ -75,10 +75,10 @@ Weekly:
 
 The `polymorph-evals` Railway cron runs every Monday at 15:00 UTC. Its expected suite is `regression` with one attempted case (`reg-research-mode`). Two distinct failure labels appear in the logs and indicate different root causes:
 
-| Label                 | Meaning                                                                                | Investigation                                                                                                                    |
-| --------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `PHOENIX UNAVAILABLE` | Phoenix HTTP layer down — experiment creation failed; suite never reached the DB write | Check Phoenix service logs; verify volume mount; confirm `PHOENIX_HOST` resolves                                                 |
-| `DB WRITE FAILED`     | Phoenix experiment succeeded; the Postgres write to `eval_summaries` failed            | Check Postgres connectivity; verify the sampler's DB role has the right RLS context; confirm `eval_summaries` table is reachable |
+| Label                 | Meaning                                                                                | Investigation                                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PHOENIX UNAVAILABLE` | Phoenix HTTP layer down — experiment creation failed; suite never reached the DB write | Check Phoenix service logs; verify volume mount; confirm `PHOENIX_HOST` resolves                                                            |
+| `DB WRITE FAILED`     | Phoenix experiment succeeded; the Postgres write to `eval_summaries` failed            | Check Postgres connectivity; verify the eval service's `DATABASE_URL` role has the right RLS context; confirm `eval_summaries` is reachable |
 
 Threshold breaches are warning-only by default (`EVAL_EXIT_ON_THRESHOLD_BREACH=false`). Set `EVAL_EXIT_ON_THRESHOLD_BREACH=true` when threshold breaches should fail the cron; DB write failures still throw separately after the mode finishes. When the dashboard is missing a row but Phoenix shows the experiment, suspect `DB WRITE FAILED`.
 

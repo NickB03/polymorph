@@ -47,6 +47,31 @@ describe('createConfig', () => {
     expect(config.caseIds).toEqual(['reg-direct-answer', 'reg-follow-up'])
   })
 
+  it('rejects EVAL_CASE_IDS with all mode before any suite can run', async () => {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    vi.stubEnv('EVAL_RUNNER_URL', 'https://app.example.com')
+    vi.stubEnv('EVAL_RUNNER_SECRET', 'secret')
+
+    const { createConfig } = await import('./config')
+
+    expect(() =>
+      createConfig({
+        DATABASE_URL: 'postgresql://db',
+        PHOENIX_HOST: 'http://phoenix',
+        PHOENIX_API_KEY: 'phoenix-key',
+        EVAL_RUN_MODE: 'all',
+        EVAL_CASE_IDS: 'cap-long-input',
+        EVAL_RUNNER_URL: 'https://app.example.com',
+        EVAL_RUNNER_SECRET: 'secret',
+        SMOKE_ENABLED: 'false'
+      })
+    ).toThrow(
+      '[evals] EVAL_CASE_IDS cannot be used with EVAL_RUN_MODE=all; select capability or regression'
+    )
+  })
+
   it('defaults to capability mode', async () => {
     vi.stubEnv('DATABASE_URL', 'postgresql://db')
     vi.stubEnv('PHOENIX_HOST', 'http://phoenix')

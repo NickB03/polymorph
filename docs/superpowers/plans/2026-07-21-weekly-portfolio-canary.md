@@ -19,7 +19,8 @@
 - Preserve `EVAL_CASE_CONCURRENCY=1`.
 - An unset `EVAL_CASE_IDS` must retain today's behavior and run every case in the selected judged suite.
 - An invalid or cross-suite case ID must fail before any app replay, Phoenix experiment, or database write.
-- The nominal weekly workload is one app replay plus six LLM judge requests, with model-selected search-provider calls for the research case; existing retries may raise the LLM ceiling to three app replay attempts plus eighteen judge requests and may repeat search work.
+- A non-empty `EVAL_CASE_IDS` must be rejected with `EVAL_RUN_MODE=all` before any suite runs; exact selection is supported only for one judged suite at a time.
+- The nominal weekly workload is one app replay plus six LLM judge requests, with model-selected search-provider calls for the research case. Existing retries define an envelope of up to three app replay attempts plus eighteen judge requests and may repeat search work. Because each research replay can contain multiple internal model/search steps, this is not a total LLM-call ceiling.
 - Railway configuration must be read before mutation and read back after mutation.
 - A Railway deployment is complete only after its latest deployment reaches terminal `SUCCESS`.
 
@@ -712,7 +713,7 @@ Expected after that firing:
 - The scheduled Railway mode no longer queries organic chats.
 - A week with zero user traffic still creates one honest synthetic regression row.
 - The dashboard and Phoenix agree on the suite, case ID, attempted count, and total count.
-- The baseline uses seven nominal LLM requests per week, plus model-selected search-provider calls, and creates no seeded production chat.
+- The baseline uses one app replay plus six nominal judge requests per week and creates no seeded production chat. The research replay can perform multiple internal model/search steps, so it is not counted as a single LLM request.
 - All eval tests, eval typecheck, root lint, root typecheck, and formatting checks pass.
 - Operations documentation consistently describes the Monday 15:00 UTC schedule and exact case selector.
 - Railway's latest deployment is terminal `SUCCESS`, the manual canary exits, and the next scheduled firing is registered.

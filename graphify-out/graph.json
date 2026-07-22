@@ -15,7 +15,7 @@
         "relation": "participate_in",
         "confidence": "EXTRACTED",
         "confidence_score": 1.0,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/components/tool-ui/agent-artifact/README.md"
+        "source_file": "components/tool-ui/agent-artifact/README.md"
       },
       {
         "id": "ai_provider_registry_mechanism",
@@ -28,7 +28,7 @@
         "relation": "form",
         "confidence": "EXTRACTED",
         "confidence_score": 1.0,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/AI-PROVIDER-REGISTRY.md"
+        "source_file": "docs/architecture/AI-PROVIDER-REGISTRY.md"
       },
       {
         "id": "generative_ui_component_family",
@@ -45,7 +45,7 @@
         "relation": "participate_in",
         "confidence": "EXTRACTED",
         "confidence_score": 1.0,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/GENERATIVE-UI-COMPONENTS.md"
+        "source_file": "docs/architecture/GENERATIVE-UI-COMPONENTS.md"
       },
       {
         "id": "generative_ui_render_pipeline",
@@ -59,7 +59,7 @@
         "relation": "participate_in",
         "confidence": "EXTRACTED",
         "confidence_score": 0.9,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/GENERATIVE-UI-OVERVIEW.md"
+        "source_file": "docs/architecture/GENERATIVE-UI-OVERVIEW.md"
       },
       {
         "id": "geo_compose_chain",
@@ -73,7 +73,7 @@
         "relation": "form",
         "confidence": "EXTRACTED",
         "confidence_score": 0.85,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/GEO-TOOLS.md"
+        "source_file": "docs/architecture/GEO-TOOLS.md"
       },
       {
         "id": "chat_agent_dispatch",
@@ -88,7 +88,7 @@
         "relation": "participate_in",
         "confidence": "EXTRACTED",
         "confidence_score": 0.9,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/OVERVIEW-AGENT-PIPELINE.md"
+        "source_file": "docs/architecture/OVERVIEW-AGENT-PIPELINE.md"
       },
       {
         "id": "spatial_helper_tools",
@@ -102,7 +102,7 @@
         "relation": "form",
         "confidence": "EXTRACTED",
         "confidence_score": 1.0,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/RESEARCH-AGENT-CORE-TOOLS.md"
+        "source_file": "docs/architecture/RESEARCH-AGENT-CORE-TOOLS.md"
       },
       {
         "id": "chat_request_pipeline",
@@ -117,7 +117,7 @@
         "relation": "participate_in",
         "confidence": "EXTRACTED",
         "confidence_score": 0.95,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/RESEARCH-AGENT-PIPELINE.md"
+        "source_file": "docs/architecture/RESEARCH-AGENT-PIPELINE.md"
       },
       {
         "id": "search_provider_implementations",
@@ -132,7 +132,7 @@
         "relation": "implement",
         "confidence": "EXTRACTED",
         "confidence_score": 1.0,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/RESEARCH-AGENT-SEARCH-PROVIDERS.md"
+        "source_file": "docs/architecture/RESEARCH-AGENT-SEARCH-PROVIDERS.md"
       },
       {
         "id": "message_preparation_pipeline",
@@ -146,7 +146,7 @@
         "relation": "form",
         "confidence": "EXTRACTED",
         "confidence_score": 0.9,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/STREAMING-MESSAGE-PREPARATION.md"
+        "source_file": "docs/architecture/STREAMING-MESSAGE-PREPARATION.md"
       },
       {
         "id": "streaming_request_lifecycle",
@@ -162,7 +162,7 @@
         "relation": "participate_in",
         "confidence": "EXTRACTED",
         "confidence_score": 0.9,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/STREAMING-SEQUENCE-DIAGRAM.md"
+        "source_file": "docs/architecture/STREAMING-SEQUENCE-DIAGRAM.md"
       },
       {
         "id": "tool_selection_failure_taxonomy",
@@ -176,7 +176,7 @@
         "relation": "form",
         "confidence": "EXTRACTED",
         "confidence_score": 0.9,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/evals/tool-selection-failure-modes.md"
+        "source_file": "docs/evals/tool-selection-failure-modes.md"
       },
       {
         "id": "phoenix_persistence_acid_test",
@@ -190,7 +190,7 @@
         "relation": "participate_in",
         "confidence": "EXTRACTED",
         "confidence_score": 0.85,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/operations/PHOENIX-OPERATIONS.md"
+        "source_file": "docs/operations/PHOENIX-OPERATIONS.md"
       },
       {
         "id": "canvas_artifact_lifecycle_flow",
@@ -205,7 +205,7 @@
         "relation": "participate_in",
         "confidence": "EXTRACTED",
         "confidence_score": 0.9,
-        "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/reference/API-CANVAS-ENDPOINTS.md"
+        "source_file": "docs/reference/API-CANVAS-ENDPOINTS.md"
       }
     ]
   },
@@ -148976,7 +148976,7 @@
       "relation": "participate_in",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/components/tool-ui/agent-artifact/README.md"
+      "source_file": "components/tool-ui/agent-artifact/README.md"
     },
     {
       "id": "ai_provider_registry_mechanism",
@@ -148989,7 +148989,7 @@
       "relation": "form",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/AI-PROVIDER-REGISTRY.md"
+      "source_file": "docs/architecture/AI-PROVIDER-REGISTRY.md"
     },
     {
       "id": "generative_ui_component_family",
@@ -149006,7 +149006,7 @@
       "relation": "participate_in",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/GENERATIVE-UI-COMPONENTS.md"
+      "source_file": "docs/architecture/GENERATIVE-UI-COMPONENTS.md"
     },
     {
       "id": "generative_ui_render_pipeline",
@@ -149020,7 +149020,7 @@
       "relation": "participate_in",
       "confidence": "EXTRACTED",
       "confidence_score": 0.9,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/GENERATIVE-UI-OVERVIEW.md"
+      "source_file": "docs/architecture/GENERATIVE-UI-OVERVIEW.md"
     },
     {
       "id": "geo_compose_chain",
@@ -149034,7 +149034,7 @@
       "relation": "form",
       "confidence": "EXTRACTED",
       "confidence_score": 0.85,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/GEO-TOOLS.md"
+      "source_file": "docs/architecture/GEO-TOOLS.md"
     },
     {
       "id": "chat_agent_dispatch",
@@ -149049,7 +149049,7 @@
       "relation": "participate_in",
       "confidence": "EXTRACTED",
       "confidence_score": 0.9,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/OVERVIEW-AGENT-PIPELINE.md"
+      "source_file": "docs/architecture/OVERVIEW-AGENT-PIPELINE.md"
     },
     {
       "id": "spatial_helper_tools",
@@ -149063,7 +149063,7 @@
       "relation": "form",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/RESEARCH-AGENT-CORE-TOOLS.md"
+      "source_file": "docs/architecture/RESEARCH-AGENT-CORE-TOOLS.md"
     },
     {
       "id": "chat_request_pipeline",
@@ -149078,7 +149078,7 @@
       "relation": "participate_in",
       "confidence": "EXTRACTED",
       "confidence_score": 0.95,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/RESEARCH-AGENT-PIPELINE.md"
+      "source_file": "docs/architecture/RESEARCH-AGENT-PIPELINE.md"
     },
     {
       "id": "search_provider_implementations",
@@ -149093,7 +149093,7 @@
       "relation": "implement",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/RESEARCH-AGENT-SEARCH-PROVIDERS.md"
+      "source_file": "docs/architecture/RESEARCH-AGENT-SEARCH-PROVIDERS.md"
     },
     {
       "id": "message_preparation_pipeline",
@@ -149107,7 +149107,7 @@
       "relation": "form",
       "confidence": "EXTRACTED",
       "confidence_score": 0.9,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/STREAMING-MESSAGE-PREPARATION.md"
+      "source_file": "docs/architecture/STREAMING-MESSAGE-PREPARATION.md"
     },
     {
       "id": "streaming_request_lifecycle",
@@ -149123,7 +149123,7 @@
       "relation": "participate_in",
       "confidence": "EXTRACTED",
       "confidence_score": 0.9,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/architecture/STREAMING-SEQUENCE-DIAGRAM.md"
+      "source_file": "docs/architecture/STREAMING-SEQUENCE-DIAGRAM.md"
     },
     {
       "id": "tool_selection_failure_taxonomy",
@@ -149137,7 +149137,7 @@
       "relation": "form",
       "confidence": "EXTRACTED",
       "confidence_score": 0.9,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/evals/tool-selection-failure-modes.md"
+      "source_file": "docs/evals/tool-selection-failure-modes.md"
     },
     {
       "id": "phoenix_persistence_acid_test",
@@ -149151,7 +149151,7 @@
       "relation": "participate_in",
       "confidence": "EXTRACTED",
       "confidence_score": 0.85,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/operations/PHOENIX-OPERATIONS.md"
+      "source_file": "docs/operations/PHOENIX-OPERATIONS.md"
     },
     {
       "id": "canvas_artifact_lifecycle_flow",
@@ -149166,7 +149166,7 @@
       "relation": "participate_in",
       "confidence": "EXTRACTED",
       "confidence_score": 0.9,
-      "source_file": "/Users/nick/.codex/worktrees/9b74/vana-v2/docs/reference/API-CANVAS-ENDPOINTS.md"
+      "source_file": "docs/reference/API-CANVAS-ENDPOINTS.md"
     }
   ],
   "built_at_commit": "13b98212b7be1a95842e3d3bb3ca588a2078985f"
