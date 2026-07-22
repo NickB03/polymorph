@@ -35,7 +35,7 @@ These are load-bearing and not derivable by reading any single file:
 - **Guest canvas tokens** are HMAC-SHA256 signed with `GUEST_CANVAS_SECRET` and rotate on every successful write.
 - **Phoenix tracing enforces HTTPS in production.** `instrumentation.ts` silently disables tracing if the collector endpoint is plain HTTP when any of `VERCEL_ENV=production`, `VERCEL_TARGET_ENV=production`, `RAILWAY_ENVIRONMENT=production`, or `NODE_ENV=production` is set.
 - **Privileged DB client bypasses RLS.** `lib/db/admin.ts` is the only path that may set/upsert rows on user-scoped tables without a session GUC. Used by the Vercel cron at `/api/suggestions/refresh` to write the singleton `trending_suggestions_cache`.
-- **Railway cron triggers:** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image but does **not** run the container CMD. Use the Railway dashboard redeploy button for an immediate one-off run.
+- **Railway cron triggers:** `railway redeploy -s polymorph-evals` from the CLI and the deployment-menu **Redeploy** action rebuild the image but do **not** run the container CMD. For an immediate one-off run, open the service's **Cron Runs** page and click **Run now**.
 - **`services/evals/` is an independent bun package, not a workspace member.** `bun install` at the repo root does not install its dependencies. After a fresh checkout or new worktree, run `bun install` in **both** the repo root and `services/evals/`.
 
 ## Skill invocation policy
