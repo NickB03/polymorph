@@ -1,6 +1,6 @@
 # Railway & Phoenix Operations
 
-Railway CLI (`railway`, v4.35.2) and Phoenix CLI (`npx @arizeai/phoenix-cli`) manage production infrastructure. MCP servers for both are configured in `.mcp.json`.
+Railway CLI (`railway`) and Phoenix CLI (`npx @arizeai/phoenix-cli`) manage production infrastructure. MCP servers for both are configured in `.mcp.json`.
 
 ## Railway evals cron (`polymorph-evals`)
 
