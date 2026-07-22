@@ -23,7 +23,7 @@ Offline LLM-judge evaluation pipeline running as a Railway cron service every Mo
 - `railway variable list -s phoenix` — list Phoenix env vars
 - `railway variable set KEY=VALUE -s <service>` — update env var (triggers redeploy)
 - `railway restart -s phoenix` — restart without rebuild
-- `railway redeploy -s polymorph-evals` — full rebuild + deploy (rebuilds cron image; does **not** run the CMD — use dashboard `Deployments → ⋯ → Redeploy` to fire a cron run on demand)
+- `railway redeploy -s polymorph-evals` — full rebuild + deploy (rebuilds the cron image; does **not** run the CMD — use dashboard `Cron Runs → Run now` to fire a cron run on demand)
 - `railway open` — open Railway dashboard in browser
 - `railway volume list --json | jq '.volumes[] | select(.name|startswith("phoenix"))'` — verify Phoenix persistence (confirms volume name, `serviceId`, and region; `deployment.meta.volumeMounts` is **not** proof of a Railway volume, only the image's `VOLUME` declaration). Current volume: `phoenix-volume-v8K9` in `us-east4`. Full procedure in `docs/operations/DEPLOYMENT.md#persistence-verification-run-after-every-phoenix-deploy`.
 

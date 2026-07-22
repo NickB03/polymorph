@@ -42,7 +42,7 @@ The `services/evals/` directory contains a scheduled evaluation pipeline:
 - Schedule: set the Railway cron to Monday at 15:00 UTC (`0 15 * * 1`) for the production baseline. This schedule is managed in Railway, not in git.
 - Uses private networking to Phoenix for writes (`PHOENIX_HOST=http://phoenix.railway.internal:6006`) and `PHOENIX_PUBLIC_URL` for dashboard links.
 
-> **Triggering a cron run manually.** `railway redeploy -s polymorph-evals` from the CLI rebuilds the image and re-registers the schedule — it does **not** execute the container CMD. For an immediate one-off run use the Railway dashboard (`Deployments → ⋯ → Redeploy`), which does run the CMD. Otherwise wait for the next scheduled tick.
+> **Triggering a cron run manually.** `railway redeploy -s polymorph-evals` from the CLI and the deployment-menu **Redeploy** action rebuild the image and re-register the schedule — they do **not** execute the container CMD. For an immediate one-off run use the Railway dashboard (`Cron Runs → Run now`). Otherwise wait for the next scheduled tick.
 
 **Cost-sensitive baseline defaults:**
 

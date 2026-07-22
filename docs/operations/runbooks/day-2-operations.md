@@ -100,12 +100,12 @@ railway logs -s polymorph-evals --filter "DB WRITE FAILED"
 
 ## 6) On-demand actions
 
-| Need                                                 | Command                                                            |
-| ---------------------------------------------------- | ------------------------------------------------------------------ |
-| Restart Phoenix without rebuild                      | `railway restart -s phoenix`                                       |
-| Rebuild + redeploy Phoenix                           | `railway redeploy -s phoenix`                                      |
-| Rebuild evals image (does **not** run a cron firing) | `railway redeploy -s polymorph-evals`                              |
-| Fire an immediate one-off cron run                   | Railway dashboard → `polymorph-evals` → Deployments → ⋯ → Redeploy |
+| Need                                                 | Command                                                     |
+| ---------------------------------------------------- | ----------------------------------------------------------- |
+| Restart Phoenix without rebuild                      | `railway restart -s phoenix`                                |
+| Rebuild + redeploy Phoenix                           | `railway redeploy -s phoenix`                               |
+| Rebuild evals image (does **not** run a cron firing) | `railway redeploy -s polymorph-evals`                       |
+| Fire an immediate one-off cron run                   | Railway dashboard → `polymorph-evals` → Cron Runs → Run now |
 
 Verify Phoenix volume is real and attached:
 

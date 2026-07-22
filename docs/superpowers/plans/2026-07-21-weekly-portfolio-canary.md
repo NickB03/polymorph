@@ -654,9 +654,9 @@ deploy.cronSchedule=0 15 * * 1
 
 - [ ] **Step 8: Fire one immediate canary from the Railway dashboard**
 
-In Railway, open `polymorph-evals` → Deployments → the deployment menu → Redeploy.
+In Railway, open `polymorph-evals` → Cron Runs → Run now.
 
-Expected: this dashboard action starts the container command immediately. Do not use CLI `railway redeploy` as proof of an immediate cron execution; in this service it rebuilds/re-registers the cron without running the command.
+Expected: this dashboard action starts the container command immediately. Do not use CLI `railway redeploy` or the deployment-menu **Redeploy** action as proof of an immediate cron execution; in this service they rebuild/re-register the cron without running the command.
 
 - [ ] **Step 9: Verify the one-case execution in bounded logs**
 
