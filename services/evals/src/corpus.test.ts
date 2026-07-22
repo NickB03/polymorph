@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   getAllCases,
+  getCasesForEvaluation,
   getCasesForSuite,
   getCorpusVersion,
   getSmoketestCases
@@ -39,6 +40,30 @@ describe('corpus', () => {
       getCasesForSuite('capability').length +
         getCasesForSuite('regression').length +
         getCasesForSuite('smoke').length
+    )
+  })
+
+  it('selects exact regression cases in configured order', () => {
+    const cases = getCasesForEvaluation('regression', [
+      'reg-follow-up',
+      'reg-direct-answer'
+    ])
+
+    expect(cases.map(caseSpec => caseSpec.id)).toEqual([
+      'reg-follow-up',
+      'reg-direct-answer'
+    ])
+  })
+
+  it('rejects unknown or cross-suite case ids', () => {
+    expect(() =>
+      getCasesForEvaluation('regression', [
+        'reg-direct-answer',
+        'cap-long-input',
+        'missing-case'
+      ])
+    ).toThrow(
+      '[evals] EVAL_CASE_IDS contains invalid regression case IDs: cap-long-input, missing-case'
     )
   })
 })
