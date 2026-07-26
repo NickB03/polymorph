@@ -546,7 +546,11 @@ export function getGoldenExamples(): GoldenExample[] {
       expected: {
         prechecks: { label: 'pass', score: 1 },
         tool_usage: { label: 'tools_missing', score: 0 },
-        faithfulness: { label: 'unfaithful', score: 0 },
+        // v2 rubric scores `unfaithful` only for contradicting the retrieval or
+        // fabricating entities/sources. This answer is content-free padding — it
+        // asserts no number, date, name, quote or source — so it does neither.
+        // Its real defect is response_quality, which is already `fail` below.
+        faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
       }
@@ -624,7 +628,11 @@ export function getGoldenExamples(): GoldenExample[] {
       expected: {
         prechecks: { label: 'pass', score: 1 },
         tool_usage: { label: 'tools_missing', score: 0 },
-        faithfulness: { label: 'unfaithful', score: 0 },
+        // v2 rubric has no incoherence branch. The answer is word salad, but its
+        // terms ("neural network", "deep learning") are generic and topical to the
+        // ML retrieval — it contradicts nothing and fabricates no entity or source.
+        // Its real defect is response_quality, which is already `fail` below.
+        faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
         response_quality: { label: 'fail', score: 0 }
       }
