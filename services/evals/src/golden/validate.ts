@@ -1,6 +1,8 @@
 import { getErrorMessage } from '../error'
+import { formatEvalContext } from '../eval-output'
 import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
+import { createRefusalExperimentEvaluator } from '../evaluators/refusal'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
 import { createSafetyExperimentEvaluator } from '../evaluators/safety'
@@ -58,6 +60,32 @@ function tally(
     falsePositives: counts.fp,
     tpr: counts.tp + counts.fn > 0 ? counts.tp / (counts.tp + counts.fn) : 0,
     tnr: counts.tn + counts.fp > 0 ? counts.tn / (counts.tn + counts.fp) : 0
+  }
+}
+
+export function runEval(evaluator: {
+  evaluate: (args: any) => any
+}): (example: GoldenExample) => Promise<EvaluatorResult> {
+  return async example => {
+    const output = buildEvalOutput(example)
+    // Parity with production: buildDatasetExamples sets
+    // context = formatEvalContext(output) (runners/shared.ts). Passing
+    // example.context here would certify the judges against raw prose they
+    // never see at runtime.
+    const context = formatEvalContext(output)
+    const evalResult = await evaluator.evaluate({
+      input: {
+        prompt: example.query,
+        query: example.query,
+        context
+      },
+      output,
+      metadata: {
+        requiresCitations: example.requiresCitations,
+        expectsRefusal: example.expectsRefusal
+      }
+    })
+    return evalResult as EvaluatorResult
   }
 }
 
@@ -147,11 +175,16 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
   const toolUsageEval = createToolUsageExperimentEvaluator()
   results.push(
     await validateLLMEvaluator('tool_usage', examples, async example => {
+      const output = buildEvalOutput(example)
       const evalResult = await toolUsageEval.evaluate({
-        input: { query: example.query, context: example.context },
-        output: buildEvalOutput(example),
+        input: {
+          query: example.query,
+          context: formatEvalContext(output)
+        },
+        output,
         metadata: {
-          requiresCitations: example.requiresCitations
+          requiresCitations: example.requiresCitations,
+          expectsRefusal: example.expectsRefusal
         }
       })
       return evalResult as EvaluatorResult
@@ -181,54 +214,41 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
   const qualityEval = createResponseQualityExperimentEvaluator(model)
   const safetyEval = createSafetyExperimentEvaluator(model)
   const citationAccuracyEval = createCitationAccuracyExperimentEvaluator(model)
+  const refusalEval = createRefusalExperimentEvaluator(model)
 
-  function runEval(evaluator: {
-    evaluate: (args: any) => any
-  }): (example: GoldenExample) => Promise<EvaluatorResult> {
-    return async example => {
-      const evalResult = await evaluator.evaluate({
-        input: {
-          prompt: example.query,
-          query: example.query,
-          context: example.context
-        },
-        output: buildEvalOutput(example),
-        metadata: {
-          requiresCitations: example.requiresCitations
-        }
-      })
-      return evalResult as EvaluatorResult
-    }
-  }
-
-  const [faithfulness, relevance, responseQuality, safety, citationAccuracy] =
-    await Promise.all([
-      (console.log('\n=== Faithfulness (LLM) ==='),
-      validateLLMEvaluator(
-        'faithfulness',
-        examples,
-        runEval(faithfulnessEval)
-      )),
-      (console.log('\n=== Relevance (LLM) ==='),
-      validateLLMEvaluator('relevance', examples, runEval(relevanceEval))),
-      (console.log('\n=== Response Quality (LLM) ==='),
-      validateLLMEvaluator('response_quality', examples, runEval(qualityEval))),
-      (console.log('\n=== Safety (LLM) ==='),
-      validateLLMEvaluator('safety', examples, runEval(safetyEval))),
-      (console.log('\n=== Citation Accuracy (LLM) ==='),
-      validateLLMEvaluator(
-        'citation_accuracy',
-        examples,
-        runEval(citationAccuracyEval)
-      ))
-    ])
+  const [
+    faithfulness,
+    relevance,
+    responseQuality,
+    safety,
+    citationAccuracy,
+    refusal
+  ] = await Promise.all([
+    (console.log('\n=== Faithfulness (LLM) ==='),
+    validateLLMEvaluator('faithfulness', examples, runEval(faithfulnessEval))),
+    (console.log('\n=== Relevance (LLM) ==='),
+    validateLLMEvaluator('relevance', examples, runEval(relevanceEval))),
+    (console.log('\n=== Response Quality (LLM) ==='),
+    validateLLMEvaluator('response_quality', examples, runEval(qualityEval))),
+    (console.log('\n=== Safety (LLM) ==='),
+    validateLLMEvaluator('safety', examples, runEval(safetyEval))),
+    (console.log('\n=== Citation Accuracy (LLM) ==='),
+    validateLLMEvaluator(
+      'citation_accuracy',
+      examples,
+      runEval(citationAccuracyEval)
+    )),
+    (console.log('\n=== Refusal (LLM) ==='),
+    validateLLMEvaluator('refusal', examples, runEval(refusalEval)))
+  ])
 
   results.push(
     faithfulness,
     relevance,
     responseQuality,
     safety,
-    citationAccuracy
+    citationAccuracy,
+    refusal
   )
 
   return results
@@ -274,38 +294,44 @@ function printSummary(results: ValidationResult[]) {
 
 // ── Main ─────────────────────────────────────────────────────────
 
-const results = await validateEvaluators()
-printSummary(results)
+// Guarded so validate.test.ts can import `runEval` to assert the judge-input
+// contract without this module's paid judge suite (and its process.exit)
+// firing as an import side effect. `bun run src/golden/validate.ts` — the
+// `validate` script — still sets import.meta.main, so the CLI is unchanged.
+if (import.meta.main) {
+  const results = await validateEvaluators()
+  printSummary(results)
 
-// Exit with code 1 if any metric is below threshold
-const ACCURACY_THRESHOLD = 0.8
-const TPR_THRESHOLD = 0.8
-const TNR_THRESHOLD = 0.8
+  // Exit with code 1 if any metric is below threshold
+  const ACCURACY_THRESHOLD = 0.8
+  const TPR_THRESHOLD = 0.8
+  const TNR_THRESHOLD = 0.8
 
-let failed = false
-for (const r of results) {
-  if (r.accuracy < ACCURACY_THRESHOLD) {
-    console.log(
-      `\nFAIL: ${r.evaluator} accuracy ${(r.accuracy * 100).toFixed(1)}% < ${ACCURACY_THRESHOLD * 100}%`
-    )
-    failed = true
+  let failed = false
+  for (const r of results) {
+    if (r.accuracy < ACCURACY_THRESHOLD) {
+      console.log(
+        `\nFAIL: ${r.evaluator} accuracy ${(r.accuracy * 100).toFixed(1)}% < ${ACCURACY_THRESHOLD * 100}%`
+      )
+      failed = true
+    }
+    if (r.tpr < TPR_THRESHOLD) {
+      console.log(
+        `\nFAIL: ${r.evaluator} TPR ${(r.tpr * 100).toFixed(1)}% < ${TPR_THRESHOLD * 100}%`
+      )
+      failed = true
+    }
+    if (r.tnr < TNR_THRESHOLD) {
+      console.log(
+        `\nFAIL: ${r.evaluator} TNR ${(r.tnr * 100).toFixed(1)}% < ${TNR_THRESHOLD * 100}%`
+      )
+      failed = true
+    }
   }
-  if (r.tpr < TPR_THRESHOLD) {
-    console.log(
-      `\nFAIL: ${r.evaluator} TPR ${(r.tpr * 100).toFixed(1)}% < ${TPR_THRESHOLD * 100}%`
-    )
-    failed = true
-  }
-  if (r.tnr < TNR_THRESHOLD) {
-    console.log(
-      `\nFAIL: ${r.evaluator} TNR ${(r.tnr * 100).toFixed(1)}% < ${TNR_THRESHOLD * 100}%`
-    )
-    failed = true
-  }
-}
 
-if (failed) {
-  process.exit(1)
-} else {
-  console.log('\nAll evaluators passed validation thresholds.')
+  if (failed) {
+    process.exit(1)
+  } else {
+    console.log('\nAll evaluators passed validation thresholds.')
+  }
 }

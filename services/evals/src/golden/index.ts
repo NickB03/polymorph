@@ -7,9 +7,10 @@ interface GoldenExpected {
   tool_usage: ExpectedEvaluatorResult | null // null = expect skip
   faithfulness: ExpectedEvaluatorResult | null // null = expect skip
   relevance: ExpectedEvaluatorResult | null // null = expect skip
-  response_quality: ExpectedEvaluatorResult
+  response_quality: ExpectedEvaluatorResult | null // null = expect skip (refusal cases)
   safety: ExpectedEvaluatorResult | null // null = expect skip
   citation_accuracy: ExpectedEvaluatorResult | null // null = expect skip
+  refusal: ExpectedEvaluatorResult | null // null = expect skip (non-refusal cases)
 }
 
 export interface GoldenExample {
@@ -23,13 +24,15 @@ export interface GoldenExample {
   requiresTextAnswer: boolean
   requiresCitations: boolean
   allowsInteractiveOnly: boolean
+  expectsRefusal: boolean
   toolNames: string[]
   expected: GoldenExpected
 }
 
-type GoldenExampleInput = Omit<GoldenExample, 'expected'> & {
-  expected: Omit<GoldenExpected, 'safety' | 'citation_accuracy'> &
-    Partial<Pick<GoldenExpected, 'safety' | 'citation_accuracy'>>
+type GoldenExampleInput = Omit<GoldenExample, 'expected' | 'expectsRefusal'> & {
+  expectsRefusal?: boolean
+  expected: Omit<GoldenExpected, 'safety' | 'citation_accuracy' | 'refusal'> &
+    Partial<Pick<GoldenExpected, 'safety' | 'citation_accuracy' | 'refusal'>>
 }
 
 function buildGoldenSearchResults(example: GoldenExample): EvalSearchResult[] {
@@ -37,20 +40,35 @@ function buildGoldenSearchResults(example: GoldenExample): EvalSearchResult[] {
   if (example.toolNames.length === 0 && example.citations.length === 0)
     return []
 
-  const results =
+  // Production shape: multiple short-ish results, not one context dump.
+  // formatEvalContext emits each item as `- [title](url): snippet`, so the
+  // judges must be validated against the same fragmented input they see on
+  // real replays.
+  const sentences = example.context
+    .split(/(?<=[.!?])\s+/)
+    .filter(sentence => sentence.length > 0)
+  const chunkCount = Math.min(3, Math.max(2, sentences.length))
+  const chunks: string[] = Array.from({ length: chunkCount }, () => '')
+  sentences.forEach((sentence, index) => {
+    chunks[index % chunkCount] +=
+      (chunks[index % chunkCount] ? ' ' : '') + sentence
+  })
+
+  const sources =
     example.citations.length > 0
-      ? example.citations.map(citation => ({
-          title: citation.title,
-          url: citation.url,
-          snippet: example.context
-        }))
-      : [
-          {
-            title: 'Golden Context',
-            url: 'https://example.com/golden-context',
-            snippet: example.context
-          }
-        ]
+      ? example.citations
+      : [{ title: 'Golden Context', url: 'https://example.com/golden-context' }]
+
+  const results = chunks
+    .filter(chunk => chunk.length > 0)
+    .map((snippet, index) => {
+      const source = sources[index % sources.length]
+      return {
+        title: source.title,
+        url: source.url,
+        snippet: snippet.slice(0, 300)
+      }
+    })
 
   return [
     {
@@ -70,16 +88,18 @@ function withExpectedDefaults(example: GoldenExampleInput): GoldenExample {
     (example.citations.length === 0
       ? null
       : example.expected.faithfulness?.score === 0 ||
-          example.expected.response_quality.score === 0
+          example.expected.response_quality?.score === 0
         ? { label: 'mostly_inaccurate', score: 0.25 }
         : { label: 'accurate', score: 1 })
 
   return {
     ...example,
+    expectsRefusal: example.expectsRefusal ?? false,
     expected: {
       ...example.expected,
       safety,
-      citation_accuracy: citationAccuracy
+      citation_accuracy: citationAccuracy,
+      refusal: example.expected.refusal ?? null
     }
   }
 }
@@ -97,6 +117,11 @@ export function buildEvalOutput(example: GoldenExample): EvalRunResult {
 }
 
 export function getGoldenExamples(): GoldenExample[] {
+  // NOTE: judges receive formatEvalContext(buildEvalOutput(example)), not the
+  // raw `context` prose below — see golden/validate.ts. An example with no
+  // searchResults, no toolNames and no citations therefore yields an EMPTY
+  // judge context, which makes faithfulness/relevance skip. Keep `context`
+  // accurate anyway: it documents the case and seeds derived snippets.
   const examples: GoldenExampleInput[] = [
     // ──────────────────────────────────────────────────────────────
     // TRUE POSITIVES — well-grounded, relevant, quality answers
@@ -220,8 +245,10 @@ export function getGoldenExamples(): GoldenExample[] {
       expected: {
         prechecks: { label: 'pass', score: 1 },
         tool_usage: null,
-        faithfulness: { label: 'faithful', score: 1 },
-        relevance: { label: 'relevant', score: 1 },
+        // No searchResults, no toolNames, no citations → empty judge context, so
+        // faithfulness skips and relevance skips (requiresCitations: false).
+        faithfulness: null,
+        relevance: null,
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -293,8 +320,10 @@ export function getGoldenExamples(): GoldenExample[] {
       expected: {
         prechecks: { label: 'pass', score: 1 },
         tool_usage: null,
-        faithfulness: { label: 'faithful', score: 1 },
-        relevance: { label: 'relevant', score: 1 },
+        // No searchResults, no toolNames, no citations → empty judge context, so
+        // faithfulness skips and relevance skips (requiresCitations: false).
+        faithfulness: null,
+        relevance: null,
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -672,7 +701,8 @@ export function getGoldenExamples(): GoldenExample[] {
         prechecks: { label: 'missing_answer', score: 0 },
         tool_usage: null,
         faithfulness: null,
-        relevance: { label: 'relevant', score: 1 },
+        // Empty judge context + requiresCitations: false → relevance skips.
+        relevance: null,
         response_quality: { label: 'no_answer', score: 0 }
       }
     },
@@ -692,8 +722,10 @@ export function getGoldenExamples(): GoldenExample[] {
       expected: {
         prechecks: { label: 'missing_citations', score: 0 },
         tool_usage: { label: 'tools_missing', score: 0 },
-        faithfulness: { label: 'faithful', score: 1 },
-        relevance: { label: 'relevant', score: 1 },
+        // Empty judge context → faithfulness skips; requiresCitations: true with
+        // zero citations is relevance's no_results branch.
+        faithfulness: null,
+        relevance: { label: 'no_results', score: 0 },
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -713,7 +745,8 @@ export function getGoldenExamples(): GoldenExample[] {
         prechecks: { label: 'interactive_only_output', score: 0 },
         tool_usage: null,
         faithfulness: null,
-        relevance: { label: 'relevant', score: 1 },
+        // Empty judge context + requiresCitations: false → relevance skips.
+        relevance: null,
         response_quality: { label: 'no_answer', score: 0 }
       }
     },
