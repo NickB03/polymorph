@@ -133,10 +133,13 @@ export function getGoldenExamples(): GoldenExample[] {
   // lenient at the top of its scale — it awards `excellent` for "nothing wrong
   // here", which is what `good` already means.
   //
-  // The kept cases below are single-source restatements of their retrieval:
-  // complete and well organized, but not insightful, and criterion 5
-  // (synthesis across sources) cannot be met because buildGoldenSearchResults
-  // attributes every snippet to the same URL. tp-tool-search-fetch is this
+  // Most of the kept cases below are single-source restatements of their
+  // retrieval: complete and well organized, but not insightful, and
+  // criterion 5 (synthesis across sources) cannot be met because
+  // buildGoldenSearchResults attributes every snippet to the same URL. The
+  // three empty-context cases named above have no retrieval to restate;
+  // they are complete, well-organized restatements of general knowledge
+  // instead, for the same reason. tp-tool-search-fetch is this
   // corpus's `excellent` anchor and the only case with two distinct sources;
   // relabelling the twelve to `excellent` would erase that gradient and leave
   // the label unable to detect a judge that over-awards it. Each such case
@@ -144,6 +147,8 @@ export function getGoldenExamples(): GoldenExample[] {
   const examples: GoldenExampleInput[] = [
     // ──────────────────────────────────────────────────────────────
     // TRUE POSITIVES — well-grounded, relevant, quality answers
+    // (tp-interactive-allowed is the one exception: its answer text is
+    // empty of substance, so response_quality is `fail` — see its note.)
     // ──────────────────────────────────────────────────────────────
     {
       id: 'tp-factual-grounded',
@@ -313,8 +318,10 @@ export function getGoldenExamples(): GoldenExample[] {
         // research-query criteria actually engage: it explicitly separates
         // settled from debated ("historians continue to debate the relative
         // importance"), satisfying criterion 6, and it explains the causal
-        // mechanism of each of the six factors where the retrieval merely
-        // enumerates them. That is added analysis, not restatement, which is
+        // mechanism of five of the six factors where the retrieval merely
+        // enumerates them (the Christianity factor's mechanism — "shifted
+        // focus from civic duty to spiritual matters" — is already spelled
+        // out in the retrieval). That is added analysis, not restatement, which is
         // what separates `excellent` from `good`. Criterion 5 is conditioned on
         // multiple sources being "available" and only one is, so the single
         // source does not bar the label.
@@ -381,7 +388,7 @@ export function getGoldenExamples(): GoldenExample[] {
         // relevance null above. Not an empty-context artifact either: three
         // other empty-context cases in this file were scored `excellent`, so
         // the judge is failing the answer, not the missing retrieval.
-        // Cascade: citations is [] , so the citation_accuracy default
+        // Cascade: citations is [], so the citation_accuracy default
         // short-circuits to null on the length check before ever reaching the
         // `response_quality?.score === 0` branch — the 0.75 → 0 drop does not
         // change this case's derived citation_accuracy.
@@ -760,6 +767,149 @@ export function getGoldenExamples(): GoldenExample[] {
     },
 
     // ──────────────────────────────────────────────────────────────
+    // TRUE NEGATIVES — off-topic retrieval (relevance must fire)
+    // The answer is correct and well-formed on purpose: only the
+    // retrieval is wrong, so only `relevance` should score 0.
+    // ──────────────────────────────────────────────────────────────
+    {
+      id: 'tn-relevance-offtopic-asyncio',
+      query: 'How does the Python asyncio event loop schedule coroutines?',
+      context:
+        'Ball pythons are docile snakes that need a warm hide and a cool hide. Adult ball pythons eat one appropriately sized rodent every one to two weeks. Enclosure humidity should sit between 55 and 60 percent.',
+      answer:
+        'The asyncio event loop runs a single-threaded cooperative scheduler. Coroutines are wrapped in Tasks and placed on a ready queue; the loop pops one Task at a time and runs it until it hits an `await` on a pending future. At that point the coroutine yields control back to the loop, which registers a callback on the future and moves on to the next ready Task. When the future resolves, its callback reschedules the coroutine onto the ready queue. Because the loop never preempts a running coroutine, a blocking call inside one will stall every other Task.',
+      citations: [],
+      searchResults: [
+        {
+          query: 'python asyncio event loop scheduling',
+          results: [
+            {
+              title: 'Ball Python Care Sheet - Reptiles Magazine',
+              url: 'https://www.reptilesmagazine.com/ball-python-care-sheet/',
+              snippet:
+                'Ball pythons are docile snakes that need a warm hide and a cool hide in their enclosure.'
+            },
+            {
+              title: 'Feeding Your Ball Python - VCA Animal Hospitals',
+              url: 'https://vcahospitals.com/know-your-pet/ball-python-feeding',
+              snippet:
+                'Adult ball pythons eat one appropriately sized rodent every one to two weeks.'
+            },
+            {
+              title: 'Snake Enclosure Humidity Guide - The Spruce Pets',
+              url: 'https://www.thesprucepets.com/snake-enclosure-humidity',
+              snippet:
+                'Enclosure humidity should sit between 55 and 60 percent for most python species.'
+            }
+          ]
+        }
+      ],
+      usedInteractiveOnlyOutput: false,
+      requiresTextAnswer: true,
+      requiresCitations: false,
+      allowsInteractiveOnly: false,
+      toolNames: ['search'],
+      expected: {
+        prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
+        faithfulness: { label: 'faithful', score: 1 },
+        relevance: { label: 'unrelated', score: 0 },
+        response_quality: { label: 'good', score: 0.75 }
+      }
+    },
+    {
+      id: 'tn-relevance-offtopic-tesla-stock',
+      query: 'How did Tesla stock perform after its 2020 stock split?',
+      context:
+        'Nikola Tesla was a Serbian-American inventor born in 1856 in the village of Smiljan. He developed the alternating-current induction motor and held around 300 patents worldwide. He died in New York City in 1943.',
+      answer:
+        'Tesla executed a five-for-one stock split effective 31 August 2020. The split itself was value-neutral — each shareholder simply held five times as many shares at one fifth the price — but the run-up into it was steep, with the stock climbing sharply through August 2020 on retail enthusiasm. Post-split trading was volatile: a rally into early September was followed by a sharp single-day drop when the stock was passed over for S&P 500 inclusion. A split changes share count and price, not the underlying market capitalisation or the fundamentals of the business.',
+      citations: [],
+      searchResults: [
+        {
+          query: 'tesla stock split 2020 performance',
+          results: [
+            {
+              title: 'Nikola Tesla - Biography and Inventions',
+              url: 'https://www.britannica.com/biography/Nikola-Tesla',
+              snippet:
+                'Nikola Tesla was a Serbian-American inventor born in 1856 in the village of Smiljan.'
+            },
+            {
+              title: 'The AC Induction Motor - Tesla Science Center',
+              url: 'https://teslasciencecenter.org/ac-induction-motor/',
+              snippet:
+                'He developed the alternating-current induction motor and held around 300 patents worldwide.'
+            },
+            {
+              title: 'Nikola Tesla Dies at 86 - New York Historical Society',
+              url: 'https://www.nyhistory.org/nikola-tesla-1943',
+              snippet: 'He died in New York City in 1943.'
+            }
+          ]
+        }
+      ],
+      usedInteractiveOnlyOutput: false,
+      requiresTextAnswer: true,
+      requiresCitations: false,
+      allowsInteractiveOnly: false,
+      toolNames: ['search'],
+      expected: {
+        prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
+        faithfulness: { label: 'faithful', score: 1 },
+        relevance: { label: 'unrelated', score: 0 },
+        response_quality: { label: 'good', score: 0.75 }
+      }
+    },
+    {
+      id: 'tn-relevance-offtopic-weather',
+      query: 'What is the weather forecast for Chicago this weekend?',
+      context:
+        'The Paris Agreement is an international treaty on climate change adopted in 2015. Signatories committed to limiting warming to well below 2 degrees Celsius above pre-industrial levels. Parties submit nationally determined contributions every five years.',
+      answer:
+        'I do not have access to a live weather feed, so I cannot give you an accurate forecast for Chicago this weekend. Forecasts change hour to hour, and a stale answer would be worse than none. For a current forecast, check the National Weather Service office for Chicago (weather.gov/lot), which publishes hourly and seven-day outlooks for the metro area.',
+      citations: [],
+      searchResults: [
+        {
+          query: 'chicago weather forecast weekend',
+          results: [
+            {
+              title: 'The Paris Agreement - UNFCCC',
+              url: 'https://unfccc.int/process-and-meetings/the-paris-agreement',
+              snippet:
+                'The Paris Agreement is an international treaty on climate change adopted in 2015.'
+            },
+            {
+              title: 'Global Warming Targets Explained - IPCC',
+              url: 'https://www.ipcc.ch/sr15/',
+              snippet:
+                'Signatories committed to limiting warming to well below 2 degrees Celsius above pre-industrial levels.'
+            },
+            {
+              title: 'Nationally Determined Contributions - UNFCCC',
+              url: 'https://unfccc.int/ndc-synthesis-report',
+              snippet:
+                'Parties submit nationally determined contributions every five years.'
+            }
+          ]
+        }
+      ],
+      usedInteractiveOnlyOutput: false,
+      requiresTextAnswer: true,
+      requiresCitations: false,
+      allowsInteractiveOnly: false,
+      toolNames: ['search'],
+      expected: {
+        prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
+        faithfulness: { label: 'faithful', score: 1 },
+        relevance: { label: 'unrelated', score: 0 },
+        response_quality: { label: 'good', score: 0.75 }
+      }
+    },
+
+    // ──────────────────────────────────────────────────────────────
     // EDGE CASES — structural/boundary cases
     // ──────────────────────────────────────────────────────────────
     {
@@ -804,9 +954,9 @@ export function getGoldenExamples(): GoldenExample[] {
         faithfulness: null,
         relevance: { label: 'no_results', score: 0 },
         // Judge said `excellent`; kept `good`. A sound definition, but with
-        // zero citations on a requiresCitations query and an empty judge
-        // context, "well-sourced" is definitionally unmet. Awarding the
-        // corpus's missing-citations edge case top marks would be perverse.
+        // an empty judge context, "well-sourced" is definitionally unmet.
+        // Awarding the corpus's missing-citations edge case top marks would
+        // be perverse.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
