@@ -359,34 +359,38 @@ export async function createChatStreamResponse(
       return getErrorMessage(error)
     },
     onFinish: async ({ responseMessage, isAborted }) => {
-      if (isAborted || !responseMessage) return
-
       try {
-        // Persist stream results to database
-        await persistStreamResults(
-          responseMessage,
-          chatId,
-          userId,
-          titlePromise,
-          correlationId,
-          userMode,
-          context.modelId,
-          context.pendingInitialSave,
-          context.pendingInitialUserMessage,
-          modelType,
-          otelTraceId
-        )
-      } catch (error) {
-        console.error(
-          `[onFinish] Failed to persist stream results for chat ${chatId}:`,
-          error
-        )
+        if (!isAborted && responseMessage) {
+          try {
+            // Persist stream results to database
+            await persistStreamResults(
+              responseMessage,
+              chatId,
+              userId,
+              titlePromise,
+              correlationId,
+              userMode,
+              context.modelId,
+              context.pendingInitialSave,
+              context.pendingInitialUserMessage,
+              modelType,
+              otelTraceId
+            )
+          } catch (error) {
+            console.error(
+              `[onFinish] Failed to persist stream results for chat ${chatId}:`,
+              error
+            )
+          }
+        }
+      } finally {
+        // Flush OTel spans before the serverless function terminates — aborted
+        // streams too, or their spans never reach Phoenix. Aborts are the
+        // traces most worth keeping. Runs after persistence so spans include
+        // DB write latency. The 5s timeout (default) is small relative to the
+        // 300s maxDuration.
+        await flushTraces()
       }
-
-      // Flush OTel spans before the serverless function terminates.
-      // Runs after persistence so spans include DB write latency.
-      // The 5s timeout (default) is small relative to the 300s maxDuration.
-      await flushTraces()
     }
   })
 

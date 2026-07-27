@@ -1,7 +1,19 @@
 import { isProductionTarget, validateEnv } from '@/lib/config/env'
 
+type TracingState =
+  | 'enabled'
+  | 'disabled-off'
+  | 'disabled-https'
+  | 'init-failed'
+
+declare global {
+  var __polymorphTracingState: TracingState | undefined
+}
+
 export async function register() {
   validateEnv()
+
+  globalThis.__polymorphTracingState = 'disabled-off'
 
   if (process.env.ENABLE_TRACING === 'true') {
     try {
@@ -23,6 +35,7 @@ export async function register() {
         console.error(
           '[otel] PHOENIX_COLLECTOR_ENDPOINT must use HTTPS in production. Tracing disabled.'
         )
+        globalThis.__polymorphTracingState = 'disabled-https'
         return
       }
 
@@ -59,11 +72,14 @@ export async function register() {
         ]
       })
 
+      globalThis.__polymorphTracingState = 'enabled'
+
       console.log(
         `[otel] Tracing enabled → ${collectorEndpoint} (project: ${process.env.PHOENIX_PROJECT_NAME ?? 'polymorph-local'})`
       )
     } catch (err) {
       console.error('[otel] Failed to initialize tracing:', err)
+      globalThis.__polymorphTracingState = 'init-failed'
       // Tracing is optional — app continues without it
     }
   }

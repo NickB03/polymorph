@@ -10,7 +10,10 @@ vi.mock('@/lib/utils/registry', () => ({
 }))
 
 vi.mock('@/lib/utils/telemetry', () => ({
-  isTracingEnabled: vi.fn().mockReturnValue(false)
+  isTracingEnabled: vi.fn().mockReturnValue(false),
+  telemetryRecordingOptions: vi
+    .fn()
+    .mockReturnValue({ recordInputs: true, recordOutputs: true })
 }))
 
 import { generateText } from 'ai'

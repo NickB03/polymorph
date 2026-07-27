@@ -46,7 +46,11 @@ const toolWiringMocks = vi.hoisted(() => {
     stepCountIs: vi.fn(maxSteps => ({ maxSteps })),
     tool: vi.fn(config => config),
     getModel: vi.fn(model => ({ model })),
-    isTracingEnabled: vi.fn(() => false)
+    isTracingEnabled: vi.fn(() => false),
+    telemetryRecordingOptions: vi.fn(() => ({
+      recordInputs: true,
+      recordOutputs: true
+    }))
   }
 })
 
@@ -81,7 +85,8 @@ vi.mock('@/lib/utils/registry', () => ({
 }))
 
 vi.mock('@/lib/utils/telemetry', () => ({
-  isTracingEnabled: toolWiringMocks.isTracingEnabled
+  isTracingEnabled: toolWiringMocks.isTracingEnabled,
+  telemetryRecordingOptions: toolWiringMocks.telemetryRecordingOptions
 }))
 
 vi.mock('@/lib/tools/create-canvas-artifact/server', () => ({
