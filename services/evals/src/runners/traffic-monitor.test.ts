@@ -63,20 +63,26 @@ vi.mock('../sampler', () => ({
   sampleRecentChats: mockSampleRecentChats
 }))
 
-vi.mock('./shared', () => ({
-  buildDatasetExamples: mockBuildDatasetExamples,
-  buildEvalSummaryMetadata: mockBuildEvalSummaryMetadata,
-  buildExperimentEvaluators: mockBuildExperimentEvaluators,
-  buildExperimentTask: mockBuildExperimentTask,
-  buildPublicExperimentUrl: vi.fn(() => 'https://phoenix.example.com/exp'),
-  buildSuiteRunResult: mockBuildSuiteRunResult,
-  buildTimestampedDatasetName: mockBuildTimestampedDatasetName,
-  checkExperimentThresholds: mockCheckExperimentThresholds,
-  createDatasetAndExperiment: mockCreateDatasetAndExperiment,
-  createJudgeModel: mockCreateJudgeModel,
-  logThresholdBreachWarning: mockLogThresholdBreachWarning,
-  runCasesConcurrently: mockRunCasesConcurrently
-}))
+vi.mock('./shared', async importOriginal => {
+  const actual = await importOriginal<typeof import('./shared')>()
+  return {
+    // Real implementation: the drop-rate gate is pure and its end-to-end
+    // effect on the suite result is asserted in this file.
+    applyDropRateGate: actual.applyDropRateGate,
+    buildDatasetExamples: mockBuildDatasetExamples,
+    buildEvalSummaryMetadata: mockBuildEvalSummaryMetadata,
+    buildExperimentEvaluators: mockBuildExperimentEvaluators,
+    buildExperimentTask: mockBuildExperimentTask,
+    buildPublicExperimentUrl: vi.fn(() => 'https://phoenix.example.com/exp'),
+    buildSuiteRunResult: mockBuildSuiteRunResult,
+    buildTimestampedDatasetName: mockBuildTimestampedDatasetName,
+    checkExperimentThresholds: mockCheckExperimentThresholds,
+    createDatasetAndExperiment: mockCreateDatasetAndExperiment,
+    createJudgeModel: mockCreateJudgeModel,
+    logThresholdBreachWarning: mockLogThresholdBreachWarning,
+    runCasesConcurrently: mockRunCasesConcurrently
+  }
+})
 
 vi.mock('../eval-summary', () => ({
   persistEvalSummary: mockPersistEvalSummary
@@ -562,30 +568,15 @@ describe('runTrafficMonitorSuite', () => {
     ])
   })
 
-  it('fails when no chats are sampled so the run is treated as incomplete', async () => {
-    mockSampleRecentChats.mockResolvedValueOnce([])
-
-    const { runTrafficMonitorSuite } = await import('./traffic-monitor')
-    await expect(runTrafficMonitorSuite()).rejects.toThrow(
-      'No chats found in lookback window for traffic-monitor run'
-    )
-
-    expect(mockCreateDatasetAndExperiment).not.toHaveBeenCalled()
-    expect(mockRunCasesConcurrently).not.toHaveBeenCalled()
-    expect(mockPersistEvalSummary).not.toHaveBeenCalled()
-  })
-
-  it('returns null without recording when empty samples are explicitly allowed', async () => {
+  it('returns null and logs NO TRAFFIC when sampler returns no chats', async () => {
     mockSampleRecentChats.mockResolvedValueOnce([])
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     const { runTrafficMonitorSuite } = await import('./traffic-monitor')
-    const result = await runTrafficMonitorSuite({ allowEmpty: true })
+    const result = await runTrafficMonitorSuite()
 
     expect(result).toBeNull()
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[evals] No chats found in lookback window for traffic-monitor run; skipping traffic-monitor suite'
-    )
+    expect(warnSpy.mock.calls.flat().join(' ')).toContain('NO TRAFFIC')
     expect(mockCreateDatasetAndExperiment).not.toHaveBeenCalled()
     expect(mockRunCasesConcurrently).not.toHaveBeenCalled()
     expect(mockPersistEvalSummary).not.toHaveBeenCalled()

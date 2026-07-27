@@ -61,9 +61,10 @@ describe('relevance experiment evaluator', () => {
       output: 'some answer'
     })
     expect(result).toEqual({
-      label: 'no_results',
-      score: 0.0,
-      explanation: 'No search results returned'
+      label: 'skipped',
+      score: null,
+      explanation:
+        'No search performed — this case does not require retrieval, so relevance is not applicable'
     })
     expect(mockEvaluate).not.toHaveBeenCalled()
   })
@@ -75,10 +76,35 @@ describe('relevance experiment evaluator', () => {
       output: 'some answer'
     })
     expect(result).toEqual({
-      label: 'no_results',
-      score: 0.0,
-      explanation: 'No search results returned'
+      label: 'skipped',
+      score: null,
+      explanation:
+        'No search performed — this case does not require retrieval, so relevance is not applicable'
     })
+    expect(mockEvaluate).not.toHaveBeenCalled()
+  })
+
+  it('skips with null score when no search context and citations not required', async () => {
+    const evaluator = createRelevanceExperimentEvaluator(mockModel)
+    const result = await evaluator.evaluate({
+      input: { query: 'hi', context: '' },
+      output: {},
+      metadata: { requiresCitations: false }
+    })
+    expect(result.score).toBeNull()
+    expect(result.label).toBe('skipped')
+    expect(mockEvaluate).not.toHaveBeenCalled()
+  })
+
+  it('still scores 0 when the case required citations but no search ran', async () => {
+    const evaluator = createRelevanceExperimentEvaluator(mockModel)
+    const result = await evaluator.evaluate({
+      input: { query: 'hi', context: '' },
+      output: {},
+      metadata: { requiresCitations: true }
+    })
+    expect(result.score).toBe(0)
+    expect(result.label).toBe('no_results')
     expect(mockEvaluate).not.toHaveBeenCalled()
   })
 

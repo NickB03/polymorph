@@ -6,7 +6,7 @@ import type {
   EvalSuite
 } from '../types'
 
-const CORPUS_VERSION = 'v7'
+const CORPUS_VERSION = 'v8'
 
 function user(text: string): EvalConversationMessage {
   return {
@@ -436,6 +436,49 @@ const REGRESSION_CASES: EvalCase[] = [
   })
 ]
 
+// Regression by promotion: reference stable capability cases rather than
+// copying their bodies, so a fix to a case body applies to both suites.
+// The 48h cron runs EVAL_RUN_MODE=regression, pinned by EVAL_CASE_IDS to the
+// single case reg-research-mode — that case-ID pin is what keeps the schedule
+// cheap, not the run mode (package.json pins traffic-monitor for the local
+// `validate` script only). Clear it and the cron judges every case below.
+// Selection rule: the correct answer must not change as the world changes.
+// Time-sensitive, unanswerable, and expectsRefusal cases are excluded on
+// purpose — see the plan for the full exclusion list before adding any.
+const PROMOTED_TO_REGRESSION: readonly string[] = [
+  'cap-factual-lookup',
+  'cap-comparison',
+  'cap-multi-hop',
+  'cap-how-to',
+  'cap-citation-critical',
+  'cap-long-form',
+  'cap-multi-turn',
+  'cap-health-advice',
+  'cap-cooking-recipe',
+  'cap-history-factual',
+  'cap-research-deep-dive',
+  'cap-quality-complex-analysis'
+]
+
+function promoteToRegression(caseSpec: EvalCase): EvalCase {
+  return {
+    ...caseSpec,
+    id: caseSpec.id.replace(/^cap-/, 'reg-promoted-'),
+    suite: 'regression',
+    tags: [...caseSpec.tags.filter(tag => tag !== 'capability'), 'regression']
+  }
+}
+
+const PROMOTED_REGRESSION_CASES: EvalCase[] = PROMOTED_TO_REGRESSION.map(id => {
+  const caseSpec = CAPABILITY_CASES.find(candidate => candidate.id === id)
+  if (!caseSpec) {
+    throw new Error(
+      `[corpus] PROMOTED_TO_REGRESSION references unknown capability case: ${id}`
+    )
+  }
+  return promoteToRegression(caseSpec)
+})
+
 const SMOKE_CASES: EvalCase[] = [
   caseSpec({
     id: 'smoke-basic',
@@ -465,7 +508,12 @@ export function getCorpusVersion(): string {
 }
 
 export function getAllCases(): EvalCase[] {
-  return [...CAPABILITY_CASES, ...REGRESSION_CASES, ...SMOKE_CASES]
+  return [
+    ...CAPABILITY_CASES,
+    ...REGRESSION_CASES,
+    ...PROMOTED_REGRESSION_CASES,
+    ...SMOKE_CASES
+  ]
 }
 
 export function getCasesForSuite(
@@ -475,7 +523,7 @@ export function getCasesForSuite(
     case 'capability':
       return [...CAPABILITY_CASES]
     case 'regression':
-      return [...REGRESSION_CASES]
+      return [...REGRESSION_CASES, ...PROMOTED_REGRESSION_CASES]
     case 'smoke':
       return [...SMOKE_CASES]
   }

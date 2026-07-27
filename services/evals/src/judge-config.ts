@@ -20,6 +20,21 @@ export function validPositiveInt(
   return n > 0 ? n : fallback
 }
 
+export function requirePositiveInt(
+  raw: string | undefined,
+  fallback: number,
+  name: string
+): number {
+  if (raw == null || raw === '') return fallback
+  const n = parseInt(raw, 10)
+  if (Number.isNaN(n) || n <= 0 || String(n) !== raw.trim()) {
+    throw new Error(
+      `Invalid ${name}: "${raw}" — must be a positive integer (or unset to use default ${fallback})`
+    )
+  }
+  return n
+}
+
 export function validBool(raw: string | undefined, fallback: boolean): boolean {
   if (raw == null) return fallback
   return raw === 'true'

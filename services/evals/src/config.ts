@@ -1,8 +1,8 @@
 import { DEFAULT_EVAL_RUNNER_TIMEOUT_MS } from './eval-runner-client'
 import {
   createJudgeConfig,
+  requirePositiveInt,
   validBool,
-  validInt,
   validPositiveInt
 } from './judge-config'
 import type { EvalRunMode } from './types'
@@ -40,6 +40,7 @@ export interface EvalsConfig {
   exitOnThresholdBreach: boolean
   caseConcurrency: number
   dbPoolMax: number
+  judgeTimeoutMs: number
   excludeFromThreshold: string[]
 }
 
@@ -51,12 +52,6 @@ function required(env: NodeJS.ProcessEnv, name: string): string {
   const value = env[name]
   if (!value) throw new Error(`Missing required env var: ${name}`)
   return value
-}
-
-function validFloat(raw: string | undefined, fallback: number): number {
-  if (!raw) return fallback
-  const n = parseFloat(raw)
-  return Number.isNaN(n) ? fallback : n
 }
 
 function validStringList(raw: string | undefined): string[] {
@@ -73,6 +68,7 @@ function validStringList(raw: string | undefined): string[] {
 }
 
 function parseRunMode(raw: string | undefined): EvalRunMode {
+  if (raw == null || raw === '') return 'capability'
   switch (raw) {
     case 'capability':
     case 'regression':
@@ -81,8 +77,21 @@ function parseRunMode(raw: string | undefined): EvalRunMode {
     case 'all':
       return raw
     default:
-      return 'capability'
+      throw new Error(
+        `Invalid EVAL_RUN_MODE: "${raw}". Valid modes: capability, regression, traffic-monitor, smoke, all`
+      )
   }
+}
+
+function requireThreshold(raw: string | undefined, fallback: number): number {
+  if (raw == null || raw === '') return fallback
+  const n = parseFloat(raw)
+  if (Number.isNaN(n) || n <= 0 || n > 1) {
+    throw new Error(
+      `Invalid SCORE_THRESHOLD: "${raw}" — must be a number in (0, 1]`
+    )
+  }
+  return n
 }
 
 function requiredEvalRunnerSettings(mode: EvalRunMode): boolean {
@@ -165,8 +174,8 @@ export function createConfig(
     phoenixPublicUrl: env.PHOENIX_PUBLIC_URL?.trim() || phoenixHost,
     phoenixApiKey: required(env, 'PHOENIX_API_KEY'),
     ...createJudgeConfig(env),
-    sampleSize: validInt(env.SAMPLE_SIZE, 10),
-    lookbackHours: validInt(env.LOOKBACK_HOURS, 48),
+    sampleSize: requirePositiveInt(env.SAMPLE_SIZE, 10, 'SAMPLE_SIZE'),
+    lookbackHours: requirePositiveInt(env.LOOKBACK_HOURS, 48, 'LOOKBACK_HOURS'),
     databaseSslDisabled: env.DATABASE_SSL_DISABLED === 'true',
     evalRunMode,
     caseIds,
@@ -182,15 +191,34 @@ export function createConfig(
     seedUserEmail,
     seedUserPassword,
     smokeEnabled,
-    smokeCaseCount: validInt(env.SMOKE_CASE_COUNT, 1),
-    smokeTimeoutMs: validInt(env.SMOKE_TIMEOUT_MS, 300_000),
-    scoreThreshold: validFloat(env.SCORE_THRESHOLD, 0.8),
+    smokeCaseCount: requirePositiveInt(
+      env.SMOKE_CASE_COUNT,
+      1,
+      'SMOKE_CASE_COUNT'
+    ),
+    smokeTimeoutMs: requirePositiveInt(
+      env.SMOKE_TIMEOUT_MS,
+      300_000,
+      'SMOKE_TIMEOUT_MS'
+    ),
+    scoreThreshold: requireThreshold(env.SCORE_THRESHOLD, 0.8),
     exitOnThresholdBreach: validBool(env.EVAL_EXIT_ON_THRESHOLD_BREACH, false),
-    caseConcurrency: validInt(env.EVAL_CASE_CONCURRENCY, 1),
-    dbPoolMax: validInt(env.EVAL_DB_POOL_MAX, 5),
-    // `safety` and `tool_selection` are excluded while we baseline real
-    // production scores before deciding what "failing" means for each.
-    // Remove them from this default once per-evaluator thresholds are set.
+    caseConcurrency: requirePositiveInt(
+      env.EVAL_CASE_CONCURRENCY,
+      1,
+      'EVAL_CASE_CONCURRENCY'
+    ),
+    dbPoolMax: requirePositiveInt(env.EVAL_DB_POOL_MAX, 5, 'EVAL_DB_POOL_MAX'),
+    judgeTimeoutMs: requirePositiveInt(
+      env.JUDGE_TIMEOUT_MS,
+      60_000,
+      'JUDGE_TIMEOUT_MS'
+    ),
+    // `safety` is excluded from the POOLED pass rate only — a hard gate in
+    // checkExperimentThresholds() (runners/shared.ts) breaches the run on any
+    // `unsafe` label regardless of this list. `tool_selection` is excluded
+    // while we baseline real production scores (see
+    // docs/superpowers/plans/2026-05-20-tool-selection-evaluator.md).
     excludeFromThreshold: env.EVAL_EXCLUDE_FROM_THRESHOLD
       ? env.EVAL_EXCLUDE_FROM_THRESHOLD.split(',').map(s => s.trim())
       : ['safety', 'tool_selection']

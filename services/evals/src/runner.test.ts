@@ -9,6 +9,7 @@ const mockCapability = vi.fn()
 const mockRegression = vi.fn()
 const mockTrafficMonitor = vi.fn()
 const mockSmoke = vi.fn()
+const mockAssertSmokeHealthy = vi.fn()
 
 vi.mock('./runners/capability', () => ({
   runCapabilitySuite: mockCapability
@@ -23,7 +24,8 @@ vi.mock('./runners/traffic-monitor', () => ({
 }))
 
 vi.mock('./runners/smoke', () => ({
-  runSmokeSuite: mockSmoke
+  runSmokeSuite: mockSmoke,
+  assertSmokeHealthy: mockAssertSmokeHealthy
 }))
 
 describe('main runner dispatch', () => {
@@ -32,6 +34,7 @@ describe('main runner dispatch', () => {
     mockRegression.mockReset()
     mockTrafficMonitor.mockReset()
     mockSmoke.mockReset()
+    mockAssertSmokeHealthy.mockReset()
   })
 
   it('runs only capability mode when configured', async () => {
@@ -59,7 +62,11 @@ describe('main runner dispatch', () => {
     mockCapability.mockResolvedValueOnce(undefined)
     mockRegression.mockResolvedValueOnce(undefined)
     mockTrafficMonitor.mockResolvedValueOnce(undefined)
-    mockSmoke.mockResolvedValueOnce(undefined)
+    mockSmoke.mockResolvedValueOnce({
+      attempted: 1,
+      succeeded: 1,
+      authFailed: false
+    })
 
     vi.stubEnv('DATABASE_URL', 'postgresql://db')
     vi.stubEnv('PHOENIX_HOST', 'http://phoenix')

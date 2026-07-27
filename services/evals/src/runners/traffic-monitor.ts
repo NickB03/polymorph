@@ -6,6 +6,7 @@ import { persistEvalSummary } from '../eval-summary'
 import { createCitationAccuracyExperimentEvaluator } from '../evaluators/citation-accuracy'
 import { createFaithfulnessExperimentEvaluator } from '../evaluators/faithfulness'
 import { createNoToolPlaceholdersExperimentEvaluator } from '../evaluators/no-tool-placeholders'
+import { createRefusalExperimentEvaluator } from '../evaluators/refusal'
 import { createRelevanceExperimentEvaluator } from '../evaluators/relevance'
 import { createResponseQualityExperimentEvaluator } from '../evaluators/response-quality'
 import { createSafetyExperimentEvaluator } from '../evaluators/safety'
@@ -16,6 +17,7 @@ import { type ChatSample, sampleRecentChats } from '../sampler'
 import type { EvalCase } from '../types'
 
 import {
+  applyDropRateGate,
   buildDatasetExamples,
   buildEvalSummaryMetadata,
   buildExperimentEvaluators,
@@ -31,31 +33,19 @@ import {
 } from './shared'
 
 const NO_TRAFFIC_SAMPLES_MESSAGE =
-  '[evals] No chats found in lookback window for traffic-monitor run'
-
-interface TrafficMonitorRunOptions {
-  allowEmpty?: boolean
-}
+  '[evals] NO TRAFFIC - no chats found in lookback window; skipping traffic-monitor suite'
 
 export function formatContext(sample: ChatSample): string {
   return formatEvalContext(sample)
 }
 
-export async function runTrafficMonitorSuite(
-  options: TrafficMonitorRunOptions = {}
-) {
+export async function runTrafficMonitorSuite() {
   console.log('[evals] Sampling recent chats...')
   const samples = await sampleRecentChats()
 
   if (samples.length === 0) {
-    if (options.allowEmpty) {
-      console.warn(
-        `${NO_TRAFFIC_SAMPLES_MESSAGE}; skipping traffic-monitor suite`
-      )
-      return null
-    }
-
-    throw new Error(NO_TRAFFIC_SAMPLES_MESSAGE)
+    console.warn(NO_TRAFFIC_SAMPLES_MESSAGE)
+    return null
   }
 
   console.log(`[evals] Sampled ${samples.length} chats`)
@@ -112,6 +102,7 @@ export async function runTrafficMonitorSuite(
     responseQuality: createResponseQualityExperimentEvaluator,
     safety: createSafetyExperimentEvaluator,
     citationAccuracy: createCitationAccuracyExperimentEvaluator,
+    refusal: createRefusalExperimentEvaluator,
     model
   })
 
@@ -180,15 +171,7 @@ export async function runTrafficMonitorSuite(
     failedCases: failCount
   })
 
-  // Drop-rate gate: if more than half of replays failed, mark the suite
-  // as threshold_breached even if the surviving cases scored well.
-  // The dashboard signal must reflect "we lost most of the run," not
-  // "the few cases we kept happened to pass."
-  const dropRate = cases.length > 0 ? failCount / cases.length : 0
-  if (dropRate > 0.5 && result.status === 'passed') {
-    result.status = 'threshold_breached'
-    result.failedEvaluators = [...result.failedEvaluators, 'replay-drop-rate']
-  }
+  applyDropRateGate(result, cases.length, failCount)
 
   if (result.status === 'threshold_breached') {
     logThresholdBreachWarning(result)

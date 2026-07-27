@@ -6,29 +6,31 @@ import { inputField, normalizeEvalRunResult } from '../eval-output'
 
 // Phoenix's default faithfulness rubric uses {{context}} and assumes that block
 // is the source-of-truth document body to verbatim-ground every claim against.
-// Polymorph passes a list of retrieved search-result titles + URLs + ~140-char
-// snippets — a topical pointer, not the source corpus. Strict-instruction-
-// following judges (e.g. nemotron-3) read the default rubric literally and
-// label the response 'unfaithful' because the snippets don't contain the full
-// claim text. This template renames the placeholder and adds a system message
-// that pins the contract: snippets are previews, not grounding text.
+// Polymorph passes retrieved search results (title, URL, retrieved text). The
+// retrieved text varies in length: replays carry full page content (capped at
+// MAX_SNIPPET_CHARS per result in formatEvalContext), while some entries are
+// only short previews. This template pins a two-tier contract: ground specific
+// claims against substantial retrieved text, fall back to topic-alignment when
+// only short previews exist.
 interface FaithfulnessRecord {
   input: string
   output: string
-  retrievedSearchTopics: string
+  retrievedSearchResults: string
   [key: string]: unknown
 }
 
 const FAITHFULNESS_PROMPT_TEMPLATE = [
   {
     role: 'system' as const,
-    content: `You are evaluating whether an assistant's response is faithful to the topics surfaced by a retrieval step.
+    content: `You are evaluating whether an assistant's response is faithful to the content retrieved by its search step.
 
-The <retrieved_search_topics> block is NOT a document body or source-of-truth corpus. It is a structured list of search-result titles, URLs, and short (~140 character) snippets that the assistant retrieved while researching the query. Treat it as an indicator of which topics the assistant had access to, NOT as the complete text the response must be verbatim-grounded against.
+The <retrieved_search_results> block lists search results the assistant retrieved: title, URL, and retrieved text for each. The retrieved text varies in length — some entries carry substantial page content, others only short previews.
 
-Score "faithful" when the response stays on-topic with the retrieved results and does not introduce specific factual claims (numbers, names, dates, quotes) that contradict or are unrelated to the retrieved topics.
+Apply a two-tier standard:
+1. When the retrieved text substantively covers a claim's topic, the claim must be consistent with that text. Score "unfaithful" if the response asserts specific facts (numbers, dates, names, quotes) that CONTRADICT the retrieved text.
+2. When the retrieved text is only a short preview that cannot verify a claim either way, judge topical alignment only. Absence of verbatim support in a short preview is NOT evidence of fabrication.
 
-Score "unfaithful" only when the response makes specific factual claims that clearly contradict the retrieved topics, or fabricates entities/sources not represented in the retrieval. Do NOT mark "unfaithful" merely because individual claims are not verbatim-quoted in the snippets — the snippets are by design too short to verify every claim, and absence of verbatim text is not evidence of fabrication.`
+Score "unfaithful" when the response contradicts the retrieved content, or fabricates entities/sources not represented in the retrieval. Score "faithful" otherwise. Do NOT penalize reasonable synthesis or general knowledge that neither contradicts nor misattributes the retrieved content.`
   },
   {
     role: 'user' as const,
@@ -37,16 +39,16 @@ Score "unfaithful" only when the response makes specific factual claims that cle
 {{input}}
 </query>
 
-<retrieved_search_topics>
-{{retrievedSearchTopics}}
-</retrieved_search_topics>
+<retrieved_search_results>
+{{retrievedSearchResults}}
+</retrieved_search_results>
 
 <response>
 {{output}}
 </response>
 </data>
 
-Is the response above faithful or unfaithful given the query and the retrieved topics? Respond with a single word: 'faithful' or 'unfaithful'.`
+Is the response above faithful or unfaithful given the query and the retrieved results?`
   }
 ]
 
@@ -92,7 +94,7 @@ export function createFaithfulnessExperimentEvaluator(model: LanguageModel) {
 
       return evaluator.evaluate({
         input: inputField(input, 'query'),
-        retrievedSearchTopics: context,
+        retrievedSearchResults: context,
         output: answer
       })
     }

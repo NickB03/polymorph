@@ -9,8 +9,8 @@ import {
 } from './corpus'
 
 describe('corpus', () => {
-  it('uses v7 after adding availableTools to Phoenix dataset inputs', () => {
-    expect(getCorpusVersion()).toBe('v7')
+  it('uses v8 after promoting capability cases into the regression suite', () => {
+    expect(getCorpusVersion()).toBe('v8')
   })
 
   it('returns capability cases with stable ids', () => {
@@ -65,5 +65,25 @@ describe('corpus', () => {
     ).toThrow(
       '[evals] EVAL_CASE_IDS contains invalid regression case IDs: cap-long-input, missing-case'
     )
+  })
+})
+
+describe('regression corpus v8', () => {
+  it('regression suite has at least 15 cases with regression suite identity', () => {
+    const cases = getCasesForEvaluation('regression')
+    expect(cases.length).toBeGreaterThanOrEqual(15)
+    for (const caseSpec of cases) {
+      expect(caseSpec.suite).toBe('regression')
+      expect(caseSpec.id).toMatch(/^reg-/)
+    }
+  })
+
+  it('regression case ids are unique', () => {
+    const ids = getCasesForEvaluation('regression').map(c => c.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('corpus version is v8', () => {
+    expect(getCorpusVersion()).toBe('v8')
   })
 })
