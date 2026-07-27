@@ -73,7 +73,12 @@ Set these env vars in the Vercel dashboard (Settings → Environment Variables, 
 
 The app exports traces to `${PHOENIX_COLLECTOR_ENDPOINT}/v1/traces` with `Authorization: Bearer $PHOENIX_API_KEY` from `instrumentation.ts`. Use low-cardinality Phoenix projects such as `polymorph-prod`; keep per-request details in metadata (`correlationId`, `otelTraceId`, model, mode, and eval case fields).
 
-For production, set OpenInference masking according to the data you are comfortable storing in Phoenix. Masks LLM prompt/output content on AI SDK spans (recordInputs/recordOutputs). Root-span and tool-event attributes are unaffected.
+For production, set OpenInference masking according to the data you are comfortable storing in Phoenix. `OPENINFERENCE_HIDE_INPUTS` / `OPENINFERENCE_HIDE_OUTPUTS` mask LLM prompt and output content on AI SDK spans (via `recordInputs`/`recordOutputs`).
+
+Two limits worth knowing before you rely on them:
+
+- **Only the exact string `true` masks.** `TRUE`, `1`, and `yes` are ignored and the span records normally. The control fails toward recording, not toward hiding, so a typo silently leaves content exposed.
+- **This is not de-identification.** The `chat-response` root span is constructed outside the AI SDK (`lib/streaming/create-chat-stream-response.ts`) and so is unreachable by these flags. It still carries the session id (chat id), user id, and request metadata — correlation id, model id, search mode, user mode, intent — no matter how the flags are set. Masking removes message content, not who sent it.
 
 | Variable                     | Typical production value |
 | ---------------------------- | ------------------------ |

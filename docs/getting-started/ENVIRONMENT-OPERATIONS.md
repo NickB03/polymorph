@@ -52,7 +52,7 @@ EVAL_REPLAY_TRACING_ENABLED=false
 
 Set these in the Vercel dashboard under **Settings → Environment Variables** for the Production environment. Since Vercel serverless functions run outside of any private network, the Phoenix endpoint must be publicly reachable (with auth via `PHOENIX_API_KEY`).
 
-For production masking, configure `OPENINFERENCE_HIDE_INPUTS` and `OPENINFERENCE_HIDE_OUTPUTS`. Masks LLM prompt/output content on AI SDK spans (recordInputs/recordOutputs). Root-span and tool-event attributes are unaffected.
+For production masking, configure `OPENINFERENCE_HIDE_INPUTS` and `OPENINFERENCE_HIDE_OUTPUTS`. These mask LLM prompt and output content on AI SDK spans (via `recordInputs`/`recordOutputs`). Only the exact string `true` masks — `TRUE`/`1`/`yes` are ignored and record normally. They are **not** de-identification: the `chat-response` root span is built outside the AI SDK and still carries session id, user id, and request metadata regardless. See [Phoenix operations](../operations/PHOENIX-OPERATIONS.md) for the full caveats.
 
 **`PHOENIX_API_KEY` vs `OTEL_EXPORTER_OTLP_HEADERS`:** `instrumentation.ts` (lines 63-64) reads `PHOENIX_API_KEY` and explicitly sets the `Authorization: Bearer` header on the `OTLPTraceExporter`. The standard OTel env var `OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer <key>` accomplishes the same thing at the SDK level. Setting `PHOENIX_API_KEY` alone is sufficient. Adding `OTEL_EXPORTER_OTLP_HEADERS` is harmless as a belt-and-suspenders approach but not required.
 
