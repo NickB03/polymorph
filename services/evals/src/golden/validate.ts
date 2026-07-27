@@ -13,6 +13,19 @@ import { evaluatePrechecks } from '../prechecks'
 
 import { buildEvalOutput, getGoldenExamples, type GoldenExample } from './index'
 
+interface ValidationRun {
+  results: ValidationResult[]
+  /**
+   * How many evaluators a complete run measures. Derived from the golden
+   * `expected` shape rather than hardcoded: validateEvaluators produces exactly
+   * one ValidationResult per key there, so adding an evaluator (as `refusal`
+   * was) updates this automatically instead of leaving a stale literal behind.
+   */
+  expectedEvaluatorCount: number
+  /** Why the LLM evaluators did not run, or null when they did. */
+  skippedReason: string | null
+}
+
 interface ValidationResult {
   evaluator: string
   total: number
@@ -162,8 +175,17 @@ async function validateLLMEvaluator(
   return tally(evaluatorName, total, counts)
 }
 
-export async function validateEvaluators(): Promise<ValidationResult[]> {
+function countExpectedEvaluators(examples: GoldenExample[]): number {
+  const names = new Set<string>()
+  for (const example of examples) {
+    for (const name of Object.keys(example.expected)) names.add(name)
+  }
+  return names.size
+}
+
+export async function validateEvaluators(): Promise<ValidationRun> {
   const examples = getGoldenExamples()
+  const expectedEvaluatorCount = countExpectedEvaluators(examples)
   const results: ValidationResult[] = []
 
   // 1. Validate prechecks (deterministic, always runs)
@@ -195,7 +217,11 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
   const judgeConfig = createJudgeConfig()
   if (!judgeConfig.judgeApiKey && !process.env.OPENROUTER_API_KEY) {
     console.log('\n[WARN] Missing judge API key — skipping LLM evaluators.')
-    return results
+    return {
+      results,
+      expectedEvaluatorCount,
+      skippedReason: 'no judge API key'
+    }
   }
 
   let model: any
@@ -206,7 +232,11 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
       '\n[WARN] Could not create judge model — skipping LLM evaluators.'
     )
     console.log(`  ${getErrorMessage(error)}`)
-    return results
+    return {
+      results,
+      expectedEvaluatorCount,
+      skippedReason: 'judge model unavailable'
+    }
   }
 
   const faithfulnessEval = createFaithfulnessExperimentEvaluator(model)
@@ -251,7 +281,7 @@ export async function validateEvaluators(): Promise<ValidationResult[]> {
     refusal
   )
 
-  return results
+  return { results, expectedEvaluatorCount, skippedReason: null }
 }
 
 function printSummary(results: ValidationResult[]) {
@@ -299,7 +329,8 @@ function printSummary(results: ValidationResult[]) {
 // firing as an import side effect. `bun run src/golden/validate.ts` — the
 // `validate` script — still sets import.meta.main, so the CLI is unchanged.
 if (import.meta.main) {
-  const results = await validateEvaluators()
+  const { results, expectedEvaluatorCount, skippedReason } =
+    await validateEvaluators()
   printSummary(results)
 
   // Exit with code 1 if any metric is below threshold
@@ -329,7 +360,15 @@ if (import.meta.main) {
     }
   }
 
-  if (failed) {
+  // A partial run must never read as a pass: the thresholds above only iterate
+  // the evaluators that actually ran, so a no-key run trivially clears them.
+  if (skippedReason) {
+    console.log(
+      `\nINCOMPLETE — ${results.length}/${expectedEvaluatorCount} evaluators measured (${skippedReason}). This is not a passing validation run.`
+    )
+  }
+
+  if (failed || skippedReason) {
     process.exit(1)
   } else {
     console.log('\nAll evaluators passed validation thresholds.')

@@ -438,8 +438,10 @@ const REGRESSION_CASES: EvalCase[] = [
 
 // Regression by promotion: reference stable capability cases rather than
 // copying their bodies, so a fix to a case body applies to both suites.
-// The cron is pinned to traffic-monitor, so growing this suite costs nothing
-// on the schedule — regression runs are on demand only.
+// The 48h cron runs EVAL_RUN_MODE=regression, pinned by EVAL_CASE_IDS to the
+// single case reg-research-mode — that case-ID pin is what keeps the schedule
+// cheap, not the run mode (package.json pins traffic-monitor for the local
+// `validate` script only). Clear it and the cron judges every case below.
 // Selection rule: the correct answer must not change as the world changes.
 // Time-sensitive, unanswerable, and expectsRefusal cases are excluded on
 // purpose — see the plan for the full exclusion list before adding any.
