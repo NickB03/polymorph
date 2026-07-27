@@ -54,7 +54,7 @@ Set these in the Vercel dashboard under **Settings → Environment Variables** f
 
 For production masking, configure `OPENINFERENCE_HIDE_INPUTS` and `OPENINFERENCE_HIDE_OUTPUTS`. Masks LLM prompt/output content on AI SDK spans (recordInputs/recordOutputs). Root-span and tool-event attributes are unaffected.
 
-**`PHOENIX_API_KEY` vs `OTEL_EXPORTER_OTLP_HEADERS`:** `instrumentation.ts` (lines 29-31) reads `PHOENIX_API_KEY` and explicitly sets the `Authorization: Bearer` header on the `OTLPTraceExporter`. The standard OTel env var `OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer <key>` accomplishes the same thing at the SDK level. Setting `PHOENIX_API_KEY` alone is sufficient. Adding `OTEL_EXPORTER_OTLP_HEADERS` is harmless as a belt-and-suspenders approach but not required.
+**`PHOENIX_API_KEY` vs `OTEL_EXPORTER_OTLP_HEADERS`:** `instrumentation.ts` (lines 63-64) reads `PHOENIX_API_KEY` and explicitly sets the `Authorization: Bearer` header on the `OTLPTraceExporter`. The standard OTel env var `OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer <key>` accomplishes the same thing at the SDK level. Setting `PHOENIX_API_KEY` alone is sufficient. Adding `OTEL_EXPORTER_OTLP_HEADERS` is harmless as a belt-and-suspenders approach but not required.
 
 **Local development:** Set `ENABLE_TRACING=true` and leave `PHOENIX_COLLECTOR_ENDPOINT` at the default (`http://localhost:6006`) if running Phoenix locally via Docker.
 
