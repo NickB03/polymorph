@@ -139,11 +139,14 @@ export function getGoldenExamples(): GoldenExample[] {
   // buildGoldenSearchResults attributes every snippet to the same URL. The
   // three empty-context cases named above have no retrieval to restate;
   // they are complete, well-organized restatements of general knowledge
-  // instead, for the same reason. tp-tool-search-fetch is this
-  // corpus's `excellent` anchor and the only case with two distinct sources;
-  // relabelling the twelve to `excellent` would erase that gradient and leave
-  // the label unable to detect a judge that over-awards it. Each such case
-  // carries a per-case note recording that the judge disagreed.
+  // instead, for the same reason. Three cases anchor `excellent` against them:
+  // tp-tool-search-fetch (two distinct citation-derived sources),
+  // tp-historical-analysis (single source, but added causal analysis), and
+  // tn-citation-fabricated (three distinct hand-written searchResults plus a
+  // causal mechanism none of them carries). Relabelling the twelve to
+  // `excellent` would erase that gradient and leave the label unable to detect
+  // a judge that over-awards it. Each such case carries a per-case note
+  // recording that the judge disagreed.
   const examples: GoldenExampleInput[] = [
     // ──────────────────────────────────────────────────────────────
     // TRUE POSITIVES — well-grounded, relevant, quality answers
@@ -964,7 +967,20 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
-        response_quality: { label: 'good', score: 0.75 },
+        // Raised good → excellent; the judge independently said `excellent`
+        // too. The original `good` was set in passing while authoring the
+        // citation fixture and never derived. The answer joins three distinct
+        // retrieved sources (Britannica half-life, NIST formation route, USGS
+        // 50,000-year limit) and supplies the causal link none of them carries
+        // — that ten half-lives of decay leaves too little carbon-14 to
+        // measure, which is why the dating limit sits where it does. Synthesis
+        // across sources and a causal mechanism are two of the three ways the
+        // rubric's `excellent` gate can be met; this answer meets both. The
+        // fabricated citation is not this evaluator's concern: it reaches the
+        // judge only as a bare title/URL in the context's [Citations] tail with
+        // no snippet, and detecting that it matches no retrieved result is
+        // exactly what citation_accuracy below is for.
+        response_quality: { label: 'excellent', score: 1 },
         citation_accuracy: { label: 'fabricated', score: 0 }
       }
     },
@@ -1015,6 +1031,20 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
+        // Judge said `excellent`; kept `good`. Derived here for the first time
+        // — the label was set in passing while authoring the citation fixture.
+        // The answer restates the one relevant snippet (NASA: landing date and
+        // Armstrong's first step) and appends a mission duration that appears
+        // in neither snippet; the Smithsonian result is about the Columbia
+        // capsule's museum display and contributes nothing to the question. So
+        // there is no synthesis across sources here, and an unsourced factual
+        // addendum is not analysis, causal mechanism, or a settled-versus-
+        // debated qualification either — the `excellent` gate is unmet on all
+        // three routes. A correct, readable single-source restatement is
+        // exactly `good`. Contrast tn-citation-fabricated directly above, which
+        // does clear the gate: same fixture family, opposite outcome, which is
+        // what makes this pair able to catch a judge that over-awards the top
+        // label.
         response_quality: { label: 'good', score: 0.75 },
         citation_accuracy: { label: 'mixed', score: 0.4 }
       }
