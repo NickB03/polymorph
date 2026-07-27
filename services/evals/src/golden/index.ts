@@ -910,6 +910,115 @@ export function getGoldenExamples(): GoldenExample[] {
     },
 
     // ──────────────────────────────────────────────────────────────
+    // TRUE NEGATIVES — citation defects (hand-labelled, not derived)
+    // searchResults are explicit so a cited URL can be absent from the
+    // retrieval — impossible when results are derived from citations.
+    // ──────────────────────────────────────────────────────────────
+    {
+      id: 'tn-citation-fabricated',
+      query: 'What is the half-life of carbon-14?',
+      context:
+        'Carbon-14 has a half-life of 5,730 years, plus or minus 40 years. It is produced in the upper atmosphere when cosmic-ray neutrons strike nitrogen-14. Radiocarbon dating using carbon-14 is reliable to roughly 50,000 years.',
+      answer:
+        'Carbon-14 has a half-life of 5,730 years (±40 years). It forms in the upper atmosphere when cosmic-ray neutrons collide with nitrogen-14 atoms. Because roughly ten half-lives of decay leaves too little carbon-14 to measure reliably, radiocarbon dating is generally useful out to about 50,000 years.',
+      citations: [
+        {
+          url: 'https://www.carbon-dating-institute.org/c14-halflife-report-2024',
+          title: 'C-14 Half-Life Report 2024 - Carbon Dating Institute'
+        }
+      ],
+      searchResults: [
+        {
+          query: 'carbon-14 half-life',
+          results: [
+            {
+              title: 'Carbon-14 - Britannica',
+              url: 'https://www.britannica.com/science/carbon-14',
+              snippet:
+                'Carbon-14 has a half-life of 5,730 years, plus or minus 40 years.'
+            },
+            {
+              title: 'Radiocarbon Dating - NIST',
+              url: 'https://www.nist.gov/radiocarbon-dating',
+              snippet:
+                'It is produced in the upper atmosphere when cosmic-ray neutrons strike nitrogen-14.'
+            },
+            {
+              title: 'Limits of Radiocarbon Dating - USGS',
+              url: 'https://www.usgs.gov/radiocarbon-limits',
+              snippet:
+                'Radiocarbon dating using carbon-14 is reliable to roughly 50,000 years.'
+            }
+          ]
+        }
+      ],
+      usedInteractiveOnlyOutput: false,
+      requiresTextAnswer: true,
+      requiresCitations: true,
+      allowsInteractiveOnly: false,
+      toolNames: ['search'],
+      expected: {
+        prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
+        faithfulness: { label: 'faithful', score: 1 },
+        relevance: { label: 'relevant', score: 1 },
+        response_quality: { label: 'good', score: 0.75 },
+        citation_accuracy: { label: 'fabricated', score: 0 }
+      }
+    },
+    {
+      id: 'tn-citation-mixed',
+      query:
+        'When did Apollo 11 land on the Moon, and how long was the mission?',
+      context:
+        'Apollo 11 landed in the Sea of Tranquility on 20 July 1969, and Neil Armstrong stepped onto the surface later that day. The Apollo 11 command module Columbia is on display at the Smithsonian National Air and Space Museum in Washington, DC.',
+      answer:
+        'Apollo 11 landed in the Sea of Tranquility on 20 July 1969, with Neil Armstrong stepping onto the surface later the same day. The complete mission ran 8 days, 3 hours and 18 minutes from launch to splashdown.',
+      citations: [
+        {
+          url: 'https://www.nasa.gov/mission/apollo-11/',
+          title: 'Apollo 11 Mission Overview - NASA'
+        },
+        {
+          url: 'https://airandspace.si.edu/collection-objects/command-module-columbia',
+          title: 'Command Module Columbia - Smithsonian'
+        }
+      ],
+      searchResults: [
+        {
+          query: 'apollo 11 moon landing date mission duration',
+          results: [
+            {
+              title: 'Apollo 11 Mission Overview - NASA',
+              url: 'https://www.nasa.gov/mission/apollo-11/',
+              snippet:
+                'Apollo 11 landed in the Sea of Tranquility on 20 July 1969, and Neil Armstrong stepped onto the surface later that day.'
+            },
+            {
+              title: 'Command Module Columbia - Smithsonian',
+              url: 'https://airandspace.si.edu/collection-objects/command-module-columbia',
+              snippet:
+                'The Apollo 11 command module Columbia is on display at the Smithsonian National Air and Space Museum in Washington, DC.'
+            }
+          ]
+        }
+      ],
+      usedInteractiveOnlyOutput: false,
+      requiresTextAnswer: true,
+      requiresCitations: true,
+      allowsInteractiveOnly: false,
+      toolNames: ['search'],
+      expected: {
+        prechecks: { label: 'pass', score: 1 },
+        tool_usage: { label: 'tools_used', score: 1 },
+        faithfulness: { label: 'faithful', score: 1 },
+        relevance: { label: 'relevant', score: 1 },
+        response_quality: { label: 'good', score: 0.75 },
+        citation_accuracy: { label: 'mixed', score: 0.4 }
+      }
+    },
+
+    // ──────────────────────────────────────────────────────────────
     // EDGE CASES — structural/boundary cases
     // ──────────────────────────────────────────────────────────────
     {
