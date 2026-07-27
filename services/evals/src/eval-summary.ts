@@ -15,7 +15,7 @@ import type {
   PersistedEvalSuite
 } from './types'
 
-export const EVALUATOR_TEMPLATE_VERSION = 'v2'
+export const EVALUATOR_TEMPLATE_VERSION = 'v3'
 
 export type EvalFailureMode =
   | 'retrieval_miss'
