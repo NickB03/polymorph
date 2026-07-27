@@ -1,5 +1,7 @@
 import { type ModelMessage, Output, streamText } from 'ai'
 
+import { telemetryRecordingOptions } from '@/lib/utils/telemetry'
+
 import { getRelatedQuestionsModel } from '../config/model-types'
 import { relatedQuestionSchema } from '../schema/related'
 import { createModelId } from '../utils'
@@ -36,6 +38,7 @@ export function createRelatedQuestionsStream(
     experimental_telemetry: {
       isEnabled: isTracingEnabled(),
       functionId: 'related-questions',
+      ...telemetryRecordingOptions(),
       metadata: {
         modelId,
         agentType: 'related-questions-generator',

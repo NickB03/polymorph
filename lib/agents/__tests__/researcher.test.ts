@@ -101,7 +101,10 @@ vi.mock('@/lib/utils/registry', () => ({
   isProviderEnabled: vi.fn().mockReturnValue(true)
 }))
 vi.mock('@/lib/utils/telemetry', () => ({
-  isTracingEnabled: vi.fn().mockReturnValue(false)
+  isTracingEnabled: vi.fn().mockReturnValue(false),
+  telemetryRecordingOptions: vi
+    .fn()
+    .mockReturnValue({ recordInputs: true, recordOutputs: true })
 }))
 vi.mock('@/lib/agents/prompts/search-mode-prompts', () => ({
   ARTIFACT_INTAKE_PROTOCOL: 'Artifact intake protocol',

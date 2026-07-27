@@ -9,7 +9,10 @@ import type { SearchMode, UserMode } from '@/lib/types/search'
 import { createModelId } from '@/lib/utils'
 import { selectModelForModeAndType } from '@/lib/utils/model-selection'
 import { getModel } from '@/lib/utils/registry'
-import { isTracingEnabled } from '@/lib/utils/telemetry'
+import {
+  isTracingEnabled,
+  telemetryRecordingOptions
+} from '@/lib/utils/telemetry'
 
 import { type ChatAgentTools, createChatAgentTools } from './toolset'
 
@@ -141,6 +144,7 @@ export function createConfiguredChatAgent(
       experimental_telemetry: {
         isEnabled: telemetryEnabled ?? isTracingEnabled(),
         functionId: `${definition.agentId}-agent`,
+        ...telemetryRecordingOptions(),
         metadata: {
           modelId: model,
           agentType: definition.agentId,

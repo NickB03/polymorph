@@ -73,17 +73,12 @@ Set these env vars in the Vercel dashboard (Settings → Environment Variables, 
 
 The app exports traces to `${PHOENIX_COLLECTOR_ENDPOINT}/v1/traces` with `Authorization: Bearer $PHOENIX_API_KEY` from `instrumentation.ts`. Use low-cardinality Phoenix projects such as `polymorph-prod`; keep per-request details in metadata (`correlationId`, `otelTraceId`, model, mode, and eval case fields).
 
-For production, set OpenInference masking according to the data you are comfortable storing in Phoenix:
+For production, set OpenInference masking according to the data you are comfortable storing in Phoenix. Masks LLM prompt/output content on AI SDK spans (recordInputs/recordOutputs). Root-span and tool-event attributes are unaffected.
 
-| Variable                                | Typical production value |
-| --------------------------------------- | ------------------------ |
-| `OPENINFERENCE_HIDE_INPUTS`             | `true`                   |
-| `OPENINFERENCE_HIDE_OUTPUTS`            | `true`                   |
-| `OPENINFERENCE_HIDE_INPUT_MESSAGES`     | `true`                   |
-| `OPENINFERENCE_HIDE_OUTPUT_MESSAGES`    | `true`                   |
-| `OPENINFERENCE_HIDE_INPUT_IMAGES`       | `true`                   |
-| `OPENINFERENCE_HIDE_INPUT_TEXT`         | `true`                   |
-| `OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH` | `10000`                  |
+| Variable                     | Typical production value |
+| ---------------------------- | ------------------------ |
+| `OPENINFERENCE_HIDE_INPUTS`  | `true`                   |
+| `OPENINFERENCE_HIDE_OUTPUTS` | `true`                   |
 
 See [Environment Reference](../getting-started/ENVIRONMENT-OPERATIONS.md#tracing-arize-phoenix) for details.
 
