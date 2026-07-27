@@ -282,12 +282,14 @@ export function getGoldenExamples(): GoldenExample[] {
         // faithfulness skips and relevance skips (requiresCitations: false).
         faithfulness: null,
         relevance: null,
-        // Judge said `excellent`; kept `good`. Six words, no citations, and an
-        // empty judge context — this cannot be "comprehensive, well-sourced,
-        // insightful" on any reading. It is correct and appropriately brief for
-        // the question, which is precisely `good`. The clearest evidence that
-        // the judge over-awards `excellent` rather than that the context format
-        // changed how well-sourced these answers look.
+        // Judge said `excellent`; kept `good`. Six words against an empty judge
+        // context. The rubric puts "a correct answer produced with no usable
+        // retrieval to draw on" at `good` however sound it is, and there is no
+        // synthesis, analysis, causal mechanism, or settled-versus-debated
+        // qualification here to lift it past that. Correct and appropriately
+        // brief for the question is precisely `good`. The clearest evidence
+        // that the judge over-awards `excellent` rather than that the context
+        // format changed how these answers read.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -1120,10 +1122,11 @@ export function getGoldenExamples(): GoldenExample[] {
         // zero citations is relevance's no_results branch.
         faithfulness: null,
         relevance: { label: 'no_results', score: 0 },
-        // Judge said `excellent`; kept `good`. A sound definition, but with
-        // an empty judge context, "well-sourced" is definitionally unmet.
-        // Awarding the corpus's missing-citations edge case top marks would
-        // be perverse.
+        // Judge said `excellent`; kept `good`. A sound definition, but with an
+        // empty judge context it is "a correct answer produced with no usable
+        // retrieval to draw on" — `good` by the rubric's own wording — and it
+        // adds no synthesis or mechanism of its own. Awarding the corpus's
+        // missing-citations edge case top marks would be perverse.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -1196,10 +1199,10 @@ export function getGoldenExamples(): GoldenExample[] {
         faithfulness: null,
         relevance: { label: 'no_results', score: 0 },
         // Judge said `excellent`; kept `good`. Substantively correct on the
-        // 2024 laureates and their contributions, but entirely unsourced on a
-        // requiresCitations query with an empty judge context — exactly the
-        // kind of recent-events claim where sourcing carries the weight, so
-        // "well-sourced" fails.
+        // 2024 laureates and their contributions, but the judge context is
+        // empty, and the rubric caps "a correct answer produced with no usable
+        // retrieval to draw on" at `good` however sound it is. Recalling the
+        // laureates is not synthesis, analysis, or causal mechanism.
         response_quality: { label: 'good', score: 0.75 }
       }
     }
