@@ -122,6 +122,25 @@ export function getGoldenExamples(): GoldenExample[] {
   // searchResults, no toolNames and no citations therefore yields an EMPTY
   // judge context, which makes faithfulness/relevance skip. Keep `context`
   // accurate anyway: it documents the case and seeds derived snippets.
+  //
+  // response_quality calibration: a validation run had the judge return
+  // `excellent` for twelve cases labelled `good`. The proposed cause was the
+  // switch to formatEvalContext(), which makes retrieval read as a list of
+  // titled, URL-bearing sources. That does not survive the evidence: three of
+  // the twelve (tp-no-citations-required, edge-missing-citations,
+  // edge-required-search-missing) derive an EMPTY judge context, so no amount
+  // of source formatting can explain their `excellent`. The judge is simply
+  // lenient at the top of its scale — it awards `excellent` for "nothing wrong
+  // here", which is what `good` already means.
+  //
+  // The kept cases below are single-source restatements of their retrieval:
+  // complete and well organized, but not insightful, and criterion 5
+  // (synthesis across sources) cannot be met because buildGoldenSearchResults
+  // attributes every snippet to the same URL. tp-tool-search-fetch is this
+  // corpus's `excellent` anchor and the only case with two distinct sources;
+  // relabelling the twelve to `excellent` would erase that gradient and leave
+  // the label unable to detect a judge that over-awards it. Each such case
+  // carries a per-case note recording that the judge disagreed.
   const examples: GoldenExampleInput[] = [
     // ──────────────────────────────────────────────────────────────
     // TRUE POSITIVES — well-grounded, relevant, quality answers
@@ -149,6 +168,8 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
+        // Judge said `excellent`; kept `good`. A two-sentence restatement of a
+        // single source — correct and complete, but not insightful.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -175,6 +196,9 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
+        // Judge said `excellent`; kept `good`. Cleanly restructures one source
+        // into two stages — strong organization, but adds no analysis the
+        // retrieval did not already supply. The closest of the kept cases.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -201,6 +225,8 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
+        // Judge said `excellent`; kept `good`. A minimal date lookup against
+        // one source — nothing here to excel at beyond being correct.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -227,6 +253,8 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
+        // Judge said `excellent`; kept `good`. A well-organized restatement of
+        // a single definitional source; no analysis beyond the retrieval.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -249,6 +277,12 @@ export function getGoldenExamples(): GoldenExample[] {
         // faithfulness skips and relevance skips (requiresCitations: false).
         faithfulness: null,
         relevance: null,
+        // Judge said `excellent`; kept `good`. Six words, no citations, and an
+        // empty judge context — this cannot be "comprehensive, well-sourced,
+        // insightful" on any reading. It is correct and appropriately brief for
+        // the question, which is precisely `good`. The clearest evidence that
+        // the judge over-awards `excellent` rather than that the context format
+        // changed how well-sourced these answers look.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -275,7 +309,16 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
-        response_quality: { label: 'good', score: 0.75 }
+        // Raised good → excellent. The only case in this file where the
+        // research-query criteria actually engage: it explicitly separates
+        // settled from debated ("historians continue to debate the relative
+        // importance"), satisfying criterion 6, and it explains the causal
+        // mechanism of each of the six factors where the retrieval merely
+        // enumerates them. That is added analysis, not restatement, which is
+        // what separates `excellent` from `good`. Criterion 5 is conditioned on
+        // multiple sources being "available" and only one is, so the single
+        // source does not bar the label.
+        response_quality: { label: 'excellent', score: 1 }
       }
     },
     {
@@ -301,6 +344,9 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
+        // Judge said `excellent`; kept `good`. Accurate, with the altitude
+        // caveat, but every fact including the Everest example comes straight
+        // from the one source — no insight added.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -324,7 +370,22 @@ export function getGoldenExamples(): GoldenExample[] {
         // faithfulness skips and relevance skips (requiresCitations: false).
         faithfulness: null,
         relevance: null,
-        response_quality: { label: 'good', score: 0.75 }
+        // Lowered good → fail. The response_quality judge receives only
+        // query/context/answer — it gets no `usedInteractiveOnlyOutput` signal
+        // — and this answer text makes zero claims about any language. It
+        // promises a comparison and delivers none, which is "empty of
+        // substance", the `fail` descriptor verbatim. That the interactive
+        // artifact carries the real content is already encoded by
+        // `prechecks: pass`; expectations here must be reachable from what this
+        // judge actually sees, the same convention that makes faithfulness and
+        // relevance null above. Not an empty-context artifact either: three
+        // other empty-context cases in this file were scored `excellent`, so
+        // the judge is failing the answer, not the missing retrieval.
+        // Cascade: citations is [] , so the citation_accuracy default
+        // short-circuits to null on the length check before ever reaching the
+        // `response_quality?.score === 0` branch — the 0.75 → 0 drop does not
+        // change this case's derived citation_accuracy.
+        response_quality: { label: 'fail', score: 0 }
       }
     },
 
@@ -384,6 +445,9 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
+        // Judge said `excellent`; kept `good`. A single dense paragraph
+        // enumerating influences — less well organized than the bulleted cases
+        // above that are also `good`, and drawn from one source.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -414,6 +478,9 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
+        // Judge said `excellent`; kept `good`. Textbook-correct, and the
+        // Babylonian precedence note is a nice touch — but it is lifted from
+        // the retrieval rather than contributed by the answer.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -440,6 +507,8 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_used', score: 1 },
         faithfulness: { label: 'faithful', score: 1 },
         relevance: { label: 'relevant', score: 1 },
+        // Judge said `excellent`; kept `good`. Complete, well-structured
+        // coverage of one source, but it contributes no analysis of its own.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -734,6 +803,10 @@ export function getGoldenExamples(): GoldenExample[] {
         // zero citations is relevance's no_results branch.
         faithfulness: null,
         relevance: { label: 'no_results', score: 0 },
+        // Judge said `excellent`; kept `good`. A sound definition, but with
+        // zero citations on a requiresCitations query and an empty judge
+        // context, "well-sourced" is definitionally unmet. Awarding the
+        // corpus's missing-citations edge case top marks would be perverse.
         response_quality: { label: 'good', score: 0.75 }
       }
     },
@@ -775,7 +848,17 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: null,
         faithfulness: null,
         relevance: null,
-        response_quality: { label: 'good', score: 0.75 }
+        // Lowered good → adequate. The answer names existentialism and
+        // religious frameworks but states what neither actually holds: shallow
+        // depth and a partial answer, which are the `adequate` descriptors
+        // verbatim. It sits above `fail` because it is on-topic and correctly
+        // frames the question as contested, unlike tn-vague-padding. This is a
+        // judgement about the answer, not about the empty context — other
+        // empty-context cases in this file were scored `excellent`, so the
+        // judge is not penalizing the missing retrieval. Cascade: 0.75 → 0.5
+        // does not cross zero, and citations is [] so citation_accuracy stays
+        // null regardless.
+        response_quality: { label: 'adequate', score: 0.5 }
       }
     },
     {
@@ -795,6 +878,11 @@ export function getGoldenExamples(): GoldenExample[] {
         tool_usage: { label: 'tools_missing', score: 0 },
         faithfulness: null,
         relevance: { label: 'no_results', score: 0 },
+        // Judge said `excellent`; kept `good`. Substantively correct on the
+        // 2024 laureates and their contributions, but entirely unsourced on a
+        // requiresCitations query with an empty judge context — exactly the
+        // kind of recent-events claim where sourcing carries the weight, so
+        // "well-sourced" fails.
         response_quality: { label: 'good', score: 0.75 }
       }
     }
