@@ -1,12 +1,14 @@
 import { type ModelMessage, Output, streamText } from 'ai'
 
-import { telemetryRecordingOptions } from '@/lib/utils/telemetry'
+import {
+  isTracingEnabled,
+  telemetryRecordingOptions
+} from '@/lib/utils/telemetry'
 
 import { getRelatedQuestionsModel } from '../config/model-types'
 import { relatedQuestionSchema } from '../schema/related'
 import { createModelId } from '../utils'
 import { getModel } from '../utils/registry'
-import { isTracingEnabled } from '../utils/telemetry'
 
 import { RELATED_QUESTIONS_PROMPT } from './prompts/related-questions-prompt'
 

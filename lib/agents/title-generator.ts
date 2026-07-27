@@ -1,9 +1,11 @@
 import { generateText } from 'ai'
 
-import { telemetryRecordingOptions } from '@/lib/utils/telemetry'
+import {
+  isTracingEnabled,
+  telemetryRecordingOptions
+} from '@/lib/utils/telemetry'
 
 import { getModel } from '../utils/registry'
-import { isTracingEnabled } from '../utils/telemetry'
 
 interface GenerateChatTitleParams {
   userMessageContent: string
