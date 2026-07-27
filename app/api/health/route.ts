@@ -4,6 +4,16 @@ import { sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 
+type TracingState =
+  | 'enabled'
+  | 'disabled-off'
+  | 'disabled-https'
+  | 'init-failed'
+
+declare global {
+  var __polymorphTracingState: TracingState | undefined
+}
+
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
@@ -63,6 +73,12 @@ export async function GET(req: NextRequest) {
   }
   if (dbError) body.dbError = dbError
   if (phoenixStatus !== undefined) body.phoenix = phoenixStatus
+  // `phoenix: 'ok'` only means the collector is reachable. `tracing` says
+  // whether THIS process registered an exporter — the blind-deploy signature
+  // is phoenix: 'ok' with tracing: 'disabled-https'.
+  if (checks === 'phoenix' || checks === 'all') {
+    body.tracing = globalThis.__polymorphTracingState ?? 'unknown'
+  }
 
   return NextResponse.json(body, { status: isHealthy ? 200 : 503 })
 }
