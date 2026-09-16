@@ -99,10 +99,29 @@ async function consumeSse(response: Response): Promise<string> {
   return text
 }
 
-export async function runSmokeSuite() {
+export interface SmokeRunResult {
+  attempted: number
+  succeeded: number
+  authFailed: boolean
+}
+
+export function assertSmokeHealthy(result: SmokeRunResult): void {
+  if (result.authFailed) {
+    throw new Error(
+      '[evals] SMOKE FAILED - could not authenticate the smoke seed user; the app auth path is broken or smoke credentials are misconfigured'
+    )
+  }
+  if (result.attempted > 0 && result.succeeded === 0) {
+    throw new Error(
+      `[evals] SMOKE FAILED - 0/${result.attempted} smoke chats succeeded; the app chat path is down`
+    )
+  }
+}
+
+export async function runSmokeSuite(): Promise<SmokeRunResult> {
   if (!config.smokeEnabled) {
     console.log('[evals] Smoke suite disabled, skipping')
-    return
+    return { attempted: 0, succeeded: 0, authFailed: false }
   }
 
   const cases = getSmoketestCases(config.smokeCaseCount)
@@ -112,11 +131,11 @@ export async function runSmokeSuite() {
   try {
     authenticatedCookies = await authenticateSmokeUser()
   } catch (error) {
-    console.warn(
-      '[evals] Smoke auth failed, continuing without failing the run:',
+    console.error(
+      '[evals] Smoke auth failed:',
       error instanceof Error ? error.message : error
     )
-    return
+    return { attempted: cases.length, succeeded: 0, authFailed: true }
   }
 
   let succeeded = 0
@@ -184,4 +203,6 @@ export async function runSmokeSuite() {
   console.log(
     `[evals] Smoke completed: ${succeeded}/${cases.length} chats succeeded`
   )
+
+  return { attempted: cases.length, succeeded, authFailed: false }
 }

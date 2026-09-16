@@ -112,7 +112,7 @@ describe('faithfulness experiment evaluator', () => {
     })
     expect(mockEvaluate).toHaveBeenCalledWith({
       input: 'what is AI?',
-      retrievedSearchTopics: 'AI is artificial intelligence.',
+      retrievedSearchResults: 'AI is artificial intelligence.',
       output: 'AI stands for artificial intelligence.'
     })
     expect(result).toEqual({
