@@ -36713,16 +36713,6 @@
       "id": "src_config_required"
     },
     {
-      "label": "validFloat()",
-      "file_type": "code",
-      "source_file": "services/evals/src/config.ts",
-      "source_location": "L56",
-      "_origin": "ast",
-      "community": 75,
-      "norm_label": "validfloat()",
-      "id": "src_config_validfloat"
-    },
-    {
       "label": "validStringList()",
       "file_type": "code",
       "source_file": "services/evals/src/config.ts",
@@ -39311,16 +39301,6 @@
       "community": 38,
       "norm_label": "traffic-monitor.ts",
       "id": "runners_traffic_monitor"
-    },
-    {
-      "label": "TrafficMonitorRunOptions",
-      "file_type": "code",
-      "source_file": "services/evals/src/runners/traffic-monitor.ts",
-      "source_location": "L36",
-      "_origin": "ast",
-      "community": 38,
-      "norm_label": "trafficmonitorrunoptions",
-      "id": "runners_traffic_monitor_trafficmonitorrunoptions"
     },
     {
       "label": "formatContext()",
@@ -46163,6 +46143,316 @@
       "community": 106,
       "norm_label": "runbooks/browser-qa-auth-admin.md",
       "id": "runbooks_browser_qa_auth_admin"
+    },
+    {
+      "label": "importCreateConfig()",
+      "file_type": "code",
+      "source_file": "services/evals/src/config.test.ts",
+      "source_location": "L343",
+      "_origin": "ast",
+      "norm_label": "importCreateConfig()",
+      "community": 229,
+      "id": "src_config_test_importcreateconfig"
+    },
+    {
+      "label": "requireThreshold()",
+      "file_type": "code",
+      "source_file": "services/evals/src/config.ts",
+      "source_location": "L86",
+      "_origin": "ast",
+      "norm_label": "requireThreshold()",
+      "community": 75,
+      "id": "src_config_requirethreshold"
+    },
+    {
+      "label": "PROMOTED_REGRESSION_CASES",
+      "file_type": "code",
+      "source_file": "services/evals/src/corpus/index.ts",
+      "source_location": "L472",
+      "_origin": "ast",
+      "norm_label": "PROMOTED_REGRESSION_CASES",
+      "community": 66,
+      "id": "corpus_index_promoted_regression_cases"
+    },
+    {
+      "label": "PROMOTED_TO_REGRESSION",
+      "file_type": "code",
+      "source_file": "services/evals/src/corpus/index.ts",
+      "source_location": "L448",
+      "_origin": "ast",
+      "norm_label": "PROMOTED_TO_REGRESSION",
+      "community": 66,
+      "id": "corpus_index_promoted_to_regression"
+    },
+    {
+      "label": "promoteToRegression()",
+      "file_type": "code",
+      "source_file": "services/evals/src/corpus/index.ts",
+      "source_location": "L463",
+      "_origin": "ast",
+      "norm_label": "promoteToRegression()",
+      "community": 66,
+      "id": "corpus_index_promotetoregression"
+    },
+    {
+      "label": "eval-output.test.ts",
+      "file_type": "code",
+      "source_file": "services/evals/src/eval-output.test.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "norm_label": "eval-output.test.ts",
+      "community": 46,
+      "id": "src_eval_output_test"
+    },
+    {
+      "label": "truncateSnippet()",
+      "file_type": "code",
+      "source_file": "services/evals/src/eval-output.ts",
+      "source_location": "L86",
+      "_origin": "ast",
+      "norm_label": "truncateSnippet()",
+      "community": 53,
+      "id": "src_eval_output_truncatesnippet"
+    },
+    {
+      "label": "fakeModel",
+      "file_type": "code",
+      "source_file": "services/evals/src/evaluators/citation-accuracy.test.ts",
+      "source_location": "L14",
+      "_origin": "ast",
+      "norm_label": "fakeModel",
+      "community": 14,
+      "id": "evaluators_citation_accuracy_test_fakemodel"
+    },
+    {
+      "label": "inputWithCitationsAndResults",
+      "file_type": "code",
+      "source_file": "services/evals/src/evaluators/citation-accuracy.test.ts",
+      "source_location": "L16",
+      "_origin": "ast",
+      "norm_label": "inputWithCitationsAndResults",
+      "community": 14,
+      "id": "evaluators_citation_accuracy_test_inputwithcitationsandresults"
+    },
+    {
+      "label": "inputWithCitationsButNoResults",
+      "file_type": "code",
+      "source_file": "services/evals/src/evaluators/citation-accuracy.test.ts",
+      "source_location": "L53",
+      "_origin": "ast",
+      "norm_label": "inputWithCitationsButNoResults",
+      "community": 14,
+      "id": "evaluators_citation_accuracy_test_inputwithcitationsbutnoresults"
+    },
+    {
+      "label": "mockGenerateObject",
+      "file_type": "code",
+      "source_file": "services/evals/src/evaluators/citation-accuracy.test.ts",
+      "source_location": "L3",
+      "_origin": "ast",
+      "norm_label": "mockGenerateObject",
+      "community": 14,
+      "id": "evaluators_citation_accuracy_test_mockgenerateobject"
+    },
+    {
+      "label": "CITATION_LABEL_SCORES",
+      "file_type": "code",
+      "source_file": "services/evals/src/evaluators/citation-accuracy.ts",
+      "source_location": "L27",
+      "_origin": "ast",
+      "norm_label": "CITATION_LABEL_SCORES",
+      "community": 14,
+      "id": "evaluators_citation_accuracy_citation_label_scores"
+    },
+    {
+      "label": "mockEvaluate",
+      "file_type": "code",
+      "source_file": "services/evals/src/evaluators/refusal.test.ts",
+      "source_location": "L4",
+      "_origin": "ast",
+      "norm_label": "mockEvaluate",
+      "community": 14,
+      "id": "evaluators_refusal_test_mockevaluate"
+    },
+    {
+      "label": "refusal.test.ts",
+      "file_type": "code",
+      "source_file": "services/evals/src/evaluators/refusal.test.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "norm_label": "refusal.test.ts",
+      "community": 14,
+      "id": "evaluators_refusal_test"
+    },
+    {
+      "label": "createRefusalExperimentEvaluator()",
+      "file_type": "code",
+      "source_file": "services/evals/src/evaluators/refusal.ts",
+      "source_location": "L17",
+      "_origin": "ast",
+      "norm_label": "createRefusalExperimentEvaluator()",
+      "community": 14,
+      "id": "evaluators_refusal_createrefusalexperimentevaluator"
+    },
+    {
+      "label": "refusal.ts",
+      "file_type": "code",
+      "source_file": "services/evals/src/evaluators/refusal.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "norm_label": "refusal.ts",
+      "community": 14,
+      "id": "evaluators_refusal"
+    },
+    {
+      "label": "SEARCH_TOOL_NAMES",
+      "file_type": "code",
+      "source_file": "services/evals/src/evaluators/tool-usage.ts",
+      "source_location": "L10",
+      "_origin": "ast",
+      "norm_label": "SEARCH_TOOL_NAMES",
+      "community": 14,
+      "id": "evaluators_tool_usage_search_tool_names"
+    },
+    {
+      "label": "evaluate()",
+      "file_type": "code",
+      "source_file": "services/evals/src/golden/validate.test.ts",
+      "source_location": "L219",
+      "_origin": "ast",
+      "norm_label": "evaluate()",
+      "community": 14,
+      "id": "golden_validate_test_evaluate"
+    },
+    {
+      "label": "JudgeInvocable",
+      "file_type": "code",
+      "source_file": "services/evals/src/golden/validate.ts",
+      "source_location": "L97",
+      "_origin": "ast",
+      "norm_label": "JudgeInvocable",
+      "community": 14,
+      "id": "golden_validate_judgeinvocable"
+    },
+    {
+      "label": "ValidationRun",
+      "file_type": "code",
+      "source_file": "services/evals/src/golden/validate.ts",
+      "source_location": "L16",
+      "_origin": "ast",
+      "norm_label": "ValidationRun",
+      "community": 14,
+      "id": "golden_validate_validationrun"
+    },
+    {
+      "label": "countExpectedEvaluators()",
+      "file_type": "code",
+      "source_file": "services/evals/src/golden/validate.ts",
+      "source_location": "L226",
+      "_origin": "ast",
+      "norm_label": "countExpectedEvaluators()",
+      "community": 14,
+      "id": "golden_validate_countexpectedevaluators"
+    },
+    {
+      "label": "runEval()",
+      "file_type": "code",
+      "source_file": "services/evals/src/golden/validate.ts",
+      "source_location": "L105",
+      "_origin": "ast",
+      "norm_label": "runEval()",
+      "community": 14,
+      "id": "golden_validate_runeval"
+    },
+    {
+      "label": "requirePositiveInt()",
+      "file_type": "code",
+      "source_file": "services/evals/src/judge-config.ts",
+      "source_location": "L23",
+      "_origin": "ast",
+      "norm_label": "requirePositiveInt()",
+      "community": 75,
+      "id": "src_judge_config_requirepositiveint"
+    },
+    {
+      "label": "mockAssertSmokeHealthy",
+      "file_type": "code",
+      "source_file": "services/evals/src/orchestrator.test.ts",
+      "source_location": "L12",
+      "_origin": "ast",
+      "norm_label": "mockAssertSmokeHealthy",
+      "community": 179,
+      "id": "src_orchestrator_test_mockassertsmokehealthy"
+    },
+    {
+      "label": "mockAssertSmokeHealthy",
+      "file_type": "code",
+      "source_file": "services/evals/src/runner.test.ts",
+      "source_location": "L12",
+      "_origin": "ast",
+      "norm_label": "mockAssertSmokeHealthy",
+      "community": 182,
+      "id": "src_runner_test_mockassertsmokehealthy"
+    },
+    {
+      "label": "run()",
+      "file_type": "code",
+      "source_file": "services/evals/src/runners/shared.test.ts",
+      "source_location": "L652",
+      "_origin": "ast",
+      "norm_label": "run()",
+      "community": 138,
+      "id": "runners_shared_test_run"
+    },
+    {
+      "label": "applyDropRateGate()",
+      "file_type": "code",
+      "source_file": "services/evals/src/runners/shared.ts",
+      "source_location": "L595",
+      "_origin": "ast",
+      "norm_label": "applyDropRateGate()",
+      "community": 38,
+      "id": "runners_shared_applydroprategate"
+    },
+    {
+      "label": "isRetryableJudgeError()",
+      "file_type": "code",
+      "source_file": "services/evals/src/runners/shared.ts",
+      "source_location": "L382",
+      "_origin": "ast",
+      "norm_label": "isRetryableJudgeError()",
+      "community": 38,
+      "id": "runners_shared_isretryablejudgeerror"
+    },
+    {
+      "label": "withJudgeTimeout()",
+      "file_type": "code",
+      "source_file": "services/evals/src/runners/shared.ts",
+      "source_location": "L390",
+      "_origin": "ast",
+      "norm_label": "withJudgeTimeout()",
+      "community": 38,
+      "id": "runners_shared_withjudgetimeout"
+    },
+    {
+      "label": "SmokeRunResult",
+      "file_type": "code",
+      "source_file": "services/evals/src/runners/smoke.ts",
+      "source_location": "L102",
+      "_origin": "ast",
+      "norm_label": "SmokeRunResult",
+      "community": 66,
+      "id": "runners_smoke_smokerunresult"
+    },
+    {
+      "label": "assertSmokeHealthy()",
+      "file_type": "code",
+      "source_file": "services/evals/src/runners/smoke.ts",
+      "source_location": "L108",
+      "_origin": "ast",
+      "norm_label": "assertSmokeHealthy()",
+      "community": 66,
+      "id": "runners_smoke_assertsmokehealthy"
     }
   ],
   "links": [
