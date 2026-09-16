@@ -332,3 +332,68 @@ describe('createConfig', () => {
     expect(() => createConfig()).toThrow('APP_URL')
   })
 })
+
+describe('fail-fast validation', () => {
+  const baseEnv: NodeJS.ProcessEnv = {
+    DATABASE_URL: 'postgresql://db',
+    PHOENIX_HOST: 'http://phoenix',
+    PHOENIX_API_KEY: 'phoenix-key'
+  }
+
+  async function importCreateConfig() {
+    vi.stubEnv('DATABASE_URL', 'postgresql://db')
+    vi.stubEnv('PHOENIX_HOST', 'http://phoenix')
+    vi.stubEnv('PHOENIX_API_KEY', 'phoenix-key')
+    const { createConfig } = await import('./config')
+    return createConfig
+  }
+
+  it('throws on unknown EVAL_RUN_MODE', async () => {
+    const createConfig = await importCreateConfig()
+    expect(() =>
+      createConfig(
+        { ...baseEnv, EVAL_RUN_MODE: 'traffic_monitor' },
+        { validateRunnerSettings: false }
+      )
+    ).toThrow(/Invalid EVAL_RUN_MODE/)
+  })
+
+  it('defaults to capability when EVAL_RUN_MODE is unset', async () => {
+    const createConfig = await importCreateConfig()
+    const config = createConfig(baseEnv, { validateRunnerSettings: false })
+    expect(config.evalRunMode).toBe('capability')
+  })
+
+  it('throws on SCORE_THRESHOLD outside (0,1]', async () => {
+    const createConfig = await importCreateConfig()
+    for (const bad of ['0', '-0.5', '1.5', 'abc']) {
+      expect(() =>
+        createConfig(
+          { ...baseEnv, SCORE_THRESHOLD: bad },
+          { validateRunnerSettings: false }
+        )
+      ).toThrow(/SCORE_THRESHOLD/)
+    }
+  })
+
+  it('throws on explicitly-set non-positive SAMPLE_SIZE', async () => {
+    const createConfig = await importCreateConfig()
+    expect(() =>
+      createConfig(
+        { ...baseEnv, SAMPLE_SIZE: '-1' },
+        { validateRunnerSettings: false }
+      )
+    ).toThrow(/SAMPLE_SIZE/)
+  })
+
+  it('accepts valid values and applies judge timeout default', async () => {
+    const createConfig = await importCreateConfig()
+    const config = createConfig(
+      { ...baseEnv, SAMPLE_SIZE: '5', SCORE_THRESHOLD: '0.9' },
+      { validateRunnerSettings: false }
+    )
+    expect(config.sampleSize).toBe(5)
+    expect(config.scoreThreshold).toBe(0.9)
+    expect(config.judgeTimeoutMs).toBe(60_000)
+  })
+})
