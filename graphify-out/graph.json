@@ -46553,6 +46553,26 @@
       "norm_label": "assertSmokeHealthy()",
       "community": 66,
       "id": "runners_smoke_assertsmokehealthy"
+    },
+    {
+      "label": "firecrawl",
+      "file_type": "code",
+      "source_file": ".mcp.json",
+      "source_location": "L1",
+      "_origin": "ast",
+      "norm_label": "firecrawl",
+      "community": 159,
+      "id": "mcp_mcp_server_firecrawl"
+    },
+    {
+      "label": "firecrawl-mcp",
+      "file_type": "code",
+      "source_file": ".mcp.json",
+      "source_location": "L1",
+      "_origin": "ast",
+      "norm_label": "firecrawl-mcp",
+      "community": 159,
+      "id": "mcp_package_firecrawl_mcp"
     }
   ],
   "links": [
