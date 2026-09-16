@@ -91,9 +91,20 @@ function tally(
   }
 }
 
-export function runEval(evaluator: {
-  evaluate: (args: any) => any
-}): (example: GoldenExample) => Promise<EvaluatorResult> {
+// Method syntax, not a property arrow: TS checks method parameters
+// bivariantly, so the concrete experiment evaluators still satisfy this while
+// the test stub gets a compile-time contract check instead of `any`.
+interface JudgeInvocable {
+  evaluate(args: {
+    input: Record<string, unknown>
+    output: unknown
+    metadata?: Record<string, unknown> | null
+  }): unknown
+}
+
+export function runEval(
+  evaluator: JudgeInvocable
+): (example: GoldenExample) => Promise<EvaluatorResult> {
   return async example => {
     const output = buildEvalOutput(example)
     // Parity with production: buildDatasetExamples sets

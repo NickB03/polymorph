@@ -212,14 +212,18 @@ describe('production-shaped adversarial golden coverage', () => {
       input: Record<string, unknown>
       metadata: Record<string, unknown>
     }> = []
-    const stubEvaluator = {
-      evaluate: (args: any) => {
-        calls.push({ input: args.input, metadata: args.metadata })
+    // Inline so the stub is contextually typed by runEval's parameter: if the
+    // judge-input contract changes, this stops compiling instead of silently
+    // drifting from what the real evaluators accept.
+    const result = await runEval({
+      evaluate(args) {
+        calls.push({
+          input: args.input,
+          metadata: (args.metadata ?? {}) as Record<string, unknown>
+        })
         return { label: 'faithful', score: 1 }
       }
-    }
-
-    const result = await runEval(stubEvaluator)(example!)
+    })(example!)
 
     expect(result).toEqual({ label: 'faithful', score: 1 })
     expect(calls).toHaveLength(1)
