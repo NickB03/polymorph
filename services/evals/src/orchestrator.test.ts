@@ -9,6 +9,7 @@ const mockRunCapabilitySuite = vi.hoisted(() => vi.fn())
 const mockRunRegressionSuite = vi.hoisted(() => vi.fn())
 const mockRunTrafficMonitorSuite = vi.hoisted(() => vi.fn())
 const mockRunSmokeSuite = vi.hoisted(() => vi.fn())
+const mockAssertSmokeHealthy = vi.hoisted(() => vi.fn())
 
 vi.mock('./config', () => ({
   config: mockConfig
@@ -27,7 +28,8 @@ vi.mock('./runners/traffic-monitor', () => ({
 }))
 
 vi.mock('./runners/smoke', () => ({
-  runSmokeSuite: mockRunSmokeSuite
+  runSmokeSuite: mockRunSmokeSuite,
+  assertSmokeHealthy: mockAssertSmokeHealthy
 }))
 
 describe('runConfiguredModes', () => {
@@ -68,7 +70,11 @@ describe('runConfiguredModes', () => {
       phoenixUrl: null,
       totalCases: 20
     })
-    mockRunSmokeSuite.mockResolvedValue(undefined)
+    mockRunSmokeSuite.mockResolvedValue({
+      attempted: 1,
+      succeeded: 1,
+      authFailed: false
+    })
   })
 
   it('returns suite results for persisted eval modes and still runs smoke', async () => {
@@ -82,9 +88,47 @@ describe('runConfiguredModes', () => {
       'regression',
       'traffic-monitor'
     ])
-    expect(mockRunTrafficMonitorSuite).toHaveBeenCalledWith({
-      allowEmpty: true
+    expect(mockRunTrafficMonitorSuite).toHaveBeenCalledWith()
+    expect(mockRunSmokeSuite).toHaveBeenCalledTimes(1)
+    expect(mockAssertSmokeHealthy).toHaveBeenCalledWith({
+      attempted: 1,
+      succeeded: 1,
+      authFailed: false
     })
+  })
+
+  it('propagates smoke failure in smoke mode instead of exiting 0', async () => {
+    mockConfig.evalRunMode = 'smoke'
+    mockRunSmokeSuite.mockResolvedValueOnce({
+      attempted: 1,
+      succeeded: 0,
+      authFailed: false
+    })
+    mockAssertSmokeHealthy.mockImplementationOnce(() => {
+      throw new Error(
+        '[evals] SMOKE FAILED - 0/1 smoke chats succeeded; the app chat path is down'
+      )
+    })
+
+    const { runConfiguredModes } = await import('./orchestrator')
+
+    await expect(runConfiguredModes()).rejects.toThrow(/SMOKE FAILED/)
+    expect(mockAssertSmokeHealthy).toHaveBeenCalledWith({
+      attempted: 1,
+      succeeded: 0,
+      authFailed: false
+    })
+  })
+
+  it('all mode runs remaining suites when one suite throws', async () => {
+    mockConfig.evalRunMode = 'all'
+    mockRunCapabilitySuite.mockRejectedValueOnce(new Error('phoenix down'))
+
+    const { runConfiguredModes } = await import('./orchestrator')
+
+    await expect(runConfiguredModes()).rejects.toThrow(/1 suite failure/)
+    expect(mockRunRegressionSuite).toHaveBeenCalled()
+    expect(mockRunTrafficMonitorSuite).toHaveBeenCalled()
     expect(mockRunSmokeSuite).toHaveBeenCalledTimes(1)
   })
 
@@ -110,19 +154,15 @@ describe('runConfiguredModes', () => {
     expect(mockRunSmokeSuite).toHaveBeenCalledTimes(1)
   })
 
-  it('fails when traffic-monitor produces no samples', async () => {
+  it('returns no results without throwing when traffic-monitor skips on empty traffic', async () => {
     mockConfig.evalRunMode = 'traffic-monitor'
-    mockRunTrafficMonitorSuite.mockRejectedValueOnce(
-      new Error(
-        '[evals] No chats found in lookback window for traffic-monitor run'
-      )
-    )
+    mockRunTrafficMonitorSuite.mockResolvedValueOnce(null)
 
     const { runConfiguredModes } = await import('./orchestrator')
 
-    await expect(runConfiguredModes()).rejects.toThrow(
-      'No chats found in lookback window for traffic-monitor run'
-    )
+    const results = await runConfiguredModes()
+
+    expect(results).toEqual([])
     expect(mockRunTrafficMonitorSuite).toHaveBeenCalledWith()
   })
 

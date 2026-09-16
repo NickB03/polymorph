@@ -73,17 +73,22 @@ Set these env vars in the Vercel dashboard (Settings → Environment Variables, 
 
 The app exports traces to `${PHOENIX_COLLECTOR_ENDPOINT}/v1/traces` with `Authorization: Bearer $PHOENIX_API_KEY` from `instrumentation.ts`. Use low-cardinality Phoenix projects such as `polymorph-prod`; keep per-request details in metadata (`correlationId`, `otelTraceId`, model, mode, and eval case fields).
 
-For production, set OpenInference masking according to the data you are comfortable storing in Phoenix:
+For production, set OpenInference masking according to the data you are comfortable storing in Phoenix. `OPENINFERENCE_HIDE_INPUTS` / `OPENINFERENCE_HIDE_OUTPUTS` mask LLM prompt and output content on AI SDK spans (via `recordInputs`/`recordOutputs`).
 
-| Variable                                | Typical production value |
-| --------------------------------------- | ------------------------ |
-| `OPENINFERENCE_HIDE_INPUTS`             | `true`                   |
-| `OPENINFERENCE_HIDE_OUTPUTS`            | `true`                   |
-| `OPENINFERENCE_HIDE_INPUT_MESSAGES`     | `true`                   |
-| `OPENINFERENCE_HIDE_OUTPUT_MESSAGES`    | `true`                   |
-| `OPENINFERENCE_HIDE_INPUT_IMAGES`       | `true`                   |
-| `OPENINFERENCE_HIDE_INPUT_TEXT`         | `true`                   |
-| `OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH` | `10000`                  |
+Three limits worth knowing before you rely on them:
+
+- **Only the exact string `true` masks.** `TRUE`, `1`, and `yes` are ignored and the span records normally. The control fails toward recording, not toward hiding, so a typo silently leaves content exposed.
+- **A trailing newline defeats it the same way.** `echo 'true' | vercel env add …` stores `true\n`, which is not `true`, so masking silently does not happen. Pipe with `printf 'true'` instead, or enter the value at the interactive prompt. Both failure modes are invisible in the Vercel dashboard, which renders either value as `true`.
+- **This is not de-identification.** The `chat-response` root span is constructed outside the AI SDK (`lib/streaming/create-chat-stream-response.ts`) and so is unreachable by these flags. It still carries the session id (chat id), user id, and request metadata — correlation id, model id, search mode, user mode, intent — no matter how the flags are set. OpenInference context propagation also stamps `session.id` / `user.id` onto every child span in the trace. Masking removes message content, not who sent it.
+
+| Variable                     | Typical production value |
+| ---------------------------- | ------------------------ |
+| `OPENINFERENCE_HIDE_INPUTS`  | `true`                   |
+| `OPENINFERENCE_HIDE_OUTPUTS` | `true`                   |
+
+Setting these takes effect only on the **next** production deployment — Vercel deployments are immutable snapshots of the env vars present when they were built. `vercel promote` does not help; it reuses a build made before the variable existed. Trigger a real rebuild (`vercel redeploy <url> --target=production`, or merge to `main`).
+
+Then confirm the resolved masking state with `GET /api/health?check=phoenix` — its `spanContent` field reports `masked` or `recorded` per direction. That is the only cheap way to catch a `TRUE` typo or a trailing newline without eyeballing a span.
 
 See [Environment Reference](../getting-started/ENVIRONMENT-OPERATIONS.md#tracing-arize-phoenix) for details.
 

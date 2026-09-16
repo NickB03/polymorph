@@ -21,6 +21,7 @@ Evaluate the response on these criteria:
 2. Is it well-organized and easy to read?
 3. Does it provide sufficient depth without unnecessary padding?
 4. Does it use the available context effectively?
+Criterion 4 is N/A when the search context is empty or is not relevant to the question — correctly disregarding irrelevant retrieval is not a deficiency; when the context is relevant it applies in full.
 
 If this appears to be a research query (one requiring evidence, sources, or in-depth analysis), also consider:
 5. Does it synthesize information from multiple sources when available?
@@ -28,8 +29,8 @@ If this appears to be a research query (one requiring evidence, sources, or in-d
 If the query is not a research query, criteria 5 and 6 are N/A — ignore them.
 
 Classifications (choose exactly one):
-- "excellent": Excels on all applicable criteria — comprehensive, well-sourced, insightful
-- "good": Satisfies all applicable criteria solidly — answers the question, readable, appropriate depth
+- "excellent": Meets all applicable criteria AND contributes something the retrieved sources do not already supply — synthesis across two or more distinct sources, or analysis, causal mechanism, or qualification of what is settled versus debated. A correct, complete, well-organized restatement of the retrieved content is "good", not "excellent". So is a correct answer produced with no usable retrieval to draw on, however sound it is.
+- "good": Meets all applicable criteria — accurate, answers the question, readable, appropriate depth — but adds nothing beyond what its sources already supply. This is the correct label for a solid answer, not a demotion.
 - "adequate": Meets minimum requirements but has notable weaknesses — shallow depth, poor organization, or partial answer
 - "poor": Fails multiple criteria — misses key aspects of the question, disorganized, or largely ignores context
 - "fail": Fundamentally broken — wrong topic, contradicts sources, garbled text, or empty of substance`

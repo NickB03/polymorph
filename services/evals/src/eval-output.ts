@@ -81,6 +81,13 @@ export function extractPromptFromConversation(
     .trim()
 }
 
+export const MAX_SNIPPET_CHARS = 2000
+
+function truncateSnippet(snippet: string): string {
+  if (snippet.length <= MAX_SNIPPET_CHARS) return snippet
+  return `${snippet.slice(0, MAX_SNIPPET_CHARS)}…`
+}
+
 export function formatEvalContext({
   searchResults,
   citations
@@ -90,7 +97,9 @@ export function formatEvalContext({
   for (const search of searchResults) {
     if (search.query) parts.push(`[Search: "${search.query}"]`)
     for (const result of search.results) {
-      parts.push(`- [${result.title}](${result.url}): ${result.snippet}`)
+      parts.push(
+        `- [${result.title}](${result.url}): ${truncateSnippet(result.snippet)}`
+      )
     }
   }
 

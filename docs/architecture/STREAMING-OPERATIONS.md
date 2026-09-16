@@ -108,14 +108,21 @@ When the client navigates away or closes the tab, the browser terminates the SSE
 4. Tool executions (search, fetch)
 5. Title and related question generation
 
-The `onFinish` callback checks `isAborted` and skips persistence if the stream was aborted:
+The `onFinish` callback skips **persistence** if the stream was aborted or produced no response message, but trace flushing runs unconditionally in a `finally` block — aborted streams' spans still reach Phoenix:
 
 ```typescript
 onFinish: async ({ responseMessage, isAborted }) => {
-  if (isAborted || !responseMessage) return
-  // ... persist
+  try {
+    if (!isAborted && responseMessage) {
+      // ... persist
+    }
+  } finally {
+    await flushTraces() // always runs, aborted or not
+  }
 }
 ```
+
+Aborts are the traces most worth keeping, and flushing after the persistence attempt means the exported spans include DB write latency.
 
 ### Database Persistence Errors
 

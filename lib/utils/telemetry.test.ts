@@ -21,6 +21,7 @@ import {
   flushTraces,
   isEvalReplayTracingEnabled,
   isTracingEnabled,
+  telemetryRecordingOptions,
   withOtelRootSpan,
   withOtelSession
 } from './telemetry'
@@ -147,6 +148,22 @@ describe('withOtelSession', () => {
       .find(span => span.name === 'child-operation')
     expect(childSpan?.attributes['session.id']).toBe('chat-1')
     expect(childSpan?.attributes['user.id']).toBe('user-1')
+  })
+})
+
+describe('telemetryRecordingOptions', () => {
+  it('telemetryRecordingOptions honors OPENINFERENCE_HIDE_INPUTS/OUTPUTS', () => {
+    vi.stubEnv('OPENINFERENCE_HIDE_INPUTS', 'true')
+    vi.stubEnv('OPENINFERENCE_HIDE_OUTPUTS', 'false')
+    expect(telemetryRecordingOptions()).toEqual({
+      recordInputs: false,
+      recordOutputs: true
+    })
+    vi.unstubAllEnvs()
+    expect(telemetryRecordingOptions()).toEqual({
+      recordInputs: true,
+      recordOutputs: true
+    })
   })
 })
 

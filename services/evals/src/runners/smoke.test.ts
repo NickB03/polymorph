@@ -165,4 +165,51 @@ describe('runSmokeSuite', () => {
 
     expect(mockFetch).not.toHaveBeenCalled()
   })
+
+  it('returns failed result when zero smoke cases succeed', async () => {
+    mockCreateBrowserClient.mockImplementation((_url, _key, options) => ({
+      auth: {
+        signInWithPassword: vi.fn(async () => {
+          options.cookies.setAll([
+            {
+              name: 'sb-project-auth-token',
+              value: 'session-cookie',
+              options: {}
+            }
+          ])
+
+          return { error: null }
+        })
+      }
+    }))
+
+    mockFetch.mockResolvedValueOnce(
+      new Response('internal error', { status: 500 })
+    )
+
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { runSmokeSuite, assertSmokeHealthy } = await import('./smoke')
+    const result = await runSmokeSuite()
+
+    expect(result.attempted).toBeGreaterThan(0)
+    expect(result.succeeded).toBe(0)
+    expect(() => assertSmokeHealthy(result)).toThrow(/SMOKE FAILED/)
+  })
+
+  it('reports auth failure instead of silently returning', async () => {
+    mockCreateBrowserClient.mockReturnValue({
+      auth: {
+        signInWithPassword: vi.fn(async () => ({
+          error: { message: 'invalid credentials' }
+        }))
+      }
+    })
+
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { runSmokeSuite, assertSmokeHealthy } = await import('./smoke')
+    const result = await runSmokeSuite()
+
+    expect(result.authFailed).toBe(true)
+    expect(() => assertSmokeHealthy(result)).toThrow(/SMOKE FAILED/)
+  })
 })

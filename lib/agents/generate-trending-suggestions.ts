@@ -9,6 +9,10 @@ import type { SuggestionCategory } from '@/lib/types'
 import { createModelId } from '@/lib/utils'
 import { getErrorMessage } from '@/lib/utils/error'
 import { getModel } from '@/lib/utils/registry'
+import {
+  isTracingEnabled,
+  telemetryRecordingOptions
+} from '@/lib/utils/telemetry'
 
 const trendingSuggestionsSchema = z.object({
   research: z.array(z.string()).length(4),
@@ -187,6 +191,12 @@ export async function generateTrendingSuggestions(): Promise<TrendingSuggestions
     model: getModel(modelId),
     schema: trendingSuggestionsSchema,
     system: SYSTEM_PROMPT,
+    experimental_telemetry: {
+      isEnabled: isTracingEnabled(),
+      functionId: 'trending-suggestions',
+      ...telemetryRecordingOptions(),
+      metadata: { modelId, source }
+    },
     prompt: `Here are today's trending topics across various domains:\n\n${context}\n\nGenerate diverse, category-appropriate prompt suggestions. Ensure broad domain coverage and limit political content.`
   })
 
