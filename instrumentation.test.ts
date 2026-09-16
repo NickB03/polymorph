@@ -4,6 +4,7 @@ import { register } from './instrumentation'
 
 afterEach(() => {
   vi.unstubAllEnvs()
+  vi.restoreAllMocks()
   delete globalThis.__polymorphTracingState
 })
 
@@ -33,6 +34,5 @@ describe('register', () => {
         'PHOENIX_COLLECTOR_ENDPOINT must use HTTPS in production'
       )
     )
-    consoleErrorSpy.mockRestore()
   })
 })
