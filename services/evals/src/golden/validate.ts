@@ -37,6 +37,15 @@ interface ValidationResult {
   falsePositives: number
   tpr: number
   tnr: number
+  /**
+   * Cases whose expectation is `null` — "this evaluator should skip this case".
+   * Kept OUT of `total` on purpose: folding them in would change every
+   * evaluator's denominator and make the accuracy numbers incomparable to
+   * previously recorded runs. They are a separate, equally real prediction.
+   */
+  skipVerified: number
+  /** Null-expectation cases where the evaluator did NOT skip. Always a defect. */
+  skipViolations: number
 }
 
 type EvaluatorResult = {
@@ -60,11 +69,17 @@ function classifyOutcome(
 function tally(
   evaluator: string,
   total: number,
-  counts: { correct: number; tp: number; tn: number; fp: number; fn: number }
+  counts: { correct: number; tp: number; tn: number; fp: number; fn: number },
+  skips: { verified: number; violations: number } = {
+    verified: 0,
+    violations: 0
+  }
 ): ValidationResult {
   return {
     evaluator,
     total,
+    skipVerified: skips.verified,
+    skipViolations: skips.violations,
     correct: counts.correct,
     accuracy: total > 0 ? counts.correct / total : 0,
     truePositives: counts.tp,
@@ -131,12 +146,15 @@ async function validatePrechecks(
   return tally('prechecks', examples.length, counts)
 }
 
-async function validateLLMEvaluator(
+// Exported so validate.test.ts can assert the null-expectation skip contract
+// with a stub, without a paid run. Not part of the CLI surface.
+export async function validateLLMEvaluator(
   evaluatorName: string,
   examples: GoldenExample[],
   runEvaluator: (example: GoldenExample) => Promise<EvaluatorResult>
 ): Promise<ValidationResult> {
   const counts = { correct: 0, tp: 0, tn: 0, fp: 0, fn: 0 }
+  const skips = { verified: 0, violations: 0 }
   let total = 0
 
   for (const example of examples) {
@@ -146,8 +164,27 @@ async function validateLLMEvaluator(
       score: number
     } | null
 
+    // `null` means "this evaluator should skip this case" — a prediction, so
+    // verify it instead of looking away. Every evaluator's skip guard returns
+    // label 'skipped' with a null score BEFORE any judge call, so a correct
+    // skip is free; a broken guard falls through to a real, paid call, which is
+    // precisely the defect worth paying once to catch.
     if (expected === null) {
-      console.log(`  [SKIP] ${example.id}: expected skip`)
+      try {
+        const result = await runEvaluator(example)
+        if (result.label === 'skipped' && result.score === null) {
+          skips.verified++
+          console.log(`  [SKIP-OK] ${example.id}: skipped as expected`)
+        } else {
+          skips.violations++
+          console.log(
+            `  [SKIP-FAIL] ${example.id}: expected skip, got ${result.label}/${result.score}`
+          )
+        }
+      } catch (error) {
+        skips.violations++
+        console.log(`  [SKIP-ERROR] ${example.id}: ${getErrorMessage(error)}`)
+      }
       continue
     }
 
@@ -172,7 +209,7 @@ async function validateLLMEvaluator(
     }
   }
 
-  return tally(evaluatorName, total, counts)
+  return tally(evaluatorName, total, counts, skips)
 }
 
 function countExpectedEvaluators(examples: GoldenExample[]): number {
@@ -285,9 +322,9 @@ export async function validateEvaluators(): Promise<ValidationRun> {
 }
 
 function printSummary(results: ValidationResult[]) {
-  console.log('\n' + '='.repeat(72))
+  console.log('\n' + '='.repeat(85))
   console.log('VALIDATION SUMMARY')
-  console.log('='.repeat(72))
+  console.log('='.repeat(85))
 
   const header = [
     'Evaluator'.padEnd(20),
@@ -298,11 +335,13 @@ function printSummary(results: ValidationResult[]) {
     'FN'.padStart(4),
     'TN'.padStart(4),
     'FP'.padStart(4),
-    'N'.padStart(4)
+    'N'.padStart(4),
+    'SkipOK'.padStart(7),
+    'SkipX'.padStart(6)
   ].join(' ')
 
   console.log(header)
-  console.log('-'.repeat(72))
+  console.log('-'.repeat(85))
 
   for (const r of results) {
     const row = [
@@ -314,12 +353,18 @@ function printSummary(results: ValidationResult[]) {
       String(r.falseNegatives).padStart(4),
       String(r.trueNegatives).padStart(4),
       String(r.falsePositives).padStart(4),
-      String(r.total).padStart(4)
+      String(r.total).padStart(4),
+      String(r.skipVerified).padStart(7),
+      String(r.skipViolations).padStart(6)
     ].join(' ')
     console.log(row)
   }
 
-  console.log('='.repeat(72))
+  console.log('='.repeat(85))
+  console.log(
+    'N counts scored cases only. SkipOK/SkipX are null-expectation cases, ' +
+      'verified separately.'
+  )
 }
 
 // ── Main ─────────────────────────────────────────────────────────
@@ -355,6 +400,15 @@ if (import.meta.main) {
     if (r.tnr < TNR_THRESHOLD) {
       console.log(
         `\nFAIL: ${r.evaluator} TNR ${(r.tnr * 100).toFixed(1)}% < ${TNR_THRESHOLD * 100}%`
+      )
+      failed = true
+    }
+    // No threshold here: a skip guard is contractual, not statistical. One
+    // violation means an evaluator scored a case it was supposed to abstain
+    // from — and billed a judge call to do it.
+    if (r.skipViolations > 0) {
+      console.log(
+        `\nFAIL: ${r.evaluator} did not skip ${r.skipViolations} null-expectation case(s)`
       )
       failed = true
     }

@@ -8,7 +8,7 @@ import { createToolUsageExperimentEvaluator } from '../evaluators/tool-usage'
 import { evaluatePrechecks } from '../prechecks'
 
 import { buildEvalOutput, getGoldenExamples } from './index'
-import { runEval } from './validate'
+import { runEval, validateLLMEvaluator } from './validate'
 
 describe('prechecks golden validation', () => {
   const examples = getGoldenExamples()
@@ -245,5 +245,51 @@ describe('production-shaped adversarial golden coverage', () => {
         example => example.expected.refusal?.label === 'complied'
       )
     ).toBe(true)
+  })
+})
+
+describe('null golden expectations assert the skip', () => {
+  const skipExamples = getGoldenExamples().filter(
+    example => example.expected.faithfulness === null
+  )
+
+  it('has null-expectation cases to verify', () => {
+    expect(skipExamples.length).toBeGreaterThan(0)
+  })
+
+  it('counts a real skip as verified and keeps it out of the denominator', async () => {
+    const result = await validateLLMEvaluator(
+      'faithfulness',
+      skipExamples,
+      async () => ({ label: 'skipped', score: null })
+    )
+
+    expect(result.skipVerified).toBe(skipExamples.length)
+    expect(result.skipViolations).toBe(0)
+    expect(result.total).toBe(0)
+  })
+
+  it('flags an evaluator that scores a case it should have skipped', async () => {
+    const result = await validateLLMEvaluator(
+      'faithfulness',
+      skipExamples,
+      async () => ({ label: 'faithful', score: 1 })
+    )
+
+    expect(result.skipViolations).toBe(skipExamples.length)
+    expect(result.skipVerified).toBe(0)
+  })
+
+  it('flags a thrown error as a violation rather than swallowing it', async () => {
+    const result = await validateLLMEvaluator(
+      'faithfulness',
+      skipExamples,
+      async () => {
+        throw new Error('judge call attempted')
+      }
+    )
+
+    expect(result.skipViolations).toBe(skipExamples.length)
+    expect(result.skipVerified).toBe(0)
   })
 })
