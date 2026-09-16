@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
+import { telemetryRecordingOptions } from '@/lib/utils/telemetry'
 
 type TracingState =
   | 'enabled'
@@ -78,6 +79,15 @@ export async function GET(req: NextRequest) {
   // is phoenix: 'ok' with tracing: 'disabled-https'.
   if (checks === 'phoenix' || checks === 'all') {
     body.tracing = globalThis.__polymorphTracingState ?? 'unknown'
+    // OPENINFERENCE_HIDE_* is case-sensitive and fails toward recording: only
+    // the exact string 'true' masks, so `OPENINFERENCE_HIDE_INPUTS=TRUE` records
+    // every prompt with no error. Report what the code RESOLVED to, not the raw
+    // env, so that typo is visible without eyeballing a span in Phoenix.
+    const { recordInputs, recordOutputs } = telemetryRecordingOptions()
+    body.spanContent = {
+      inputs: recordInputs ? 'recorded' : 'masked',
+      outputs: recordOutputs ? 'recorded' : 'masked'
+    }
   }
 
   return NextResponse.json(body, { status: isHealthy ? 200 : 503 })

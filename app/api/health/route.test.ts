@@ -63,6 +63,66 @@ describe('GET /api/health', () => {
     expect(body).not.toHaveProperty('tracing')
   })
 
+  it('reports spanContent as recorded when masking is off', async () => {
+    mockExecute.mockResolvedValue(undefined)
+
+    const response = await GET(makeRequest('?check=phoenix'))
+    const body = await response.json()
+
+    expect(body.spanContent).toEqual({
+      inputs: 'recorded',
+      outputs: 'recorded'
+    })
+  })
+
+  it('reports spanContent as masked when masking is on', async () => {
+    mockExecute.mockResolvedValue(undefined)
+    vi.stubEnv('OPENINFERENCE_HIDE_INPUTS', 'true')
+    vi.stubEnv('OPENINFERENCE_HIDE_OUTPUTS', 'true')
+
+    const response = await GET(makeRequest('?check=all'))
+    const body = await response.json()
+
+    expect(body.spanContent).toEqual({ inputs: 'masked', outputs: 'masked' })
+  })
+
+  it('reports each masking flag independently', async () => {
+    mockExecute.mockResolvedValue(undefined)
+    vi.stubEnv('OPENINFERENCE_HIDE_INPUTS', 'true')
+
+    const response = await GET(makeRequest('?check=phoenix'))
+    const body = await response.json()
+
+    expect(body.spanContent).toEqual({
+      inputs: 'masked',
+      outputs: 'recorded'
+    })
+  })
+
+  it('reports TRUE as recorded, because only lowercase true masks', async () => {
+    mockExecute.mockResolvedValue(undefined)
+    vi.stubEnv('OPENINFERENCE_HIDE_INPUTS', 'TRUE')
+    vi.stubEnv('OPENINFERENCE_HIDE_OUTPUTS', '1')
+
+    const response = await GET(makeRequest('?check=phoenix'))
+    const body = await response.json()
+
+    expect(body.spanContent).toEqual({
+      inputs: 'recorded',
+      outputs: 'recorded'
+    })
+  })
+
+  it('omits spanContent from the body when check is unset', async () => {
+    mockExecute.mockResolvedValue(undefined)
+    vi.stubEnv('OPENINFERENCE_HIDE_INPUTS', 'true')
+
+    const response = await GET(makeRequest())
+    const body = await response.json()
+
+    expect(body).not.toHaveProperty('spanContent')
+  })
+
   it('falls back to unknown when the global tracing state was never set', async () => {
     mockExecute.mockResolvedValue(undefined)
 

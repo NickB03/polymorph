@@ -85,6 +85,8 @@ Two limits worth knowing before you rely on them:
 | `OPENINFERENCE_HIDE_INPUTS`  | `true`                   |
 | `OPENINFERENCE_HIDE_OUTPUTS` | `true`                   |
 
+Confirm the resolved masking state with `GET /api/health?check=phoenix` — its `spanContent` field reports `masked` or `recorded` per direction, which is how you catch a `TRUE` typo without eyeballing a span.
+
 See [Environment Reference](../getting-started/ENVIRONMENT-OPERATIONS.md#tracing-arize-phoenix) for details.
 
 ### Rotating Phoenix API keys
