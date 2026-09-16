@@ -36713,16 +36713,6 @@
       "id": "src_config_required"
     },
     {
-      "label": "validFloat()",
-      "file_type": "code",
-      "source_file": "services/evals/src/config.ts",
-      "source_location": "L56",
-      "_origin": "ast",
-      "community": 75,
-      "norm_label": "validfloat()",
-      "id": "src_config_validfloat"
-    },
-    {
       "label": "validStringList()",
       "file_type": "code",
       "source_file": "services/evals/src/config.ts",
@@ -39311,16 +39301,6 @@
       "community": 38,
       "norm_label": "traffic-monitor.ts",
       "id": "runners_traffic_monitor"
-    },
-    {
-      "label": "TrafficMonitorRunOptions",
-      "file_type": "code",
-      "source_file": "services/evals/src/runners/traffic-monitor.ts",
-      "source_location": "L36",
-      "_origin": "ast",
-      "community": 38,
-      "norm_label": "trafficmonitorrunoptions",
-      "id": "runners_traffic_monitor_trafficmonitorrunoptions"
     },
     {
       "label": "formatContext()",
