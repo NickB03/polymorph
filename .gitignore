@@ -88,3 +88,4 @@ skills-lock.json
 docs/assets/demos/*.mp4
 !docs/assets/demos/polymorph-demo.mp4
 docs/assets/demos/*-poster.png
+.superpowers/
