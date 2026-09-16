@@ -14,6 +14,19 @@ const mockWithOtelRootSpan = vi.hoisted(() =>
     return callback({ otelTraceId: 'otel-trace-1' })
   })
 )
+const defaultOnFinishPayload = vi.hoisted(() => ({
+  responseMessage: {
+    id: 'assistant-1',
+    role: 'assistant',
+    parts: []
+  }
+}))
+const mockOnFinishPayload = vi.hoisted(() => ({
+  current: defaultOnFinishPayload as {
+    responseMessage?: unknown
+    isAborted?: boolean
+  }
+}))
 
 vi.mock('ai', async importOriginal => {
   const actual = await importOriginal<typeof import('ai')>()
@@ -34,13 +47,7 @@ vi.mock('ai', async importOriginal => {
         }) => Promise<void>
       }) => {
         void execute({ writer: mockWriter }).then(() =>
-          onFinish?.({
-            responseMessage: {
-              id: 'assistant-1',
-              role: 'assistant',
-              parts: []
-            }
-          })
+          onFinish?.(mockOnFinishPayload.current)
         )
         return { mocked: true }
       }
@@ -114,14 +121,38 @@ vi.mock('@/lib/streaming/helpers/stream-related-questions', () => ({
 
 import { createChatStreamResponse } from '@/lib/streaming/create-chat-stream-response'
 import { prepareMessages } from '@/lib/streaming/helpers/prepare-messages'
+import { flushTraces } from '@/lib/utils/telemetry'
 
 function makeModel() {
   return { providerId: 'openai', id: 'gpt-4o-mini' } as any
 }
 
+function baseRequestConfig(agentFactory: any) {
+  return {
+    messages: [
+      {
+        id: 'user-1',
+        role: 'user' as const,
+        parts: [{ type: 'text' as const, text: 'hello' }]
+      }
+    ],
+    model: makeModel(),
+    chatId: 'chat-1',
+    userId: 'user-1',
+    trigger: 'submit-message' as const,
+    abortSignal: new AbortController().signal,
+    isNewChat: true,
+    searchMode: 'chat' as const,
+    userMode: 'search' as const,
+    modelType: 'speed' as const,
+    agentFactory
+  }
+}
+
 describe('createChatStreamResponse', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockOnFinishPayload.current = defaultOnFinishPayload
     mockLoadCanvasArtifactByChatId.mockResolvedValue({
       id: 'artifact-1',
       draftRevision: 3
@@ -348,5 +379,59 @@ describe('createChatStreamResponse', () => {
     expect(mockLoadChatWithMessages).toHaveBeenCalledTimes(2)
     expect(prepareMessages).toHaveBeenCalledTimes(2)
     expect(mockAgentStream).toHaveBeenCalledTimes(1)
+  })
+
+  it('flushes traces without persisting when the stream was aborted', async () => {
+    mockOnFinishPayload.current = { isAborted: true }
+    const agentFactory = vi.fn(() => ({ stream: mockAgentStream }) as any)
+
+    const response = await createChatStreamResponse(
+      baseRequestConfig(agentFactory)
+    )
+
+    await expect(response.text()).resolves.toBe('ok')
+    await vi.waitFor(() => {
+      expect(flushTraces).toHaveBeenCalledTimes(1)
+    })
+    expect(mockPersistStreamResults).not.toHaveBeenCalled()
+  })
+
+  it('flushes traces without persisting when responseMessage is missing', async () => {
+    mockOnFinishPayload.current = { isAborted: false }
+    const agentFactory = vi.fn(() => ({ stream: mockAgentStream }) as any)
+
+    const response = await createChatStreamResponse(
+      baseRequestConfig(agentFactory)
+    )
+
+    await expect(response.text()).resolves.toBe('ok')
+    await vi.waitFor(() => {
+      expect(flushTraces).toHaveBeenCalledTimes(1)
+    })
+    expect(mockPersistStreamResults).not.toHaveBeenCalled()
+  })
+
+  it('still flushes traces when persisting the stream results throws', async () => {
+    const persistError = new Error('db unavailable')
+    mockPersistStreamResults.mockRejectedValueOnce(persistError)
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+    const agentFactory = vi.fn(() => ({ stream: mockAgentStream }) as any)
+
+    const response = await createChatStreamResponse(
+      baseRequestConfig(agentFactory)
+    )
+
+    await expect(response.text()).resolves.toBe('ok')
+    await vi.waitFor(() => {
+      expect(flushTraces).toHaveBeenCalledTimes(1)
+    })
+    expect(mockPersistStreamResults).toHaveBeenCalledTimes(1)
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[onFinish] Failed to persist stream results'),
+      persistError
+    )
+    consoleErrorSpy.mockRestore()
   })
 })

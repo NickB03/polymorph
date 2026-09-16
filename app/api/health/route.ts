@@ -3,6 +3,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
+import { telemetryRecordingOptions } from '@/lib/utils/telemetry'
+
+type TracingState =
+  | 'enabled'
+  | 'disabled-off'
+  | 'disabled-https'
+  | 'init-failed'
+
+declare global {
+  var __polymorphTracingState: TracingState | undefined
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +74,21 @@ export async function GET(req: NextRequest) {
   }
   if (dbError) body.dbError = dbError
   if (phoenixStatus !== undefined) body.phoenix = phoenixStatus
+  // `phoenix: 'ok'` only means the collector is reachable. `tracing` says
+  // whether THIS process registered an exporter — the blind-deploy signature
+  // is phoenix: 'ok' with tracing: 'disabled-https'.
+  if (checks === 'phoenix' || checks === 'all') {
+    body.tracing = globalThis.__polymorphTracingState ?? 'unknown'
+    // OPENINFERENCE_HIDE_* is case-sensitive and fails toward recording: only
+    // the exact string 'true' masks, so `OPENINFERENCE_HIDE_INPUTS=TRUE` records
+    // every prompt with no error. Report what the code RESOLVED to, not the raw
+    // env, so that typo is visible without eyeballing a span in Phoenix.
+    const { recordInputs, recordOutputs } = telemetryRecordingOptions()
+    body.spanContent = {
+      inputs: recordInputs ? 'recorded' : 'masked',
+      outputs: recordOutputs ? 'recorded' : 'masked'
+    }
+  }
 
   return NextResponse.json(body, { status: isHealthy ? 200 : 503 })
 }

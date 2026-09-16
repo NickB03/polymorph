@@ -12,6 +12,20 @@ export function isEvalReplayTracingEnabled(): boolean {
   return process.env.EVAL_REPLAY_TRACING_ENABLED === 'true'
 }
 
+// The OPENINFERENCE_HIDE_* env vars are NOT read by openinference-vercel's span
+// processor in this setup, so setting them alone masks nothing. The AI SDK does
+// honour recordInputs/recordOutputs per call, which makes this helper the single
+// enforcement point — spread it into every experimental_telemetry block.
+export function telemetryRecordingOptions(): {
+  recordInputs: boolean
+  recordOutputs: boolean
+} {
+  return {
+    recordInputs: process.env.OPENINFERENCE_HIDE_INPUTS !== 'true',
+    recordOutputs: process.env.OPENINFERENCE_HIDE_OUTPUTS !== 'true'
+  }
+}
+
 type TraceMetadata = Record<
   string,
   string | number | boolean | null | undefined

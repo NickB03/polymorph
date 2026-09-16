@@ -27,11 +27,6 @@ const baseEnvSchema = z.object({
   PHOENIX_API_KEY: z.string().optional(),
   OPENINFERENCE_HIDE_INPUTS: z.string().optional(),
   OPENINFERENCE_HIDE_OUTPUTS: z.string().optional(),
-  OPENINFERENCE_HIDE_INPUT_MESSAGES: z.string().optional(),
-  OPENINFERENCE_HIDE_OUTPUT_MESSAGES: z.string().optional(),
-  OPENINFERENCE_HIDE_INPUT_IMAGES: z.string().optional(),
-  OPENINFERENCE_HIDE_INPUT_TEXT: z.string().optional(),
-  OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH: z.string().optional(),
 
   // Feature-gated (warn if missing)
   OPENROUTER_API_KEY: z.string().optional(),
@@ -109,15 +104,6 @@ export function validateEnv(): Env {
       PHOENIX_API_KEY: process.env.PHOENIX_API_KEY,
       OPENINFERENCE_HIDE_INPUTS: process.env.OPENINFERENCE_HIDE_INPUTS,
       OPENINFERENCE_HIDE_OUTPUTS: process.env.OPENINFERENCE_HIDE_OUTPUTS,
-      OPENINFERENCE_HIDE_INPUT_MESSAGES:
-        process.env.OPENINFERENCE_HIDE_INPUT_MESSAGES,
-      OPENINFERENCE_HIDE_OUTPUT_MESSAGES:
-        process.env.OPENINFERENCE_HIDE_OUTPUT_MESSAGES,
-      OPENINFERENCE_HIDE_INPUT_IMAGES:
-        process.env.OPENINFERENCE_HIDE_INPUT_IMAGES,
-      OPENINFERENCE_HIDE_INPUT_TEXT: process.env.OPENINFERENCE_HIDE_INPUT_TEXT,
-      OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH:
-        process.env.OPENINFERENCE_BASE64_IMAGE_MAX_LENGTH,
       OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
       AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
       TAVILY_API_KEY: process.env.TAVILY_API_KEY,

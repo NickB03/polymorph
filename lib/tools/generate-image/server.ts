@@ -10,6 +10,10 @@ import {
 } from '@/lib/supabase/server-storage'
 import { getErrorMessage } from '@/lib/utils/error'
 import { getModel } from '@/lib/utils/registry'
+import {
+  isTracingEnabled,
+  telemetryRecordingOptions
+} from '@/lib/utils/telemetry'
 
 import type { GenerateImageError, GenerateImageOutput } from './schema'
 import { inputSchema } from './schema'
@@ -90,6 +94,16 @@ export function createGenerateImageTool(context: ImageToolContext) {
         const result = await generateText({
           model,
           messages: [{ role: 'user', content }],
+          experimental_telemetry: {
+            isEnabled: isTracingEnabled(),
+            functionId: 'generate-image',
+            ...telemetryRecordingOptions(),
+            metadata: {
+              modelId: IMAGE_MODEL,
+              chatId: context.chatId,
+              ...(sourceImageUrl ? { isEdit: true } : {})
+            }
+          },
           ...(aspectRatio && {
             providerOptions: { google: { aspectRatio } }
           })

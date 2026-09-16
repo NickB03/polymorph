@@ -172,7 +172,8 @@ For Vercel monitoring, use the canonical production alias (`https://polymorph.fy
   "status": "ok",
   "timestamp": "2025-01-15T10:30:00.000Z",
   "db": "connected",
-  "phoenix": "ok"
+  "phoenix": "ok",
+  "tracing": "enabled"
 }
 ```
 
@@ -188,5 +189,7 @@ For Vercel monitoring, use the canonical production alias (`https://polymorph.fy
 ```
 
 > **Note:** Phoenix status is advisory-only and does not affect the HTTP status code. The endpoint returns 503 only when the database is unreachable.
+
+> **`phoenix: 'ok'` is not proof tracing is active.** With `check=phoenix` or `check=all`, the response also includes `tracing`, one of `enabled` | `disabled-off` | `disabled-https` | `init-failed` | `unknown`. `phoenix` reports whether the Phoenix collector is reachable over the network; `tracing` reports whether _this process_ actually registered an OTel exporter (set in `instrumentation.ts`). The blind-deploy signature to watch for is `phoenix: 'ok'` together with `tracing: 'disabled-https'` — the collector is up, but this deployment silently disabled export because `PHOENIX_COLLECTOR_ENDPOINT` wasn't `https://` in production (see [Environment Operations → Tracing](../getting-started/ENVIRONMENT-OPERATIONS.md#tracing-arize-phoenix)).
 
 ---
