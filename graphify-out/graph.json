@@ -46163,6 +46163,76 @@
       "community": 106,
       "norm_label": "runbooks/browser-qa-auth-admin.md",
       "id": "runbooks_browser_qa_auth_admin"
+    },
+    {
+      "label": "makeRequest()",
+      "file_type": "code",
+      "source_file": "app/api/health/route.test.ts",
+      "source_location": "L15",
+      "_origin": "ast",
+      "norm_label": "makeRequest()",
+      "community": 10,
+      "id": "health_route_test_makerequest"
+    },
+    {
+      "label": "mockExecute",
+      "file_type": "code",
+      "source_file": "app/api/health/route.test.ts",
+      "source_location": "L5",
+      "_origin": "ast",
+      "norm_label": "mockExecute",
+      "community": 10,
+      "id": "health_route_test_mockexecute"
+    },
+    {
+      "label": "route.test.ts",
+      "file_type": "code",
+      "source_file": "app/api/health/route.test.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "norm_label": "route.test.ts",
+      "community": 10,
+      "id": "health_route_test"
+    },
+    {
+      "label": "TracingState",
+      "file_type": "code",
+      "source_file": "app/api/health/route.ts",
+      "source_location": "L8",
+      "_origin": "ast",
+      "norm_label": "TracingState",
+      "community": 10,
+      "id": "health_route_tracingstate"
+    },
+    {
+      "label": "instrumentation.test.ts",
+      "file_type": "code",
+      "source_file": "instrumentation.test.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "norm_label": "instrumentation.test.ts",
+      "community": 0,
+      "id": "instrumentation_test"
+    },
+    {
+      "label": "TracingState",
+      "file_type": "code",
+      "source_file": "instrumentation.ts",
+      "source_location": "L3",
+      "_origin": "ast",
+      "norm_label": "TracingState",
+      "community": 96,
+      "id": "instrumentation_tracingstate"
+    },
+    {
+      "label": "telemetryRecordingOptions()",
+      "file_type": "code",
+      "source_file": "lib/utils/telemetry.ts",
+      "source_location": "L19",
+      "_origin": "ast",
+      "norm_label": "telemetryRecordingOptions()",
+      "community": 32,
+      "id": "utils_telemetry_telemetryrecordingoptions"
     }
   ],
   "links": [
