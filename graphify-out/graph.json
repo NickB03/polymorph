@@ -46233,6 +46233,36 @@
       "norm_label": "telemetryRecordingOptions()",
       "community": 32,
       "id": "utils_telemetry_telemetryrecordingoptions"
+    },
+    {
+      "label": "makeModel()",
+      "file_type": "code",
+      "source_file": "lib/utils/telemetry-masking.test.ts",
+      "source_location": "L31",
+      "_origin": "ast",
+      "norm_label": "makeModel()",
+      "community": 113,
+      "id": "utils_telemetry_masking_test_makemodel"
+    },
+    {
+      "label": "runAndCollect()",
+      "file_type": "code",
+      "source_file": "lib/utils/telemetry-masking.test.ts",
+      "source_location": "L50",
+      "_origin": "ast",
+      "norm_label": "runAndCollect()",
+      "community": 113,
+      "id": "utils_telemetry_masking_test_runandcollect"
+    },
+    {
+      "label": "telemetry-masking.test.ts",
+      "file_type": "code",
+      "source_file": "lib/utils/telemetry-masking.test.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "norm_label": "telemetry-masking.test.ts",
+      "community": 113,
+      "id": "utils_telemetry_masking_test"
     }
   ],
   "links": [
