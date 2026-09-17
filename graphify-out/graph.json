@@ -46812,6 +46812,15 @@
       "source_file": "app/not-found.tsx",
       "source_location": "L3",
       "_origin": "ast"
+    },
+    {
+      "id": "db_actions_withchatmessageslock",
+      "label": "withChatMessagesLock()",
+      "file_type": "code",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L174",
+      "_origin": "ast",
+      "community": 19
     }
   ],
   "links": [
@@ -149696,6 +149705,49 @@
       "source_file": "app/(chat)/search/[id]/page.tsx",
       "source_location": "L39",
       "weight": 1.0
+    },
+    {
+      "source": "db_actions",
+      "target": "db_actions_withchatmessageslock",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L174",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "db_actions_deletemessagesafter",
+      "target": "db_actions_withchatmessageslock",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L321",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "db_actions_deletemessagesfromindex",
+      "target": "db_actions_withchatmessageslock",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L366",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "db_actions_withchatmessageslock",
+      "target": "db_with_rls_withrls",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L185",
+      "weight": 1.0,
+      "confidence_score": 1.0
     }
   ]
 }
