@@ -8,7 +8,13 @@ export default function GlobalError({
   reset: () => void
 }) {
   return (
-    <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 p-8">
+    // main#main-content: the root layout's skip link still renders when this
+    // boundary replaces the route tree, so it needs a target here too.
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="flex min-h-[400px] flex-col items-center justify-center gap-4 p-8"
+    >
       <h2 className="text-lg font-medium">Something went wrong</h2>
       <p className="text-sm text-muted-foreground">
         {error.digest
@@ -22,6 +28,6 @@ export default function GlobalError({
       >
         Try again
       </button>
-    </div>
+    </main>
   )
 }

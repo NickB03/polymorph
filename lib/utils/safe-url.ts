@@ -1,9 +1,11 @@
+import { lookup } from 'node:dns/promises'
 import { isIP } from 'node:net'
 
-// SSRF guards shared by every server-side fetch of a URL that originated
-// outside our trust boundary (search-provider thumbnails, client-supplied
-// file parts). Hostname-based only: it rejects literal private addresses and
-// localhost, but cannot stop a public hostname that resolves to a private IP.
+// SSRF guards for URLs that originated outside our trust boundary
+// (search-provider thumbnails, client-supplied file parts).
+// `isSafeRedirectTarget` is hostname-only and is enough when the *client*
+// follows the URL; anything the server fetches must use `isSafeFetchTarget`,
+// which also rejects public hostnames that resolve to private addresses.
 
 function normalizeHost(hostname: string): string {
   return hostname
@@ -119,4 +121,32 @@ export function isSafeRedirectTarget(candidate: string): boolean {
   }
 
   return true
+}
+
+/**
+ * For URLs the server itself will fetch: `isSafeRedirectTarget` plus a DNS
+ * check, so a public-looking hostname that resolves to a private or
+ * link-local address is rejected too. Fails closed when resolution fails.
+ */
+export async function isSafeFetchTarget(candidate: string): Promise<boolean> {
+  if (!isSafeRedirectTarget(candidate)) return false
+
+  const hostname = normalizeHost(new URL(candidate).hostname)
+  if (isIP(hostname)) return true // literal IPs were vetted above
+
+  try {
+    const addresses = await lookup(hostname, { all: true })
+    // ponytail: check-then-fetch leaves a DNS-rebinding window between this
+    // lookup and fetch's own. Closing it needs a pinned-IP dispatcher
+    // (undici Agent with connect.lookup); add if this ever fetches from a
+    // network with reachable internal hosts.
+    return (
+      addresses.length > 0 &&
+      addresses.every(({ address, family }) =>
+        family === 6 ? !isPrivateIpv6(address) : !isPrivateIpv4(address)
+      )
+    )
+  } catch {
+    return false
+  }
 }

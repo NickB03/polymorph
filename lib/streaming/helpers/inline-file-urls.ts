@@ -7,7 +7,7 @@ import {
 } from '@/lib/supabase/file-url'
 import { downloadStorageFile } from '@/lib/supabase/server-storage'
 import { MAX_UPLOAD_SIZE_BYTES } from '@/lib/utils/file-validation'
-import { isSafeRedirectTarget } from '@/lib/utils/safe-url'
+import { isSafeFetchTarget, isSafeRedirectTarget } from '@/lib/utils/safe-url'
 
 // Walk model messages and convert file parts with URL data to inline
 // Uint8Array data. The Vercel AI Gateway claims it supports all URLs, so the
@@ -94,6 +94,14 @@ export async function inlineFileUrls(
         return downloadStorageFile(source.path)
       }
       try {
+        // resolveFileSource already vetted the hostname; this adds the DNS
+        // check so a public name pointing at a private address is refused.
+        if (!(await isSafeFetchTarget(source.url.href))) {
+          console.warn(
+            `[inlineFileUrls] Refusing unsafe fetch target ${source.url.host}`
+          )
+          return null
+        }
         const res = await fetch(source.url, {
           redirect: 'error',
           signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)

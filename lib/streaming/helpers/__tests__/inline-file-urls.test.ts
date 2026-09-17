@@ -1,11 +1,14 @@
 import type { ModelMessage } from 'ai'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { downloadStorageFile } = vi.hoisted(() => ({
-  downloadStorageFile: vi.fn()
+const { downloadStorageFile, lookup } = vi.hoisted(() => ({
+  downloadStorageFile: vi.fn(),
+  lookup: vi.fn()
 }))
 
 vi.mock('@/lib/supabase/server-storage', () => ({ downloadStorageFile }))
+// Keep the SSRF DNS check hermetic: no real lookups from the test run.
+vi.mock('node:dns/promises', () => ({ lookup, default: { lookup } }))
 
 import { MAX_UPLOAD_SIZE_BYTES } from '@/lib/utils/file-validation'
 
@@ -18,6 +21,8 @@ vi.stubGlobal('fetch', mockFetch)
 beforeEach(() => {
   mockFetch.mockReset()
   downloadStorageFile.mockReset()
+  lookup.mockReset()
+  lookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
 })
 
 afterEach(() => {
@@ -392,6 +397,56 @@ describe('inlineFileUrls', () => {
       expect(result).toBe(messages)
       expect(mockFetch).not.toHaveBeenCalled()
     }
+  })
+
+  it('refuses a public hostname that resolves to a private address', async () => {
+    const answers = [
+      [{ address: '10.0.0.5', family: 4 }],
+      [{ address: 'fd00::1', family: 6 }],
+      // One private answer among public ones is enough to refuse.
+      [
+        { address: '93.184.216.34', family: 4 },
+        { address: '169.254.169.254', family: 4 }
+      ],
+      []
+    ]
+
+    for (const answer of answers) {
+      lookup.mockResolvedValueOnce(answer)
+      const messages: ModelMessage[] = [
+        userMsg([
+          {
+            type: 'file',
+            data: 'https://internal.example.com/secret',
+            mediaType: 'image/png'
+          }
+        ])
+      ]
+
+      const result = await inlineFileUrls(messages, 'user-1')
+
+      expect((result[0].content as any[])[0].data).toBe(
+        'https://internal.example.com/secret'
+      )
+      expect(mockFetch).not.toHaveBeenCalled()
+    }
+  })
+
+  it('fails closed when the hostname cannot be resolved', async () => {
+    lookup.mockRejectedValueOnce(new Error('ENOTFOUND'))
+    const messages: ModelMessage[] = [
+      userMsg([
+        {
+          type: 'file',
+          data: 'https://nope.example.com/a.png',
+          mediaType: 'image/png'
+        }
+      ])
+    ]
+
+    await inlineFileUrls(messages, 'user-1')
+
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
   it('refuses a response larger than the upload size limit', async () => {

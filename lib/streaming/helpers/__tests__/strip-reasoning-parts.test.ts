@@ -4,11 +4,38 @@ import type { UIMessage } from '@/lib/types/ai'
 
 import {
   needsReasoningStrip,
+  stripReasoningParts,
   toReplaySafeAbortedMessage
 } from '../strip-reasoning-parts'
 
 const assistant = (parts: unknown[]): UIMessage =>
   ({ id: 'a1', role: 'assistant', parts }) as UIMessage
+
+describe('stripReasoningParts', () => {
+  const user = { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'hi' }] }
+  const reasoning = { type: 'reasoning', text: 'thinking', state: 'done' }
+  const text = { type: 'text', text: 'answer' }
+
+  it('removes reasoning parts and keeps the rest of the message', () => {
+    const result = stripReasoningParts([
+      user as UIMessage,
+      assistant([reasoning, text])
+    ])
+
+    expect(result).toHaveLength(2)
+    expect(result[1].parts).toEqual([text])
+  })
+
+  it('drops a completed reasoning-only assistant turn instead of replaying it', () => {
+    const result = stripReasoningParts([
+      user as UIMessage,
+      assistant([reasoning]),
+      user as UIMessage
+    ])
+
+    expect(result.map(m => m.role)).toEqual(['user', 'user'])
+  })
+})
 
 describe('toReplaySafeAbortedMessage', () => {
   it('drops a reasoning-only aborted message', () => {

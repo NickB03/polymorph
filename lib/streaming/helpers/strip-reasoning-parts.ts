@@ -29,19 +29,21 @@ export function needsReasoningStrip(modelId: string): boolean {
  * @see https://github.com/vercel/ai/issues/11036
  */
 export function stripReasoningParts(messages: UIMessage[]): UIMessage[] {
-  return messages.map(msg => {
+  return messages.flatMap(msg => {
     if (msg.role !== 'assistant' || !msg.parts) {
-      return msg
+      return [msg]
     }
 
     const filteredParts = msg.parts.filter(part => part.type !== 'reasoning')
 
-    // If all parts were reasoning, keep the original message
+    // A reasoning-only turn (e.g. the model spent its whole output budget
+    // thinking) has nothing replayable. Keeping it would replay exactly the
+    // reasoning metadata this function exists to remove, so drop the message.
     if (filteredParts.length === 0) {
-      return msg
+      return []
     }
 
-    return { ...msg, parts: filteredParts }
+    return [{ ...msg, parts: filteredParts }]
   })
 }
 
@@ -53,9 +55,9 @@ const SETTLED_TOOL_STATES = new Set(['output-available', 'output-error'])
  *
  * - A tool call cut off before its result would be replayed as a tool-call
  *   with no tool-result, which providers reject.
- * - A reasoning-only message survives `stripReasoningParts` untouched (it keeps
- *   all-reasoning messages), so persisting one would replay provider reasoning
- *   metadata. It also has no visible answer worth keeping.
+ * - A reasoning-only message has no visible answer worth keeping, and models
+ *   that skip `stripReasoningParts` would replay its provider reasoning
+ *   metadata.
  */
 export function toReplaySafeAbortedMessage(
   message: UIMessage
