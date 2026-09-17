@@ -195,18 +195,22 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         let state: CanvasArtifactState | undefined
         do {
           reloadQueuedRef.current = false
-          const res = await fetch(url)
+          let failure: unknown
+          try {
+            const res = await fetch(url)
+            if (res.ok) state = await res.json()
+            else failure = res.status
+          } catch (err) {
+            failure = err
+          }
           if (generation !== loadGenerationRef.current) return
-          if (!res.ok) {
-            // A reload queued during this fetch is an explicit retry — honor
-            // it before giving up on a (possibly transient) failure.
-            if (reloadQueuedRef.current) continue
-            console.error('Failed to load canvas artifact:', res.status)
+          // A reload queued during this attempt is an explicit retry — honor it
+          // before giving up on a (possibly transient) non-2xx or network error.
+          if (failure !== undefined && !reloadQueuedRef.current) {
+            console.error('Failed to load canvas artifact:', failure)
             setArtifact(null)
             return
           }
-          state = await res.json()
-          if (generation !== loadGenerationRef.current) return
         } while (reloadQueuedRef.current)
         if (state) applyState(state)
       } catch (err) {

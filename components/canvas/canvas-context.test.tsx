@@ -376,6 +376,38 @@ describe('CanvasProvider', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
+  it('honors a queued reload when the in-flight open throws', async () => {
+    const deferred = createDeferred<Response>()
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(() =>
+        deferred.promise.then(() => {
+          throw new TypeError('Failed to fetch')
+        })
+      )
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => makeArtifactState()
+      })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <CanvasProvider>
+        <Harness />
+      </CanvasProvider>
+    )
+
+    fireEvent.click(screen.getByText('open-auth'))
+    fireEvent.click(screen.getByText('reload'))
+
+    deferred.resolve({} as Response)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('artifact-id')).toHaveTextContent('art-1')
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it('treats a pending workspace as open before artifact persistence', async () => {
     render(
       <CanvasProvider>
