@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Empty chat routes (#241); `DateTicker` key collisions when month/day labels repeat (#238)
 - Optimistic-concurrency and atomic-counter fixes for canvas and rate-limit, dead surface removed (this branch)
 - Tool/binary context counting, tool-pair integrity, and restored span metadata in streaming (this branch)
+- OpenRouter provider now declares a v4 `specificationVersion` so AI SDK 7's registry no longer routes it through the v2 shim, which double-wrapped `finishReason` and broke the chat stream's `finish` chunk (this branch)
 
 ### Security
 
