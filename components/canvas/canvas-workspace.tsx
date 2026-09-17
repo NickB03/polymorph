@@ -383,7 +383,7 @@ export function CanvasWorkspace() {
           <TooltipButton
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-9 w-9 md:h-7 md:w-7"
             onClick={() => canvas.viewFullscreen()}
             disabled={!artifact?.draftCompiledHtml}
             aria-label="Open in new tab"
@@ -398,7 +398,7 @@ export function CanvasWorkspace() {
             <TooltipButton
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-9 w-9 md:h-7 md:w-7"
               aria-label="More actions"
               tooltipContent="More actions"
               data-testid="canvas-more-actions"
@@ -430,7 +430,7 @@ export function CanvasWorkspace() {
         <TooltipButton
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="h-9 w-9 md:h-7 md:w-7"
           onClick={() => canvas.closeWorkspace()}
           data-testid="canvas-close"
           aria-label="Close"

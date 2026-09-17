@@ -24,6 +24,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, InputProps>(
           size="icon"
           className="h-full px-3 py-2 hover:bg-transparent absolute right-0 flex items-center justify-center"
           onClick={() => setShowPassword(!showPassword)}
+          aria-label={showPassword ? 'Hide password' : 'Show password'}
         >
           {showPassword ? (
             <EyeOff className="h-4 w-4" />
