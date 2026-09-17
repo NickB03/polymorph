@@ -58,14 +58,14 @@ The primary chat endpoint. Accepts the AI SDK `UIMessage[]` history and returns 
 }
 ```
 
-| Field              | Type          | Required    | Description                                                                                                                        |
-| ------------------ | ------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `messages`         | `UIMessage[]` | Yes         | Full AI SDK v6 conversation history. Interactive tool continuations use the updated assistant message produced by `addToolOutput`. |
-| `chatId`           | `string`      | Yes         | Unique identifier for the chat session.                                                                                            |
-| `trigger`          | `string`      | No          | Action type: `"submit-message"` or `"regenerate-message"`. Defaults to `"submit-message"`.                                         |
-| `messageId`        | `string`      | Conditional | ID of the message to regenerate. Required when `trigger` is `"regenerate-message"`.                                                |
-| `isNewChat`        | `boolean`     | No          | Indicates a new chat session. Affects analytics tracking.                                                                          |
-| `guestCanvasToken` | `string`      | No          | HMAC-SHA256 signed token for guest canvas artifact continuity. Passed through to canvas tools for guest session verification.      |
+| Field              | Type          | Required    | Description                                                                                                                       |
+| ------------------ | ------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `messages`         | `UIMessage[]` | Yes         | Full AI SDK 7 conversation history. Interactive tool continuations use the updated assistant message produced by `addToolOutput`. |
+| `chatId`           | `string`      | Yes         | Unique identifier for the chat session.                                                                                           |
+| `trigger`          | `string`      | No          | Action type: `"submit-message"` or `"regenerate-message"`. Defaults to `"submit-message"`.                                        |
+| `messageId`        | `string`      | Conditional | ID of the message to regenerate. Required when `trigger` is `"regenerate-message"`.                                               |
+| `isNewChat`        | `boolean`     | No          | Indicates a new chat session. Affects analytics tracking.                                                                         |
+| `guestCanvasToken` | `string`      | No          | HMAC-SHA256 signed token for guest canvas artifact continuity. Passed through to canvas tools for guest session verification.     |
 
 #### Cookies Read
 

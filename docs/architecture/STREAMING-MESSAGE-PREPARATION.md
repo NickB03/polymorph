@@ -39,7 +39,7 @@ When the user regenerates a response:
 
 ### Native Interactive Tool Output
 
-Interactive display tools use the AI SDK v6 continuation path: the client calls `addToolOutput`, the SDK updates the assistant `UIMessage` tool part to `output-available`, and the next request arrives as a normal `submit-message` with the updated `messages` array. The server validates that the latest persisted message is the same assistant message and that exactly one registered interactive tool part moved from `input-available` to `output-available`.
+Interactive display tools use the AI SDK 7 continuation path: the client calls `addToolOutput`, the SDK updates the assistant `UIMessage` tool part to `output-available`, and the next request arrives as a normal `submit-message` with the updated `messages` array. The server validates that the latest persisted message is the same assistant message and that exactly one registered interactive tool part moved from `input-available` to `output-available`.
 
 ### Post-Preparation Processing
 

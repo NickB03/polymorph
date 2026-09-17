@@ -14,7 +14,7 @@ The React `Chat` component (`components/chat.tsx`) uses the AI SDK's `useChat` h
 `app/api/chat/route.ts` (POST handler, `maxDuration = 300` seconds):
 
 1. Parses the request body
-2. Validates the AI SDK v6 body (`messages` must be a non-empty array; `messageId` is required for regenerate)
+2. Validates the AI SDK 7 body (`messages` must be a non-empty array; `messageId` is required for regenerate)
 3. Authenticates the user via `getCurrentUserId()`
 4. Determines guest status and enforces rate limits (`checkAndEnforceGuestLimit` or `checkAndEnforceOverallChatLimit`)
 

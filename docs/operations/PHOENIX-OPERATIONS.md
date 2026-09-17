@@ -30,6 +30,8 @@ Railway (polymorph-evals cron) --API--/
 
 > **HTTPS required in production.** The `instrumentation.ts` enforces HTTPS for the collector endpoint when `VERCEL_ENV=production`, `VERCEL_TARGET_ENV=production`, `RAILWAY_ENVIRONMENT=production`, or `NODE_ENV=production` (without `VERCEL_ENV`). If the endpoint uses plain HTTP, tracing is silently disabled and a console error is logged.
 
+> **AI SDK 7 telemetry registration.** AI SDK 7 moved telemetry collection out of the `ai` package into `@ai-sdk/otel`; `instrumentation.ts` imports `OpenTelemetry` from `@ai-sdk/otel` and registers it via `registerOTel()` from `@vercel/otel`. Per-call metadata (session id, user id, search mode, etc.) travels on the `runtimeContext` option rather than `experimental_context`/`experimental_telemetry`, and is only exported to spans when the corresponding key is opted into `telemetry.includeRuntimeContext`. See `lib/utils/telemetry.ts` (`telemetryMetadataOptions`) for the helper that builds both.
+
 ### Persistence verification (run after every Phoenix deploy)
 
 Phoenix is a single stateful SQLite file. An unmounted or region-mismatched volume looks healthy at boot but wipes on every redeploy, so run this check after any change touching the `phoenix` service.

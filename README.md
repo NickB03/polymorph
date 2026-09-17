@@ -41,6 +41,14 @@
 - **Voice mode** — speech input and text-to-speech playback
 - **Configurable guest access** — optional instant search without sign-up, rate-limited per IP in cloud deployments
 
+## Technical highlights
+
+- **RLS-keyed multi-tenant Postgres** — every user-scoped table is protected by Row-Level Security policies keyed on a per-request session GUC, set through `withRLS`/`withOptionalRLS` (`lib/db/with-rls.ts`)
+- **Generative UI as typed message parts** — ~15 display, canvas, and image tools stream structured output that renders as tables, charts, maps, timelines, and interactive widgets (`lib/tools/*`, `components/tool-ui/*`)
+- **Single-artifact canvas** — one React app compiled server-side to a persisted, versioned single-file HTML document and served client-side via `iframe.srcdoc`, with HMAC-SHA256-signed guest edit tokens that rotate on every write (`lib/canvas/*`)
+- **9-evaluator LLM-judge pipeline** — 3 deterministic + 6 LLM-judge evaluators run against Phoenix experiments, including a weekly regression canary on Railway cron (`services/evals`)
+- **End-to-end OpenTelemetry tracing** — every LLM call and tool invocation is traced into Arize Phoenix, with production span-content masking (`instrumentation.ts`, `lib/utils/telemetry.ts`)
+
 ## Documentation
 
 [Browse all documentation →](docs/README.md)
@@ -80,6 +88,13 @@
 </div>
 
 <p align="center"><sub>Offline LLM-judge pipeline · Railway cron → Phoenix experiments → Postgres dashboard.</sub></p>
+
+## Status & roadmap
+
+- **Canvas is one artifact per chat** — `createCanvasArtifact`/`updateCanvasArtifact`/`readCanvasArtifact` are only registered when a chat has an active canvas context; there's no multi-artifact workspace yet
+- **OpenRouter/DeepSeek is the default text provider** — DeepSeek V4 Flash/Pro via OpenRouter, with direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers supported for self-hosted or BYO-key setups
+- **Deferred dependency upgrades** — Vitest 5, `@vitejs/plugin-react` 6, and ESLint 10 were attempted and rolled back (ESLint 10 is blocked on `eslint-plugin-react` compatibility); TypeScript 7 and the Drizzle ORM v1 beta are also not yet adopted
+- **Evals cron runs a low-cost weekly canary by default** — the scheduled Railway cron replays a single synthetic regression case; full capability/traffic-monitor suites are triggered on demand from the Railway dashboard
 
 ## Attribution
 

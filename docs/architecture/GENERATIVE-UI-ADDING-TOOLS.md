@@ -9,7 +9,7 @@ This leaf documents the checklist for adding a new manifest-managed display tool
 
 ### Adding a New Display Tool
 
-Polymorph uses one local AI SDK v6 plus Tool UI manifest contract. It does not use `assistant-ui` `Toolkit`, Agent Kit runtime, or upstream Tool UI runtime wiring for the main chat runtime.
+Polymorph uses one local AI SDK 7 plus Tool UI manifest contract. It does not use `assistant-ui` `Toolkit`, Agent Kit runtime, or upstream Tool UI runtime wiring for the main chat runtime.
 
 For passive display tools, add:
 

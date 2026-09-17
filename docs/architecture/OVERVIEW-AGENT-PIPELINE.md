@@ -67,7 +67,7 @@ The agent is selected by [`resolveChatAgentId()`](../../lib/agents/chat/registry
 
 | Field              | Purpose                                                |
 | ------------------ | ------------------------------------------------------ |
-| `messages`         | Full AI SDK v6 `UIMessage[]` history                   |
+| `messages`         | Full AI SDK 7 `UIMessage[]` history                    |
 | `chatId`           | Chat identifier                                        |
 | `trigger`          | `submit-message` or `regenerate-message`               |
 | `messageId`        | Target message ID (required for `regenerate-message`)  |

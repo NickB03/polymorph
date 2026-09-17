@@ -27,11 +27,15 @@ This leaf lists the required bootstrap variables and core runtime controls.
 
 ## Cloud deployment controls
 
-| Variable                     | Required in cloud                     | Purpose                                                                                                                                     |
-| ---------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POLYMORPH_CLOUD_DEPLOYMENT` | Yes                                   | Enables cloud-mode guardrails and behavior. `VANA_CLOUD_DEPLOYMENT=true` is accepted as a backward-compatible alias (`lib/utils/index.ts`). |
-| `UPSTASH_REDIS_REST_URL`     | Yes, if you want chat limits enforced | Redis endpoint for limits                                                                                                                   |
-| `UPSTASH_REDIS_REST_TOKEN`   | Yes, if you want chat limits enforced | Redis credential                                                                                                                            |
+| Variable                     | Required in cloud                     | Purpose                                                                                                                                                             |
+| ---------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POLYMORPH_CLOUD_DEPLOYMENT` | Yes                                   | Enables cloud-mode guardrails and behavior. `VANA_CLOUD_DEPLOYMENT=true` is accepted as a legacy alias (`lib/utils/index.ts`); prefer `POLYMORPH_CLOUD_DEPLOYMENT`. |
+| `UPSTASH_REDIS_REST_URL`     | Yes, if you want chat limits enforced | Redis endpoint for limits                                                                                                                                           |
+| `UPSTASH_REDIS_REST_TOKEN`   | Yes, if you want chat limits enforced | Redis credential                                                                                                                                                    |
+
+## CLI tooling (`scripts/chat-cli.ts`)
+
+- `POLYMORPH_COOKIES` — session cookies for `bun run chat` to hit an authenticated deployment from the terminal. `VANA_COOKIES` is accepted as a legacy alias (`scripts/chat-cli.ts`); prefer `POLYMORPH_COOKIES`.
 
 ## Authentication (Supabase)
 
