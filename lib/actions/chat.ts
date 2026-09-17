@@ -227,7 +227,8 @@ export async function shareChat(chatId: string) {
 export async function deleteMessagesFromIndex(
   chatId: string,
   messageId: string,
-  userIdOverride?: string
+  userIdOverride?: string,
+  inclusive = true
 ) {
   const userId = userIdOverride ?? (await getCurrentUserId())
   if (!userId) {
@@ -243,7 +244,8 @@ export async function deleteMessagesFromIndex(
   const result = await dbActions.deleteMessagesFromIndex(
     chatId,
     messageId,
-    userId
+    userId,
+    inclusive
   )
 
   revalidateTag(`chat-${chatId}`, 'max')

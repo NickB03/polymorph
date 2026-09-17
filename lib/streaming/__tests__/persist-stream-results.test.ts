@@ -8,7 +8,8 @@ vi.mock('@/lib/actions/chat', () => ({
 }))
 
 vi.mock('@/lib/db/actions', () => ({
-  updateChatTitle: vi.fn().mockResolvedValue(undefined)
+  updateChatTitle: vi.fn().mockResolvedValue(undefined),
+  upsertMessage: vi.fn()
 }))
 
 vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }))
@@ -25,6 +26,7 @@ vi.mock('@/lib/utils/retry', () => ({
 import { revalidateTag } from 'next/cache'
 
 import { upsertMessage } from '@/lib/actions/chat'
+import { upsertMessage as upsertMessageIfCurrent } from '@/lib/db/actions'
 
 describe('persistStreamResults', () => {
   it('writes modelType onto assistant message metadata when provided', async () => {
@@ -62,5 +64,39 @@ describe('persistStreamResults', () => {
       'user-1'
     )
     expect(revalidateTag).toHaveBeenCalledWith('chat-chat-1', { expire: 0 })
+  })
+
+  it('skips cache revalidation when the stale guard drops an aborted partial', async () => {
+    vi.mocked(revalidateTag).mockClear()
+    vi.mocked(upsertMessage).mockClear()
+    vi.mocked(upsertMessageIfCurrent).mockResolvedValue(null)
+    const staleGuard = { latestId: 'user-msg-1', since: new Date() }
+
+    await persistStreamResults(
+      {
+        id: 'msg-2',
+        role: 'assistant',
+        parts: [{ type: 'text', text: 'partial' }]
+      } as Parameters<typeof persistStreamResults>[0],
+      'chat-1',
+      'user-1',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      staleGuard
+    )
+
+    expect(upsertMessageIfCurrent).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'msg-2', chatId: 'chat-1' }),
+      'user-1',
+      staleGuard
+    )
+    expect(upsertMessage).not.toHaveBeenCalled()
+    expect(revalidateTag).not.toHaveBeenCalled()
   })
 })

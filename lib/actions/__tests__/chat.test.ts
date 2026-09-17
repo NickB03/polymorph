@@ -533,7 +533,8 @@ describe('Chat Actions', () => {
       expect(dbActions.deleteMessagesFromIndex).toHaveBeenCalledWith(
         chatId,
         messageId,
-        userId
+        userId,
+        true
       )
       expect(revalidateTag).toHaveBeenCalledWith(`chat-${chatId}`, 'max')
     })

@@ -333,12 +333,15 @@ export async function deleteMessagesAfter(
 }
 
 /**
- * Delete messages from a specific index
+ * Delete messages from a specific index. With `inclusive: false` the target
+ * message is kept and only what follows it (per a fresh read, not a caller's
+ * snapshot) is deleted.
  */
 export async function deleteMessagesFromIndex(
   chatId: string,
   messageId: string,
-  userId?: string
+  userId?: string,
+  inclusive = true
 ): Promise<{ count: number }> {
   return withOptionalRLS(userId || null, async tx => {
     // Get all messages for the chat
@@ -356,7 +359,9 @@ export async function deleteMessagesFromIndex(
     }
 
     // Get messages to delete (from index onwards)
-    const messagesToDelete = allMessages.slice(messageIndex)
+    const messagesToDelete = allMessages.slice(
+      inclusive ? messageIndex : messageIndex + 1
+    )
     const messageIds = messagesToDelete.map(m => m.id)
 
     if (messageIds.length > 0) {

@@ -192,19 +192,19 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         }
 
         const url = buildUrl(id, '', effectiveGuestToken, chatId)
-        let res: Response
+        let state: CanvasArtifactState
         do {
           reloadQueuedRef.current = false
-          res = await fetch(url)
+          const res = await fetch(url)
+          if (generation !== loadGenerationRef.current) return
+          if (!res.ok) {
+            console.error('Failed to load canvas artifact:', res.status)
+            setArtifact(null)
+            return
+          }
+          state = await res.json()
           if (generation !== loadGenerationRef.current) return
         } while (reloadQueuedRef.current)
-        if (!res.ok) {
-          console.error('Failed to load canvas artifact:', res.status)
-          setArtifact(null)
-          return
-        }
-        const state: CanvasArtifactState = await res.json()
-        if (generation !== loadGenerationRef.current) return
         applyState(state)
       } catch (err) {
         if (generation !== loadGenerationRef.current) return
