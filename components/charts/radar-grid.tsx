@@ -2,7 +2,7 @@
 
 import { scaleLinear } from '@visx/scale'
 import { LineRadial } from '@visx/shape'
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { radarCssVars, useRadar } from './radar-context'
 
 export interface RadarGridProps {
@@ -37,6 +37,7 @@ export function RadarGrid({
   className = ''
 }: RadarGridProps) {
   const { metrics, radius, levels, animate } = useRadar()
+  const reduce = useReducedMotion()
 
   // Generate grid vertices on the same metric angles used by axes, labels, and
   // area points. The inverted radial scale below handles SVG orientation.
@@ -64,7 +65,9 @@ export function RadarGrid({
           <motion.g
             animate={{ scale: 1, opacity: 1 }}
             initial={
-              animate ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }
+              animate && !reduce
+                ? { scale: 0, opacity: 0 }
+                : { scale: 1, opacity: 1 }
             }
             key={`grid-${i}`}
             style={{ transformOrigin: '0px 0px' }}
@@ -92,7 +95,7 @@ export function RadarGrid({
         [...new Array(levels)].map((_, i) => (
           <motion.g
             animate={{ opacity: 1 }}
-            initial={animate ? { opacity: 0 } : { opacity: 1 }}
+            initial={animate && !reduce ? { opacity: 0 } : { opacity: 1 }}
             key={`level-label-${i}`}
             transition={{
               duration: 0.4,

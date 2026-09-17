@@ -102,6 +102,7 @@ export function VoiceOrb({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
+              transition={prefersReducedMotion ? { duration: 0 } : undefined}
               className="max-w-[calc(100vw-3rem)] sm:max-w-xs rounded-xl bg-background/90 px-4 py-2 text-center text-sm text-foreground shadow-lg backdrop-blur-sm"
             >
               {interimTranscript}

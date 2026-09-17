@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useSpring } from 'motion/react'
+import { motion, useReducedMotion, useSpring } from 'motion/react'
 import { useMemo, useRef } from 'react'
 
 const TICKER_ITEM_HEIGHT = 24
@@ -54,8 +54,12 @@ export function DateTicker({ currentIndex, labels, visible }: DateTickerProps) {
   const prevMonthIndexRef = useRef(-1)
 
   // Animated Y offsets
-  const dayY = useSpring(0, { stiffness: 400, damping: 35 })
-  const monthY = useSpring(0, { stiffness: 400, damping: 35 })
+  const reduce = useReducedMotion()
+  const tickerSpringConfig = reduce
+    ? { duration: 0 }
+    : { stiffness: 400, damping: 35 }
+  const dayY = useSpring(0, tickerSpringConfig)
+  const monthY = useSpring(0, tickerSpringConfig)
 
   dayY.set(-currentIndex * TICKER_ITEM_HEIGHT)
 

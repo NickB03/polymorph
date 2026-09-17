@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useSpring } from 'motion/react'
+import { motion, useReducedMotion, useSpring } from 'motion/react'
 import type { RefObject } from 'react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -58,8 +58,10 @@ export function TooltipBox({
     setMounted(true)
   }, [])
 
-  const animatedLeft = useSpring(x + offset, springConfig)
-  const animatedTop = useSpring(y, springConfig)
+  const reduce = useReducedMotion()
+  const resolvedSpringConfig = reduce ? { duration: 0 } : springConfig
+  const animatedLeft = useSpring(x + offset, resolvedSpringConfig)
+  const animatedTop = useSpring(y, resolvedSpringConfig)
 
   const tw = tooltipWidthRef.current
   const th = tooltipHeightRef.current
@@ -151,7 +153,7 @@ export function TooltipBox({
       initial={{ opacity: 0 }}
       ref={tooltipRef}
       style={{ left: finalLeft, top: finalTop }}
-      transition={{ duration: 0.1 }}
+      transition={{ duration: reduce ? 0 : 0.1 }}
     >
       <motion.div
         animate={{ scale: 1, opacity: 1, x: 0 }}
@@ -159,7 +161,11 @@ export function TooltipBox({
         initial={{ scale: 0.85, opacity: 0, x: isFlipped ? 20 : -20 }}
         key={flipKey}
         style={{ transformOrigin }}
-        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        transition={
+          reduce
+            ? { duration: 0 }
+            : { type: 'spring', stiffness: 300, damping: 25 }
+        }
       >
         {children}
       </motion.div>

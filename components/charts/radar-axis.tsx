@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { radarCssVars, useRadar } from './radar-context'
 
 export interface RadarAxisProps {
@@ -10,6 +10,7 @@ export interface RadarAxisProps {
 
 export function RadarAxis({ className = '' }: RadarAxisProps) {
   const { metrics, radius, getAngle, animate } = useRadar()
+  const reduce = useReducedMotion()
 
   // Animation delay base
   const axisBaseDelay = 0
@@ -24,7 +25,11 @@ export function RadarAxis({ className = '' }: RadarAxisProps) {
         return (
           <motion.line
             animate={{ x2: targetX, y2: targetY }}
-            initial={animate ? { x2: 0, y2: 0 } : { x2: targetX, y2: targetY }}
+            initial={
+              animate && !reduce
+                ? { x2: 0, y2: 0 }
+                : { x2: targetX, y2: targetY }
+            }
             key={`axis-${metric.key}`}
             stroke={radarCssVars.border}
             strokeOpacity={0.6}
