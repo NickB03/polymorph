@@ -145,8 +145,7 @@ export function Chat({
         m => m.role === 'assistant'
       )
       const metadata = lastAssistantMessage?.metadata as
-        | UIMessageMetadata
-        | undefined
+        UIMessageMetadata | undefined
       if (isValidUserMode(metadata?.userMode)) {
         syncSearchMode(metadata.userMode)
       }

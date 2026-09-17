@@ -2,11 +2,7 @@
 export type { SearchMode } from './search'
 
 export type SuggestionCategory =
-  | 'research'
-  | 'compare'
-  | 'latest'
-  | 'summarize'
-  | 'explain'
+  'research' | 'compare' | 'latest' | 'summarize' | 'explain'
 
 export type SearchResults = {
   images: SearchResultImage[]

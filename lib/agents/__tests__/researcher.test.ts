@@ -1,4 +1,4 @@
-import { stepCountIs, ToolLoopAgent } from 'ai'
+import { isStepCount, ToolLoopAgent } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 
 // Mock all tool imports
@@ -100,7 +100,8 @@ vi.mock('@/lib/utils/registry', () => ({
   getModel: vi.fn().mockReturnValue('mock-model'),
   isProviderEnabled: vi.fn().mockReturnValue(true)
 }))
-vi.mock('@/lib/utils/telemetry', () => ({
+vi.mock('@/lib/utils/telemetry', async importOriginal => ({
+  ...((await importOriginal()) as object),
   isTracingEnabled: vi.fn().mockReturnValue(false),
   telemetryRecordingOptions: vi
     .fn()
@@ -122,7 +123,7 @@ vi.mock('ai', async importOriginal => {
       _isAgent: true,
       tools: config.tools
     })),
-    stepCountIs: vi.fn().mockReturnValue('stepCountPredicate'),
+    isStepCount: vi.fn().mockReturnValue('stepCountPredicate'),
     tool: vi.fn().mockImplementation(config => ({
       ...config,
       _isTool: true
@@ -175,7 +176,7 @@ describe('createChatAgent', () => {
     expect(Object.keys(config.tools)).toContain('getStaticMapImage')
     // Research mode should NOT include displayPlan
     expect(config.activeTools).not.toContain('displayPlan')
-    expect(vi.mocked(stepCountIs).mock.calls.at(-1)?.[0]).toBe(50)
+    expect(vi.mocked(isStepCount).mock.calls.at(-1)?.[0]).toBe(50)
   })
 
   it('configures chat mode with correct tools and step limit', () => {
@@ -200,7 +201,7 @@ describe('createChatAgent', () => {
     expect(Object.keys(config.tools)).toContain('displayGeoMap')
     // Chat mode should NOT include todoWrite
     expect(config.activeTools).not.toContain('todoWrite')
-    expect(vi.mocked(stepCountIs).mock.calls.at(-1)?.[0]).toBe(20)
+    expect(vi.mocked(isStepCount).mock.calls.at(-1)?.[0]).toBe(20)
   })
 
   it('routes build intent through chat tools with the artifact intake prefix', () => {
@@ -219,7 +220,7 @@ describe('createChatAgent', () => {
     expect(
       config.instructions.indexOf('Artifact intake protocol')
     ).toBeLessThan(config.instructions.indexOf('Chat mode system prompt'))
-    expect(vi.mocked(stepCountIs).mock.calls.at(-1)?.[0]).toBe(20)
+    expect(vi.mocked(isStepCount).mock.calls.at(-1)?.[0]).toBe(20)
   })
 
   it('includes todoWrite in research mode when writer is provided', () => {
@@ -271,9 +272,10 @@ describe('createChatAgent', () => {
     })
 
     const config = MockToolLoopAgent.mock.calls[0][0] as any
-    expect(config.experimental_telemetry).toBeDefined()
-    expect(config.experimental_telemetry.functionId).toBe('research-agent')
-    expect(config.experimental_telemetry.metadata.searchMode).toBe('research')
+    expect(config.telemetry).toBeDefined()
+    expect(config.telemetry.functionId).toBe('research-agent')
+    expect(config.runtimeContext.searchMode).toBe('research')
+    expect(config.telemetry.includeRuntimeContext.searchMode).toBe(true)
   })
 
   it('sets instructions with current date', () => {

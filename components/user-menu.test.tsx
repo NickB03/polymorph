@@ -5,7 +5,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() })
 }))
 
-vi.mock('@/lib/actions/chat', () => ({
+vi.mock('@/lib/actions/chat-actions', () => ({
   clearChats: vi.fn()
 }))
 

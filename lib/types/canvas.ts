@@ -1,22 +1,11 @@
 export type CanvasArtifactStatus =
-  | 'generating'
-  | 'compiling'
-  | 'ready'
-  | 'compile_failed'
-  | 'restoring'
+  'generating' | 'compiling' | 'ready' | 'compile_failed' | 'restoring'
 
 export type CanvasCompileStepId =
-  | 'generate'
-  | 'validate'
-  | 'bundle'
-  | 'tailwind'
-  | 'assemble'
+  'generate' | 'validate' | 'bundle' | 'tailwind' | 'assemble'
 
 export type CanvasCompileStepStatus =
-  | 'pending'
-  | 'in-progress'
-  | 'completed'
-  | 'failed'
+  'pending' | 'in-progress' | 'completed' | 'failed'
 
 export type CanvasCompileStep = {
   id: CanvasCompileStepId

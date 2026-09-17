@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DEFAULT_SUGGESTIONS } from '@/lib/constants/default-suggestions'
 
-const mockGenerateObject = vi.fn()
+const mockGenerateText = vi.fn()
 const mockGetTrendingSuggestionsModel = vi.fn()
 const mockGetModel = vi.fn()
 const mockBraveSearch = vi.fn()
@@ -10,7 +10,8 @@ const mockTavilySearch = vi.fn()
 const mockExaSearch = vi.fn()
 
 vi.mock('ai', () => ({
-  generateObject: (...args: unknown[]) => mockGenerateObject(...args)
+  generateText: (...args: unknown[]) => mockGenerateText(...args),
+  Output: { object: (config: unknown) => config }
 }))
 
 vi.mock('@/lib/config/model-types', () => ({
@@ -71,7 +72,7 @@ describe('generateTrendingSuggestions', () => {
       id: 'google/gemini-3-flash'
     })
     mockGetModel.mockReturnValue('mock-model')
-    mockGenerateObject.mockResolvedValue({ object: DEFAULT_SUGGESTIONS })
+    mockGenerateText.mockResolvedValue({ output: DEFAULT_SUGGESTIONS })
   })
 
   it('uses Brave first and does not call Tavily or Exa when Brave succeeds', async () => {
@@ -140,9 +141,10 @@ describe('generateTrendingSuggestions', () => {
 
     await generateTrendingSuggestions()
 
-    expect(mockGenerateObject).toHaveBeenCalledWith(
+    expect(mockGenerateText).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: expect.stringContaining('Brave Context')
+        prompt: expect.stringContaining('Brave Context'),
+        runtimeContext: expect.objectContaining({ source: 'brave' })
       })
     )
   })
@@ -153,7 +155,7 @@ describe('generateTrendingSuggestions', () => {
       research: ['a', 'b', 'c', 'd']
     }
     mockBraveSearch.mockResolvedValue(braveResults)
-    mockGenerateObject.mockResolvedValue({ object: generated })
+    mockGenerateText.mockResolvedValue({ output: generated })
 
     const result = await generateTrendingSuggestions()
 
@@ -187,7 +189,7 @@ describe('generateTrendingSuggestions', () => {
     await expect(generateTrendingSuggestions()).rejects.toThrow(
       /All trending providers failed/i
     )
-    expect(mockGenerateObject).not.toHaveBeenCalled()
+    expect(mockGenerateText).not.toHaveBeenCalled()
   })
 
   it('throws when every provider returns empty results', async () => {
@@ -199,6 +201,6 @@ describe('generateTrendingSuggestions', () => {
     await expect(generateTrendingSuggestions()).rejects.toThrow(
       /All trending providers failed/i
     )
-    expect(mockGenerateObject).not.toHaveBeenCalled()
+    expect(mockGenerateText).not.toHaveBeenCalled()
   })
 })

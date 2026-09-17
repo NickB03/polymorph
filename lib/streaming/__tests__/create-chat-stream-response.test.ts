@@ -225,7 +225,8 @@ describe('createChatStreamResponse', () => {
         expect.any(Promise),
         expect.objectContaining({ id: 'user-1' }),
         'speed',
-        'otel-trace-1'
+        'otel-trace-1',
+        undefined // no stale guard on a completed response
       )
     })
   })
@@ -394,6 +395,40 @@ describe('createChatStreamResponse', () => {
       expect(flushTraces).toHaveBeenCalledTimes(1)
     })
     expect(mockPersistStreamResults).not.toHaveBeenCalled()
+  })
+
+  it('guards an aborted partial against a chat that has moved on', async () => {
+    mockOnFinishPayload.current = {
+      isAborted: true,
+      responseMessage: {
+        id: 'assistant-1',
+        role: 'assistant',
+        parts: [{ type: 'text', text: 'partial' }]
+      }
+    }
+    const agentFactory = vi.fn(() => ({ stream: mockAgentStream }) as any)
+    const config = baseRequestConfig(agentFactory)
+
+    await createChatStreamResponse(config)
+
+    await vi.waitFor(() => {
+      expect(mockPersistStreamResults).toHaveBeenCalledTimes(1)
+    })
+    expect(mockPersistStreamResults.mock.calls[0][11]).toEqual({
+      latestId: config.messages.at(-1)?.id,
+      since: expect.any(Date)
+    })
+  })
+
+  it('does not guard a completed response', async () => {
+    const agentFactory = vi.fn(() => ({ stream: mockAgentStream }) as any)
+
+    await createChatStreamResponse(baseRequestConfig(agentFactory))
+
+    await vi.waitFor(() => {
+      expect(mockPersistStreamResults).toHaveBeenCalledTimes(1)
+    })
+    expect(mockPersistStreamResults.mock.calls[0][11]).toBeUndefined()
   })
 
   it('flushes traces without persisting when responseMessage is missing', async () => {

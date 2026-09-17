@@ -68,7 +68,7 @@ writer.merge(
 During streaming, the `ToolLoopAgent` may invoke tools multiple times. Each tool call and result is streamed to the client in real time. The agent continues calling tools until:
 
 - It produces a final text response without a tool call
-- It reaches the step limit (`stepCountIs(maxSteps)`)
+- It reaches the step limit (`isStepCount(maxSteps)`)
 - The `AbortSignal` fires
 
 ## 11. Related Questions Generation

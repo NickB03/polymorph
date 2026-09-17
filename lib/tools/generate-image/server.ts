@@ -12,6 +12,7 @@ import { getErrorMessage } from '@/lib/utils/error'
 import { getModel } from '@/lib/utils/registry'
 import {
   isTracingEnabled,
+  telemetryMetadataOptions,
   telemetryRecordingOptions
 } from '@/lib/utils/telemetry'
 
@@ -91,18 +92,21 @@ export function createGenerateImageTool(context: ImageToolContext) {
           content.push({ type: 'image', image: resolved })
         }
 
+        const telemetryMetadata = telemetryMetadataOptions({
+          modelId: IMAGE_MODEL,
+          chatId: context.chatId,
+          ...(sourceImageUrl ? { isEdit: true } : {})
+        })
+
         const result = await generateText({
           model,
           messages: [{ role: 'user', content }],
-          experimental_telemetry: {
+          runtimeContext: telemetryMetadata.runtimeContext,
+          telemetry: {
             isEnabled: isTracingEnabled(),
             functionId: 'generate-image',
             ...telemetryRecordingOptions(),
-            metadata: {
-              modelId: IMAGE_MODEL,
-              chatId: context.chatId,
-              ...(sourceImageUrl ? { isEdit: true } : {})
-            }
+            includeRuntimeContext: telemetryMetadata.includeRuntimeContext
           },
           ...(aspectRatio && {
             providerOptions: { google: { aspectRatio } }

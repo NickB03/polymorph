@@ -9,7 +9,6 @@ export const CANVAS_ALLOWED_FILES = [
 export const CANVAS_REQUIRED_FILES = ['App.tsx'] as const
 
 // Locked v1 size limits
-export const CANVAS_MAX_FILES = 4
 export const CANVAS_MAX_FILE_SIZE = 150 * 1024 // 150 KB
 export const CANVAS_MAX_TOTAL_SOURCE_SIZE = 400 * 1024 // 400 KB
 export const CANVAS_MAX_COMPILED_HTML_SIZE = 2 * 1024 * 1024 // 2 MB

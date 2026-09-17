@@ -1,11 +1,16 @@
 import type { ModelMessage } from 'ai'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { downloadStorageFile } = vi.hoisted(() => ({
-  downloadStorageFile: vi.fn()
+const { downloadStorageFile, lookup } = vi.hoisted(() => ({
+  downloadStorageFile: vi.fn(),
+  lookup: vi.fn()
 }))
 
 vi.mock('@/lib/supabase/server-storage', () => ({ downloadStorageFile }))
+// Keep the SSRF DNS check hermetic: no real lookups from the test run.
+vi.mock('node:dns/promises', () => ({ lookup, default: { lookup } }))
+
+import { MAX_UPLOAD_SIZE_BYTES } from '@/lib/utils/file-validation'
 
 import { inlineFileUrls } from '../inline-file-urls'
 
@@ -16,6 +21,8 @@ vi.stubGlobal('fetch', mockFetch)
 beforeEach(() => {
   mockFetch.mockReset()
   downloadStorageFile.mockReset()
+  lookup.mockReset()
+  lookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
 })
 
 afterEach(() => {
@@ -65,7 +72,7 @@ describe('inlineFileUrls', () => {
     const testData = new Uint8Array([137, 80, 78, 71]) // PNG magic bytes
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: () => Promise.resolve(testData.buffer),
+      body: new Response(testData).body,
       headers: new Headers({ 'content-type': 'image/png' })
     })
 
@@ -78,7 +85,7 @@ describe('inlineFileUrls', () => {
 
     const result = await inlineFileUrls(messages, null)
 
-    expect(mockFetch).toHaveBeenCalledWith(fileUrl)
+    expect(mockFetch).toHaveBeenCalledWith(fileUrl, expect.any(Object))
     const filePart = (result[0] as { content: Array<Record<string, unknown>> })
       .content[0]
     expect(filePart.data).toBeInstanceOf(Uint8Array)
@@ -90,7 +97,7 @@ describe('inlineFileUrls', () => {
     const testData = new Uint8Array([137, 80, 78, 71])
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: () => Promise.resolve(testData.buffer),
+      body: new Response(testData).body,
       headers: new Headers({ 'content-type': 'image/png' })
     })
 
@@ -134,7 +141,7 @@ describe('inlineFileUrls', () => {
     const testData = new Uint8Array([1, 2, 3])
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: () => Promise.resolve(testData.buffer),
+      body: new Response(testData).body,
       headers: new Headers({ 'content-type': 'image/png' })
     })
 
@@ -200,12 +207,12 @@ describe('inlineFileUrls', () => {
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
-        arrayBuffer: () => Promise.resolve(data1.buffer),
+        body: new Response(data1).body,
         headers: new Headers({ 'content-type': 'image/png' })
       })
       .mockResolvedValueOnce({
         ok: true,
-        arrayBuffer: () => Promise.resolve(data2.buffer),
+        body: new Response(data2).body,
         headers: new Headers({ 'content-type': 'image/jpeg' })
       })
 
@@ -353,7 +360,7 @@ describe('inlineFileUrls', () => {
     const testData = new Uint8Array([1, 2, 3])
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: () => Promise.resolve(testData.buffer),
+      body: new Response(testData).body,
       headers: new Headers({ 'content-type': 'image/webp' })
     })
 
@@ -368,5 +375,138 @@ describe('inlineFileUrls', () => {
       .content[0]
     expect(part.data).toEqual(testData)
     expect(part.mediaType).toBe('image/webp')
+  })
+
+  it('refuses to fetch private, loopback or plain-http URLs', async () => {
+    const hostile = [
+      'http://169.254.169.254/latest/meta-data/',
+      'https://127.0.0.1/secret',
+      'https://10.0.0.5/secret',
+      'https://[::1]/secret',
+      'https://localhost/secret',
+      'http://example.com/photo.png'
+    ]
+
+    for (const url of hostile) {
+      const messages: ModelMessage[] = [
+        userMsg([{ type: 'file', data: url, mediaType: 'image/png' }])
+      ]
+
+      const result = await inlineFileUrls(messages, 'user-1')
+
+      expect(result).toBe(messages)
+      expect(mockFetch).not.toHaveBeenCalled()
+    }
+  })
+
+  it('refuses a public hostname that resolves to a private address', async () => {
+    const answers = [
+      [{ address: '10.0.0.5', family: 4 }],
+      [{ address: 'fd00::1', family: 6 }],
+      // One private answer among public ones is enough to refuse.
+      [
+        { address: '93.184.216.34', family: 4 },
+        { address: '169.254.169.254', family: 4 }
+      ],
+      []
+    ]
+
+    for (const answer of answers) {
+      lookup.mockResolvedValueOnce(answer)
+      const messages: ModelMessage[] = [
+        userMsg([
+          {
+            type: 'file',
+            data: 'https://internal.example.com/secret',
+            mediaType: 'image/png'
+          }
+        ])
+      ]
+
+      const result = await inlineFileUrls(messages, 'user-1')
+
+      expect((result[0].content as any[])[0].data).toBe(
+        'https://internal.example.com/secret'
+      )
+      expect(mockFetch).not.toHaveBeenCalled()
+    }
+  })
+
+  it('fails closed when the hostname cannot be resolved', async () => {
+    lookup.mockRejectedValueOnce(new Error('ENOTFOUND'))
+    const messages: ModelMessage[] = [
+      userMsg([
+        {
+          type: 'file',
+          data: 'https://nope.example.com/a.png',
+          mediaType: 'image/png'
+        }
+      ])
+    ]
+
+    await inlineFileUrls(messages, 'user-1')
+
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('refuses a response larger than the upload size limit', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      body: new Response(new Uint8Array(1)).body,
+      headers: new Headers({
+        'content-type': 'image/png',
+        'content-length': String(MAX_UPLOAD_SIZE_BYTES + 1)
+      })
+    })
+
+    const messages: ModelMessage[] = [
+      userMsg([
+        {
+          type: 'file',
+          data: 'https://example.com/huge.png',
+          mediaType: 'image/png'
+        }
+      ])
+    ]
+
+    const result = await inlineFileUrls(messages, null)
+
+    const part = (result[0] as { content: Array<Record<string, unknown>> })
+      .content[0]
+    expect(part.data).toBe('https://example.com/huge.png')
+  })
+
+  it('stops reading a body that exceeds the limit without a content-length', async () => {
+    const chunk = new Uint8Array(1024 * 1024)
+    let pulls = 0
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls++
+        controller.enqueue(chunk)
+      }
+    })
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      body,
+      headers: new Headers({ 'content-type': 'image/png' })
+    })
+
+    const result = await inlineFileUrls(
+      [
+        userMsg([
+          {
+            type: 'file',
+            data: 'https://example.com/endless.png',
+            mediaType: 'image/png'
+          }
+        ])
+      ],
+      null
+    )
+
+    const part = (result[0] as { content: Array<Record<string, unknown>> })
+      .content[0]
+    expect(part.data).toBe('https://example.com/endless.png')
+    expect(pulls).toBeLessThanOrEqual(MAX_UPLOAD_SIZE_BYTES / chunk.length + 3)
   })
 })

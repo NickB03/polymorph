@@ -365,8 +365,9 @@ describe('prepareMessages', () => {
       // Verify subsequent messages were deleted
       expect(deleteMessagesFromIndex).toHaveBeenCalledWith(
         chatId,
-        'msg-4',
-        userId
+        'msg-3',
+        userId,
+        false
       )
 
       // Critical: loadChat should be called to get updated state

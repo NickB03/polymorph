@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { radarCssVars, useRadar } from './radar-context'
 
 export interface RadarLabelsProps {
@@ -21,6 +21,7 @@ export function RadarLabels({
   className = ''
 }: RadarLabelsProps) {
   const { metrics, radius, levels, getAngle, animate } = useRadar()
+  const reduce = useReducedMotion()
 
   // Label animation delay (starts after grid begins)
   const gridStagger = 0.08
@@ -39,7 +40,9 @@ export function RadarLabels({
           <motion.g
             animate={{ opacity: 1, x, y }}
             initial={
-              animate ? { opacity: 0, x: 0, y: 0 } : { opacity: 1, x, y }
+              animate && !reduce
+                ? { opacity: 0, x: 0, y: 0 }
+                : { opacity: 1, x, y }
             }
             key={`label-${metric.key}`}
             transition={{

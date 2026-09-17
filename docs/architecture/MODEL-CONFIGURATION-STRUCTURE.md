@@ -42,28 +42,16 @@ Model configurations live in `config/models/` as JSON files. Each file follows t
   "models": {
     "byMode": {
       "chat": {
-        "speed": {
-          /* Model */
-        },
-        "quality": {
-          /* Model */
-        }
+        "speed": {/* Model */},
+        "quality": {/* Model */}
       },
       "research": {
-        "speed": {
-          /* Model */
-        },
-        "quality": {
-          /* Model */
-        }
+        "speed": {/* Model */},
+        "quality": {/* Model */}
       }
     },
-    "relatedQuestions": {
-      /* Model */
-    },
-    "trendingSuggestions": {
-      /* Model */
-    }
+    "relatedQuestions": {/* Model */},
+    "trendingSuggestions": {/* Model */}
   }
 }
 ```

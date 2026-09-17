@@ -3,19 +3,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { checkAndEnforceCanvasLimit } from '@/lib/rate-limit/canvas-limits'
 
 const mockRedisIncr = vi.fn()
-const mockRedisExpire = vi.fn()
 
 vi.mock('@upstash/redis', () => ({
   Redis: vi.fn().mockImplementation(() => ({
-    incr: mockRedisIncr,
-    expire: mockRedisExpire
+    // incrWithTtl runs INCR + EXPIRE as one Lua script
+    eval: (_script: string, _keys: string[], _args: unknown[]) =>
+      mockRedisIncr()
   }))
 }))
 
 describe('checkAndEnforceCanvasLimit', () => {
   beforeEach(() => {
     mockRedisIncr.mockReset()
-    mockRedisExpire.mockReset()
     process.env.POLYMORPH_CLOUD_DEPLOYMENT = 'true'
     process.env.UPSTASH_REDIS_REST_URL = 'https://example.com'
     process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
@@ -23,7 +22,6 @@ describe('checkAndEnforceCanvasLimit', () => {
 
   it('allows request under the draft limit', async () => {
     mockRedisIncr.mockResolvedValue(5)
-    mockRedisExpire.mockResolvedValue(1)
 
     const response = await checkAndEnforceCanvasLimit('user-1', 'draft')
     expect(response).toBeNull()
@@ -31,7 +29,6 @@ describe('checkAndEnforceCanvasLimit', () => {
 
   it('returns 429 when draft limit is exceeded', async () => {
     mockRedisIncr.mockResolvedValue(31)
-    mockRedisExpire.mockResolvedValue(1)
 
     const response = await checkAndEnforceCanvasLimit('user-1', 'draft')
     expect(response).not.toBeNull()
@@ -44,7 +41,6 @@ describe('checkAndEnforceCanvasLimit', () => {
 
   it('returns 429 when version limit is exceeded', async () => {
     mockRedisIncr.mockResolvedValue(11)
-    mockRedisExpire.mockResolvedValue(1)
 
     const response = await checkAndEnforceCanvasLimit('user-1', 'version')
     expect(response).not.toBeNull()
@@ -56,7 +52,6 @@ describe('checkAndEnforceCanvasLimit', () => {
 
   it('returns 429 when restore limit is exceeded', async () => {
     mockRedisIncr.mockResolvedValue(11)
-    mockRedisExpire.mockResolvedValue(1)
 
     const response = await checkAndEnforceCanvasLimit('user-1', 'restore')
     expect(response).not.toBeNull()
@@ -68,7 +63,6 @@ describe('checkAndEnforceCanvasLimit', () => {
 
   it('returns 429 when runtime-diagnostics limit is exceeded', async () => {
     mockRedisIncr.mockResolvedValue(61)
-    mockRedisExpire.mockResolvedValue(1)
 
     const response = await checkAndEnforceCanvasLimit(
       'user-1',
@@ -83,7 +77,6 @@ describe('checkAndEnforceCanvasLimit', () => {
 
   it('returns 429 when image-proxy limit is exceeded', async () => {
     mockRedisIncr.mockResolvedValue(61)
-    mockRedisExpire.mockResolvedValue(1)
 
     const response = await checkAndEnforceCanvasLimit('user-1', 'image-proxy')
     expect(response).not.toBeNull()

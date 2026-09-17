@@ -40,11 +40,7 @@ export type ChatAgentTools = {
   myTool: typeof myTool
 } & ReturnType<typeof createTodoTools>
 
-export function createChatAgentTools(
-  {
-    /* ... */
-  }
-): ChatAgentTools {
+export function createChatAgentTools({/* ... */}): ChatAgentTools {
   return {
     // ... existing tools
     myTool

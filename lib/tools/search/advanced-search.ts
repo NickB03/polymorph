@@ -170,8 +170,7 @@ async function advancedSearchXNGSearch(
     url.searchParams.append('pageno', String(Math.ceil(maxResults / 10)))
 
     const data:
-      | SearXNGResponse
-      | { error: string; status: number; data: string } =
+      SearXNGResponse | { error: string; status: number; data: string } =
       await fetchJsonWithRetry(url.toString(), 3)
 
     if ('error' in data) {
@@ -224,13 +223,13 @@ async function advancedSearchXNGSearch(
       .slice(0, maxResults)
 
     return {
-      results: generalResults.slice(0, maxResults).map(
-        (result: SearXNGResult): SearchResultItem => ({
+      results: generalResults
+        .slice(0, maxResults)
+        .map((result: SearXNGResult): SearchResultItem => ({
           title: result.title || '',
           url: result.url || '',
           content: result.content || ''
-        })
-      ),
+        })),
       query: data.query || query,
       images: imageResults
         .map(result => {

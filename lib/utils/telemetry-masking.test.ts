@@ -14,6 +14,7 @@
  * become decorative again — the exact failure this feature exists to prevent.
  * That regression fails here. No network, no cost, no production writes.
  */
+import { OpenTelemetry } from '@ai-sdk/otel'
 import {
   BasicTracerProvider,
   InMemorySpanExporter,
@@ -54,14 +55,16 @@ async function runAndCollect() {
   })
   const tracer = provider.getTracer('masking-verify')
 
-  // Mirrors lib/agents/chat/factory.ts:147 — the production call shape.
+  // Mirrors lib/agents/chat/factory.ts — the production call shape. In AI SDK 7
+  // the tracer moved off the telemetry options onto the OpenTelemetry
+  // integration, passed here per call via `integrations`.
   await generateText({
     model: makeModel(),
     prompt: SECRET_PROMPT,
-    experimental_telemetry: {
+    telemetry: {
       isEnabled: true,
       functionId: 'masking-verify',
-      tracer,
+      integrations: [new OpenTelemetry({ tracer })],
       ...telemetryRecordingOptions()
     }
   })

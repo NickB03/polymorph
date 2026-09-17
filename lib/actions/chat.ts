@@ -1,8 +1,9 @@
-'use server'
-
+// Server-only chat helpers. This module is deliberately NOT a 'use server'
+// boundary: several functions accept a caller-supplied userId, which must
+// never be settable from the browser. Client-invoked Server Actions live in
+// ./chat-actions.
 import { revalidateTag } from 'next/cache'
 
-import { generateChatTitle } from '@/lib/agents/title-generator'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
 import * as dbActions from '@/lib/db/actions'
@@ -177,40 +178,6 @@ export async function upsertMessage(
 }
 
 /**
- * Delete a chat
- */
-export async function deleteChat(chatId: string) {
-  const userId = await getCurrentUserId()
-  if (!userId) {
-    return { success: false, error: 'User not authenticated' }
-  }
-
-  const result = await dbActions.deleteChat(chatId, userId)
-
-  if (result.success) {
-    revalidateTag(`chat-${chatId}`, 'max')
-  }
-
-  return result
-}
-
-/**
- * Clear all chats for the current user
- */
-export async function clearChats() {
-  const userId = await getCurrentUserId()
-  if (!userId) {
-    return { success: false, error: 'User not authenticated' }
-  }
-
-  const result = await dbActions.clearAllChats(userId)
-  if (result.success) {
-    revalidateTag('chat', 'max')
-  }
-  return result
-}
-
-/**
  * Delete messages after a specific message
  */
 export async function deleteMessagesAfter(chatId: string, messageId: string) {
@@ -260,7 +227,8 @@ export async function shareChat(chatId: string) {
 export async function deleteMessagesFromIndex(
   chatId: string,
   messageId: string,
-  userIdOverride?: string
+  userIdOverride?: string,
+  inclusive = true
 ) {
   const userId = userIdOverride ?? (await getCurrentUserId())
   if (!userId) {
@@ -276,36 +244,11 @@ export async function deleteMessagesFromIndex(
   const result = await dbActions.deleteMessagesFromIndex(
     chatId,
     messageId,
-    userId
+    userId,
+    inclusive
   )
 
   revalidateTag(`chat-${chatId}`, 'max')
 
   return { success: true, count: result.count }
-}
-
-/**
- * Save or update chat title if it's the first conversation
- * @param chat Existing chat object (null if new chat)
- * @param chatId The chat ID
- * @param message The user message to generate title from
- * @param modelId The model ID to use for title generation
- */
-export async function saveChatTitle(
-  chat: Chat | null,
-  chatId: string,
-  message: UIMessage | null,
-  modelId: string,
-  correlationId?: string
-) {
-  if (!chat && message) {
-    const userContent = getTextFromParts(message.parts)
-    const title = await generateChatTitle({
-      userMessageContent: userContent,
-      modelId,
-      correlationId
-    })
-    await dbActions.updateChatTitle(chatId, title)
-    revalidateTag(`chat-${chatId}`, 'max')
-  }
 }

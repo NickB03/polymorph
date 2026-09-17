@@ -38,9 +38,10 @@ const agent = new ToolLoopAgent({
   instructions: systemPrompt, // Mode-specific prompt + current date
   tools, // All available tools
   activeTools: activeToolsList, // Subset enabled for this mode
-  stopWhen: stepCountIs(maxSteps), // 20 (chat) or 50 (research)
+  stopWhen: isStepCount(maxSteps), // 20 (chat) or 50 (research)
   providerOptions, // Model-specific options (if any)
-  experimental_telemetry // Phoenix/OTel tracing config
+  runtimeContext, // Per-call metadata (session/user/mode), opted into telemetry via includeRuntimeContext
+  telemetry // Phoenix/OTel tracing config
 })
 ```
 
@@ -48,7 +49,7 @@ Key concepts:
 
 - **`tools`**: The full set of tools the agent knows about. All tools are always defined in the tools object regardless of mode.
 - **`activeTools`**: A subset of tool names that the agent can actually invoke. This is what differs between modes.
-- **`stopWhen`**: A predicate that terminates the loop. `stepCountIs(N)` stops after N tool-call rounds.
+- **`stopWhen`**: A predicate that terminates the loop. `isStepCount(N)` stops after N tool-call rounds.
 - **`instructions`**: The system prompt that shapes the agent's behavior, injected with the current date/time.
 
 ### Invocation

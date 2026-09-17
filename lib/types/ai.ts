@@ -153,10 +153,7 @@ export type ToolPart<T extends keyof UITools = keyof UITools> = {
   input: UITools[T]['input']
   output?: UITools[T]['output']
   state:
-    | 'input-streaming'
-    | 'input-available'
-    | 'output-available'
-    | 'output-error'
+    'input-streaming' | 'input-available' | 'output-available' | 'output-error'
   errorText?: string
 }
 

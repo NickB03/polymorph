@@ -62,8 +62,7 @@ const DataTableContext = React.createContext<
 
 export function useDataTable<T extends object = RowData>() {
   const context = React.use(DataTableContext) as
-    | DataTableContextValue<T>
-    | undefined
+    DataTableContextValue<T> | undefined
   if (!context) {
     throw new Error('useDataTable must be used within <DataTable.Provider />')
   }

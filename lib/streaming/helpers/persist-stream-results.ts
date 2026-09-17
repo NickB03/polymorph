@@ -2,7 +2,12 @@ import { revalidateTag } from 'next/cache'
 
 import { createChatWithFirstMessage, upsertMessage } from '@/lib/actions/chat'
 import { DEFAULT_CHAT_TITLE } from '@/lib/constants'
-import { updateChatTitle } from '@/lib/db/actions'
+import {
+  type StaleGuard,
+  updateChatTitle,
+  upsertMessage as upsertMessageIfCurrent
+} from '@/lib/db/actions'
+import { generateId } from '@/lib/db/schema'
 import type { UIMessage } from '@/lib/types/ai'
 import type { ModelType } from '@/lib/types/model-type'
 import { UserMode } from '@/lib/types/search'
@@ -22,7 +27,10 @@ export async function persistStreamResults(
   >,
   initialUserMessage?: UIMessage,
   modelType?: ModelType,
-  otelTraceId?: string
+  otelTraceId?: string,
+  // Aborted partials only: skip the write if the chat moved on (new message,
+  // retry, or edit) before this late onFinish ran.
+  staleGuard?: StaleGuard
 ) {
   // Attach metadata to the response message
   responseMessage.metadata = {
@@ -92,18 +100,29 @@ export async function persistStreamResults(
   // Save message with retry logic
   const saveStart = performance.now()
   let messageSaved = false
+  const save = () =>
+    staleGuard
+      ? upsertMessageIfCurrent(
+          {
+            ...responseMessage,
+            id: responseMessage.id || generateId(),
+            chatId
+          },
+          userId,
+          staleGuard
+        )
+      : upsertMessage(chatId, responseMessage, userId)
+  let staleDropped = false
   try {
-    await upsertMessage(chatId, responseMessage, userId)
-    messageSaved = true
+    messageSaved = (await save()) !== null
+    staleDropped = !!staleGuard && !messageSaved
     perfTime('upsertMessage (AI response) completed', saveStart)
   } catch (error) {
     console.error('Error saving message:', error)
     try {
-      await retryDatabaseOperation(
-        () => upsertMessage(chatId, responseMessage, userId),
-        'save message'
-      )
-      messageSaved = true
+      messageSaved =
+        (await retryDatabaseOperation(save, 'save message')) !== null
+      staleDropped = !!staleGuard && !messageSaved
       perfTime('upsertMessage (AI response) completed after retry', saveStart)
     } catch (retryError) {
       console.error(
@@ -113,6 +132,11 @@ export async function persistStreamResults(
       // Don't throw here to avoid breaking the stream
     }
   }
+
+  // The stale guard dropped this aborted partial: the chat has moved on, so its
+  // title must not land either (the replacement request sees an existing chat
+  // and would never regenerate a corrective one).
+  if (staleDropped) return
 
   if (messageSaved) {
     // Keep any chat-tagged consumers in sync after writing the canonical

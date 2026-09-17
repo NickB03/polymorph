@@ -1,3 +1,4 @@
+import { readResponseWithSizeLimit } from '@ai-sdk/provider-utils'
 import type { ModelMessage } from 'ai'
 
 import {
@@ -5,6 +6,8 @@ import {
   storagePathFromProxyUrl
 } from '@/lib/supabase/file-url'
 import { downloadStorageFile } from '@/lib/supabase/server-storage'
+import { MAX_UPLOAD_SIZE_BYTES } from '@/lib/utils/file-validation'
+import { isSafeFetchTarget, isSafeRedirectTarget } from '@/lib/utils/safe-url'
 
 // Walk model messages and convert file parts with URL data to inline
 // Uint8Array data. The Vercel AI Gateway claims it supports all URLs, so the
@@ -16,6 +19,8 @@ import { downloadStorageFile } from '@/lib/supabase/server-storage'
 // proxy URLs (older messages carry absolute public storage URLs). Both are
 // resolved via a direct storage download rather than HTTP, since the proxy
 // route requires the requester's auth cookies.
+
+const FETCH_TIMEOUT_MS = 10_000
 
 type FileSource = { kind: 'url'; url: URL } | { kind: 'storage'; path: string }
 
@@ -41,7 +46,10 @@ function resolveFileSource(
     return null
   }
 
-  if (/^https?:\/\//i.test(href)) {
+  // File parts arrive from the client unvalidated, so this fetch is an SSRF
+  // sink: only https URLs that do not resolve to localhost or a private range
+  // may be fetched server-side.
+  if (/^https?:\/\//i.test(href) && isSafeRedirectTarget(href)) {
     try {
       return { kind: 'url', url: new URL(href) }
     } catch {
@@ -86,16 +94,43 @@ export async function inlineFileUrls(
         return downloadStorageFile(source.path)
       }
       try {
-        const res = await fetch(source.url)
+        // resolveFileSource already vetted the hostname; this adds the DNS
+        // check so a public name pointing at a private address is refused.
+        if (!(await isSafeFetchTarget(source.url.href))) {
+          console.warn(
+            `[inlineFileUrls] Refusing unsafe fetch target ${source.url.host}`
+          )
+          return null
+        }
+        const res = await fetch(source.url, {
+          redirect: 'error',
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+        })
         if (!res.ok) {
           console.warn(
             `[inlineFileUrls] Failed to fetch ${source.url}: ${res.status} ${res.statusText}`
           )
           return null
         }
-        const buffer = await res.arrayBuffer()
+        const declaredLength = Number(res.headers.get('content-length'))
+        if (
+          Number.isFinite(declaredLength) &&
+          declaredLength > MAX_UPLOAD_SIZE_BYTES
+        ) {
+          console.warn(
+            `[inlineFileUrls] Refusing oversized file from ${source.url}: ${declaredLength} bytes`
+          )
+          return null
+        }
+        // Streams the body and throws once it passes the cap, so a lying or
+        // absent content-length cannot make us buffer an unbounded response.
+        const data = await readResponseWithSizeLimit({
+          response: res,
+          url: source.url.href,
+          maxBytes: MAX_UPLOAD_SIZE_BYTES
+        })
         const mediaType = res.headers.get('content-type') ?? undefined
-        return { data: new Uint8Array(buffer), mediaType }
+        return { data, mediaType }
       } catch (err) {
         console.warn(`[inlineFileUrls] Fetch error for ${source.url}:`, err)
         return null

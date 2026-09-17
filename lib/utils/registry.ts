@@ -6,6 +6,20 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { createProviderRegistry, LanguageModel } from 'ai'
 import { createOllama } from 'ollama-ai-provider-v2'
 
+// `createProviderRegistry` decides how to treat a provider by the
+// `specificationVersion` on the *provider object*, not on its models. A
+// provider that omits it is wrapped in the AI SDK's v2 compatibility proxy,
+// which re-wraps the already-structured v4 `finishReason` into
+// `{ unified: { unified, raw }, raw: undefined }` and breaks the UI message
+// stream (`finish` chunk validation fails client-side). Every model these
+// providers return is v4, so declare it when the provider forgot to.
+function asV4Provider<T extends object>(provider: T): T {
+  if (!('specificationVersion' in provider)) {
+    Object.assign(provider, { specificationVersion: 'v4' as const })
+  }
+  return provider
+}
+
 // Build providers object conditionally
 const providers: Record<string, any> = {
   openai,
@@ -14,27 +28,38 @@ const providers: Record<string, any> = {
   gateway: createGateway({
     apiKey: process.env.AI_GATEWAY_API_KEY
   }),
-  openrouter: createOpenRouter({
-    apiKey: process.env.OPENROUTER_API_KEY
-  })
+  // @openrouter/ai-sdk-provider 3.0.0 ships v4 models but no provider-level
+  // specificationVersion.
+  openrouter: asV4Provider(
+    createOpenRouter({
+      apiKey: process.env.OPENROUTER_API_KEY
+    })
+  )
 }
 
 if (
   process.env.OPENAI_COMPATIBLE_API_KEY &&
   process.env.OPENAI_COMPATIBLE_API_BASE_URL
 ) {
-  providers['openai-compatible'] = createOpenAI({
-    apiKey: process.env.OPENAI_COMPATIBLE_API_KEY,
-    baseURL: process.env.OPENAI_COMPATIBLE_API_BASE_URL
-  })
+  providers['openai-compatible'] = asV4Provider(
+    createOpenAI({
+      apiKey: process.env.OPENAI_COMPATIBLE_API_KEY,
+      baseURL: process.env.OPENAI_COMPATIBLE_API_BASE_URL
+    })
+  )
 }
 
 // Only add Ollama if OLLAMA_BASE_URL is configured
 if (process.env.OLLAMA_BASE_URL) {
-  providers.ollama = createOllama({
-    baseURL: `${process.env.OLLAMA_BASE_URL}/api`
-  })
+  providers.ollama = asV4Provider(
+    createOllama({
+      baseURL: `${process.env.OLLAMA_BASE_URL}/api`
+    })
+  )
 }
+
+/** Exported for the registry regression test only. */
+export const registryProviders: Readonly<Record<string, unknown>> = providers
 
 export const registry = createProviderRegistry(providers)
 

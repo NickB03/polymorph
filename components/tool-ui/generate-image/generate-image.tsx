@@ -77,6 +77,7 @@ export function GenerateImage({
             size="icon"
             className="pointer-events-auto size-7 text-white/80 hover:bg-white/15 hover:text-white"
             onClick={handleDownload}
+            aria-label="Download image"
           >
             <Download className="size-3.5" />
           </Button>
@@ -98,6 +99,7 @@ export function GenerateImage({
                 size="icon"
                 className="size-8 text-white hover:bg-white/10 sm:size-9"
                 onClick={handleDownload}
+                aria-label="Download image"
               >
                 <Download className="size-4 sm:size-5" />
               </Button>
@@ -106,6 +108,7 @@ export function GenerateImage({
                 size="icon"
                 className="size-8 text-white hover:bg-white/10 sm:size-9"
                 onClick={() => setExpanded(false)}
+                aria-label="Close"
               >
                 <X className="size-4 sm:size-5" />
               </Button>

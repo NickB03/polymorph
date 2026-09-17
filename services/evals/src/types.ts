@@ -1,8 +1,5 @@
 export type EvalSuite =
-  | 'capability'
-  | 'regression'
-  | 'smoke'
-  | 'traffic-monitor'
+  'capability' | 'regression' | 'smoke' | 'traffic-monitor'
 
 export type PersistedEvalSuite = Exclude<EvalSuite, 'smoke'>
 
@@ -23,11 +20,7 @@ export interface SuiteRunResult {
 }
 
 export type EvalRunMode =
-  | 'capability'
-  | 'regression'
-  | 'traffic-monitor'
-  | 'smoke'
-  | 'all'
+  'capability' | 'regression' | 'traffic-monitor' | 'smoke' | 'all'
 
 export type EvalSearchMode = 'chat' | 'research'
 export type EvalUserMode = 'search' | 'research' | 'build'

@@ -327,12 +327,35 @@ function mergeSequentialAssistantText(previous: string, next: string) {
   return `${previous}\n\n${next}`
 }
 
+/**
+ * Build the renderable part list, and collect the latest canvas-artifact
+ * status per artifact while walking it.
+ *
+ * `sourceIndex` is recorded as a NORMALIZED position (how many renderable
+ * parts precede the status part), not a raw `message.parts` index: the render
+ * loop iterates the normalized list, and comparing the two index spaces —
+ * which diverge because hidden parts are dropped and sequential text merged —
+ * produced wrong status overrides.
+ */
 function normalizeRenderableParts(parts: UIMessage['parts']) {
-  if (!parts) return []
-
   const normalizedParts: NonNullable<UIMessage['parts']> = []
+  const latestCanvasArtifactStatuses = new Map<
+    string,
+    CanvasArtifactStatusData & { sourceIndex: number }
+  >()
 
-  for (const part of parts) {
+  for (const part of parts ?? []) {
+    if (part.type === 'data-canvasArtifactStatus') {
+      const statusData = (part as { data?: CanvasArtifactStatusData }).data
+      if (statusData?.artifactId) {
+        latestCanvasArtifactStatuses.set(statusData.artifactId, {
+          ...statusData,
+          sourceIndex: normalizedParts.length
+        })
+      }
+      continue
+    }
+
     if (isHiddenInfrastructurePart(part as { type?: string })) {
       continue
     }
@@ -353,7 +376,7 @@ function normalizeRenderableParts(parts: UIMessage['parts']) {
     normalizedParts.push(part)
   }
 
-  return normalizedParts
+  return { renderParts: normalizedParts, latestCanvasArtifactStatuses }
 }
 
 function getLatestPersistedCanvasArtifactPartIndexes(
@@ -370,27 +393,6 @@ function getLatestPersistedCanvasArtifactPartIndexes(
   }
 
   return latestIndexes
-}
-
-function getLatestCanvasArtifactStatuses(parts: UIMessage['parts']) {
-  const latestStatuses = new Map<
-    string,
-    CanvasArtifactStatusData & { sourceIndex: number }
-  >()
-
-  for (const [index, part] of (parts || []).entries()) {
-    if (part.type !== 'data-canvasArtifactStatus') continue
-
-    const data = (part as { data?: CanvasArtifactStatusData }).data
-    if (data?.artifactId) {
-      latestStatuses.set(data.artifactId, {
-        ...data,
-        sourceIndex: index
-      })
-    }
-  }
-
-  return latestStatuses
 }
 
 interface RenderMessageProps {
@@ -444,7 +446,8 @@ export function RenderMessage({
     toolUISegmentsByPartIndex
   } = useMemo(() => {
     const todoScan = scanTodoWriteParts(message.parts)
-    const renderParts = normalizeRenderableParts(message.parts)
+    const { renderParts, latestCanvasArtifactStatuses } =
+      normalizeRenderableParts(message.parts)
     const generatedImageUrls = collectGeneratedImageUrls(message.parts)
     const completedDisplayToolResults = collectCompletedDisplayToolResults(
       message.parts
@@ -479,9 +482,7 @@ export function RenderMessage({
       renderParts,
       latestPersistedCanvasArtifactPartIndexes:
         getLatestPersistedCanvasArtifactPartIndexes(renderParts),
-      latestCanvasArtifactStatuses: getLatestCanvasArtifactStatuses(
-        message.parts
-      ),
+      latestCanvasArtifactStatuses,
       generatedImageUrls,
       completedDisplayToolResults,
       toolUISegmentsByPartIndex

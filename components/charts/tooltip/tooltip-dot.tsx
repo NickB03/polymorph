@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useSpring } from 'motion/react'
+import { motion, useReducedMotion, useSpring } from 'motion/react'
 import { chartCssVars } from '../chart-context'
 
 // Faster spring to stay in sync with indicator
@@ -25,8 +25,10 @@ export function TooltipDot({
   strokeColor = chartCssVars.background,
   strokeWidth = 2
 }: TooltipDotProps) {
-  const animatedX = useSpring(x, crosshairSpringConfig)
-  const animatedY = useSpring(y, crosshairSpringConfig)
+  const reduce = useReducedMotion()
+  const springConfig = reduce ? { duration: 0 } : crosshairSpringConfig
+  const animatedX = useSpring(x, springConfig)
+  const animatedY = useSpring(y, springConfig)
 
   animatedX.set(x)
   animatedY.set(y)

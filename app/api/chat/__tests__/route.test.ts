@@ -175,20 +175,6 @@ describe('POST /api/chat', () => {
     expect(json.message).toContain('messages')
   })
 
-  it('returns 403 for requests from share pages', async () => {
-    const req = createRequest(
-      {
-        messages: [{ role: 'user', parts: [{ type: 'text', text: 'hi' }] }],
-        chatId: 'c1',
-        trigger: 'submit-message'
-      },
-      { referer: 'http://localhost/share/abc123' }
-    )
-
-    const res = await POST(req)
-    expect(res.status).toBe(403)
-  })
-
   it('returns 401 when guest chat is disabled and user is not authenticated', async () => {
     vi.mocked(getCurrentUserId).mockResolvedValueOnce(
       undefined as unknown as string

@@ -31,7 +31,10 @@ describe('Feedback Actions', () => {
       vi.mocked(db).select = vi.fn().mockReturnValue({ from: mockFrom })
 
       // Mock db.update
-      const mockUpdateWhere = vi.fn().mockResolvedValue(undefined)
+      const mockReturning = vi.fn().mockResolvedValue([{ id: messageId }])
+      const mockUpdateWhere = vi
+        .fn()
+        .mockReturnValue({ returning: mockReturning })
       const mockSet = vi.fn().mockReturnValue({ where: mockUpdateWhere })
       vi.mocked(db).update = vi.fn().mockReturnValue({ set: mockSet })
 
@@ -44,6 +47,32 @@ describe('Feedback Actions', () => {
       })
       expect(db.select).toHaveBeenCalled()
       expect(db.update).toHaveBeenCalled()
+    })
+
+    it('should fail when the update affects no rows', async () => {
+      const messageId = 'test-message-id'
+
+      const mockLimit = vi
+        .fn()
+        .mockResolvedValue([{ metadata: null, chatId: 'test-chat-id' }])
+      const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit })
+      const mockFrom = vi.fn().mockReturnValue({ where: mockWhere })
+      vi.mocked(db).select = vi.fn().mockReturnValue({ from: mockFrom })
+
+      const mockReturning = vi.fn().mockResolvedValue([])
+      const mockUpdateWhere = vi
+        .fn()
+        .mockReturnValue({ returning: mockReturning })
+      const mockSet = vi.fn().mockReturnValue({ where: mockUpdateWhere })
+      vi.mocked(db).update = vi.fn().mockReturnValue({ set: mockSet })
+
+      const result = await updateMessageFeedback(messageId, 1)
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Feedback update affected no rows',
+        notFound: true
+      })
     })
 
     it('should return error when message not found', async () => {
@@ -60,7 +89,8 @@ describe('Feedback Actions', () => {
 
       expect(result).toEqual({
         success: false,
-        error: 'Message not found'
+        error: 'Message not found',
+        notFound: true
       })
     })
 

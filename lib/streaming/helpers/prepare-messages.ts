@@ -233,10 +233,9 @@ export async function prepareMessages(
       if (editedMessage) {
         await upsertMessage(chatId, editedMessage, userId)
       }
-      const messagesToDelete = currentChat.messages.slice(messageIndex + 1)
-      if (messagesToDelete.length > 0) {
-        await deleteMessagesFromIndex(chatId, messagesToDelete[0].id, userId)
-      }
+      // Delete by a fresh read, not the request's snapshot: an aborted
+      // stream may have persisted its partial answer after the snapshot.
+      await deleteMessagesFromIndex(chatId, messageId, userId, false)
       const updatedChat = await loadChat(chatId, userId)
       return (
         updatedChat?.messages || currentChat.messages.slice(0, messageIndex + 1)

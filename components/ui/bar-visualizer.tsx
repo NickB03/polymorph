@@ -457,11 +457,7 @@ export const generateThinkingSequenceBar = (columns: number): number[][] => {
 }
 
 export type AgentState =
-  | 'connecting'
-  | 'initializing'
-  | 'listening'
-  | 'speaking'
-  | 'thinking'
+  'connecting' | 'initializing' | 'listening' | 'speaking' | 'thinking'
 
 export interface BarVisualizerProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Voice assistant state */

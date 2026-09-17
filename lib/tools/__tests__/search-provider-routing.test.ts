@@ -61,7 +61,7 @@ async function collectSearchChunks() {
       include_domains: [],
       exclude_domains: []
     },
-    { toolCallId: 'search-test', messages: [] }
+    { toolCallId: 'search-test', messages: [], context: {} }
   )
 
   if (stream && Symbol.asyncIterator in (stream as AsyncIterable<any>)) {
@@ -93,7 +93,7 @@ async function collectAdvancedSearchChunks() {
       include_domains: [],
       exclude_domains: []
     },
-    { toolCallId: 'search-test', messages: [] }
+    { toolCallId: 'search-test', messages: [], context: {} }
   )
 
   if (stream && Symbol.asyncIterator in (stream as AsyncIterable<any>)) {
@@ -285,7 +285,7 @@ describe('search provider routing', () => {
           include_domains: [],
           exclude_domains: []
         },
-        { toolCallId: 'search-test', messages: [] }
+        { toolCallId: 'search-test', messages: [], context: {} }
       )
 
       const iterator = (stream as AsyncIterable<any>)[Symbol.asyncIterator]()
@@ -390,6 +390,7 @@ describe('search provider routing', () => {
         {
           toolCallId: 'search-test',
           messages: [],
+          context: {},
           abortSignal: abortController.signal
         }
       )
@@ -468,7 +469,7 @@ describe('search provider routing', () => {
             include_domains: [],
             exclude_domains: []
           },
-          { toolCallId: 'search-test', messages: [] }
+          { toolCallId: 'search-test', messages: [], context: {} }
         )
         for await (const _chunk of stream as AsyncIterable<any>) {
           // consume

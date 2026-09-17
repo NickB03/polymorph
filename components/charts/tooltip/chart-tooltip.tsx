@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useSpring } from 'motion/react'
+import { motion, useReducedMotion, useSpring } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import { chartCssVars, useChart } from '../chart-context'
 import { DateTicker } from './date-ticker'
@@ -83,7 +83,11 @@ export function ChartTooltip({
   const yWithMargin = firstLineY + margin.top
 
   // Animated crosshair position
-  const animatedX = useSpring(xWithMargin, crosshairSpringConfig)
+  const reduce = useReducedMotion()
+  const animatedX = useSpring(
+    xWithMargin,
+    reduce ? { duration: 0 } : crosshairSpringConfig
+  )
 
   animatedX.set(xWithMargin)
 

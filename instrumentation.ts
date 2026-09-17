@@ -1,10 +1,7 @@
 import { isProductionTarget, validateEnv } from '@/lib/config/env'
 
 type TracingState =
-  | 'enabled'
-  | 'disabled-off'
-  | 'disabled-https'
-  | 'init-failed'
+  'enabled' | 'disabled-off' | 'disabled-https' | 'init-failed'
 
 declare global {
   var __polymorphTracingState: TracingState | undefined
@@ -17,6 +14,7 @@ export async function register() {
 
   if (process.env.ENABLE_TRACING === 'true') {
     try {
+      const { OpenTelemetry } = await import('@ai-sdk/otel')
       const { SEMRESATTRS_PROJECT_NAME } =
         await import('@arizeai/openinference-semantic-conventions')
       const { OpenInferenceBatchSpanProcessor } =
@@ -24,6 +22,7 @@ export async function register() {
       const { OTLPTraceExporter } =
         await import('@opentelemetry/exporter-trace-otlp-proto')
       const { registerOTel } = await import('@vercel/otel')
+      const { registerTelemetry } = await import('ai')
       const { OpenInferenceContextPropagator } =
         await import('@/lib/utils/otel-context-processor')
 
@@ -43,6 +42,23 @@ export async function register() {
       // set via setSession()/setUser() onto every child span.
       const contextPropagator = new OpenInferenceContextPropagator()
       await contextPropagator.init()
+
+      // AI SDK 7 moved telemetry collection out of `ai` into `@ai-sdk/otel`.
+      // `runtimeContext: true` is what emits `ai.settings.context.*`, which
+      // openinference-vercel maps to Phoenix `metadata.*` — the replacement for
+      // the v6 `experimental_telemetry.metadata` block.
+      registerTelemetry(
+        new OpenTelemetry({
+          usage: true,
+          providerMetadata: true,
+          embedding: true,
+          reranking: true,
+          runtimeContext: true,
+          headers: true,
+          toolChoice: true,
+          schema: true
+        })
+      )
 
       registerOTel({
         serviceName: 'polymorph',

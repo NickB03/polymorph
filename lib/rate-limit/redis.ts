@@ -21,3 +21,22 @@ export function getRedis(): Redis | null {
   }
   return _redis
 }
+
+// INCR and EXPIRE in one atomic server-side step. Done as two round trips the
+// counter can survive a failure between them (the INCR lands, the EXPIRE never
+// runs) and the key then never expires, locking the identifier out forever.
+const INCR_WITH_TTL_SCRIPT = `
+local count = redis.call('INCR', KEYS[1])
+if count == 1 then
+  redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return count
+`
+
+export async function incrWithTtl(
+  redis: Redis,
+  key: string,
+  ttlSeconds: number
+): Promise<number> {
+  return redis.eval(INCR_WITH_TTL_SCRIPT, [key], [ttlSeconds])
+}

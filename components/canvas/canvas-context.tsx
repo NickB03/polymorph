@@ -132,6 +132,12 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   // opens of the same artifact (the auto-open effect can fire repeatedly
   // during streaming as canvas state changes trigger re-renders).
   const openingRef = useRef<string | null>(null)
+  // Bumped whenever the target artifact changes or the workspace closes, so a
+  // slow in-flight fetch cannot apply its state over a newer one.
+  const loadGenerationRef = useRef(0)
+  // Set when a reload is requested while an open of the same artifact is in
+  // flight; the open refetches instead of being cancelled by the reload.
+  const reloadQueuedRef = useRef(false)
   const artifactChatIdRef = useRef<string | null>(null)
 
   const isWorkspaceOpen = !!(artifact || isLoading || pendingWorkspace)
@@ -173,6 +179,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       if (openingRef.current === id) return // Already fetching this artifact
 
       openingRef.current = id
+      const generation = ++loadGenerationRef.current
       clearWorkspaceState()
       setArtifactId(id)
       setIsLoading(true)
@@ -185,19 +192,39 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         }
 
         const url = buildUrl(id, '', effectiveGuestToken, chatId)
-        const res = await fetch(url)
-        if (!res.ok) {
-          console.error('Failed to load canvas artifact:', res.status)
-          setArtifact(null)
-          return
-        }
-        const state: CanvasArtifactState = await res.json()
-        applyState(state)
+        let state: CanvasArtifactState | undefined
+        do {
+          reloadQueuedRef.current = false
+          let failure: unknown
+          try {
+            const res = await fetch(url)
+            if (res.ok) state = await res.json()
+            else failure = res.status
+          } catch (err) {
+            failure = err
+          }
+          if (generation !== loadGenerationRef.current) return
+          // A reload queued during this attempt is an explicit retry — honor it
+          // before giving up on a (possibly transient) non-2xx or network error.
+          if (failure !== undefined && !reloadQueuedRef.current) {
+            console.error('Failed to load canvas artifact:', failure)
+            // Keep an earlier successful response if only the retry failed.
+            break
+          }
+        } while (reloadQueuedRef.current)
+        if (state) applyState(state)
+        else setArtifact(null)
       } catch (err) {
+        if (generation !== loadGenerationRef.current) return
         console.error('Error loading canvas artifact:', err)
         setArtifact(null)
       } finally {
-        if (openingRef.current === id) {
+        // Generation, not just id: after close + reopen of the same artifact,
+        // this stale request must not clear the newer open's marker.
+        if (
+          generation === loadGenerationRef.current &&
+          openingRef.current === id
+        ) {
           openingRef.current = null
           setIsLoading(false)
         }
@@ -225,6 +252,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
   const closeWorkspace = useCallback(() => {
     openingRef.current = null
+    loadGenerationRef.current++
     artifactChatIdRef.current = null
     setArtifact(null)
     setArtifactId(null)
@@ -281,7 +309,12 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
   const reloadArtifact = useCallback(async () => {
     if (!artifactId) return
+    if (openingRef.current === artifactId) {
+      reloadQueuedRef.current = true
+      return
+    }
 
+    const generation = ++loadGenerationRef.current
     setIsLoading(true)
     try {
       const url = buildUrl(
@@ -291,16 +324,21 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         artifactChatIdRef.current
       )
       const res = await fetch(url)
+      if (generation !== loadGenerationRef.current) return
       if (!res.ok) {
         console.error('Failed to reload canvas artifact:', res.status)
         return
       }
       const state: CanvasArtifactState = await res.json()
+      if (generation !== loadGenerationRef.current) return
       applyState(state)
     } catch (err) {
+      if (generation !== loadGenerationRef.current) return
       console.error('Error reloading canvas artifact:', err)
     } finally {
-      setIsLoading(false)
+      if (generation === loadGenerationRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [artifactId, applyState])
 

@@ -1,50 +1,13 @@
-'use server'
-
 import { and, asc, desc, eq, gt, inArray, sql } from 'drizzle-orm'
 
 import type { UIMessage } from '@/lib/types/ai'
-import type { PersistableUIMessage } from '@/lib/types/message-persistence'
-
-// Legacy artifact types inlined here since the old types file was deleted.
-// These are only used by the legacy DB functions below which are retained
-// for Drizzle schema compatibility but are not called from active code.
-type ArtifactStatus = 'building' | 'ready' | 'failed' | 'restarting' | 'expired'
-type CreateArtifactInput = {
-  id?: string
-  chatId: string
-  userId: string | null
-  currentRevisionId?: string | null
-  currentRuntimeSessionId?: string | null
-  title: string
-  framework: 'react-spa'
-  status: ArtifactStatus
-}
-type AppendArtifactRevisionInput = {
-  id?: string
-  artifactId: string
-  triggeringMessageId: string
-  promptSummary: string
-  title: string
-  sandboxSnapshotRef?: string | null
-  sourceFiles?: Record<string, string> | null
-}
-type UpsertArtifactRuntimeSessionInput = {
-  id?: string
-  artifactId: string
-  provider: 'sandbox'
-  sandboxId: string
-  previewUrl?: string | null
-  status: ArtifactStatus
-  startedAt: Date
-  expiresAt?: Date | null
-  lastHeartbeatAt?: Date | null
-}
 import type {
   CanvasArtifactStatus,
   CanvasDiagnostics,
   CanvasSourceFiles,
   CanvasVersionCreatedBy
 } from '@/lib/types/canvas'
+import type { PersistableUIMessage } from '@/lib/types/message-persistence'
 import {
   buildUIMessageFromDB,
   mapUIMessageToDBMessage
@@ -54,9 +17,6 @@ import { incrementDbOperationCount } from '@/lib/utils/perf-tracking'
 
 import type { Chat, Message } from './schema'
 import {
-  artifactRevisions,
-  artifactRuntimeSessions,
-  artifacts,
   canvasArtifacts,
   canvasArtifactVersions,
   chats,
@@ -201,24 +161,58 @@ export async function getChat(
 }
 
 /**
+ * Only write if the chat has not moved on: its latest message must still be
+ * `latestId` and must not have been edited after `since`.
+ */
+export type StaleGuard = { latestId: string; since: Date }
+
+/**
  * Upsert a message with its parts
  * Note: This function should be called with appropriate userId context
  */
 export async function upsertMessage(
   message: PersistableUIMessage & { chatId: string },
   userId?: string
-): Promise<Message> {
+): Promise<Message>
+export async function upsertMessage(
+  message: PersistableUIMessage & { chatId: string },
+  userId: string | undefined,
+  staleGuard: StaleGuard
+): Promise<Message | null>
+export async function upsertMessage(
+  message: PersistableUIMessage & { chatId: string },
+  userId?: string,
+  staleGuard?: StaleGuard
+): Promise<Message | null> {
   const count = incrementDbOperationCount()
   perfLog(`DB - upsertMessage called - count: ${count}`)
 
   // Use RLS if userId is provided, otherwise use regular db
   const executeFn = userId
-    ? (callback: (tx: TxInstance) => Promise<Message>) =>
+    ? (callback: (tx: TxInstance) => Promise<Message | null>) =>
         withRLS(userId, callback)
-    : (callback: (tx: TxInstance) => Promise<Message>) =>
+    : (callback: (tx: TxInstance) => Promise<Message | null>) =>
         db.transaction(callback)
 
   const result = await executeFn(async tx => {
+    if (staleGuard) {
+      // ponytail: check+insert share a transaction but READ COMMITTED still
+      // lets a concurrent insert land between them (sub-ms window). Take a
+      // per-chat advisory lock in every message writer if that ever matters.
+      const [latest] = await tx
+        .select({ id: messages.id, updatedAt: messages.updatedAt })
+        .from(messages)
+        .where(eq(messages.chatId, message.chatId))
+        .orderBy(desc(messages.createdAt))
+        .limit(1)
+      if (
+        latest?.id !== staleGuard.latestId ||
+        (latest.updatedAt && latest.updatedAt > staleGuard.since)
+      ) {
+        return null
+      }
+    }
+
     // 1. Insert or update the message
     const messageData = mapUIMessageToDBMessage(message)
     const [dbMessage] = await tx
@@ -256,260 +250,6 @@ export async function loadChat(
     })
 
     return result.map(message => buildUIMessageFromDB(message))
-  })
-}
-
-/**
- * Load the most recent artifact for a chat
- */
-export async function loadArtifactByChatId(
-  chatId: string,
-  userId?: string | null
-) {
-  return withOptionalRLS(userId ?? null, async tx => {
-    const [artifact] = await tx
-      .select()
-      .from(artifacts)
-      .where(eq(artifacts.chatId, chatId))
-      .orderBy(desc(artifacts.updatedAt))
-      .limit(1)
-
-    return artifact ?? null
-  })
-}
-
-/**
- * Load an artifact by its ID.
- *
- * **Security:** When `userId` is `null`, RLS is bypassed and the query runs
- * without row-level permission checks. Callers MUST authenticate through an
- * alternative mechanism (e.g. a signed guest artifact token) before passing
- * `null`. Prefer passing a real `userId` whenever one is available.
- */
-export async function loadArtifactById(
-  artifactId: string,
-  userId?: string | null
-) {
-  return withOptionalRLS(userId ?? null, async tx => {
-    const [artifact] = await tx
-      .select()
-      .from(artifacts)
-      .where(eq(artifacts.id, artifactId))
-      .limit(1)
-
-    return artifact ?? null
-  })
-}
-
-/**
- * Load the current runtime session for an artifact.
- *
- * **Security:** When `userId` is `null`, RLS is bypassed and the query runs
- * without row-level permission checks. Callers MUST authenticate through an
- * alternative mechanism (e.g. a signed guest artifact token) before passing
- * `null`. Prefer passing a real `userId` whenever one is available.
- */
-export async function loadArtifactRuntimeSession(
-  artifactId: string,
-  userId?: string | null
-) {
-  return withOptionalRLS(userId ?? null, async tx => {
-    const [session] = await tx
-      .select()
-      .from(artifactRuntimeSessions)
-      .where(eq(artifactRuntimeSessions.artifactId, artifactId))
-      .orderBy(desc(artifactRuntimeSessions.startedAt))
-      .limit(1)
-
-    return session ?? null
-  })
-}
-
-/**
- * Create a persisted artifact record
- */
-export async function createArtifactRecord(input: CreateArtifactInput) {
-  return withOptionalRLS(input.userId, async tx => {
-    const [artifact] = await tx
-      .insert(artifacts)
-      .values({
-        id: input.id ?? generateId(),
-        chatId: input.chatId,
-        userId: input.userId,
-        currentRevisionId: input.currentRevisionId ?? null,
-        currentRuntimeSessionId: input.currentRuntimeSessionId ?? null,
-        title: input.title,
-        framework: input.framework,
-        status: input.status,
-        updatedAt: new Date()
-      })
-      .returning()
-
-    return artifact
-  })
-}
-
-export async function updateArtifactRecord(
-  input: {
-    id: string
-    title?: string
-    status?: ArtifactStatus
-    currentRevisionId?: string | null
-    currentRuntimeSessionId?: string | null
-  },
-  userId?: string | null
-) {
-  return withOptionalRLS(userId ?? null, async tx => {
-    const [artifact] = await tx
-      .update(artifacts)
-      .set({
-        ...(input.title !== undefined ? { title: input.title } : {}),
-        ...(input.status !== undefined ? { status: input.status } : {}),
-        ...(input.currentRevisionId !== undefined
-          ? { currentRevisionId: input.currentRevisionId }
-          : {}),
-        ...(input.currentRuntimeSessionId !== undefined
-          ? { currentRuntimeSessionId: input.currentRuntimeSessionId }
-          : {}),
-        updatedAt: new Date()
-      })
-      .where(eq(artifacts.id, input.id))
-      .returning()
-
-    return artifact ?? null
-  })
-}
-
-/**
- * Atomically claim an artifact for rebuild by transitioning its status
- * to 'building', but only if it is not already building.
- *
- * Returns the updated artifact if the claim succeeded, or null if
- * another rebuild is already in progress. This prevents concurrent
- * rebuild requests from creating duplicate sessions.
- */
-export async function claimArtifactForRebuild(
-  artifactId: string,
-  userId?: string | null
-) {
-  return withOptionalRLS(userId ?? null, async tx => {
-    const [artifact] = await tx
-      .update(artifacts)
-      .set({ status: 'building', updatedAt: new Date() })
-      .where(
-        and(
-          eq(artifacts.id, artifactId),
-          sql`${artifacts.status} != 'building'`
-        )
-      )
-      .returning()
-
-    return artifact ?? null
-  })
-}
-
-/**
- * Append a revision and promote it to the current artifact revision
- */
-export async function appendArtifactRevision(
-  input: AppendArtifactRevisionInput,
-  userId?: string | null
-) {
-  return withOptionalRLS(userId ?? null, async tx => {
-    return tx.transaction(async nestedTx => {
-      const [revision] = await nestedTx
-        .insert(artifactRevisions)
-        .values({
-          id: input.id ?? generateId(),
-          artifactId: input.artifactId,
-          triggeringMessageId: input.triggeringMessageId,
-          promptSummary: input.promptSummary,
-          title: input.title,
-          sandboxSnapshotRef: input.sandboxSnapshotRef ?? null,
-          sourceFiles: input.sourceFiles ?? null
-        })
-        .returning()
-
-      await nestedTx
-        .update(artifacts)
-        .set({
-          currentRevisionId: revision.id,
-          title: input.title,
-          updatedAt: new Date()
-        })
-        .where(eq(artifacts.id, input.artifactId))
-
-      return revision
-    })
-  })
-}
-
-/**
- * Load the latest revision for an artifact, including source files.
- * Used by rebuild-on-demand to reconstruct expired sandboxes,
- * and by orchestrateUpdate to merge partial file deltas.
- */
-export async function loadLatestRevisionWithSource(
-  artifactId: string,
-  userId?: string | null
-) {
-  return withOptionalRLS(userId ?? null, async tx => {
-    const [revision] = await tx
-      .select()
-      .from(artifactRevisions)
-      .where(eq(artifactRevisions.artifactId, artifactId))
-      .orderBy(desc(artifactRevisions.createdAt))
-      .limit(1)
-    return revision ?? null
-  })
-}
-
-/**
- * Upsert a runtime session and promote it to the current runtime session
- */
-export async function upsertArtifactRuntimeSession(
-  input: UpsertArtifactRuntimeSessionInput,
-  userId?: string | null
-) {
-  return withOptionalRLS(userId ?? null, async tx => {
-    return tx.transaction(async nestedTx => {
-      const [session] = await nestedTx
-        .insert(artifactRuntimeSessions)
-        .values({
-          id: input.id ?? generateId(),
-          artifactId: input.artifactId,
-          provider: input.provider,
-          sandboxId: input.sandboxId,
-          previewUrl: input.previewUrl ?? null,
-          status: input.status,
-          startedAt: input.startedAt,
-          expiresAt: input.expiresAt ?? null,
-          lastHeartbeatAt: input.lastHeartbeatAt ?? null
-        })
-        .onConflictDoUpdate({
-          target: artifactRuntimeSessions.id,
-          set: {
-            sandboxId: input.sandboxId,
-            previewUrl: input.previewUrl ?? null,
-            status: input.status,
-            startedAt: input.startedAt,
-            expiresAt: input.expiresAt ?? null,
-            lastHeartbeatAt: input.lastHeartbeatAt ?? null
-          }
-        })
-        .returning()
-
-      await nestedTx
-        .update(artifacts)
-        .set({
-          currentRuntimeSessionId: session.id,
-          status: input.status,
-          updatedAt: new Date()
-        })
-        .where(eq(artifacts.id, input.artifactId))
-
-      return session
-    })
   })
 }
 
@@ -593,12 +333,15 @@ export async function deleteMessagesAfter(
 }
 
 /**
- * Delete messages from a specific index
+ * Delete messages from a specific index. With `inclusive: false` the target
+ * message is kept and only what follows it (per a fresh read, not a caller's
+ * snapshot) is deleted.
  */
 export async function deleteMessagesFromIndex(
   chatId: string,
   messageId: string,
-  userId?: string
+  userId?: string,
+  inclusive = true
 ): Promise<{ count: number }> {
   return withOptionalRLS(userId || null, async tx => {
     // Get all messages for the chat
@@ -616,7 +359,9 @@ export async function deleteMessagesFromIndex(
     }
 
     // Get messages to delete (from index onwards)
-    const messagesToDelete = allMessages.slice(messageIndex)
+    const messagesToDelete = allMessages.slice(
+      inclusive ? messageIndex : messageIndex + 1
+    )
     const messageIds = messagesToDelete.map(m => m.id)
 
     if (messageIds.length > 0) {
@@ -1004,6 +749,10 @@ export async function createCanvasArtifactVersion(input: {
 /**
  * List all immutable versions for a canvas artifact, ordered by creation
  * time descending (newest first).
+ *
+ * Deliberately omits `sourceSnapshot`: it is the whole artifact source per
+ * row, and every caller but the restore path only needs the metadata. Use
+ * `loadCanvasArtifactVersionSnapshot` when the source is actually needed.
  */
 export async function listCanvasArtifactVersions(
   artifactId: string,
@@ -1011,7 +760,13 @@ export async function listCanvasArtifactVersions(
 ) {
   return withOptionalRLS(userId ?? null, async tx => {
     return tx
-      .select()
+      .select({
+        id: canvasArtifactVersions.id,
+        artifactId: canvasArtifactVersions.artifactId,
+        versionNumber: canvasArtifactVersions.versionNumber,
+        createdBy: canvasArtifactVersions.createdBy,
+        createdAt: canvasArtifactVersions.createdAt
+      })
       .from(canvasArtifactVersions)
       .where(eq(canvasArtifactVersions.artifactId, artifactId))
       .orderBy(desc(canvasArtifactVersions.createdAt))
@@ -1019,48 +774,51 @@ export async function listCanvasArtifactVersions(
 }
 
 /**
- * Restore a saved version into the active draft.
- *
- * Loads the version's source snapshot and writes it into the draft,
- * incrementing `draftRevision` via the standard optimistic concurrency
- * path. Returns the updated artifact row, or `null` if the revision was
- * stale.
+ * Load one version's source snapshot, scoped to its artifact.
  */
-export async function restoreCanvasArtifactVersion(input: {
-  artifactId: string
-  versionId: string
-  expectedRevision: number
+export async function loadCanvasArtifactVersionSnapshot(
+  versionId: string,
+  artifactId: string,
   userId?: string | null
-}) {
-  return withOptionalRLS(input.userId ?? null, async tx => {
-    // Load the version to restore
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
     const [version] = await tx
-      .select()
-      .from(canvasArtifactVersions)
-      .where(eq(canvasArtifactVersions.id, input.versionId))
-      .limit(1)
-
-    if (!version) return null
-
-    // Apply the restored source to the draft with optimistic concurrency
-    const [updated] = await tx
-      .update(canvasArtifacts)
-      .set({
-        draftSource: version.sourceSnapshot,
-        draftCompiledHtml: null,
-        draftDiagnostics: null,
-        status: 'restoring',
-        draftRevision: sql`${canvasArtifacts.draftRevision} + 1`,
-        updatedAt: new Date()
+      .select({
+        id: canvasArtifactVersions.id,
+        versionNumber: canvasArtifactVersions.versionNumber,
+        sourceSnapshot: canvasArtifactVersions.sourceSnapshot
       })
+      .from(canvasArtifactVersions)
       .where(
         and(
-          eq(canvasArtifacts.id, input.artifactId),
-          eq(canvasArtifacts.draftRevision, input.expectedRevision)
+          eq(canvasArtifactVersions.id, versionId),
+          eq(canvasArtifactVersions.artifactId, artifactId)
         )
       )
-      .returning()
+      .limit(1)
 
-    return updated ?? null
+    return version ?? null
+  })
+}
+
+/**
+ * Delete canvas artifact versions by id, scoped to their artifact.
+ */
+export async function deleteCanvasArtifactVersions(
+  artifactId: string,
+  versionIds: string[],
+  userId?: string | null
+) {
+  if (versionIds.length === 0) return
+
+  return withOptionalRLS(userId ?? null, async tx => {
+    await tx
+      .delete(canvasArtifactVersions)
+      .where(
+        and(
+          eq(canvasArtifactVersions.artifactId, artifactId),
+          inArray(canvasArtifactVersions.id, versionIds)
+        )
+      )
   })
 }

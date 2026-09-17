@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock Next.js cookies API
 vi.mock('next/headers', () => ({
@@ -10,15 +10,13 @@ vi.mock('next/headers', () => ({
   }))
 }))
 
+const { getUser } = vi.hoisted(() => ({
+  getUser: vi.fn()
+}))
+
 // Mock Supabase
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(() => ({
-    auth: {
-      getUser: vi.fn(() =>
-        Promise.resolve({ data: { user: null }, error: null })
-      )
-    }
-  }))
+  createClient: vi.fn(() => ({ auth: { getUser } }))
 }))
 
 // Mock the modules
@@ -30,15 +28,44 @@ vi.mock('@/lib/observability/phoenix-feedback', () => ({
   annotatePhoenixUserFeedback: vi.fn()
 }))
 
+vi.mock('@/lib/rate-limit/feedback-limits', () => ({
+  checkMessageFeedbackLimit: vi.fn()
+}))
+
 // Import after mocking
 import { updateMessageFeedback } from '@/lib/actions/feedback'
 import { annotatePhoenixUserFeedback } from '@/lib/observability/phoenix-feedback'
+import { checkMessageFeedbackLimit } from '@/lib/rate-limit/feedback-limits'
 
 import { POST } from '../route'
+
+function feedbackRequest(body: unknown) {
+  return new Request('http://localhost:3000/api/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+}
 
 describe('Feedback API Route', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co')
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'anon-key')
+    getUser.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null
+    })
+    vi.mocked(checkMessageFeedbackLimit).mockResolvedValue({
+      allowed: true,
+      remaining: 4,
+      resetAt: 0,
+      limit: 5
+    })
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   describe('POST /api/feedback', () => {
@@ -53,19 +80,13 @@ describe('Feedback API Route', () => {
       })
       vi.mocked(annotatePhoenixUserFeedback).mockResolvedValue(undefined)
 
-      const request = new Request('http://localhost:3000/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const response = await POST(
+        feedbackRequest({
           score: 1,
           comment: 'Great!',
           messageId: 'test-message-id'
         })
-      })
-
-      const response = await POST(request)
+      )
       const text = await response.text()
 
       expect(response.status).toBe(200)
@@ -73,7 +94,7 @@ describe('Feedback API Route', () => {
       expect(updateMessageFeedback).toHaveBeenCalledWith(
         'test-message-id',
         1,
-        null
+        'user-1'
       )
       expect(annotatePhoenixUserFeedback).toHaveBeenCalledWith({
         chatId: 'chat-1',
@@ -93,74 +114,75 @@ describe('Feedback API Route', () => {
         metadata: null
       })
 
-      const request = new Request('http://localhost:3000/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          score: -1,
-          messageId: 'test-message-id'
-        })
-      })
-
-      const response = await POST(request)
+      const response = await POST(
+        feedbackRequest({ score: -1, messageId: 'test-message-id' })
+      )
 
       expect(response.status).toBe(200)
       expect(updateMessageFeedback).toHaveBeenCalledWith(
         'test-message-id',
         -1,
-        null
+        'user-1'
       )
     })
 
-    it('should return 400 for invalid score', async () => {
-      const request = new Request('http://localhost:3000/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          score: 0,
-          messageId: 'test-message-id'
-        })
-      })
+    it('should return 401 for anonymous callers', async () => {
+      getUser.mockResolvedValue({ data: { user: null }, error: null })
 
-      const response = await POST(request)
-      const text = await response.text()
+      const response = await POST(
+        feedbackRequest({ score: 1, messageId: 'someone-elses-message' })
+      )
 
-      expect(response.status).toBe(400)
-      expect(text).toBe('score must be 1 (good) or -1 (bad)')
+      expect(response.status).toBe(401)
+      expect(updateMessageFeedback).not.toHaveBeenCalled()
     })
 
-    it('should work without traceId', async () => {
+    it('should accept the shared anonymous user when ENABLE_AUTH=false', async () => {
+      vi.stubEnv('ENABLE_AUTH', 'false')
+      vi.stubEnv('ANONYMOUS_USER_ID', 'self-host-user')
+      getUser.mockResolvedValue({ data: { user: null }, error: null })
       vi.mocked(updateMessageFeedback).mockResolvedValue({
         success: true,
         chatId: 'chat-1',
         metadata: null
       })
 
-      const request = new Request('http://localhost:3000/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          score: 1,
-          messageId: 'test-message-id'
-        })
-      })
-
-      const response = await POST(request)
-      const text = await response.text()
+      const response = await POST(
+        feedbackRequest({ score: 1, messageId: 'test-message-id' })
+      )
 
       expect(response.status).toBe(200)
-      expect(text).toBe('Feedback recorded successfully')
       expect(updateMessageFeedback).toHaveBeenCalledWith(
         'test-message-id',
         1,
-        null
+        'self-host-user'
       )
+    })
+
+    it('should return 429 when rate limited', async () => {
+      vi.mocked(checkMessageFeedbackLimit).mockResolvedValue({
+        allowed: false,
+        remaining: 0,
+        resetAt: 0,
+        limit: 5
+      })
+
+      const response = await POST(
+        feedbackRequest({ score: 1, messageId: 'test-message-id' })
+      )
+
+      expect(response.status).toBe(429)
+      expect(updateMessageFeedback).not.toHaveBeenCalled()
+    })
+
+    it('should return 400 for invalid score', async () => {
+      const response = await POST(
+        feedbackRequest({ score: 0, messageId: 'test-message-id' })
+      )
+      const text = await response.text()
+
+      expect(response.status).toBe(400)
+      expect(text).toBe('score must be 1 (good) or -1 (bad)')
     })
 
     it('should continue if Phoenix annotation fails', async () => {
@@ -176,18 +198,9 @@ describe('Feedback API Route', () => {
         .spyOn(console, 'warn')
         .mockImplementation(() => {})
 
-      const request = new Request('http://localhost:3000/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          score: 1,
-          messageId: 'test-message-id'
-        })
-      })
-
-      const response = await POST(request)
+      const response = await POST(
+        feedbackRequest({ score: 1, messageId: 'test-message-id' })
+      )
 
       expect(response.status).toBe(200)
       expect(consoleWarnSpy).toHaveBeenCalledWith(
@@ -198,7 +211,25 @@ describe('Feedback API Route', () => {
       consoleWarnSpy.mockRestore()
     })
 
-    it('should continue even if database update fails', async () => {
+    it('should return 404 when the message is not found', async () => {
+      vi.mocked(updateMessageFeedback).mockResolvedValue({
+        success: false,
+        error: 'Message not found',
+        notFound: true
+      })
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      const response = await POST(
+        feedbackRequest({ score: 1, messageId: 'test-message-id' })
+      )
+
+      expect(response.status).toBe(404)
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('should report a failed database update', async () => {
       vi.mocked(updateMessageFeedback).mockResolvedValue({
         success: false,
         error: 'Database error'
@@ -208,20 +239,11 @@ describe('Feedback API Route', () => {
         .spyOn(console, 'error')
         .mockImplementation(() => {})
 
-      const request = new Request('http://localhost:3000/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          score: 1,
-          messageId: 'test-message-id'
-        })
-      })
+      const response = await POST(
+        feedbackRequest({ score: 1, messageId: 'test-message-id' })
+      )
 
-      const response = await POST(request)
-
-      expect(response.status).toBe(200)
+      expect(response.status).toBe(500)
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'Error updating message feedback:',
         'Database error'
@@ -230,20 +252,10 @@ describe('Feedback API Route', () => {
       consoleErrorSpy.mockRestore()
     })
 
-    it('should work without messageId', async () => {
-      const request = new Request('http://localhost:3000/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          score: 1
-        })
-      })
+    it('should return 400 without messageId', async () => {
+      const response = await POST(feedbackRequest({ score: 1 }))
 
-      const response = await POST(request)
-
-      expect(response.status).toBe(200)
+      expect(response.status).toBe(400)
       expect(updateMessageFeedback).not.toHaveBeenCalled()
     })
 
@@ -254,9 +266,7 @@ describe('Feedback API Route', () => {
 
       const request = new Request('http://localhost:3000/api/feedback', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: 'invalid json'
       })
 

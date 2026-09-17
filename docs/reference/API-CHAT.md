@@ -58,14 +58,14 @@ The primary chat endpoint. Accepts the AI SDK `UIMessage[]` history and returns 
 }
 ```
 
-| Field              | Type          | Required    | Description                                                                                                                        |
-| ------------------ | ------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `messages`         | `UIMessage[]` | Yes         | Full AI SDK v6 conversation history. Interactive tool continuations use the updated assistant message produced by `addToolOutput`. |
-| `chatId`           | `string`      | Yes         | Unique identifier for the chat session.                                                                                            |
-| `trigger`          | `string`      | No          | Action type: `"submit-message"` or `"regenerate-message"`. Defaults to `"submit-message"`.                                         |
-| `messageId`        | `string`      | Conditional | ID of the message to regenerate. Required when `trigger` is `"regenerate-message"`.                                                |
-| `isNewChat`        | `boolean`     | No          | Indicates a new chat session. Affects analytics tracking.                                                                          |
-| `guestCanvasToken` | `string`      | No          | HMAC-SHA256 signed token for guest canvas artifact continuity. Passed through to canvas tools for guest session verification.      |
+| Field              | Type          | Required    | Description                                                                                                                       |
+| ------------------ | ------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `messages`         | `UIMessage[]` | Yes         | Full AI SDK 7 conversation history. Interactive tool continuations use the updated assistant message produced by `addToolOutput`. |
+| `chatId`           | `string`      | Yes         | Unique identifier for the chat session.                                                                                           |
+| `trigger`          | `string`      | No          | Action type: `"submit-message"` or `"regenerate-message"`. Defaults to `"submit-message"`.                                        |
+| `messageId`        | `string`      | Conditional | ID of the message to regenerate. Required when `trigger` is `"regenerate-message"`.                                               |
+| `isNewChat`        | `boolean`     | No          | Indicates a new chat session. Affects analytics tracking.                                                                         |
+| `guestCanvasToken` | `string`      | No          | HMAC-SHA256 signed token for guest canvas artifact continuity. Passed through to canvas tools for guest session verification.     |
 
 #### Cookies Read
 
@@ -86,7 +86,6 @@ The response is a streaming SSE connection. Message parts (text, search results,
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `400 Bad Request`           | Missing/non-array `messages`, singular-message payloads, retired tool-continuation payloads, unknown triggers, or missing `messageId` for regenerate. |
 | `401 Unauthorized`          | No authenticated user and guest mode is disabled.                                                                                                     |
-| `403 Forbidden`             | Request originated from a `/share/` page. Chat API is blocked on share pages.                                                                         |
 | `404 Not Found`             | Selected AI provider is not enabled in the registry.                                                                                                  |
 | `429 Too Many Requests`     | Authenticated user exceeded daily chat limit or guest rate limit exceeded in cloud deployments.                                                       |
 | `500 Internal Server Error` | Unexpected server error during processing.                                                                                                            |

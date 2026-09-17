@@ -6,19 +6,18 @@ import {
 } from '@/lib/rate-limit/memory-limiter'
 
 const mockRedisIncr = vi.fn()
-const mockRedisExpire = vi.fn()
 
 vi.mock('@upstash/redis', () => ({
   Redis: vi.fn().mockImplementation(() => ({
-    incr: mockRedisIncr,
-    expire: mockRedisExpire
+    // incrWithTtl runs INCR + EXPIRE as one Lua script
+    eval: (_script: string, _keys: string[], _args: unknown[]) =>
+      mockRedisIncr()
   }))
 }))
 
 describe('rate-limit fallback behavior', () => {
   beforeEach(() => {
     mockRedisIncr.mockReset()
-    mockRedisExpire.mockReset()
     _resetMemoryLimiter()
   })
 
@@ -147,7 +146,6 @@ describe('rate-limit fallback behavior', () => {
     it('defaults to 100 when env var is not set', async () => {
       delete process.env.DAILY_CHAT_LIMIT
       mockRedisIncr.mockResolvedValue(101)
-      mockRedisExpire.mockResolvedValue(1)
 
       const { checkAndEnforceOverallChatLimit } =
         await import('@/lib/rate-limit/chat-limits')
@@ -162,7 +160,6 @@ describe('rate-limit fallback behavior', () => {
     it('reads custom limit from env var', async () => {
       process.env.DAILY_CHAT_LIMIT = '50'
       mockRedisIncr.mockResolvedValue(51)
-      mockRedisExpire.mockResolvedValue(1)
 
       const { checkAndEnforceOverallChatLimit } =
         await import('@/lib/rate-limit/chat-limits')
@@ -177,7 +174,6 @@ describe('rate-limit fallback behavior', () => {
     it('falls back to default for invalid env var values', async () => {
       process.env.DAILY_CHAT_LIMIT = 'not-a-number'
       mockRedisIncr.mockResolvedValue(101)
-      mockRedisExpire.mockResolvedValue(1)
 
       const { checkAndEnforceOverallChatLimit } =
         await import('@/lib/rate-limit/chat-limits')

@@ -14,7 +14,6 @@ flowchart TD
     POST["POST /api/chat"]
     Parse["Parse request body<br/>(messages, chatId, trigger)"]
     Auth["getCurrentUserId()"]
-    ShareCheck{"Referer is /share/?"}
     GuestCheck{"userId exists?"}
     GuestEnabled{"ENABLE_GUEST_CHAT<br/>= true?"}
     GuestLimit["checkAndEnforceGuestLimit()<br/>(extract IP from x-forwarded-for)"]
@@ -35,9 +34,7 @@ flowchart TD
     SSE["SSE Response to Client"]
 
     POST --> Parse --> Auth
-    Auth --> ShareCheck
-    ShareCheck -->|Yes| ForbidShare["403 Forbidden"]
-    ShareCheck -->|No| GuestCheck
+    Auth --> GuestCheck
     GuestCheck -->|No user| GuestEnabled
     GuestEnabled -->|No| Unauth["401 Unauthorized"]
     GuestEnabled -->|Yes| GuestLimit
@@ -70,7 +67,7 @@ The agent is selected by [`resolveChatAgentId()`](../../lib/agents/chat/registry
 
 | Field              | Purpose                                                |
 | ------------------ | ------------------------------------------------------ |
-| `messages`         | Full AI SDK v6 `UIMessage[]` history                   |
+| `messages`         | Full AI SDK 7 `UIMessage[]` history                    |
 | `chatId`           | Chat identifier                                        |
 | `trigger`          | `submit-message` or `regenerate-message`               |
 | `messageId`        | Target message ID (required for `regenerate-message`)  |

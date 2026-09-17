@@ -6,10 +6,7 @@ import { db } from '@/lib/db'
 import { telemetryRecordingOptions } from '@/lib/utils/telemetry'
 
 type TracingState =
-  | 'enabled'
-  | 'disabled-off'
-  | 'disabled-https'
-  | 'init-failed'
+  'enabled' | 'disabled-off' | 'disabled-https' | 'init-failed'
 
 declare global {
   var __polymorphTracingState: TracingState | undefined
@@ -24,15 +21,16 @@ export async function GET(req: NextRequest) {
   // Always check database
   let dbStatus: 'connected' | 'error' = 'error'
   let dbError: string | undefined
+  let dbTimeout: ReturnType<typeof setTimeout> | undefined
   try {
     await Promise.race([
       db.execute(sql`SELECT 1`),
-      new Promise((_, reject) =>
-        setTimeout(
+      new Promise((_, reject) => {
+        dbTimeout = setTimeout(
           () => reject(new Error('Database health check timed out after 5s')),
           5000
         )
-      )
+      })
     ])
     dbStatus = 'connected'
   } catch (error) {
@@ -42,6 +40,8 @@ export async function GET(req: NextRequest) {
           ? error.message
           : 'Unknown error'
         : 'unreachable'
+  } finally {
+    if (dbTimeout) clearTimeout(dbTimeout)
   }
 
   // Optional Phoenix check (only when requested and tracing is configured).

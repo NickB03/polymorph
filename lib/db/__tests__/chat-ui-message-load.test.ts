@@ -334,6 +334,57 @@ describe('canonical chat UIMessage loading', () => {
     )
   })
 
+  describe('upsertMessage stale guard (aborted partials)', () => {
+    const partial: UIMessage & { chatId: string } = {
+      id: 'partial-1',
+      chatId: 'chat-1',
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'partial' }]
+    }
+    const since = new Date('2026-01-01T00:00:10Z')
+
+    function mockLatest(rows: unknown[]) {
+      const limit = vi.fn().mockResolvedValue(rows)
+      const orderBy = vi.fn(() => ({ limit }))
+      const where = vi.fn(() => ({ orderBy }))
+      dbMocks.tx.select.mockReturnValueOnce({ from: vi.fn(() => ({ where })) })
+    }
+
+    function mockInsert() {
+      const insert = {
+        values: vi.fn(() => insert),
+        onConflictDoUpdate: vi.fn(() => insert),
+        returning: vi.fn().mockResolvedValue([{ id: 'partial-1' }])
+      }
+      dbMocks.tx.insert.mockReturnValueOnce(insert)
+    }
+
+    it('persists when the answered message is still the latest', async () => {
+      mockLatest([{ id: 'user-1', updatedAt: null }])
+      mockInsert()
+
+      await expect(
+        upsertMessage(partial, 'user-1', { latestId: 'user-1', since })
+      ).resolves.toEqual({ id: 'partial-1' })
+    })
+
+    it.each([
+      ['a newer message exists', [{ id: 'user-2', updatedAt: null }]],
+      ['the answered message was deleted', []],
+      [
+        'the answered message was edited since',
+        [{ id: 'user-1', updatedAt: new Date('2026-01-01T00:00:20Z') }]
+      ]
+    ])('skips the write when %s', async (_name, rows) => {
+      mockLatest(rows)
+
+      await expect(
+        upsertMessage(partial, 'user-1', { latestId: 'user-1', since })
+      ).resolves.toBeNull()
+      expect(dbMocks.tx.insert).not.toHaveBeenCalled()
+    })
+  })
+
   it('createChatWithFirstMessageTransaction persists first message without sidecar projections', async () => {
     const message: UIMessage = {
       id: 'msg-1',

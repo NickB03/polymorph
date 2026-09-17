@@ -1,7 +1,7 @@
 import { isCloudDeployment } from '@/lib/utils'
 
 import { checkMemoryLimit } from './memory-limiter'
-import { getRedis } from './redis'
+import { getRedis, incrWithTtl } from './redis'
 
 export interface RateLimitResult {
   allowed: boolean
@@ -34,17 +34,14 @@ export async function checkPerMinuteLimit(
 
     let timeout: ReturnType<typeof setTimeout> | undefined
     const count = await Promise.race([
-      redis.incr(key),
+      // 2 minutes TTL to cover the edge of the window
+      incrWithTtl(redis, key, 120),
       new Promise<number>((_, reject) => {
         timeout = setTimeout(() => reject(new Error('Redis timeout')), 3000)
       })
     ]).finally(() => {
       if (timeout) clearTimeout(timeout)
     })
-
-    if (count === 1) {
-      await redis.expire(key, 120) // 2 minutes TTL to cover edge of window
-    }
 
     const remaining = Math.max(0, limit - count)
     const resetAt = (minuteKey + 1) * 60_000

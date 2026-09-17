@@ -11,6 +11,8 @@ const mockEnsureChatRecord = vi.fn()
 const mockListCanvasArtifactVersions = vi.fn()
 const mockLoadCanvasArtifactByChatId = vi.fn()
 const mockLoadCanvasArtifactById = vi.fn()
+const mockDeleteCanvasArtifactVersions = vi.fn()
+const mockLoadCanvasArtifactVersionSnapshot = vi.fn()
 const mockUpdateCanvasArtifactDiagnosticsOnly = vi.fn()
 const mockUpdateCanvasArtifactDraft = vi.fn()
 const mockDeleteWhere = vi.fn()
@@ -20,6 +22,8 @@ vi.mock('@/lib/db/actions', () => ({
     mockCreateCanvasArtifact(...args),
   createCanvasArtifactVersion: (...args: unknown[]) =>
     mockCreateCanvasArtifactVersion(...args),
+  deleteCanvasArtifactVersions: (...args: unknown[]) =>
+    mockDeleteCanvasArtifactVersions(...args),
   ensureChatRecord: (...args: unknown[]) => mockEnsureChatRecord(...args),
   listCanvasArtifactVersions: (...args: unknown[]) =>
     mockListCanvasArtifactVersions(...args),
@@ -27,6 +31,8 @@ vi.mock('@/lib/db/actions', () => ({
     mockLoadCanvasArtifactByChatId(...args),
   loadCanvasArtifactById: (...args: unknown[]) =>
     mockLoadCanvasArtifactById(...args),
+  loadCanvasArtifactVersionSnapshot: (...args: unknown[]) =>
+    mockLoadCanvasArtifactVersionSnapshot(...args),
   updateCanvasArtifactDiagnosticsOnly: (...args: unknown[]) =>
     mockUpdateCanvasArtifactDiagnosticsOnly(...args),
   updateCanvasArtifactDraft: (...args: unknown[]) =>
@@ -161,6 +167,37 @@ describe('Canvas Service', () => {
           id: 'art-pre'
         })
       )
+    })
+
+    it('reports stale-revision when a concurrent write beats the first draft update', async () => {
+      mockLoadCanvasArtifactByChatId.mockResolvedValue(null)
+      mockCreateCanvasArtifact.mockResolvedValue(makeArtifactRow())
+      mockCompile.mockResolvedValue({
+        ok: true,
+        html: '<html>compiled</html>',
+        diagnostics: [],
+        externalDependencies: []
+      })
+      // Optimistic concurrency miss: the update matched no row
+      mockUpdateCanvasArtifactDraft.mockResolvedValue(null)
+      mockLoadCanvasArtifactById.mockResolvedValue(
+        makeArtifactRow({ draftRevision: 3 })
+      )
+
+      const result = await createCanvasArtifactFromSource({
+        chatId: 'chat-1',
+        userId: 'user-1',
+        title: 'My App',
+        draftSource: validSource
+      })
+
+      expect(result.ok).toBe(false)
+      expect(result.errorCode).toBe('stale-revision')
+      // The row exists, so the failure must still carry its real identity
+      expect(result.artifact?.artifactId).toBe(makeArtifactRow().id)
+      expect(result.artifact?.draftRevision).toBe(3)
+      // Must not go on to link a version against a revision it never won
+      expect(mockCreateCanvasArtifactVersion).not.toHaveBeenCalled()
     })
 
     it('creates artifact and compiles successfully', async () => {
@@ -573,18 +610,16 @@ describe('Canvas Service', () => {
         createdBy: 'user'
       })
 
-      expect(mockDeleteWhere).toHaveBeenCalled()
-      expect(
-        mockDeleteWhere.mock.calls.some(
-          ([arg]) => arg?.value === currentVersion.id
-        )
-      ).toBe(false)
+      expect(mockDeleteCanvasArtifactVersions).toHaveBeenCalled()
+      const deletedIds = mockDeleteCanvasArtifactVersions.mock
+        .calls[0][1] as string[]
+      expect(deletedIds).not.toContain(currentVersion.id)
     })
   })
 
   describe('restoreCanvasArtifactVersion', () => {
     it('restores version and recompiles', async () => {
-      mockListCanvasArtifactVersions.mockResolvedValue([makeVersionRow()])
+      mockLoadCanvasArtifactVersionSnapshot.mockResolvedValue(makeVersionRow())
       mockUpdateCanvasArtifactDraft
         .mockResolvedValueOnce(makeArtifactRow({ draftRevision: 1 }))
         .mockResolvedValueOnce(makeArtifactRow({ draftRevision: 2 }))
@@ -608,7 +643,7 @@ describe('Canvas Service', () => {
     })
 
     it('returns not-found for unknown version', async () => {
-      mockListCanvasArtifactVersions.mockResolvedValue([])
+      mockLoadCanvasArtifactVersionSnapshot.mockResolvedValue(null)
 
       const result = await restoreCanvasArtifactVersion({
         artifactId: 'art-1',
@@ -621,7 +656,7 @@ describe('Canvas Service', () => {
     })
 
     it('returns stale-revision on concurrency conflict', async () => {
-      mockListCanvasArtifactVersions.mockResolvedValue([makeVersionRow()])
+      mockLoadCanvasArtifactVersionSnapshot.mockResolvedValue(makeVersionRow())
       mockUpdateCanvasArtifactDraft.mockResolvedValue(null)
 
       const result = await restoreCanvasArtifactVersion({
@@ -635,7 +670,7 @@ describe('Canvas Service', () => {
     })
 
     it('returns compile-failed details when restore recompilation fails', async () => {
-      mockListCanvasArtifactVersions.mockResolvedValue([makeVersionRow()])
+      mockLoadCanvasArtifactVersionSnapshot.mockResolvedValue(makeVersionRow())
       mockUpdateCanvasArtifactDraft
         .mockResolvedValueOnce(makeArtifactRow({ draftRevision: 1 }))
         .mockResolvedValueOnce(
@@ -681,6 +716,22 @@ describe('Canvas Service', () => {
       expect(mockUpdateCanvasArtifactDiagnosticsOnly).toHaveBeenCalled()
       // Must NOT bump the draft revision
       expect(mockUpdateCanvasArtifactDraft).not.toHaveBeenCalled()
+    })
+
+    it('reports stale-revision when the diagnostics write matches no row', async () => {
+      mockLoadCanvasArtifactById.mockResolvedValue(
+        makeArtifactRow({ draftRevision: 3 })
+      )
+      mockUpdateCanvasArtifactDiagnosticsOnly.mockResolvedValue(null)
+
+      const result = await recordCanvasRuntimeDiagnostics({
+        artifactId: 'art-1',
+        draftRevision: 3,
+        diagnostics: [{ severity: 'error', message: 'Runtime error' }]
+      })
+
+      expect(result.ok).toBe(false)
+      expect(result.errorCode).toBe('stale-revision')
     })
 
     it('rejects diagnostics when revision does not match', async () => {

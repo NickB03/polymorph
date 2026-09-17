@@ -116,8 +116,60 @@ export function getMaxAllowedTokens(model: Model): number {
   return Math.max(availableTokens, 1000)
 }
 
+// Binary payloads are not tokenized as text. Providers bill files at roughly
+// this many bytes per token; it is an approximation, but far closer than the
+// zero these parts used to contribute.
+const BYTES_PER_BINARY_TOKEN = 750
+// Providers downscale/tile images, so cost is bounded regardless of file size
+// (a 5 MB photo is ~1-2k tokens, not bytes/750 ≈ 7k).
+const MAX_IMAGE_TOKENS = 1600
+
+function safeStringify(value: unknown): string {
+  if (value === undefined || value === null) return ''
+  if (typeof value === 'string') return value
+  try {
+    return JSON.stringify(value) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+type LoosePart = {
+  type?: string
+  text?: unknown
+  data?: unknown
+  image?: unknown
+  mediaType?: unknown
+}
+
+const MEDIA_PART_TYPES = new Set([
+  'image',
+  'file',
+  'media',
+  'file-data',
+  'image-data'
+])
+
+// Items of a tool-result `content` output (text + media); null otherwise.
+function toolResultContentItems(part: unknown): LoosePart[] | null {
+  const { type, output } = part as {
+    type?: string
+    output?: { type?: string; value?: unknown }
+  }
+  return type === 'tool-result' &&
+    output?.type === 'content' &&
+    Array.isArray(output.value)
+    ? (output.value as LoosePart[])
+    : null
+}
+
 /**
- * Extract text content from various message content types
+ * Extract text content from various message content types.
+ *
+ * Tool calls and tool results are serialized rather than skipped: they are
+ * often the largest thing in a research turn, and counting them as zero
+ * tokens made the budget meaningless. Base64 media inside tool results is
+ * excluded here and billed by estimateBinaryTokens instead.
  */
 function extractTextContent(content: ModelMessage['content']): string {
   if (!content) return ''
@@ -131,8 +183,24 @@ function extractTextContent(content: ModelMessage['content']): string {
   if (Array.isArray(content)) {
     return content
       .map(part => {
-        if ('text' in part) {
+        if ('text' in part && typeof part.text === 'string') {
           return part.text
+        }
+        if (part.type === 'tool-call') {
+          return safeStringify(part.input)
+        }
+        if (part.type === 'tool-result') {
+          const items = toolResultContentItems(part)
+          if (!items) return safeStringify(part.output)
+          return items
+            .map(item =>
+              MEDIA_PART_TYPES.has(item.type ?? '')
+                ? ''
+                : typeof item.text === 'string'
+                  ? item.text
+                  : safeStringify(item)
+            )
+            .join(' ')
         }
         return ''
       })
@@ -141,6 +209,76 @@ function extractTextContent(content: ModelMessage['content']): string {
 
   // Handle other content types
   return ''
+}
+
+function byteLengthOf(data: unknown): number {
+  if (data instanceof Uint8Array) return data.byteLength
+  if (data instanceof ArrayBuffer) return data.byteLength
+  // Strings are base64: 4 chars per 3 bytes
+  if (typeof data === 'string') return Math.ceil((data.length * 3) / 4)
+  // Tagged file data: { type: 'data', data }
+  if (data && typeof data === 'object' && 'data' in data) {
+    return byteLengthOf((data as { data: unknown }).data)
+  }
+  return 0
+}
+
+function estimateMediaPartTokens(part: LoosePart): number {
+  if (!MEDIA_PART_TYPES.has(part.type ?? '')) return 0
+  const tokens = Math.ceil(
+    byteLengthOf(part.data ?? part.image) / BYTES_PER_BINARY_TOKEN
+  )
+  const isImage =
+    part.type === 'image' ||
+    part.type === 'image-data' ||
+    (typeof part.mediaType === 'string' && part.mediaType.startsWith('image'))
+  return isImage ? Math.min(tokens, MAX_IMAGE_TOKENS) : tokens
+}
+
+/**
+ * Approximate token cost of image/file parts, which carry no text.
+ */
+function estimateBinaryTokens(content: ModelMessage['content']): number {
+  if (!Array.isArray(content)) return 0
+
+  let tokens = 0
+  for (const part of content) {
+    for (const item of toolResultContentItems(part) ?? [part as LoosePart]) {
+      tokens += estimateMediaPartTokens(item)
+    }
+  }
+  return tokens
+}
+
+/**
+ * Drop `tool` messages whose tool calls are no longer present in the kept
+ * window. Truncation can strip the assistant turn that issued a tool call
+ * while its result survives, which providers reject with a 400.
+ */
+function dropOrphanToolMessages(messages: ModelMessage[]): ModelMessage[] {
+  const availableCallIds = new Set<string>()
+  const kept: ModelMessage[] = []
+
+  for (const message of messages) {
+    if (message.role === 'assistant' && Array.isArray(message.content)) {
+      for (const part of message.content) {
+        if (part.type === 'tool-call') {
+          availableCallIds.add(part.toolCallId)
+        }
+      }
+    }
+
+    if (message.role === 'tool' && Array.isArray(message.content)) {
+      const orphaned = message.content.some(
+        part => 'toolCallId' in part && !availableCallIds.has(part.toolCallId)
+      )
+      if (orphaned) continue
+    }
+
+    kept.push(message)
+  }
+
+  return kept
 }
 
 /**
@@ -172,12 +310,31 @@ function getEncoder(modelId: string) {
  * Estimate token count for a message
  * Uses tiktoken for accurate counting when available
  */
+// Tool payloads are stringified and BPE-encoded, so each message is measured
+// once and reused across the budget check, truncation, and eviction passes.
+const tokenCountCache = new WeakMap<
+  ModelMessage,
+  { modelId?: string; tokens: number }
+>()
+
+function estimateMessageTokens(
+  message: ModelMessage,
+  modelId?: string
+): number {
+  const cached = tokenCountCache.get(message)
+  if (cached && cached.modelId === modelId) return cached.tokens
+  const tokens = estimateTokenCount(message.content, modelId)
+  tokenCountCache.set(message, { modelId, tokens })
+  return tokens
+}
+
 function estimateTokenCount(
   content: ModelMessage['content'],
   modelId?: string
 ): number {
   const text = extractTextContent(content)
-  if (!text) return 0
+  const binaryTokens = estimateBinaryTokens(content)
+  if (!text) return binaryTokens > 0 ? binaryTokens + 4 : 0
 
   // Try to use tiktoken for accurate counting
   if (modelId) {
@@ -187,7 +344,7 @@ function estimateTokenCount(
         const tokens = encoder.encode(text)
         const tokenCount = tokens.length
         const overhead = 4 // Message formatting tokens
-        return tokenCount + overhead
+        return tokenCount + overhead + binaryTokens
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {
           console.warn(
@@ -204,7 +361,7 @@ function estimateTokenCount(
   const baseCount = Math.ceil(text.length / 4)
   const overhead = 4 // Message formatting tokens
 
-  return baseCount + overhead
+  return baseCount + overhead + binaryTokens
 }
 
 /**
@@ -229,7 +386,7 @@ export function truncateMessages(
   // Calculate token counts for all messages
   const messageTokenCounts = messages.map(msg => ({
     message: msg,
-    tokens: estimateTokenCount(msg.content, modelId)
+    tokens: estimateMessageTokens(msg, modelId)
   }))
 
   // Calculate total tokens
@@ -250,10 +407,7 @@ export function truncateMessages(
   // Reserve space for first user message if it exists
   let reservedFirstUser = false
   if (firstUserMessage) {
-    const firstUserTokens = estimateTokenCount(
-      firstUserMessage.content,
-      modelId
-    )
+    const firstUserTokens = messageTokenCounts[firstUserIndex].tokens
     if (firstUserTokens < maxTokens * 0.3) {
       // Don't let first message take more than 30%
       result.push(firstUserMessage)
@@ -283,7 +437,7 @@ export function truncateMessages(
         while (recentMessages.length > 0 && usedTokens + tokens > maxTokens) {
           const removed = recentMessages.shift()
           if (removed) {
-            usedTokens -= estimateTokenCount(removed.content, modelId)
+            usedTokens -= estimateMessageTokens(removed, modelId)
           }
         }
         if (usedTokens + tokens <= maxTokens) {
@@ -303,6 +457,11 @@ export function truncateMessages(
     // Otherwise, just use recent messages
     result.push(...recentMessages)
   }
+
+  // Drop tool results whose originating tool call fell outside the window
+  const pruned = dropOrphanToolMessages(result)
+  result.length = 0
+  result.push(...pruned)
 
   // Ensure the result starts with a user message
   while (result.length > 0 && result[0].role !== 'user') {
@@ -336,7 +495,7 @@ export function maybeTruncateMessages(
 
   const maxTokens = getMaxAllowedTokens(model)
   const totalTokens = messages.reduce(
-    (sum, msg) => sum + estimateTokenCount(msg.content, model.id),
+    (sum, msg) => sum + estimateMessageTokens(msg, model.id),
     0
   )
 

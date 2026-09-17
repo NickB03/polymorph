@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-16
+
+### Added
+
+- Graphify knowledge-graph corpus persisted in git, with a merge driver and CI freshness guard (#256), split long docs for ingest (#253), and long-lived assistant support (Add Graphify assistant support)
+- `tool_selection` LLM-judge evaluator, bringing the evals pipeline to 9 evaluators (#220, corrected in docs by #242)
+- bklit chart visualizations in `/admin/evals` (#218)
+- Low-cost weekly portfolio eval canary alongside the existing regression suite (#261)
+- First-run Polymorph demo popup and README demo reel/GIF (#237, #222, #223, #247, #246, docs: improve README demo video quality)
+- Tier-1 test coverage for auth, search, rate-limit, and RLS, plus coverage/typecheck CI guardrails (#244)
+- `/api/health` now reports tracing-registration state and resolved OpenInference span-content masking state, so a blind-deploy or a masking-flag typo is visible without opening Phoenix (#263)
+- AI SDK 7 and OpenTelemetry SDK 2.x adopted across the app and `services/evals`, with `@ai-sdk/otel` registered in `instrumentation.ts` (this branch)
+- `prefers-reduced-motion` handling for chart tooltips/axes and the voice orb animation (this branch)
+- Skip-to-content link, `id="main-content"` focus targets, and accessible names/mobile touch targets across chat and tool UI (this branch)
+
+### Changed
+
+- Manifest-driven Tool UI runtime; 5 display tools migrated to the directory pattern (#197, Add manifest-driven Tool UI runtime)
+- Chat stack aligned with the AI SDK v6 contract, then migrated again to AI SDK 7 on this branch (Align chat stack with AI SDK v6 contract; this branch)
+- `render-message` legacy compatibility paths reduced; `parts` table and backward-compat code removed from the DB layer (#202, #200)
+- DeepSeek reasoning now streams with per-step Thoughts disclosures coalesced, and DeepSeek models mirror through the Gateway fallback (#234, #226)
+- Text models standardized on OpenRouter, with fallback when the OpenRouter key is missing (#224, #225)
+- Docs corrected for accuracy drift against current source: eval count (9, not 7), configurable `DAILY_CHAT_LIMIT`, `FILE-INDEX.md` entries (#243, #242), and agent-instruction stale references (#251)
+- Dependency refresh: Next 16.3.5, React 19.3, `tailwind-merge` 3, `next-themes` 0.4, `sonner` 2, `lucide-react` 1.x, `@supabase/ssr`, `@vercel/analytics`, `exa-js` 2, `streamdown` 2; unused `node-html-parser` dependency dropped (this branch)
+- `services/types.ts` reformatted for Prettier 3.9 (this branch)
+
+### Fixed
+
+- Canvas fullscreen view sandboxed (`Content-Security-Policy: sandbox allow-scripts`) to block session-cookie exfiltration via attacker-controlled canvas HTML (#252)
+- Security audit fixes: open-redirect bypass via backslash/control-char paths, raw upstream error text no longer reflected to clients, empty first-turn token-budget handling, unbounded crawl concurrency bounded, JSDOM leak closed, pooled-connection deadlock in `updateChatVisibility`, Redis rate-limit timer leak, and other correctness/resource issues from a full-codebase audit (#257)
+- Security hardening: timing-safe comparison for cron/eval shared secrets, clamped pagination on `/api/chats`, validated and rate-limited site-feedback submissions, feedback `SELECT` policy restricted to row owner (#255)
+- Four silent gaps in Phoenix span coverage: aborted chats now flush traces unconditionally, `OPENINFERENCE_HIDE_INPUTS`/`OUTPUTS` now actually mask AI SDK span input/output, image-generation and trending-suggestions LLM calls are now traced (#263)
+- Golden eval validator now judges production-shaped context; fail-fast on invalid eval config, fail-closed gating (safety hard gate, judge-error separation), replay drop-rate gate applied to capability/regression suites, judge-call timeouts (#262)
+- Empty chat routes (#241); `DateTicker` key collisions when month/day labels repeat (#238)
+- Optimistic-concurrency and atomic-counter fixes for canvas and rate-limit, dead surface removed (this branch)
+- Tool/binary context counting, tool-pair integrity, and restored span metadata in streaming (this branch)
+- OpenRouter provider now declares a v4 `specificationVersion` so AI SDK 7's registry no longer routes it through the v2 shim, which double-wrapped `finishReason` and broke the chat stream's `finish` chunk (this branch)
+
+### Security
+
+- Server Action exposure, an SSRF sink, and unauthenticated feedback writes closed — guests can no longer submit message feedback (this branch)
+- 78 of 80 audit-flagged dependency vulnerabilities patched across root and `services/evals` (#254)
+- Ollama startup validation check removed as dead code once its per-request callers were removed in #257 (#258)
+
 ## [0.2.0] - 2026-05-04
 
 ### Added

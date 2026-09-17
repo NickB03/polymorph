@@ -88,6 +88,13 @@ export function CanvasPreview() {
   const artifactId = artifact?.artifactId ?? null
   const pendingArtifactId = pendingWorkspace?.artifactId ?? null
 
+  // Mirror of the focused artifact id, read by in-flight async callbacks so a
+  // late response cannot install state for an artifact the user left.
+  const artifactIdRef = useRef(artifactId)
+  useEffect(() => {
+    artifactIdRef.current = artifactId
+  }, [artifactId])
+
   const activeCompileProgress = useMemo(() => {
     if (!compileProgress) return null
 
@@ -118,7 +125,7 @@ export function CanvasPreview() {
 
   const postRuntimeDiagnostics = useCallback(
     async (
-      artifactId: string,
+      targetArtifactId: string,
       draftRevision: number,
       diagnostics: CanvasDiagnostic[]
     ) => {
@@ -132,7 +139,7 @@ export function CanvasPreview() {
         }
 
         const res = await fetch(
-          `/api/canvas-artifacts/${artifactId}/runtime-diagnostics`,
+          `/api/canvas-artifacts/${targetArtifactId}/runtime-diagnostics`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -143,6 +150,8 @@ export function CanvasPreview() {
         if (!res.ok) return
 
         const state: CanvasArtifactState = await res.json()
+        // The user may have switched artifacts while this was in flight
+        if (state.artifactId !== artifactIdRef.current) return
         setArtifact(state)
       } catch {
         // Silently ignore — diagnostics are best-effort

@@ -1,5 +1,6 @@
-'use server'
-
+// Server-only: this helper takes a caller-supplied userId and must never be
+// exposed as a Server Action (its only caller is app/api/feedback/route.ts,
+// which authenticates first).
 import { eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
@@ -13,7 +14,7 @@ export type MessageFeedbackUpdateResult =
       chatId: string
       metadata: UIMessageMetadata | null
     }
-  | { success: false; error?: string }
+  | { success: false; error?: string; notFound?: true }
 
 export async function updateMessageFeedback(
   messageId: string,
@@ -36,7 +37,7 @@ export async function updateMessageFeedback(
           .limit(1)
 
         if (!currentMessage) {
-          return { success: false, error: 'Message not found' }
+          return { success: false, error: 'Message not found', notFound: true }
         }
 
         // Merge the feedback score with existing metadata
@@ -45,11 +46,22 @@ export async function updateMessageFeedback(
           feedbackScore: score
         }
 
-        // Update the message with the new feedback score
-        await tx
+        // Update the message with the new feedback score. RLS can make the
+        // UPDATE a no-op even though the SELECT above succeeded, so treat a
+        // zero-row result as a failure rather than reporting success.
+        const updated = await tx
           .update(messages)
           .set({ metadata: updatedMetadata })
           .where(eq(messages.id, messageId))
+          .returning({ id: messages.id })
+
+        if (updated.length === 0) {
+          return {
+            success: false,
+            error: 'Feedback update affected no rows',
+            notFound: true
+          }
+        }
 
         return {
           success: true,

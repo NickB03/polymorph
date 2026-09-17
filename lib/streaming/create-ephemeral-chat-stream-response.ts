@@ -25,7 +25,10 @@ import { hasPendingInteractiveTool } from './helpers/has-pending-interactive-too
 import { inlineFileUrls } from './helpers/inline-file-urls'
 import { hasNativeInteractiveToolOutput } from './helpers/native-tool-output-continuation'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
-import { stripReasoningParts } from './helpers/strip-reasoning-parts'
+import {
+  needsReasoningStrip,
+  stripReasoningParts
+} from './helpers/strip-reasoning-parts'
 import { createCanvasEmitter } from './helpers/write-canvas-data'
 import { BaseStreamConfig } from './types'
 
@@ -75,9 +78,8 @@ export async function createEphemeralChatStreamResponse(
     originalMessages: messages,
     execute: async ({ writer }: { writer: UIMessageStreamWriter }) => {
       const executeBody = async () => {
-        const isOpenAI = modelId.startsWith('openai:')
         const validatedMessages = await validationContract.validate(messages)
-        const messagesToConvert = isOpenAI
+        const messagesToConvert = needsReasoningStrip(modelId)
           ? stripReasoningParts(validatedMessages)
           : validatedMessages
 

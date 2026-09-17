@@ -1,5 +1,5 @@
 import { ModelMessage } from 'ai'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import { Model } from '@/lib/types/models'
 
@@ -247,6 +247,201 @@ describe('context-window', () => {
       // Without model ID - should use fallback
       const resultWithoutModel = truncateMessages(messages, 1000)
       expect(resultWithoutModel).toBeDefined()
+    })
+  })
+
+  describe('tool and binary parts', () => {
+    test('charges tool results against the budget instead of counting zero', () => {
+      // Spaced words, not one unbroken run: BPE is ~quadratic on a single
+      // whitespace-free chunk and times out under coverage on CI.
+      const bigOutput = 'search result text '.repeat(400)
+      const messages: ModelMessage[] = [
+        createMessage('user', 'first question'),
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'call-1',
+              toolName: 'search',
+              input: { query: 'something' }
+            }
+          ]
+        },
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId: 'call-1',
+              toolName: 'search',
+              output: { type: 'text', value: bigOutput }
+            }
+          ]
+        },
+        createMessage('user', 'latest question')
+      ]
+
+      // Budget is far smaller than the serialized tool result, so truncation
+      // must kick in. Before the fix the tool result counted as 0 tokens and
+      // every message was returned untouched.
+      const result = truncateMessages(messages, 200, 'gpt-4o-mini')
+
+      expect(result.length).toBeLessThan(messages.length)
+    })
+
+    test('charges binary file parts against the budget', () => {
+      const messages: ModelMessage[] = [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'file',
+              data: new Uint8Array(750_000),
+              mediaType: 'image/png'
+            }
+          ]
+        },
+        createMessage('user', 'what is in this image?')
+      ]
+
+      const result = truncateMessages(messages, 500, 'gpt-4o-mini')
+
+      expect(result).toEqual([messages[1]])
+    })
+
+    test('caps image cost but not other binary files', () => {
+      const bigFile = (mediaType: string): ModelMessage => ({
+        role: 'user',
+        content: [
+          { type: 'file', data: new Uint8Array(5_000_000), mediaType },
+          { type: 'text', text: 'what is this?' }
+        ]
+      })
+      const photo = [bigFile('image/jpeg')]
+      const pdf = [bigFile('application/pdf'), createMessage('user', 'and?')]
+
+      // 5 MB / 750 ≈ 6.7k tokens uncapped; an image is capped at 1600.
+      expect(truncateMessages(photo, 2000, 'gpt-4o-mini')).toBe(photo)
+      expect(truncateMessages(pdf, 2000, 'gpt-4o-mini')).toEqual([pdf[1]])
+    })
+
+    test('bills base64 media in tool results as capped media, not text', () => {
+      const messages: ModelMessage[] = [
+        createMessage('user', 'draw a cat'),
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'call-1',
+              toolName: 'image',
+              input: {}
+            }
+          ]
+        },
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId: 'call-1',
+              toolName: 'image',
+              output: {
+                type: 'content',
+                value: [
+                  { type: 'text', text: 'here it is' },
+                  {
+                    type: 'image-data',
+                    data: 'A'.repeat(4_000_000),
+                    mediaType: 'image/png'
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+
+      // As text this is ~1M tokens; as a capped image it is 1600.
+      expect(truncateMessages(messages, 2000, 'gpt-4o-mini')).toBe(messages)
+    })
+
+    test('measures each message once per request', () => {
+      const input = { query: 'filler words here '.repeat(200) }
+      const messages: ModelMessage[] = [
+        createMessage('user', 'first question'),
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'call-1',
+              toolName: 'search',
+              input
+            }
+          ]
+        },
+        createMessage('user', 'latest question')
+      ]
+      const stringify = vi.spyOn(JSON, 'stringify')
+
+      maybeTruncateMessages(messages, { ...mockModel, id: 'unknown-model' })
+      truncateMessages(messages, 100, 'unknown-model')
+
+      expect(stringify.mock.calls.filter(([v]) => v === input)).toHaveLength(1)
+      stringify.mockRestore()
+    })
+
+    test('drops tool results orphaned by truncation', () => {
+      const filler = 'filler words here '.repeat(200)
+      const messages: ModelMessage[] = [
+        createMessage('user', 'first question'),
+        createMessage('assistant', filler),
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'call-1',
+              toolName: 'search',
+              input: { query: filler }
+            }
+          ]
+        },
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId: 'call-1',
+              toolName: 'search',
+              output: { type: 'text', value: 'short result' }
+            }
+          ]
+        },
+        createMessage('user', 'latest question')
+      ]
+
+      const result = truncateMessages(messages, 300, 'gpt-4o-mini')
+
+      const keptToolCallIds = new Set(
+        result.flatMap(msg =>
+          msg.role === 'assistant' && Array.isArray(msg.content)
+            ? msg.content
+                .filter(part => part.type === 'tool-call')
+                .map(part => part.toolCallId)
+            : []
+        )
+      )
+      for (const msg of result) {
+        if (msg.role !== 'tool' || !Array.isArray(msg.content)) continue
+        for (const part of msg.content) {
+          if (!('toolCallId' in part)) continue
+          expect(keptToolCallIds.has(part.toolCallId)).toBe(true)
+        }
+      }
+      expect(result.some(msg => msg.role === 'tool')).toBe(false)
     })
   })
 })

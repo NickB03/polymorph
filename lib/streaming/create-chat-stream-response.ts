@@ -32,7 +32,11 @@ import { hasNativeInteractiveToolOutput } from './helpers/native-tool-output-con
 import { persistStreamResults } from './helpers/persist-stream-results'
 import { prepareMessages } from './helpers/prepare-messages'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
-import { stripReasoningParts } from './helpers/strip-reasoning-parts'
+import {
+  needsReasoningStrip,
+  stripReasoningParts,
+  toReplaySafeAbortedMessage
+} from './helpers/strip-reasoning-parts'
 import type { StreamContext } from './helpers/types'
 import { createCanvasEmitter } from './helpers/write-canvas-data'
 import { BaseStreamConfig } from './types'
@@ -123,6 +127,9 @@ export async function createChatStreamResponse(
   const isNativeToolOutputContinuation =
     hasNativeInteractiveToolOutput(requestMessages)
   let prefetchedMessages: UIMessage[] | undefined
+  // The persisted message this response answers, and when we saw it. Used to
+  // drop an aborted partial if the chat moved on before onFinish ran.
+  let answered: { id: string; at: Date } | undefined
 
   if (isNativeToolOutputContinuation) {
     try {
@@ -184,6 +191,8 @@ export async function createChatStreamResponse(
               prefetchedMessages ??
               (await prepareMessages(context, requestMessages))
             perfTime('prepareMessages completed (stream)', prepareStart)
+            const answeredId = messagesToModel.at(-1)?.id
+            if (answeredId) answered = { id: answeredId, at: new Date() }
 
             const validatedMessages =
               await validationContract.validate(messagesToModel)
@@ -230,17 +239,11 @@ export async function createChatStreamResponse(
               imageToolContext: { userId, chatId }
             })
 
-            // Strip reasoning parts from prior assistant turns before conversion:
-            // - OpenAI's Responses API requires reasoning items and their following items to be kept together
-            //   (see: https://github.com/vercel/ai/issues/11036)
-            // - DeepSeek (via OpenRouter) attaches provider-specific `reasoning_details` metadata that
-            //   should not be replayed on the next turn; replaying it risks 400s or silent drops.
-            // The current turn's streamed reasoning is unaffected — it flows through writer.merge(),
-            // not through messagesToConvert.
-            const needsReasoningStrip =
-              context.modelId.startsWith('openai:') ||
-              context.modelId.startsWith('openrouter:deepseek/')
-            const messagesToConvert = needsReasoningStrip
+            // Strip reasoning parts from prior assistant turns before
+            // conversion (see needsReasoningStrip). The current turn's
+            // streamed reasoning is unaffected — it flows through
+            // writer.merge(), not through messagesToConvert.
+            const messagesToConvert = needsReasoningStrip(context.modelId)
               ? stripReasoningParts(validatedMessages)
               : validatedMessages
 
@@ -360,11 +363,27 @@ export async function createChatStreamResponse(
     },
     onFinish: async ({ responseMessage, isAborted }) => {
       try {
-        if (!isAborted && responseMessage) {
+        // Aborted streams still carry whatever the model produced before the
+        // client disconnected; dropping it loses the visible partial answer.
+        // Only the replay-safe parts are kept: an unfinished tool call or a
+        // reasoning-only message would break the next turn.
+        const messageToPersist =
+          responseMessage && isAborted
+            ? toReplaySafeAbortedMessage(responseMessage)
+            : responseMessage
+        // Stop followed by a new message, retry, or edit can reach the DB
+        // before this onFinish does. Messages order by insert time, so a late
+        // partial would land after the newer turn (or resurrect a deleted one).
+        if (isAborted && !answered) return
+        const staleGuard =
+          isAborted && answered
+            ? { latestId: answered.id, since: answered.at }
+            : undefined
+        if (messageToPersist) {
           try {
             // Persist stream results to database
             await persistStreamResults(
-              responseMessage,
+              messageToPersist,
               chatId,
               userId,
               titlePromise,
@@ -374,7 +393,8 @@ export async function createChatStreamResponse(
               context.pendingInitialSave,
               context.pendingInitialUserMessage,
               modelType,
-              otelTraceId
+              otelTraceId,
+              staleGuard
             )
           } catch (error) {
             console.error(
