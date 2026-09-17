@@ -11,18 +11,18 @@
     "validate": "EVAL_RUN_MODE=traffic-monitor bun run src/golden/validate.ts"
   },
   "dependencies": {
-    "@openrouter/ai-sdk-provider": "^2.9.0",
-    "@arizeai/phoenix-client": "6.6.0",
-    "@arizeai/phoenix-evals": "1.0.2",
+    "@openrouter/ai-sdk-provider": "^3.0.0",
+    "@arizeai/phoenix-client": "^7.11.0",
+    "@arizeai/phoenix-evals": "^2.5.0",
     "@paralleldrive/cuid2": "^2.3.1",
     "@supabase/ssr": "^0.6.1",
-    "ai": "^6.0.199",
+    "ai": "^7.0.105",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.9"
   },
   "devDependencies": {
-    "@types/bun": "~1.2.23",
+    "@types/bun": "~1.4.0",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.6"
+    "vitest": "^3.2.7"
   }
 }
