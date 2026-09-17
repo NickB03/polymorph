@@ -44,3 +44,29 @@ export function stripReasoningParts(messages: UIMessage[]): UIMessage[] {
     return { ...msg, parts: filteredParts }
   })
 }
+
+const SETTLED_TOOL_STATES = new Set(['output-available', 'output-error'])
+
+/**
+ * Reduces an aborted assistant message to the parts that are safe to persist
+ * and replay on the next turn, or returns null when nothing visible is left.
+ *
+ * - A tool call cut off before its result would be replayed as a tool-call
+ *   with no tool-result, which providers reject.
+ * - A reasoning-only message survives `stripReasoningParts` untouched (it keeps
+ *   all-reasoning messages), so persisting one would replay provider reasoning
+ *   metadata. It also has no visible answer worth keeping.
+ */
+export function toReplaySafeAbortedMessage(
+  message: UIMessage
+): UIMessage | null {
+  const parts = (message.parts ?? []).filter(part => {
+    if (part.type === 'text') return part.text.trim().length > 0
+    if ('toolCallId' in part) return SETTLED_TOOL_STATES.has(part.state)
+    return true
+  })
+  const hasVisibleContent = parts.some(
+    part => part.type === 'text' || 'toolCallId' in part
+  )
+  return hasVisibleContent ? { ...message, parts } : null
+}

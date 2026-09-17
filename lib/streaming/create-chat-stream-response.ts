@@ -34,7 +34,8 @@ import { prepareMessages } from './helpers/prepare-messages'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
 import {
   needsReasoningStrip,
-  stripReasoningParts
+  stripReasoningParts,
+  toReplaySafeAbortedMessage
 } from './helpers/strip-reasoning-parts'
 import type { StreamContext } from './helpers/types'
 import { createCanvasEmitter } from './helpers/write-canvas-data'
@@ -359,12 +360,17 @@ export async function createChatStreamResponse(
       try {
         // Aborted streams still carry whatever the model produced before the
         // client disconnected; dropping it loses the visible partial answer.
-        const hasContent = (responseMessage?.parts?.length ?? 0) > 0
-        if (responseMessage && (!isAborted || hasContent)) {
+        // Only the replay-safe parts are kept: an unfinished tool call or a
+        // reasoning-only message would break the next turn.
+        const messageToPersist =
+          responseMessage && isAborted
+            ? toReplaySafeAbortedMessage(responseMessage)
+            : responseMessage
+        if (messageToPersist) {
           try {
             // Persist stream results to database
             await persistStreamResults(
-              responseMessage,
+              messageToPersist,
               chatId,
               userId,
               titlePromise,
