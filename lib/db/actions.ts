@@ -710,6 +710,10 @@ export async function createCanvasArtifactVersion(input: {
 /**
  * List all immutable versions for a canvas artifact, ordered by creation
  * time descending (newest first).
+ *
+ * Deliberately omits `sourceSnapshot`: it is the whole artifact source per
+ * row, and every caller but the restore path only needs the metadata. Use
+ * `loadCanvasArtifactVersionSnapshot` when the source is actually needed.
  */
 export async function listCanvasArtifactVersions(
   artifactId: string,
@@ -717,9 +721,65 @@ export async function listCanvasArtifactVersions(
 ) {
   return withOptionalRLS(userId ?? null, async tx => {
     return tx
-      .select()
+      .select({
+        id: canvasArtifactVersions.id,
+        artifactId: canvasArtifactVersions.artifactId,
+        versionNumber: canvasArtifactVersions.versionNumber,
+        createdBy: canvasArtifactVersions.createdBy,
+        createdAt: canvasArtifactVersions.createdAt
+      })
       .from(canvasArtifactVersions)
       .where(eq(canvasArtifactVersions.artifactId, artifactId))
       .orderBy(desc(canvasArtifactVersions.createdAt))
+  })
+}
+
+/**
+ * Load one version's source snapshot, scoped to its artifact.
+ */
+export async function loadCanvasArtifactVersionSnapshot(
+  versionId: string,
+  artifactId: string,
+  userId?: string | null
+) {
+  return withOptionalRLS(userId ?? null, async tx => {
+    const [version] = await tx
+      .select({
+        id: canvasArtifactVersions.id,
+        versionNumber: canvasArtifactVersions.versionNumber,
+        sourceSnapshot: canvasArtifactVersions.sourceSnapshot
+      })
+      .from(canvasArtifactVersions)
+      .where(
+        and(
+          eq(canvasArtifactVersions.id, versionId),
+          eq(canvasArtifactVersions.artifactId, artifactId)
+        )
+      )
+      .limit(1)
+
+    return version ?? null
+  })
+}
+
+/**
+ * Delete canvas artifact versions by id, scoped to their artifact.
+ */
+export async function deleteCanvasArtifactVersions(
+  artifactId: string,
+  versionIds: string[],
+  userId?: string | null
+) {
+  if (versionIds.length === 0) return
+
+  return withOptionalRLS(userId ?? null, async tx => {
+    await tx
+      .delete(canvasArtifactVersions)
+      .where(
+        and(
+          eq(canvasArtifactVersions.artifactId, artifactId),
+          inArray(canvasArtifactVersions.id, versionIds)
+        )
+      )
   })
 }

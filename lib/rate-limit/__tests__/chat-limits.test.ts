@@ -4,12 +4,15 @@ import { _resetMemoryLimiter } from '../memory-limiter'
 
 const mockGetRedis = vi.hoisted(() => vi.fn())
 
-vi.mock('../redis', () => ({ getRedis: mockGetRedis }))
+vi.mock('../redis', async importOriginal => ({
+  ...(await importOriginal<typeof import('../redis')>()),
+  getRedis: mockGetRedis
+}))
 
 import { checkAndEnforceOverallChatLimit } from '../chat-limits'
 
 function makeRedis() {
-  return { incr: vi.fn(), expire: vi.fn() }
+  return { eval: vi.fn() }
 }
 
 describe('checkAndEnforceOverallChatLimit', () => {
@@ -34,33 +37,26 @@ describe('checkAndEnforceOverallChatLimit', () => {
     await expect(checkAndEnforceOverallChatLimit('u1')).resolves.toBeNull()
   })
 
-  it('allows a request under the daily limit and sets the TTL on the first hit', async () => {
+  it('allows a request under the daily limit and sets the TTL atomically', async () => {
     const redis = makeRedis()
-    redis.incr.mockResolvedValue(1)
+    redis.eval.mockResolvedValue(1)
     mockGetRedis.mockReturnValue(redis)
 
     const res = await checkAndEnforceOverallChatLimit('u1')
 
     expect(res).toBeNull()
-    expect(redis.incr).toHaveBeenCalledWith(
-      expect.stringContaining('rl:chat:u1:')
+    // One round trip: the INCR cannot land without its EXPIRE
+    expect(redis.eval).toHaveBeenCalledOnce()
+    expect(redis.eval).toHaveBeenCalledWith(
+      expect.stringContaining('INCR'),
+      [expect.stringContaining('rl:chat:u1:')],
+      [expect.any(Number)]
     )
-    expect(redis.expire).toHaveBeenCalledOnce()
-  })
-
-  it('does not reset the TTL on subsequent hits', async () => {
-    const redis = makeRedis()
-    redis.incr.mockResolvedValue(2)
-    mockGetRedis.mockReturnValue(redis)
-
-    await checkAndEnforceOverallChatLimit('u1')
-
-    expect(redis.expire).not.toHaveBeenCalled()
   })
 
   it('returns a 429 with rate-limit metadata when the count exceeds the limit', async () => {
     const redis = makeRedis()
-    redis.incr.mockResolvedValue(101)
+    redis.eval.mockResolvedValue(101)
     mockGetRedis.mockReturnValue(redis)
 
     const res = await checkAndEnforceOverallChatLimit('u1')
@@ -76,7 +72,7 @@ describe('checkAndEnforceOverallChatLimit', () => {
   it('honors a custom DAILY_CHAT_LIMIT', async () => {
     vi.stubEnv('DAILY_CHAT_LIMIT', '50')
     const redis = makeRedis()
-    redis.incr.mockResolvedValue(51)
+    redis.eval.mockResolvedValue(51)
     mockGetRedis.mockReturnValue(redis)
 
     const res = await checkAndEnforceOverallChatLimit('u1')
@@ -88,7 +84,7 @@ describe('checkAndEnforceOverallChatLimit', () => {
   it('falls back to the default limit when DAILY_CHAT_LIMIT is invalid', async () => {
     vi.stubEnv('DAILY_CHAT_LIMIT', 'not-a-number')
     const redis = makeRedis()
-    redis.incr.mockResolvedValue(101)
+    redis.eval.mockResolvedValue(101)
     mockGetRedis.mockReturnValue(redis)
 
     const res = await checkAndEnforceOverallChatLimit('u1')
@@ -98,7 +94,7 @@ describe('checkAndEnforceOverallChatLimit', () => {
 
   it('falls back to the in-memory limiter (1 req / 10s) when Redis throws', async () => {
     const redis = makeRedis()
-    redis.incr.mockRejectedValue(new Error('redis down'))
+    redis.eval.mockRejectedValue(new Error('redis down'))
     mockGetRedis.mockReturnValue(redis)
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 

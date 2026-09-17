@@ -132,6 +132,9 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   // opens of the same artifact (the auto-open effect can fire repeatedly
   // during streaming as canvas state changes trigger re-renders).
   const openingRef = useRef<string | null>(null)
+  // Bumped whenever the target artifact changes or the workspace closes, so a
+  // slow in-flight fetch cannot apply its state over a newer one.
+  const loadGenerationRef = useRef(0)
   const artifactChatIdRef = useRef<string | null>(null)
 
   const isWorkspaceOpen = !!(artifact || isLoading || pendingWorkspace)
@@ -173,6 +176,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
       if (openingRef.current === id) return // Already fetching this artifact
 
       openingRef.current = id
+      const generation = ++loadGenerationRef.current
       clearWorkspaceState()
       setArtifactId(id)
       setIsLoading(true)
@@ -186,14 +190,17 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
         const url = buildUrl(id, '', effectiveGuestToken, chatId)
         const res = await fetch(url)
+        if (generation !== loadGenerationRef.current) return
         if (!res.ok) {
           console.error('Failed to load canvas artifact:', res.status)
           setArtifact(null)
           return
         }
         const state: CanvasArtifactState = await res.json()
+        if (generation !== loadGenerationRef.current) return
         applyState(state)
       } catch (err) {
+        if (generation !== loadGenerationRef.current) return
         console.error('Error loading canvas artifact:', err)
         setArtifact(null)
       } finally {
@@ -225,6 +232,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
   const closeWorkspace = useCallback(() => {
     openingRef.current = null
+    loadGenerationRef.current++
     artifactChatIdRef.current = null
     setArtifact(null)
     setArtifactId(null)
@@ -282,6 +290,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   const reloadArtifact = useCallback(async () => {
     if (!artifactId) return
 
+    const generation = ++loadGenerationRef.current
     setIsLoading(true)
     try {
       const url = buildUrl(
@@ -291,16 +300,21 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         artifactChatIdRef.current
       )
       const res = await fetch(url)
+      if (generation !== loadGenerationRef.current) return
       if (!res.ok) {
         console.error('Failed to reload canvas artifact:', res.status)
         return
       }
       const state: CanvasArtifactState = await res.json()
+      if (generation !== loadGenerationRef.current) return
       applyState(state)
     } catch (err) {
+      if (generation !== loadGenerationRef.current) return
       console.error('Error reloading canvas artifact:', err)
     } finally {
-      setIsLoading(false)
+      if (generation === loadGenerationRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [artifactId, applyState])
 

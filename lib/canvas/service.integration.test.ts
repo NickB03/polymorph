@@ -7,6 +7,8 @@ const mockEnsureChatRecord = vi.fn()
 const mockListCanvasArtifactVersions = vi.fn()
 const mockLoadCanvasArtifactByChatId = vi.fn()
 const mockLoadCanvasArtifactById = vi.fn()
+const mockDeleteCanvasArtifactVersions = vi.fn()
+const mockLoadCanvasArtifactVersionSnapshot = vi.fn()
 const mockUpdateCanvasArtifactDiagnosticsOnly = vi.fn()
 const mockUpdateCanvasArtifactDraft = vi.fn()
 
@@ -15,6 +17,8 @@ vi.mock('@/lib/db/actions', () => ({
     mockCreateCanvasArtifact(...args),
   createCanvasArtifactVersion: (...args: unknown[]) =>
     mockCreateCanvasArtifactVersion(...args),
+  deleteCanvasArtifactVersions: (...args: unknown[]) =>
+    mockDeleteCanvasArtifactVersions(...args),
   ensureChatRecord: (...args: unknown[]) => mockEnsureChatRecord(...args),
   listCanvasArtifactVersions: (...args: unknown[]) =>
     mockListCanvasArtifactVersions(...args),
@@ -22,6 +26,8 @@ vi.mock('@/lib/db/actions', () => ({
     mockLoadCanvasArtifactByChatId(...args),
   loadCanvasArtifactById: (...args: unknown[]) =>
     mockLoadCanvasArtifactById(...args),
+  loadCanvasArtifactVersionSnapshot: (...args: unknown[]) =>
+    mockLoadCanvasArtifactVersionSnapshot(...args),
   updateCanvasArtifactDiagnosticsOnly: (...args: unknown[]) =>
     mockUpdateCanvasArtifactDiagnosticsOnly(...args),
   updateCanvasArtifactDraft: (...args: unknown[]) =>
@@ -245,9 +251,9 @@ describe('canvas service compile integration', () => {
 
   it('preserves compile diagnostics for restoreCanvasArtifactVersion failures', async () => {
     installStatefulDraftMocks(makeArtifactRow({ draftRevision: 2 }))
-    mockListCanvasArtifactVersions.mockResolvedValue([
+    mockLoadCanvasArtifactVersionSnapshot.mockResolvedValue(
       makeVersionRow({ sourceSnapshot: validCompileFailureSource })
-    ])
+    )
 
     const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 

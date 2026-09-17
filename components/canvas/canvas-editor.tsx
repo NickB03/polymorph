@@ -76,6 +76,7 @@ export function CanvasEditor() {
 
   // ── Debounce + inflight tracking ──────────────────────────────────
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inflightRef = useRef(false)
   const editSequenceRef = useRef(0)
   const requestSequenceRef = useRef(0)
@@ -164,7 +165,8 @@ export function CanvasEditor() {
       // outer `doSave` binding.
       if (pendingSaveRef.current) {
         pendingSaveRef.current = false
-        setTimeout(() => {
+        retryRef.current = setTimeout(() => {
+          retryRef.current = null
           void doSaveInner(localSourceRef.current)
         }, 0)
       }
@@ -185,11 +187,14 @@ export function CanvasEditor() {
     [doSave]
   )
 
-  // Cleanup debounce on unmount
+  // Cleanup pending timers on unmount
   useEffect(() => {
     return () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current)
+      }
+      if (retryRef.current) {
+        clearTimeout(retryRef.current)
       }
     }
   }, [])

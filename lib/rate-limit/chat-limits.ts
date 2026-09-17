@@ -2,7 +2,7 @@ import { isCloudDeployment } from '@/lib/utils'
 import { perfLog } from '@/lib/utils/perf-logging'
 
 import { checkMemoryLimit } from './memory-limiter'
-import { getRedis } from './redis'
+import { getRedis, incrWithTtl } from './redis'
 
 const DEFAULT_DAILY_CHAT_LIMIT = 100
 
@@ -60,18 +60,13 @@ async function checkOverallChatLimit(userId: string): Promise<{
 
     let timeout: ReturnType<typeof setTimeout> | undefined
     const count = await Promise.race([
-      redis.incr(key),
+      incrWithTtl(redis, key, getSecondsUntilMidnight()),
       new Promise<number>((_, reject) => {
         timeout = setTimeout(() => reject(new Error('Redis timeout')), 3000)
       })
     ]).finally(() => {
       if (timeout) clearTimeout(timeout)
     })
-
-    if (count === 1) {
-      const secondsUntilMidnight = getSecondsUntilMidnight()
-      await redis.expire(key, secondsUntilMidnight)
-    }
 
     const remaining = Math.max(0, limit - count)
     const resetAt = getNextMidnightTimestamp()

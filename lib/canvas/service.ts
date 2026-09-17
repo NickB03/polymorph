@@ -1,5 +1,3 @@
-import { eq } from 'drizzle-orm'
-
 import {
   compileCanvasArtifact,
   type CompileCanvasArtifactResult
@@ -10,15 +8,16 @@ import { validateCanvasSource } from '@/lib/canvas/validation/validate-canvas-so
 import {
   createCanvasArtifact as dbCreateCanvasArtifact,
   createCanvasArtifactVersion as dbCreateCanvasArtifactVersion,
+  deleteCanvasArtifactVersions,
   ensureChatRecord,
   listCanvasArtifactVersions,
   loadCanvasArtifactByChatId,
   loadCanvasArtifactById,
+  loadCanvasArtifactVersionSnapshot,
   updateCanvasArtifactDiagnosticsOnly,
   updateCanvasArtifactDraft
 } from '@/lib/db/actions'
-import { canvasArtifactVersions, generateId } from '@/lib/db/schema'
-import { withOptionalRLS } from '@/lib/db/with-rls'
+import { generateId } from '@/lib/db/schema'
 import type {
   CanvasArtifactStatus,
   CanvasCompileProgressPayload,
@@ -187,13 +186,11 @@ async function enforceVersionCap(
     .filter(v => v.id !== currentVersionId)
     .slice(0, deleteCount)
 
-  for (const v of deletableVersions) {
-    await withOptionalRLS(userId ?? null, async tx => {
-      await tx
-        .delete(canvasArtifactVersions)
-        .where(eq(canvasArtifactVersions.id, v.id))
-    })
-  }
+  await deleteCanvasArtifactVersions(
+    artifactId,
+    deletableVersions.map(v => v.id),
+    userId
+  )
 }
 
 const CREATE_COMPILE_TITLE = 'Canvas Artifact'
@@ -391,7 +388,7 @@ export async function createCanvasArtifactFromSource(input: {
   }
 
   // Update draft with compiled HTML and diagnostics
-  await updateCanvasArtifactDraft({
+  const compiled = await updateCanvasArtifactDraft({
     artifactId: artifact.id,
     expectedRevision: 0,
     draftCompiledHtml: compileResult.html ?? null,
@@ -400,6 +397,14 @@ export async function createCanvasArtifactFromSource(input: {
     lastCompiledAt: new Date(),
     userId: input.userId
   })
+
+  if (!compiled) {
+    return {
+      ok: false,
+      error: 'Draft revision is stale',
+      errorCode: 'stale-revision'
+    }
+  }
 
   // Auto-create version on successful compile
   const versionNumber = 1
@@ -411,13 +416,22 @@ export async function createCanvasArtifactFromSource(input: {
     userId: input.userId
   })
 
-  // Update currentVersionId (revision is now 1 after the draft update)
-  await updateCanvasArtifactDraft({
+  // Update currentVersionId, chaining off the revision the compile write
+  // produced rather than assuming nothing else touched the draft.
+  const linked = await updateCanvasArtifactDraft({
     artifactId: artifact.id,
-    expectedRevision: 1,
+    expectedRevision: compiled.draftRevision,
     currentVersionId: version.id,
     userId: input.userId
   })
+
+  if (!linked) {
+    return {
+      ok: false,
+      error: 'Draft revision is stale',
+      errorCode: 'stale-revision'
+    }
+  }
 
   const state = await buildArtifactState(artifact.id, input.userId)
   return { ok: true, artifact: state ?? undefined }
@@ -605,12 +619,12 @@ export async function restoreCanvasArtifactVersion(input: {
   expectedRevision: number
   userId?: string | null
 }): Promise<CanvasServiceResult> {
-  // Load the version
-  const versions = await listCanvasArtifactVersions(
+  // Load the version (scoped to this artifact)
+  const version = await loadCanvasArtifactVersionSnapshot(
+    input.versionId,
     input.artifactId,
     input.userId
   )
-  const version = versions.find(v => v.id === input.versionId)
   if (!version) {
     return { ok: false, error: 'Version not found', errorCode: 'not-found' }
   }
@@ -723,12 +737,20 @@ export async function recordCanvasRuntimeDiagnostics(input: {
     runtime: input.diagnostics
   }
 
-  await updateCanvasArtifactDiagnosticsOnly({
+  const recorded = await updateCanvasArtifactDiagnosticsOnly({
     artifactId: input.artifactId,
     expectedRevision: input.draftRevision,
     draftDiagnostics: updatedDiagnostics,
     userId: input.userId
   })
+
+  if (!recorded) {
+    return {
+      ok: false,
+      error: 'Draft revision does not match',
+      errorCode: 'stale-revision'
+    }
+  }
 
   const state = await buildArtifactState(input.artifactId, input.userId)
   return { ok: true, artifact: state ?? undefined }

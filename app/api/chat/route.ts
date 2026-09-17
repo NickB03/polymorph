@@ -87,23 +87,12 @@ export async function POST(req: Request) {
       }
     }
 
-    const referer = req.headers.get('referer')
-    const isSharePage = referer?.includes('/share/')
-
     const authStart = performance.now()
     const [userId, cookieStore] = await Promise.all([
       getCurrentUserId(),
       cookies()
     ])
     perfTime('Auth completed', authStart)
-
-    if (isSharePage) {
-      return jsonError(
-        'FORBIDDEN',
-        'Chat API is not available on share pages',
-        403
-      )
-    }
 
     const guestChatEnabled = process.env.ENABLE_GUEST_CHAT === 'true'
     const isGuest = !userId

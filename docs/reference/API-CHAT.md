@@ -86,7 +86,6 @@ The response is a streaming SSE connection. Message parts (text, search results,
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `400 Bad Request`           | Missing/non-array `messages`, singular-message payloads, retired tool-continuation payloads, unknown triggers, or missing `messageId` for regenerate. |
 | `401 Unauthorized`          | No authenticated user and guest mode is disabled.                                                                                                     |
-| `403 Forbidden`             | Request originated from a `/share/` page. Chat API is blocked on share pages.                                                                         |
 | `404 Not Found`             | Selected AI provider is not enabled in the registry.                                                                                                  |
 | `429 Too Many Requests`     | Authenticated user exceeded daily chat limit or guest rate limit exceeded in cloud deployments.                                                       |
 | `500 Internal Server Error` | Unexpected server error during processing.                                                                                                            |

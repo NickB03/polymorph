@@ -15,9 +15,8 @@ The React `Chat` component (`components/chat.tsx`) uses the AI SDK's `useChat` h
 
 1. Parses the request body
 2. Validates the AI SDK v6 body (`messages` must be a non-empty array; `messageId` is required for regenerate)
-3. Checks if the request originates from a share page (blocked with 403)
-4. Authenticates the user via `getCurrentUserId()`
-5. Determines guest status and enforces rate limits (`checkAndEnforceGuestLimit` or `checkAndEnforceOverallChatLimit`)
+3. Authenticates the user via `getCurrentUserId()`
+4. Determines guest status and enforces rate limits (`checkAndEnforceGuestLimit` or `checkAndEnforceOverallChatLimit`)
 
 ## 3. Model Selection
 

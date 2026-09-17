@@ -56,6 +56,33 @@ function parseSql(expression: unknown) {
   return dialect.sqlToQuery(expression as any)
 }
 
+// Drizzle SQL fragments in an UPDATE ... SET must be evaluated against the
+// row, or the stored value stays an SQL object and any later use of it (e.g.
+// chaining the next optimistic-concurrency check off the returned revision)
+// renders as nonsense.
+function resolvePatch(patch: Row, row: Row): Row {
+  const resolved: Row = {}
+
+  for (const [key, value] of Object.entries(patch)) {
+    if (!value || typeof value !== 'object' || !('queryChunks' in value)) {
+      resolved[key] = value
+      continue
+    }
+
+    const rendered = parseSql(value).sql.trim()
+    const increment = rendered.match(/^"[^"]+"\."[^"]+" \+ (\d+)$/)
+    if (!increment) {
+      throw new Error(
+        `Unsupported rendered set expression in test DB: ${rendered}`
+      )
+    }
+
+    resolved[key] = Number(row[key] ?? 0) + Number(increment[1])
+  }
+
+  return resolved
+}
+
 function normalizeValue(value: unknown) {
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
     return new Date(value).getTime()
@@ -518,7 +545,7 @@ class UpdateBuilder {
       )
 
     for (const row of rows) {
-      const nextRow = { ...row, ...this.patch }
+      const nextRow = { ...row, ...resolvePatch(this.patch, row) }
       assertWriteAccess(this.store, this.table, nextRow, this.currentUserId)
       Object.assign(row, nextRow)
     }

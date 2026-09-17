@@ -1,7 +1,7 @@
 import { isCloudDeployment } from '@/lib/utils'
 
 import { checkMemoryLimit } from './memory-limiter'
-import { getRedis } from './redis'
+import { getRedis, incrWithTtl } from './redis'
 
 const DEFAULT_GUEST_DAILY_LIMIT = 10
 
@@ -48,18 +48,13 @@ async function checkGuestLimit(ip: string): Promise<{
     const key = `rl:guest:chat:${ip}:${dateKey}`
     let timeout: ReturnType<typeof setTimeout> | undefined
     const count = await Promise.race([
-      redis.incr(key),
+      incrWithTtl(redis, key, getSecondsUntilMidnight()),
       new Promise<number>((_, reject) => {
         timeout = setTimeout(() => reject(new Error('Redis timeout')), 3000)
       })
     ]).finally(() => {
       if (timeout) clearTimeout(timeout)
     })
-
-    if (count === 1) {
-      const secondsUntilMidnight = getSecondsUntilMidnight()
-      await redis.expire(key, secondsUntilMidnight)
-    }
 
     const limit = getGuestDailyLimit()
     const remaining = Math.max(0, limit - count)

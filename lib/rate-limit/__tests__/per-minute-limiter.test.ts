@@ -4,7 +4,10 @@ import { _resetMemoryLimiter } from '../memory-limiter'
 
 const mockGetRedis = vi.hoisted(() => vi.fn())
 
-vi.mock('../redis', () => ({ getRedis: mockGetRedis }))
+vi.mock('../redis', async importOriginal => ({
+  ...(await importOriginal<typeof import('../redis')>()),
+  getRedis: mockGetRedis
+}))
 
 import {
   checkPerMinuteLimit,
@@ -12,7 +15,7 @@ import {
 } from '../per-minute-limiter'
 
 function makeRedis() {
-  return { incr: vi.fn(), expire: vi.fn() }
+  return { eval: vi.fn() }
 }
 
 describe('checkPerMinuteLimit', () => {
@@ -45,24 +48,22 @@ describe('checkPerMinuteLimit', () => {
 
   it('allows requests under the limit and sets a 120s TTL on the first hit', async () => {
     const redis = makeRedis()
-    redis.incr.mockResolvedValue(1)
+    redis.eval.mockResolvedValue(1)
     mockGetRedis.mockReturnValue(redis)
 
     const result = await checkPerMinuteLimit('voice', 'u1', 5)
 
     expect(result).toMatchObject({ allowed: true, remaining: 4, limit: 5 })
-    expect(redis.incr).toHaveBeenCalledWith(
-      expect.stringContaining('rl:voice:u1:')
-    )
-    expect(redis.expire).toHaveBeenCalledWith(
-      expect.stringContaining('rl:voice:u1:'),
-      120
+    expect(redis.eval).toHaveBeenCalledWith(
+      expect.stringContaining('INCR'),
+      [expect.stringContaining('rl:voice:u1:')],
+      [120]
     )
   })
 
   it('treats a count equal to the limit as allowed with zero remaining', async () => {
     const redis = makeRedis()
-    redis.incr.mockResolvedValue(5)
+    redis.eval.mockResolvedValue(5)
     mockGetRedis.mockReturnValue(redis)
 
     await expect(checkPerMinuteLimit('voice', 'u1', 5)).resolves.toMatchObject({
@@ -73,7 +74,7 @@ describe('checkPerMinuteLimit', () => {
 
   it('blocks requests over the limit', async () => {
     const redis = makeRedis()
-    redis.incr.mockResolvedValue(6)
+    redis.eval.mockResolvedValue(6)
     mockGetRedis.mockReturnValue(redis)
 
     await expect(checkPerMinuteLimit('voice', 'u1', 5)).resolves.toMatchObject({
@@ -84,7 +85,7 @@ describe('checkPerMinuteLimit', () => {
 
   it('falls back to the in-memory limiter when Redis throws', async () => {
     const redis = makeRedis()
-    redis.incr.mockRejectedValue(new Error('redis down'))
+    redis.eval.mockRejectedValue(new Error('redis down'))
     mockGetRedis.mockReturnValue(redis)
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -110,7 +111,7 @@ describe('enforcePerMinuteLimit', () => {
 
   it('returns null when the request is allowed', async () => {
     const redis = makeRedis()
-    redis.incr.mockResolvedValue(1)
+    redis.eval.mockResolvedValue(1)
     mockGetRedis.mockReturnValue(redis)
 
     await expect(
@@ -120,7 +121,7 @@ describe('enforcePerMinuteLimit', () => {
 
   it('returns a 429 carrying the supplied error message when blocked', async () => {
     const redis = makeRedis()
-    redis.incr.mockResolvedValue(6)
+    redis.eval.mockResolvedValue(6)
     mockGetRedis.mockReturnValue(redis)
 
     const res = await enforcePerMinuteLimit(

@@ -14,7 +14,6 @@ flowchart TD
     POST["POST /api/chat"]
     Parse["Parse request body<br/>(messages, chatId, trigger)"]
     Auth["getCurrentUserId()"]
-    ShareCheck{"Referer is /share/?"}
     GuestCheck{"userId exists?"}
     GuestEnabled{"ENABLE_GUEST_CHAT<br/>= true?"}
     GuestLimit["checkAndEnforceGuestLimit()<br/>(extract IP from x-forwarded-for)"]
@@ -35,9 +34,7 @@ flowchart TD
     SSE["SSE Response to Client"]
 
     POST --> Parse --> Auth
-    Auth --> ShareCheck
-    ShareCheck -->|Yes| ForbidShare["403 Forbidden"]
-    ShareCheck -->|No| GuestCheck
+    Auth --> GuestCheck
     GuestCheck -->|No user| GuestEnabled
     GuestEnabled -->|No| Unauth["401 Unauthorized"]
     GuestEnabled -->|Yes| GuestLimit
