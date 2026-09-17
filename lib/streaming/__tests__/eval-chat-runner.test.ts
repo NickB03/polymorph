@@ -52,6 +52,9 @@ vi.mock('@/lib/utils/telemetry', () => ({
 }))
 
 vi.mock('@/lib/streaming/helpers/strip-reasoning-parts', () => ({
+  needsReasoningStrip: vi.fn((modelId: string) =>
+    modelId.startsWith('openai:')
+  ),
   stripReasoningParts: vi.fn((messages: unknown[]) => messages)
 }))
 

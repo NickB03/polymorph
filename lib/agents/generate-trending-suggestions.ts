@@ -1,4 +1,4 @@
-import { generateObject } from 'ai'
+import { generateText, Output } from 'ai'
 import { z } from 'zod'
 
 import { getTrendingSuggestionsModel } from '@/lib/config/model-types'
@@ -11,6 +11,7 @@ import { getErrorMessage } from '@/lib/utils/error'
 import { getModel } from '@/lib/utils/registry'
 import {
   isTracingEnabled,
+  telemetryMetadataOptions,
   telemetryRecordingOptions
 } from '@/lib/utils/telemetry'
 
@@ -187,21 +188,24 @@ export async function generateTrendingSuggestions(): Promise<TrendingSuggestions
   const suggestionsModel = getTrendingSuggestionsModel()
   const modelId = createModelId(suggestionsModel)
 
-  const { object } = await generateObject({
+  const { runtimeContext, includeRuntimeContext } = telemetryMetadataOptions({
+    modelId,
+    source
+  })
+
+  const { output } = await generateText({
     model: getModel(modelId),
-    schema: trendingSuggestionsSchema,
+    output: Output.object({ schema: trendingSuggestionsSchema }),
     system: SYSTEM_PROMPT,
-    // AI SDK 7 dropped `telemetry.metadata`; its replacement (`runtimeContext` +
-    // `telemetry.includeRuntimeContext`) is not available on the deprecated
-    // `generateObject`, so `modelId` / `source` no longer reach the span here.
-    // `modelId` is still covered by the GenAI semconv model attribute.
+    runtimeContext,
     telemetry: {
       isEnabled: isTracingEnabled(),
       functionId: 'trending-suggestions',
-      ...telemetryRecordingOptions()
+      ...telemetryRecordingOptions(),
+      includeRuntimeContext
     },
     prompt: `Here are today's trending topics across various domains:\n\n${context}\n\nGenerate diverse, category-appropriate prompt suggestions. Ensure broad domain coverage and limit political content.`
   })
 
-  return { suggestions: object, source }
+  return { suggestions: output, source }
 }

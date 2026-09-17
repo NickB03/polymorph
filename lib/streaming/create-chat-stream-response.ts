@@ -32,7 +32,10 @@ import { hasNativeInteractiveToolOutput } from './helpers/native-tool-output-con
 import { persistStreamResults } from './helpers/persist-stream-results'
 import { prepareMessages } from './helpers/prepare-messages'
 import { streamRelatedQuestions } from './helpers/stream-related-questions'
-import { stripReasoningParts } from './helpers/strip-reasoning-parts'
+import {
+  needsReasoningStrip,
+  stripReasoningParts
+} from './helpers/strip-reasoning-parts'
 import type { StreamContext } from './helpers/types'
 import { createCanvasEmitter } from './helpers/write-canvas-data'
 import { BaseStreamConfig } from './types'
@@ -230,17 +233,11 @@ export async function createChatStreamResponse(
               imageToolContext: { userId, chatId }
             })
 
-            // Strip reasoning parts from prior assistant turns before conversion:
-            // - OpenAI's Responses API requires reasoning items and their following items to be kept together
-            //   (see: https://github.com/vercel/ai/issues/11036)
-            // - DeepSeek (via OpenRouter) attaches provider-specific `reasoning_details` metadata that
-            //   should not be replayed on the next turn; replaying it risks 400s or silent drops.
-            // The current turn's streamed reasoning is unaffected — it flows through writer.merge(),
-            // not through messagesToConvert.
-            const needsReasoningStrip =
-              context.modelId.startsWith('openai:') ||
-              context.modelId.startsWith('openrouter:deepseek/')
-            const messagesToConvert = needsReasoningStrip
+            // Strip reasoning parts from prior assistant turns before
+            // conversion (see needsReasoningStrip). The current turn's
+            // streamed reasoning is unaffected — it flows through
+            // writer.merge(), not through messagesToConvert.
+            const messagesToConvert = needsReasoningStrip(context.modelId)
               ? stripReasoningParts(validatedMessages)
               : validatedMessages
 
@@ -360,7 +357,10 @@ export async function createChatStreamResponse(
     },
     onFinish: async ({ responseMessage, isAborted }) => {
       try {
-        if (!isAborted && responseMessage) {
+        // Aborted streams still carry whatever the model produced before the
+        // client disconnected; dropping it loses the visible partial answer.
+        const hasContent = (responseMessage?.parts?.length ?? 0) > 0
+        if (responseMessage && (!isAborted || hasContent)) {
           try {
             // Persist stream results to database
             await persistStreamResults(

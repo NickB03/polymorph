@@ -1,6 +1,22 @@
 import type { UIMessage } from '@/lib/types/ai'
 
 /**
+ * Whether prior assistant reasoning must be stripped before conversion for
+ * this model.
+ *
+ * - OpenAI's Responses API requires reasoning items and their following items
+ *   to be kept together (see the note on stripReasoningParts below).
+ * - DeepSeek (via OpenRouter) attaches provider-specific `reasoning_details`
+ *   metadata that should not be replayed on the next turn; replaying it risks
+ *   400s or silent drops.
+ */
+export function needsReasoningStrip(modelId: string): boolean {
+  return (
+    modelId.startsWith('openai:') || modelId.startsWith('openrouter:deepseek/')
+  )
+}
+
+/**
  * Strips reasoning parts from UIMessages for OpenAI models.
  *
  * OpenAI's Responses API requires reasoning items and their following items

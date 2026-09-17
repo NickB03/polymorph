@@ -3,7 +3,10 @@ import { randomUUID } from 'crypto'
 
 import { createChatAgent } from '@/lib/agents/chat/registry'
 import { inlineFileUrls } from '@/lib/streaming/helpers/inline-file-urls'
-import { stripReasoningParts } from '@/lib/streaming/helpers/strip-reasoning-parts'
+import {
+  needsReasoningStrip,
+  stripReasoningParts
+} from '@/lib/streaming/helpers/strip-reasoning-parts'
 import type { SearchResults } from '@/lib/types'
 import type { UIMessage } from '@/lib/types/ai'
 import type { ModelType } from '@/lib/types/model-type'
@@ -233,8 +236,7 @@ export async function runEvalChat({
     id: randomUUID(),
     ...message
   })) as UIMessage[]
-  const isOpenAI = modelId.startsWith('openai:')
-  const messagesToConvert = isOpenAI
+  const messagesToConvert = needsReasoningStrip(modelId)
     ? stripReasoningParts(uiMessages)
     : uiMessages
 

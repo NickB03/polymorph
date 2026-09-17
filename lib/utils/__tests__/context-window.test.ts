@@ -249,4 +249,114 @@ describe('context-window', () => {
       expect(resultWithoutModel).toBeDefined()
     })
   })
+
+  describe('tool and binary parts', () => {
+    test('charges tool results against the budget instead of counting zero', () => {
+      const bigOutput = 'x'.repeat(8000)
+      const messages: ModelMessage[] = [
+        createMessage('user', 'first question'),
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'call-1',
+              toolName: 'search',
+              input: { query: 'something' }
+            }
+          ]
+        },
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId: 'call-1',
+              toolName: 'search',
+              output: { type: 'text', value: bigOutput }
+            }
+          ]
+        },
+        createMessage('user', 'latest question')
+      ]
+
+      // Budget is far smaller than the serialized tool result, so truncation
+      // must kick in. Before the fix the tool result counted as 0 tokens and
+      // every message was returned untouched.
+      const result = truncateMessages(messages, 200, 'gpt-4o-mini')
+
+      expect(result.length).toBeLessThan(messages.length)
+    })
+
+    test('charges binary file parts against the budget', () => {
+      const messages: ModelMessage[] = [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'file',
+              data: new Uint8Array(750_000),
+              mediaType: 'image/png'
+            }
+          ]
+        },
+        createMessage('user', 'what is in this image?')
+      ]
+
+      const result = truncateMessages(messages, 500, 'gpt-4o-mini')
+
+      expect(result).toEqual([messages[1]])
+    })
+
+    test('drops tool results orphaned by truncation', () => {
+      const filler = 'filler words here '.repeat(200)
+      const messages: ModelMessage[] = [
+        createMessage('user', 'first question'),
+        createMessage('assistant', filler),
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'call-1',
+              toolName: 'search',
+              input: { query: filler }
+            }
+          ]
+        },
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId: 'call-1',
+              toolName: 'search',
+              output: { type: 'text', value: 'short result' }
+            }
+          ]
+        },
+        createMessage('user', 'latest question')
+      ]
+
+      const result = truncateMessages(messages, 300, 'gpt-4o-mini')
+
+      const keptToolCallIds = new Set(
+        result.flatMap(msg =>
+          msg.role === 'assistant' && Array.isArray(msg.content)
+            ? msg.content
+                .filter(part => part.type === 'tool-call')
+                .map(part => part.toolCallId)
+            : []
+        )
+      )
+      for (const msg of result) {
+        if (msg.role !== 'tool' || !Array.isArray(msg.content)) continue
+        for (const part of msg.content) {
+          if (!('toolCallId' in part)) continue
+          expect(keptToolCallIds.has(part.toolCallId)).toBe(true)
+        }
+      }
+      expect(result.some(msg => msg.role === 'tool')).toBe(false)
+    })
+  })
 })
