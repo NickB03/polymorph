@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { clearChats } from '@/lib/actions/chat'
+import { clearChats } from '@/lib/actions/chat-actions'
 import { createClient } from '@/lib/supabase/client'
 
 import {

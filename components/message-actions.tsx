@@ -83,6 +83,8 @@ export function MessageActions({
             ? 'Thanks for the feedback!'
             : 'Thanks for letting us know!'
         )
+      } else if (response.status === 401) {
+        toast.error('Sign in to send feedback')
       } else {
         console.error('Failed to submit feedback')
         toast.error('Failed to submit feedback')

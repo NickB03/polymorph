@@ -35,7 +35,6 @@ import {
   listCanvasArtifactVersions,
   loadCanvasArtifactByChatId,
   loadCanvasArtifactById,
-  restoreCanvasArtifactVersion,
   updateCanvasArtifactDraft
 } from '@/lib/db/actions'
 import type { CanvasArtifact, CanvasArtifactVersion } from '@/lib/db/schema'
@@ -383,93 +382,6 @@ describe('Canvas DB Actions', () => {
       const result = await listCanvasArtifactVersions('artifact-1', 'user-1')
 
       expect(result).toEqual([])
-    })
-  })
-
-  describe('restoreCanvasArtifactVersion', () => {
-    it('should restore a version to the active draft', async () => {
-      const versionSource = {
-        'App.tsx': 'export default function App() { return <p>v1</p> }'
-      }
-      const mockVersion = mockVersionRow({
-        sourceSnapshot: versionSource
-      })
-      const restoredArtifact = mockArtifactRow({
-        draftSource: versionSource,
-        draftRevision: 1,
-        status: 'restoring',
-        draftCompiledHtml: null,
-        draftDiagnostics: null
-      })
-
-      const selectChain = chainMock([mockVersion])
-      const updateChain = chainMock([restoredArtifact])
-
-      vi.mocked(db.transaction).mockImplementation(async (cb: any) => {
-        const tx = {
-          select: () => selectChain,
-          update: () => updateChain,
-          execute: vi.fn()
-        }
-        return cb(tx)
-      })
-
-      const result = await restoreCanvasArtifactVersion({
-        artifactId: 'artifact-1',
-        versionId: 'version-1',
-        expectedRevision: 0,
-        userId: 'user-1'
-      })
-
-      expect(result).toEqual(restoredArtifact)
-      expect(result!.status).toBe('restoring')
-      expect(result!.draftCompiledHtml).toBeNull()
-    })
-
-    it('should return null when version does not exist', async () => {
-      const selectChain = chainMock([])
-
-      vi.mocked(db.transaction).mockImplementation(async (cb: any) => {
-        const tx = {
-          select: () => selectChain,
-          update: vi.fn(),
-          execute: vi.fn()
-        }
-        return cb(tx)
-      })
-
-      const result = await restoreCanvasArtifactVersion({
-        artifactId: 'artifact-1',
-        versionId: 'nonexistent',
-        expectedRevision: 0,
-        userId: 'user-1'
-      })
-
-      expect(result).toBeNull()
-    })
-
-    it('should return null when draft revision is stale', async () => {
-      const mockVersion = mockVersionRow()
-      const selectChain = chainMock([mockVersion])
-      const updateChain = chainMock([])
-
-      vi.mocked(db.transaction).mockImplementation(async (cb: any) => {
-        const tx = {
-          select: () => selectChain,
-          update: () => updateChain,
-          execute: vi.fn()
-        }
-        return cb(tx)
-      })
-
-      const result = await restoreCanvasArtifactVersion({
-        artifactId: 'artifact-1',
-        versionId: 'version-1',
-        expectedRevision: 999,
-        userId: 'user-1'
-      })
-
-      expect(result).toBeNull()
     })
   })
 

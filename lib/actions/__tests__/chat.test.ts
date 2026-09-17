@@ -2,32 +2,28 @@ import { revalidateTag } from 'next/cache'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { generateChatTitle } from '@/lib/agents/title-generator'
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
 import * as dbActions from '@/lib/db/actions'
 import type { Chat, Message } from '@/lib/db/schema'
 import type { UIMessage } from '@/lib/types/ai'
 
 import {
-  clearChats,
   createChat,
   createChatAndSaveMessage,
   createChatWithFirstMessage,
-  deleteChat,
   deleteMessagesAfter,
   deleteMessagesFromIndex,
   getChats,
   getChatsPage,
   loadChat,
-  saveChatTitle,
   shareChat,
   upsertMessage
 } from '../chat'
+import { clearChats, deleteChat } from '../chat-actions'
 
 // Mock the modules
 vi.mock('@/lib/auth/get-current-user')
 vi.mock('@/lib/db/actions')
-vi.mock('@/lib/agents/title-generator')
 
 describe('Chat Actions', () => {
   beforeEach(() => {
@@ -540,68 +536,6 @@ describe('Chat Actions', () => {
         userId
       )
       expect(revalidateTag).toHaveBeenCalledWith(`chat-${chatId}`, 'max')
-    })
-  })
-
-  describe('saveChatTitle', () => {
-    it('should generate and save title for new chat', async () => {
-      const chatId = 'chat-123'
-      const message: UIMessage = {
-        id: 'msg-1',
-        role: 'user',
-        parts: [{ type: 'text', text: 'Hello, how are you?' }]
-      }
-      const modelId = 'gpt-4'
-      const generatedTitle = 'Greeting Conversation'
-
-      vi.mocked(generateChatTitle).mockResolvedValue(generatedTitle)
-      vi.mocked(dbActions.updateChatTitle).mockResolvedValue({
-        id: chatId,
-        title: generatedTitle,
-        userId: 'user-123',
-        visibility: 'private',
-        createdAt: new Date()
-      })
-
-      await saveChatTitle(null, chatId, message, modelId)
-
-      expect(generateChatTitle).toHaveBeenCalledWith({
-        userMessageContent: 'Hello, how are you?',
-        modelId,
-        correlationId: undefined
-      })
-      expect(dbActions.updateChatTitle).toHaveBeenCalledWith(
-        chatId,
-        generatedTitle
-      )
-      expect(revalidateTag).toHaveBeenCalledWith(`chat-${chatId}`, 'max')
-    })
-
-    it('should not generate title for existing chat', async () => {
-      const chat: Chat = {
-        id: 'chat-123',
-        title: 'Existing Chat',
-        userId: 'user-123',
-        visibility: 'private',
-        createdAt: new Date()
-      }
-      const message: UIMessage = {
-        id: 'msg-1',
-        role: 'user',
-        parts: []
-      }
-
-      await saveChatTitle(chat, 'chat-123', message, 'gpt-4')
-
-      expect(generateChatTitle).not.toHaveBeenCalled()
-      expect(dbActions.updateChatTitle).not.toHaveBeenCalled()
-    })
-
-    it('should not generate title when message is null', async () => {
-      await saveChatTitle(null, 'chat-123', null, 'gpt-4')
-
-      expect(generateChatTitle).not.toHaveBeenCalled()
-      expect(dbActions.updateChatTitle).not.toHaveBeenCalled()
     })
   })
 })

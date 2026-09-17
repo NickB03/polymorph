@@ -7,6 +7,8 @@ const { downloadStorageFile } = vi.hoisted(() => ({
 
 vi.mock('@/lib/supabase/server-storage', () => ({ downloadStorageFile }))
 
+import { MAX_UPLOAD_SIZE_BYTES } from '@/lib/utils/file-validation'
+
 import { inlineFileUrls } from '../inline-file-urls'
 
 // Mock global fetch
@@ -78,7 +80,7 @@ describe('inlineFileUrls', () => {
 
     const result = await inlineFileUrls(messages, null)
 
-    expect(mockFetch).toHaveBeenCalledWith(fileUrl)
+    expect(mockFetch).toHaveBeenCalledWith(fileUrl, expect.any(Object))
     const filePart = (result[0] as { content: Array<Record<string, unknown>> })
       .content[0]
     expect(filePart.data).toBeInstanceOf(Uint8Array)
@@ -368,5 +370,54 @@ describe('inlineFileUrls', () => {
       .content[0]
     expect(part.data).toEqual(testData)
     expect(part.mediaType).toBe('image/webp')
+  })
+
+  it('refuses to fetch private, loopback or plain-http URLs', async () => {
+    const hostile = [
+      'http://169.254.169.254/latest/meta-data/',
+      'https://127.0.0.1/secret',
+      'https://10.0.0.5/secret',
+      'https://[::1]/secret',
+      'https://localhost/secret',
+      'http://example.com/photo.png'
+    ]
+
+    for (const url of hostile) {
+      const messages: ModelMessage[] = [
+        userMsg([{ type: 'file', data: url, mediaType: 'image/png' }])
+      ]
+
+      const result = await inlineFileUrls(messages, 'user-1')
+
+      expect(result).toBe(messages)
+      expect(mockFetch).not.toHaveBeenCalled()
+    }
+  })
+
+  it('refuses a response larger than the upload size limit', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      arrayBuffer: () => Promise.resolve(new Uint8Array(1).buffer),
+      headers: new Headers({
+        'content-type': 'image/png',
+        'content-length': String(MAX_UPLOAD_SIZE_BYTES + 1)
+      })
+    })
+
+    const messages: ModelMessage[] = [
+      userMsg([
+        {
+          type: 'file',
+          data: 'https://example.com/huge.png',
+          mediaType: 'image/png'
+        }
+      ])
+    ]
+
+    const result = await inlineFileUrls(messages, null)
+
+    const part = (result[0] as { content: Array<Record<string, unknown>> })
+      .content[0]
+    expect(part.data).toBe('https://example.com/huge.png')
   })
 })
