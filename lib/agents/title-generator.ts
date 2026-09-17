@@ -2,6 +2,7 @@ import { generateText } from 'ai'
 
 import {
   isTracingEnabled,
+  telemetryMetadataOptions,
   telemetryRecordingOptions
 } from '@/lib/utils/telemetry'
 
@@ -32,21 +33,24 @@ export async function generateChatTitle({
   try {
     const systemPrompt = `System: You are an AI assistant specialized in creating very short, concise, and informative titles for chat conversations based on the user's first message. The title should ideally be 3-5 words long, and no more than 10 words. Only output the title itself, with no prefixes, labels, or quotation marks.`
 
+    const telemetryMetadata = telemetryMetadataOptions({
+      modelId,
+      agentType: 'title-generator',
+      promptLength: userMessageContent.length,
+      ...(correlationId ? { correlationId } : {})
+    })
+
     const { text: generatedTitle } = await generateText({
       model: getModel(modelId),
       system: systemPrompt,
       prompt: userMessageContent,
       abortSignal,
-      experimental_telemetry: {
+      runtimeContext: telemetryMetadata.runtimeContext,
+      telemetry: {
         isEnabled: isTracingEnabled(),
         functionId: 'title-generation',
         ...telemetryRecordingOptions(),
-        metadata: {
-          modelId: modelId,
-          agentType: 'title-generator',
-          promptLength: userMessageContent.length,
-          ...(correlationId ? { correlationId } : {})
-        }
+        includeRuntimeContext: telemetryMetadata.includeRuntimeContext
       }
     })
 

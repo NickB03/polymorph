@@ -9,7 +9,8 @@ vi.mock('@/lib/utils/registry', () => ({
   getModel: vi.fn().mockReturnValue('mock-model')
 }))
 
-vi.mock('@/lib/utils/telemetry', () => ({
+vi.mock('@/lib/utils/telemetry', async importOriginal => ({
+  ...((await importOriginal()) as object),
   isTracingEnabled: vi.fn().mockReturnValue(false),
   telemetryRecordingOptions: vi
     .fn()

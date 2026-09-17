@@ -15,7 +15,7 @@ export function isEvalReplayTracingEnabled(): boolean {
 // The OPENINFERENCE_HIDE_* env vars are NOT read by openinference-vercel's span
 // processor in this setup, so setting them alone masks nothing. The AI SDK does
 // honour recordInputs/recordOutputs per call, which makes this helper the single
-// enforcement point — spread it into every experimental_telemetry block.
+// enforcement point — spread it into every telemetry block.
 export function telemetryRecordingOptions(): {
   recordInputs: boolean
   recordOutputs: boolean
@@ -23,6 +23,34 @@ export function telemetryRecordingOptions(): {
   return {
     recordInputs: process.env.OPENINFERENCE_HIDE_INPUTS !== 'true',
     recordOutputs: process.env.OPENINFERENCE_HIDE_OUTPUTS !== 'true'
+  }
+}
+
+/**
+ * AI SDK 7 removed `telemetry.metadata`. Arbitrary trace metadata now travels
+ * on `runtimeContext`, and each key has to be opted into telemetry explicitly
+ * via `telemetry.includeRuntimeContext`.
+ *
+ * openinference-vercel maps `ai.settings.context.<key>` → `metadata.<key>`, so
+ * Phoenix still sees the same metadata it did under the v6 `metadata` block.
+ *
+ * Returns both halves because they belong in different places on the call:
+ * `runtimeContext` is a top-level option, `includeRuntimeContext` goes inside
+ * `telemetry`.
+ */
+export function telemetryMetadataOptions<
+  T extends Record<string, string | number | boolean>
+>(
+  metadata: T
+): {
+  runtimeContext: T
+  includeRuntimeContext: { [K in keyof T]: true }
+} {
+  return {
+    runtimeContext: metadata,
+    includeRuntimeContext: Object.fromEntries(
+      Object.keys(metadata).map(key => [key, true])
+    ) as { [K in keyof T]: true }
   }
 }
 

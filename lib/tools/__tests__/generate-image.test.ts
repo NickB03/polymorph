@@ -66,7 +66,12 @@ describe('createGenerateImageTool', () => {
     const execute = tool.execute!
     const result = await execute(
       { prompt: 'a sunset over mountains', aspectRatio: '16:9' },
-      { abortSignal: undefined as any, toolCallId: 'tc-1', messages: [] }
+      {
+        abortSignal: undefined as any,
+        toolCallId: 'tc-1',
+        messages: [],
+        context: {}
+      }
     )
 
     expect(mockGenerateText).toHaveBeenCalledWith(
@@ -102,7 +107,12 @@ describe('createGenerateImageTool', () => {
     const execute = tool.execute!
     const result = await execute(
       { prompt: 'something' },
-      { abortSignal: undefined as any, toolCallId: 'tc-2', messages: [] }
+      {
+        abortSignal: undefined as any,
+        toolCallId: 'tc-2',
+        messages: [],
+        context: {}
+      }
     )
 
     expect(result).toEqual(
@@ -129,7 +139,12 @@ describe('createGenerateImageTool', () => {
         prompt: 'make it bluer',
         sourceImageUrl: '/api/files/user-1/chats/chat-1/generated-1.png'
       },
-      { abortSignal: undefined as any, toolCallId: 'tc-sign', messages: [] }
+      {
+        abortSignal: undefined as any,
+        toolCallId: 'tc-sign',
+        messages: [],
+        context: {}
+      }
     )
 
     expect(mockCreateSignedDownloadUrl).toHaveBeenCalledWith(
@@ -160,7 +175,12 @@ describe('createGenerateImageTool', () => {
         prompt: 'make it bluer',
         sourceImageUrl: '/api/files/victim-user/chats/c/generated-1.png'
       },
-      { abortSignal: undefined as any, toolCallId: 'tc-forged', messages: [] }
+      {
+        abortSignal: undefined as any,
+        toolCallId: 'tc-forged',
+        messages: [],
+        context: {}
+      }
     )
 
     expect(result).toEqual(
@@ -191,7 +211,12 @@ describe('createGenerateImageTool', () => {
     })
     await guestTool.execute!(
       { prompt: 'a sunset' },
-      { abortSignal: undefined as any, toolCallId: 'tc-guest', messages: [] }
+      {
+        abortSignal: undefined as any,
+        toolCallId: 'tc-guest',
+        messages: [],
+        context: {}
+      }
     )
 
     expect(mockUploadGeneratedImage).toHaveBeenCalledWith(
@@ -218,7 +243,8 @@ describe('createGenerateImageTool', () => {
       {
         abortSignal: undefined as any,
         toolCallId: 'tc-guest-forged',
-        messages: []
+        messages: [],
+        context: {}
       }
     )
 
@@ -257,7 +283,8 @@ describe('createGenerateImageTool', () => {
       {
         abortSignal: undefined as any,
         toolCallId: 'tc-guest-edit',
-        messages: []
+        messages: [],
+        context: {}
       }
     )
 
@@ -294,7 +321,12 @@ describe('createGenerateImageTool', () => {
 
     await tool.execute!(
       { prompt: 'a sunset' },
-      { abortSignal: undefined as any, toolCallId: 'tc-auth', messages: [] }
+      {
+        abortSignal: undefined as any,
+        toolCallId: 'tc-auth',
+        messages: [],
+        context: {}
+      }
     )
 
     expect(mockUploadGeneratedImage).toHaveBeenLastCalledWith(
@@ -324,7 +356,12 @@ describe('createGenerateImageTool', () => {
         prompt: 'make it bluer',
         sourceImageUrl: 'https://example.com/original.png'
       },
-      { abortSignal: undefined as any, toolCallId: 'tc-3', messages: [] }
+      {
+        abortSignal: undefined as any,
+        toolCallId: 'tc-3',
+        messages: [],
+        context: {}
+      }
     )
 
     expect(mockGenerateText).toHaveBeenCalledWith(

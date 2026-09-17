@@ -43,7 +43,7 @@ const toolWiringMocks = vi.hoisted(() => {
     createServerTool: vi.fn(() => ({ execute: vi.fn() })),
     createTodoTools: vi.fn(() => ({ todoWrite: { execute: vi.fn() } })),
     ToolLoopAgent: vi.fn(config => ({ config })),
-    stepCountIs: vi.fn(maxSteps => ({ maxSteps })),
+    isStepCount: vi.fn(maxSteps => ({ maxSteps })),
     tool: vi.fn(config => config),
     getModel: vi.fn(model => ({ model })),
     isTracingEnabled: vi.fn(() => false),
@@ -68,7 +68,7 @@ vi.mock('@/lib/agents/chat/build', () => ({
 
 vi.mock('ai', () => ({
   ToolLoopAgent: toolWiringMocks.ToolLoopAgent,
-  stepCountIs: toolWiringMocks.stepCountIs,
+  isStepCount: toolWiringMocks.isStepCount,
   tool: toolWiringMocks.tool
 }))
 
@@ -84,7 +84,8 @@ vi.mock('@/lib/utils/registry', () => ({
   getModel: toolWiringMocks.getModel
 }))
 
-vi.mock('@/lib/utils/telemetry', () => ({
+vi.mock('@/lib/utils/telemetry', async importOriginal => ({
+  ...((await importOriginal()) as object),
   isTracingEnabled: toolWiringMocks.isTracingEnabled,
   telemetryRecordingOptions: toolWiringMocks.telemetryRecordingOptions
 }))

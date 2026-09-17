@@ -158,7 +158,7 @@ describe('createCanvasArtifactTool', () => {
     const toolInstance = createCanvasArtifactTool(ctx)
     await toolInstance.execute!(
       { files: SAMPLE_FILES },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(mockCreateCanvasArtifactFromSource).toHaveBeenCalledWith(
@@ -186,7 +186,7 @@ describe('createCanvasArtifactTool', () => {
     const toolInstance = createCanvasArtifactTool(ctx)
     const result = await toolInstance.execute!(
       { files: SAMPLE_FILES },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(result).toMatchObject({
@@ -206,7 +206,7 @@ describe('createCanvasArtifactTool', () => {
     const toolInstance = createCanvasArtifactTool(ctx)
     const result = await toolInstance.execute!(
       { title: 'My App', files: SAMPLE_FILES },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(result).toMatchObject({
@@ -235,7 +235,7 @@ describe('createCanvasArtifactTool', () => {
     const toolInstance = createCanvasArtifactTool(ctx)
     await toolInstance.execute!(
       { files: SAMPLE_FILES },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     // Generating status is always emitted at the start, even on failure
@@ -275,7 +275,7 @@ describe('createCanvasArtifactTool', () => {
     const toolInstance = createCanvasArtifactTool(ctx)
     const result = await toolInstance.execute!(
       { files: SAMPLE_FILES },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(result).toMatchObject({
@@ -312,7 +312,7 @@ describe('createCanvasArtifactTool', () => {
     const toolInstance = createCanvasArtifactTool(ctx)
     await toolInstance.execute!(
       { files: SAMPLE_FILES },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     // The final status call should include the token
@@ -337,7 +337,7 @@ describe('createCanvasArtifactTool', () => {
     const toolInstance = createCanvasArtifactTool(ctx)
     await toolInstance.execute!(
       { files: SAMPLE_FILES },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     const statusCalls = (
@@ -401,7 +401,7 @@ describe('updateCanvasArtifactTool', () => {
         baseRevision: 2,
         files: SAMPLE_FILES
       },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     const firstStatusCall = (
@@ -433,7 +433,7 @@ describe('updateCanvasArtifactTool', () => {
         baseRevision: 2,
         files: SAMPLE_FILES
       },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(mockLoadCanvasArtifactState).toHaveBeenCalledWith({
@@ -461,7 +461,7 @@ describe('updateCanvasArtifactTool', () => {
         baseRevision: 1,
         files: SAMPLE_FILES
       },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(result).toMatchObject({
@@ -494,7 +494,7 @@ describe('updateCanvasArtifactTool', () => {
         baseRevision: 2,
         files: SAMPLE_FILES
       },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(mockSaveCanvasArtifactVersion).toHaveBeenCalledWith({
@@ -528,7 +528,7 @@ describe('updateCanvasArtifactTool', () => {
         baseRevision: 1,
         files: SAMPLE_FILES
       },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(result).toMatchObject({
@@ -565,7 +565,7 @@ describe('updateCanvasArtifactTool', () => {
         baseRevision: 2,
         files: SAMPLE_FILES
       },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     const statusCalls = (
@@ -586,7 +586,7 @@ describe('updateCanvasArtifactTool', () => {
         baseRevision: 0,
         files: SAMPLE_FILES
       },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(result).toMatchObject({
@@ -616,7 +616,7 @@ describe('updateCanvasArtifactTool', () => {
         baseRevision: 2,
         files: SAMPLE_FILES
       },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(result).toMatchObject({
@@ -660,7 +660,7 @@ describe('readCanvasArtifactTool', () => {
     const toolInstance = readCanvasArtifactTool(ctx)
     const result = await toolInstance.execute!(
       { artifactId: 'art-1' },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(result).toMatchObject({
@@ -681,7 +681,7 @@ describe('readCanvasArtifactTool', () => {
     const toolInstance = readCanvasArtifactTool(ctx)
     const result = await toolInstance.execute!(
       { artifactId: 'art-missing' },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(result).toMatchObject({
@@ -698,7 +698,7 @@ describe('readCanvasArtifactTool', () => {
     const toolInstance = readCanvasArtifactTool(ctx)
     await toolInstance.execute!(
       { artifactId: 'art-1' },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(ctx.emitter.emitCanvasArtifact).not.toHaveBeenCalled()
@@ -714,7 +714,7 @@ describe('readCanvasArtifactTool', () => {
     const toolInstance = readCanvasArtifactTool(ctx)
     await toolInstance.execute!(
       { artifactId: 'art-1' },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(mockLoadCanvasArtifactState).toHaveBeenCalledWith({
@@ -730,7 +730,7 @@ describe('readCanvasArtifactTool', () => {
     const toolInstance = readCanvasArtifactTool(ctx)
     const result = await toolInstance.execute!(
       { artifactId: 'art-1' },
-      { toolCallId: 'tc-1', messages: [] }
+      { toolCallId: 'tc-1', messages: [], context: {} }
     )
 
     expect(result).toMatchObject({

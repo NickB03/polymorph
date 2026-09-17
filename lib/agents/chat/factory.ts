@@ -1,4 +1,4 @@
-import { stepCountIs, ToolLoopAgent, type UIMessageStreamWriter } from 'ai'
+import { isStepCount, ToolLoopAgent, type UIMessageStreamWriter } from 'ai'
 
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import { createSearchTool } from '@/lib/tools/search/server'
@@ -11,6 +11,7 @@ import { selectModelForModeAndType } from '@/lib/utils/model-selection'
 import { getModel } from '@/lib/utils/registry'
 import {
   isTracingEnabled,
+  telemetryMetadataOptions,
   telemetryRecordingOptions
 } from '@/lib/utils/telemetry'
 
@@ -18,7 +19,7 @@ import { type ChatAgentTools, createChatAgentTools } from './toolset'
 
 export type ChatAgentId = 'search' | 'research' | 'build'
 
-export type ChatAgent = ToolLoopAgent<never, ChatAgentTools, never>
+export type ChatAgent = ToolLoopAgent<never, ChatAgentTools>
 
 export type CreateChatAgentArgs = {
   model: string
@@ -113,6 +114,17 @@ export function createConfiguredChatAgent(
       activeTools.push('generateImage')
     }
 
+    const telemetryMetadata = telemetryMetadataOptions({
+      modelId: model,
+      agentType: definition.agentId,
+      ...(correlationId ? { correlationId } : {}),
+      ...(otelTraceId ? { otelTraceId } : {}),
+      ...(searchMode ? { searchMode } : {}),
+      ...(args.userMode ? { userMode: args.userMode } : {}),
+      ...(args.intent ? { intent: args.intent } : {}),
+      ...(modelType ? { modelType } : {})
+    })
+
     const searchTool = definition.configureSearchTool(createSearchTool(model))
 
     const baseTools = createChatAgentTools({
@@ -134,27 +146,21 @@ export function createConfiguredChatAgent(
       instructions,
       tools,
       activeTools,
-      stopWhen: stepCountIs(definition.maxSteps),
+      stopWhen: isStepCount(definition.maxSteps),
       ...(modelConfig?.providerOptions && {
         providerOptions: modelConfig.providerOptions
       }),
-      ...(experimentalContext !== undefined && {
-        experimental_context: experimentalContext
-      }),
-      experimental_telemetry: {
+      runtimeContext: {
+        ...(typeof experimentalContext === 'object' && experimentalContext
+          ? (experimentalContext as Record<string, unknown>)
+          : {}),
+        ...telemetryMetadata.runtimeContext
+      },
+      telemetry: {
         isEnabled: telemetryEnabled ?? isTracingEnabled(),
         functionId: `${definition.agentId}-agent`,
         ...telemetryRecordingOptions(),
-        metadata: {
-          modelId: model,
-          agentType: definition.agentId,
-          ...(correlationId ? { correlationId } : {}),
-          ...(otelTraceId ? { otelTraceId } : {}),
-          ...(searchMode ? { searchMode } : {}),
-          ...(args.userMode ? { userMode: args.userMode } : {}),
-          ...(args.intent ? { intent: args.intent } : {}),
-          ...(modelType ? { modelType } : {})
-        }
+        includeRuntimeContext: telemetryMetadata.includeRuntimeContext
       }
     })
   } catch (error) {

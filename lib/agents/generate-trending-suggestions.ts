@@ -191,11 +191,14 @@ export async function generateTrendingSuggestions(): Promise<TrendingSuggestions
     model: getModel(modelId),
     schema: trendingSuggestionsSchema,
     system: SYSTEM_PROMPT,
-    experimental_telemetry: {
+    // AI SDK 7 dropped `telemetry.metadata`; its replacement (`runtimeContext` +
+    // `telemetry.includeRuntimeContext`) is not available on the deprecated
+    // `generateObject`, so `modelId` / `source` no longer reach the span here.
+    // `modelId` is still covered by the GenAI semconv model attribute.
+    telemetry: {
       isEnabled: isTracingEnabled(),
       functionId: 'trending-suggestions',
-      ...telemetryRecordingOptions(),
-      metadata: { modelId, source }
+      ...telemetryRecordingOptions()
     },
     prompt: `Here are today's trending topics across various domains:\n\n${context}\n\nGenerate diverse, category-appropriate prompt suggestions. Ensure broad domain coverage and limit political content.`
   })

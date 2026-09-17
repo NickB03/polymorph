@@ -2,6 +2,7 @@ import { type ModelMessage, Output, streamText } from 'ai'
 
 import {
   isTracingEnabled,
+  telemetryMetadataOptions,
   telemetryRecordingOptions
 } from '@/lib/utils/telemetry'
 
@@ -20,6 +21,13 @@ export function createRelatedQuestionsStream(
   const relatedModel = getRelatedQuestionsModel()
   const modelId = createModelId(relatedModel)
 
+  const { runtimeContext, includeRuntimeContext } = telemetryMetadataOptions({
+    modelId,
+    agentType: 'related-questions-generator',
+    messageCount: messages.length,
+    ...(correlationId ? { correlationId } : {})
+  })
+
   return streamText({
     model: getModel(modelId),
     output: Output.array({
@@ -37,16 +45,12 @@ export function createRelatedQuestionsStream(
       }
     ],
     abortSignal,
-    experimental_telemetry: {
+    runtimeContext,
+    telemetry: {
       isEnabled: isTracingEnabled(),
       functionId: 'related-questions',
       ...telemetryRecordingOptions(),
-      metadata: {
-        modelId,
-        agentType: 'related-questions-generator',
-        messageCount: messages.length,
-        ...(correlationId ? { correlationId } : {})
-      }
+      includeRuntimeContext
     }
   })
 }
