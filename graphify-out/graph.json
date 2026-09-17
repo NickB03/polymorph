@@ -46515,16 +46515,6 @@
       "id": "utils_registry_registryproviders"
     },
     {
-      "label": "decodeMappedIpv4()",
-      "file_type": "code",
-      "source_file": "lib/utils/safe-url.ts",
-      "source_location": "L30",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "decodemappedipv4",
-      "id": "utils_safe_url_decodemappedipv4"
-    },
-    {
       "label": "isPrivateIpv4()",
       "file_type": "code",
       "source_file": "lib/utils/safe-url.ts",
@@ -46663,6 +46653,141 @@
       "community": 136,
       "norm_label": "nwsapi",
       "id": "package_overrides_nwsapi"
+    },
+    {
+      "id": "tests_chat_ui_message_load_test_mockinsert",
+      "label": "mockInsert()",
+      "file_type": "code",
+      "source_file": "lib/db/__tests__/chat-ui-message-load.test.ts",
+      "source_location": "L353",
+      "_origin": "ast",
+      "community": 19
+    },
+    {
+      "id": "tests_chat_ui_message_load_test_mocklatest",
+      "label": "mockLatest()",
+      "file_type": "code",
+      "source_file": "lib/db/__tests__/chat-ui-message-load.test.ts",
+      "source_location": "L346",
+      "_origin": "ast",
+      "community": 19
+    },
+    {
+      "id": "db_actions_staleguard",
+      "label": "StaleGuard",
+      "file_type": "code",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L167",
+      "_origin": "ast",
+      "community": 19
+    },
+    {
+      "id": "rate_limit_feedback_limits_checkmessagefeedbacklimit",
+      "label": "checkMessageFeedbackLimit()",
+      "file_type": "code",
+      "source_file": "lib/rate-limit/feedback-limits.ts",
+      "source_location": "L24",
+      "_origin": "ast",
+      "community": 33
+    },
+    {
+      "id": "tests_inline_file_urls_test_pull",
+      "label": "pull()",
+      "file_type": "code",
+      "source_file": "lib/streaming/helpers/__tests__/inline-file-urls.test.ts",
+      "source_location": "L428",
+      "_origin": "ast",
+      "community": 17
+    },
+    {
+      "id": "tests_safe_url_test",
+      "label": "safe-url.test.ts",
+      "file_type": "code",
+      "source_file": "lib/utils/__tests__/safe-url.test.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 7
+    },
+    {
+      "id": "utils_context_window_loosepart",
+      "label": "LoosePart",
+      "file_type": "code",
+      "source_file": "lib/utils/context-window.ts",
+      "source_location": "L137",
+      "_origin": "ast",
+      "community": 113
+    },
+    {
+      "id": "utils_context_window_media_part_types",
+      "label": "MEDIA_PART_TYPES",
+      "file_type": "code",
+      "source_file": "lib/utils/context-window.ts",
+      "source_location": "L145",
+      "_origin": "ast",
+      "community": 113
+    },
+    {
+      "id": "utils_context_window_estimatemediaparttokens",
+      "label": "estimateMediaPartTokens()",
+      "file_type": "code",
+      "source_file": "lib/utils/context-window.ts",
+      "source_location": "L226",
+      "_origin": "ast",
+      "community": 113
+    },
+    {
+      "id": "utils_context_window_estimatemessagetokens",
+      "label": "estimateMessageTokens()",
+      "file_type": "code",
+      "source_file": "lib/utils/context-window.ts",
+      "source_location": "L320",
+      "_origin": "ast",
+      "community": 113
+    },
+    {
+      "id": "utils_context_window_tokencountcache",
+      "label": "tokenCountCache",
+      "file_type": "code",
+      "source_file": "lib/utils/context-window.ts",
+      "source_location": "L315",
+      "_origin": "ast",
+      "community": 113
+    },
+    {
+      "id": "utils_context_window_toolresultcontentitems",
+      "label": "toolResultContentItems()",
+      "file_type": "code",
+      "source_file": "lib/utils/context-window.ts",
+      "source_location": "L154",
+      "_origin": "ast",
+      "community": 113
+    },
+    {
+      "id": "utils_safe_url_embedded_ipv4_prefixes",
+      "label": "EMBEDDED_IPV4_PREFIXES",
+      "file_type": "code",
+      "source_file": "lib/utils/safe-url.ts",
+      "source_location": "L36",
+      "_origin": "ast",
+      "community": 58
+    },
+    {
+      "id": "utils_safe_url_decodeembeddedipv4",
+      "label": "decodeEmbeddedIpv4()",
+      "file_type": "code",
+      "source_file": "lib/utils/safe-url.ts",
+      "source_location": "L38",
+      "_origin": "ast",
+      "community": 58
+    },
+    {
+      "id": "package_dependencies_ai_sdk_provider_utils",
+      "label": "@ai-sdk/provider-utils",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L31",
+      "_origin": "ast",
+      "community": 136
     }
   ],
   "links": [
