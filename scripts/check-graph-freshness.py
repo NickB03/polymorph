@@ -29,7 +29,8 @@ Scope and intent:
 Exit 0 when in sync, 1 when stale (with an actionable message).
 
 ``--fix`` repairs graph.json in place: adds the missing AST nodes and drops the
-stale ones (plus links left dangling by a dropped node), touching nothing else.
+stale ones (plus links left dangling by a dropped node) and carries over the
+extractor's edges for the added nodes, touching nothing else.
 Use this instead of `graphify update .`, which rebuilds from code only and
 DROPS the LLM-extracted doc/semantic nodes the committed graph carries. Run it
 with the CI-pinned extractor (see .github/workflows/ci.yml) from a clean
@@ -92,7 +93,7 @@ def _key(n) -> tuple:
     return (_rel(n.get("source_file") or ""), n.get("label"))
 
 
-def _fix(graph: dict, fresh_nodes: list, added: set, missing: set) -> set:
+def _fix(graph: dict, fresh: dict, added: set, missing: set) -> set:
     """Repair graph.json in place; returns the `added` keys it could NOT insert."""
     nodes = graph["nodes"]
     dropped = {n["id"] for n in nodes if n.get("_origin") == "ast" and _key(n) in missing}
@@ -105,7 +106,7 @@ def _fix(graph: dict, fresh_nodes: list, added: set, missing: set) -> set:
     have = {n["id"] for n in nodes}
     inserted: set = set()
     blocked = set()
-    for n in fresh_nodes:
+    for n in fresh["nodes"]:
         if _key(n) not in added:
             continue
         if n["id"] in inserted:
@@ -125,6 +126,18 @@ def _fix(graph: dict, fresh_nodes: list, added: set, missing: set) -> set:
         for l in graph.get("links", [])
         if l.get("source") not in dropped and l.get("target") not in dropped
     ]
+    # Carry over the extractor's structural edges for the new nodes so they are
+    # not isolated (graph.json is undirected + simple: one link per pair).
+    ids = {n["id"] for n in nodes}
+    seen = {frozenset((l.get("source"), l.get("target"))) for l in graph["links"]}
+    for e in fresh.get("edges", []):
+        s, t = e.get("source"), e.get("target")
+        pair = frozenset((s, t))
+        if (s in inserted or t in inserted) and s in ids and t in ids and pair not in seen:
+            seen.add(pair)
+            graph["links"].append(
+                {**e, "source_file": _rel(e.get("source_file") or ""), "confidence_score": 1.0}
+            )
     GRAPH.write_text(json.dumps(graph, indent=2) + "\n", encoding="utf-8")
     return blocked
 
@@ -164,7 +177,7 @@ def main() -> int:
     _sample(missing, "graphed symbols no longer in code")
     print()
     if "--fix" in sys.argv[1:]:
-        blocked = _fix(graph, fresh["nodes"], added, missing)
+        blocked = _fix(graph, fresh, added, missing)
         if blocked:
             print("::error:: --fix could not add symbols whose node id is already used by a doc/semantic node; run a full `/graphify` rebuild.")
             _sample(blocked, "blocked by id collision")
