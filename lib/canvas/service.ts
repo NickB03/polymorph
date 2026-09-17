@@ -402,7 +402,9 @@ export async function createCanvasArtifactFromSource(input: {
     return {
       ok: false,
       error: 'Draft revision is stale',
-      errorCode: 'stale-revision'
+      errorCode: 'stale-revision',
+      artifact:
+        (await buildArtifactState(artifact.id, input.userId)) ?? undefined
     }
   }
 
@@ -429,7 +431,9 @@ export async function createCanvasArtifactFromSource(input: {
     return {
       ok: false,
       error: 'Draft revision is stale',
-      errorCode: 'stale-revision'
+      errorCode: 'stale-revision',
+      artifact:
+        (await buildArtifactState(artifact.id, input.userId)) ?? undefined
     }
   }
 

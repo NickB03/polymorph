@@ -180,6 +180,9 @@ describe('Canvas Service', () => {
       })
       // Optimistic concurrency miss: the update matched no row
       mockUpdateCanvasArtifactDraft.mockResolvedValue(null)
+      mockLoadCanvasArtifactById.mockResolvedValue(
+        makeArtifactRow({ draftRevision: 3 })
+      )
 
       const result = await createCanvasArtifactFromSource({
         chatId: 'chat-1',
@@ -190,6 +193,9 @@ describe('Canvas Service', () => {
 
       expect(result.ok).toBe(false)
       expect(result.errorCode).toBe('stale-revision')
+      // The row exists, so the failure must still carry its real identity
+      expect(result.artifact?.artifactId).toBe(makeArtifactRow().id)
+      expect(result.artifact?.draftRevision).toBe(3)
       // Must not go on to link a version against a revision it never won
       expect(mockCreateCanvasArtifactVersion).not.toHaveBeenCalled()
     })

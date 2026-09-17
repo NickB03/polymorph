@@ -135,6 +135,9 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   // Bumped whenever the target artifact changes or the workspace closes, so a
   // slow in-flight fetch cannot apply its state over a newer one.
   const loadGenerationRef = useRef(0)
+  // Set when a reload is requested while an open of the same artifact is in
+  // flight; the open refetches instead of being cancelled by the reload.
+  const reloadQueuedRef = useRef(false)
   const artifactChatIdRef = useRef<string | null>(null)
 
   const isWorkspaceOpen = !!(artifact || isLoading || pendingWorkspace)
@@ -189,8 +192,12 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         }
 
         const url = buildUrl(id, '', effectiveGuestToken, chatId)
-        const res = await fetch(url)
-        if (generation !== loadGenerationRef.current) return
+        let res: Response
+        do {
+          reloadQueuedRef.current = false
+          res = await fetch(url)
+          if (generation !== loadGenerationRef.current) return
+        } while (reloadQueuedRef.current)
         if (!res.ok) {
           console.error('Failed to load canvas artifact:', res.status)
           setArtifact(null)
@@ -289,6 +296,10 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
 
   const reloadArtifact = useCallback(async () => {
     if (!artifactId) return
+    if (openingRef.current === artifactId) {
+      reloadQueuedRef.current = true
+      return
+    }
 
     const generation = ++loadGenerationRef.current
     setIsLoading(true)
