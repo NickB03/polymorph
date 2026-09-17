@@ -46603,6 +46603,66 @@
       "community": 136,
       "norm_label": "opentelemetry api",
       "id": "package_dependencies_opentelemetry_api"
+    },
+    {
+      "label": "AuthLayout()",
+      "file_type": "code",
+      "source_file": "app/auth/layout.tsx",
+      "source_location": "L3",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "authlayout",
+      "id": "auth_layout_authlayout"
+    },
+    {
+      "label": "layout.tsx",
+      "file_type": "code",
+      "source_file": "app/auth/layout.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "layout tsx",
+      "id": "auth_layout"
+    },
+    {
+      "label": "assistant()",
+      "file_type": "code",
+      "source_file": "lib/streaming/helpers/__tests__/strip-reasoning-parts.test.ts",
+      "source_location": "L10",
+      "_origin": "ast",
+      "community": 17,
+      "norm_label": "assistant",
+      "id": "tests_strip_reasoning_parts_test_assistant"
+    },
+    {
+      "label": "SETTLED_TOOL_STATES",
+      "file_type": "code",
+      "source_file": "lib/streaming/helpers/strip-reasoning-parts.ts",
+      "source_location": "L48",
+      "_origin": "ast",
+      "community": 32,
+      "norm_label": "settled tool states",
+      "id": "helpers_strip_reasoning_parts_settled_tool_states"
+    },
+    {
+      "label": "toReplaySafeAbortedMessage()",
+      "file_type": "code",
+      "source_file": "lib/streaming/helpers/strip-reasoning-parts.ts",
+      "source_location": "L60",
+      "_origin": "ast",
+      "community": 32,
+      "norm_label": "toreplaysafeabortedmessage",
+      "id": "helpers_strip_reasoning_parts_toreplaysafeabortedmessage"
+    },
+    {
+      "label": "nwsapi",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L151",
+      "_origin": "ast",
+      "community": 136,
+      "norm_label": "nwsapi",
+      "id": "package_overrides_nwsapi"
     }
   ],
   "links": [
