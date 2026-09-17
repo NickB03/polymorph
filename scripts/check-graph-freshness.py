@@ -27,11 +27,19 @@ Scope and intent:
       Doc/semantic concept nodes have no ``_origin`` key and are excluded.
 
 Exit 0 when in sync, 1 when stale (with an actionable message).
+
+``--fix`` repairs graph.json in place: adds the missing AST nodes and drops the
+stale ones (plus links left dangling by a dropped node), touching nothing else.
+Use this instead of `graphify update .`, which rebuilds from code only and
+DROPS the LLM-extracted doc/semantic nodes the committed graph carries. Run it
+with the CI-pinned extractor (see .github/workflows/ci.yml) from a clean
+checkout — untracked local dirs would otherwise leak phantom nodes in.
 """
 from __future__ import annotations
 
 from pathlib import Path
 import json
+import sys
 
 from graphify.detect import detect
 from graphify.extract import collect_files, extract
@@ -80,6 +88,35 @@ def _sample(pairs: set, label: str) -> None:
             print(f"    {sf}::{lbl}")
 
 
+def _key(n) -> tuple:
+    return (_rel(n.get("source_file") or ""), n.get("label"))
+
+
+def _fix(graph: dict, fresh_nodes: list, added: set, missing: set) -> None:
+    nodes = graph["nodes"]
+    dropped = {n["id"] for n in nodes if n.get("_origin") == "ast" and _key(n) in missing}
+    nodes[:] = [n for n in nodes if n["id"] not in dropped]
+    # Inherit a community from a sibling in the same file so clustering-based
+    # queries still place the new node; a full `/graphify` re-clusters properly.
+    community_by_file = {
+        n.get("source_file"): n["community"] for n in nodes if "community" in n
+    }
+    have = {n["id"] for n in nodes}
+    for n in fresh_nodes:
+        if _key(n) in added and n["id"] not in have:
+            have.add(n["id"])
+            new = {**n, "source_file": _rel(n.get("source_file") or ""), "_origin": "ast"}
+            if new["source_file"] in community_by_file:
+                new["community"] = community_by_file[new["source_file"]]
+            nodes.append(new)
+    graph["links"] = [
+        l
+        for l in graph.get("links", [])
+        if l.get("source") not in dropped and l.get("target") not in dropped
+    ]
+    GRAPH.write_text(json.dumps(graph, indent=2) + "\n", encoding="utf-8")
+
+
 def main() -> int:
     if not GRAPH.exists():
         print(
@@ -114,9 +151,14 @@ def main() -> int:
     _sample(added, "new code symbols (not in graph)")
     _sample(missing, "graphed symbols no longer in code")
     print()
+    if "--fix" in sys.argv[1:]:
+        _fix(graph, fresh["nodes"], added, missing)
+        print(f"Fixed: +{len(added)} / -{len(missing)} AST node(s). Commit graphify-out/graph.json.")
+        return 0
     print(
-        "Fix: run `graphify update .` (or `/graphify` for a full rebuild), "
-        "then commit graphify-out/."
+        "Fix: run `python scripts/check-graph-freshness.py --fix` with the "
+        "CI-pinned graphify from a clean checkout, then commit graph.json. "
+        "Do NOT use `graphify update .` — it drops the doc/semantic nodes."
     )
     return 1
 
