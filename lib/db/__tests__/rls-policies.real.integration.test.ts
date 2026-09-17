@@ -112,18 +112,30 @@ describe.skipIf(!RUN)('RLS policies (real Postgres)', () => {
     })
     await lockHeld
 
-    let settled = false
     const latePartial = upsertMessage(
       { id: `${prefix}-partial`, chatId, role: 'assistant', parts: [] },
       'user-A',
       { latestId: answered, since: new Date() }
-    ).finally(() => (settled = true))
+    )
 
-    // Without the lock this resolves immediately: the uncommitted newer
-    // message is invisible, the guard passes, and the stale partial lands.
+    // Barrier, not a timer: wait until Postgres itself reports a session
+    // waiting on this chat's advisory lock. Without the lock no waiter ever
+    // appears (the uncommitted newer message is invisible, the guard passes,
+    // the stale partial lands) and this fails — on any runner speed.
     try {
-      await new Promise(r => setTimeout(r, 300))
-      expect(settled).toBe(false)
+      let waiters = 0
+      // ~2s budget: well inside the 5s test timeout, so a missing lock fails
+      // on the assertion below rather than as an opaque timeout.
+      for (let i = 0; i < 40 && waiters === 0; i++) {
+        const [row] = await owner`
+          select count(*)::int as n from pg_locks
+          where locktype = 'advisory' and not granted
+            and objid = (hashtext(${chatId})::bigint & 4294967295)::oid
+        `
+        waiters = row.n
+        if (waiters === 0) await new Promise(r => setTimeout(r, 50))
+      }
+      expect(waiters).toBe(1)
     } finally {
       // Always let the held transaction finish, or a failed assertion would
       // leave it (and the lock) open until the connection is torn down.
