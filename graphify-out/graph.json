@@ -1455,16 +1455,6 @@
       "id": "image_proxy_route"
     },
     {
-      "label": "normalizeHost()",
-      "file_type": "code",
-      "source_file": "app/api/canvas-assets/image-proxy/route.ts",
-      "source_location": "L13",
-      "_origin": "ast",
-      "community": 102,
-      "norm_label": "normalizehost()",
-      "id": "image_proxy_route_normalizehost"
-    },
-    {
       "label": "getTrustedIpCandidate()",
       "file_type": "code",
       "source_file": "app/api/canvas-assets/image-proxy/route.ts",
@@ -1483,46 +1473,6 @@
       "community": 102,
       "norm_label": "getclientip()",
       "id": "image_proxy_route_getclientip"
-    },
-    {
-      "label": "isPrivateIpv4()",
-      "file_type": "code",
-      "source_file": "app/api/canvas-assets/image-proxy/route.ts",
-      "source_location": "L38",
-      "_origin": "ast",
-      "community": 102,
-      "norm_label": "isprivateipv4()",
-      "id": "image_proxy_route_isprivateipv4"
-    },
-    {
-      "label": "decodeMappedIpv4()",
-      "file_type": "code",
-      "source_file": "app/api/canvas-assets/image-proxy/route.ts",
-      "source_location": "L56",
-      "_origin": "ast",
-      "community": 102,
-      "norm_label": "decodemappedipv4()",
-      "id": "image_proxy_route_decodemappedipv4"
-    },
-    {
-      "label": "isPrivateIpv6()",
-      "file_type": "code",
-      "source_file": "app/api/canvas-assets/image-proxy/route.ts",
-      "source_location": "L85",
-      "_origin": "ast",
-      "community": 102,
-      "norm_label": "isprivateipv6()",
-      "id": "image_proxy_route_isprivateipv6"
-    },
-    {
-      "label": "isSafeRedirectTarget()",
-      "file_type": "code",
-      "source_file": "app/api/canvas-assets/image-proxy/route.ts",
-      "source_location": "L101",
-      "_origin": "ast",
-      "community": 102,
-      "norm_label": "issaferedirecttarget()",
-      "id": "image_proxy_route_issaferedirecttarget"
     },
     {
       "label": "getFirstThumbnailUrl()",
@@ -8513,16 +8463,6 @@
       "community": 2,
       "norm_label": "getlatestpersistedcanvasartifactpartindexes()",
       "id": "components_render_message_getlatestpersistedcanvasartifactpartindexes"
-    },
-    {
-      "label": "getLatestCanvasArtifactStatuses()",
-      "file_type": "code",
-      "source_file": "components/render-message.tsx",
-      "source_location": "L375",
-      "_origin": "ast",
-      "community": 2,
-      "norm_label": "getlatestcanvasartifactstatuses()",
-      "id": "components_render_message_getlatestcanvasartifactstatuses"
     },
     {
       "label": "RenderMessageProps",
@@ -16585,16 +16525,6 @@
       "id": "ui_sonner"
     },
     {
-      "label": "ToasterProps",
-      "file_type": "code",
-      "source_file": "components/ui/sonner.tsx",
-      "source_location": "L7",
-      "_origin": "ast",
-      "community": 58,
-      "norm_label": "toasterprops",
-      "id": "ui_sonner_toasterprops"
-    },
-    {
       "label": "Toaster()",
       "file_type": "code",
       "source_file": "components/ui/sonner.tsx",
@@ -18965,26 +18895,6 @@
       "id": "actions_chat_upsertmessage"
     },
     {
-      "label": "deleteChat()",
-      "file_type": "code",
-      "source_file": "lib/actions/chat.ts",
-      "source_location": "L182",
-      "_origin": "ast",
-      "community": 7,
-      "norm_label": "deletechat()",
-      "id": "actions_chat_deletechat"
-    },
-    {
-      "label": "clearChats()",
-      "file_type": "code",
-      "source_file": "lib/actions/chat.ts",
-      "source_location": "L200",
-      "_origin": "ast",
-      "community": 7,
-      "norm_label": "clearchats()",
-      "id": "actions_chat_clearchats"
-    },
-    {
       "label": "deleteMessagesAfter()",
       "file_type": "code",
       "source_file": "lib/actions/chat.ts",
@@ -19013,16 +18923,6 @@
       "community": 7,
       "norm_label": "deletemessagesfromindex()",
       "id": "actions_chat_deletemessagesfromindex"
-    },
-    {
-      "label": "saveChatTitle()",
-      "file_type": "code",
-      "source_file": "lib/actions/chat.ts",
-      "source_location": "L294",
-      "_origin": "ast",
-      "community": 7,
-      "norm_label": "savechattitle()",
-      "id": "actions_chat_savechattitle"
     },
     {
       "label": "feedback.ts",
@@ -19093,16 +18993,6 @@
       "community": 26,
       "norm_label": "generate-trending-suggestions.test.ts",
       "id": "tests_generate_trending_suggestions_test"
-    },
-    {
-      "label": "mockGenerateObject",
-      "file_type": "code",
-      "source_file": "lib/agents/__tests__/generate-trending-suggestions.test.ts",
-      "source_location": "L5",
-      "_origin": "ast",
-      "community": 26,
-      "norm_label": "mockgenerateobject",
-      "id": "tests_generate_trending_suggestions_test_mockgenerateobject"
     },
     {
       "label": "mockGetTrendingSuggestionsModel",
@@ -22805,46 +22695,6 @@
       "id": "db_actions"
     },
     {
-      "label": "ArtifactStatus",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L11",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "artifactstatus",
-      "id": "db_actions_artifactstatus"
-    },
-    {
-      "label": "CreateArtifactInput",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L12",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "createartifactinput",
-      "id": "db_actions_createartifactinput"
-    },
-    {
-      "label": "AppendArtifactRevisionInput",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L22",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "appendartifactrevisioninput",
-      "id": "db_actions_appendartifactrevisioninput"
-    },
-    {
-      "label": "UpsertArtifactRuntimeSessionInput",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L31",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "upsertartifactruntimesessioninput",
-      "id": "db_actions_upsertartifactruntimesessioninput"
-    },
-    {
       "label": "hasDisplayableChatContent()",
       "file_type": "code",
       "source_file": "lib/db/actions.ts",
@@ -22903,96 +22753,6 @@
       "community": 19,
       "norm_label": "loadchat()",
       "id": "db_actions_loadchat"
-    },
-    {
-      "label": "loadArtifactByChatId()",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L265",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "loadartifactbychatid()",
-      "id": "db_actions_loadartifactbychatid"
-    },
-    {
-      "label": "loadArtifactById()",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L289",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "loadartifactbyid()",
-      "id": "db_actions_loadartifactbyid"
-    },
-    {
-      "label": "loadArtifactRuntimeSession()",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L312",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "loadartifactruntimesession()",
-      "id": "db_actions_loadartifactruntimesession"
-    },
-    {
-      "label": "createArtifactRecord()",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L331",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "createartifactrecord()",
-      "id": "db_actions_createartifactrecord"
-    },
-    {
-      "label": "updateArtifactRecord()",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L352",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "updateartifactrecord()",
-      "id": "db_actions_updateartifactrecord"
-    },
-    {
-      "label": "claimArtifactForRebuild()",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L391",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "claimartifactforrebuild()",
-      "id": "db_actions_claimartifactforrebuild"
-    },
-    {
-      "label": "appendArtifactRevision()",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L414",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "appendartifactrevision()",
-      "id": "db_actions_appendartifactrevision"
-    },
-    {
-      "label": "loadLatestRevisionWithSource()",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L452",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "loadlatestrevisionwithsource()",
-      "id": "db_actions_loadlatestrevisionwithsource"
-    },
-    {
-      "label": "upsertArtifactRuntimeSession()",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L470",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "upsertartifactruntimesession()",
-      "id": "db_actions_upsertartifactruntimesession"
     },
     {
       "label": "loadChatWithMessages()",
@@ -23163,16 +22923,6 @@
       "community": 29,
       "norm_label": "listcanvasartifactversions()",
       "id": "db_actions_listcanvasartifactversions"
-    },
-    {
-      "label": "restoreCanvasArtifactVersion()",
-      "file_type": "code",
-      "source_file": "lib/db/actions.ts",
-      "source_location": "L1029",
-      "_origin": "ast",
-      "community": 19,
-      "norm_label": "restorecanvasartifactversion()",
-      "id": "db_actions_restorecanvasartifactversion"
     },
     {
       "label": "admin.ts",
@@ -25145,16 +24895,6 @@
       "id": "tests_canvas_limits_test_mockredisincr"
     },
     {
-      "label": "mockRedisExpire",
-      "file_type": "code",
-      "source_file": "lib/rate-limit/__tests__/canvas-limits.test.ts",
-      "source_location": "L6",
-      "_origin": "ast",
-      "community": 20,
-      "norm_label": "mockredisexpire",
-      "id": "tests_canvas_limits_test_mockredisexpire"
-    },
-    {
       "label": "chat-limits.test.ts",
       "file_type": "code",
       "source_file": "lib/rate-limit/__tests__/chat-limits.test.ts",
@@ -25205,16 +24945,6 @@
       "id": "tests_guest_limit_test_mockredisincr"
     },
     {
-      "label": "mockRedisExpire",
-      "file_type": "code",
-      "source_file": "lib/rate-limit/__tests__/guest-limit.test.ts",
-      "source_location": "L6",
-      "_origin": "ast",
-      "community": 33,
-      "norm_label": "mockredisexpire",
-      "id": "tests_guest_limit_test_mockredisexpire"
-    },
-    {
       "label": "per-minute-limiter.test.ts",
       "file_type": "code",
       "source_file": "lib/rate-limit/__tests__/per-minute-limiter.test.ts",
@@ -25263,16 +24993,6 @@
       "community": 33,
       "norm_label": "mockredisincr",
       "id": "tests_rate_limit_fallback_test_mockredisincr"
-    },
-    {
-      "label": "mockRedisExpire",
-      "file_type": "code",
-      "source_file": "lib/rate-limit/__tests__/rate-limit-fallback.test.ts",
-      "source_location": "L9",
-      "_origin": "ast",
-      "community": 33,
-      "norm_label": "mockredisexpire",
-      "id": "tests_rate_limit_fallback_test_mockredisexpire"
     },
     {
       "label": "canvas-limits.ts",
@@ -35403,16 +35123,6 @@
       "community": 0,
       "norm_label": "next-themes",
       "id": "package_dependencies_next_themes"
-    },
-    {
-      "label": "node-html-parser",
-      "file_type": "code",
-      "source_file": "package.json",
-      "source_location": "L102",
-      "_origin": "ast",
-      "community": 0,
-      "norm_label": "node-html-parser",
-      "id": "package_dependencies_node_html_parser"
     },
     {
       "label": "ollama-ai-provider-v2",
@@ -46573,6 +46283,326 @@
       "norm_label": "firecrawl-mcp",
       "community": 159,
       "id": "mcp_package_firecrawl_mcp"
+    },
+    {
+      "label": "feedbackRequest()",
+      "file_type": "code",
+      "source_file": "app/api/feedback/__tests__/route.test.ts",
+      "source_location": "L42",
+      "_origin": "ast",
+      "community": 140,
+      "norm_label": "feedbackrequest",
+      "id": "tests_route_test_feedbackrequest"
+    },
+    {
+      "label": "{ getUser }",
+      "file_type": "code",
+      "source_file": "app/api/feedback/__tests__/route.test.ts",
+      "source_location": "L13",
+      "_origin": "ast",
+      "community": 140,
+      "norm_label": "getuser",
+      "id": "tests_route_test_getuser"
+    },
+    {
+      "label": "resolvePatch()",
+      "file_type": "code",
+      "source_file": "lib/actions/__tests__/canvas-chat-ownership-race.test.ts",
+      "source_location": "L63",
+      "_origin": "ast",
+      "community": 21,
+      "norm_label": "resolvepatch",
+      "id": "tests_canvas_chat_ownership_race_test_resolvepatch"
+    },
+    {
+      "label": "chat-actions.ts",
+      "file_type": "code",
+      "source_file": "lib/actions/chat-actions.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 7,
+      "norm_label": "chat actions ts",
+      "id": "actions_chat_actions"
+    },
+    {
+      "label": "clearChats()",
+      "file_type": "code",
+      "source_file": "lib/actions/chat-actions.ts",
+      "source_location": "L33",
+      "_origin": "ast",
+      "community": 7,
+      "norm_label": "clearchats",
+      "id": "actions_chat_actions_clearchats"
+    },
+    {
+      "label": "deleteChat()",
+      "file_type": "code",
+      "source_file": "lib/actions/chat-actions.ts",
+      "source_location": "L15",
+      "_origin": "ast",
+      "community": 7,
+      "norm_label": "deletechat",
+      "id": "actions_chat_actions_deletechat"
+    },
+    {
+      "label": "mockGenerateText",
+      "file_type": "code",
+      "source_file": "lib/agents/__tests__/generate-trending-suggestions.test.ts",
+      "source_location": "L5",
+      "_origin": "ast",
+      "community": 26,
+      "norm_label": "mockgeneratetext",
+      "id": "tests_generate_trending_suggestions_test_mockgeneratetext"
+    },
+    {
+      "label": "mockDeleteCanvasArtifactVersions",
+      "file_type": "code",
+      "source_file": "lib/canvas/service.integration.test.ts",
+      "source_location": "L10",
+      "_origin": "ast",
+      "community": 95,
+      "norm_label": "mockdeletecanvasartifactversions",
+      "id": "canvas_service_integration_test_mockdeletecanvasartifactversions"
+    },
+    {
+      "label": "mockLoadCanvasArtifactVersionSnapshot",
+      "file_type": "code",
+      "source_file": "lib/canvas/service.integration.test.ts",
+      "source_location": "L11",
+      "_origin": "ast",
+      "community": 95,
+      "norm_label": "mockloadcanvasartifactversionsnapshot",
+      "id": "canvas_service_integration_test_mockloadcanvasartifactversionsnapshot"
+    },
+    {
+      "label": "mockDeleteCanvasArtifactVersions",
+      "file_type": "code",
+      "source_file": "lib/canvas/service.test.ts",
+      "source_location": "L14",
+      "_origin": "ast",
+      "community": 29,
+      "norm_label": "mockdeletecanvasartifactversions",
+      "id": "canvas_service_test_mockdeletecanvasartifactversions"
+    },
+    {
+      "label": "mockLoadCanvasArtifactVersionSnapshot",
+      "file_type": "code",
+      "source_file": "lib/canvas/service.test.ts",
+      "source_location": "L15",
+      "_origin": "ast",
+      "community": 29,
+      "norm_label": "mockloadcanvasartifactversionsnapshot",
+      "id": "canvas_service_test_mockloadcanvasartifactversionsnapshot"
+    },
+    {
+      "label": "deleteCanvasArtifactVersions()",
+      "file_type": "code",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L768",
+      "_origin": "ast",
+      "community": 19,
+      "norm_label": "deletecanvasartifactversions",
+      "id": "db_actions_deletecanvasartifactversions"
+    },
+    {
+      "label": "loadCanvasArtifactVersionSnapshot()",
+      "file_type": "code",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L740",
+      "_origin": "ast",
+      "community": 19,
+      "norm_label": "loadcanvasartifactversionsnapshot",
+      "id": "db_actions_loadcanvasartifactversionsnapshot"
+    },
+    {
+      "label": "incrWithTtl()",
+      "file_type": "code",
+      "source_file": "lib/rate-limit/redis.ts",
+      "source_location": "L36",
+      "_origin": "ast",
+      "community": 33,
+      "norm_label": "incrwithttl",
+      "id": "rate_limit_redis_incrwithttl"
+    },
+    {
+      "label": "strip-reasoning-parts.test.ts",
+      "file_type": "code",
+      "source_file": "lib/streaming/helpers/__tests__/strip-reasoning-parts.test.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 17,
+      "norm_label": "strip reasoning parts test ts",
+      "id": "tests_strip_reasoning_parts_test"
+    },
+    {
+      "label": "needsReasoningStrip()",
+      "file_type": "code",
+      "source_file": "lib/streaming/helpers/strip-reasoning-parts.ts",
+      "source_location": "L13",
+      "_origin": "ast",
+      "community": 32,
+      "norm_label": "needsreasoningstrip",
+      "id": "helpers_strip_reasoning_parts_needsreasoningstrip"
+    },
+    {
+      "label": "registry.test.ts",
+      "file_type": "code",
+      "source_file": "lib/utils/__tests__/registry.test.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 7,
+      "norm_label": "registry test ts",
+      "id": "lib_utils_tests_registry_test_ts_tests_registry_test"
+    },
+    {
+      "label": "byteLengthOf()",
+      "file_type": "code",
+      "source_file": "lib/utils/context-window.ts",
+      "source_location": "L171",
+      "_origin": "ast",
+      "community": 113,
+      "norm_label": "bytelengthof",
+      "id": "utils_context_window_bytelengthof"
+    },
+    {
+      "label": "dropOrphanToolMessages()",
+      "file_type": "code",
+      "source_file": "lib/utils/context-window.ts",
+      "source_location": "L200",
+      "_origin": "ast",
+      "community": 113,
+      "norm_label": "droporphantoolmessages",
+      "id": "utils_context_window_droporphantoolmessages"
+    },
+    {
+      "label": "estimateBinaryTokens()",
+      "file_type": "code",
+      "source_file": "lib/utils/context-window.ts",
+      "source_location": "L181",
+      "_origin": "ast",
+      "community": 113,
+      "norm_label": "estimatebinarytokens",
+      "id": "utils_context_window_estimatebinarytokens"
+    },
+    {
+      "label": "safeStringify()",
+      "file_type": "code",
+      "source_file": "lib/utils/context-window.ts",
+      "source_location": "L124",
+      "_origin": "ast",
+      "community": 113,
+      "norm_label": "safestringify",
+      "id": "utils_context_window_safestringify"
+    },
+    {
+      "label": "asV4Provider()",
+      "file_type": "code",
+      "source_file": "lib/utils/registry.ts",
+      "source_location": "L16",
+      "_origin": "ast",
+      "community": 88,
+      "norm_label": "asv4provider",
+      "id": "utils_registry_asv4provider"
+    },
+    {
+      "label": "registryProviders",
+      "file_type": "code",
+      "source_file": "lib/utils/registry.ts",
+      "source_location": "L62",
+      "_origin": "ast",
+      "community": 88,
+      "norm_label": "registryproviders",
+      "id": "utils_registry_registryproviders"
+    },
+    {
+      "label": "decodeMappedIpv4()",
+      "file_type": "code",
+      "source_file": "lib/utils/safe-url.ts",
+      "source_location": "L30",
+      "_origin": "ast",
+      "community": 58,
+      "norm_label": "decodemappedipv4",
+      "id": "utils_safe_url_decodemappedipv4"
+    },
+    {
+      "label": "isPrivateIpv4()",
+      "file_type": "code",
+      "source_file": "lib/utils/safe-url.ts",
+      "source_location": "L12",
+      "_origin": "ast",
+      "community": 58,
+      "norm_label": "isprivateipv4",
+      "id": "utils_safe_url_isprivateipv4"
+    },
+    {
+      "label": "isPrivateIpv6()",
+      "file_type": "code",
+      "source_file": "lib/utils/safe-url.ts",
+      "source_location": "L59",
+      "_origin": "ast",
+      "community": 58,
+      "norm_label": "isprivateipv6",
+      "id": "utils_safe_url_isprivateipv6"
+    },
+    {
+      "label": "isSafeRedirectTarget()",
+      "file_type": "code",
+      "source_file": "lib/utils/safe-url.ts",
+      "source_location": "L79",
+      "_origin": "ast",
+      "community": 58,
+      "norm_label": "issaferedirecttarget",
+      "id": "utils_safe_url_issaferedirecttarget"
+    },
+    {
+      "label": "normalizeHost()",
+      "file_type": "code",
+      "source_file": "lib/utils/safe-url.ts",
+      "source_location": "L8",
+      "_origin": "ast",
+      "community": 58,
+      "norm_label": "normalizehost",
+      "id": "utils_safe_url_normalizehost"
+    },
+    {
+      "label": "safe-url.ts",
+      "file_type": "code",
+      "source_file": "lib/utils/safe-url.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 58,
+      "norm_label": "safe url ts",
+      "id": "utils_safe_url"
+    },
+    {
+      "label": "telemetryMetadataOptions()",
+      "file_type": "code",
+      "source_file": "lib/utils/telemetry.ts",
+      "source_location": "L41",
+      "_origin": "ast",
+      "community": 32,
+      "norm_label": "telemetrymetadataoptions",
+      "id": "utils_telemetry_telemetrymetadataoptions"
+    },
+    {
+      "label": "@ai-sdk/otel",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L30",
+      "_origin": "ast",
+      "community": 136,
+      "norm_label": "ai sdk otel",
+      "id": "package_dependencies_ai_sdk_otel"
+    },
+    {
+      "label": "@opentelemetry/api",
+      "file_type": "code",
+      "source_file": "package.json",
+      "source_location": "L42",
+      "_origin": "ast",
+      "community": 136,
+      "norm_label": "opentelemetry api",
+      "id": "package_dependencies_opentelemetry_api"
     }
   ],
   "links": [
