@@ -208,17 +208,23 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
           // before giving up on a (possibly transient) non-2xx or network error.
           if (failure !== undefined && !reloadQueuedRef.current) {
             console.error('Failed to load canvas artifact:', failure)
-            setArtifact(null)
-            return
+            // Keep an earlier successful response if only the retry failed.
+            break
           }
         } while (reloadQueuedRef.current)
         if (state) applyState(state)
+        else setArtifact(null)
       } catch (err) {
         if (generation !== loadGenerationRef.current) return
         console.error('Error loading canvas artifact:', err)
         setArtifact(null)
       } finally {
-        if (openingRef.current === id) {
+        // Generation, not just id: after close + reopen of the same artifact,
+        // this stale request must not clear the newer open's marker.
+        if (
+          generation === loadGenerationRef.current &&
+          openingRef.current === id
+        ) {
           openingRef.current = null
           setIsLoading(false)
         }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CanvasArtifactState } from '@/lib/canvas/service'
@@ -53,6 +53,7 @@ function Harness() {
       </button>
       <button onClick={() => canvas.focusCanvasArtifact('art-1')}>focus</button>
       <button onClick={() => void canvas.reloadArtifact()}>reload</button>
+      <button onClick={() => canvas.closeWorkspace()}>close</button>
       <button onClick={() => canvas.viewFullscreen()}>view</button>
       <button onClick={() => void canvas.exportHtml()}>export</button>
       <button
@@ -406,6 +407,72 @@ describe('CanvasProvider', () => {
       expect(screen.getByTestId('artifact-id')).toHaveTextContent('art-1')
     })
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps a successful open when its queued retry fails', async () => {
+    const deferred = createDeferred<Response>()
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(() => deferred.promise)
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <CanvasProvider>
+        <Harness />
+      </CanvasProvider>
+    )
+
+    fireEvent.click(screen.getByText('open-auth'))
+    fireEvent.click(screen.getByText('reload'))
+
+    deferred.resolve({
+      ok: true,
+      json: async () => makeArtifactState()
+    } as Response)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('artifact-id')).toHaveTextContent('art-1')
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not let a stale open clear a newer open of the same artifact', async () => {
+    const stale = createDeferred<Response>()
+    const current = createDeferred<Response>()
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(() => stale.promise)
+      .mockImplementationOnce(() => current.promise)
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <CanvasProvider>
+        <Harness />
+      </CanvasProvider>
+    )
+
+    fireEvent.click(screen.getByText('open-auth'))
+    fireEvent.click(screen.getByText('close'))
+    fireEvent.click(screen.getByText('open-auth'))
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+
+    // The abandoned request settles while the reopen is still pending.
+    await act(async () => {
+      stale.resolve({
+        ok: true,
+        json: async () => makeArtifactState()
+      } as Response)
+    })
+    expect(screen.getByTestId('workspace-open')).toHaveTextContent('true')
+
+    current.resolve({
+      ok: true,
+      json: async () => makeArtifactState()
+    } as Response)
+    await waitFor(() => {
+      expect(screen.getByTestId('artifact-id')).toHaveTextContent('art-1')
+    })
   })
 
   it('treats a pending workspace as open before artifact persistence', async () => {
