@@ -46796,6 +46796,22 @@
       "source_location": "L131",
       "_origin": "ast",
       "community": 58
+    },
+    {
+      "id": "app_not_found",
+      "label": "not-found.tsx",
+      "file_type": "code",
+      "source_file": "app/not-found.tsx",
+      "source_location": "L1",
+      "_origin": "ast"
+    },
+    {
+      "id": "app_not_found_notfound",
+      "label": "NotFound()",
+      "file_type": "code",
+      "source_file": "app/not-found.tsx",
+      "source_location": "L3",
+      "_origin": "ast"
     }
   ],
   "links": [
@@ -149637,6 +149653,49 @@
       "source_location": "L134",
       "weight": 1.0,
       "confidence_score": 1.0
+    },
+    {
+      "source": "app_not_found",
+      "target": "app_not_found_notfound",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/not-found.tsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "evals_page_evalspage",
+      "target": "app_not_found_notfound",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 1.0,
+      "source_file": "app/(admin)/admin/evals/page.tsx",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "admin_layout_adminlayout",
+      "target": "app_not_found_notfound",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 1.0,
+      "source_file": "app/(admin)/layout.tsx",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "id_page_searchpage",
+      "target": "app_not_found_notfound",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 1.0,
+      "source_file": "app/(chat)/search/[id]/page.tsx",
+      "source_location": "L39",
+      "weight": 1.0
     }
   ]
 }
