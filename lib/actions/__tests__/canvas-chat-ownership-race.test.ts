@@ -614,6 +614,10 @@ function createMemoryDb(gate?: Gate | null) {
           currentUserId = String(rendered.params[0])
           return []
         }
+        // Per-chat message lock: a no-op in this single-connection fake.
+        if (rendered.sql === 'select pg_advisory_xact_lock(hashtext($1))') {
+          return []
+        }
 
         throw new Error(`Unsupported SQL execution in test DB: ${rendered.sql}`)
       },

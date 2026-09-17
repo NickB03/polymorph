@@ -161,6 +161,31 @@ export async function getChat(
 }
 
 /**
+ * Runs a write to a chat's messages in a transaction that first takes a
+ * per-chat advisory lock, so message writers for one chat run one at a time.
+ * That is what makes a read-then-write (the stale guard below, or a delete
+ * computed from a fresh read) atomic under READ COMMITTED.
+ *
+ * Every writer that inserts or deletes a chat's messages must go through this:
+ * the lock only serializes transactions that take it. It is released on
+ * commit/rollback. `hashtext` is 32-bit, so two chats can share a key; that
+ * only costs a brief unnecessary wait, never correctness.
+ */
+async function withChatMessagesLock<T>(
+  chatId: string,
+  userId: string | undefined,
+  callback: (tx: TxInstance) => Promise<T>
+): Promise<T> {
+  const locked = async (tx: TxInstance) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${chatId}))`)
+    return callback(tx)
+  }
+  // Always a real transaction: a transaction-scoped lock taken on a bare
+  // connection would be released before the write ran.
+  return userId ? withRLS(userId, locked) : db.transaction(locked)
+}
+
+/**
  * Only write if the chat has not moved on: its latest message must still be
  * `latestId` and must not have been edited after `since`.
  */
@@ -187,18 +212,13 @@ export async function upsertMessage(
   const count = incrementDbOperationCount()
   perfLog(`DB - upsertMessage called - count: ${count}`)
 
-  // Use RLS if userId is provided, otherwise use regular db
-  const executeFn = userId
-    ? (callback: (tx: TxInstance) => Promise<Message | null>) =>
-        withRLS(userId, callback)
-    : (callback: (tx: TxInstance) => Promise<Message | null>) =>
-        db.transaction(callback)
+  const executeFn = (callback: (tx: TxInstance) => Promise<Message | null>) =>
+    withChatMessagesLock(message.chatId, userId, callback)
 
   const result = await executeFn(async tx => {
     if (staleGuard) {
-      // ponytail: check+insert share a transaction but READ COMMITTED still
-      // lets a concurrent insert land between them (sub-ms window). Take a
-      // per-chat advisory lock in every message writer if that ever matters.
+      // Atomic with the insert below: the per-chat lock keeps a newer turn
+      // (or an edit's delete) from committing between this read and the write.
       const [latest] = await tx
         .select({ id: messages.id, updatedAt: messages.updatedAt })
         .from(messages)
@@ -298,7 +318,7 @@ export async function deleteMessagesAfter(
   messageId: string,
   userId?: string
 ): Promise<{ count: number }> {
-  return withOptionalRLS(userId || null, async tx => {
+  return withChatMessagesLock(chatId, userId, async tx => {
     // Get the message's timestamp
     const [targetMessage] = await tx
       .select({ createdAt: messages.createdAt })
@@ -343,7 +363,7 @@ export async function deleteMessagesFromIndex(
   userId?: string,
   inclusive = true
 ): Promise<{ count: number }> {
-  return withOptionalRLS(userId || null, async tx => {
+  return withChatMessagesLock(chatId, userId, async tx => {
     // Get all messages for the chat
     const allMessages = await tx
       .select({ id: messages.id, createdAt: messages.createdAt })

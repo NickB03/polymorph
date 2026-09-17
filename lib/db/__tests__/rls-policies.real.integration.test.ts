@@ -16,7 +16,7 @@ import postgres from 'postgres'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { db } from '@/lib/db'
-import { createChat } from '@/lib/db/actions'
+import { createChat, upsertMessage } from '@/lib/db/actions'
 import { chats } from '@/lib/db/schema'
 import { withRLS } from '@/lib/db/with-rls'
 
@@ -80,5 +80,61 @@ describe.skipIf(!RUN)('RLS policies (real Postgres)', () => {
       tx.select().from(chats).where(eq(chats.id, idA))
     )
     expect(asB).toHaveLength(0)
+  })
+
+  // Not an RLS test, but it needs real Postgres and this is the file the
+  // DB-integration CI job runs: a mock cannot prove mutual exclusion.
+  it('serializes a stale-guarded write behind an in-flight newer message', async () => {
+    const chatId = `${prefix}-lock`
+    seededIds.push(chatId) // messages cascade with the chat
+    await createChat({ id: chatId, userId: 'user-A', title: 'Lock chat' })
+    const answered = `${prefix}-u1`
+    await upsertMessage(
+      { id: answered, chatId, role: 'user', parts: [] },
+      'user-A'
+    )
+
+    let releaseNewerTurn!: () => void
+    const newerTurnMayCommit = new Promise<void>(r => (releaseNewerTurn = r))
+    let newerTurnHoldsLock!: () => void
+    const lockHeld = new Promise<void>(r => (newerTurnHoldsLock = r))
+
+    // A newer turn that has taken the chat's lock and written its message but
+    // not yet committed — the exact window the guard used to lose.
+    const newerTurn = owner.begin(async tx => {
+      await tx`select pg_advisory_xact_lock(hashtext(${chatId}))`
+      await tx`
+        insert into messages (id, chat_id, role, ui_message, created_at)
+        values (${`${prefix}-u2`}, ${chatId}, 'user', '{}'::jsonb, now() + interval '1 second')
+      `
+      newerTurnHoldsLock()
+      await newerTurnMayCommit
+    })
+    await lockHeld
+
+    let settled = false
+    const latePartial = upsertMessage(
+      { id: `${prefix}-partial`, chatId, role: 'assistant', parts: [] },
+      'user-A',
+      { latestId: answered, since: new Date() }
+    ).finally(() => (settled = true))
+
+    // Without the lock this resolves immediately: the uncommitted newer
+    // message is invisible, the guard passes, and the stale partial lands.
+    try {
+      await new Promise(r => setTimeout(r, 300))
+      expect(settled).toBe(false)
+    } finally {
+      // Always let the held transaction finish, or a failed assertion would
+      // leave it (and the lock) open until the connection is torn down.
+      releaseNewerTurn()
+      await newerTurn
+    }
+
+    await expect(latePartial).resolves.toBeNull()
+    const rows = await owner`
+      select id from messages where chat_id = ${chatId} order by created_at
+    `
+    expect(rows.map(r => r.id)).toEqual([answered, `${prefix}-u2`])
   })
 })

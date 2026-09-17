@@ -7,6 +7,7 @@ import type { UIMessage } from '@/lib/types/ai'
 const dbMocks = vi.hoisted(() => {
   const tx = {
     delete: vi.fn(),
+    execute: vi.fn(),
     insert: vi.fn(),
     query: {
       messages: {
@@ -366,6 +367,23 @@ describe('canonical chat UIMessage loading', () => {
       await expect(
         upsertMessage(partial, 'user-1', { latestId: 'user-1', since })
       ).resolves.toEqual({ id: 'partial-1' })
+    })
+
+    it('takes the per-chat lock before the stale read', async () => {
+      dbMocks.tx.execute.mockClear()
+      dbMocks.tx.select.mockClear()
+      mockLatest([{ id: 'user-1', updatedAt: null }])
+      mockInsert()
+
+      await upsertMessage(partial, 'user-1', { latestId: 'user-1', since })
+
+      // A mock cannot prove mutual exclusion (the real-Postgres test does);
+      // it can prove the lock is requested first, which is what makes the
+      // read-then-insert atomic.
+      expect(dbMocks.tx.execute).toHaveBeenCalledTimes(1)
+      expect(dbMocks.tx.execute.mock.invocationCallOrder[0]).toBeLessThan(
+        dbMocks.tx.select.mock.invocationCallOrder[0]
+      )
     })
 
     it.each([

@@ -443,9 +443,12 @@ describe('Chat Actions', () => {
       const result = await deleteMessagesAfter(chatId, messageId)
 
       expect(result).toEqual({ success: true, count: 3 })
+      // userId is required so the delete runs in an RLS-scoped transaction
+      // (and can hold the per-chat message lock).
       expect(dbActions.deleteMessagesAfter).toHaveBeenCalledWith(
         chatId,
-        messageId
+        messageId,
+        userId
       )
       expect(revalidateTag).toHaveBeenCalledWith(`chat-${chatId}`, 'max')
     })
