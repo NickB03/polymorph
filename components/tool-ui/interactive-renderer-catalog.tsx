@@ -8,10 +8,7 @@ import { renderToolPart as renderDisplayQuestionWizardToolPart } from '@/lib/too
 import { toolName as displayQuestionWizardToolName } from '@/lib/tools/display-question-wizard/schema'
 
 type ToolPartState =
-  | 'input-streaming'
-  | 'input-available'
-  | 'output-available'
-  | 'output-error'
+  'input-streaming' | 'input-available' | 'output-available' | 'output-error'
 
 export type DisplayToolPart = {
   state?: ToolPartState

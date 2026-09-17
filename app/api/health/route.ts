@@ -6,10 +6,7 @@ import { db } from '@/lib/db'
 import { telemetryRecordingOptions } from '@/lib/utils/telemetry'
 
 type TracingState =
-  | 'enabled'
-  | 'disabled-off'
-  | 'disabled-https'
-  | 'init-failed'
+  'enabled' | 'disabled-off' | 'disabled-https' | 'init-failed'
 
 declare global {
   var __polymorphTracingState: TracingState | undefined

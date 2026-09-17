@@ -7,10 +7,7 @@ import type { WizardResult } from '@/components/tool-ui/question-wizard/schema'
 import { safeParseSerializableQuestionWizard } from '@/components/tool-ui/question-wizard/schema'
 
 type ToolPartState =
-  | 'input-streaming'
-  | 'input-available'
-  | 'output-available'
-  | 'output-error'
+  'input-streaming' | 'input-available' | 'output-available' | 'output-error'
 
 type DisplayToolPart = {
   state?: ToolPartState

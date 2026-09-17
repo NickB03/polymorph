@@ -56,8 +56,7 @@ const GetStaticMapImageInputSchema = z.object({
 })
 
 export type GetStaticMapImageResult =
-  | { state: 'success'; imageUrl: string }
-  | { state: 'error'; message: string }
+  { state: 'success'; imageUrl: string } | { state: 'error'; message: string }
 
 function clampDimension(value: number): number {
   return Math.min(MAX_DIMENSION, Math.max(32, Math.round(value)))

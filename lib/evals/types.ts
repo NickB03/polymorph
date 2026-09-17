@@ -1,7 +1,5 @@
 export type PersistedDashboardSuite =
-  | 'capability'
-  | 'regression'
-  | 'traffic-monitor'
+  'capability' | 'regression' | 'traffic-monitor'
 
 export interface EvalTrendPoint {
   createdAt: string

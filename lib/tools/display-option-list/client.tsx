@@ -8,10 +8,7 @@ import type { OptionListSelection } from '@/components/tool-ui/option-list/schem
 import { safeParseSerializableOptionList } from '@/components/tool-ui/option-list/schema'
 
 type ToolPartState =
-  | 'input-streaming'
-  | 'input-available'
-  | 'output-available'
-  | 'output-error'
+  'input-streaming' | 'input-available' | 'output-available' | 'output-error'
 
 type DisplayToolPart = {
   state?: ToolPartState

@@ -920,8 +920,7 @@ describe('Chat sections', () => {
     render(<Chat savedMessages={[]} />)
 
     const lastCall = mockChatMessages.mock.calls.at(-1)?.[0] as
-      | { sections?: Array<{ assistantMessages: UIMessage[] }> }
-      | undefined
+      { sections?: Array<{ assistantMessages: UIMessage[] }> } | undefined
 
     expect(lastCall?.sections).toHaveLength(1)
     expect(lastCall?.sections?.[0]?.assistantMessages).toHaveLength(1)

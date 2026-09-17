@@ -34,11 +34,7 @@ type TextPart = {
 type DataPart = UIDataPart
 
 type MessagePart =
-  | ReasoningPart
-  | ToolPart
-  | TextPart
-  | DataPart
-  | DynamicToolPart
+  ReasoningPart | ToolPart | TextPart | DataPart | DynamicToolPart
 
 // Type guards
 function isReasoningPart(part: MessagePart): part is ReasoningPart {

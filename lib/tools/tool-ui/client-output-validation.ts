@@ -45,8 +45,7 @@ type QuestionWizardInput = {
 }
 
 type SelectionValidationResult =
-  | { success: true }
-  | { success: false; message: string }
+  { success: true } | { success: false; message: string }
 
 export function getClientResolvedToolName(part: ToolPart): string | null {
   if (

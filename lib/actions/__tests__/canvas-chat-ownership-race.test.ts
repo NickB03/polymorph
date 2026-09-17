@@ -304,8 +304,7 @@ function matchesRenderedWhere(
     const property = columnProperty(tableName, columnName)
     const rowValue = normalizeValue(row[property]) as string | number
     const paramValue = normalizeValue(params[Number(paramIndex) - 1]) as
-      | string
-      | number
+      string | number
     return rowValue > paramValue
   }
 

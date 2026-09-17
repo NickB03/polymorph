@@ -20,8 +20,7 @@ import type {
  */
 export class OpenInferenceContextPropagator implements SpanProcessor {
   private getAttributesFromContext:
-    | ((ctx: Context) => Record<string, unknown>)
-    | null = null
+    ((ctx: Context) => Record<string, unknown>) | null = null
 
   async init() {
     try {

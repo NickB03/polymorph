@@ -74,8 +74,7 @@ export function selectModel({
   searchMode
 }: ModelSelectionParams): Model {
   const modelTypeCookie = cookieStore.get('modelType')?.value as
-    | ModelType
-    | undefined
+    ModelType | undefined
 
   return selectModelForModeAndType({
     searchMode,

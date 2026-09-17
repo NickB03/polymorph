@@ -7,11 +7,7 @@ const CANVAS_DIAGNOSTICS_LIMIT_PER_MINUTE = 60
 const CANVAS_IMAGE_PROXY_LIMIT_PER_MINUTE = 60
 
 type CanvasRateLimitKind =
-  | 'draft'
-  | 'version'
-  | 'restore'
-  | 'runtime-diagnostics'
-  | 'image-proxy'
+  'draft' | 'version' | 'restore' | 'runtime-diagnostics' | 'image-proxy'
 
 function getLimitForKind(kind: CanvasRateLimitKind): number {
   switch (kind) {

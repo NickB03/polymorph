@@ -1379,10 +1379,7 @@ Follow each file's existing import-order convention (`@/lib/utils/telemetry` sor
 
 ```ts
 type TracingState =
-  | 'enabled'
-  | 'disabled-off'
-  | 'disabled-https'
-  | 'init-failed'
+  'enabled' | 'disabled-off' | 'disabled-https' | 'init-failed'
 
 declare global {
   // eslint-disable-next-line no-var

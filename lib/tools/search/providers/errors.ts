@@ -1,9 +1,5 @@
 export type SearchProviderName =
-  | 'brave'
-  | 'tavily'
-  | 'exa'
-  | 'firecrawl'
-  | 'searxng'
+  'brave' | 'tavily' | 'exa' | 'firecrawl' | 'searxng'
 
 export class SearchProviderError extends Error {
   readonly provider: SearchProviderName

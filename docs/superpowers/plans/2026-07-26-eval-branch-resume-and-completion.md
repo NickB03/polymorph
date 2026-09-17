@@ -1307,10 +1307,7 @@ At the top of the file:
 
 ```ts
 type TracingState =
-  | 'enabled'
-  | 'disabled-off'
-  | 'disabled-https'
-  | 'init-failed'
+  'enabled' | 'disabled-off' | 'disabled-https' | 'init-failed'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -1331,10 +1328,7 @@ There is no `types/globals.d.ts` in this repo, so repeat **both** the `TracingSt
 
 ```ts
 type TracingState =
-  | 'enabled'
-  | 'disabled-off'
-  | 'disabled-https'
-  | 'init-failed'
+  'enabled' | 'disabled-off' | 'disabled-https' | 'init-failed'
 
 declare global {
   // eslint-disable-next-line no-var

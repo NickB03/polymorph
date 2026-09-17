@@ -40,8 +40,7 @@ type GuestRouteContext = BaseValidatedRouteContext & {
 }
 
 export type ValidatedChatAgentRouteContext =
-  | AuthenticatedRouteContext
-  | GuestRouteContext
+  AuthenticatedRouteContext | GuestRouteContext
 
 function createRouteAgentFactory({
   model,
