@@ -24,6 +24,15 @@ if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
 
+# graphify powers the graph.json merge driver (which now reports a conflict
+# rather than silently keeping one side when graphify is missing) and the
+# freshness `--fix`. Pin matches the Graph Freshness CI job so AST extraction
+# is identical. Idempotent; never blocks startup.
+if ! command -v graphify >/dev/null 2>&1; then
+  pip install --quiet 'graphifyy==0.8.38' >/tmp/session-start-graphify.log 2>&1 \
+    || echo "[session-start] WARNING: graphify install failed; see /tmp/session-start-graphify.log" >&2
+fi
+
 # Idempotent: container state is cached after the first run, so once ffmpeg is
 # present there is nothing to do.
 if command -v ffmpeg >/dev/null 2>&1; then
