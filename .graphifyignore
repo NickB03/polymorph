@@ -52,6 +52,7 @@ skills-lock.json
 # Graph-maintenance tooling — excluded from the corpus it maintains so editing
 # the guard or merge driver never makes the graph report itself "stale".
 scripts/check-graph-freshness.py
+scripts/test-graph-freshness-fix.py
 scripts/graphify-merge-driver.sh
 scripts/setup-git-merge-drivers.sh
 

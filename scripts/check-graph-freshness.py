@@ -40,13 +40,15 @@ from __future__ import annotations
 
 from pathlib import Path
 import json
+import os
 import sys
 
 from graphify.detect import detect
 from graphify.extract import collect_files, extract
 
 ROOT = Path(".").resolve()
-GRAPH = Path("graphify-out/graph.json")
+# GRAPH_JSON override lets scripts/test-graph-freshness-fix.py run --fix on a copy.
+GRAPH = Path(os.environ.get("GRAPH_JSON", "graphify-out/graph.json"))
 
 
 def _rel(source_file: str) -> str:
