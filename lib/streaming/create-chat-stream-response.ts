@@ -127,6 +127,9 @@ export async function createChatStreamResponse(
   const isNativeToolOutputContinuation =
     hasNativeInteractiveToolOutput(requestMessages)
   let prefetchedMessages: UIMessage[] | undefined
+  // The persisted message this response answers, and when we saw it. Used to
+  // drop an aborted partial if the chat moved on before onFinish ran.
+  let answered: { id: string; at: Date } | undefined
 
   if (isNativeToolOutputContinuation) {
     try {
@@ -188,6 +191,8 @@ export async function createChatStreamResponse(
               prefetchedMessages ??
               (await prepareMessages(context, requestMessages))
             perfTime('prepareMessages completed (stream)', prepareStart)
+            const answeredId = messagesToModel.at(-1)?.id
+            if (answeredId) answered = { id: answeredId, at: new Date() }
 
             const validatedMessages =
               await validationContract.validate(messagesToModel)
@@ -366,6 +371,14 @@ export async function createChatStreamResponse(
           responseMessage && isAborted
             ? toReplaySafeAbortedMessage(responseMessage)
             : responseMessage
+        // Stop followed by a new message, retry, or edit can reach the DB
+        // before this onFinish does. Messages order by insert time, so a late
+        // partial would land after the newer turn (or resurrect a deleted one).
+        if (isAborted && !answered) return
+        const staleGuard =
+          isAborted && answered
+            ? { latestId: answered.id, since: answered.at }
+            : undefined
         if (messageToPersist) {
           try {
             // Persist stream results to database
@@ -380,7 +393,8 @@ export async function createChatStreamResponse(
               context.pendingInitialSave,
               context.pendingInitialUserMessage,
               modelType,
-              otelTraceId
+              otelTraceId,
+              staleGuard
             )
           } catch (error) {
             console.error(

@@ -1,5 +1,5 @@
 import { ModelMessage } from 'ai'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import { Model } from '@/lib/types/models'
 
@@ -308,6 +308,89 @@ describe('context-window', () => {
       const result = truncateMessages(messages, 500, 'gpt-4o-mini')
 
       expect(result).toEqual([messages[1]])
+    })
+
+    test('caps image cost but not other binary files', () => {
+      const bigFile = (mediaType: string): ModelMessage => ({
+        role: 'user',
+        content: [
+          { type: 'file', data: new Uint8Array(5_000_000), mediaType },
+          { type: 'text', text: 'what is this?' }
+        ]
+      })
+      const photo = [bigFile('image/jpeg')]
+      const pdf = [bigFile('application/pdf'), createMessage('user', 'and?')]
+
+      // 5 MB / 750 ≈ 6.7k tokens uncapped; an image is capped at 1600.
+      expect(truncateMessages(photo, 2000, 'gpt-4o-mini')).toBe(photo)
+      expect(truncateMessages(pdf, 2000, 'gpt-4o-mini')).toEqual([pdf[1]])
+    })
+
+    test('bills base64 media in tool results as capped media, not text', () => {
+      const messages: ModelMessage[] = [
+        createMessage('user', 'draw a cat'),
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'call-1',
+              toolName: 'image',
+              input: {}
+            }
+          ]
+        },
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId: 'call-1',
+              toolName: 'image',
+              output: {
+                type: 'content',
+                value: [
+                  { type: 'text', text: 'here it is' },
+                  {
+                    type: 'image-data',
+                    data: 'A'.repeat(4_000_000),
+                    mediaType: 'image/png'
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+
+      // As text this is ~1M tokens; as a capped image it is 1600.
+      expect(truncateMessages(messages, 2000, 'gpt-4o-mini')).toBe(messages)
+    })
+
+    test('measures each message once per request', () => {
+      const input = { query: 'filler words here '.repeat(200) }
+      const messages: ModelMessage[] = [
+        createMessage('user', 'first question'),
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'call-1',
+              toolName: 'search',
+              input
+            }
+          ]
+        },
+        createMessage('user', 'latest question')
+      ]
+      const stringify = vi.spyOn(JSON, 'stringify')
+
+      maybeTruncateMessages(messages, { ...mockModel, id: 'unknown-model' })
+      truncateMessages(messages, 100, 'unknown-model')
+
+      expect(stringify.mock.calls.filter(([v]) => v === input)).toHaveLength(1)
+      stringify.mockRestore()
     })
 
     test('drops tool results orphaned by truncation', () => {

@@ -161,24 +161,58 @@ export async function getChat(
 }
 
 /**
+ * Only write if the chat has not moved on: its latest message must still be
+ * `latestId` and must not have been edited after `since`.
+ */
+export type StaleGuard = { latestId: string; since: Date }
+
+/**
  * Upsert a message with its parts
  * Note: This function should be called with appropriate userId context
  */
 export async function upsertMessage(
   message: PersistableUIMessage & { chatId: string },
   userId?: string
-): Promise<Message> {
+): Promise<Message>
+export async function upsertMessage(
+  message: PersistableUIMessage & { chatId: string },
+  userId: string | undefined,
+  staleGuard: StaleGuard
+): Promise<Message | null>
+export async function upsertMessage(
+  message: PersistableUIMessage & { chatId: string },
+  userId?: string,
+  staleGuard?: StaleGuard
+): Promise<Message | null> {
   const count = incrementDbOperationCount()
   perfLog(`DB - upsertMessage called - count: ${count}`)
 
   // Use RLS if userId is provided, otherwise use regular db
   const executeFn = userId
-    ? (callback: (tx: TxInstance) => Promise<Message>) =>
+    ? (callback: (tx: TxInstance) => Promise<Message | null>) =>
         withRLS(userId, callback)
-    : (callback: (tx: TxInstance) => Promise<Message>) =>
+    : (callback: (tx: TxInstance) => Promise<Message | null>) =>
         db.transaction(callback)
 
   const result = await executeFn(async tx => {
+    if (staleGuard) {
+      // ponytail: check+insert share a transaction but READ COMMITTED still
+      // lets a concurrent insert land between them (sub-ms window). Take a
+      // per-chat advisory lock in every message writer if that ever matters.
+      const [latest] = await tx
+        .select({ id: messages.id, updatedAt: messages.updatedAt })
+        .from(messages)
+        .where(eq(messages.chatId, message.chatId))
+        .orderBy(desc(messages.createdAt))
+        .limit(1)
+      if (
+        latest?.id !== staleGuard.latestId ||
+        (latest.updatedAt && latest.updatedAt > staleGuard.since)
+      ) {
+        return null
+      }
+    }
+
     // 1. Insert or update the message
     const messageData = mapUIMessageToDBMessage(message)
     const [dbMessage] = await tx

@@ -116,10 +116,13 @@ export function getMaxAllowedTokens(model: Model): number {
   return Math.max(availableTokens, 1000)
 }
 
-// Binary payloads are not tokenized as text. Providers bill images/files at
-// roughly this many bytes per token; it is an approximation, but far closer
-// than the zero these parts used to contribute.
+// Binary payloads are not tokenized as text. Providers bill files at roughly
+// this many bytes per token; it is an approximation, but far closer than the
+// zero these parts used to contribute.
 const BYTES_PER_BINARY_TOKEN = 750
+// Providers downscale/tile images, so cost is bounded regardless of file size
+// (a 5 MB photo is ~1-2k tokens, not bytes/750 ≈ 7k).
+const MAX_IMAGE_TOKENS = 1600
 
 function safeStringify(value: unknown): string {
   if (value === undefined || value === null) return ''
@@ -131,12 +134,42 @@ function safeStringify(value: unknown): string {
   }
 }
 
+type LoosePart = {
+  type?: string
+  text?: unknown
+  data?: unknown
+  image?: unknown
+  mediaType?: unknown
+}
+
+const MEDIA_PART_TYPES = new Set([
+  'image',
+  'file',
+  'media',
+  'file-data',
+  'image-data'
+])
+
+// Items of a tool-result `content` output (text + media); null otherwise.
+function toolResultContentItems(part: unknown): LoosePart[] | null {
+  const { type, output } = part as {
+    type?: string
+    output?: { type?: string; value?: unknown }
+  }
+  return type === 'tool-result' &&
+    output?.type === 'content' &&
+    Array.isArray(output.value)
+    ? (output.value as LoosePart[])
+    : null
+}
+
 /**
  * Extract text content from various message content types.
  *
  * Tool calls and tool results are serialized rather than skipped: they are
  * often the largest thing in a research turn, and counting them as zero
- * tokens made the budget meaningless.
+ * tokens made the budget meaningless. Base64 media inside tool results is
+ * excluded here and billed by estimateBinaryTokens instead.
  */
 function extractTextContent(content: ModelMessage['content']): string {
   if (!content) return ''
@@ -157,7 +190,17 @@ function extractTextContent(content: ModelMessage['content']): string {
           return safeStringify(part.input)
         }
         if (part.type === 'tool-result') {
-          return safeStringify(part.output)
+          const items = toolResultContentItems(part)
+          if (!items) return safeStringify(part.output)
+          return items
+            .map(item =>
+              MEDIA_PART_TYPES.has(item.type ?? '')
+                ? ''
+                : typeof item.text === 'string'
+                  ? item.text
+                  : safeStringify(item)
+            )
+            .join(' ')
         }
         return ''
       })
@@ -171,8 +214,25 @@ function extractTextContent(content: ModelMessage['content']): string {
 function byteLengthOf(data: unknown): number {
   if (data instanceof Uint8Array) return data.byteLength
   if (data instanceof ArrayBuffer) return data.byteLength
-  if (typeof data === 'string') return data.length
+  // Strings are base64: 4 chars per 3 bytes
+  if (typeof data === 'string') return Math.ceil((data.length * 3) / 4)
+  // Tagged file data: { type: 'data', data }
+  if (data && typeof data === 'object' && 'data' in data) {
+    return byteLengthOf((data as { data: unknown }).data)
+  }
   return 0
+}
+
+function estimateMediaPartTokens(part: LoosePart): number {
+  if (!MEDIA_PART_TYPES.has(part.type ?? '')) return 0
+  const tokens = Math.ceil(
+    byteLengthOf(part.data ?? part.image) / BYTES_PER_BINARY_TOKEN
+  )
+  const isImage =
+    part.type === 'image' ||
+    part.type === 'image-data' ||
+    (typeof part.mediaType === 'string' && part.mediaType.startsWith('image'))
+  return isImage ? Math.min(tokens, MAX_IMAGE_TOKENS) : tokens
 }
 
 /**
@@ -181,15 +241,13 @@ function byteLengthOf(data: unknown): number {
 function estimateBinaryTokens(content: ModelMessage['content']): number {
   if (!Array.isArray(content)) return 0
 
-  let bytes = 0
+  let tokens = 0
   for (const part of content) {
-    if (part.type !== 'image' && part.type !== 'file') continue
-    const data =
-      'data' in part ? part.data : 'image' in part ? part.image : undefined
-    bytes += byteLengthOf(data)
+    for (const item of toolResultContentItems(part) ?? [part as LoosePart]) {
+      tokens += estimateMediaPartTokens(item)
+    }
   }
-
-  return Math.ceil(bytes / BYTES_PER_BINARY_TOKEN)
+  return tokens
 }
 
 /**
@@ -252,6 +310,24 @@ function getEncoder(modelId: string) {
  * Estimate token count for a message
  * Uses tiktoken for accurate counting when available
  */
+// Tool payloads are stringified and BPE-encoded, so each message is measured
+// once and reused across the budget check, truncation, and eviction passes.
+const tokenCountCache = new WeakMap<
+  ModelMessage,
+  { modelId?: string; tokens: number }
+>()
+
+function estimateMessageTokens(
+  message: ModelMessage,
+  modelId?: string
+): number {
+  const cached = tokenCountCache.get(message)
+  if (cached && cached.modelId === modelId) return cached.tokens
+  const tokens = estimateTokenCount(message.content, modelId)
+  tokenCountCache.set(message, { modelId, tokens })
+  return tokens
+}
+
 function estimateTokenCount(
   content: ModelMessage['content'],
   modelId?: string
@@ -310,7 +386,7 @@ export function truncateMessages(
   // Calculate token counts for all messages
   const messageTokenCounts = messages.map(msg => ({
     message: msg,
-    tokens: estimateTokenCount(msg.content, modelId)
+    tokens: estimateMessageTokens(msg, modelId)
   }))
 
   // Calculate total tokens
@@ -331,10 +407,7 @@ export function truncateMessages(
   // Reserve space for first user message if it exists
   let reservedFirstUser = false
   if (firstUserMessage) {
-    const firstUserTokens = estimateTokenCount(
-      firstUserMessage.content,
-      modelId
-    )
+    const firstUserTokens = messageTokenCounts[firstUserIndex].tokens
     if (firstUserTokens < maxTokens * 0.3) {
       // Don't let first message take more than 30%
       result.push(firstUserMessage)
@@ -364,7 +437,7 @@ export function truncateMessages(
         while (recentMessages.length > 0 && usedTokens + tokens > maxTokens) {
           const removed = recentMessages.shift()
           if (removed) {
-            usedTokens -= estimateTokenCount(removed.content, modelId)
+            usedTokens -= estimateMessageTokens(removed, modelId)
           }
         }
         if (usedTokens + tokens <= maxTokens) {
@@ -422,7 +495,7 @@ export function maybeTruncateMessages(
 
   const maxTokens = getMaxAllowedTokens(model)
   const totalTokens = messages.reduce(
-    (sum, msg) => sum + estimateTokenCount(msg.content, model.id),
+    (sum, msg) => sum + estimateMessageTokens(msg, model.id),
     0
   )
 
