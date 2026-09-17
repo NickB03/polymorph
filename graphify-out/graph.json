@@ -25725,16 +25725,6 @@
       "id": "tests_inline_file_urls_test"
     },
     {
-      "label": "{ downloadStorageFile }",
-      "file_type": "code",
-      "source_file": "lib/streaming/helpers/__tests__/inline-file-urls.test.ts",
-      "source_location": "L4",
-      "_origin": "ast",
-      "community": 17,
-      "norm_label": "{ downloadstoragefile }",
-      "id": "tests_inline_file_urls_test_downloadstoragefile"
-    },
-    {
       "label": "mockFetch",
       "file_type": "code",
       "source_file": "lib/streaming/helpers/__tests__/inline-file-urls.test.ts",
@@ -46788,6 +46778,24 @@
       "source_location": "L31",
       "_origin": "ast",
       "community": 136
+    },
+    {
+      "id": "tests_inline_file_urls_test_downloadstoragefile_lookup",
+      "label": "{ downloadStorageFile, lookup }",
+      "file_type": "code",
+      "source_file": "lib/streaming/helpers/__tests__/inline-file-urls.test.ts",
+      "source_location": "L4",
+      "_origin": "ast",
+      "community": 17
+    },
+    {
+      "id": "utils_safe_url_issafefetchtarget",
+      "label": "isSafeFetchTarget()",
+      "file_type": "code",
+      "source_file": "lib/utils/safe-url.ts",
+      "source_location": "L131",
+      "_origin": "ast",
+      "community": 58
     }
   ],
   "links": [
@@ -116825,16 +116833,6 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "lib/streaming/helpers/__tests__/inline-file-urls.test.ts",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_inline_file_urls_test",
-      "target": "tests_inline_file_urls_test_downloadstoragefile"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "lib/streaming/helpers/__tests__/inline-file-urls.test.ts",
       "source_location": "L13",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -149586,6 +149584,59 @@
       "weight": 1.0,
       "source": "supabase_postgres",
       "target": "polymorph_evals"
+    },
+    {
+      "source": "tests_inline_file_urls_test",
+      "target": "tests_inline_file_urls_test_downloadstoragefile_lookup",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/streaming/helpers/__tests__/inline-file-urls.test.ts",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "helpers_inline_file_urls",
+      "target": "utils_safe_url_issafefetchtarget",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/streaming/helpers/inline-file-urls.ts",
+      "source_location": "L10",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "utils_safe_url",
+      "target": "utils_safe_url_issafefetchtarget",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/utils/safe-url.ts",
+      "source_location": "L131",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "utils_safe_url_issafefetchtarget",
+      "target": "utils_safe_url_issaferedirecttarget",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/utils/safe-url.ts",
+      "source_location": "L132",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "utils_safe_url_issafefetchtarget",
+      "target": "utils_safe_url_normalizehost",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/utils/safe-url.ts",
+      "source_location": "L134",
+      "weight": 1.0,
+      "confidence_score": 1.0
     }
   ]
 }
