@@ -6,10 +6,13 @@ import { isIP } from 'node:net'
 // localhost, but cannot stop a public hostname that resolves to a private IP.
 
 function normalizeHost(hostname: string): string {
-  return hostname.replace(/^\[(.*)\]$/, '$1').toLowerCase()
+  return hostname
+    .replace(/^\[(.*)\]$/, '$1')
+    .replace(/\.$/, '')
+    .toLowerCase()
 }
 
-export function isPrivateIpv4(hostname: string): boolean {
+function isPrivateIpv4(hostname: string): boolean {
   const parts = hostname.split('.').map(part => Number(part))
   if (parts.length !== 4 || parts.some(part => Number.isNaN(part))) {
     return false
@@ -27,19 +30,29 @@ export function isPrivateIpv4(hostname: string): boolean {
   return false
 }
 
-function decodeMappedIpv4(hostname: string): string | null {
-  if (!hostname.startsWith('::ffff:')) {
+// IPv6 ranges that carry an IPv4 address in their low 32 bits: IPv4-mapped,
+// NAT64 and the deprecated IPv4-compatible ::/96. WHATWG URL serializes these
+// in hex (https://[::127.0.0.1]/ -> ::7f00:1), so decode rather than string-match.
+const EMBEDDED_IPV4_PREFIXES = ['::ffff:', '64:ff9b::', '::']
+
+function decodeEmbeddedIpv4(hostname: string): string | null {
+  const prefix = EMBEDDED_IPV4_PREFIXES.find(p => hostname.startsWith(p))
+  if (!prefix) {
     return null
   }
 
-  const mapped = hostname.slice('::ffff:'.length)
+  const mapped = hostname.slice(prefix.length)
   if (isIP(mapped) === 4) {
     return mapped
   }
 
   const groups = mapped.split(':')
-  if (groups.length !== 2) {
+  if (groups.length > 2) {
     return null
+  }
+  // Zero compression can swallow the high group (64:ff9b::5 is 0.0.0.5).
+  if (groups.length === 1) {
+    groups.unshift('0')
   }
 
   const values = groups.map(group => Number.parseInt(group, 16))
@@ -56,19 +69,23 @@ function decodeMappedIpv4(hostname: string): string | null {
   )
 }
 
-export function isPrivateIpv6(hostname: string): boolean {
+function isPrivateIpv6(hostname: string): boolean {
   const normalized = normalizeHost(hostname)
-  const mappedIpv4 = decodeMappedIpv4(normalized)
-  if (mappedIpv4) {
-    return isPrivateIpv4(mappedIpv4)
+  if (normalized === '::') {
+    return true
+  }
+
+  // Also covers ::1, which decodes to 0.0.0.1
+  const embeddedIpv4 = decodeEmbeddedIpv4(normalized)
+  if (embeddedIpv4) {
+    return isPrivateIpv4(embeddedIpv4)
   }
 
   return (
-    normalized === '::1' ||
-    normalized === '::' ||
     normalized.startsWith('fc') ||
     normalized.startsWith('fd') ||
-    normalized.startsWith('fe80:')
+    // fe80::/10 spans fe80 through febf
+    /^fe[89ab]/.test(normalized)
   )
 }
 

@@ -14,7 +14,7 @@ export type MessageFeedbackUpdateResult =
       chatId: string
       metadata: UIMessageMetadata | null
     }
-  | { success: false; error?: string }
+  | { success: false; error?: string; notFound?: true }
 
 export async function updateMessageFeedback(
   messageId: string,
@@ -37,7 +37,7 @@ export async function updateMessageFeedback(
           .limit(1)
 
         if (!currentMessage) {
-          return { success: false, error: 'Message not found' }
+          return { success: false, error: 'Message not found', notFound: true }
         }
 
         // Merge the feedback score with existing metadata
@@ -56,7 +56,11 @@ export async function updateMessageFeedback(
           .returning({ id: messages.id })
 
         if (updated.length === 0) {
-          return { success: false, error: 'Feedback update affected no rows' }
+          return {
+            success: false,
+            error: 'Feedback update affected no rows',
+            notFound: true
+          }
         }
 
         return {

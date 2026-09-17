@@ -70,7 +70,8 @@ describe('Feedback Actions', () => {
 
       expect(result).toEqual({
         success: false,
-        error: 'Feedback update affected no rows'
+        error: 'Feedback update affected no rows',
+        notFound: true
       })
     })
 
@@ -88,7 +89,8 @@ describe('Feedback Actions', () => {
 
       expect(result).toEqual({
         success: false,
-        error: 'Message not found'
+        error: 'Message not found',
+        notFound: true
       })
     })
 

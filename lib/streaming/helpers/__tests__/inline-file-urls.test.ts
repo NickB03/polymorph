@@ -67,7 +67,7 @@ describe('inlineFileUrls', () => {
     const testData = new Uint8Array([137, 80, 78, 71]) // PNG magic bytes
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: () => Promise.resolve(testData.buffer),
+      body: new Response(testData).body,
       headers: new Headers({ 'content-type': 'image/png' })
     })
 
@@ -92,7 +92,7 @@ describe('inlineFileUrls', () => {
     const testData = new Uint8Array([137, 80, 78, 71])
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: () => Promise.resolve(testData.buffer),
+      body: new Response(testData).body,
       headers: new Headers({ 'content-type': 'image/png' })
     })
 
@@ -136,7 +136,7 @@ describe('inlineFileUrls', () => {
     const testData = new Uint8Array([1, 2, 3])
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: () => Promise.resolve(testData.buffer),
+      body: new Response(testData).body,
       headers: new Headers({ 'content-type': 'image/png' })
     })
 
@@ -202,12 +202,12 @@ describe('inlineFileUrls', () => {
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
-        arrayBuffer: () => Promise.resolve(data1.buffer),
+        body: new Response(data1).body,
         headers: new Headers({ 'content-type': 'image/png' })
       })
       .mockResolvedValueOnce({
         ok: true,
-        arrayBuffer: () => Promise.resolve(data2.buffer),
+        body: new Response(data2).body,
         headers: new Headers({ 'content-type': 'image/jpeg' })
       })
 
@@ -355,7 +355,7 @@ describe('inlineFileUrls', () => {
     const testData = new Uint8Array([1, 2, 3])
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: () => Promise.resolve(testData.buffer),
+      body: new Response(testData).body,
       headers: new Headers({ 'content-type': 'image/webp' })
     })
 
@@ -397,7 +397,7 @@ describe('inlineFileUrls', () => {
   it('refuses a response larger than the upload size limit', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      arrayBuffer: () => Promise.resolve(new Uint8Array(1).buffer),
+      body: new Response(new Uint8Array(1)).body,
       headers: new Headers({
         'content-type': 'image/png',
         'content-length': String(MAX_UPLOAD_SIZE_BYTES + 1)
@@ -419,5 +419,39 @@ describe('inlineFileUrls', () => {
     const part = (result[0] as { content: Array<Record<string, unknown>> })
       .content[0]
     expect(part.data).toBe('https://example.com/huge.png')
+  })
+
+  it('stops reading a body that exceeds the limit without a content-length', async () => {
+    const chunk = new Uint8Array(1024 * 1024)
+    let pulls = 0
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls++
+        controller.enqueue(chunk)
+      }
+    })
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      body,
+      headers: new Headers({ 'content-type': 'image/png' })
+    })
+
+    const result = await inlineFileUrls(
+      [
+        userMsg([
+          {
+            type: 'file',
+            data: 'https://example.com/endless.png',
+            mediaType: 'image/png'
+          }
+        ])
+      ],
+      null
+    )
+
+    const part = (result[0] as { content: Array<Record<string, unknown>> })
+      .content[0]
+    expect(part.data).toBe('https://example.com/endless.png')
+    expect(pulls).toBeLessThanOrEqual(MAX_UPLOAD_SIZE_BYTES / chunk.length + 3)
   })
 })

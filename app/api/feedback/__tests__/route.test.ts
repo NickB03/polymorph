@@ -29,13 +29,13 @@ vi.mock('@/lib/observability/phoenix-feedback', () => ({
 }))
 
 vi.mock('@/lib/rate-limit/feedback-limits', () => ({
-  checkFeedbackLimit: vi.fn()
+  checkMessageFeedbackLimit: vi.fn()
 }))
 
 // Import after mocking
 import { updateMessageFeedback } from '@/lib/actions/feedback'
 import { annotatePhoenixUserFeedback } from '@/lib/observability/phoenix-feedback'
-import { checkFeedbackLimit } from '@/lib/rate-limit/feedback-limits'
+import { checkMessageFeedbackLimit } from '@/lib/rate-limit/feedback-limits'
 
 import { POST } from '../route'
 
@@ -56,7 +56,7 @@ describe('Feedback API Route', () => {
       data: { user: { id: 'user-1' } },
       error: null
     })
-    vi.mocked(checkFeedbackLimit).mockResolvedValue({
+    vi.mocked(checkMessageFeedbackLimit).mockResolvedValue({
       allowed: true,
       remaining: 4,
       resetAt: 0,
@@ -137,8 +137,30 @@ describe('Feedback API Route', () => {
       expect(updateMessageFeedback).not.toHaveBeenCalled()
     })
 
+    it('should accept the shared anonymous user when ENABLE_AUTH=false', async () => {
+      vi.stubEnv('ENABLE_AUTH', 'false')
+      vi.stubEnv('ANONYMOUS_USER_ID', 'self-host-user')
+      getUser.mockResolvedValue({ data: { user: null }, error: null })
+      vi.mocked(updateMessageFeedback).mockResolvedValue({
+        success: true,
+        chatId: 'chat-1',
+        metadata: null
+      })
+
+      const response = await POST(
+        feedbackRequest({ score: 1, messageId: 'test-message-id' })
+      )
+
+      expect(response.status).toBe(200)
+      expect(updateMessageFeedback).toHaveBeenCalledWith(
+        'test-message-id',
+        1,
+        'self-host-user'
+      )
+    })
+
     it('should return 429 when rate limited', async () => {
-      vi.mocked(checkFeedbackLimit).mockResolvedValue({
+      vi.mocked(checkMessageFeedbackLimit).mockResolvedValue({
         allowed: false,
         remaining: 0,
         resetAt: 0,
@@ -189,6 +211,24 @@ describe('Feedback API Route', () => {
       consoleWarnSpy.mockRestore()
     })
 
+    it('should return 404 when the message is not found', async () => {
+      vi.mocked(updateMessageFeedback).mockResolvedValue({
+        success: false,
+        error: 'Message not found',
+        notFound: true
+      })
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      const response = await POST(
+        feedbackRequest({ score: 1, messageId: 'test-message-id' })
+      )
+
+      expect(response.status).toBe(404)
+      consoleErrorSpy.mockRestore()
+    })
+
     it('should report a failed database update', async () => {
       vi.mocked(updateMessageFeedback).mockResolvedValue({
         success: false,
@@ -203,7 +243,7 @@ describe('Feedback API Route', () => {
         feedbackRequest({ score: 1, messageId: 'test-message-id' })
       )
 
-      expect(response.status).toBe(404)
+      expect(response.status).toBe(500)
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'Error updating message feedback:',
         'Database error'

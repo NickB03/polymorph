@@ -1,3 +1,4 @@
+import { readResponseWithSizeLimit } from '@ai-sdk/provider-utils'
 import type { ModelMessage } from 'ai'
 
 import {
@@ -113,15 +114,15 @@ export async function inlineFileUrls(
           )
           return null
         }
-        const buffer = await res.arrayBuffer()
-        if (buffer.byteLength > MAX_UPLOAD_SIZE_BYTES) {
-          console.warn(
-            `[inlineFileUrls] Refusing oversized file from ${source.url}: ${buffer.byteLength} bytes`
-          )
-          return null
-        }
+        // Streams the body and throws once it passes the cap, so a lying or
+        // absent content-length cannot make us buffer an unbounded response.
+        const data = await readResponseWithSizeLimit({
+          response: res,
+          url: source.url.href,
+          maxBytes: MAX_UPLOAD_SIZE_BYTES
+        })
         const mediaType = res.headers.get('content-type') ?? undefined
-        return { data: new Uint8Array(buffer), mediaType }
+        return { data, mediaType }
       } catch (err) {
         console.warn(`[inlineFileUrls] Fetch error for ${source.url}:`, err)
         return null
