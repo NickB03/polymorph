@@ -112,14 +112,17 @@ export async function persistStreamResults(
           staleGuard
         )
       : upsertMessage(chatId, responseMessage, userId)
+  let staleDropped = false
   try {
     messageSaved = (await save()) !== null
+    staleDropped = !!staleGuard && !messageSaved
     perfTime('upsertMessage (AI response) completed', saveStart)
   } catch (error) {
     console.error('Error saving message:', error)
     try {
       messageSaved =
         (await retryDatabaseOperation(save, 'save message')) !== null
+      staleDropped = !!staleGuard && !messageSaved
       perfTime('upsertMessage (AI response) completed after retry', saveStart)
     } catch (retryError) {
       console.error(
@@ -129,6 +132,11 @@ export async function persistStreamResults(
       // Don't throw here to avoid breaking the stream
     }
   }
+
+  // The stale guard dropped this aborted partial: the chat has moved on, so its
+  // title must not land either (the replacement request sees an existing chat
+  // and would never regenerate a corrective one).
+  if (staleDropped) return
 
   if (messageSaved) {
     // Keep any chat-tagged consumers in sync after writing the canonical
