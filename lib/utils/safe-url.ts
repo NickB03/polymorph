@@ -136,10 +136,14 @@ export async function isSafeFetchTarget(candidate: string): Promise<boolean> {
 
   try {
     const addresses = await lookup(hostname, { all: true })
-    // ponytail: check-then-fetch leaves a DNS-rebinding window between this
-    // lookup and fetch's own. Closing it needs a pinned-IP dispatcher
-    // (undici Agent with connect.lookup); add if this ever fetches from a
-    // network with reachable internal hosts.
+    // ponytail: check-then-fetch, so a rebinding host could answer public here
+    // and private to fetch's own lookup. Not pinned because the https-only
+    // rule above already covers it: after a rebind fetch still validates the
+    // certificate against the attacker's hostname, which an internal service
+    // cannot present, so the handshake fails before any request is sent (and
+    // callers must keep `redirect: 'error'`). Pin the connection (node:https
+    // `lookup` option, or an undici Agent) only if plain http is ever allowed
+    // or TLS verification is relaxed for these fetches.
     return (
       addresses.length > 0 &&
       addresses.every(({ address, family }) =>
