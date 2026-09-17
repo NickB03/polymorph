@@ -27,7 +27,7 @@ FIX="then run 'python scripts/check-graph-freshness.py --fix' and commit"
 if ! command -v graphify >/dev/null 2>&1; then
   # Keeping one side silently would drop the other branch's LLM-extracted nodes
   # (the freshness guard only sees AST nodes), so surface a conflict instead.
-  echo "graphify not on PATH; cannot union-merge graph.json. Install it (pip install graphifyy) and re-merge, or 'git checkout --ours graphify-out/graph.json', $FIX." >&2
+  echo "graphify not on PATH; cannot union-merge graph.json. Install it (pip install graphifyy), abort and re-run the merge, $FIX. Do not resolve by picking one side: that drops the other branch's doc/semantic nodes." >&2
   exit 1
 fi
 

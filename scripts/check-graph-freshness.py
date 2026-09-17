@@ -92,7 +92,8 @@ def _key(n) -> tuple:
     return (_rel(n.get("source_file") or ""), n.get("label"))
 
 
-def _fix(graph: dict, fresh_nodes: list, added: set, missing: set) -> None:
+def _fix(graph: dict, fresh_nodes: list, added: set, missing: set) -> set:
+    """Repair graph.json in place; returns the `added` keys it could NOT insert."""
     nodes = graph["nodes"]
     dropped = {n["id"] for n in nodes if n.get("_origin") == "ast" and _key(n) in missing}
     nodes[:] = [n for n in nodes if n["id"] not in dropped]
@@ -102,19 +103,30 @@ def _fix(graph: dict, fresh_nodes: list, added: set, missing: set) -> None:
         n.get("source_file"): n["community"] for n in nodes if "community" in n
     }
     have = {n["id"] for n in nodes}
+    inserted: set = set()
+    blocked = set()
     for n in fresh_nodes:
-        if _key(n) in added and n["id"] not in have:
-            have.add(n["id"])
-            new = {**n, "source_file": _rel(n.get("source_file") or ""), "_origin": "ast"}
-            if new["source_file"] in community_by_file:
-                new["community"] = community_by_file[new["source_file"]]
-            nodes.append(new)
+        if _key(n) not in added:
+            continue
+        if n["id"] in inserted:
+            continue  # same-id duplicate of a node just added (first wins)
+        if n["id"] in have:
+            # id already taken by a retained (doc/semantic) node — inserting
+            # would duplicate the id, skipping would leave the graph stale.
+            blocked.add(_key(n))
+            continue
+        inserted.add(n["id"])
+        new = {**n, "source_file": _rel(n.get("source_file") or ""), "_origin": "ast"}
+        if new["source_file"] in community_by_file:
+            new["community"] = community_by_file[new["source_file"]]
+        nodes.append(new)
     graph["links"] = [
         l
         for l in graph.get("links", [])
         if l.get("source") not in dropped and l.get("target") not in dropped
     ]
     GRAPH.write_text(json.dumps(graph, indent=2) + "\n", encoding="utf-8")
+    return blocked
 
 
 def main() -> int:
@@ -152,7 +164,11 @@ def main() -> int:
     _sample(missing, "graphed symbols no longer in code")
     print()
     if "--fix" in sys.argv[1:]:
-        _fix(graph, fresh["nodes"], added, missing)
+        blocked = _fix(graph, fresh["nodes"], added, missing)
+        if blocked:
+            print("::error:: --fix could not add symbols whose node id is already used by a doc/semantic node; run a full `/graphify` rebuild.")
+            _sample(blocked, "blocked by id collision")
+            return 1
         print(f"Fixed: +{len(added)} / -{len(missing)} AST node(s). Commit graphify-out/graph.json.")
         return 0
     print(
