@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DeepSeek reasoning now streams with per-step Thoughts disclosures coalesced, and DeepSeek models mirror through the Gateway fallback (#234, #226)
 - Text models standardized on OpenRouter, with fallback when the OpenRouter key is missing (#224, #225)
 - Docs corrected for accuracy drift against current source: eval count (9, not 7), configurable `DAILY_CHAT_LIMIT`, `FILE-INDEX.md` entries (#243, #242), and agent-instruction stale references (#251)
-- Dependency refresh: Next 16.3.5, React 19.3, `tailwind-merge` 3, `next-themes` 0.4, `sonner` 2, `lucide-react` 1.x, `@supabase/ssr`, `@vercel/analytics`, `jsdom` 30, `exa-js` 2, `streamdown` 2; unused `node-html-parser` dependency dropped (this branch)
+- Dependency refresh: Next 16.3.5, React 19.3, `tailwind-merge` 3, `next-themes` 0.4, `sonner` 2, `lucide-react` 1.x, `@supabase/ssr`, `@vercel/analytics`, `exa-js` 2, `streamdown` 2; unused `node-html-parser` dependency dropped (this branch)
 - `services/types.ts` reformatted for Prettier 3.9 (this branch)
 
 ### Fixed

@@ -252,7 +252,9 @@ describe('context-window', () => {
 
   describe('tool and binary parts', () => {
     test('charges tool results against the budget instead of counting zero', () => {
-      const bigOutput = 'x'.repeat(8000)
+      // Spaced words, not one unbroken run: BPE is ~quadratic on a single
+      // whitespace-free chunk and times out under coverage on CI.
+      const bigOutput = 'search result text '.repeat(400)
       const messages: ModelMessage[] = [
         createMessage('user', 'first question'),
         {
