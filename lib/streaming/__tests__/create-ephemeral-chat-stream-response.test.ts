@@ -6,6 +6,7 @@ const mockWriter = {
 }
 const mockAgentStream = vi.fn()
 const mockVerifyGuestCanvasToken = vi.fn()
+const mockHasGuestCanvasSecret = vi.fn(() => true)
 
 vi.mock('ai', async importOriginal => {
   const actual = await importOriginal<typeof import('ai')>()
@@ -54,6 +55,7 @@ vi.mock('@/lib/agents/researcher', () => ({
 }))
 
 vi.mock('@/lib/canvas/guest-token', () => ({
+  hasGuestCanvasSecret: () => mockHasGuestCanvasSecret(),
   verifyGuestCanvasToken: (...args: unknown[]) =>
     mockVerifyGuestCanvasToken(...args)
 }))
@@ -106,6 +108,36 @@ describe('createEphemeralChatStreamResponse', () => {
     })
     expect(agentFactory).toHaveBeenCalledTimes(1)
     expect(mockAgentStream).toHaveBeenCalledTimes(1)
+  })
+
+  it('omits canvas tool context when no guest canvas secret is configured', async () => {
+    mockHasGuestCanvasSecret.mockReturnValueOnce(false)
+    const agentFactory = vi.fn(() => ({ stream: mockAgentStream }) as any)
+
+    await createEphemeralChatStreamResponse({
+      messages: [
+        {
+          id: 'user-1',
+          role: 'user',
+          parts: [{ type: 'text', text: 'Build me a game' }]
+        }
+      ],
+      model: makeModel(),
+      abortSignal: new AbortController().signal,
+      searchMode: 'chat',
+      modelType: 'speed',
+      chatId: 'guest-chat-1',
+      trigger: 'submit-message',
+      agentFactory
+    })
+
+    await vi.waitFor(() => {
+      expect(agentFactory).toHaveBeenCalledTimes(1)
+    })
+    expect(agentFactory).toHaveBeenCalledWith(
+      expect.objectContaining({ canvasToolContext: undefined })
+    )
+    expect(mockVerifyGuestCanvasToken).not.toHaveBeenCalled()
   })
 
   it('hydrates guest currentArtifact before invoking the injected agent factory', async () => {

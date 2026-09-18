@@ -3,7 +3,7 @@ import { createGateway } from '@ai-sdk/gateway'
 import { google } from '@ai-sdk/google'
 import { createOpenAI, openai } from '@ai-sdk/openai'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
-import { createProviderRegistry, LanguageModel } from 'ai'
+import { createProviderRegistry, ImageModel, LanguageModel } from 'ai'
 import { createOllama } from 'ollama-ai-provider-v2'
 
 // `createProviderRegistry` decides how to treat a provider by the
@@ -66,12 +66,21 @@ export const registry = createProviderRegistry(providers)
 export function getModel(model: string): LanguageModel {
   if (!model.includes(':')) {
     throw new Error(
-      `Invalid model format "${model}": expected "provider:model-id" (e.g. "openrouter:deepseek/deepseek-v4-flash")`
+      `Invalid model format "${model}": expected "provider:model-id" (e.g. "openrouter:z-ai/glm-5.3-flash")`
     )
   }
   return registry.languageModel(
     model as Parameters<typeof registry.languageModel>[0]
   )
+}
+
+export function getImageModel(model: string): ImageModel {
+  if (!model.includes(':')) {
+    throw new Error(
+      `Invalid model format "${model}": expected "provider:model-id" (e.g. "gateway:meta/muse-image-1.0")`
+    )
+  }
+  return registry.imageModel(model as Parameters<typeof registry.imageModel>[0])
 }
 
 export function isProviderEnabled(providerId: string): boolean {

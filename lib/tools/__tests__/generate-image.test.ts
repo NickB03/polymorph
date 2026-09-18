@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// Mock the AI SDK generateText before importing the tool
+// Mock the AI SDK generateImage before importing the tool
 vi.mock('ai', async importOriginal => {
   const actual = await importOriginal<typeof import('ai')>()
   return {
     ...actual,
-    generateText: vi.fn()
+    generateImage: vi.fn()
   }
 })
 
@@ -22,19 +22,31 @@ vi.mock('@/lib/supabase/server-storage', () => ({
 
 // Mock registry
 vi.mock('@/lib/utils/registry', () => ({
-  getModel: vi.fn().mockReturnValue('mock-model')
+  getImageModel: vi.fn().mockReturnValue('mock-image-model')
 }))
 
-import { generateText } from 'ai'
+import { generateImage, NoImageGeneratedError } from 'ai'
 
 import {
   createSignedDownloadUrl,
   uploadGeneratedImage
 } from '@/lib/supabase/server-storage'
+import { getImageModel } from '@/lib/utils/registry'
 
 import { createGenerateImageTool } from '../generate-image'
 
-const mockGenerateText = vi.mocked(generateText)
+const mockGenerateImage = vi.mocked(generateImage)
+const mockGetImageModel = vi.mocked(getImageModel)
+
+// Muse returns WebP; mirror that so the media type is carried end to end.
+const museResult = {
+  image: {
+    mediaType: 'image/webp',
+    base64: 'UklGR...',
+    uint8Array: new Uint8Array([82, 73, 70, 70])
+  },
+  warnings: []
+} as any
 const mockUploadGeneratedImage = vi.mocked(uploadGeneratedImage)
 const mockCreateSignedDownloadUrl = vi.mocked(createSignedDownloadUrl)
 
@@ -51,17 +63,8 @@ describe('createGenerateImageTool', () => {
     expect(tool.description).toBeTruthy()
   })
 
-  it('calls generateText with the image model and returns upload URL', async () => {
-    mockGenerateText.mockResolvedValueOnce({
-      text: '',
-      files: [
-        {
-          mediaType: 'image/png',
-          base64: 'iVBOR...',
-          uint8Array: new Uint8Array([137, 80, 78, 71])
-        }
-      ]
-    } as any)
+  it('calls generateImage with the Muse image model, a mapped size, and returns upload URL', async () => {
+    mockGenerateImage.mockResolvedValueOnce(museResult)
 
     const execute = tool.execute!
     const result = await execute(
@@ -74,35 +77,30 @@ describe('createGenerateImageTool', () => {
       }
     )
 
-    expect(mockGenerateText).toHaveBeenCalledWith(
-      expect.objectContaining({
-        messages: expect.arrayContaining([
-          expect.objectContaining({
-            role: 'user',
-            content: expect.arrayContaining([
-              expect.objectContaining({
-                type: 'text',
-                text: 'a sunset over mountains'
-              })
-            ])
-          })
-        ])
-      })
+    expect(mockGetImageModel).toHaveBeenCalledWith(
+      'gateway:meta/muse-image-1.0'
     )
+    // Muse ignores `aspectRatio` (it warns "use size instead"), so the tool
+    // must translate the ratio into a size and never forward aspectRatio.
+    expect(mockGenerateImage).toHaveBeenCalledWith({
+      model: 'mock-image-model',
+      prompt: 'a sunset over mountains',
+      size: '1792x1024'
+    })
     expect(result).toEqual(
       expect.objectContaining({
         imageUrl: 'https://storage.example.com/generated-123.png',
-        mediaType: 'image/png',
-        description: 'a sunset over mountains'
+        mediaType: 'image/webp',
+        description: 'a sunset over mountains',
+        aspectRatio: '16:9'
       })
     )
   })
 
   it('returns error when no image is generated', async () => {
-    mockGenerateText.mockResolvedValueOnce({
-      text: 'Sorry, I cannot generate that image.',
-      files: []
-    } as any)
+    mockGenerateImage.mockRejectedValueOnce(
+      new NoImageGeneratedError({ responses: [] })
+    )
 
     const execute = tool.execute!
     const result = await execute(
@@ -123,16 +121,7 @@ describe('createGenerateImageTool', () => {
   })
 
   it('signs own proxy-path edit sources before calling the model', async () => {
-    mockGenerateText.mockResolvedValueOnce({
-      text: '',
-      files: [
-        {
-          mediaType: 'image/png',
-          base64: 'iVBOR...',
-          uint8Array: new Uint8Array([137, 80, 78, 71])
-        }
-      ]
-    } as any)
+    mockGenerateImage.mockResolvedValueOnce(museResult)
 
     await tool.execute!(
       {
@@ -151,22 +140,13 @@ describe('createGenerateImageTool', () => {
       'user-1/chats/chat-1/generated-1.png',
       expect.any(Number)
     )
-    expect(mockGenerateText).toHaveBeenCalledWith(
-      expect.objectContaining({
-        messages: expect.arrayContaining([
-          expect.objectContaining({
-            content: expect.arrayContaining([
-              expect.objectContaining({
-                type: 'image',
-                image: new URL(
-                  'https://storage.example.com/signed/source.png?token=t'
-                )
-              })
-            ])
-          })
-        ])
-      })
-    )
+    expect(mockGenerateImage).toHaveBeenCalledWith({
+      model: 'mock-image-model',
+      prompt: {
+        text: 'make it bluer',
+        images: ['https://storage.example.com/signed/source.png?token=t']
+      }
+    })
   })
 
   it('rejects edit sources owned by another user without calling the model', async () => {
@@ -189,20 +169,11 @@ describe('createGenerateImageTool', () => {
       })
     )
     expect(mockCreateSignedDownloadUrl).not.toHaveBeenCalled()
-    expect(mockGenerateText).not.toHaveBeenCalled()
+    expect(mockGenerateImage).not.toHaveBeenCalled()
   })
 
   it('requests a signed URL for guest contexts', async () => {
-    mockGenerateText.mockResolvedValueOnce({
-      text: '',
-      files: [
-        {
-          mediaType: 'image/png',
-          base64: 'iVBOR...',
-          uint8Array: new Uint8Array([137, 80, 78, 71])
-        }
-      ]
-    } as any)
+    mockGenerateImage.mockResolvedValueOnce(museResult)
 
     const guestTool = createGenerateImageTool({
       userId: 'guest',
@@ -221,7 +192,7 @@ describe('createGenerateImageTool', () => {
 
     expect(mockUploadGeneratedImage).toHaveBeenCalledWith(
       expect.any(Uint8Array),
-      'image/png',
+      'image/webp',
       'guest',
       'chat-1',
       { useSignedUrl: true }
@@ -254,20 +225,11 @@ describe('createGenerateImageTool', () => {
       })
     )
     expect(mockCreateSignedDownloadUrl).not.toHaveBeenCalled()
-    expect(mockGenerateText).not.toHaveBeenCalled()
+    expect(mockGenerateImage).not.toHaveBeenCalled()
   })
 
   it('allows guest edit sources that are already fetchable URLs', async () => {
-    mockGenerateText.mockResolvedValueOnce({
-      text: '',
-      files: [
-        {
-          mediaType: 'image/png',
-          base64: 'iVBOR...',
-          uint8Array: new Uint8Array([137, 80, 78, 71])
-        }
-      ]
-    } as any)
+    mockGenerateImage.mockResolvedValueOnce(museResult)
 
     const guestTool = createGenerateImageTool({
       userId: 'guest',
@@ -289,35 +251,17 @@ describe('createGenerateImageTool', () => {
     )
 
     expect(mockCreateSignedDownloadUrl).not.toHaveBeenCalled()
-    expect(mockGenerateText).toHaveBeenCalledWith(
-      expect.objectContaining({
-        messages: expect.arrayContaining([
-          expect.objectContaining({
-            content: expect.arrayContaining([
-              expect.objectContaining({
-                type: 'image',
-                image: new URL(
-                  'https://storage.example.com/signed/source.png?token=t'
-                )
-              })
-            ])
-          })
-        ])
-      })
-    )
+    expect(mockGenerateImage).toHaveBeenCalledWith({
+      model: 'mock-image-model',
+      prompt: {
+        text: 'make it bluer',
+        images: ['https://storage.example.com/signed/source.png?token=t']
+      }
+    })
   })
 
   it('uses the proxy URL (no signed URL) for authenticated contexts', async () => {
-    mockGenerateText.mockResolvedValueOnce({
-      text: '',
-      files: [
-        {
-          mediaType: 'image/png',
-          base64: 'iVBOR...',
-          uint8Array: new Uint8Array([137, 80, 78, 71])
-        }
-      ]
-    } as any)
+    mockGenerateImage.mockResolvedValueOnce(museResult)
 
     await tool.execute!(
       { prompt: 'a sunset' },
@@ -331,24 +275,15 @@ describe('createGenerateImageTool', () => {
 
     expect(mockUploadGeneratedImage).toHaveBeenLastCalledWith(
       expect.any(Uint8Array),
-      'image/png',
+      'image/webp',
       'user-1',
       'chat-1',
       { useSignedUrl: undefined }
     )
   })
 
-  it('includes sourceImageUrl in content for editing', async () => {
-    mockGenerateText.mockResolvedValueOnce({
-      text: '',
-      files: [
-        {
-          mediaType: 'image/png',
-          base64: 'iVBOR...',
-          uint8Array: new Uint8Array([137, 80, 78, 71])
-        }
-      ]
-    } as any)
+  it('passes the source image URL as an edit input', async () => {
+    mockGenerateImage.mockResolvedValueOnce(museResult)
 
     const execute = tool.execute!
     await execute(
@@ -364,20 +299,52 @@ describe('createGenerateImageTool', () => {
       }
     )
 
-    expect(mockGenerateText).toHaveBeenCalledWith(
-      expect.objectContaining({
-        messages: expect.arrayContaining([
-          expect.objectContaining({
-            content: expect.arrayContaining([
-              expect.objectContaining({
-                type: 'text',
-                text: 'make it bluer'
-              }),
-              expect.objectContaining({ type: 'image' })
-            ])
-          })
-        ])
-      })
+    expect(mockGenerateImage).toHaveBeenCalledWith({
+      model: 'mock-image-model',
+      prompt: {
+        text: 'make it bluer',
+        images: ['https://example.com/original.png']
+      }
+    })
+  })
+
+  it.each([
+    ['1:1', '1024x1024'],
+    ['16:9', '1792x1024'],
+    ['9:16', '1024x1792'],
+    ['4:3', '1536x1152'],
+    ['3:4', '768x1024']
+  ] as const)('maps aspect ratio %s to size %s', async (aspectRatio, size) => {
+    mockGenerateImage.mockResolvedValueOnce(museResult)
+
+    await tool.execute!(
+      { prompt: 'a sunset', aspectRatio },
+      {
+        abortSignal: undefined as any,
+        toolCallId: 'tc-size',
+        messages: [],
+        context: {}
+      }
     )
+
+    expect(mockGenerateImage).toHaveBeenCalledWith(
+      expect.objectContaining({ size })
+    )
+  })
+
+  it('omits size when no aspect ratio is requested', async () => {
+    mockGenerateImage.mockResolvedValueOnce(museResult)
+
+    await tool.execute!(
+      { prompt: 'a sunset' },
+      {
+        abortSignal: undefined as any,
+        toolCallId: 'tc-nosize',
+        messages: [],
+        context: {}
+      }
+    )
+
+    expect(mockGenerateImage.mock.calls[0][0]).not.toHaveProperty('size')
   })
 })

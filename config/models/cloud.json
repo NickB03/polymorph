@@ -4,9 +4,9 @@
     "byMode": {
       "chat": {
         "speed": {
-          "id": "deepseek/deepseek-v4-flash",
-          "name": "DeepSeek V4 Flash",
-          "provider": "DeepSeek",
+          "id": "z-ai/glm-5.3-flash",
+          "name": "GLM-5.3 Flash",
+          "provider": "Z.ai",
           "providerId": "openrouter",
           "providerOptions": {
             "openrouter": {
@@ -15,22 +15,22 @@
           }
         },
         "quality": {
-          "id": "deepseek/deepseek-v4-pro",
-          "name": "DeepSeek V4 Pro",
-          "provider": "DeepSeek",
+          "id": "z-ai/glm-5.3",
+          "name": "GLM-5.3",
+          "provider": "Z.ai",
           "providerId": "openrouter",
           "providerOptions": {
             "openrouter": {
-              "reasoning": { "enabled": true, "effort": "medium" }
+              "reasoning": { "enabled": true, "effort": "high" }
             }
           }
         }
       },
       "research": {
         "speed": {
-          "id": "deepseek/deepseek-v4-flash",
-          "name": "DeepSeek V4 Flash",
-          "provider": "DeepSeek",
+          "id": "z-ai/glm-5.3-flash",
+          "name": "GLM-5.3 Flash",
+          "provider": "Z.ai",
           "providerId": "openrouter",
           "providerOptions": {
             "openrouter": {
@@ -39,37 +39,57 @@
           }
         },
         "quality": {
-          "id": "deepseek/deepseek-v4-pro",
-          "name": "DeepSeek V4 Pro",
-          "provider": "DeepSeek",
+          "id": "z-ai/glm-5.3",
+          "name": "GLM-5.3",
+          "provider": "Z.ai",
           "providerId": "openrouter",
           "providerOptions": {
             "openrouter": {
-              "reasoning": { "enabled": true, "effort": "medium" }
+              "reasoning": { "enabled": true, "effort": "high" }
             }
           }
         }
       }
     },
     "relatedQuestions": {
-      "id": "deepseek/deepseek-v4-flash",
-      "name": "DeepSeek V4 Flash",
-      "provider": "DeepSeek",
+      "id": "z-ai/glm-5.3-flash",
+      "name": "GLM-5.3 Flash",
+      "provider": "Z.ai",
       "providerId": "openrouter",
       "providerOptions": {
         "openrouter": {
-          "reasoning": { "exclude": true }
+          "reasoning": { "effort": "low", "exclude": true },
+          "provider": {
+            "only": [
+              "together",
+              "fireworks",
+              "baseten",
+              "parasail",
+              "cloudflare",
+              "friendli"
+            ]
+          }
         }
       }
     },
     "trendingSuggestions": {
-      "id": "deepseek/deepseek-v4-flash",
-      "name": "DeepSeek V4 Flash",
-      "provider": "DeepSeek",
+      "id": "z-ai/glm-5.3-flash",
+      "name": "GLM-5.3 Flash",
+      "provider": "Z.ai",
       "providerId": "openrouter",
       "providerOptions": {
         "openrouter": {
-          "reasoning": { "exclude": true }
+          "reasoning": { "effort": "low", "exclude": true },
+          "provider": {
+            "only": [
+              "together",
+              "fireworks",
+              "baseten",
+              "parasail",
+              "cloudflare",
+              "friendli"
+            ]
+          }
         }
       }
     }
