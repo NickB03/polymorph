@@ -45,6 +45,12 @@ export async function generateChatTitle({
       system: systemPrompt,
       prompt: userMessageContent,
       abortSignal,
+      // Titles never benefit from reasoning. GLM-5.3 cannot disable it, so pin
+      // the lowest budget and hide the output. Namespaced: ignored by
+      // non-OpenRouter providers.
+      providerOptions: {
+        openrouter: { reasoning: { effort: 'low', exclude: true } }
+      },
       runtimeContext: telemetryMetadata.runtimeContext,
       telemetry: {
         isEnabled: isTracingEnabled(),

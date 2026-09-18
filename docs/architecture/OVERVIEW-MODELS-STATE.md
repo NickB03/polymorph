@@ -26,7 +26,7 @@ flowchart TD
     NextCandidate["Try next candidate"]
     DefaultGatewayCheck{"Gateway enabled<br/>for DEFAULT_MODEL?"}
     DefaultGateway["Return DEFAULT_MODEL<br/>via gateway"]
-    DefaultModel["Return DEFAULT_MODEL<br/>(DeepSeek V4 Flash via OpenRouter)"]
+    DefaultModel["Return DEFAULT_MODEL<br/>(GLM-5.3 Flash via OpenRouter)"]
 
     subgraph ConfigFiles["Configuration Files"]
         DefaultJSON["default.json<br/>(standard deployment)"]
@@ -65,17 +65,18 @@ flowchart TD
 
 From [`config/models/default.json`](../../config/models/default.json):
 
-| Mode              | Type    | Model                        | Provider   |
-| ----------------- | ------- | ---------------------------- | ---------- |
-| Chat              | Speed   | `deepseek/deepseek-v4-flash` | OpenRouter |
-| Chat              | Quality | `deepseek/deepseek-v4-pro`   | OpenRouter |
-| Research          | Speed   | `deepseek/deepseek-v4-flash` | OpenRouter |
-| Research          | Quality | `deepseek/deepseek-v4-pro`   | OpenRouter |
-| Related Questions | --      | `deepseek/deepseek-v4-flash` | OpenRouter |
+| Mode                 | Type    | Model                | Provider   |
+| -------------------- | ------- | -------------------- | ---------- |
+| Chat                 | Speed   | `z-ai/glm-5.3-flash` | OpenRouter |
+| Chat                 | Quality | `z-ai/glm-5.3`       | OpenRouter |
+| Research             | Speed   | `z-ai/glm-5.3-flash` | OpenRouter |
+| Research             | Quality | `z-ai/glm-5.3`       | OpenRouter |
+| Related Questions    | --      | `z-ai/glm-5.3-flash` | OpenRouter |
+| Trending Suggestions | --      | `z-ai/glm-5.3-flash` | OpenRouter |
 
 **Cloud deployment behavior:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag controls config profile selection (uses `cloud.json` instead of `default.json`), rate limiting enforcement, and analytics event tracking.
 
-If an OpenRouter candidate is selected from config but OpenRouter is disabled and Gateway is enabled, `selectModel()` returns the same model ID with `providerId: 'gateway'` before trying later candidates. The hardcoded `DEFAULT_MODEL` uses the same Gateway fallback after all configured candidates are exhausted.
+If an OpenRouter candidate is selected from config but OpenRouter is disabled and Gateway is enabled, `selectModel()` returns the same model ID with `providerId: 'gateway'` before trying later candidates — except ids whose namespace differs between OpenRouter and the Gateway, which are remapped via `GATEWAY_ID_OVERRIDES` in `lib/utils/model-selection.ts` (currently `z-ai/…` → `zai/…`). The hardcoded `DEFAULT_MODEL` uses the same Gateway fallback after all configured candidates are exhausted.
 
 **Source files:** [`lib/utils/model-selection.ts`](../../lib/utils/model-selection.ts), [`lib/utils/registry.ts`](../../lib/utils/registry.ts), [`lib/config/model-types.ts`](../../lib/config/model-types.ts), [`config/models/default.json`](../../config/models/default.json)
 

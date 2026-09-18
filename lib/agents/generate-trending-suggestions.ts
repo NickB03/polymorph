@@ -197,6 +197,9 @@ export async function generateTrendingSuggestions(): Promise<TrendingSuggestions
     model: getModel(modelId),
     output: Output.object({ schema: trendingSuggestionsSchema }),
     system: SYSTEM_PROMPT,
+    ...(suggestionsModel.providerOptions && {
+      providerOptions: suggestionsModel.providerOptions
+    }),
     runtimeContext,
     telemetry: {
       isEnabled: isTracingEnabled(),

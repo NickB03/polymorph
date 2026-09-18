@@ -79,6 +79,7 @@ Generates a 3-5 word chat title from the user's first message. Runs in parallel 
 
 - Uses `generateText` (non-streaming) with the same model as the research agent
 - System prompt: requests 3-5 word titles with no prefixes or quotes
+- Pins `providerOptions.openrouter.reasoning: { effort: 'low', exclude: true }` — a title never benefits from reasoning, and GLM-5.3 cannot disable it
 - Fallback chain: empty result -> first 75 chars of user message -> `'New Chat'`
 - Abort-safe: catches `AbortError` and `ResponseAborted` gracefully
 
@@ -89,7 +90,7 @@ Generates a 3-5 word chat title from the user's first message. Runs in parallel 
 Generates 3 concise follow-up questions after the main agent completes. Streams results incrementally.
 
 - Uses `streamText` with `Output.array` for structured output
-- Model: configured via `getRelatedQuestionsModel()` (default: DeepSeek V4 Flash)
+- Model: configured via `getRelatedQuestionsModel()` (default: GLM-5.3 Flash)
 - Receives the last user message + all response messages as context
 - Validated against `relatedQuestionSchema` (Zod)
 - Questions must be 10-12 words max, unique angles, in the user's language
