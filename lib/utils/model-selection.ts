@@ -7,9 +7,9 @@ import { SearchMode } from '@/lib/types/search'
 import { isProviderEnabled } from '@/lib/utils/registry'
 
 const DEFAULT_MODEL: Model = {
-  id: 'deepseek/deepseek-v4-flash',
-  name: 'DeepSeek V4 Flash',
-  provider: 'DeepSeek',
+  id: 'z-ai/glm-5.3-flash',
+  name: 'GLM-5.3 Flash',
+  provider: 'Z.ai',
   providerId: 'openrouter'
 }
 

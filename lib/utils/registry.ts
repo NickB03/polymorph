@@ -66,7 +66,7 @@ export const registry = createProviderRegistry(providers)
 export function getModel(model: string): LanguageModel {
   if (!model.includes(':')) {
     throw new Error(
-      `Invalid model format "${model}": expected "provider:model-id" (e.g. "openrouter:deepseek/deepseek-v4-flash")`
+      `Invalid model format "${model}": expected "provider:model-id" (e.g. "openrouter:z-ai/glm-5.3-flash")`
     )
   }
   return registry.languageModel(

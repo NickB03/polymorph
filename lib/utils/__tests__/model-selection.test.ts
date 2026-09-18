@@ -139,9 +139,9 @@ describe('selectModel', () => {
 
   it('falls back to the Gateway version of the configured speed model when OpenRouter is not configured', () => {
     matrix.chat.speed = {
-      id: 'deepseek/deepseek-v4-flash',
-      name: 'DeepSeek V4 Flash',
-      provider: 'DeepSeek',
+      id: 'z-ai/glm-5.3-flash',
+      name: 'GLM-5.3 Flash',
+      provider: 'Z.ai',
       providerId: 'openrouter'
     }
     mockIsProviderEnabled.mockImplementation(
@@ -154,18 +154,18 @@ describe('selectModel', () => {
     })
 
     expect(result).toEqual({
-      id: 'deepseek/deepseek-v4-flash',
-      name: 'DeepSeek V4 Flash',
-      provider: 'DeepSeek',
+      id: 'z-ai/glm-5.3-flash',
+      name: 'GLM-5.3 Flash',
+      provider: 'Z.ai',
       providerId: 'gateway'
     })
   })
 
   it('falls back to the Gateway version of the configured quality model when OpenRouter is not configured', () => {
     matrix.chat.quality = {
-      id: 'deepseek/deepseek-v4-pro',
-      name: 'DeepSeek V4 Pro',
-      provider: 'DeepSeek',
+      id: 'z-ai/glm-5.3',
+      name: 'GLM-5.3',
+      provider: 'Z.ai',
       providerId: 'openrouter'
     }
     mockIsProviderEnabled.mockImplementation(
@@ -178,10 +178,14 @@ describe('selectModel', () => {
     })
 
     expect(result).toEqual({
-      id: 'deepseek/deepseek-v4-pro',
-      name: 'DeepSeek V4 Pro',
-      provider: 'DeepSeek',
+      id: 'z-ai/glm-5.3',
+      name: 'GLM-5.3',
+      provider: 'Z.ai',
       providerId: 'gateway'
     })
+  })
+
+  it('exposes the hardcoded DEFAULT_MODEL fallback as GLM-5.3 Flash', () => {
+    expect(DEFAULT_MODEL.id).toBe('z-ai/glm-5.3-flash')
   })
 })
