@@ -192,7 +192,7 @@ export async function deleteMessagesAfter(chatId: string, messageId: string) {
     return { success: false, error: 'Unauthorized' }
   }
 
-  const result = await dbActions.deleteMessagesAfter(chatId, messageId)
+  const result = await dbActions.deleteMessagesAfter(chatId, messageId, userId)
 
   revalidateTag(`chat-${chatId}`, 'max')
 
