@@ -31,9 +31,9 @@ OpenRouter (`providerId: "openrouter"`) is the default text model provider. Verc
 
 ```json
 {
-  "id": "deepseek/deepseek-v4-flash",
-  "name": "DeepSeek V4 Flash",
-  "provider": "DeepSeek",
+  "id": "z-ai/glm-5.3-flash",
+  "name": "GLM-5.3 Flash",
+  "provider": "Z.ai",
   "providerId": "openrouter"
 }
 ```

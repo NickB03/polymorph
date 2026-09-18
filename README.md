@@ -37,7 +37,7 @@
 - **Generative UI** — tables, charts, geo maps, timelines, citations, callouts, and link previews render inline
 - **Three conversation modes** — Search, Research, and Build share one chat surface with intent-aware prompting
 - **Geo intelligence** — interactive maps, real directions, reachability polygons, and static map images
-- **Multi-provider AI** — DeepSeek V4 Flash/Pro via OpenRouter for text, Gemini 2.5 Flash Image via Vercel AI Gateway for inline generation, plus direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers
+- **Multi-provider AI** — GLM-5.3 Flash/GLM-5.3 via OpenRouter for text, Gemini 2.5 Flash Image via Vercel AI Gateway for inline generation, plus direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers
 - **Voice mode** — speech input and text-to-speech playback
 - **Configurable guest access** — optional instant search without sign-up, rate-limited per IP in cloud deployments
 
@@ -92,7 +92,7 @@
 ## Status & roadmap
 
 - **Canvas is one artifact per chat** — `createCanvasArtifact`/`updateCanvasArtifact`/`readCanvasArtifact` are only registered when a chat has an active canvas context; there's no multi-artifact workspace yet
-- **OpenRouter/DeepSeek is the default text provider** — DeepSeek V4 Flash/Pro via OpenRouter, with direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers supported for self-hosted or BYO-key setups
+- **OpenRouter/Z.ai is the default text provider** — GLM-5.3 Flash/GLM-5.3 via OpenRouter, with direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers supported for self-hosted or BYO-key setups
 - **Deferred dependency upgrades** — Vitest 5, `@vitejs/plugin-react` 6, and ESLint 10 were attempted and rolled back (ESLint 10 is blocked on `eslint-plugin-react` compatibility); TypeScript 7 and the Drizzle ORM v1 beta are also not yet adopted
 - **Evals cron runs a low-cost weekly canary by default** — the scheduled Railway cron replays a single synthetic regression case; full capability/traffic-monitor suites are triggered on demand from the Railway dashboard
 

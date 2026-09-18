@@ -24,7 +24,8 @@ This document records the foundational architecture decisions for Polymorph.
 ## 3) AI Model Orchestration
 
 - **Primary Text Interface**: OpenRouter (`OPENROUTER_API_KEY`)
-- **Default Models**: DeepSeek V4 Flash (Speed), DeepSeek V4 Pro (Quality) — see [`config/models/default.json`](../../config/models/default.json)
+- **Default Models**: GLM-5.3 Flash (Speed), GLM-5.3 (Quality) — see [`config/models/default.json`](../../config/models/default.json)
+- **2026-09-17 refresh**: moved from DeepSeek V4 Flash 0423 / V4 Pro 0423 to GLM-5.3-Flash / GLM-5.3. Rationale, candidate table, and rejected options (Gemini 3.8 Flash, DeepSeek V4.1 Flash, Kimi K3, Qwen3.8) in [`docs/superpowers/plans/2026-09-17-model-refresh-glm-5-3.md`](../superpowers/plans/2026-09-17-model-refresh-glm-5-3.md). GLM-5.3 thinking is forced; `reasoning.effort` accepts `low`/`high`/`max` only.
 - **Image Generation**: `gateway:google/gemini-2.5-flash-image` via Vercel AI Gateway (`AI_GATEWAY_API_KEY`; see `lib/tools/generate-image.ts`)
 
 ## 4) Storage Strategy

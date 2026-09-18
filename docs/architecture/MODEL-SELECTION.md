@@ -33,7 +33,7 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
    - If the model is an OpenRouter model and OpenRouter is disabled while Gateway is enabled, return the same model ID through `providerId: "gateway"` immediately
    - Otherwise, try the next configured candidate
 
-5. **Fallback** — If no configured candidate succeeds (all providers disabled, or config loading fails), try the hardcoded `DEFAULT_MODEL` (DeepSeek V4 Flash) through Gateway when Gateway is enabled. Otherwise, return the raw OpenRouter `DEFAULT_MODEL` as the last-resort configuration, even if OpenRouter is also unavailable.
+5. **Fallback** — If no configured candidate succeeds (all providers disabled, or config loading fails), try the hardcoded `DEFAULT_MODEL` (GLM-5.3 Flash) through Gateway when Gateway is enabled. Otherwise, return the raw OpenRouter `DEFAULT_MODEL` as the last-resort configuration, even if OpenRouter is also unavailable.
 
 **Cloud deployment:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag selects the `cloud.json` config profile instead of `default.json`. The legacy `VANA_CLOUD_DEPLOYMENT` alias is also accepted. This does not force a specific model type.
 
@@ -45,13 +45,13 @@ For a request with `searchMode=chat` and `modelType=quality`, the candidates are
 2. `chat` + `speed` (fallback type); same immediate Gateway fallback rule
 3. `research` + `quality` (fallback mode); same immediate Gateway fallback rule
 4. `research` + `speed` (fallback mode + type); same immediate Gateway fallback rule
-5. `DEFAULT_MODEL` (hardcoded DeepSeek V4 Flash); return it through Gateway if Gateway is enabled, otherwise return the raw OpenRouter default
+5. `DEFAULT_MODEL` (hardcoded GLM-5.3 Flash); return it through Gateway if Gateway is enabled, otherwise return the raw OpenRouter default
 
 ### Example scenarios
 
-**Default local development** — User has `modelType=speed`, `searchMode=chat`. Lookup finds `chat/speed` -> `deepseek/deepseek-v4-flash` via `openrouter`. `OPENROUTER_API_KEY` is set, so the provider is enabled. Result: DeepSeek V4 Flash.
+**Default local development** — User has `modelType=speed`, `searchMode=chat`. Lookup finds `chat/speed` -> `z-ai/glm-5.3-flash` via `openrouter`. `OPENROUTER_API_KEY` is set, so the provider is enabled. Result: GLM-5.3 Flash.
 
-**Quality preference** — User has `modelType=quality`, `searchMode=chat`. Lookup finds `chat/quality` -> `deepseek/deepseek-v4-pro` via `openrouter`. Provider is enabled. Result: DeepSeek V4 Pro.
+**Quality preference** — User has `modelType=quality`, `searchMode=chat`. Lookup finds `chat/quality` -> `z-ai/glm-5.3` via `openrouter`. Provider is enabled. Result: GLM-5.3.
 
 **Provider unavailable** — User has `modelType=quality` but no OpenRouter key is set. If `AI_GATEWAY_API_KEY` is set, OpenRouter model IDs are retried through Gateway. If neither provider is enabled, the hardcoded `DEFAULT_MODEL` is returned as a last resort (even though its provider may also be unavailable).
 
@@ -61,22 +61,22 @@ For a request with `searchMode=chat` and `modelType=quality`, the candidates are
 
 The current default configuration (`config/models/default.json`):
 
-| Mode                 | Type    | Model             | Provider   |
-| -------------------- | ------- | ----------------- | ---------- |
-| Chat                 | Speed   | DeepSeek V4 Flash | OpenRouter |
-| Chat                 | Quality | DeepSeek V4 Pro   | OpenRouter |
-| Research             | Speed   | DeepSeek V4 Flash | OpenRouter |
-| Research             | Quality | DeepSeek V4 Pro   | OpenRouter |
-| Related Questions    | -       | DeepSeek V4 Flash | OpenRouter |
-| Trending Suggestions | -       | DeepSeek V4 Flash | OpenRouter |
+| Mode                 | Type    | Model         | Provider   |
+| -------------------- | ------- | ------------- | ---------- |
+| Chat                 | Speed   | GLM-5.3 Flash | OpenRouter |
+| Chat                 | Quality | GLM-5.3       | OpenRouter |
+| Research             | Speed   | GLM-5.3 Flash | OpenRouter |
+| Research             | Quality | GLM-5.3       | OpenRouter |
+| Related Questions    | -       | GLM-5.3 Flash | OpenRouter |
+| Trending Suggestions | -       | GLM-5.3 Flash | OpenRouter |
 
 The hardcoded `DEFAULT_MODEL` fallback (used when all config models fail):
 
 ```typescript
 const DEFAULT_MODEL: Model = {
-  id: 'deepseek/deepseek-v4-flash',
-  name: 'DeepSeek V4 Flash',
-  provider: 'DeepSeek',
+  id: 'z-ai/glm-5.3-flash',
+  name: 'GLM-5.3 Flash',
+  provider: 'Z.ai',
   providerId: 'openrouter'
 }
 ```

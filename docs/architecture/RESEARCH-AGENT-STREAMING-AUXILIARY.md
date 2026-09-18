@@ -89,7 +89,7 @@ Generates a 3-5 word chat title from the user's first message. Runs in parallel 
 Generates 3 concise follow-up questions after the main agent completes. Streams results incrementally.
 
 - Uses `streamText` with `Output.array` for structured output
-- Model: configured via `getRelatedQuestionsModel()` (default: DeepSeek V4 Flash)
+- Model: configured via `getRelatedQuestionsModel()` (default: GLM-5.3 Flash)
 - Receives the last user message + all response messages as context
 - Validated against `relatedQuestionSchema` (Zod)
 - Questions must be 10-12 words max, unique angles, in the user's language

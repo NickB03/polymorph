@@ -26,7 +26,7 @@ flowchart TD
     NextCandidate["Try next candidate"]
     DefaultGatewayCheck{"Gateway enabled<br/>for DEFAULT_MODEL?"}
     DefaultGateway["Return DEFAULT_MODEL<br/>via gateway"]
-    DefaultModel["Return DEFAULT_MODEL<br/>(DeepSeek V4 Flash via OpenRouter)"]
+    DefaultModel["Return DEFAULT_MODEL<br/>(GLM-5.3 Flash via OpenRouter)"]
 
     subgraph ConfigFiles["Configuration Files"]
         DefaultJSON["default.json<br/>(standard deployment)"]
@@ -65,13 +65,13 @@ flowchart TD
 
 From [`config/models/default.json`](../../config/models/default.json):
 
-| Mode              | Type    | Model                        | Provider   |
-| ----------------- | ------- | ---------------------------- | ---------- |
-| Chat              | Speed   | `deepseek/deepseek-v4-flash` | OpenRouter |
-| Chat              | Quality | `deepseek/deepseek-v4-pro`   | OpenRouter |
-| Research          | Speed   | `deepseek/deepseek-v4-flash` | OpenRouter |
-| Research          | Quality | `deepseek/deepseek-v4-pro`   | OpenRouter |
-| Related Questions | --      | `deepseek/deepseek-v4-flash` | OpenRouter |
+| Mode              | Type    | Model                | Provider   |
+| ----------------- | ------- | -------------------- | ---------- |
+| Chat              | Speed   | `z-ai/glm-5.3-flash` | OpenRouter |
+| Chat              | Quality | `z-ai/glm-5.3`       | OpenRouter |
+| Research          | Speed   | `z-ai/glm-5.3-flash` | OpenRouter |
+| Research          | Quality | `z-ai/glm-5.3`       | OpenRouter |
+| Related Questions | --      | `z-ai/glm-5.3-flash` | OpenRouter |
 
 **Cloud deployment behavior:** The `POLYMORPH_CLOUD_DEPLOYMENT` flag controls config profile selection (uses `cloud.json` instead of `default.json`), rate limiting enforcement, and analytics event tracking.
 
