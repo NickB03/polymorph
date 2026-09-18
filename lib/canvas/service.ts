@@ -83,7 +83,7 @@ export type CanvasExportResult = {
 
 async function buildArtifactState(
   artifactId: string,
-  userId?: string | null
+  userId: string
 ): Promise<CanvasArtifactState | null> {
   const artifact = await loadCanvasArtifactById(artifactId, userId)
   if (!artifact) return null
@@ -162,7 +162,7 @@ function isUniqueConstraintError(error: unknown): boolean {
 
 async function getNextVersionNumber(
   artifactId: string,
-  userId?: string | null
+  userId: string
 ): Promise<number> {
   const versions = await listCanvasArtifactVersions(artifactId, userId)
   if (versions.length === 0) return 1
@@ -171,7 +171,7 @@ async function getNextVersionNumber(
 
 async function enforceVersionCap(
   artifactId: string,
-  userId?: string | null
+  userId: string
 ): Promise<void> {
   const versions = await listCanvasArtifactVersions(artifactId, userId)
   if (versions.length <= CANVAS_MAX_VERSIONS) return
@@ -446,7 +446,7 @@ export async function updateCanvasArtifactDraftFromSource(input: {
   artifactId: string
   expectedRevision: number
   draftSource: CanvasSourceFiles
-  userId?: string | null
+  userId: string
   title?: string
   onProgress?: (payload: CanvasCompileProgressPayload) => void
 }): Promise<CanvasServiceResult> {
@@ -552,7 +552,7 @@ export async function updateCanvasArtifactDraftFromSource(input: {
 export async function saveCanvasArtifactVersion(input: {
   artifactId: string
   createdBy: CanvasVersionCreatedBy
-  userId?: string | null
+  userId: string
 }): Promise<CanvasVersionResult> {
   const artifact = await loadCanvasArtifactById(input.artifactId, input.userId)
   if (!artifact) {
@@ -622,7 +622,7 @@ export async function restoreCanvasArtifactVersion(input: {
   artifactId: string
   versionId: string
   expectedRevision: number
-  userId?: string | null
+  userId: string
 }): Promise<CanvasServiceResult> {
   // Load the version (scoped to this artifact)
   const version = await loadCanvasArtifactVersionSnapshot(
@@ -713,7 +713,7 @@ export async function recordCanvasRuntimeDiagnostics(input: {
   artifactId: string
   draftRevision: number
   diagnostics: CanvasDiagnostic[]
-  userId?: string | null
+  userId: string
 }): Promise<CanvasServiceResult> {
   const artifact = await loadCanvasArtifactById(input.artifactId, input.userId)
   if (!artifact) {
@@ -763,14 +763,14 @@ export async function recordCanvasRuntimeDiagnostics(input: {
 
 export async function loadCanvasArtifactState(input: {
   artifactId: string
-  userId?: string | null
+  userId: string
 }): Promise<CanvasArtifactState | null> {
   return buildArtifactState(input.artifactId, input.userId)
 }
 
 export async function exportCanvasArtifactHtml(input: {
   artifactId: string
-  userId?: string | null
+  userId: string
 }): Promise<CanvasExportResult> {
   const artifact = await loadCanvasArtifactById(input.artifactId, input.userId)
   if (!artifact) {

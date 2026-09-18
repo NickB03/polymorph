@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
+import { GUEST_USER_ID } from '@/lib/canvas/constants'
 import {
   refreshGuestCanvasToken,
   verifyGuestCanvasToken
@@ -65,7 +66,10 @@ export async function POST(
       }
       // Verify guest token chatId matches artifact. A missing artifact falls
       // through to the service call below, which reports not-found.
-      const state = await loadCanvasArtifactState({ artifactId, userId: null })
+      const state = await loadCanvasArtifactState({
+        artifactId,
+        userId: GUEST_USER_ID
+      })
       if (state && payload.chatId !== state.chatId) {
         return jsonError(
           'FORBIDDEN',
@@ -89,7 +93,8 @@ export async function POST(
     const result = await saveCanvasArtifactVersion({
       artifactId,
       createdBy: 'user',
-      userId: isGuest ? null : userId
+      // Past the auth gate, no session user means a verified guest token.
+      userId: userId || GUEST_USER_ID
     })
 
     if (!result.ok) {

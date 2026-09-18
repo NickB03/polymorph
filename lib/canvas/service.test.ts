@@ -346,6 +346,7 @@ describe('Canvas Service', () => {
       )
 
       await updateCanvasArtifactDraftFromSource({
+        userId: 'user-1',
         artifactId: 'art-1',
         expectedRevision: 0,
         draftSource: validSource,
@@ -371,6 +372,7 @@ describe('Canvas Service', () => {
       } as any)
 
       const result = await updateCanvasArtifactDraftFromSource({
+        userId: 'user-1',
         artifactId: 'art-1',
         expectedRevision: 0,
         draftSource: validSource,
@@ -409,6 +411,7 @@ describe('Canvas Service', () => {
       )
 
       const result = await updateCanvasArtifactDraftFromSource({
+        userId: 'user-1',
         artifactId: 'art-1',
         expectedRevision: 0,
         draftSource: validSource
@@ -422,6 +425,7 @@ describe('Canvas Service', () => {
       mockUpdateCanvasArtifactDraft.mockResolvedValue(null)
 
       const result = await updateCanvasArtifactDraftFromSource({
+        userId: 'user-1',
         artifactId: 'art-1',
         expectedRevision: 0,
         draftSource: validSource
@@ -443,6 +447,7 @@ describe('Canvas Service', () => {
       })
 
       const result = await updateCanvasArtifactDraftFromSource({
+        userId: 'user-1',
         artifactId: 'art-1',
         expectedRevision: 0,
         draftSource: validSource
@@ -465,6 +470,7 @@ describe('Canvas Service', () => {
       )
 
       const result = await saveCanvasArtifactVersion({
+        userId: 'user-1',
         artifactId: 'art-1',
         createdBy: 'user'
       })
@@ -478,6 +484,7 @@ describe('Canvas Service', () => {
       )
 
       const result = await saveCanvasArtifactVersion({
+        userId: 'user-1',
         artifactId: 'art-1',
         createdBy: 'user'
       })
@@ -490,6 +497,7 @@ describe('Canvas Service', () => {
       mockLoadCanvasArtifactById.mockResolvedValue(null)
 
       const result = await saveCanvasArtifactVersion({
+        userId: 'user-1',
         artifactId: 'nonexistent',
         createdBy: 'user'
       })
@@ -506,6 +514,7 @@ describe('Canvas Service', () => {
       mockUpdateCanvasArtifactDraft.mockResolvedValue(null)
 
       const result = await saveCanvasArtifactVersion({
+        userId: 'user-1',
         artifactId: 'art-1',
         createdBy: 'user'
       })
@@ -551,6 +560,7 @@ describe('Canvas Service', () => {
       )
 
       const result = await saveCanvasArtifactVersion({
+        userId: 'user-1',
         artifactId: 'art-1',
         createdBy: 'user'
       })
@@ -606,6 +616,7 @@ describe('Canvas Service', () => {
         ])
 
       await saveCanvasArtifactVersion({
+        userId: 'user-1',
         artifactId: 'art-1',
         createdBy: 'user'
       })
@@ -634,6 +645,7 @@ describe('Canvas Service', () => {
       )
 
       const result = await restoreCanvasArtifactVersion({
+        userId: 'user-1',
         artifactId: 'art-1',
         versionId: 'ver-1',
         expectedRevision: 0
@@ -646,6 +658,7 @@ describe('Canvas Service', () => {
       mockLoadCanvasArtifactVersionSnapshot.mockResolvedValue(null)
 
       const result = await restoreCanvasArtifactVersion({
+        userId: 'user-1',
         artifactId: 'art-1',
         versionId: 'nonexistent',
         expectedRevision: 0
@@ -660,6 +673,7 @@ describe('Canvas Service', () => {
       mockUpdateCanvasArtifactDraft.mockResolvedValue(null)
 
       const result = await restoreCanvasArtifactVersion({
+        userId: 'user-1',
         artifactId: 'art-1',
         versionId: 'ver-1',
         expectedRevision: 0
@@ -686,6 +700,7 @@ describe('Canvas Service', () => {
       )
 
       const result = await restoreCanvasArtifactVersion({
+        userId: 'user-1',
         artifactId: 'art-1',
         versionId: 'ver-1',
         expectedRevision: 0
@@ -707,6 +722,7 @@ describe('Canvas Service', () => {
       )
 
       const result = await recordCanvasRuntimeDiagnostics({
+        userId: 'user-1',
         artifactId: 'art-1',
         draftRevision: 3,
         diagnostics: [{ severity: 'error', message: 'Runtime error' }]
@@ -725,6 +741,7 @@ describe('Canvas Service', () => {
       mockUpdateCanvasArtifactDiagnosticsOnly.mockResolvedValue(null)
 
       const result = await recordCanvasRuntimeDiagnostics({
+        userId: 'user-1',
         artifactId: 'art-1',
         draftRevision: 3,
         diagnostics: [{ severity: 'error', message: 'Runtime error' }]
@@ -740,6 +757,7 @@ describe('Canvas Service', () => {
       )
 
       const result = await recordCanvasRuntimeDiagnostics({
+        userId: 'user-1',
         artifactId: 'art-1',
         draftRevision: 3,
         diagnostics: [{ severity: 'error', message: 'Runtime error' }]
@@ -753,6 +771,7 @@ describe('Canvas Service', () => {
       mockLoadCanvasArtifactById.mockResolvedValue(null)
 
       const result = await recordCanvasRuntimeDiagnostics({
+        userId: 'user-1',
         artifactId: 'nonexistent',
         draftRevision: 0,
         diagnostics: []
@@ -768,7 +787,10 @@ describe('Canvas Service', () => {
       mockLoadCanvasArtifactById.mockResolvedValue(makeArtifactRow())
       mockListCanvasArtifactVersions.mockResolvedValue([makeVersionRow()])
 
-      const state = await loadCanvasArtifactState({ artifactId: 'art-1' })
+      const state = await loadCanvasArtifactState({
+        userId: 'user-1',
+        artifactId: 'art-1'
+      })
 
       expect(state).not.toBeNull()
       expect(state?.artifactId).toBe('art-1')
@@ -779,6 +801,7 @@ describe('Canvas Service', () => {
       mockLoadCanvasArtifactById.mockResolvedValue(null)
 
       const state = await loadCanvasArtifactState({
+        userId: 'user-1',
         artifactId: 'nonexistent'
       })
 
@@ -802,7 +825,10 @@ describe('Canvas Service', () => {
         })
       )
 
-      const result = await exportCanvasArtifactHtml({ artifactId: 'art-1' })
+      const result = await exportCanvasArtifactHtml({
+        userId: 'user-1',
+        artifactId: 'art-1'
+      })
 
       expect(result.ok).toBe(true)
       expect(result.html).toBe('<html>export</html>')
@@ -814,7 +840,10 @@ describe('Canvas Service', () => {
         makeArtifactRow({ draftCompiledHtml: null })
       )
 
-      const result = await exportCanvasArtifactHtml({ artifactId: 'art-1' })
+      const result = await exportCanvasArtifactHtml({
+        userId: 'user-1',
+        artifactId: 'art-1'
+      })
 
       expect(result.ok).toBe(false)
       expect(result.errorCode).toBe('no-compiled-html')
@@ -824,6 +853,7 @@ describe('Canvas Service', () => {
       mockLoadCanvasArtifactById.mockResolvedValue(null)
 
       const result = await exportCanvasArtifactHtml({
+        userId: 'user-1',
         artifactId: 'nonexistent'
       })
 

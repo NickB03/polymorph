@@ -197,7 +197,7 @@ describe('POST /api/canvas-artifacts/[artifactId]/restore', () => {
     expect(response.status).toBe(403)
     expect(mockLoadState).toHaveBeenCalledWith({
       artifactId: 'art-1',
-      userId: null
+      userId: 'guest'
     })
     expect(mockRestoreVersion).not.toHaveBeenCalled()
     expect(mockRefreshGuestCanvasToken).not.toHaveBeenCalled()

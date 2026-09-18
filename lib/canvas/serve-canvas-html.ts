@@ -1,4 +1,5 @@
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
+import { GUEST_USER_ID } from '@/lib/canvas/constants'
 import { verifyGuestCanvasToken } from '@/lib/canvas/guest-token'
 import { injectViewportFitStyles } from '@/lib/canvas/inject-viewport-fit'
 import { exportCanvasArtifactHtml } from '@/lib/canvas/service'
@@ -77,7 +78,7 @@ export async function serveCanvasHtml(
   if (isGuest) {
     result = await exportCanvasArtifactHtml({
       artifactId,
-      userId: null
+      userId: GUEST_USER_ID
     })
   } else if (userId) {
     result = await exportCanvasArtifactHtml({

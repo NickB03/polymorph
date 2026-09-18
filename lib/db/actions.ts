@@ -87,15 +87,19 @@ export async function ensureChatRecord(input: {
   userId: string
   visibility?: 'public' | 'private'
 }): Promise<void> {
-  await db
-    .insert(chats)
-    .values({
-      id: input.id,
-      title: input.title,
-      userId: input.userId,
-      visibility: input.visibility ?? 'private'
-    })
-    .onConflictDoNothing({ target: chats.id })
+  // Under the user's RLS context: the chats WITH CHECK policy rejects an
+  // insert made with no app.current_user_id under the restricted DB role.
+  await withRLS(input.userId, tx =>
+    tx
+      .insert(chats)
+      .values({
+        id: input.id,
+        title: input.title,
+        userId: input.userId,
+        visibility: input.visibility ?? 'private'
+      })
+      .onConflictDoNothing({ target: chats.id })
+  )
 }
 
 /**
@@ -164,6 +168,11 @@ export async function getChat(
  * Owner of an existing chat row, or null when there is none. Lets the chat
  * route reject a client-claimed "new" chat id that already belongs to someone
  * else without loading the chat's messages.
+ *
+ * Runs with no app.current_user_id, so under the restricted DB role it only
+ * sees public chats and returns null for someone else's private chat. That is
+ * safe: the writes that follow run under the caller's RLS context and
+ * `assertChatOwner`, and fail closed on a chat the caller does not own.
  */
 export async function getChatOwnerId(chatId: string): Promise<string | null> {
   const [chat] = await db
@@ -627,23 +636,23 @@ export async function createChatWithFirstMessageTransaction({
 
 /**
  * Explicit owner predicate for canvas artifact queries (RLS is defense in
- * depth only). A null/absent userId means the caller authenticated another
- * way (a signed guest canvas token), so no owner predicate applies.
+ * depth only). Every canvas action takes a userId: guest sessions pass
+ * GUEST_USER_ID (after verifying their signed token) and public-share reads
+ * pass the chat owner's id, so the query also works under the restricted DB
+ * role, where a missing app.current_user_id matches no canvas row.
  */
-function canvasArtifactOwnedBy(userId?: string | null) {
-  return userId ? eq(canvasArtifacts.userId, userId) : undefined
+function canvasArtifactOwnedBy(userId: string) {
+  return eq(canvasArtifacts.userId, userId)
 }
 
 /**
  * Versions carry no userId; access goes through the parent artifact's owner.
  */
 async function canAccessCanvasArtifact(
-  tx: TxInstance | DbInstance,
+  tx: TxInstance,
   artifactId: string,
-  userId?: string | null
+  userId: string
 ): Promise<boolean> {
-  if (!userId) return true
-
   const [artifact] = await tx
     .select({ id: canvasArtifacts.id })
     .from(canvasArtifacts)
@@ -668,7 +677,7 @@ export async function createCanvasArtifact(input: {
   draftSource: CanvasSourceFiles
   status?: CanvasArtifactStatus
 }) {
-  return withOptionalRLS(input.userId, async tx => {
+  return withRLS(input.userId, async tx => {
     await assertChatOwner(tx, input.chatId, input.userId)
 
     const [artifact] = await tx
@@ -694,9 +703,9 @@ export async function createCanvasArtifact(input: {
  */
 export async function loadCanvasArtifactByChatId(
   chatId: string,
-  userId?: string | null
+  userId: string
 ) {
-  return withOptionalRLS(userId ?? null, async tx => {
+  return withRLS(userId, async tx => {
     const [artifact] = await tx
       .select()
       .from(canvasArtifacts)
@@ -710,18 +719,17 @@ export async function loadCanvasArtifactByChatId(
 }
 
 /**
- * Load a canvas artifact by its ID.
+ * Load a canvas artifact by its ID, scoped to its owner.
  *
- * **Security:** When `userId` is `null`, RLS is bypassed and the query runs
- * without row-level permission checks. Callers MUST authenticate through an
- * alternative mechanism (e.g. a signed guest canvas token) before passing
- * `null`. Prefer passing a real `userId` whenever one is available.
+ * Guest callers MUST verify their signed guest canvas token first and then
+ * pass GUEST_USER_ID: every guest shares that identity, so the token (bound to
+ * one artifactId + chatId) is the only thing separating guests.
  */
 export async function loadCanvasArtifactById(
   artifactId: string,
-  userId?: string | null
+  userId: string
 ) {
-  return withOptionalRLS(userId ?? null, async tx => {
+  return withRLS(userId, async tx => {
     const [artifact] = await tx
       .select()
       .from(canvasArtifacts)
@@ -752,9 +760,9 @@ export async function updateCanvasArtifactDraft(input: {
   lastCompiledAt?: Date | null
   title?: string
   currentVersionId?: string | null
-  userId?: string | null
+  userId: string
 }) {
-  return withOptionalRLS(input.userId ?? null, async tx => {
+  return withRLS(input.userId, async tx => {
     const setClause: Record<string, unknown> = {
       draftRevision: sql`${canvasArtifacts.draftRevision} + 1`,
       updatedAt: new Date()
@@ -802,9 +810,9 @@ export async function updateCanvasArtifactDiagnosticsOnly(input: {
   artifactId: string
   expectedRevision: number
   draftDiagnostics: CanvasDiagnostics
-  userId?: string | null
+  userId: string
 }) {
-  return withOptionalRLS(input.userId ?? null, async tx => {
+  return withRLS(input.userId, async tx => {
     const [updated] = await tx
       .update(canvasArtifacts)
       .set({
@@ -832,9 +840,9 @@ export async function createCanvasArtifactVersion(input: {
   versionNumber: number
   sourceSnapshot: CanvasSourceFiles
   createdBy: CanvasVersionCreatedBy
-  userId?: string | null
+  userId: string
 }) {
-  return withOptionalRLS(input.userId ?? null, async tx => {
+  return withRLS(input.userId, async tx => {
     if (!(await canAccessCanvasArtifact(tx, input.artifactId, input.userId))) {
       throw new Error('Unauthorized: canvas artifact does not belong to user')
     }
@@ -863,9 +871,9 @@ export async function createCanvasArtifactVersion(input: {
  */
 export async function listCanvasArtifactVersions(
   artifactId: string,
-  userId?: string | null
+  userId: string
 ) {
-  return withOptionalRLS(userId ?? null, async tx => {
+  return withRLS(userId, async tx => {
     if (!(await canAccessCanvasArtifact(tx, artifactId, userId))) return []
 
     return tx
@@ -888,9 +896,9 @@ export async function listCanvasArtifactVersions(
 export async function loadCanvasArtifactVersionSnapshot(
   versionId: string,
   artifactId: string,
-  userId?: string | null
+  userId: string
 ) {
-  return withOptionalRLS(userId ?? null, async tx => {
+  return withRLS(userId, async tx => {
     if (!(await canAccessCanvasArtifact(tx, artifactId, userId))) return null
 
     const [version] = await tx
@@ -918,11 +926,11 @@ export async function loadCanvasArtifactVersionSnapshot(
 export async function deleteCanvasArtifactVersions(
   artifactId: string,
   versionIds: string[],
-  userId?: string | null
+  userId: string
 ) {
   if (versionIds.length === 0) return
 
-  return withOptionalRLS(userId ?? null, async tx => {
+  return withRLS(userId, async tx => {
     if (!(await canAccessCanvasArtifact(tx, artifactId, userId))) return
 
     await tx

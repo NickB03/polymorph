@@ -152,7 +152,8 @@ describe('createEphemeralChatStreamResponse', () => {
     await vi.waitFor(() => {
       expect(mockVerifyGuestCanvasToken).toHaveBeenCalledWith('valid-token')
       expect(loadCanvasArtifactState).toHaveBeenCalledWith({
-        artifactId: 'art-1'
+        artifactId: 'art-1',
+        userId: 'guest'
       })
     })
     expect(agentFactory).toHaveBeenCalledWith(

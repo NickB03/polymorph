@@ -10,6 +10,7 @@ import {
 import { randomUUID } from 'crypto'
 
 import { createChatValidationContract } from '@/lib/agents/chat/message-contract'
+import { GUEST_USER_ID } from '@/lib/canvas/constants'
 import { verifyGuestCanvasToken } from '@/lib/canvas/guest-token'
 import { loadCanvasArtifactState } from '@/lib/canvas/service'
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
@@ -111,14 +112,15 @@ export async function createEphemeralChatStreamResponse(
           }
           const currentArtifact = verifiedToken
             ? await loadCanvasArtifactState({
-                artifactId: verifiedToken.artifactId
+                artifactId: verifiedToken.artifactId,
+                userId: GUEST_USER_ID
               })
             : null
 
           const emitter = createCanvasEmitter(writer)
           canvasToolContext = {
             chatId,
-            userId: 'guest',
+            userId: GUEST_USER_ID,
             isGuest: true,
             emitter,
             ...(verifiedToken ? { guestCanvasToken } : {}),
@@ -142,7 +144,7 @@ export async function createEphemeralChatStreamResponse(
           ...(chatId
             ? {
                 imageToolContext: {
-                  userId: 'guest',
+                  userId: GUEST_USER_ID,
                   chatId,
                   isGuest: true
                 }

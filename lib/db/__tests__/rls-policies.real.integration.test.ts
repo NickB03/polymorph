@@ -16,8 +16,17 @@ import postgres from 'postgres'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { updateMessageFeedback } from '@/lib/actions/feedback'
+import { GUEST_USER_ID } from '@/lib/canvas/constants'
 import { db } from '@/lib/db'
-import { createChat, updateChatTitle, upsertMessage } from '@/lib/db/actions'
+import {
+  createCanvasArtifact,
+  createChat,
+  ensureChatRecord,
+  loadCanvasArtifactById,
+  loadChatWithMessages,
+  updateChatTitle,
+  upsertMessage
+} from '@/lib/db/actions'
 import { chats } from '@/lib/db/schema'
 import { withRLS } from '@/lib/db/with-rls'
 
@@ -81,6 +90,107 @@ describe.skipIf(!RUN)('RLS policies (real Postgres)', () => {
       tx.select().from(chats).where(eq(chats.id, idA))
     )
     expect(asB).toHaveLength(0)
+  })
+
+  // The guest canvas path must work under the restricted role, not only when
+  // the app's role bypasses RLS: guests run under the shared guest identity.
+  describe('guest canvas path', () => {
+    const draftSource = { 'App.tsx': 'export default () => null' }
+
+    it('creates and loads a guest artifact under the guest identity only', async () => {
+      const chatId = `${prefix}-guest`
+      const artifactId = `${prefix}-guest-art`
+      seededIds.push(chatId) // the artifact cascades with the chat
+
+      await ensureChatRecord({
+        id: chatId,
+        title: 'Guest canvas',
+        userId: GUEST_USER_ID
+      })
+      await createCanvasArtifact({
+        id: artifactId,
+        chatId,
+        userId: GUEST_USER_ID,
+        title: 'Guest artifact',
+        draftSource
+      })
+
+      await expect(
+        loadCanvasArtifactById(artifactId, GUEST_USER_ID)
+      ).resolves.toMatchObject({ id: artifactId, userId: GUEST_USER_ID })
+      await expect(
+        loadCanvasArtifactById(artifactId, 'user-A')
+      ).resolves.toBeNull()
+    })
+
+    it("does not load another user's artifact, as a user or as a guest", async () => {
+      const chatId = `${prefix}-art-owner`
+      const artifactId = `${prefix}-art-owner-art`
+      seededIds.push(chatId)
+      await createChat({ id: chatId, userId: 'user-A', title: 'A canvas' })
+      await createCanvasArtifact({
+        id: artifactId,
+        chatId,
+        userId: 'user-A',
+        title: 'A artifact',
+        draftSource
+      })
+
+      await expect(
+        loadCanvasArtifactById(artifactId, 'user-A')
+      ).resolves.toMatchObject({ id: artifactId })
+      await expect(
+        loadCanvasArtifactById(artifactId, 'user-B')
+      ).resolves.toBeNull()
+      await expect(
+        loadCanvasArtifactById(artifactId, GUEST_USER_ID)
+      ).resolves.toBeNull()
+    })
+
+    it("refuses a guest create in another user's chat", async () => {
+      const chatId = `${prefix}-guest-hijack`
+      seededIds.push(chatId)
+      await createChat({ id: chatId, userId: 'user-A', title: 'A chat' })
+
+      await ensureChatRecord({
+        id: chatId,
+        title: 'hijack',
+        userId: GUEST_USER_ID
+      })
+      await expect(
+        createCanvasArtifact({
+          chatId,
+          userId: GUEST_USER_ID,
+          title: 'hijack',
+          draftSource
+        })
+      ).rejects.toThrow('Unauthorized')
+    })
+  })
+
+  describe('reads with no user (no GUC)', () => {
+    it('reads a public chat and its messages, but not a private one', async () => {
+      const publicId = `${prefix}-public`
+      const privateId = `${prefix}-private`
+      seededIds.push(publicId, privateId)
+      await createChat({
+        id: publicId,
+        userId: 'user-A',
+        title: 'Shared',
+        visibility: 'public'
+      })
+      await createChat({ id: privateId, userId: 'user-A', title: 'Private' })
+      for (const chatId of [publicId, privateId]) {
+        await upsertMessage(
+          { id: `${chatId}-m1`, chatId, role: 'user', parts: [] },
+          'user-A'
+        )
+      }
+
+      const shared = await loadChatWithMessages(publicId)
+      expect(shared?.messages.map(m => m.id)).toEqual([`${publicId}-m1`])
+      await expect(loadChatWithMessages(privateId)).resolves.toBeNull()
+    })
   })
 
   // Not an RLS test, but it needs real Postgres and this is the file the

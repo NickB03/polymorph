@@ -20,6 +20,7 @@ NEXT_PUBLIC_SUPABASE_URL=[YOUR_SUPABASE_PROJECT_URL]
 NEXT_PUBLIC_SUPABASE_ANON_KEY=[YOUR_SUPABASE_ANON_KEY]
 SUPABASE_STORAGE_BUCKET=[YOUR_BUCKET_NAME]
 DATABASE_URL=[PRODUCTION_POSTGRES_URL]
+DATABASE_RESTRICTED_URL=[PRODUCTION_POSTGRES_URL_AS_app_user]
 OPENROUTER_API_KEY=[YOUR_OPENROUTER_KEY]
 AI_GATEWAY_API_KEY=[YOUR_VERCEL_GATEWAY_KEY_FOR_IMAGE_GENERATION]
 BRAVE_SEARCH_API_KEY=[YOUR_BRAVE_SEARCH_KEY]
@@ -29,6 +30,29 @@ ADMIN_USER_ID=[SUPABASE_USER_ID_FOR_ADMIN_ACCESS]
 ```
 
 `BRAVE_SEARCH_API_KEY` is the default search provider (`SEARCH_API=brave`). Set `TAVILY_API_KEY`, `EXA_API_KEY`, or another provider key instead if you prefer. `CRON_SECRET` is required for the Vercel cron in the next section. `ADMIN_USER_ID` is optional — required only if you want `/admin/*` routes to resolve for a specific user.
+
+### Restricted database role (`DATABASE_RESTRICTED_URL`) — required
+
+Row-Level Security is only enforced when the app connects as a role that is neither a superuser nor `BYPASSRLS`. The database owner (on Supabase, the `postgres` role, which has `BYPASSRLS`) ignores every policy, including on tables with `FORCE ROW LEVEL SECURITY`. Without `DATABASE_RESTRICTED_URL` the app runs as the owner, RLS is inert, and only the application-level ownership checks protect user data. The app still boots in that state, but logs a `[DB] DATABASE_RESTRICTED_URL is not set` error once per server process start.
+
+Provision once per database:
+
+1. Apply migrations as the owner: `bun run migrate` (uses `DATABASE_URL`, falling back to `POSTGRES_URL`).
+2. Create the restricted role as the owner, with a generated password that is not the owner's:
+
+   ```bash
+   psql "[OWNER_CONNECTION_STRING]" -v ON_ERROR_STOP=1 \
+     -v app_user_password='[GENERATED_PASSWORD]' \
+     -f scripts/provision-app-user.sql
+   ```
+
+   The script is idempotent (re-running it rotates the password and re-applies grants). Its last line must show `rolsuper = f` and `rolbypassrls = f`.
+
+3. Set `DATABASE_RESTRICTED_URL` to the same host, port, and database as the owner URL, with the `app_user` credentials. On Supabase use the pooler host, where the username carries the project ref: `postgresql://app_user.[PROJECT_REF]:[GENERATED_PASSWORD]@[POOLER_HOST]:[PORT]/postgres`.
+4. Keep `DATABASE_URL` / `POSTGRES_URL` pointing at the owner. Migrations (`lib/db/migrate.ts`) and the privileged cron client (`lib/db/admin.ts`, which refuses to run as `app_user`) use it; the runtime query client (`lib/db/index.ts`) prefers `DATABASE_RESTRICTED_URL`.
+5. Redeploy, then verify: `GET /api/health` must return `"rlsEnforced": true`. The value is read from the connected role (`NOT (rolsuper OR rolbypassrls)`), not from the environment, so a restricted URL that actually points at the owner still reports `false`.
+
+Later migrations grant `app_user` access to new tables automatically (default privileges, plus the grant block in `drizzle/0028_force_rls_and_app_user_grants.sql`).
 
 For the current Vercel production alias, set:
 
@@ -81,6 +105,7 @@ ORS_API_KEY=[YOUR_OPENROUTESERVICE_KEY]
 - Database migrations must be applied (`bun run migrate`) before accepting traffic
 - **Self-hosted Docker deployments:** Consider moving `bun run migrate` from the Docker entrypoint to a one-shot pre-deploy step to avoid race conditions with multi-replica deployments. The entrypoint currently runs migrations on every container start. (Polymorph itself deploys to Vercel; only Phoenix and the `polymorph-evals` cron run on Railway.)
 - At least one configured model/provider must be enabled at runtime
+- `/api/health` must report `"rlsEnforced": true` (see the restricted database role section above); `false` means the app is connected as the owner and RLS is not enforced
 - Monitor `https://polymorph.fyi/api/health` rather than raw deployment URLs. Deployment URLs may still be protected by Vercel Authentication.
 
 ## Rollback strategy

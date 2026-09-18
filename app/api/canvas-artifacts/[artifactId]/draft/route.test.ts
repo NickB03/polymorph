@@ -207,7 +207,7 @@ describe('PATCH /api/canvas-artifacts/[artifactId]/draft', () => {
     expect(response.status).toBe(403)
     expect(mockLoadState).toHaveBeenCalledWith({
       artifactId: 'art-1',
-      userId: null
+      userId: 'guest'
     })
     expect(mockUpdateDraft).not.toHaveBeenCalled()
     expect(mockRefreshGuestCanvasToken).not.toHaveBeenCalled()
