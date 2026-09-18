@@ -79,6 +79,7 @@ Generates a 3-5 word chat title from the user's first message. Runs in parallel 
 
 - Uses `generateText` (non-streaming) with the same model as the research agent
 - System prompt: requests 3-5 word titles with no prefixes or quotes
+- Pins `providerOptions.openrouter.reasoning: { effort: 'low', exclude: true }` — a title never benefits from reasoning, and GLM-5.3 cannot disable it
 - Fallback chain: empty result -> first 75 chars of user message -> `'New Chat'`
 - Abort-safe: catches `AbortError` and `ResponseAborted` gracefully
 

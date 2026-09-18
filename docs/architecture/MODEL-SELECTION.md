@@ -30,7 +30,7 @@ Model selection happens in `selectModel()` at `lib/utils/model-selection.ts`. Th
    - Look up the model from the config via `getModelForModeAndType(mode, type)`
    - Check if the model's provider is enabled via `isProviderEnabled(providerId)`
    - If both succeed, return that model immediately
-   - If the model is an OpenRouter model and OpenRouter is disabled while Gateway is enabled, return the same model ID through `providerId: "gateway"` immediately
+   - If the model is an OpenRouter model and OpenRouter is disabled while Gateway is enabled, return the same model ID through `providerId: "gateway"` immediately. Ids whose namespace differs between OpenRouter and the Gateway are remapped via `GATEWAY_ID_OVERRIDES` in `lib/utils/model-selection.ts` (currently `z-ai/…` → `zai/…`); add an entry there when swapping models.
    - Otherwise, try the next configured candidate
 
 5. **Fallback** — If no configured candidate succeeds (all providers disabled, or config loading fails), try the hardcoded `DEFAULT_MODEL` (GLM-5.3 Flash) through Gateway when Gateway is enabled. Otherwise, return the raw OpenRouter `DEFAULT_MODEL` as the last-resort configuration, even if OpenRouter is also unavailable.
@@ -46,6 +46,8 @@ For a request with `searchMode=chat` and `modelType=quality`, the candidates are
 3. `research` + `quality` (fallback mode); same immediate Gateway fallback rule
 4. `research` + `speed` (fallback mode + type); same immediate Gateway fallback rule
 5. `DEFAULT_MODEL` (hardcoded GLM-5.3 Flash); return it through Gateway if Gateway is enabled, otherwise return the raw OpenRouter default
+
+The Gateway-routed id is unchanged except where `GATEWAY_ID_OVERRIDES` (`lib/utils/model-selection.ts`) remaps a namespace difference (currently `z-ai/…` → `zai/…`).
 
 ### Example scenarios
 
