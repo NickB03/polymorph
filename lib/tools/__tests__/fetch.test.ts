@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const { lookup } = vi.hoisted(() => ({ lookup: vi.fn() }))
+
+// Keep the SSRF DNS check hermetic: no real lookups from the test run.
+vi.mock('node:dns/promises', () => ({ lookup, default: { lookup } }))
+
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
 const originalEnv = { ...process.env }
@@ -25,6 +30,104 @@ async function collectStreamResults(
   }
   return results
 }
+
+beforeEach(() => {
+  lookup.mockReset()
+  lookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
+})
+
+describe('fetchTool - SSRF guard', () => {
+  beforeEach(() => {
+    mockFetch.mockReset()
+  })
+
+  const unsafeUrls = [
+    'http://127.0.0.1/',
+    'https://[::1]/',
+    'http://169.254.169.254/latest/meta-data/',
+    'https://localhost/',
+    'http://example.com/'
+  ]
+
+  for (const type of ['regular', 'api'] as const) {
+    it.each(unsafeUrls)(
+      `refuses %s in ${type} mode without fetching`,
+      async url => {
+        await expect(collectStreamResults({ url, type })).rejects.toThrow(
+          'Refusing to fetch a non-public or non-https URL'
+        )
+        expect(mockFetch).not.toHaveBeenCalled()
+      }
+    )
+  }
+
+  it('refuses a public hostname that resolves to a private address', async () => {
+    lookup.mockResolvedValueOnce([{ address: '10.0.0.5', family: 4 }])
+
+    await expect(
+      collectStreamResults({ url: 'https://example.com', type: 'regular' })
+    ).rejects.toThrow('Refusing to fetch a non-public or non-https URL')
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  const redirectTo = (status: number, location: string) => ({
+    ok: false,
+    status,
+    statusText: 'Redirect',
+    headers: new Headers({ location })
+  })
+
+  it('follows a redirect to another public https URL', async () => {
+    mockFetch
+      .mockResolvedValueOnce(redirectTo(301, 'https://www.example.com/'))
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'text/html' }),
+        text: () =>
+          Promise.resolve('<html><title>WWW</title><body>landed</body></html>')
+      })
+
+    const results = await collectStreamResults({
+      url: 'https://example.com',
+      type: 'regular'
+    })
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      1,
+      'https://example.com',
+      expect.objectContaining({ redirect: 'manual' })
+    )
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      'https://www.example.com/',
+      expect.objectContaining({ redirect: 'manual' })
+    )
+    expect(results[1].results[0].title).toBe('WWW')
+    expect(results[1].results[0].content).toContain('landed')
+  })
+
+  it.each(['http://169.254.169.254/', 'https://localhost/'])(
+    'refuses a redirect to %s without fetching it',
+    async location => {
+      mockFetch.mockResolvedValueOnce(redirectTo(302, location))
+
+      await expect(
+        collectStreamResults({ url: 'https://example.com', type: 'regular' })
+      ).rejects.toThrow('Refusing to fetch a non-public or non-https URL')
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('throws after more than 5 redirects', async () => {
+    mockFetch.mockResolvedValue(redirectTo(302, 'https://example.com/loop'))
+
+    await expect(
+      collectStreamResults({ url: 'https://example.com', type: 'regular' })
+    ).rejects.toThrow('Too many redirects')
+    expect(mockFetch).toHaveBeenCalledTimes(6)
+  })
+})
 
 describe('fetchTool - regular mode', () => {
   beforeEach(() => {
