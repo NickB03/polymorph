@@ -59,6 +59,19 @@ describe('context-window', () => {
       const maxTokens = getMaxAllowedTokens(mockModel)
       expect(maxTokens).toBeGreaterThanOrEqual(1000)
     })
+
+    test('resolves GLM-5.3 ids to a 1M context window', () => {
+      for (const id of ['z-ai/glm-5.3-flash', 'z-ai/glm-5.3']) {
+        const max = getMaxAllowedTokens({
+          id,
+          name: 'GLM',
+          provider: 'Z.ai',
+          providerId: 'openrouter'
+        })
+        // 1,048,576 context − 131,072 output − 10% safety buffer
+        expect(max).toBe(1048576 - 131072 - Math.floor(1048576 * 0.1))
+      }
+    })
   })
 
   describe('maybeTruncateMessages', () => {
