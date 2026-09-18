@@ -15,8 +15,9 @@ import { eq, sql } from 'drizzle-orm'
 import postgres from 'postgres'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { updateMessageFeedback } from '@/lib/actions/feedback'
 import { db } from '@/lib/db'
-import { createChat, upsertMessage } from '@/lib/db/actions'
+import { createChat, updateChatTitle, upsertMessage } from '@/lib/db/actions'
 import { chats } from '@/lib/db/schema'
 import { withRLS } from '@/lib/db/with-rls'
 
@@ -148,5 +149,93 @@ describe.skipIf(!RUN)('RLS policies (real Postgres)', () => {
       select id from messages where chat_id = ${chatId} order by created_at
     `
     expect(rows.map(r => r.id)).toEqual([answered, `${prefix}-u2`])
+  })
+
+  // Application-level ownership guards. These hold whatever role the app
+  // connects as (production's role bypasses RLS), so they assert the explicit
+  // errors rather than an RLS violation.
+  describe('explicit ownership guards', () => {
+    it("refuses to write a message or title into another user's chat", async () => {
+      const chatId = `${prefix}-victim`
+      seededIds.push(chatId)
+      await createChat({ id: chatId, userId: 'user-A', title: 'Victim chat' })
+
+      await expect(
+        upsertMessage(
+          { id: `${prefix}-injected`, chatId, role: 'user', parts: [] },
+          'user-B'
+        )
+      ).rejects.toThrow('Unauthorized')
+      await expect(
+        updateChatTitle(chatId, 'pwned', 'user-B')
+      ).resolves.toBeNull()
+
+      const rows = await owner`
+        select c.title, count(m.id)::int as messages
+        from chats c left join messages m on m.chat_id = c.id
+        where c.id = ${chatId} group by c.title
+      `
+      expect(rows[0]).toMatchObject({ title: 'Victim chat', messages: 0 })
+    })
+
+    it('refuses to overwrite a message id that lives in another chat', async () => {
+      const victimChat = `${prefix}-ow-victim`
+      const attackerChat = `${prefix}-ow-attacker`
+      const messageId = `${prefix}-ow-msg`
+      seededIds.push(victimChat, attackerChat)
+      await createChat({ id: victimChat, userId: 'user-A', title: 'A' })
+      await createChat({ id: attackerChat, userId: 'user-B', title: 'B' })
+      await upsertMessage(
+        {
+          id: messageId,
+          chatId: victimChat,
+          role: 'user',
+          parts: [{ type: 'text', text: 'original' }]
+        },
+        'user-A'
+      )
+
+      await expect(
+        upsertMessage(
+          {
+            id: messageId,
+            chatId: attackerChat,
+            role: 'user',
+            parts: [{ type: 'text', text: 'overwritten' }]
+          },
+          'user-B'
+        )
+      ).rejects.toThrow()
+
+      const rows = await owner`
+        select chat_id, ui_message->'parts'->0->>'text' as text
+        from messages where id = ${messageId}
+      `
+      expect(rows[0]).toMatchObject({ chat_id: victimChat, text: 'original' })
+    })
+
+    it("only records feedback on the user's own message", async () => {
+      const chatId = `${prefix}-fb`
+      const messageId = `${prefix}-fb-msg`
+      seededIds.push(chatId)
+      await createChat({ id: chatId, userId: 'user-A', title: 'Feedback' })
+      await upsertMessage(
+        { id: messageId, chatId, role: 'assistant', parts: [] },
+        'user-A'
+      )
+
+      await expect(
+        updateMessageFeedback(messageId, -1, 'user-B')
+      ).resolves.toMatchObject({ success: false, notFound: true })
+      await expect(
+        updateMessageFeedback(messageId, 1, 'user-A')
+      ).resolves.toMatchObject({ success: true, chatId })
+
+      const rows = await owner`
+        select metadata->>'feedbackScore' as score from messages
+        where id = ${messageId}
+      `
+      expect(rows[0].score).toBe('1')
+    })
   })
 })

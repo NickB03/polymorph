@@ -25,7 +25,7 @@ vi.mock('@/lib/utils/retry', () => ({
 
 import { revalidateTag } from 'next/cache'
 
-import { upsertMessage } from '@/lib/actions/chat'
+import { createChatWithFirstMessage, upsertMessage } from '@/lib/actions/chat'
 import {
   updateChatTitle,
   upsertMessage as upsertMessageIfCurrent
@@ -127,5 +127,80 @@ describe('persistStreamResults', () => {
     )
 
     expect(updateChatTitle).not.toHaveBeenCalled()
+  })
+
+  it("writes nothing when duplicate-key recovery hits another user's chat", async () => {
+    vi.mocked(upsertMessage).mockClear()
+    vi.mocked(updateChatTitle).mockClear()
+    vi.mocked(revalidateTag).mockClear()
+    const duplicateKey = new Error(
+      'duplicate key value violates unique constraint "chats_pkey"'
+    )
+    vi.mocked(createChatWithFirstMessage).mockRejectedValueOnce(duplicateKey)
+    // The DB-level owner guard rejects the recovery upsert.
+    vi.mocked(upsertMessage).mockRejectedValueOnce(new Error('Unauthorized'))
+    const userMessage = {
+      id: 'user-msg-1',
+      role: 'user',
+      parts: [{ type: 'text', text: 'injected' }]
+    } as Parameters<typeof persistStreamResults>[0]
+
+    await persistStreamResults(
+      {
+        id: 'msg-4',
+        role: 'assistant',
+        parts: [{ type: 'text', text: 'reply' }]
+      } as Parameters<typeof persistStreamResults>[0],
+      'victim-chat',
+      'attacker',
+      Promise.resolve('Attacker title'),
+      undefined,
+      undefined,
+      undefined,
+      Promise.reject(duplicateKey),
+      userMessage
+    )
+
+    // Only the rejected recovery attempt: no assistant reply, no title.
+    expect(upsertMessage).toHaveBeenCalledTimes(1)
+    expect(upsertMessage).toHaveBeenCalledWith(
+      'victim-chat',
+      userMessage,
+      'attacker'
+    )
+    expect(updateChatTitle).not.toHaveBeenCalled()
+    expect(revalidateTag).not.toHaveBeenCalled()
+  })
+
+  it("recovers the owner's own chat after a duplicate key", async () => {
+    vi.mocked(upsertMessage).mockClear()
+    vi.mocked(upsertMessage).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof upsertMessage>>
+    )
+    const duplicateKey = new Error('duplicate key value violates unique')
+    vi.mocked(createChatWithFirstMessage).mockRejectedValueOnce(duplicateKey)
+
+    await persistStreamResults(
+      {
+        id: 'msg-5',
+        role: 'assistant',
+        parts: [{ type: 'text', text: 'reply' }]
+      } as Parameters<typeof persistStreamResults>[0],
+      'chat-1',
+      'user-1',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      Promise.reject(duplicateKey),
+      {
+        id: 'user-msg-1',
+        role: 'user',
+        parts: [{ type: 'text', text: 'hi' }]
+      } as Parameters<typeof persistStreamResults>[0]
+    )
+
+    // Initial user message, then the assistant reply.
+    expect(upsertMessage).toHaveBeenCalledTimes(2)
   })
 })

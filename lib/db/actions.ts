@@ -23,7 +23,7 @@ import {
   generateId,
   messages
 } from './schema'
-import type { TxInstance } from './with-rls'
+import type { DbInstance, TxInstance } from './with-rls'
 import { withOptionalRLS, withRLS } from './with-rls'
 import { db } from '.'
 
@@ -161,6 +161,41 @@ export async function getChat(
 }
 
 /**
+ * Owner of an existing chat row, or null when there is none. Lets the chat
+ * route reject a client-claimed "new" chat id that already belongs to someone
+ * else without loading the chat's messages.
+ */
+export async function getChatOwnerId(chatId: string): Promise<string | null> {
+  const [chat] = await db
+    .select({ userId: chats.userId })
+    .from(chats)
+    .where(eq(chats.id, chatId))
+    .limit(1)
+
+  return chat?.userId ?? null
+}
+
+/**
+ * Explicit ownership check. RLS is defense in depth only: the app's DB role
+ * may bypass it, so writers must not rely on it for cross-user authorization.
+ */
+async function assertChatOwner(
+  tx: TxInstance | DbInstance,
+  chatId: string,
+  userId: string
+): Promise<void> {
+  const [chat] = await tx
+    .select({ userId: chats.userId })
+    .from(chats)
+    .where(eq(chats.id, chatId))
+    .limit(1)
+
+  if (chat?.userId !== userId) {
+    throw new Error('Unauthorized: chat does not belong to this user')
+  }
+}
+
+/**
  * Runs a write to a chat's messages in a transaction that first takes a
  * per-chat advisory lock, so message writers for one chat run one at a time.
  * That is what makes a read-then-write (the stale guard below, or a delete
@@ -170,6 +205,9 @@ export async function getChat(
  * the lock only serializes transactions that take it. It is released on
  * commit/rollback. `hashtext` is 32-bit, so two chats can share a key; that
  * only costs a brief unnecessary wait, never correctness.
+ *
+ * With a `userId` the chat must belong to that user, checked here so every
+ * message writer is covered; the write throws otherwise.
  */
 async function withChatMessagesLock<T>(
   chatId: string,
@@ -178,6 +216,7 @@ async function withChatMessagesLock<T>(
 ): Promise<T> {
   const locked = async (tx: TxInstance) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${chatId}))`)
+    if (userId) await assertChatOwner(tx, chatId, userId)
     return callback(tx)
   }
   // Always a real transaction: a transaction-scoped lock taken on a bare
@@ -245,9 +284,15 @@ export async function upsertMessage(
           uiMessage: messageData.uiMessage,
           metadata: messageData.metadata,
           updatedAt: new Date()
-        }
+        },
+        // Never overwrite a message that lives in a different chat.
+        setWhere: eq(messages.chatId, message.chatId)
       })
       .returning()
+
+    if (!dbMessage) {
+      throw new Error(`Message ${message.id} belongs to a different chat`)
+    }
 
     return dbMessage
   })
@@ -323,7 +368,7 @@ export async function deleteMessagesAfter(
     const [targetMessage] = await tx
       .select({ createdAt: messages.createdAt })
       .from(messages)
-      .where(eq(messages.id, messageId))
+      .where(and(eq(messages.id, messageId), eq(messages.chatId, chatId)))
       .limit(1)
 
     if (!targetMessage) {
@@ -521,13 +566,13 @@ export async function updateChatVisibility(
 export async function updateChatTitle(
   chatId: string,
   title: string,
-  userId?: string
+  userId: string
 ): Promise<Chat | null> {
-  return withOptionalRLS(userId || null, async tx => {
+  return withRLS(userId, async tx => {
     const [updatedChat] = await tx
       .update(chats)
       .set({ title })
-      .where(eq(chats.id, chatId))
+      .where(and(eq(chats.id, chatId), eq(chats.userId, userId)))
       .returning()
 
     return updatedChat || null
@@ -581,6 +626,36 @@ export async function createChatWithFirstMessageTransaction({
 // ---------------------------------------------------------------------------
 
 /**
+ * Explicit owner predicate for canvas artifact queries (RLS is defense in
+ * depth only). A null/absent userId means the caller authenticated another
+ * way (a signed guest canvas token), so no owner predicate applies.
+ */
+function canvasArtifactOwnedBy(userId?: string | null) {
+  return userId ? eq(canvasArtifacts.userId, userId) : undefined
+}
+
+/**
+ * Versions carry no userId; access goes through the parent artifact's owner.
+ */
+async function canAccessCanvasArtifact(
+  tx: TxInstance | DbInstance,
+  artifactId: string,
+  userId?: string | null
+): Promise<boolean> {
+  if (!userId) return true
+
+  const [artifact] = await tx
+    .select({ id: canvasArtifacts.id })
+    .from(canvasArtifacts)
+    .where(
+      and(eq(canvasArtifacts.id, artifactId), canvasArtifactOwnedBy(userId))
+    )
+    .limit(1)
+
+  return !!artifact
+}
+
+/**
  * Create a new canvas artifact for a chat.
  *
  * The unique index on `chatId` enforces one artifact per chat at the DB level.
@@ -594,6 +669,8 @@ export async function createCanvasArtifact(input: {
   status?: CanvasArtifactStatus
 }) {
   return withOptionalRLS(input.userId, async tx => {
+    await assertChatOwner(tx, input.chatId, input.userId)
+
     const [artifact] = await tx
       .insert(canvasArtifacts)
       .values({
@@ -623,7 +700,9 @@ export async function loadCanvasArtifactByChatId(
     const [artifact] = await tx
       .select()
       .from(canvasArtifacts)
-      .where(eq(canvasArtifacts.chatId, chatId))
+      .where(
+        and(eq(canvasArtifacts.chatId, chatId), canvasArtifactOwnedBy(userId))
+      )
       .limit(1)
 
     return artifact ?? null
@@ -646,7 +725,9 @@ export async function loadCanvasArtifactById(
     const [artifact] = await tx
       .select()
       .from(canvasArtifacts)
-      .where(eq(canvasArtifacts.id, artifactId))
+      .where(
+        and(eq(canvasArtifacts.id, artifactId), canvasArtifactOwnedBy(userId))
+      )
       .limit(1)
 
     return artifact ?? null
@@ -698,7 +779,8 @@ export async function updateCanvasArtifactDraft(input: {
       .where(
         and(
           eq(canvasArtifacts.id, input.artifactId),
-          eq(canvasArtifacts.draftRevision, input.expectedRevision)
+          eq(canvasArtifacts.draftRevision, input.expectedRevision),
+          canvasArtifactOwnedBy(input.userId)
         )
       )
       .returning()
@@ -732,7 +814,8 @@ export async function updateCanvasArtifactDiagnosticsOnly(input: {
       .where(
         and(
           eq(canvasArtifacts.id, input.artifactId),
-          eq(canvasArtifacts.draftRevision, input.expectedRevision)
+          eq(canvasArtifacts.draftRevision, input.expectedRevision),
+          canvasArtifactOwnedBy(input.userId)
         )
       )
       .returning()
@@ -752,6 +835,10 @@ export async function createCanvasArtifactVersion(input: {
   userId?: string | null
 }) {
   return withOptionalRLS(input.userId ?? null, async tx => {
+    if (!(await canAccessCanvasArtifact(tx, input.artifactId, input.userId))) {
+      throw new Error('Unauthorized: canvas artifact does not belong to user')
+    }
+
     const [version] = await tx
       .insert(canvasArtifactVersions)
       .values({
@@ -779,6 +866,8 @@ export async function listCanvasArtifactVersions(
   userId?: string | null
 ) {
   return withOptionalRLS(userId ?? null, async tx => {
+    if (!(await canAccessCanvasArtifact(tx, artifactId, userId))) return []
+
     return tx
       .select({
         id: canvasArtifactVersions.id,
@@ -802,6 +891,8 @@ export async function loadCanvasArtifactVersionSnapshot(
   userId?: string | null
 ) {
   return withOptionalRLS(userId ?? null, async tx => {
+    if (!(await canAccessCanvasArtifact(tx, artifactId, userId))) return null
+
     const [version] = await tx
       .select({
         id: canvasArtifactVersions.id,
@@ -832,6 +923,8 @@ export async function deleteCanvasArtifactVersions(
   if (versionIds.length === 0) return
 
   return withOptionalRLS(userId ?? null, async tx => {
+    if (!(await canAccessCanvasArtifact(tx, artifactId, userId))) return
+
     await tx
       .delete(canvasArtifactVersions)
       .where(
