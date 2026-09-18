@@ -46821,6 +46821,38 @@
       "source_location": "L174",
       "_origin": "ast",
       "community": 19
+    },
+    {
+      "id": "tests_generate_related_questions_test",
+      "label": "generate-related-questions.test.ts",
+      "file_type": "code",
+      "source_file": "lib/agents/__tests__/generate-related-questions.test.ts",
+      "source_location": "L1",
+      "_origin": "ast"
+    },
+    {
+      "id": "tests_generate_related_questions_test_mockstreamtext",
+      "label": "mockStreamText",
+      "file_type": "code",
+      "source_file": "lib/agents/__tests__/generate-related-questions.test.ts",
+      "source_location": "L3",
+      "_origin": "ast"
+    },
+    {
+      "id": "tests_generate_related_questions_test_mockgetrelatedquestionsmodel",
+      "label": "mockGetRelatedQuestionsModel",
+      "file_type": "code",
+      "source_file": "lib/agents/__tests__/generate-related-questions.test.ts",
+      "source_location": "L4",
+      "_origin": "ast"
+    },
+    {
+      "id": "tests_generate_related_questions_test_mockgetmodel",
+      "label": "mockGetModel",
+      "file_type": "code",
+      "source_file": "lib/agents/__tests__/generate-related-questions.test.ts",
+      "source_location": "L5",
+      "_origin": "ast"
     }
   ],
   "links": [
@@ -149746,6 +149778,58 @@
       "confidence": "EXTRACTED",
       "source_file": "lib/db/actions.ts",
       "source_location": "L185",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_generate_related_questions_test",
+      "target": "tests_generate_related_questions_test_mockstreamtext",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/agents/__tests__/generate-related-questions.test.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_generate_related_questions_test",
+      "target": "tests_generate_related_questions_test_mockgetrelatedquestionsmodel",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/agents/__tests__/generate-related-questions.test.ts",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_generate_related_questions_test",
+      "target": "tests_generate_related_questions_test_mockgetmodel",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/agents/__tests__/generate-related-questions.test.ts",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_generate_related_questions_test",
+      "target": "agents_generate_related_questions",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/agents/__tests__/generate-related-questions.test.ts",
+      "source_location": "L20",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_generate_related_questions_test",
+      "target": "agents_generate_related_questions_createrelatedquestionsstream",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/agents/__tests__/generate-related-questions.test.ts",
+      "source_location": "L20",
       "weight": 1.0,
       "confidence_score": 1.0
     }

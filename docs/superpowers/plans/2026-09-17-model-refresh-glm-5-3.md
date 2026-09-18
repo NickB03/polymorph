@@ -614,9 +614,32 @@ After the Vercel production deploy, open Railway → `polymorph-evals` → **Cro
 
 ---
 
+### Task 7: Reliable background structured output (added during execution, 2026-09-18)
+
+The Task 6 live smoke test failed: related questions threw `AI_NoObjectGeneratedError` on 3 of 3 chats. Verified root cause, two parts:
+
+1. **Host-dependent JSON-schema support.** OpenRouter load-balances `z-ai/glm-5.3-flash` across ~29 hosts. With `Output.array` / `Output.object` (sent as `response_format: json_schema`), `together`, `fireworks`, `baseten`, `parasail`, `cloudflare`, and `friendli` returned valid JSON on 18 of 18 calls. The Z.AI first-party host returned markdown 3 of 3, `deepinfra` errored 3 of 3, `wafer` errored 1 of 3. `provider.require_parameters: true` did not help. DeepSeek V4 Flash passed 3 of 3 unpinned, so this was a regression from the swap.
+2. **Background `providerOptions` were never forwarded.** `lib/agents/generate-related-questions.ts` and `lib/agents/generate-trending-suggestions.ts` ignored the config's `providerOptions`, so the `reasoning` settings added in PR #234 were dead config.
+
+Fix (commit `3a12c58`): both generators now forward `providerOptions` (same conditional spread as `lib/agents/chat/factory.ts`), and the two background slots pin `provider.only` to the six verified hosts. Re-smoke: related questions stream `status: success`; zero parse errors across five chats.
+
+Not exercised locally: the persisted multi-turn path (`create-chat-stream-response.ts`) because local Supabase was not running; the cross-turn reasoning strip is covered by unit tests only. Check one two-turn chat on the Vercel preview before merging.
+
+---
+
 ## Follow-ups (not in this plan)
 
-- **Image model:** `google/gemini-3.1-flash-image` ($0.50 / $3.00) superseded `gemini-2.5-flash-image` in June 2026. Separate PR; needs a visual check of generated images.
+- **Image model — recommendation: `gateway:google/gemini-3.1-flash-image` (Nano Banana 2).** Researched 2026-09-18. The tool (`lib/tools/generate-image/server.ts`) calls `generateText` and reads `result.files`, with `providerOptions.google.aspectRatio` and an image part for edits. On the Vercel AI Gateway only the Gemini image family is typed `language` and works with that code path, so these are one-line swaps:
+
+  | Model                                     | $/image (1K) | AA text-to-image Elo (rank) | AA editing Elo (rank) |
+  | ----------------------------------------- | ------------ | --------------------------- | --------------------- |
+  | `google/gemini-2.5-flash-image` (current) | 0.039        | 985 (#50)                   | 987 (#45)             |
+  | `google/gemini-3.1-flash-lite-image`      | 0.034        | 1091 (#13)                  | 1041 (#22)            |
+  | **`google/gemini-3.1-flash-image`**       | 0.067        | 1122 (#6)                   | 1106 (#9)             |
+  | `google/gemini-3-pro-image`               | 0.134        | 1100 (#10)                  | 1096 (#12)            |
+
+  3.1 Flash Image is the best of the drop-ins on both generation and editing; the Lite variant is the pick if cost ever matters (cheaper than today and still +100 Elo). Best value overall is `meta/muse-image-1.0` ($0.01, Elo 1112 / 1116) and the quality leader is `openai/gpt-image-2.5` ($0.21), but both are Gateway type `image`: they need the tool rewritten around `generateImage`, with different edit and aspect-ratio handling. Not worth it at current volume. The swap touches `server.ts:22` plus three doc lines (`DECISIONS.md:29`, `RESEARCH-AGENT-CONDITIONAL-TOOLS.md:12`, `README.md:40`) and needs a visual check of one generation and one edit with a live `AI_GATEWAY_API_KEY`.
+
 - **Judge model:** `google/gemini-3.1-flash-lite-preview` still resolves on OpenRouter, but the GA `google/gemini-3.1-flash-lite` (2026-05-07) and `gemini-3.5-flash-lite` exist. Retiring the preview alias will break the cron. Plan a deliberate judge migration with a re-baselined regression run, never as part of a cost change.
 - **Image uploads to a text-only quality tier:** today both tiers are text-only. After this plan the speed tier accepts images but the quality tier (and the canvas upgrade path) does not. If image-in-canvas matters, the multimodal option at the same score is `qwen/qwen3.8-max-0902` ($2 / $6).
 - **Provider pinning:** `@openrouter/ai-sdk-provider` 3.0.0 has no `provider.quantizations` passthrough. If fp4 hosts prove flaky, add `provider: { order: ['Z.AI'] }` via raw `providerOptions.openrouter` after checking the SDK version supports it.
