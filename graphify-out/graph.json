@@ -46821,6 +46821,139 @@
       "source_location": "L174",
       "_origin": "ast",
       "community": 19
+    },
+    {
+      "id": "draft_route_test_mockloadstate",
+      "label": "mockLoadState",
+      "file_type": "code",
+      "source_file": "app/api/canvas-artifacts/[artifactId]/draft/route.test.ts",
+      "source_location": "L42",
+      "_origin": "ast",
+      "community": 110
+    },
+    {
+      "id": "restore_route_test_mockloadstate",
+      "label": "mockLoadState",
+      "file_type": "code",
+      "source_file": "app/api/canvas-artifacts/[artifactId]/restore/route.test.ts",
+      "source_location": "L42",
+      "_origin": "ast",
+      "community": 20
+    },
+    {
+      "id": "runtime_diagnostics_route_test_mockloadstate",
+      "label": "mockLoadState",
+      "file_type": "code",
+      "source_file": "app/api/canvas-artifacts/[artifactId]/runtime-diagnostics/route.test.ts",
+      "source_location": "L42",
+      "_origin": "ast",
+      "community": 20
+    },
+    {
+      "id": "versions_route_test_mockloadstate",
+      "label": "mockLoadState",
+      "file_type": "code",
+      "source_file": "app/api/canvas-artifacts/[artifactId]/versions/route.test.ts",
+      "source_location": "L42",
+      "_origin": "ast",
+      "community": 20
+    },
+    {
+      "id": "tests_feedback_test_mockjoinedfrom",
+      "label": "mockJoinedFrom()",
+      "file_type": "code",
+      "source_file": "lib/actions/__tests__/feedback.test.ts",
+      "source_location": "L21",
+      "_origin": "ast",
+      "community": 10
+    },
+    {
+      "id": "tests_feedback_test_rendersql",
+      "label": "renderSql()",
+      "file_type": "code",
+      "source_file": "lib/actions/__tests__/feedback.test.ts",
+      "source_location": "L27",
+      "_origin": "ast",
+      "community": 10
+    },
+    {
+      "id": "tests_chat_ui_message_load_test_rendersql",
+      "label": "renderSql()",
+      "file_type": "code",
+      "source_file": "lib/db/__tests__/chat-ui-message-load.test.ts",
+      "source_location": "L66",
+      "_origin": "ast",
+      "community": 19
+    },
+    {
+      "id": "tests_chat_ui_message_load_test_mockmessageinsert",
+      "label": "mockMessageInsert()",
+      "file_type": "code",
+      "source_file": "lib/db/__tests__/chat-ui-message-load.test.ts",
+      "source_location": "L430",
+      "_origin": "ast",
+      "community": 19
+    },
+    {
+      "id": "tests_owner_role_warning_test",
+      "label": "owner-role-warning.test.ts",
+      "file_type": "code",
+      "source_file": "lib/db/__tests__/owner-role-warning.test.ts",
+      "source_location": "L1",
+      "_origin": "ast"
+    },
+    {
+      "id": "tests_owner_role_warning_test_importdbwith",
+      "label": "importDbWith()",
+      "file_type": "code",
+      "source_file": "lib/db/__tests__/owner-role-warning.test.ts",
+      "source_location": "L5",
+      "_origin": "ast"
+    },
+    {
+      "id": "db_actions_getchatownerid",
+      "label": "getChatOwnerId()",
+      "file_type": "code",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L177",
+      "_origin": "ast",
+      "community": 19
+    },
+    {
+      "id": "db_actions_assertchatowner",
+      "label": "assertChatOwner()",
+      "file_type": "code",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L191",
+      "_origin": "ast",
+      "community": 19
+    },
+    {
+      "id": "db_actions_canvasartifactownedby",
+      "label": "canvasArtifactOwnedBy()",
+      "file_type": "code",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L644",
+      "_origin": "ast",
+      "community": 19
+    },
+    {
+      "id": "db_actions_canaccesscanvasartifact",
+      "label": "canAccessCanvasArtifact()",
+      "file_type": "code",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L651",
+      "_origin": "ast",
+      "community": 19
+    },
+    {
+      "id": "tests_fetch_test_lookup",
+      "label": "{ lookup }",
+      "file_type": "code",
+      "source_file": "lib/tools/__tests__/fetch.test.ts",
+      "source_location": "L3",
+      "_origin": "ast",
+      "community": 187
     }
   ],
   "links": [
@@ -149748,6 +149881,190 @@
       "source_location": "L185",
       "weight": 1.0,
       "confidence_score": 1.0
+    },
+    {
+      "source": "draft_route_test",
+      "target": "draft_route_test_mockloadstate",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/api/canvas-artifacts/[artifactId]/draft/route.test.ts",
+      "source_location": "L42",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "restore_route_test",
+      "target": "restore_route_test_mockloadstate",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/api/canvas-artifacts/[artifactId]/restore/route.test.ts",
+      "source_location": "L42",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "runtime_diagnostics_route_test",
+      "target": "runtime_diagnostics_route_test_mockloadstate",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/api/canvas-artifacts/[artifactId]/runtime-diagnostics/route.test.ts",
+      "source_location": "L42",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "versions_route_test",
+      "target": "versions_route_test_mockloadstate",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/api/canvas-artifacts/[artifactId]/versions/route.test.ts",
+      "source_location": "L42",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_feedback_test",
+      "target": "tests_feedback_test_mockjoinedfrom",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/actions/__tests__/feedback.test.ts",
+      "source_location": "L21",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_feedback_test",
+      "target": "tests_feedback_test_rendersql",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/actions/__tests__/feedback.test.ts",
+      "source_location": "L27",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_chat_ui_message_load_test",
+      "target": "tests_chat_ui_message_load_test_rendersql",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/__tests__/chat-ui-message-load.test.ts",
+      "source_location": "L66",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_chat_ui_message_load_test",
+      "target": "tests_chat_ui_message_load_test_mockmessageinsert",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/__tests__/chat-ui-message-load.test.ts",
+      "source_location": "L430",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_owner_role_warning_test",
+      "target": "tests_owner_role_warning_test_importdbwith",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/__tests__/owner-role-warning.test.ts",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_owner_role_warning_test_importdbwith",
+      "target": "db_index",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/__tests__/owner-role-warning.test.ts",
+      "source_location": "L10",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "db_actions",
+      "target": "db_actions_getchatownerid",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L177",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "db_actions",
+      "target": "db_actions_assertchatowner",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L191",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "db_actions",
+      "target": "db_actions_canvasartifactownedby",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L644",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "db_actions",
+      "target": "db_actions_canaccesscanvasartifact",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L651",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "db_actions_canaccesscanvasartifact",
+      "target": "db_actions_canvasartifactownedby",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/actions.ts",
+      "source_location": "L660",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "streaming_create_chat_stream_response",
+      "target": "db_actions_getchatownerid",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/streaming/create-chat-stream-response.ts",
+      "source_location": "L24",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_fetch_test",
+      "target": "tests_fetch_test_lookup",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/tools/__tests__/fetch.test.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "streaming_create_chat_stream_response_createchatstreamresponse",
+      "target": "db_actions_getchatownerid",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/streaming/create-chat-stream-response.ts",
+      "source_location": "L107",
+      "weight": 1.0
     }
   ]
 }
