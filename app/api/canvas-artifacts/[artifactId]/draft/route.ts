@@ -5,7 +5,10 @@ import {
   refreshGuestCanvasToken,
   verifyGuestCanvasToken
 } from '@/lib/canvas/guest-token'
-import { updateCanvasArtifactDraftFromSource } from '@/lib/canvas/service'
+import {
+  loadCanvasArtifactState,
+  updateCanvasArtifactDraftFromSource
+} from '@/lib/canvas/service'
 import { checkAndEnforceCanvasLimit } from '@/lib/rate-limit/canvas-limits'
 import { jsonError } from '@/lib/utils/json-error'
 
@@ -59,6 +62,16 @@ export async function PATCH(
         return jsonError('FORBIDDEN', 'Invalid or expired guest token', 403)
       }
       if (payload.artifactId !== artifactId) {
+        return jsonError(
+          'FORBIDDEN',
+          'Guest token does not match this artifact',
+          403
+        )
+      }
+      // Verify guest token chatId matches artifact. A missing artifact falls
+      // through to the service call below, which reports not-found.
+      const state = await loadCanvasArtifactState({ artifactId, userId: null })
+      if (state && payload.chatId !== state.chatId) {
         return jsonError(
           'FORBIDDEN',
           'Guest token does not match this artifact',

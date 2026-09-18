@@ -53,13 +53,14 @@ export async function serveCanvasHtml(
 
   const userId = (await getCurrentUserId()) ?? undefined
   let isGuest = false
+  let guestPayload: Awaited<ReturnType<typeof verifyGuestCanvasToken>> = null
 
   if (!userId && guestToken) {
-    const payload = await verifyGuestCanvasToken(guestToken)
-    if (!payload) {
+    guestPayload = await verifyGuestCanvasToken(guestToken)
+    if (!guestPayload) {
       return jsonError('FORBIDDEN', 'Invalid or expired guest token', 403)
     }
-    if (payload.artifactId !== artifactId) {
+    if (guestPayload.artifactId !== artifactId) {
       return jsonError(
         'FORBIDDEN',
         'Guest token does not match this artifact',
@@ -107,6 +108,15 @@ export async function serveCanvasHtml(
       errorCode.toUpperCase(),
       result?.error ?? 'Artifact not found',
       status
+    )
+  }
+
+  // Verify guest token chatId matches artifact
+  if (isGuest && guestPayload?.chatId !== result.chatId) {
+    return jsonError(
+      'FORBIDDEN',
+      'Guest token does not match this artifact',
+      403
     )
   }
 

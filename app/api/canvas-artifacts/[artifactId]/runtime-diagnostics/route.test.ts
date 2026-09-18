@@ -39,7 +39,9 @@ vi.mock('@/lib/canvas/guest-token', () => ({
 
 // Mock service
 const mockRecordDiagnostics = vi.fn()
+const mockLoadState = vi.fn()
 vi.mock('@/lib/canvas/service', () => ({
+  loadCanvasArtifactState: (...args: unknown[]) => mockLoadState(...args),
   recordCanvasRuntimeDiagnostics: (...args: unknown[]) =>
     mockRecordDiagnostics(...args)
 }))
@@ -94,6 +96,7 @@ describe('POST /api/canvas-artifacts/[artifactId]/runtime-diagnostics', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCheckCanvasLimit.mockResolvedValue(null)
+    mockLoadState.mockResolvedValue(makeArtifactState())
   })
 
   it('records diagnostics for authenticated user', async () => {
@@ -193,6 +196,30 @@ describe('POST /api/canvas-artifacts/[artifactId]/runtime-diagnostics', () => {
     const response = await POST(req, ctx)
 
     expect(response.status).toBe(404)
+  })
+
+  it("rejects a guest token whose chatId does not match the artifact's chat", async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockVerifyGuestCanvasToken.mockResolvedValue({
+      chatId: 'chat-attacker',
+      artifactId: 'art-1',
+      exp: Date.now() + 60000
+    })
+
+    const [req, ctx] = makeRequest({
+      draftRevision: 3,
+      diagnostics: [{ severity: 'error', message: 'err' }],
+      guestCanvasToken: 'token'
+    })
+    const response = await POST(req, ctx)
+
+    expect(response.status).toBe(403)
+    expect(mockLoadState).toHaveBeenCalledWith({
+      artifactId: 'art-1',
+      userId: null
+    })
+    expect(mockRecordDiagnostics).not.toHaveBeenCalled()
+    expect(mockRefreshGuestCanvasToken).not.toHaveBeenCalled()
   })
 
   it('rotates guest token on successful write', async () => {

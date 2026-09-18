@@ -71,6 +71,7 @@ export type CanvasVersionResult = {
 
 export type CanvasExportResult = {
   ok: boolean
+  chatId?: string
   html?: string
   title?: string
   hasExternalDependencies?: boolean
@@ -790,6 +791,7 @@ export async function exportCanvasArtifactHtml(input: {
 
   return {
     ok: true,
+    chatId: artifact.chatId,
     html: artifact.draftCompiledHtml,
     title: artifact.title,
     hasExternalDependencies

@@ -45,10 +45,19 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
         updatedAt: new Date().toISOString()
       })
 
-      const currentState = await loadCanvasArtifactState({
-        artifactId,
-        userId: ctx.userId
-      })
+      // All guests share one userId, so userId scoping cannot tell guests
+      // apart. A guest may only touch the artifact its verified token (or its
+      // own create call in this request) bound to the context; anything else
+      // is reported as not-found without touching the DB.
+      const guestDenied =
+        ctx.isGuest && artifactId !== ctx.currentArtifact?.artifactId
+
+      const currentState = guestDenied
+        ? null
+        : await loadCanvasArtifactState({
+            artifactId,
+            userId: ctx.userId
+          })
 
       if (!currentState) {
         return {
@@ -168,7 +177,7 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
           let guestCanvasToken: string | undefined
           if (ctx.isGuest) {
             guestCanvasToken = await refreshGuestCanvasToken({
-              chatId: ctx.chatId,
+              chatId: versioned.chatId,
               artifactId
             })
           }
@@ -206,7 +215,7 @@ export function updateCanvasArtifactTool(ctx: CanvasToolContext) {
       let guestCanvasToken: string | undefined
       if (ctx.isGuest) {
         guestCanvasToken = await refreshGuestCanvasToken({
-          chatId: ctx.chatId,
+          chatId: artifact.chatId,
           artifactId
         })
       }
