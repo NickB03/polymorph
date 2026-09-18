@@ -58,7 +58,17 @@
       "providerId": "openrouter",
       "providerOptions": {
         "openrouter": {
-          "reasoning": { "effort": "low", "exclude": true }
+          "reasoning": { "effort": "low", "exclude": true },
+          "provider": {
+            "only": [
+              "together",
+              "fireworks",
+              "baseten",
+              "parasail",
+              "cloudflare",
+              "friendli"
+            ]
+          }
         }
       }
     },
@@ -69,7 +79,17 @@
       "providerId": "openrouter",
       "providerOptions": {
         "openrouter": {
-          "reasoning": { "effort": "low", "exclude": true }
+          "reasoning": { "effort": "low", "exclude": true },
+          "provider": {
+            "only": [
+              "together",
+              "fireworks",
+              "baseten",
+              "parasail",
+              "cloudflare",
+              "friendli"
+            ]
+          }
         }
       }
     }

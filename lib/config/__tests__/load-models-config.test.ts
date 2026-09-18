@@ -62,14 +62,23 @@ describe('loadModelsConfig — GLM-5.3 reasoning provider options', () => {
       }
     })
 
-    it('pins background calls to GLM-5.3-Flash at low effort with hidden reasoning', () => {
+    it('pins background calls to GLM-5.3-Flash at low effort, hidden reasoning, JSON-schema-capable hosts', () => {
       const config = loadModelsConfigSync()
       for (const key of ['relatedQuestions', 'trendingSuggestions'] as const) {
         const model = config.models[key]
         expect(model.id).toBe('z-ai/glm-5.3-flash')
-        expect((model as any).providerOptions?.openrouter?.reasoning).toEqual({
-          effort: 'low',
-          exclude: true
+        expect((model as any).providerOptions?.openrouter).toEqual({
+          reasoning: { effort: 'low', exclude: true },
+          provider: {
+            only: [
+              'together',
+              'fireworks',
+              'baseten',
+              'parasail',
+              'cloudflare',
+              'friendli'
+            ]
+          }
         })
       }
     })
