@@ -75,11 +75,13 @@ describe('toReplaySafeAbortedMessage', () => {
 })
 
 describe('needsReasoningStrip', () => {
-  it('strips for OpenAI and DeepSeek-via-OpenRouter models', () => {
+  it('strips for OpenAI, DeepSeek and Z.ai via OpenRouter', () => {
     expect(needsReasoningStrip('openai:gpt-4.1')).toBe(true)
     expect(needsReasoningStrip('openrouter:deepseek/deepseek-v4-pro')).toBe(
       true
     )
+    expect(needsReasoningStrip('openrouter:z-ai/glm-5.3-flash')).toBe(true)
+    expect(needsReasoningStrip('openrouter:z-ai/glm-5.3')).toBe(true)
   })
 
   it('leaves reasoning intact for every other model', () => {
