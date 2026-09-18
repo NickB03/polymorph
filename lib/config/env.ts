@@ -132,6 +132,17 @@ export function validateEnv(): Env {
       console.warn(`[env] Warning: ${message}`)
     }
   }
+  // Guest canvas tokens are HMAC-signed; without a secret every guest
+  // createCanvasArtifact call throws after the artifact is already created.
+  if (
+    process.env.ENABLE_GUEST_CHAT === 'true' &&
+    !process.env.GUEST_CANVAS_SECRET &&
+    !process.env.GUEST_ARTIFACT_SECRET
+  ) {
+    console.warn(
+      '[env] Warning: Guest canvas artifacts require GUEST_CANVAS_SECRET'
+    )
+  }
 
   return _env
 }
