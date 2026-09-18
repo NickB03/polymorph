@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { registryProviders } from '@/lib/utils/registry'
+import { getImageModel, registryProviders } from '@/lib/utils/registry'
 
 describe('provider registry', () => {
   // `createProviderRegistry` keys its compatibility handling off the
@@ -18,5 +18,13 @@ describe('provider registry', () => {
         `provider "${name}" must declare specificationVersion 'v4'`
       ).toBe('v4')
     }
+  })
+
+  it('resolves Gateway image models and rejects ids without a provider prefix', () => {
+    const model = getImageModel('gateway:meta/muse-image-1.0')
+    expect((model as { modelId?: string }).modelId).toBe('meta/muse-image-1.0')
+    expect(() => getImageModel('meta/muse-image-1.0')).toThrow(
+      /expected "provider:model-id"/
+    )
   })
 })

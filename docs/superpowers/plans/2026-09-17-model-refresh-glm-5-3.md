@@ -629,7 +629,7 @@ Not exercised locally: the persisted multi-turn path (`create-chat-stream-respon
 
 ## Follow-ups (not in this plan)
 
-- **Image model — recommendation: `gateway:google/gemini-3.1-flash-image` (Nano Banana 2).** Researched 2026-09-18. The tool (`lib/tools/generate-image/server.ts`) calls `generateText` and reads `result.files`, with `providerOptions.google.aspectRatio` and an image part for edits. On the Vercel AI Gateway only the Gemini image family is typed `language` and works with that code path, so these are one-line swaps:
+- **Image model — decided 2026-09-18: `gateway:meta/muse-image-1.0`, shipped on branch `feat/muse-image-model`.** The owner chose the best-value model over the drop-in; the tool was rewritten around `generateImage` (aspect ratios map to `size` hints because Muse ignores `aspectRatio`; edits pass the source as a URL file; output is WebP). Original research, for the record: The tool (`lib/tools/generate-image/server.ts`) calls `generateText` and reads `result.files`, with `providerOptions.google.aspectRatio` and an image part for edits. On the Vercel AI Gateway only the Gemini image family is typed `language` and works with that code path, so these are one-line swaps:
 
   | Model                                     | $/image (1K) | AA text-to-image Elo (rank) | AA editing Elo (rank) |
   | ----------------------------------------- | ------------ | --------------------------- | --------------------- |
