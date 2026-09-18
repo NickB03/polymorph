@@ -82,6 +82,7 @@ describe('needsReasoningStrip', () => {
     )
     expect(needsReasoningStrip('openrouter:z-ai/glm-5.3-flash')).toBe(true)
     expect(needsReasoningStrip('openrouter:z-ai/glm-5.3')).toBe(true)
+    expect(needsReasoningStrip('gateway:zai/glm-5.3-flash')).toBe(true)
   })
 
   it('leaves reasoning intact for every other model', () => {

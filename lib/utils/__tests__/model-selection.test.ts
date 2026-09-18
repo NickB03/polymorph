@@ -154,9 +154,33 @@ describe('selectModel', () => {
     })
 
     expect(result).toEqual({
-      id: 'z-ai/glm-5.3-flash',
+      id: 'zai/glm-5.3-flash',
       name: 'GLM-5.3 Flash',
       provider: 'Z.ai',
+      providerId: 'gateway'
+    })
+  })
+
+  it('passes non-mapped ids through unchanged on Gateway fallback', () => {
+    matrix.chat.speed = {
+      id: 'deepseek/deepseek-v4-flash',
+      name: 'DeepSeek V4 Flash',
+      provider: 'DeepSeek',
+      providerId: 'openrouter'
+    }
+    mockIsProviderEnabled.mockImplementation(
+      providerId => providerId === 'gateway'
+    )
+
+    const result = selectModel({
+      cookieStore: createCookieStore(),
+      searchMode: 'chat'
+    })
+
+    expect(result).toEqual({
+      id: 'deepseek/deepseek-v4-flash',
+      name: 'DeepSeek V4 Flash',
+      provider: 'DeepSeek',
       providerId: 'gateway'
     })
   })
@@ -178,7 +202,7 @@ describe('selectModel', () => {
     })
 
     expect(result).toEqual({
-      id: 'z-ai/glm-5.3',
+      id: 'zai/glm-5.3',
       name: 'GLM-5.3',
       provider: 'Z.ai',
       providerId: 'gateway'

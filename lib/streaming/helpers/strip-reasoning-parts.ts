@@ -9,15 +9,17 @@ import type { UIMessage } from '@/lib/types/ai'
  * - DeepSeek (via OpenRouter) attaches provider-specific `reasoning_details`
  *   metadata that should not be replayed on the next turn; replaying it risks
  *   400s or silent drops.
- * - Z.ai GLM (via OpenRouter) returns `reasoning_details` per step. The SDK
- *   replays them within a tool loop (required); across user turns they are
- *   stale, inflate the prompt, and trigger missing-signature warnings.
+ * - Z.ai GLM (via OpenRouter or the Gateway fallback) returns
+ *   `reasoning_details` per step. The SDK replays them within a tool loop
+ *   (required); across user turns they are stale, inflate the prompt, and
+ *   trigger missing-signature warnings.
  */
 export function needsReasoningStrip(modelId: string): boolean {
   return (
     modelId.startsWith('openai:') ||
     modelId.startsWith('openrouter:deepseek/') ||
-    modelId.startsWith('openrouter:z-ai/')
+    modelId.startsWith('openrouter:z-ai/') ||
+    modelId.startsWith('gateway:zai/')
   )
 }
 
