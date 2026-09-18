@@ -37,7 +37,7 @@
 - **Generative UI** — tables, charts, geo maps, timelines, citations, callouts, and link previews render inline
 - **Three conversation modes** — Search, Research, and Build share one chat surface with intent-aware prompting
 - **Geo intelligence** — interactive maps, real directions, reachability polygons, and static map images
-- **Multi-provider AI** — GLM-5.3 Flash/GLM-5.3 via OpenRouter for text, Gemini 2.5 Flash Image via Vercel AI Gateway for inline generation, plus direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers
+- **Multi-provider AI** — GLM-5.3 Flash/GLM-5.3 via OpenRouter for text, Meta Muse Image via Vercel AI Gateway for inline generation, plus direct OpenAI, Anthropic, Google, OpenAI-compatible, and Ollama providers
 - **Voice mode** — speech input and text-to-speech playback
 - **Configurable guest access** — optional instant search without sign-up, rate-limited per IP in cloud deployments
 

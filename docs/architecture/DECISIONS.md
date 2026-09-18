@@ -26,7 +26,7 @@ This document records the foundational architecture decisions for Polymorph.
 - **Primary Text Interface**: OpenRouter (`OPENROUTER_API_KEY`)
 - **Default Models**: GLM-5.3 Flash (Speed), GLM-5.3 (Quality) — see [`config/models/default.json`](../../config/models/default.json)
 - **2026-09-17 refresh**: moved from DeepSeek V4 Flash 0423 / V4 Pro 0423 to GLM-5.3 Flash / GLM-5.3. Rationale, candidate table, and rejected options (Gemini 3.8 Flash, DeepSeek V4.1 Flash, Kimi K3, Qwen3.8) in [`docs/superpowers/plans/2026-09-17-model-refresh-glm-5-3.md`](../superpowers/plans/2026-09-17-model-refresh-glm-5-3.md). GLM-5.3 thinking is forced; `reasoning.effort` accepts `low`/`high`/`max` only. Background structured-output calls (related questions, trending suggestions) pin `provider.only` to hosts verified to honor JSON schema, because the Z.AI first-party host returns markdown.
-- **Image Generation**: `gateway:google/gemini-2.5-flash-image` via Vercel AI Gateway (`AI_GATEWAY_API_KEY`; see `lib/tools/generate-image/server.ts`)
+- **Image Generation**: `gateway:meta/muse-image-1.0` (Meta Muse Image) via Vercel AI Gateway (`AI_GATEWAY_API_KEY`; see `lib/tools/generate-image/server.ts`). Chosen 2026-09-18 over Gemini 2.5 Flash Image: about a quarter of the price ($0.01 vs $0.039 per image) and well ahead on the Artificial Analysis arenas (generation Elo 1112 vs 985, editing 1116 vs 987). It is a Gateway `image`-type model, so the tool calls `generateImage` rather than `generateText`.
 
 ## 4) Storage Strategy
 

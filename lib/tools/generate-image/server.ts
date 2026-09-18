@@ -1,4 +1,5 @@
-import { generateText, tool } from 'ai'
+import { trace } from '@opentelemetry/api'
+import { generateImage, NoImageGeneratedError, tool } from 'ai'
 
 import {
   storagePathFromLegacyPublicUrl,
@@ -9,17 +10,30 @@ import {
   uploadGeneratedImage
 } from '@/lib/supabase/server-storage'
 import { getErrorMessage } from '@/lib/utils/error'
-import { getModel } from '@/lib/utils/registry'
-import {
-  isTracingEnabled,
-  telemetryMetadataOptions,
-  telemetryRecordingOptions
-} from '@/lib/utils/telemetry'
+import { getImageModel } from '@/lib/utils/registry'
 
-import type { GenerateImageError, GenerateImageOutput } from './schema'
+import type {
+  GenerateImageError,
+  GenerateImageInput,
+  GenerateImageOutput
+} from './schema'
 import { inputSchema } from './schema'
 
-const IMAGE_MODEL = 'gateway:google/gemini-2.5-flash-image'
+const IMAGE_MODEL = 'gateway:meta/muse-image-1.0'
+
+// Muse ignores `aspectRatio` (the Gateway warns "use size instead"). `size`
+// acts as a ratio hint: output is snapped to ~2.4MP at the requested ratio
+// (e.g. 1792x1024 -> 2016x1152). Verified live for all five ratios.
+const ASPECT_RATIO_SIZES: Record<
+  NonNullable<GenerateImageInput['aspectRatio']>,
+  `${number}x${number}`
+> = {
+  '1:1': '1024x1024',
+  '16:9': '1792x1024',
+  '9:16': '1024x1792',
+  '4:3': '1536x1152',
+  '3:4': '768x1024'
+}
 
 type ImageToolContext = {
   userId: string
@@ -74,13 +88,7 @@ export function createGenerateImageTool(context: ImageToolContext) {
       sourceImageUrl
     }): Promise<GenerateImageOutput | GenerateImageError> => {
       try {
-        const model = getModel(IMAGE_MODEL)
-
-        // Build messages: text-only for generation, text+image for editing.
-        const content: Array<
-          { type: 'text'; text: string } | { type: 'image'; image: URL }
-        > = [{ type: 'text', text: prompt }]
-
+        let sourceImage: string | undefined
         if (sourceImageUrl) {
           const resolved = await resolveSourceImageUrl(sourceImageUrl, context)
           if (!resolved) {
@@ -89,41 +97,28 @@ export function createGenerateImageTool(context: ImageToolContext) {
                 'The source image is not accessible for editing. Generate a new image instead.'
             }
           }
-          content.push({ type: 'image', image: resolved })
+          // An http(s) string is forwarded as a URL file, so the Gateway
+          // fetches it; this server never downloads model-supplied URLs.
+          sourceImage = resolved.href
         }
 
-        const telemetryMetadata = telemetryMetadataOptions({
-          modelId: IMAGE_MODEL,
-          chatId: context.chatId,
-          ...(sourceImageUrl ? { isEdit: true } : {})
+        const size = aspectRatio && ASPECT_RATIO_SIZES[aspectRatio]
+
+        // generateImage has no telemetry option; annotate the enclosing tool
+        // span instead. No-op when tracing is disabled.
+        trace.getActiveSpan()?.setAttributes({
+          'image.model': IMAGE_MODEL,
+          'image.is_edit': Boolean(sourceImage),
+          ...(size && { 'image.size': size })
         })
 
-        const result = await generateText({
-          model,
-          messages: [{ role: 'user', content }],
-          runtimeContext: telemetryMetadata.runtimeContext,
-          telemetry: {
-            isEnabled: isTracingEnabled(),
-            functionId: 'generate-image',
-            ...telemetryRecordingOptions(),
-            includeRuntimeContext: telemetryMetadata.includeRuntimeContext
-          },
-          ...(aspectRatio && {
-            providerOptions: { google: { aspectRatio } }
-          })
+        const { image: imageFile } = await generateImage({
+          model: getImageModel(IMAGE_MODEL),
+          prompt: sourceImage
+            ? { text: prompt, images: [sourceImage] }
+            : prompt,
+          ...(size && { size })
         })
-
-        const imageFile = result.files.find(f =>
-          f.mediaType?.startsWith('image/')
-        )
-
-        if (!imageFile) {
-          return {
-            error:
-              'No image was generated. The model may have declined the request. Text response: ' +
-              (result.text || '(none)')
-          }
-        }
 
         const { url, filename } = await uploadGeneratedImage(
           imageFile.uint8Array,
@@ -141,6 +136,12 @@ export function createGenerateImageTool(context: ImageToolContext) {
           aspectRatio
         }
       } catch (err) {
+        if (NoImageGeneratedError.isInstance(err)) {
+          return {
+            error:
+              'No image was generated. The model may have declined the request.'
+          }
+        }
         console.error('[generateImage] Failed:', err)
         return {
           error: 'Image generation failed: ' + getErrorMessage(err)

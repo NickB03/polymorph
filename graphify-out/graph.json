@@ -46862,6 +46862,24 @@
       "source_location": "L31",
       "_origin": "ast",
       "community": 16
+    },
+    {
+      "id": "generate_image_server_aspect_ratio_sizes",
+      "label": "ASPECT_RATIO_SIZES",
+      "file_type": "code",
+      "source_file": "lib/tools/generate-image/server.ts",
+      "source_location": "L27",
+      "_origin": "ast",
+      "community": 17
+    },
+    {
+      "id": "utils_registry_getimagemodel",
+      "label": "getImageModel()",
+      "file_type": "code",
+      "source_file": "lib/utils/registry.ts",
+      "source_location": "L77",
+      "_origin": "ast",
+      "community": 88
     }
   ],
   "links": [
@@ -149849,6 +149867,59 @@
       "confidence": "EXTRACTED",
       "source_file": "lib/utils/model-selection.ts",
       "source_location": "L31",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_generate_image_test",
+      "target": "utils_registry_getimagemodel",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/tools/__tests__/generate-image.test.ts",
+      "source_location": "L34",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "generate_image_server",
+      "target": "utils_registry_getimagemodel",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/tools/generate-image/server.ts",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "generate_image_server",
+      "target": "generate_image_server_aspect_ratio_sizes",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/tools/generate-image/server.ts",
+      "source_location": "L27",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "lib_utils_tests_registry_test_ts_tests_registry_test",
+      "target": "utils_registry_getimagemodel",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/utils/__tests__/registry.test.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "utils_registry",
+      "target": "utils_registry_getimagemodel",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/utils/registry.ts",
+      "source_location": "L77",
       "weight": 1.0,
       "confidence_score": 1.0
     }
