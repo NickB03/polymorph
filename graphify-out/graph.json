@@ -47106,6 +47106,23 @@
       "_origin": "ast",
       "community": 88,
       "id": "utils_registry_getimagemodel"
+    },
+    {
+      "id": "tests_migrate_test",
+      "label": "migrate.test.ts",
+      "file_type": "code",
+      "source_file": "lib/db/__tests__/migrate.test.ts",
+      "source_location": "L1",
+      "_origin": "ast"
+    },
+    {
+      "id": "db_migrate_shouldskipmigrations",
+      "label": "shouldSkipMigrations()",
+      "file_type": "code",
+      "source_file": "lib/db/migrate.ts",
+      "source_location": "L13",
+      "_origin": "ast",
+      "community": 199
     }
   ],
   "links": [
@@ -150332,6 +150349,49 @@
       "confidence_score": 1.0,
       "source": "tests_generate_related_questions_test",
       "target": "tests_generate_related_questions_test_mockgetmodel"
+    },
+    {
+      "source": "tests_migrate_test",
+      "target": "db_migrate",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/__tests__/migrate.test.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_migrate_test",
+      "target": "db_migrate_shouldskipmigrations",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/__tests__/migrate.test.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "db_migrate",
+      "target": "db_migrate_shouldskipmigrations",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/migrate.ts",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "db_migrate_runmigrations",
+      "target": "db_migrate_shouldskipmigrations",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/db/migrate.ts",
+      "source_location": "L20",
+      "weight": 1.0,
+      "confidence_score": 1.0
     }
   ]
 }
