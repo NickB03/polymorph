@@ -27,6 +27,14 @@ export const CANVAS_STATUSES = [
   'restoring'
 ] as const
 
+// Identity every guest (unauthenticated) canvas session runs under: the owner
+// of its chats/canvas_artifacts rows and the value of the app.current_user_id
+// GUC, so guest access works under the RLS-restricted DB role. All guests share
+// it; what separates one guest from another is the signed guest canvas token,
+// which is bound to a single artifactId + chatId (lib/canvas/guest-token.ts).
+// Real user ids are Supabase UUIDs, so they cannot collide with it.
+export const GUEST_USER_ID = 'guest'
+
 // Tool names
 export const CANVAS_TOOL_NAMES = [
   'createCanvasArtifact',

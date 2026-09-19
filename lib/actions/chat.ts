@@ -100,11 +100,14 @@ export async function createChatAndSaveMessage(
   })
 
   // Save message
-  const dbMessage = await dbActions.upsertMessage({
-    ...message,
-    id: messageId,
-    chatId
-  })
+  const dbMessage = await dbActions.upsertMessage(
+    {
+      ...message,
+      id: messageId,
+      chatId
+    },
+    userId
+  )
 
   // Revalidate cache
   revalidateTag(`chat-${chatId}`, 'max')
@@ -144,23 +147,14 @@ export async function createChatWithFirstMessage(
 
 /**
  * Upsert a message to a chat
- * @param userId - Required but not used for access check (assumes already authorized)
- *
- * IMPORTANT: This function assumes the caller has already performed authorization checks.
- * It is only called from:
- * 1. API routes after authentication (app/api/chat/route.ts)
- * 2. Stream handlers after chat ownership verification
- * 3. Internal functions that have already verified access
- *
- * DO NOT call this function directly from untrusted contexts.
+ * @param userId - Required. dbActions.upsertMessage throws unless the chat
+ * belongs to this user, so callers need no separate ownership check.
  */
 export async function upsertMessage(
   chatId: string,
   message: UIMessage,
   userId: string
 ): Promise<Message> {
-  // Skip access check - userId is required for audit/logging but not for authorization
-  // Caller MUST ensure authorization before calling this function
   const messageId = message.id || generateId()
   const dbMessage = await dbActions.upsertMessage(
     {

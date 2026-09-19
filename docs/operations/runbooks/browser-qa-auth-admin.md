@@ -41,7 +41,8 @@ credentials and safe data access are available.
 
    Keep `DATABASE_RESTRICTED_URL` unset unless you are intentionally testing the
    restricted runtime path; the shared app DB client prefers it over
-   `DATABASE_URL`.
+   `DATABASE_URL`. This is a local-only simplification: production requires
+   `DATABASE_RESTRICTED_URL` (see `docs/operations/DEPLOYMENT-PRODUCTION.md`).
 
 3. Migrate and seed synthetic eval dashboard rows:
 

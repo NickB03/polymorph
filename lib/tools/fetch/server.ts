@@ -1,11 +1,13 @@
 import { tool, UIToolInvocation } from 'ai'
 
 import { SearchResults as SearchResultsType } from '@/lib/types'
+import { isSafeFetchTarget } from '@/lib/utils/safe-url'
 
 import { inputSchema } from './schema'
 
 const CONTENT_CHARACTER_LIMIT = 50000
 const TITLE_CHARACTER_LIMIT = 100
+const MAX_REDIRECTS = 5
 
 function isPdfUrl(url: string): boolean {
   try {
@@ -97,14 +99,32 @@ async function fetchRegularData(
       ? AbortSignal.any([timeoutController.signal, abortSignal])
       : timeoutController.signal
 
-    const response = await fetch(url, {
-      signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; Polymorph/1.0)',
-        Accept:
-          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+    // Follow redirects by hand so every hop passes the SSRF guard: a vetted
+    // public URL must not be able to bounce the server to an internal address.
+    let currentUrl = url
+    let response: Response
+    for (let hops = 0; ; hops++) {
+      response = await fetch(currentUrl, {
+        redirect: 'manual',
+        signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; Polymorph/1.0)',
+          Accept:
+            'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        }
+      })
+
+      const location = response.headers.get('location')
+      if (response.status < 300 || response.status >= 400 || !location) break
+      if (hops >= MAX_REDIRECTS) {
+        throw new Error('Too many redirects')
       }
-    })
+
+      currentUrl = new URL(location, currentUrl).href
+      if (!(await isSafeFetchTarget(currentUrl))) {
+        throw new Error('Refusing to fetch a non-public or non-https URL')
+      }
+    }
 
     clearTimeout(timeoutId)
 
@@ -274,6 +294,12 @@ export const fetchTool = tool({
     'Fetch content from any URL. By default uses "regular" type which performs fast, direct HTML fetching without external APIs - ideal for most websites. IMPORTANT: "regular" type does NOT support PDFs and will fail on PDF URLs. Use "api" type when you need: 1) PDF content extraction (required for .pdf URLs), 2) Complex JavaScript-rendered pages, 3) Better markdown formatting, 4) Table extraction. The "api" type requires Jina or Tavily API keys and uses Jina Reader if available, otherwise falls back to Tavily Extract.',
   inputSchema,
   async *execute({ url, type = 'regular' }, context) {
+    // SSRF guard for the model-supplied URL. Runs before every branch so an
+    // internal URL is neither fetched here nor forwarded to Jina/Tavily.
+    if (!(await isSafeFetchTarget(url))) {
+      throw new Error('Refusing to fetch a non-public or non-https URL')
+    }
+
     // Yield initial fetching state
     yield {
       state: 'fetching' as const,

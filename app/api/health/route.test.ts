@@ -23,6 +23,15 @@ afterEach(() => {
 })
 
 describe('GET /api/health', () => {
+  it('reports rlsEnforced from the connected role, not from env', async () => {
+    mockExecute.mockResolvedValue([{ rls_enforced: true }])
+    expect((await (await GET(makeRequest())).json()).rlsEnforced).toBe(true)
+
+    // Owner / BYPASSRLS role: policies are not applied to the app's queries.
+    mockExecute.mockResolvedValue([{ rls_enforced: false }])
+    expect((await (await GET(makeRequest())).json()).rlsEnforced).toBe(false)
+  })
+
   it('includes tracing in the body for check=phoenix, reflecting the current global state', async () => {
     mockExecute.mockResolvedValue(undefined)
     globalThis.__polymorphTracingState = 'disabled-https'

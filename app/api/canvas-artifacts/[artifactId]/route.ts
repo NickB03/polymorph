@@ -1,4 +1,5 @@
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
+import { GUEST_USER_ID } from '@/lib/canvas/constants'
 import { verifyGuestCanvasToken } from '@/lib/canvas/guest-token'
 import { loadCanvasArtifactState } from '@/lib/canvas/service'
 import { getChat, loadCanvasArtifactByChatId } from '@/lib/db/actions'
@@ -69,7 +70,7 @@ export async function GET(
     if (isGuest) {
       state = await loadCanvasArtifactState({
         artifactId,
-        userId: null
+        userId: GUEST_USER_ID
       })
     } else if (userId) {
       state = await loadCanvasArtifactState({

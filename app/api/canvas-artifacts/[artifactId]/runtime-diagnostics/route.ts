@@ -1,11 +1,15 @@
 import { z } from 'zod'
 
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
+import { GUEST_USER_ID } from '@/lib/canvas/constants'
 import {
   refreshGuestCanvasToken,
   verifyGuestCanvasToken
 } from '@/lib/canvas/guest-token'
-import { recordCanvasRuntimeDiagnostics } from '@/lib/canvas/service'
+import {
+  loadCanvasArtifactState,
+  recordCanvasRuntimeDiagnostics
+} from '@/lib/canvas/service'
 import { checkAndEnforceCanvasLimit } from '@/lib/rate-limit/canvas-limits'
 import { jsonError } from '@/lib/utils/json-error'
 
@@ -78,6 +82,19 @@ export async function POST(
           403
         )
       }
+      // Verify guest token chatId matches artifact. A missing artifact falls
+      // through to the service call below, which reports not-found.
+      const state = await loadCanvasArtifactState({
+        artifactId,
+        userId: GUEST_USER_ID
+      })
+      if (state && payload.chatId !== state.chatId) {
+        return jsonError(
+          'FORBIDDEN',
+          'Guest token does not match this artifact',
+          403
+        )
+      }
       isGuest = true
       rateLimitId = `guest:${payload.chatId}`
     } else if (!userId) {
@@ -95,7 +112,8 @@ export async function POST(
       artifactId,
       draftRevision,
       diagnostics,
-      userId: isGuest ? null : userId
+      // Past the auth gate, no session user means a verified guest token.
+      userId: userId || GUEST_USER_ID
     })
 
     if (!result.ok) {
