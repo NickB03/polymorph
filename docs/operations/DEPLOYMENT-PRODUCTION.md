@@ -103,6 +103,7 @@ ORS_API_KEY=[YOUR_OPENROUTESERVICE_KEY]
 
 - App should respond on `/` and complete one end-to-end chat request
 - Database migrations must be applied (`bun run migrate`) before accepting traffic
+- Migrations run on production deploys only. Vercel **preview** builds skip them, so an unmerged branch cannot change the schema of a database it shares with production. Set `MIGRATE_ON_PREVIEW=true` in the Preview environment only when Preview points at its own database.
 - **Self-hosted Docker deployments:** Consider moving `bun run migrate` from the Docker entrypoint to a one-shot pre-deploy step to avoid race conditions with multi-replica deployments. The entrypoint currently runs migrations on every container start. (Polymorph itself deploys to Vercel; only Phoenix and the `polymorph-evals` cron run on Railway.)
 - At least one configured model/provider must be enabled at runtime
 - `/api/health` must report `"rlsEnforced": true` (see the restricted database role section above); `false` means the app is connected as the owner and RLS is not enforced
