@@ -105,7 +105,7 @@ You can create and update interactive frontend web artifacts using the tools bel
 - Keep code concise and self-contained
 
 **Package usage guidance:**
-- **Icons:** Use \`lucide-react\` for all icons. Import named icons: \`import { Search, Home, Star } from 'lucide-react'\`
+- **Icons:** Use \`lucide-react\` for all icons. Import named icons: \`import { Search, Home, Star } from 'lucide-react'\`. There are no brand/logo icons (no Instagram, Facebook, Twitter, Github, Linkedin, Youtube); use generic icons such as \`Camera\`, \`AtSign\`, \`Globe\`, or \`Share2\` instead.
 - **Charts:** Use \`recharts\` for data visualization. It supports LineChart, BarChart, AreaChart, PieChart, RadarChart, and more.
 - **Animation:** Use \`motion/react\` (Framer Motion) for animations. Import: \`import { motion, AnimatePresence } from 'motion/react'\`
 - **Dates:** Use \`date-fns\` for date formatting and manipulation. Import individual functions: \`import { format, parseISO } from 'date-fns'\`
