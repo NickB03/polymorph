@@ -55,10 +55,10 @@ vi.mock('../eval-summary', () => ({
   persistEvalSummary: mockPersistEvalSummary
 }))
 
-const mockCreateClient = vi.hoisted(() => vi.fn(() => ({})))
-const mockCreateDataset = vi.hoisted(() =>
-  vi.fn(async () => ({ datasetId: 'ds-created' }))
+const mockPost = vi.hoisted(() =>
+  vi.fn(async () => ({ data: { data: { dataset_id: 'ds-created' } } }))
 )
+const mockCreateClient = vi.hoisted(() => vi.fn(() => ({ POST: mockPost })))
 const mockCreateOrGetDataset = vi.hoisted(() =>
   vi.fn(async () => ({ datasetId: 'ds-1' }))
 )
@@ -97,7 +97,6 @@ vi.mock('@arizeai/phoenix-client', () => ({
 }))
 
 vi.mock('@arizeai/phoenix-client/datasets', () => ({
-  createDataset: mockCreateDataset,
   getDatasetExamples: mockGetDatasetExamples,
   createOrGetDataset: mockCreateOrGetDataset
 }))
@@ -349,7 +348,7 @@ describe('Phoenix dataset and experiment naming', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-29T12:34:56Z'))
-    mockCreateDataset.mockClear()
+    mockPost.mockClear()
     mockCreateOrGetDataset.mockClear()
     mockGetDatasetExamples.mockClear()
     mockRunExperiment.mockClear()
@@ -398,16 +397,16 @@ describe('Phoenix dataset and experiment naming', () => {
       task: async example => example.output as any
     })
 
-    expect(mockCreateDataset).toHaveBeenCalledWith(
+    expect(mockPost).toHaveBeenCalledWith(
+      '/v1/datasets/upload',
       expect.objectContaining({
-        name: 'polymorph-capability-v2-2026-04-29-12-34-56',
-        examples: [
-          expect.objectContaining({
-            input: expect.objectContaining({
-              availableTools: ['search', 'fetch']
-            })
-          })
-        ]
+        body: expect.objectContaining({
+          name: 'polymorph-capability-v2-2026-04-29-12-34-56',
+          action: 'create',
+          inputs: [
+            expect.objectContaining({ availableTools: ['search', 'fetch'] })
+          ]
+        })
       })
     )
     expect(mockCreateOrGetDataset).not.toHaveBeenCalled()
@@ -419,7 +418,7 @@ describe('Phoenix dataset and experiment naming', () => {
     )
   })
 
-  it('uses createDataset for timestamped traffic-monitor overrides', async () => {
+  it('creates timestamped traffic-monitor override datasets', async () => {
     const { createDatasetAndExperiment } = await import('./shared')
 
     await createDatasetAndExperiment({
@@ -436,9 +435,13 @@ describe('Phoenix dataset and experiment naming', () => {
       task: async example => example.output as any
     })
 
-    expect(mockCreateDataset).toHaveBeenCalledWith(
+    expect(mockPost).toHaveBeenCalledWith(
+      '/v1/datasets/upload',
       expect.objectContaining({
-        name: 'polymorph-traffic-monitor-2026-04-29-12-34'
+        body: expect.objectContaining({
+          name: 'polymorph-traffic-monitor-2026-04-29-12-34',
+          action: 'create'
+        })
       })
     )
     expect(mockCreateOrGetDataset).not.toHaveBeenCalled()
@@ -940,7 +943,7 @@ describe('runJudgedSuite', () => {
 
     expect(mockGetCasesForEvaluation).toHaveBeenCalledWith('capability', [])
     expect(mockRunEvalCase).toHaveBeenCalledTimes(2)
-    expect(mockCreateDataset).toHaveBeenCalledTimes(1)
+    expect(mockPost).toHaveBeenCalledTimes(1)
     expect(mockCreateOrGetDataset).not.toHaveBeenCalled()
     expect(mockRunExperiment).toHaveBeenCalledTimes(1)
     expect(mockPersistEvalSummary).toHaveBeenCalledTimes(1)
@@ -987,7 +990,7 @@ describe('runJudgedSuite', () => {
     )
 
     expect(mockCreateOrGetDataset).not.toHaveBeenCalled()
-    expect(mockCreateDataset).not.toHaveBeenCalled()
+    expect(mockPost).not.toHaveBeenCalled()
     expect(mockRunExperiment).not.toHaveBeenCalled()
   })
 
@@ -1011,7 +1014,7 @@ describe('runJudgedSuite', () => {
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('1/3 regression cases failed')
     )
-    expect(mockCreateDataset).toHaveBeenCalledTimes(1)
+    expect(mockPost).toHaveBeenCalledTimes(1)
     expect(mockCreateOrGetDataset).not.toHaveBeenCalled()
     expect(mockRunExperiment).toHaveBeenCalledTimes(1)
     expect(result.status).toBe('passed')
@@ -1072,7 +1075,7 @@ describe('runJudgedSuite', () => {
     const cases = [makeCaseSpec('c1', 'capability')]
     mockGetCasesForEvaluation.mockReturnValue(cases)
     mockRunEvalCase.mockResolvedValueOnce(makeRunResult('c1'))
-    mockCreateDataset.mockRejectedValueOnce(new Error('phoenix down'))
+    mockPost.mockRejectedValueOnce(new Error('phoenix down'))
 
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
