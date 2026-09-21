@@ -1,8 +1,5 @@
 import { createClient } from '@arizeai/phoenix-client'
-import {
-  createDataset,
-  getDatasetExamples
-} from '@arizeai/phoenix-client/datasets'
+import { getDatasetExamples } from '@arizeai/phoenix-client/datasets'
 import { runExperiment } from '@arizeai/phoenix-client/experiments'
 import type { Example } from '@arizeai/phoenix-client/types/datasets'
 import type {
@@ -510,12 +507,26 @@ export async function createDatasetAndExperiment({
   const datasetName = datasetNameOverride ?? buildFreshDatasetName(suite)
   const experimentName = buildTimestampedExperimentName(suite)
 
-  const { datasetId } = await createDataset({
-    client: phoenix,
-    name: datasetName,
-    description: `Automated eval of ${examples.length} ${suite} cases from corpus ${getCorpusVersion()}`,
-    examples: toPhoenixExamples(examples)
+  // Upload with action 'create' directly: phoenix-client 7.x createDataset
+  // sends action 'update' (Phoenix >= 15 only), and its fallback to 'create'
+  // never runs because the client's error middleware throws on the 422 first.
+  // Dataset names are always timestamped, so 'create' is the right semantics.
+  const phoenixExamples = toPhoenixExamples(examples)
+  const upload = await phoenix.POST('/v1/datasets/upload', {
+    params: { query: { sync: true } },
+    body: {
+      name: datasetName,
+      description: `Automated eval of ${examples.length} ${suite} cases from corpus ${getCorpusVersion()}`,
+      action: 'create',
+      inputs: phoenixExamples.map(ex => ex.input),
+      outputs: phoenixExamples.map(ex => ex.output ?? {}),
+      metadata: phoenixExamples.map(ex => ex.metadata ?? {})
+    }
   })
+  const datasetId = upload.data?.data?.dataset_id
+  if (!datasetId) {
+    throw new Error('Phoenix dataset upload returned no dataset_id')
+  }
   const datasetExamples = await getDatasetExamples({
     client: phoenix,
     dataset: { datasetId }
