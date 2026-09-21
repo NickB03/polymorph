@@ -47122,6 +47122,38 @@
       "_origin": "ast",
       "community": 199,
       "id": "db_migrate_shouldskipmigrations"
+    },
+    {
+      "id": "pre_processors_fix_missing_lucide_icons_test",
+      "label": "fix-missing-lucide-icons.test.ts",
+      "file_type": "code",
+      "source_file": "lib/canvas/pre-processors/fix-missing-lucide-icons.test.ts",
+      "source_location": "L1",
+      "_origin": "ast"
+    },
+    {
+      "id": "pre_processors_fix_missing_lucide_icons",
+      "label": "fix-missing-lucide-icons.ts",
+      "file_type": "code",
+      "source_file": "lib/canvas/pre-processors/fix-missing-lucide-icons.ts",
+      "source_location": "L1",
+      "_origin": "ast"
+    },
+    {
+      "id": "pre_processors_fix_missing_lucide_icons_fixspecifier",
+      "label": "fixSpecifier()",
+      "file_type": "code",
+      "source_file": "lib/canvas/pre-processors/fix-missing-lucide-icons.ts",
+      "source_location": "L13",
+      "_origin": "ast"
+    },
+    {
+      "id": "pre_processors_fix_missing_lucide_icons_fixmissinglucideicons",
+      "label": "fixMissingLucideIcons()",
+      "file_type": "code",
+      "source_file": "lib/canvas/pre-processors/fix-missing-lucide-icons.ts",
+      "source_location": "L23",
+      "_origin": "ast"
     }
   ],
   "links": [
@@ -150391,6 +150423,92 @@
       "confidence_score": 1.0,
       "source": "tests_migrate_test",
       "target": "db_migrate_shouldskipmigrations"
+    },
+    {
+      "source": "pre_processors_fix_missing_lucide_icons_test",
+      "target": "pre_processors_fix_missing_lucide_icons",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/canvas/pre-processors/fix-missing-lucide-icons.test.ts",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "pre_processors_fix_missing_lucide_icons_test",
+      "target": "pre_processors_fix_missing_lucide_icons_fixmissinglucideicons",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/canvas/pre-processors/fix-missing-lucide-icons.test.ts",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "pre_processors_fix_missing_lucide_icons",
+      "target": "types_canvas",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/canvas/pre-processors/fix-missing-lucide-icons.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "pre_processors_fix_missing_lucide_icons",
+      "target": "types_canvas_canvassourcefiles",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/canvas/pre-processors/fix-missing-lucide-icons.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "pre_processors_fix_missing_lucide_icons",
+      "target": "pre_processors_fix_missing_lucide_icons_fixspecifier",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/canvas/pre-processors/fix-missing-lucide-icons.ts",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "pre_processors_fix_missing_lucide_icons",
+      "target": "pre_processors_fix_missing_lucide_icons_fixmissinglucideicons",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/canvas/pre-processors/fix-missing-lucide-icons.ts",
+      "source_location": "L23",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "pre_processors_run_pre_processors",
+      "target": "pre_processors_fix_missing_lucide_icons",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/canvas/pre-processors/run-pre-processors.ts",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "pre_processors_run_pre_processors",
+      "target": "pre_processors_fix_missing_lucide_icons_fixmissinglucideicons",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/canvas/pre-processors/run-pre-processors.ts",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0
     }
   ]
 }
