@@ -30,7 +30,7 @@ Guest mode lets unauthenticated users search immediately without signing in — 
 
 - Set `ENABLE_GUEST_CHAT=true` to allow unauthenticated users to search.
 - Leave it unset or set it to `false` to require sign-in before any search.
-- Guest sessions are ephemeral: chats are not persisted, and the UI defaults guests to speed-mode models.
+- Guest chat messages are not persisted, and the UI defaults guests to speed-mode models. The exception is the canvas: a guest who creates a canvas artifact gets a `chats` row and canvas artifact rows stored under the shared `guest` identity, reachable only with the signed guest canvas token (requires `GUEST_CANVAS_SECRET`).
 - `GUEST_CHAT_DAILY_LIMIT` (default: `10`) caps daily searches per IP. It is enforced only in cloud mode when Redis is configured; otherwise the app allows requests without applying the guest limit.
 
 ### Cloud Mode (`POLYMORPH_CLOUD_DEPLOYMENT`)

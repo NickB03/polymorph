@@ -542,7 +542,10 @@ describe('updateCanvasArtifactTool', () => {
   })
 
   it('includes guestCanvasToken in status for guest flows', async () => {
-    const ctx = createCtx({ isGuest: true })
+    const ctx = createCtx({
+      isGuest: true,
+      currentArtifact: { artifactId: 'art-1', draftRevision: 2 }
+    })
     mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
     mockUpdateCanvasArtifactDraftFromSource.mockResolvedValue({
       ok: true,
@@ -628,6 +631,136 @@ describe('updateCanvasArtifactTool', () => {
         artifactId: 'art-1',
         status: 'compile_failed'
       })
+    )
+  })
+
+  it('refuses a guest update when no guest token was verified', async () => {
+    const ctx = createCtx({ isGuest: true, userId: 'guest' })
+    mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
+
+    const toolInstance = updateCanvasArtifactTool(ctx)
+    const result = await toolInstance.execute!(
+      { artifactId: 'art-1', baseRevision: 2, files: SAMPLE_FILES },
+      { toolCallId: 'tc-1', messages: [], context: {} }
+    )
+
+    expect(result).toEqual({
+      artifactId: 'art-1',
+      chatId: 'chat-1',
+      title: 'Canvas Artifact',
+      status: 'compile_failed',
+      draftRevision: 2,
+      currentVersionId: null,
+      error: 'Artifact not found',
+      errorCode: 'not-found'
+    })
+    expect(mockLoadCanvasArtifactState).not.toHaveBeenCalled()
+    expect(mockUpdateCanvasArtifactDraftFromSource).not.toHaveBeenCalled()
+    expect(mockRefreshGuestCanvasToken).not.toHaveBeenCalled()
+  })
+
+  it("refuses a guest update of an artifact other than the token's", async () => {
+    const ctx = createCtx({
+      isGuest: true,
+      userId: 'guest',
+      currentArtifact: { artifactId: 'art-1', draftRevision: 2 }
+    })
+    mockLoadCanvasArtifactState.mockResolvedValue({
+      ...READY_ARTIFACT,
+      artifactId: 'art-victim',
+      chatId: 'chat-victim'
+    })
+
+    const toolInstance = updateCanvasArtifactTool(ctx)
+    const result = await toolInstance.execute!(
+      { artifactId: 'art-victim', baseRevision: 2, files: SAMPLE_FILES },
+      { toolCallId: 'tc-1', messages: [], context: {} }
+    )
+
+    expect(result).toMatchObject({
+      artifactId: 'art-victim',
+      chatId: 'chat-1',
+      error: 'Artifact not found',
+      errorCode: 'not-found'
+    })
+    expect(mockLoadCanvasArtifactState).not.toHaveBeenCalled()
+    expect(mockUpdateCanvasArtifactDraftFromSource).not.toHaveBeenCalled()
+    expect(mockRefreshGuestCanvasToken).not.toHaveBeenCalled()
+  })
+
+  it("binds the rotated guest token to the artifact's chatId", async () => {
+    const ctx = createCtx({
+      chatId: 'chat-other',
+      isGuest: true,
+      userId: 'guest',
+      currentArtifact: { artifactId: 'art-1', draftRevision: 2 }
+    })
+    mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
+    mockUpdateCanvasArtifactDraftFromSource.mockResolvedValue({
+      ok: true,
+      artifact: { ...READY_ARTIFACT, draftRevision: 3 }
+    })
+    mockSaveCanvasArtifactVersion.mockResolvedValue({
+      ok: true,
+      artifact: { ...READY_ARTIFACT, draftRevision: 4 }
+    })
+    mockRefreshGuestCanvasToken.mockResolvedValue('rotated-token')
+
+    const toolInstance = updateCanvasArtifactTool(ctx)
+    await toolInstance.execute!(
+      { artifactId: 'art-1', baseRevision: 2, files: SAMPLE_FILES },
+      { toolCallId: 'tc-1', messages: [], context: {} }
+    )
+
+    expect(mockRefreshGuestCanvasToken).toHaveBeenCalledWith({
+      chatId: 'chat-1',
+      artifactId: 'art-1'
+    })
+  })
+
+  it('lets a guest update the artifact it created earlier in the same request', async () => {
+    const ctx = createCtx({ isGuest: true, userId: 'guest' })
+    mockCreateCanvasArtifactFromSource.mockResolvedValue({
+      ok: true,
+      artifact: READY_ARTIFACT
+    })
+    mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
+    mockUpdateCanvasArtifactDraftFromSource.mockResolvedValue({
+      ok: true,
+      artifact: { ...READY_ARTIFACT, status: 'compile_failed' }
+    })
+    mockRefreshGuestCanvasToken.mockResolvedValue('rotated-token')
+
+    await createCanvasArtifactTool(ctx).execute!(
+      { files: SAMPLE_FILES },
+      { toolCallId: 'tc-1', messages: [], context: {} }
+    )
+    await updateCanvasArtifactTool(ctx).execute!(
+      { artifactId: 'art-1', baseRevision: 2, files: SAMPLE_FILES },
+      { toolCallId: 'tc-2', messages: [], context: {} }
+    )
+
+    expect(mockUpdateCanvasArtifactDraftFromSource).toHaveBeenCalled()
+  })
+
+  it('does not restrict artifactId for authenticated users', async () => {
+    const ctx = createCtx({
+      currentArtifact: { artifactId: 'art-other', draftRevision: 0 }
+    })
+    mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
+    mockUpdateCanvasArtifactDraftFromSource.mockResolvedValue({
+      ok: true,
+      artifact: { ...READY_ARTIFACT, status: 'compile_failed' }
+    })
+
+    const toolInstance = updateCanvasArtifactTool(ctx)
+    await toolInstance.execute!(
+      { artifactId: 'art-1', baseRevision: 2, files: SAMPLE_FILES },
+      { toolCallId: 'tc-1', messages: [], context: {} }
+    )
+
+    expect(mockUpdateCanvasArtifactDraftFromSource).toHaveBeenCalledWith(
+      expect.objectContaining({ artifactId: 'art-1', userId: 'user-1' })
     )
   })
 })
@@ -724,7 +857,11 @@ describe('readCanvasArtifactTool', () => {
   })
 
   it('works for guest flow', async () => {
-    const ctx = createCtx({ isGuest: true, userId: 'guest' })
+    const ctx = createCtx({
+      isGuest: true,
+      userId: 'guest',
+      currentArtifact: { artifactId: 'art-1', draftRevision: 2 }
+    })
     mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
 
     const toolInstance = readCanvasArtifactTool(ctx)
@@ -740,5 +877,73 @@ describe('readCanvasArtifactTool', () => {
     })
     // No guest token rotation for reads
     expect(mockRefreshGuestCanvasToken).not.toHaveBeenCalled()
+  })
+
+  it('refuses a guest read when no guest token was verified', async () => {
+    const ctx = createCtx({ isGuest: true, userId: 'guest' })
+    mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
+
+    const toolInstance = readCanvasArtifactTool(ctx)
+    const result = await toolInstance.execute!(
+      { artifactId: 'art-1' },
+      { toolCallId: 'tc-1', messages: [], context: {} }
+    )
+
+    expect(result).toEqual({
+      artifactId: 'art-1',
+      chatId: 'chat-1',
+      title: '',
+      status: 'not_found',
+      draftRevision: 0,
+      currentVersionId: null,
+      files: {},
+      error: 'Artifact not found',
+      errorCode: 'not-found'
+    })
+    expect(mockLoadCanvasArtifactState).not.toHaveBeenCalled()
+  })
+
+  it("refuses a guest read of an artifact other than the token's", async () => {
+    const ctx = createCtx({
+      isGuest: true,
+      userId: 'guest',
+      currentArtifact: { artifactId: 'art-1', draftRevision: 2 }
+    })
+    mockLoadCanvasArtifactState.mockResolvedValue({
+      ...READY_ARTIFACT,
+      artifactId: 'art-victim'
+    })
+
+    const toolInstance = readCanvasArtifactTool(ctx)
+    const result = await toolInstance.execute!(
+      { artifactId: 'art-victim' },
+      { toolCallId: 'tc-1', messages: [], context: {} }
+    )
+
+    expect(result).toMatchObject({
+      artifactId: 'art-victim',
+      files: {},
+      error: 'Artifact not found',
+      errorCode: 'not-found'
+    })
+    expect(mockLoadCanvasArtifactState).not.toHaveBeenCalled()
+  })
+
+  it('does not restrict artifactId for authenticated users', async () => {
+    const ctx = createCtx({
+      currentArtifact: { artifactId: 'art-other', draftRevision: 0 }
+    })
+    mockLoadCanvasArtifactState.mockResolvedValue(READY_ARTIFACT)
+
+    const toolInstance = readCanvasArtifactTool(ctx)
+    const result = await toolInstance.execute!(
+      { artifactId: 'art-1' },
+      { toolCallId: 'tc-1', messages: [], context: {} }
+    )
+
+    expect(result).toMatchObject({
+      artifactId: 'art-1',
+      files: { 'App.tsx': 'export default () => <div/>' }
+    })
   })
 })

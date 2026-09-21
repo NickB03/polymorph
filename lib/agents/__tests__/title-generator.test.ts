@@ -36,6 +36,25 @@ describe('generateChatTitle', () => {
     expect(title).toBe('AI Research Tools')
   })
 
+  it('pins low-effort, excluded reasoning via providerOptions', async () => {
+    mockGenerateText.mockResolvedValue({
+      text: 'AI Research Tools'
+    } as any)
+
+    await generateChatTitle({
+      userMessageContent: 'What are the best AI research tools?',
+      modelId: 'test-model'
+    })
+
+    expect(mockGenerateText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerOptions: {
+          openrouter: { reasoning: { effort: 'low', exclude: true } }
+        }
+      })
+    )
+  })
+
   it('strips surrounding quotes from generated title', async () => {
     mockGenerateText.mockResolvedValue({
       text: '"Quoted Title"'

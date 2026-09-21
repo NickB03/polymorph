@@ -15,8 +15,18 @@ import { eq, sql } from 'drizzle-orm'
 import postgres from 'postgres'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { updateMessageFeedback } from '@/lib/actions/feedback'
+import { GUEST_USER_ID } from '@/lib/canvas/constants'
 import { db } from '@/lib/db'
-import { createChat, upsertMessage } from '@/lib/db/actions'
+import {
+  createCanvasArtifact,
+  createChat,
+  ensureChatRecord,
+  loadCanvasArtifactById,
+  loadChatWithMessages,
+  updateChatTitle,
+  upsertMessage
+} from '@/lib/db/actions'
 import { chats } from '@/lib/db/schema'
 import { withRLS } from '@/lib/db/with-rls'
 
@@ -80,6 +90,107 @@ describe.skipIf(!RUN)('RLS policies (real Postgres)', () => {
       tx.select().from(chats).where(eq(chats.id, idA))
     )
     expect(asB).toHaveLength(0)
+  })
+
+  // The guest canvas path must work under the restricted role, not only when
+  // the app's role bypasses RLS: guests run under the shared guest identity.
+  describe('guest canvas path', () => {
+    const draftSource = { 'App.tsx': 'export default () => null' }
+
+    it('creates and loads a guest artifact under the guest identity only', async () => {
+      const chatId = `${prefix}-guest`
+      const artifactId = `${prefix}-guest-art`
+      seededIds.push(chatId) // the artifact cascades with the chat
+
+      await ensureChatRecord({
+        id: chatId,
+        title: 'Guest canvas',
+        userId: GUEST_USER_ID
+      })
+      await createCanvasArtifact({
+        id: artifactId,
+        chatId,
+        userId: GUEST_USER_ID,
+        title: 'Guest artifact',
+        draftSource
+      })
+
+      await expect(
+        loadCanvasArtifactById(artifactId, GUEST_USER_ID)
+      ).resolves.toMatchObject({ id: artifactId, userId: GUEST_USER_ID })
+      await expect(
+        loadCanvasArtifactById(artifactId, 'user-A')
+      ).resolves.toBeNull()
+    })
+
+    it("does not load another user's artifact, as a user or as a guest", async () => {
+      const chatId = `${prefix}-art-owner`
+      const artifactId = `${prefix}-art-owner-art`
+      seededIds.push(chatId)
+      await createChat({ id: chatId, userId: 'user-A', title: 'A canvas' })
+      await createCanvasArtifact({
+        id: artifactId,
+        chatId,
+        userId: 'user-A',
+        title: 'A artifact',
+        draftSource
+      })
+
+      await expect(
+        loadCanvasArtifactById(artifactId, 'user-A')
+      ).resolves.toMatchObject({ id: artifactId })
+      await expect(
+        loadCanvasArtifactById(artifactId, 'user-B')
+      ).resolves.toBeNull()
+      await expect(
+        loadCanvasArtifactById(artifactId, GUEST_USER_ID)
+      ).resolves.toBeNull()
+    })
+
+    it("refuses a guest create in another user's chat", async () => {
+      const chatId = `${prefix}-guest-hijack`
+      seededIds.push(chatId)
+      await createChat({ id: chatId, userId: 'user-A', title: 'A chat' })
+
+      await ensureChatRecord({
+        id: chatId,
+        title: 'hijack',
+        userId: GUEST_USER_ID
+      })
+      await expect(
+        createCanvasArtifact({
+          chatId,
+          userId: GUEST_USER_ID,
+          title: 'hijack',
+          draftSource
+        })
+      ).rejects.toThrow('Unauthorized')
+    })
+  })
+
+  describe('reads with no user (no GUC)', () => {
+    it('reads a public chat and its messages, but not a private one', async () => {
+      const publicId = `${prefix}-public`
+      const privateId = `${prefix}-private`
+      seededIds.push(publicId, privateId)
+      await createChat({
+        id: publicId,
+        userId: 'user-A',
+        title: 'Shared',
+        visibility: 'public'
+      })
+      await createChat({ id: privateId, userId: 'user-A', title: 'Private' })
+      for (const chatId of [publicId, privateId]) {
+        await upsertMessage(
+          { id: `${chatId}-m1`, chatId, role: 'user', parts: [] },
+          'user-A'
+        )
+      }
+
+      const shared = await loadChatWithMessages(publicId)
+      expect(shared?.messages.map(m => m.id)).toEqual([`${publicId}-m1`])
+      await expect(loadChatWithMessages(privateId)).resolves.toBeNull()
+    })
   })
 
   // Not an RLS test, but it needs real Postgres and this is the file the
@@ -148,5 +259,93 @@ describe.skipIf(!RUN)('RLS policies (real Postgres)', () => {
       select id from messages where chat_id = ${chatId} order by created_at
     `
     expect(rows.map(r => r.id)).toEqual([answered, `${prefix}-u2`])
+  })
+
+  // Application-level ownership guards. These hold whatever role the app
+  // connects as (production's role bypasses RLS), so they assert the explicit
+  // errors rather than an RLS violation.
+  describe('explicit ownership guards', () => {
+    it("refuses to write a message or title into another user's chat", async () => {
+      const chatId = `${prefix}-victim`
+      seededIds.push(chatId)
+      await createChat({ id: chatId, userId: 'user-A', title: 'Victim chat' })
+
+      await expect(
+        upsertMessage(
+          { id: `${prefix}-injected`, chatId, role: 'user', parts: [] },
+          'user-B'
+        )
+      ).rejects.toThrow('Unauthorized')
+      await expect(
+        updateChatTitle(chatId, 'pwned', 'user-B')
+      ).resolves.toBeNull()
+
+      const rows = await owner`
+        select c.title, count(m.id)::int as messages
+        from chats c left join messages m on m.chat_id = c.id
+        where c.id = ${chatId} group by c.title
+      `
+      expect(rows[0]).toMatchObject({ title: 'Victim chat', messages: 0 })
+    })
+
+    it('refuses to overwrite a message id that lives in another chat', async () => {
+      const victimChat = `${prefix}-ow-victim`
+      const attackerChat = `${prefix}-ow-attacker`
+      const messageId = `${prefix}-ow-msg`
+      seededIds.push(victimChat, attackerChat)
+      await createChat({ id: victimChat, userId: 'user-A', title: 'A' })
+      await createChat({ id: attackerChat, userId: 'user-B', title: 'B' })
+      await upsertMessage(
+        {
+          id: messageId,
+          chatId: victimChat,
+          role: 'user',
+          parts: [{ type: 'text', text: 'original' }]
+        },
+        'user-A'
+      )
+
+      await expect(
+        upsertMessage(
+          {
+            id: messageId,
+            chatId: attackerChat,
+            role: 'user',
+            parts: [{ type: 'text', text: 'overwritten' }]
+          },
+          'user-B'
+        )
+      ).rejects.toThrow()
+
+      const rows = await owner`
+        select chat_id, ui_message->'parts'->0->>'text' as text
+        from messages where id = ${messageId}
+      `
+      expect(rows[0]).toMatchObject({ chat_id: victimChat, text: 'original' })
+    })
+
+    it("only records feedback on the user's own message", async () => {
+      const chatId = `${prefix}-fb`
+      const messageId = `${prefix}-fb-msg`
+      seededIds.push(chatId)
+      await createChat({ id: chatId, userId: 'user-A', title: 'Feedback' })
+      await upsertMessage(
+        { id: messageId, chatId, role: 'assistant', parts: [] },
+        'user-A'
+      )
+
+      await expect(
+        updateMessageFeedback(messageId, -1, 'user-B')
+      ).resolves.toMatchObject({ success: false, notFound: true })
+      await expect(
+        updateMessageFeedback(messageId, 1, 'user-A')
+      ).resolves.toMatchObject({ success: true, chatId })
+
+      const rows = await owner`
+        select metadata->>'feedbackScore' as score from messages
+        where id = ${messageId}
+      `
+      expect(rows[0].score).toBe('1')
+    })
   })
 })

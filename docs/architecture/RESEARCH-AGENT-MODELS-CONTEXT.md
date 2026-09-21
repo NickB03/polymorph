@@ -22,7 +22,7 @@ flowchart TD
     Enabled{"Provider enabled?<br/>(API key present)"}
     Return["Return model"]
     Next["Next candidate"]
-    Default["Return DEFAULT_MODEL<br/>(DeepSeek V4 Flash via OpenRouter)"]
+    Default["Return DEFAULT_MODEL<br/>(GLM-5.3 Flash via OpenRouter)"]
 
     Start --> ReadType --> ReadMode --> BuildOrder --> Loop
     Loop --> LoadJSON --> Found
@@ -37,12 +37,12 @@ flowchart TD
 
 From `config/models/default.json`:
 
-| Mode     | Type    | Model                        | Provider   |
-| -------- | ------- | ---------------------------- | ---------- |
-| Chat     | Speed   | `deepseek/deepseek-v4-flash` | OpenRouter |
-| Chat     | Quality | `deepseek/deepseek-v4-pro`   | OpenRouter |
-| Research | Speed   | `deepseek/deepseek-v4-flash` | OpenRouter |
-| Research | Quality | `deepseek/deepseek-v4-pro`   | OpenRouter |
+| Mode     | Type    | Model                | Provider   |
+| -------- | ------- | -------------------- | ---------- |
+| Chat     | Speed   | `z-ai/glm-5.3-flash` | OpenRouter |
+| Chat     | Quality | `z-ai/glm-5.3`       | OpenRouter |
+| Research | Speed   | `z-ai/glm-5.3-flash` | OpenRouter |
+| Research | Quality | `z-ai/glm-5.3`       | OpenRouter |
 
 ### Provider Registry
 
@@ -58,7 +58,7 @@ The provider registry ([`lib/utils/registry.ts`](../../lib/utils/registry.ts)) w
 | `openai-compatible` | `@ai-sdk/openai` (custom base URL) | `OPENAI_COMPATIBLE_API_KEY` + `OPENAI_COMPATIBLE_API_BASE_URL` |
 | `ollama`            | `ollama-ai-provider-v2`            | `OLLAMA_BASE_URL`                                              |
 
-The `getModel(modelString)` function takes a `providerId:modelId` string (e.g., `openrouter:deepseek/deepseek-v4-flash`) and returns a `LanguageModel` instance from the registry.
+The `getModel(modelString)` function takes a `providerId:modelId` string (e.g., `openrouter:z-ai/glm-5.3-flash`) and returns a `LanguageModel` instance from the registry.
 
 ### Cloud Deployment Behavior
 
@@ -97,6 +97,7 @@ Token estimation uses `js-tiktoken` with the `cl100k_base` encoding (GPT-4 token
 | Claude Opus 4 / Sonnet 4             | 680,000        | 8,192         |
 | Claude 3.7 Sonnet / 3.5 Haiku        | 200,000        | 8,192         |
 | Gemini 3 Flash / 2.5 Flash / 2.5 Pro | 1,048,576      | 65,536        |
+| GLM-5.3 Flash / GLM-5.3              | 1,048,576      | 131,072       |
 | DeepSeek V4 Flash / Pro              | 1,048,576      | 65,536        |
 
 A 10% safety buffer is reserved for system prompts and formatting overhead. The formula is:

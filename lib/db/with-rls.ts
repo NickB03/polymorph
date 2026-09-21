@@ -73,7 +73,10 @@ export async function withRLS<T>(
 
 /**
  * Execute database operations with optional RLS context
- * If userId is null, executes without RLS context (for public operations)
+ * If userId is null, no app.current_user_id is set. That does NOT bypass RLS:
+ * under the restricted DB role only rows exposed by a public policy (public
+ * chats and their messages, the suggestions cache, feedback inserts) are
+ * reachable. Guest canvas access passes GUEST_USER_ID instead of null.
  *
  * @param userId - The user ID to set for RLS policies, or null for public access
  * @param callback - The database operations to execute

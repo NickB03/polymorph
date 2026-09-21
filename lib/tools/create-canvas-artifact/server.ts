@@ -125,6 +125,13 @@ export function createCanvasArtifactTool(ctx: CanvasToolContext) {
         currentVersionId: artifact.currentVersionId
       })
 
+      // Bind the new artifact to this request so a guest can read/update it
+      // in later steps of the same turn, before any token round-trip.
+      ctx.currentArtifact = {
+        artifactId: artifact.artifactId,
+        draftRevision: artifact.draftRevision
+      }
+
       let guestCanvasToken: string | undefined
       if (ctx.isGuest) {
         guestCanvasToken = await refreshGuestCanvasToken({

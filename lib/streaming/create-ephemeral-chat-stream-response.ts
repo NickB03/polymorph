@@ -10,7 +10,11 @@ import {
 import { randomUUID } from 'crypto'
 
 import { createChatValidationContract } from '@/lib/agents/chat/message-contract'
-import { verifyGuestCanvasToken } from '@/lib/canvas/guest-token'
+import { GUEST_USER_ID } from '@/lib/canvas/constants'
+import {
+  hasGuestCanvasSecret,
+  verifyGuestCanvasToken
+} from '@/lib/canvas/guest-token'
 import { loadCanvasArtifactState } from '@/lib/canvas/service'
 import type { CanvasToolContext } from '@/lib/canvas/tool-context'
 import type { UIMessage } from '@/lib/types/ai'
@@ -99,9 +103,11 @@ export async function createEphemeralChatStreamResponse(
 
         modelMessages = maybeTruncateMessages(modelMessages, model)
 
-        // Build canvas tool context for guest users
+        // Build canvas tool context for guest users. Without a signing secret
+        // the guest token can never be issued, so leave canvas tools
+        // unregistered instead of failing after the artifact is created.
         let canvasToolContext: CanvasToolContext | undefined
-        if (chatId) {
+        if (chatId && hasGuestCanvasSecret()) {
           // Verify guest canvas token if provided
           let verifiedToken: Awaited<
             ReturnType<typeof verifyGuestCanvasToken>
@@ -111,14 +117,15 @@ export async function createEphemeralChatStreamResponse(
           }
           const currentArtifact = verifiedToken
             ? await loadCanvasArtifactState({
-                artifactId: verifiedToken.artifactId
+                artifactId: verifiedToken.artifactId,
+                userId: GUEST_USER_ID
               })
             : null
 
           const emitter = createCanvasEmitter(writer)
           canvasToolContext = {
             chatId,
-            userId: 'guest',
+            userId: GUEST_USER_ID,
             isGuest: true,
             emitter,
             ...(verifiedToken ? { guestCanvasToken } : {}),
@@ -142,7 +149,7 @@ export async function createEphemeralChatStreamResponse(
           ...(chatId
             ? {
                 imageToolContext: {
-                  userId: 'guest',
+                  userId: GUEST_USER_ID,
                   chatId,
                   isGuest: true
                 }

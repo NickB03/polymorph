@@ -4,6 +4,13 @@ import type { GuestCanvasTokenPayload } from '@/lib/types/canvas'
 
 const TTL_MS = 30 * 60 * 1000 // 30 minutes
 
+/** True when a guest canvas signing secret is configured. */
+export function hasGuestCanvasSecret(): boolean {
+  return Boolean(
+    process.env.GUEST_CANVAS_SECRET || process.env.GUEST_ARTIFACT_SECRET
+  )
+}
+
 function getSecret(): string {
   const secret =
     process.env.GUEST_CANVAS_SECRET || process.env.GUEST_ARTIFACT_SECRET

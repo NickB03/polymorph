@@ -149,6 +149,41 @@ describe('generateTrendingSuggestions', () => {
     )
   })
 
+  it('forwards providerOptions from the model config to generateText', async () => {
+    mockGetTrendingSuggestionsModel.mockReturnValue({
+      providerId: 'openrouter',
+      id: 'z-ai/glm-5.3-flash',
+      providerOptions: {
+        openrouter: { reasoning: { effort: 'low', exclude: true } }
+      }
+    })
+    mockBraveSearch.mockResolvedValue(braveResults)
+
+    await generateTrendingSuggestions()
+
+    expect(mockGenerateText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerOptions: {
+          openrouter: { reasoning: { effort: 'low', exclude: true } }
+        }
+      })
+    )
+  })
+
+  it('omits providerOptions from generateText when the model has none', async () => {
+    mockGetTrendingSuggestionsModel.mockReturnValue({
+      providerId: 'gateway',
+      id: 'google/gemini-3-flash'
+    })
+    mockBraveSearch.mockResolvedValue(braveResults)
+
+    await generateTrendingSuggestions()
+
+    expect(mockGenerateText.mock.calls[0][0]).not.toHaveProperty(
+      'providerOptions'
+    )
+  })
+
   it('returns the LLM-generated suggestions', async () => {
     const generated = {
       ...DEFAULT_SUGGESTIONS,

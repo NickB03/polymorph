@@ -7,6 +7,7 @@ const mockWriter = {
 const mockAgentStream = vi.fn()
 const mockLoadCanvasArtifactByChatId = vi.fn()
 const mockLoadChatWithMessages = vi.fn()
+const mockGetChatOwnerId = vi.fn()
 const mockPersistStreamResults = vi.fn()
 const mockWithOtelRootSpan = vi.hoisted(() =>
   vi.fn(async (...args: unknown[]) => {
@@ -75,6 +76,7 @@ vi.mock('@/lib/agents/researcher', () => ({
 }))
 
 vi.mock('@/lib/db/actions', () => ({
+  getChatOwnerId: (...args: unknown[]) => mockGetChatOwnerId(...args),
   loadCanvasArtifactByChatId: (...args: unknown[]) =>
     mockLoadCanvasArtifactByChatId(...args),
   loadChatWithMessages: (...args: unknown[]) =>
@@ -158,6 +160,7 @@ describe('createChatStreamResponse', () => {
       draftRevision: 3
     })
     mockLoadChatWithMessages.mockResolvedValue(null)
+    mockGetChatOwnerId.mockResolvedValue(null)
     mockWithOtelRootSpan.mockClear()
     mockAgentStream.mockResolvedValue({
       toUIMessageStream: vi.fn(() => ({})),
@@ -229,6 +232,36 @@ describe('createChatStreamResponse', () => {
         undefined // no stale guard on a completed response
       )
     })
+  })
+
+  it('rejects isNewChat for an existing chat that belongs to another user', async () => {
+    // isNewChat is client-supplied, so it must not skip the ownership check.
+    mockGetChatOwnerId.mockResolvedValue('victim-user')
+    const agentFactory = vi.fn(() => ({ stream: mockAgentStream }) as any)
+
+    const response = await createChatStreamResponse(
+      baseRequestConfig(agentFactory)
+    )
+
+    expect(response.status).toBe(403)
+    expect(mockGetChatOwnerId).toHaveBeenCalledWith('chat-1')
+    expect(prepareMessages).not.toHaveBeenCalled()
+    expect(mockLoadCanvasArtifactByChatId).not.toHaveBeenCalled()
+    expect(agentFactory).not.toHaveBeenCalled()
+    expect(mockPersistStreamResults).not.toHaveBeenCalled()
+  })
+
+  it('allows isNewChat when the chat row already belongs to the caller', async () => {
+    // Duplicate-key recovery: the owner retrying their own new chat.
+    mockGetChatOwnerId.mockResolvedValue('user-1')
+    const agentFactory = vi.fn(() => ({ stream: mockAgentStream }) as any)
+
+    const response = await createChatStreamResponse(
+      baseRequestConfig(agentFactory)
+    )
+
+    await expect(response.text()).resolves.toBe('ok')
+    await vi.waitFor(() => expect(agentFactory).toHaveBeenCalled())
   })
 
   it('uses the injected agent factory for native authenticated tool-output continuations', async () => {

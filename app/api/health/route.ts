@@ -22,10 +22,18 @@ export async function GET(req: NextRequest) {
   let dbStatus: 'connected' | 'error' = 'error'
   let dbError: string | undefined
   let dbTimeout: ReturnType<typeof setTimeout> | undefined
+  // Whether Row-Level Security applies to this process's DB role. Read from
+  // the role itself rather than inferred from DATABASE_RESTRICTED_URL being
+  // set: a SUPERUSER or BYPASSRLS role (the Supabase owner) ignores every
+  // policy. false means the restricted app_user role is not in use: see
+  // docs/operations/DEPLOYMENT-PRODUCTION.md.
+  let rlsEnforced = false
   try {
-    await Promise.race([
-      db.execute(sql`SELECT 1`),
-      new Promise((_, reject) => {
+    const rows = await Promise.race([
+      db.execute<{ rls_enforced: boolean }>(
+        sql`SELECT NOT (rolsuper OR rolbypassrls) AS rls_enforced FROM pg_roles WHERE rolname = current_user`
+      ),
+      new Promise<never>((_, reject) => {
         dbTimeout = setTimeout(
           () => reject(new Error('Database health check timed out after 5s')),
           5000
@@ -33,6 +41,7 @@ export async function GET(req: NextRequest) {
       })
     ])
     dbStatus = 'connected'
+    rlsEnforced = rows?.[0]?.rls_enforced === true
   } catch (error) {
     dbError =
       process.env.NODE_ENV === 'development'
@@ -70,7 +79,8 @@ export async function GET(req: NextRequest) {
   const body: Record<string, unknown> = {
     status: isHealthy ? 'ok' : 'error',
     timestamp,
-    db: dbStatus
+    db: dbStatus,
+    rlsEnforced
   }
   if (dbError) body.dbError = dbError
   if (phoenixStatus !== undefined) body.phoenix = phoenixStatus

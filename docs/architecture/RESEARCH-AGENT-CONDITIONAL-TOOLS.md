@@ -9,7 +9,7 @@ This leaf covers request-context tool registration, canonical persisted messages
 
 Some tools are registered only when the request context provides the capabilities they need. These are not part of the default chat or research tool lists — they are injected on demand at agent-creation time.
 
-- **`generateImage`** (`lib/tools/generate-image/`) — Text-to-image generation via `gateway:google/gemini-2.5-flash-image`. Registered when a `userId` + `chatId` context is available (authenticated and guest flows both supply this). Accepts `prompt`, optional `aspectRatio`, and an optional `sourceImageUrl` for image editing. Uploaded images are persisted to Supabase Storage under `{userId}/chats/{chatId}/generated-{timestamp}.{ext}` via `lib/supabase/server-storage.ts`.
+- **`generateImage`** (`lib/tools/generate-image/`) — Text-to-image generation and editing via `gateway:meta/muse-image-1.0` using the AI SDK's `generateImage`. Muse ignores `aspectRatio`, so the tool maps each ratio to a `size` hint; edit sources are passed as URLs the Gateway fetches. Output is WebP. Registered when a `userId` + `chatId` context is available (authenticated and guest flows both supply this). Accepts `prompt`, optional `aspectRatio`, and an optional `sourceImageUrl` for image editing. Uploaded images are persisted to Supabase Storage under `{userId}/chats/{chatId}/generated-{timestamp}.{ext}` via `lib/supabase/server-storage.ts`.
 - **`createCanvasArtifact`, `updateCanvasArtifact`, `readCanvasArtifact`** (`lib/tools/*-canvas-artifact/`) — Canvas authoring tools. Registered when a canvas context is present on the request. Enforce one-artifact-per-chat (see `lib/db/schema.ts` — `canvas_artifacts_chat_id_idx` unique index).
 
 ### Message Persistence Contract

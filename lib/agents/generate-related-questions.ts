@@ -45,6 +45,9 @@ export function createRelatedQuestionsStream(
       }
     ],
     abortSignal,
+    ...(relatedModel.providerOptions && {
+      providerOptions: relatedModel.providerOptions
+    }),
     runtimeContext,
     telemetry: {
       isEnabled: isTracingEnabled(),

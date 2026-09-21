@@ -33,6 +33,11 @@ const MODEL_CONTEXT_WINDOWS: Record<string, ModelContextInfo> = {
   'deepseek-v4-flash': { contextWindow: 1048576, outputTokens: 65536 },
   'deepseek-v4-pro': { contextWindow: 1048576, outputTokens: 65536 },
 
+  // Z.ai Models (OpenRouter lists 1,310,720 but most hosts serve 1,048,576;
+  // use the conservative figure)
+  'glm-5.3-flash': { contextWindow: 1048576, outputTokens: 131072 },
+  'glm-5.3': { contextWindow: 1048576, outputTokens: 131072 },
+
   // xAI Models
   'grok-4.1-fast-non-reasoning': {
     contextWindow: 2097152,
@@ -72,6 +77,8 @@ const MODEL_TO_ENCODING: Record<string, TiktokenEncoding> = {
   'gemini-3.1-flash-lite': 'cl100k_base',
   'deepseek-v4-flash': 'cl100k_base',
   'deepseek-v4-pro': 'cl100k_base',
+  'glm-5.3-flash': 'cl100k_base',
+  'glm-5.3': 'cl100k_base',
   'grok-4.1-fast-non-reasoning': 'cl100k_base',
   'grok-4.1-fast-reasoning': 'cl100k_base',
   'grok-4-0709': 'cl100k_base', // Use GPT-4 tokenizer as approximation for Grok

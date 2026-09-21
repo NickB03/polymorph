@@ -1,3 +1,4 @@
+import { PgDialect } from 'drizzle-orm/pg-core'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,7 +15,8 @@ const dbMocks = vi.hoisted(() => {
         findMany: vi.fn()
       }
     },
-    select: vi.fn()
+    select: vi.fn(),
+    update: vi.fn()
   }
 
   return { tx }
@@ -43,7 +45,10 @@ vi.mock('@/lib/db/with-rls', () => ({
 
 import {
   createChatWithFirstMessageTransaction,
+  deleteMessagesAfter,
+  deleteMessagesFromIndex,
   loadChatWithMessages,
+  updateChatTitle,
   upsertMessage
 } from '@/lib/db/actions'
 import { buildUIMessageFromDB } from '@/lib/utils/message-mapping'
@@ -58,12 +63,17 @@ function mockChatSelect(chatRows: unknown[]) {
   return { from, limit, where }
 }
 
+function renderSql(expression: unknown) {
+  return new PgDialect().sqlToQuery(expression as never)
+}
+
 describe('canonical chat UIMessage loading', () => {
   beforeEach(() => {
     dbMocks.tx.delete.mockReset()
     dbMocks.tx.insert.mockReset()
     dbMocks.tx.query.messages.findMany.mockReset()
     dbMocks.tx.select.mockReset()
+    dbMocks.tx.update.mockReset()
   })
 
   it('buildUIMessageFromDB returns the uiMessage parts', () => {
@@ -316,6 +326,7 @@ describe('canonical chat UIMessage loading', () => {
       returning: vi.fn().mockResolvedValue([{ id: 'msg-1' }])
     }
 
+    mockChatSelect([{ userId: 'user-1' }])
     dbMocks.tx.insert.mockReturnValueOnce(messageInsert)
 
     await upsertMessage(message, 'user-1')
@@ -361,6 +372,7 @@ describe('canonical chat UIMessage loading', () => {
     }
 
     it('persists when the answered message is still the latest', async () => {
+      mockChatSelect([{ userId: 'user-1' }])
       mockLatest([{ id: 'user-1', updatedAt: null }])
       mockInsert()
 
@@ -372,6 +384,7 @@ describe('canonical chat UIMessage loading', () => {
     it('takes the per-chat lock before the stale read', async () => {
       dbMocks.tx.execute.mockClear()
       dbMocks.tx.select.mockClear()
+      mockChatSelect([{ userId: 'user-1' }])
       mockLatest([{ id: 'user-1', updatedAt: null }])
       mockInsert()
 
@@ -394,12 +407,102 @@ describe('canonical chat UIMessage loading', () => {
         [{ id: 'user-1', updatedAt: new Date('2026-01-01T00:00:20Z') }]
       ]
     ])('skips the write when %s', async (_name, rows) => {
+      mockChatSelect([{ userId: 'user-1' }])
       mockLatest(rows)
 
       await expect(
         upsertMessage(partial, 'user-1', { latestId: 'user-1', since })
       ).resolves.toBeNull()
       expect(dbMocks.tx.insert).not.toHaveBeenCalled()
+    })
+  })
+
+  // The app's DB role may bypass RLS, so every writer that takes a userId must
+  // enforce chat ownership itself.
+  describe('explicit chat ownership on message/chat writers', () => {
+    const message: UIMessage & { chatId: string } = {
+      id: 'msg-1',
+      chatId: 'victim-chat',
+      role: 'user',
+      parts: [{ type: 'text', text: 'injected' }]
+    }
+
+    function mockMessageInsert(rows: unknown[]) {
+      const insert = {
+        values: vi.fn(() => insert),
+        onConflictDoUpdate: vi.fn((_config: { setWhere?: unknown }) => insert),
+        returning: vi.fn().mockResolvedValue(rows)
+      }
+      dbMocks.tx.insert.mockReturnValueOnce(insert)
+      return insert
+    }
+
+    it.each([
+      ['belongs to another user', [{ userId: 'victim' }]],
+      ['does not exist', []]
+    ])('upsertMessage refuses when the chat %s', async (_name, chatRows) => {
+      mockChatSelect(chatRows)
+
+      await expect(upsertMessage(message, 'attacker')).rejects.toThrow(
+        'Unauthorized'
+      )
+      expect(dbMocks.tx.insert).not.toHaveBeenCalled()
+    })
+
+    it('upsertMessage only overwrites a conflicting id within the same chat', async () => {
+      mockChatSelect([{ userId: 'attacker' }])
+      const insert = mockMessageInsert([{ id: 'msg-1' }])
+
+      await upsertMessage({ ...message, chatId: 'own-chat' }, 'attacker')
+
+      const { setWhere } = insert.onConflictDoUpdate.mock.calls[0][0]
+      const rendered = renderSql(setWhere)
+      expect(rendered.sql).toBe('"messages"."chat_id" = $1')
+      expect(rendered.params).toEqual(['own-chat'])
+    })
+
+    it('upsertMessage throws when the id belongs to a message in another chat', async () => {
+      mockChatSelect([{ userId: 'attacker' }])
+      // The conflict row failed setWhere, so nothing was written or returned.
+      mockMessageInsert([])
+
+      await expect(
+        upsertMessage({ ...message, chatId: 'own-chat' }, 'attacker')
+      ).rejects.toThrow('different chat')
+    })
+
+    it('deleteMessagesFromIndex refuses a chat owned by another user', async () => {
+      mockChatSelect([{ userId: 'victim' }])
+
+      await expect(
+        deleteMessagesFromIndex('victim-chat', 'msg-1', 'attacker')
+      ).rejects.toThrow('Unauthorized')
+      expect(dbMocks.tx.delete).not.toHaveBeenCalled()
+    })
+
+    it('deleteMessagesAfter refuses a chat owned by another user', async () => {
+      mockChatSelect([{ userId: 'victim' }])
+
+      await expect(
+        deleteMessagesAfter('victim-chat', 'msg-1', 'attacker')
+      ).rejects.toThrow('Unauthorized')
+      expect(dbMocks.tx.delete).not.toHaveBeenCalled()
+    })
+
+    it('updateChatTitle only matches a chat owned by the user', async () => {
+      const returning = vi.fn().mockResolvedValue([])
+      const where = vi.fn((_where: unknown) => ({ returning }))
+      const set = vi.fn(() => ({ where }))
+      dbMocks.tx.update.mockReturnValueOnce({ set })
+
+      await expect(
+        updateChatTitle('victim-chat', 'pwned', 'attacker')
+      ).resolves.toBeNull()
+
+      const rendered = renderSql(where.mock.calls[0][0])
+      expect(rendered.sql).toContain('"chats"."id" = $1')
+      expect(rendered.sql).toContain('"chats"."user_id" = $2')
+      expect(rendered.params).toEqual(['victim-chat', 'attacker'])
     })
   })
 

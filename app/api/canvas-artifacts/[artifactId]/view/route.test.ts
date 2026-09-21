@@ -99,6 +99,7 @@ describe('GET /api/canvas-artifacts/[artifactId]/view', () => {
     })
     mockExportHtml.mockResolvedValue({
       ok: true,
+      chatId: 'chat-1',
       html: '<html>guest view</html>',
       title: 'Guest App',
       hasExternalDependencies: false
@@ -115,6 +116,32 @@ describe('GET /api/canvas-artifacts/[artifactId]/view', () => {
     expect(response.headers.get('Content-Security-Policy')).toBe(
       'sandbox allow-scripts'
     )
+  })
+
+  it("rejects a guest token whose chatId does not match the artifact's chat", async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockVerifyGuestCanvasToken.mockResolvedValue({
+      chatId: 'chat-attacker',
+      artifactId: 'art-1',
+      exp: Date.now() + 60000
+    })
+    mockExportHtml.mockResolvedValue({
+      ok: true,
+      chatId: 'chat-1',
+      html: '<html>victim</html>',
+      title: 'Victim App',
+      hasExternalDependencies: false
+    })
+
+    const req = new Request(
+      'http://localhost/api/canvas-artifacts/art-1/view?guestCanvasToken=valid'
+    )
+    const response = await GET(req, {
+      params: Promise.resolve({ artifactId: 'art-1' })
+    })
+
+    expect(response.status).toBe(403)
+    expect(await response.text()).not.toContain('victim')
   })
 
   it('sandboxes the view served for artifacts attached to public chats', async () => {

@@ -1,11 +1,10 @@
 // Server-only: this helper takes a caller-supplied userId and must never be
 // exposed as a Server Action (its only caller is app/api/feedback/route.ts,
 // which authenticates first).
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
-import { messages } from '@/lib/db/schema'
-import { withOptionalRLS } from '@/lib/db/with-rls'
+import { chats, messages } from '@/lib/db/schema'
+import { withRLS } from '@/lib/db/with-rls'
 import type { UIMessageMetadata } from '@/lib/types/ai'
 
 export type MessageFeedbackUpdateResult =
@@ -19,21 +18,24 @@ export type MessageFeedbackUpdateResult =
 export async function updateMessageFeedback(
   messageId: string,
   score: number,
-  userId: string | null = null
+  userId: string
 ): Promise<MessageFeedbackUpdateResult> {
   try {
-    // Use RLS context for all database operations
-    const result = await withOptionalRLS<MessageFeedbackUpdateResult>(
+    // RLS is defense in depth only; ownership is enforced explicitly below.
+    const result = await withRLS<MessageFeedbackUpdateResult>(
       userId,
       async tx => {
-        // Get the current message to preserve existing metadata and get chatId
+        // Get the current message to preserve existing metadata and get
+        // chatId. Only a message in one of the user's own chats matches, so
+        // another user's message reports not-found.
         const [currentMessage] = await tx
           .select({
             metadata: messages.metadata,
             chatId: messages.chatId
           })
           .from(messages)
-          .where(eq(messages.id, messageId))
+          .innerJoin(chats, eq(chats.id, messages.chatId))
+          .where(and(eq(messages.id, messageId), eq(chats.userId, userId)))
           .limit(1)
 
         if (!currentMessage) {
@@ -52,7 +54,13 @@ export async function updateMessageFeedback(
         const updated = await tx
           .update(messages)
           .set({ metadata: updatedMetadata })
-          .where(eq(messages.id, messageId))
+          // Pinned to the chat whose ownership was verified above.
+          .where(
+            and(
+              eq(messages.id, messageId),
+              eq(messages.chatId, currentMessage.chatId)
+            )
+          )
           .returning({ id: messages.id })
 
         if (updated.length === 0) {

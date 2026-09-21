@@ -1,3 +1,4 @@
+import { PgDialect } from 'drizzle-orm/pg-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -117,6 +118,7 @@ describe('Canvas DB Actions', () => {
       // calls db.transaction. We need to mock the transaction callback.
       vi.mocked(db.transaction).mockImplementation(async (cb: any) => {
         const tx = {
+          select: () => chainMock([{ userId: 'user-1' }]),
           insert: () => chain,
           execute: vi.fn()
         }
@@ -141,6 +143,7 @@ describe('Canvas DB Actions', () => {
 
       vi.mocked(db.transaction).mockImplementation(async (cb: any) => {
         const tx = {
+          select: () => chainMock([{ userId: 'user-1' }]),
           insert: () => chain,
           execute: vi.fn()
         }
@@ -314,6 +317,7 @@ describe('Canvas DB Actions', () => {
 
       vi.mocked(db.transaction).mockImplementation(async (cb: any) => {
         const tx = {
+          select: () => chainMock([{ id: 'artifact-1' }]),
           insert: () => chain,
           execute: vi.fn()
         }
@@ -397,6 +401,7 @@ describe('Canvas DB Actions', () => {
         const chain = chainMock([])
         chain.returning.mockRejectedValue(error)
         const tx = {
+          select: () => chainMock([{ userId: 'user-1' }]),
           insert: () => chain,
           execute: vi.fn()
         }
@@ -411,6 +416,83 @@ describe('Canvas DB Actions', () => {
           draftSource: { 'App.tsx': '' }
         })
       ).rejects.toThrow('unique constraint')
+    })
+  })
+
+  // The app's DB role may bypass RLS, so ownership is an explicit predicate.
+  describe('explicit ownership predicates', () => {
+    const renderSql = (expression: unknown) =>
+      new PgDialect().sqlToQuery(expression as never)
+
+    it('createCanvasArtifact refuses a chat owned by another user', async () => {
+      const insert = vi.fn()
+      vi.mocked(db.transaction).mockImplementation(async (cb: any) =>
+        cb({
+          select: () => chainMock([{ userId: 'victim' }]),
+          insert,
+          execute: vi.fn()
+        })
+      )
+
+      await expect(
+        createCanvasArtifact({
+          chatId: 'victim-chat',
+          userId: 'attacker',
+          title: 'Injected',
+          draftSource: { 'App.tsx': '' }
+        })
+      ).rejects.toThrow('Unauthorized')
+      expect(insert).not.toHaveBeenCalled()
+    })
+
+    it('updateCanvasArtifactDraft scopes the update to the owner', async () => {
+      const chain = chainMock([])
+      vi.mocked(db.transaction).mockImplementation(async (cb: any) =>
+        cb({ update: () => chain, execute: vi.fn() })
+      )
+
+      await updateCanvasArtifactDraft({
+        artifactId: 'victim-artifact',
+        expectedRevision: 0,
+        status: 'ready',
+        userId: 'attacker'
+      })
+
+      const rendered = renderSql(chain.where.mock.calls[0][0])
+      expect(rendered.sql).toContain('"canvas_artifacts"."user_id" = $3')
+      expect(rendered.params).toEqual(['victim-artifact', 0, 'attacker'])
+    })
+
+    it('loadCanvasArtifactById scopes the read to the owner', async () => {
+      const chain = chainMock([])
+      vi.mocked(db.transaction).mockImplementation(async (cb: any) =>
+        cb({ select: () => chain, execute: vi.fn() })
+      )
+
+      await loadCanvasArtifactById('victim-artifact', 'attacker')
+
+      expect(renderSql(chain.where.mock.calls[0][0]).params).toEqual([
+        'victim-artifact',
+        'attacker'
+      ])
+    })
+
+    it('createCanvasArtifactVersion refuses an artifact owned by another user', async () => {
+      const insert = vi.fn()
+      vi.mocked(db.transaction).mockImplementation(async (cb: any) =>
+        cb({ select: () => chainMock([]), insert, execute: vi.fn() })
+      )
+
+      await expect(
+        createCanvasArtifactVersion({
+          artifactId: 'victim-artifact',
+          versionNumber: 1,
+          sourceSnapshot: { 'App.tsx': '' },
+          createdBy: 'user',
+          userId: 'attacker'
+        })
+      ).rejects.toThrow('Unauthorized')
+      expect(insert).not.toHaveBeenCalled()
     })
   })
 })

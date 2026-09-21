@@ -369,9 +369,7 @@ export function createSearchTool(fullModel: string) {
 }
 
 // Default export for backward compatibility, using a default model
-export const searchTool = createSearchTool(
-  'openrouter:deepseek/deepseek-v4-flash'
-)
+export const searchTool = createSearchTool('openrouter:z-ai/glm-5.3-flash')
 
 export const serverTool = searchTool
 

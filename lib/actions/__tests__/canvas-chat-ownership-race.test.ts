@@ -460,8 +460,12 @@ class InsertBuilder {
         ...payload
       }
 
+      // Hold only the new-chat transaction's plain insert. The canvas flow's
+      // ensureChatRecord (ON CONFLICT DO NOTHING) now runs under the same RLS
+      // user, and it is the writer that must win this race.
       if (
         this.gate &&
+        this.conflictMode === 'none' &&
         tableNameOf(this.table) === 'chats' &&
         row.id === this.gate.chatId &&
         row.userId === this.gate.userId &&

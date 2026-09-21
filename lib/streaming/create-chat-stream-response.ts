@@ -21,7 +21,7 @@ import { flushTraces, withOtelRootSpan } from '@/lib/utils/telemetry'
 
 import { loadChat } from '../actions/chat'
 import { generateChatTitle } from '../agents/title-generator'
-import { loadChatWithMessages } from '../db/actions'
+import { getChatOwnerId, loadChatWithMessages } from '../db/actions'
 import { maybeTruncateMessages } from '../utils/context-window'
 import { getTextFromParts } from '../utils/message-utils'
 import { perfLog, perfTime } from '../utils/perf-logging'
@@ -101,6 +101,17 @@ export async function createChatStreamResponse(
     }
   } else {
     perfLog('loadChat skipped for new chat')
+    // isNewChat is client-supplied, so it cannot skip authorization: a "new"
+    // chat id that already belongs to someone else is rejected. This is a
+    // single-row lookup, so the skip-loading optimization is kept.
+    const existingOwnerId = await getChatOwnerId(chatId)
+    if (existingOwnerId && existingOwnerId !== userId) {
+      return jsonError(
+        'FORBIDDEN',
+        'You are not allowed to access this chat',
+        403
+      )
+    }
   }
 
   const correlationId = randomUUID()

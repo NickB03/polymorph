@@ -20,10 +20,19 @@ export function readCanvasArtifactTool(ctx: CanvasToolContext) {
         `[readCanvasArtifact] Tool invoked: chatId=${ctx.chatId}, artifactId=${artifactId}`
       )
 
-      const state = await loadCanvasArtifactState({
-        artifactId,
-        userId: ctx.userId
-      })
+      // All guests share one userId, so userId scoping cannot tell guests
+      // apart. A guest may only touch the artifact its verified token (or its
+      // own create call in this request) bound to the context; anything else
+      // is reported as not-found without touching the DB.
+      const guestDenied =
+        ctx.isGuest && artifactId !== ctx.currentArtifact?.artifactId
+
+      const state = guestDenied
+        ? null
+        : await loadCanvasArtifactState({
+            artifactId,
+            userId: ctx.userId
+          })
 
       if (!state) {
         return {

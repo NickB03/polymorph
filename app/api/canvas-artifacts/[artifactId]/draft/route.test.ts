@@ -39,7 +39,9 @@ vi.mock('@/lib/canvas/guest-token', () => ({
 
 // Mock service
 const mockUpdateDraft = vi.fn()
+const mockLoadState = vi.fn()
 vi.mock('@/lib/canvas/service', () => ({
+  loadCanvasArtifactState: (...args: unknown[]) => mockLoadState(...args),
   updateCanvasArtifactDraftFromSource: (...args: unknown[]) =>
     mockUpdateDraft(...args)
 }))
@@ -93,6 +95,7 @@ describe('PATCH /api/canvas-artifacts/[artifactId]/draft', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCheckCanvasLimit.mockResolvedValue(null)
+    mockLoadState.mockResolvedValue(makeArtifactState())
   })
 
   it('updates draft for authenticated user', async () => {
@@ -184,6 +187,30 @@ describe('PATCH /api/canvas-artifacts/[artifactId]/draft', () => {
     const response = await PATCH(req, ctx)
 
     expect(response.status).toBe(403)
+  })
+
+  it("rejects a guest token whose chatId does not match the artifact's chat", async () => {
+    mockGetCurrentUserId.mockResolvedValue(undefined)
+    mockVerifyGuestCanvasToken.mockResolvedValue({
+      chatId: 'chat-attacker',
+      artifactId: 'art-1',
+      exp: Date.now() + 60000
+    })
+
+    const [req, ctx] = makeRequest({
+      baseRevision: 0,
+      draftSource: validSource,
+      guestCanvasToken: 'token'
+    })
+    const response = await PATCH(req, ctx)
+
+    expect(response.status).toBe(403)
+    expect(mockLoadState).toHaveBeenCalledWith({
+      artifactId: 'art-1',
+      userId: 'guest'
+    })
+    expect(mockUpdateDraft).not.toHaveBeenCalled()
+    expect(mockRefreshGuestCanvasToken).not.toHaveBeenCalled()
   })
 
   it('rotates guest token on successful write', async () => {

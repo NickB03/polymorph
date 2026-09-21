@@ -44,6 +44,21 @@ if (isDevelopment) {
   )
 }
 
+// Production without the restricted role: the owner role (Supabase `postgres`
+// has BYPASSRLS) ignores every RLS policy, so only the app-level ownership
+// checks protect user data. Logged once per server process, never thrown:
+// deploys must keep working until the operator provisions the role.
+if (
+  process.env.NODE_ENV === 'production' &&
+  !isBuild &&
+  typeof window === 'undefined' &&
+  !process.env.DATABASE_RESTRICTED_URL
+) {
+  console.error(
+    '[DB] DATABASE_RESTRICTED_URL is not set: connected with the database owner role, so Row-Level Security is NOT enforced. Provision the restricted app_user role (scripts/provision-app-user.sql) and set DATABASE_RESTRICTED_URL. See docs/operations/DEPLOYMENT-PRODUCTION.md.'
+  )
+}
+
 // SSL configuration: Use environment variable to control SSL
 // DATABASE_SSL_DISABLED=true disables SSL completely (for local/Docker PostgreSQL)
 // Default is to enable SSL without strict CA verification (standard for managed

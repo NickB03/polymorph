@@ -43,11 +43,13 @@ Database tables enable PostgreSQL Row-Level Security. User-scoped tables use `cu
 - **messages** -- Access is granted only when the user owns the parent chat (verified via `EXISTS` subquery).
 - **canvasArtifacts**, **canvasArtifactVersions** -- Access scoped to the owning user via the parent chat chain.
 - **artifacts**, **artifactRevisions**, **artifactRuntimeSessions** -- Legacy artifact tables; access scoped to the owning user via the parent artifact/chat chain.
-- **feedback** -- Anyone can insert feedback; all feedback is readable (no sensitive user data stored).
+- **feedback** -- Anyone can insert feedback; a user can read back only their own submissions.
 - **eval_summaries**, **eval_case_results** -- readable to authenticated app sessions for the admin dashboard.
 - **trending_suggestions_cache** -- public read-only cache for home-page suggestion pills; writes go through the privileged cron path.
 
-RLS is enabled on every table (`enableRLS()` in the Drizzle schema at `lib/db/schema.ts`).
+RLS is enabled on every table (`enableRLS()` in the Drizzle schema at `lib/db/schema.ts`), and the user-scoped tables also set `FORCE ROW LEVEL SECURITY`.
+
+**Enforcement requires the restricted role.** PostgreSQL never applies RLS to a superuser or a `BYPASSRLS` role, and the Supabase owner role (`postgres`) is `BYPASSRLS`. RLS therefore only takes effect when the app connects as the restricted `app_user` role through `DATABASE_RESTRICTED_URL` (provisioned with `scripts/provision-app-user.sql`; required in production, see `docs/operations/DEPLOYMENT-PRODUCTION.md`). `/api/health` reports the live state as `rlsEnforced`. Because a deployment can run without that role, RLS is defense in depth: database writers and canvas queries also carry explicit ownership checks in `lib/db/actions.ts`.
 
 ### File Upload Restrictions
 
@@ -71,7 +73,8 @@ The upload endpoint (`app/api/upload/route.ts`) enforces the following:
 
 ### Guest Mode Isolation
 
-- Guest sessions are ephemeral and are not persisted to the database.
+- Guest chat messages are not persisted to the database.
+- Guest canvas sessions are persisted: creating a canvas as a guest writes a `chats` row and `canvas_artifacts` (plus any `canvas_artifact_versions`) rows owned by the shared `guest` identity (`GUEST_USER_ID` in `lib/canvas/constants.ts`). Every guest shares that identity, so it does not separate one guest from another; access to a guest artifact is gated by the signed guest canvas token, which is bound to one `artifactId` + `chatId` (see Canvas Artifact Isolation).
 - Guest sessions default to the `speed` model type.
 - Guest chat requires `ENABLE_GUEST_CHAT=true`; otherwise, unauthenticated requests receive `401 Unauthorized`.
 

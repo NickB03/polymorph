@@ -7,9 +7,9 @@ import { SearchMode } from '@/lib/types/search'
 import { isProviderEnabled } from '@/lib/utils/registry'
 
 const DEFAULT_MODEL: Model = {
-  id: 'deepseek/deepseek-v4-flash',
-  name: 'DeepSeek V4 Flash',
-  provider: 'DeepSeek',
+  id: 'z-ai/glm-5.3-flash',
+  name: 'GLM-5.3 Flash',
+  provider: 'Z.ai',
   providerId: 'openrouter'
 }
 
@@ -26,12 +26,23 @@ interface ModelSelectionByModeAndTypeParams {
   modelType?: ModelType
 }
 
+// OpenRouter and the Vercel AI Gateway disagree on the Z.ai namespace
+// (`z-ai/` vs `zai/`). Map ids that differ; everything else is identical.
+const GATEWAY_ID_OVERRIDES: Record<string, string> = {
+  'z-ai/glm-5.3-flash': 'zai/glm-5.3-flash',
+  'z-ai/glm-5.3': 'zai/glm-5.3'
+}
+
 function resolveGatewayFallbackModel(model: Model): Model | undefined {
   if (model.providerId !== 'openrouter' || !isProviderEnabled('gateway')) {
     return undefined
   }
 
-  return { ...model, providerId: 'gateway' }
+  return {
+    ...model,
+    id: GATEWAY_ID_OVERRIDES[model.id] ?? model.id,
+    providerId: 'gateway'
+  }
 }
 
 function resolveModelForModeAndType(
