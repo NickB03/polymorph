@@ -32,6 +32,23 @@ describe('GET /api/health', () => {
     expect((await (await GET(makeRequest())).json()).rlsEnforced).toBe(false)
   })
 
+  it('is unhealthy in production when the DB role bypasses RLS', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+
+    mockExecute.mockResolvedValue([{ rls_enforced: false }])
+    const bypassing = await GET(makeRequest())
+    expect(bypassing.status).toBe(503)
+    expect((await bypassing.json()).status).toBe('error')
+
+    mockExecute.mockResolvedValue([{ rls_enforced: true }])
+    expect((await GET(makeRequest())).status).toBe(200)
+  })
+
+  it('stays healthy outside production when the DB role bypasses RLS', async () => {
+    mockExecute.mockResolvedValue([{ rls_enforced: false }])
+    expect((await GET(makeRequest())).status).toBe(200)
+  })
+
   it('includes tracing in the body for check=phoenix, reflecting the current global state', async () => {
     mockExecute.mockResolvedValue(undefined)
     globalThis.__polymorphTracingState = 'disabled-https'

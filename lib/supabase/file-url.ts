@@ -9,6 +9,11 @@ const PUBLIC_BUCKET_PATH = '/storage/v1/object/public/user-uploads/'
 
 const SAFE_SEGMENT = /^[a-zA-Z0-9._-]+$/
 
+/** True when `segment` is safe to use as one storage path segment. */
+export function isSafeStorageSegment(segment: string): boolean {
+  return SAFE_SEGMENT.test(segment) && segment !== '..' && segment !== '.'
+}
+
 /**
  * Uploads are written as `<userId>/chats/<chatId>/<filename>` with sanitized
  * segments. Anything else (traversal, empty segments, other shapes) is
@@ -19,10 +24,7 @@ export function isSafeStoragePath(path: string): boolean {
   return (
     segments.length >= 4 &&
     segments[1] === 'chats' &&
-    segments.every(
-      segment =>
-        SAFE_SEGMENT.test(segment) && segment !== '..' && segment !== '.'
-    )
+    segments.every(isSafeStorageSegment)
   )
 }
 

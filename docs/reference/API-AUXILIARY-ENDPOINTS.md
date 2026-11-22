@@ -9,7 +9,7 @@ This leaf covers advanced search, suggestions, voice synthesis, and health check
 
 Performs a SearXNG-powered web search with optional deep crawling and relevance scoring. Results are cached in Redis for 1 hour.
 
-**Authentication:** None
+**Authentication:** Same as `/api/chat`: a signed-in user, or a guest when `ENABLE_GUEST_CHAT=true` (otherwise `401`). Rate limited to 10 requests per minute per user, or per IP for guests (`429`).
 
 > **Note:** This endpoint requires a self-hosted SearXNG instance. It is separate from the primary Brave search (and Tavily/Exa fallbacks) used by the chat agent tools.
 
@@ -188,7 +188,7 @@ For Vercel monitoring, use the canonical production alias (`https://polymorph.fy
 }
 ```
 
-> **Note:** Phoenix status is advisory-only and does not affect the HTTP status code. The endpoint returns 503 only when the database is unreachable.
+> **Note:** Phoenix status is advisory-only and does not affect the HTTP status code. The endpoint returns 503 when the database is unreachable, or in production when the connected database role bypasses Row-Level Security (`"rlsEnforced": false`).
 
 > **`phoenix: 'ok'` is not proof tracing is active.** With `check=phoenix` or `check=all`, the response also includes `tracing`, one of `enabled` | `disabled-off` | `disabled-https` | `init-failed` | `unknown`. `phoenix` reports whether the Phoenix collector is reachable over the network; `tracing` reports whether _this process_ actually registered an OTel exporter (set in `instrumentation.ts`). The blind-deploy signature to watch for is `phoenix: 'ok'` together with `tracing: 'disabled-https'` — the collector is up, but this deployment silently disabled export because `PHOENIX_COLLECTOR_ENDPOINT` wasn't `https://` in production (see [Environment Operations → Tracing](../getting-started/ENVIRONMENT-OPERATIONS.md#tracing-arize-phoenix)).
 

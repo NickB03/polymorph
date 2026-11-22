@@ -75,7 +75,10 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const isHealthy = dbStatus === 'connected'
+  // In production a role that bypasses RLS is a failed deployment, not a
+  // degraded one: report unhealthy so monitors and deploy checks catch it.
+  const rlsRequired = process.env.NODE_ENV === 'production'
+  const isHealthy = dbStatus === 'connected' && (rlsEnforced || !rlsRequired)
   const body: Record<string, unknown> = {
     status: isHealthy ? 'ok' : 'error',
     timestamp,

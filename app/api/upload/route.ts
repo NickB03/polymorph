@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { getCurrentUserId } from '@/lib/auth/get-current-user'
+import { isSafeStorageSegment } from '@/lib/supabase/file-url'
 import { uploadFileToSupabase } from '@/lib/supabase/storage'
 import { getErrorMessage } from '@/lib/utils/error'
 import {
@@ -27,6 +28,11 @@ export async function POST(req: NextRequest) {
     const chatId = formData.get('chatId') as string
     if (!file) {
       return NextResponse.json({ error: 'File is required' }, { status: 400 })
+    }
+
+    // chatId becomes a storage path segment, so it must not carry `/` or `..`.
+    if (typeof chatId !== 'string' || !isSafeStorageSegment(chatId)) {
+      return NextResponse.json({ error: 'Invalid chatId' }, { status: 400 })
     }
 
     if (file.size > MAX_UPLOAD_SIZE_BYTES) {

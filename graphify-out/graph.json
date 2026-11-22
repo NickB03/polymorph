@@ -47154,6 +47154,72 @@
       "source_file": "lib/canvas/pre-processors/fix-missing-lucide-icons.ts",
       "source_location": "L23",
       "_origin": "ast"
+    },
+    {
+      "id": "tests_route_test_authmocks",
+      "label": "authMocks",
+      "file_type": "code",
+      "source_file": "app/api/advanced-search/__tests__/route.test.ts",
+      "source_location": "L35",
+      "_origin": "ast",
+      "community": 125
+    },
+    {
+      "id": "app_api_upload_tests_route_test_ts_tests_route_test",
+      "label": "route.test.ts",
+      "file_type": "code",
+      "source_file": "app/api/upload/__tests__/route.test.ts",
+      "source_location": "L1",
+      "_origin": "ast"
+    },
+    {
+      "id": "tests_route_test_mocks",
+      "label": "mocks",
+      "file_type": "code",
+      "source_file": "app/api/upload/__tests__/route.test.ts",
+      "source_location": "L6",
+      "_origin": "ast"
+    },
+    {
+      "id": "app_api_upload_tests_route_test_ts_tests_route_test_makerequest",
+      "label": "makeRequest()",
+      "file_type": "code",
+      "source_file": "app/api/upload/__tests__/route.test.ts",
+      "source_location": "L20",
+      "_origin": "ast"
+    },
+    {
+      "id": "supabase_file_url_issafestoragesegment",
+      "label": "isSafeStorageSegment()",
+      "file_type": "code",
+      "source_file": "lib/supabase/file-url.ts",
+      "source_location": "L13",
+      "_origin": "ast",
+      "community": 17
+    },
+    {
+      "id": "tests_advanced_search_ssrf_test",
+      "label": "advanced-search-ssrf.test.ts",
+      "file_type": "code",
+      "source_file": "lib/tools/search/__tests__/advanced-search-ssrf.test.ts",
+      "source_location": "L1",
+      "_origin": "ast"
+    },
+    {
+      "id": "tests_advanced_search_ssrf_test_mocks",
+      "label": "mocks",
+      "file_type": "code",
+      "source_file": "lib/tools/search/__tests__/advanced-search-ssrf.test.ts",
+      "source_location": "L5",
+      "_origin": "ast"
+    },
+    {
+      "id": "tests_advanced_search_ssrf_test_respondwith",
+      "label": "respondWith()",
+      "file_type": "code",
+      "source_file": "lib/tools/search/__tests__/advanced-search-ssrf.test.ts",
+      "source_location": "L19",
+      "_origin": "ast"
     }
   ],
   "links": [
@@ -150509,6 +150575,154 @@
       "source_location": "L5",
       "weight": 1.0,
       "confidence_score": 1.0
+    },
+    {
+      "source": "app_api_advanced_search_tests_route_test_ts_tests_route_test",
+      "target": "tests_route_test_authmocks",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/api/advanced-search/__tests__/route.test.ts",
+      "source_location": "L35",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "app_api_upload_tests_route_test_ts_tests_route_test",
+      "target": "tests_route_test_mocks",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/api/upload/__tests__/route.test.ts",
+      "source_location": "L6",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "app_api_upload_tests_route_test_ts_tests_route_test",
+      "target": "upload_route",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/api/upload/__tests__/route.test.ts",
+      "source_location": "L18",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "app_api_upload_tests_route_test_ts_tests_route_test",
+      "target": "upload_route_post",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/api/upload/__tests__/route.test.ts",
+      "source_location": "L18",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "app_api_upload_tests_route_test_ts_tests_route_test",
+      "target": "app_api_upload_tests_route_test_ts_tests_route_test_makerequest",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/api/upload/__tests__/route.test.ts",
+      "source_location": "L20",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "upload_route",
+      "target": "supabase_file_url_issafestoragesegment",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/api/upload/route.ts",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "supabase_file_url",
+      "target": "supabase_file_url_issafestoragesegment",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/supabase/file-url.ts",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "supabase_server_storage",
+      "target": "supabase_file_url_issafestoragesegment",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/supabase/server-storage.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_advanced_search_ssrf_test",
+      "target": "tests_advanced_search_ssrf_test_mocks",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/tools/search/__tests__/advanced-search-ssrf.test.ts",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_advanced_search_ssrf_test",
+      "target": "search_advanced_search",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/tools/search/__tests__/advanced-search-ssrf.test.ts",
+      "source_location": "L17",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_advanced_search_ssrf_test",
+      "target": "search_advanced_search_fetchhtml",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/tools/search/__tests__/advanced-search-ssrf.test.ts",
+      "source_location": "L17",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "tests_advanced_search_ssrf_test",
+      "target": "tests_advanced_search_ssrf_test_respondwith",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "lib/tools/search/__tests__/advanced-search-ssrf.test.ts",
+      "source_location": "L19",
+      "weight": 1.0,
+      "confidence_score": 1.0
+    },
+    {
+      "source": "upload_route_post",
+      "target": "supabase_file_url_issafestoragesegment",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app/api/upload/route.ts",
+      "source_location": "L34",
+      "weight": 1.0
+    },
+    {
+      "source": "supabase_server_storage_buildgeneratedimagepath",
+      "target": "supabase_file_url_issafestoragesegment",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "lib/supabase/server-storage.ts",
+      "source_location": "L27",
+      "weight": 1.0
     }
   ]
 }

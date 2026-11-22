@@ -17,4 +17,12 @@ describe('buildGeneratedImagePath', () => {
     const path = buildGeneratedImagePath('u', 'c', 'image/jpeg')
     expect(path.endsWith('.jpeg')).toBe(true)
   })
+
+  it('rejects a chatId that could escape the chat folder', () => {
+    for (const chatId of ['a/b', '..', '../other-user', '']) {
+      expect(() => buildGeneratedImagePath('u', chatId, 'image/png')).toThrow(
+        'Invalid chatId'
+      )
+    }
+  })
 })

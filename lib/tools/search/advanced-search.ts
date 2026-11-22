@@ -12,6 +12,7 @@ import {
   SearXNGSearchResults
 } from '@/lib/types'
 import { getErrorMessage } from '@/lib/utils/error'
+import { isSafeFetchTarget } from '@/lib/utils/safe-url'
 
 const SEARXNG_MAX_RESULTS = Math.max(
   10,
@@ -544,7 +545,16 @@ async function fetchHtmlWithTimeout(
   }
 }
 
-function fetchHtml(url: string, remainingRedirects = 5): Promise<string> {
+// Result URLs come from the search backend and redirects from the crawled
+// site, so every hop is checked against the SSRF guard before it is requested.
+export async function fetchHtml(
+  url: string,
+  remainingRedirects = 5
+): Promise<string> {
+  if (!(await isSafeFetchTarget(url))) {
+    throw new Error('Refusing to fetch a non-public URL')
+  }
+
   return new Promise((resolve, reject) => {
     const protocol = url.startsWith('https:') ? https : http
     const agent = url.startsWith('https:') ? httpsAgent : httpAgent

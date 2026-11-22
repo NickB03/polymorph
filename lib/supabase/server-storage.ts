@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
-import { FILE_PROXY_PREFIX } from './file-url'
+import { FILE_PROXY_PREFIX, isSafeStorageSegment } from './file-url'
 import { SUPABASE_STORAGE_BUCKET } from './storage'
 
 let _adminClient: ReturnType<typeof createClient> | null = null
@@ -23,6 +23,10 @@ export function buildGeneratedImagePath(
   chatId: string,
   mediaType: string
 ): string {
+  // chatId is client-supplied; refuse anything that could escape the folder.
+  if (!isSafeStorageSegment(chatId)) {
+    throw new Error('Invalid chatId for storage path')
+  }
   const ext = mediaType.split('/')[1] || 'png'
   return `${userId}/chats/${chatId}/generated-${Date.now()}.${ext}`
 }

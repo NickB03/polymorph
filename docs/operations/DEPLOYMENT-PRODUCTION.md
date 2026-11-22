@@ -50,7 +50,7 @@ Provision once per database:
 
 3. Set `DATABASE_RESTRICTED_URL` to the same host, port, and database as the owner URL, with the `app_user` credentials. On Supabase use the pooler host, where the username carries the project ref: `postgresql://app_user.[PROJECT_REF]:[GENERATED_PASSWORD]@[POOLER_HOST]:[PORT]/postgres`.
 4. Keep `DATABASE_URL` / `POSTGRES_URL` pointing at the owner. Migrations (`lib/db/migrate.ts`) and the privileged cron client (`lib/db/admin.ts`, which refuses to run as `app_user`) use it; the runtime query client (`lib/db/index.ts`) prefers `DATABASE_RESTRICTED_URL`.
-5. Redeploy, then verify: `GET /api/health` must return `"rlsEnforced": true`. The value is read from the connected role (`NOT (rolsuper OR rolbypassrls)`), not from the environment, so a restricted URL that actually points at the owner still reports `false`.
+5. Redeploy, then verify: `GET /api/health` must return `"rlsEnforced": true`. The value is read from the connected role (`NOT (rolsuper OR rolbypassrls)`), not from the environment, so a restricted URL that actually points at the owner still reports `false`. In production, `false` also makes the endpoint return `503` with `"status": "error"`.
 
 Later migrations grant `app_user` access to new tables automatically (default privileges, plus the grant block in `drizzle/0028_force_rls_and_app_user_grants.sql`).
 

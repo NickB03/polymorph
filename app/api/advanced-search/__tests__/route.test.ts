@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createAdvancedSearchResult } from '@/lib/tools/search/advanced-search.test-helpers'
 
@@ -32,7 +32,28 @@ vi.mock('@/lib/tools/search/advanced-search', async importOriginal => {
   }
 })
 
+const authMocks = vi.hoisted(() => ({
+  getCurrentUserId: vi.fn(),
+  checkPerMinuteLimit: vi.fn()
+}))
+
+vi.mock('@/lib/auth/get-current-user', () => ({
+  getCurrentUserId: authMocks.getCurrentUserId
+}))
+vi.mock('@/lib/rate-limit/per-minute-limiter', () => ({
+  checkPerMinuteLimit: authMocks.checkPerMinuteLimit
+}))
+
 import { POST } from '../route'
+
+beforeEach(() => {
+  vi.unstubAllEnvs()
+  advancedSearchMocks.runAdvancedSearch.mockReset()
+  authMocks.getCurrentUserId.mockReset().mockResolvedValue('user-1')
+  authMocks.checkPerMinuteLimit
+    .mockReset()
+    .mockResolvedValue({ allowed: true, remaining: 9, resetAt: 0, limit: 10 })
+})
 
 function makeRequest(body: unknown) {
   return new Request('http://localhost/api/advanced-search', {
@@ -97,5 +118,62 @@ describe('POST /api/advanced-search validation', () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json.results[0].title).toBe('Route delegated result')
+  })
+})
+
+describe('POST /api/advanced-search access control', () => {
+  it('rejects guests when guest chat is disabled', async () => {
+    authMocks.getCurrentUserId.mockResolvedValue(undefined)
+    vi.stubEnv('ENABLE_GUEST_CHAT', 'false')
+
+    const res = await POST(makeRequest({ query: 'test' }))
+
+    expect(res.status).toBe(401)
+    expect(advancedSearchMocks.runAdvancedSearch).not.toHaveBeenCalled()
+  })
+
+  it('rate limits guests by IP when guest chat is enabled', async () => {
+    authMocks.getCurrentUserId.mockResolvedValue(undefined)
+    vi.stubEnv('ENABLE_GUEST_CHAT', 'true')
+    advancedSearchMocks.runAdvancedSearch.mockResolvedValueOnce(
+      createAdvancedSearchResult('Guest result')
+    )
+
+    const res = await POST(
+      new Request('http://localhost/api/advanced-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-forwarded-for': '203.0.113.7, 10.0.0.1'
+        },
+        body: JSON.stringify({ query: 'test' })
+      })
+    )
+
+    expect(res.status).toBe(200)
+    expect(authMocks.checkPerMinuteLimit).toHaveBeenCalledWith(
+      'advanced-search',
+      'guest:203.0.113.7',
+      10
+    )
+  })
+
+  it('returns 429 once the per-minute limit is exceeded', async () => {
+    authMocks.checkPerMinuteLimit.mockResolvedValue({
+      allowed: false,
+      remaining: 0,
+      resetAt: 0,
+      limit: 10
+    })
+
+    const res = await POST(makeRequest({ query: 'test' }))
+
+    expect(res.status).toBe(429)
+    expect(authMocks.checkPerMinuteLimit).toHaveBeenCalledWith(
+      'advanced-search',
+      'user-1',
+      10
+    )
+    expect(advancedSearchMocks.runAdvancedSearch).not.toHaveBeenCalled()
   })
 })
